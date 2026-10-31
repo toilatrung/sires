@@ -14,14 +14,17 @@ import path from 'node:path';
 const EXT = new Set(['.css', '.scss', '.sass', '.less', '.html', '.htm', '.jsx', '.tsx', '.vue', '.svelte', '.astro', '.js', '.ts', '.mjs']);
 const SKIP_DIR = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', 'out', '.turbo']);
 
+// Exactly the colours of docs/ui-design/design.md §2.1 (light table and dark table). Nothing else.
 const PALETTE = new Set([
-  '#F6F2EE', '#FCF9F5', '#E5DED5', '#EFEAE3', '#FFFFFF', '#DBD3C7', '#C7C7C7', '#1C1B18', '#4D4A44', '#7A756C',
-  '#0277DD', '#025FAC', '#EAF4FE', '#80B9EE', '#CFE6FC', '#9A3412', '#BE123C', '#FFF1F2', '#9F1239', '#FFE4E6', '#0268BE',
-  // dark (Agent List)
-  '#12110F', '#2E2B26', '#3A372F', '#26241F', '#C9C2B6', '#3DA5FF', '#7CC0FF', '#0E2A45', '#F87171', '#3A1518', '#FCA5A5',
-  '#000000'
+  // light
+  '#F6F2EE', '#FCF9F5', '#E5DED5', '#EFEAE3', '#DBD3C7', '#C7C7C7', '#1C1B18', '#4D4A44', '#7A756C',
+  '#0277DD', '#025FAC', '#EAF4FE', '#80B9EE', '#CFE6FC', '#9A3412', '#BE123C', '#FFF1F2', '#9F1239', '#FFE4E6', '#FFFFFF',
+  // dark
+  '#12110F', '#1C1B18', '#2E2B26', '#3A372F', '#F6F2EE', '#C9C2B6', '#3DA5FF', '#7CC0FF', '#0E2A45', '#FB923C', '#F87171', '#3A1518'
 ]);
-const RADIUS_OK = new Set(['0', '0px', '4px', '6px', '8px', '50%', '2px', 'inherit', 'var']);
+// design.md §2.3: 8px cards, 6px controls, 4px chips and progress bars. Fully round shapes (avatars, dots,
+// switch knobs, count badges) are judged by size below, not listed here.
+const RADIUS_OK = new Set(['0', '0px', '4px', '6px', '8px', 'inherit', 'var']);
 const FONT_OK = /montserrat|jetbrains mono|times new roman|times|serif|monospace|system-ui|sans-serif|inherit|var\(|ui-monospace/i;
 
 const findings = [];

@@ -9,7 +9,8 @@ info:
   summary: API nội bộ của knowledge (Python) — truy xuất lai, đọc chunk, kiểm tra quote.
   description: |
     knowledge sở hữu SourceDocument, Chunk, văn bản chunk và vector (pgvector) — architecture mục 7. Indexing chạy
-    theo sự kiện `reference.trusted` và lệnh `knowledge.index` (events/asyncapi.yaml), không có endpoint công khai.
+    theo sự kiện `reference.status_changed` với trạng thái đích Trusted (routing key `reference.status_changed.trusted`)
+    và lệnh `knowledge.index` (events/asyncapi.yaml), không có endpoint công khai.
     Phạm vi truy xuất do knowledge tự tính từ token và bản sao selection; request không mở rộng được phạm vi.
   contact:
     name: eTroy — đội SWE, GEN AI, AIE và PO
@@ -128,7 +129,8 @@ paths:
       summary: Kiểm tra quote có thật trong chunk (so khớp sau chuẩn hóa, mờ ≥ 0,95)
       description: Kiểm tra tất định chống bịa evidence (architecture 7.5); trả vị trí chính xác lấy từ chunk.
       x-callers: [research, agent-core]
-      x-requirements: [EVID-RETRIEVAL-001, KPI-01]
+      x-requirements: [EVID-RETRIEVAL-001]
+      x-kpis: [KPI-01]
       requestBody:
         required: true
         content:

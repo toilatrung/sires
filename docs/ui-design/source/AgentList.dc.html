@@ -13,32 +13,206 @@
 <body>
 <x-dc>
 <helmet>
+<style data-sires-motion>
+/* Bản chép từ assets/motion.css do tools/render.mjs tạo; sửa motion.css rồi chạy lại render. */
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+
+/* Chuyển động của SIRes UI (design.md mục 2.4, DEC-51).
+   Port sang CSS thuần từ token và recipe của Animate UI, mức subtle:
+   agent/skills/vendor/animate-ui/references/tokens.md, recipes/press.md, modal.md, overlay.md, disclosure.md.
+   Đây là nguồn chuẩn. tools/render.mjs (1) gắn file này vào mọi trang trong pages/ bằng <link>,
+   (2) chép nguyên văn vào khối <style data-sires-motion> trong helmet của mỗi source/*.dc.html
+   để canvas cũng hiển thị đúng chuyển động. Sửa ở đây rồi chạy lại render; không sửa khối đã chép. */
+
+:root {
+  /* Đường cong (tokens.md § Curves) */
+  --sires-ease-out: cubic-bezier(0.23, 1, 0.32, 1);    /* ease.out: vào hoặc rời */
+  --sires-ease-soft: cubic-bezier(0.215, 0.61, 0.355, 1); /* ease.soft: dialog, menu, disclosure */
+  --sires-ease-color: cubic-bezier(0.25, 0.1, 0.25, 1);  /* ease.color: đổi màu */
+
+  /* Thời lượng (tokens.md § Tweens) */
+  --sires-dur-press: 160ms;    /* thay cho spring.press (~120ms tới nơi) */
+  --sires-dur-color: 200ms;    /* transition.color */
+  --sires-dur-menu: 220ms;     /* transition.menu, dùng cho tooltip */
+  --sires-dur-reveal: 300ms;   /* transition.reveal */
+  --sires-dur-disclose: 350ms; /* transition.disclosure */
+  --sires-dur-dialog: 400ms;   /* transition.dialogFade */
+
+  /* Điểm bắt đầu (tokens.md § Scales, nhẹ hơn một bậc theo feel.md "subtler") */
+  --sires-press: 0.97;         /* scale.press */
+  --sires-dialog-from: scale(0.9);
+  --sires-tooltip-from: scale(0.85);
+  --sires-reveal-from: translateY(4px);
+  --sires-disclose-from: translateY(-4px);
+
+  /* Tác vụ chạy lâu (design.md 2.4.1) */
+  --sires-dur-progress: 550ms; /* spring.progress: không vượt, ổn định ~550ms */
+  --sires-dur-pulse: 1.6s;     /* chấm Đang chạy và skeleton */
+  --sires-dur-sweep: 1.4s;     /* dải chạy của thanh không xác định */
+  --sires-progress-from: scaleX(0);
+}
+
+/* Giảm chuyển động: bỏ mọi dịch chuyển và co giãn, giữ hiệu ứng mờ dần. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sires-press: 1;
+    --sires-dialog-from: none;
+    --sires-tooltip-from: none;
+    --sires-reveal-from: none;
+    --sires-disclose-from: none;
+    --sires-progress-from: none;
+  }
+}
+
+/* Đổi màu khi hover, focus, chọn: chuyển mượt thay vì nhảy. */
+a, button, summary, input, select, textarea,
+[role="tab"], [role="radio"], [role="switch"] {
+  transition:
+    color var(--sires-dur-color) var(--sires-ease-color),
+    background-color var(--sires-dur-color) var(--sires-ease-color),
+    border-color var(--sires-dur-color) var(--sires-ease-color),
+    outline-color var(--sires-dur-color) var(--sires-ease-color),
+    transform var(--sires-dur-press) var(--sires-ease-out);
+}
+
+/* Bấm: lún 0.97, không phóng to khi hover (recipes/press.md). */
+button:not(:disabled):active,
+[role="tab"]:active, [role="radio"]:active, [role="switch"]:active {
+  transform: scale(var(--sires-press));
+}
+
+/* Dialog: hiện dần và co từ 0.9, giữ nguyên tâm (recipes/modal.md, bỏ góc nghiêng). */
+[role="dialog"] {
+  animation: sires-dialog-in var(--sires-dur-dialog) var(--sires-ease-soft) both;
+}
+@keyframes sires-dialog-in {
+  from { opacity: 0; transform: var(--sires-dialog-from); }
+}
+
+/* Tooltip, popover: mọc từ phía nơi gọi nó (recipes/overlay.md). Phía ghi bằng data-side:
+   bottom (mặc định, hiện dưới nơi gọi), top, left, right; căn theo mép đầu của nơi gọi. */
+[role="tooltip"], [data-popover] {
+  transform-origin: top left;
+  animation: sires-tooltip-in var(--sires-dur-menu) var(--sires-ease-out) both;
+}
+[data-side="top"]:is([role="tooltip"], [data-popover]) { transform-origin: bottom left; }
+[data-side="left"]:is([role="tooltip"], [data-popover]) { transform-origin: top right; }
+[data-side="right"]:is([role="tooltip"], [data-popover]) { transform-origin: top left; }
+@keyframes sires-tooltip-in {
+  from { opacity: 0; transform: var(--sires-tooltip-from); }
+}
+
+/* Thông báo lỗi: hiện dần, nhích lên 4px (transition.reveal). */
+[role="alert"] {
+  animation: sires-reveal-in var(--sires-dur-reveal) var(--sires-ease-out) both;
+}
+@keyframes sires-reveal-in {
+  from { opacity: 0; transform: var(--sires-reveal-from); }
+}
+
+/* <details>: nội dung mở ra mượt (recipes/disclosure.md, dạng mờ dần, không đổi chiều cao). */
+details[open] > :not(summary) {
+  animation: sires-disclose-in var(--sires-dur-disclose) var(--sires-ease-soft) both;
+}
+@keyframes sires-disclose-in {
+  from { opacity: 0; transform: var(--sires-disclose-from); }
+}
+
+/* ---- Tác vụ chạy lâu: Running, tiến độ, đang tải (UX-STATE-001) ---- */
+
+/* Chấm 7px nhấp nháy trước nhãn của mọi chip đang chạy (Running, In Progress, Indexing, Đang build…).
+   Gắn bằng thuộc tính data-running trên chip; chữ trạng thái vẫn là tín hiệu chính. */
+@keyframes sires-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+[data-running] { gap: 5px; }
+[data-running]::before {
+  content: "";
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--sires-running-dot, #0277DD); /* nền tối: --sires-running-dot: #3DA5FF */
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Thanh tiến độ biết số bước: phần tô (data-progress) trượt từ 0 tới giá trị, chỉ dùng transform. */
+[data-progress]:not([data-progress="indeterminate"]) {
+  transform-origin: left center;
+  animation: sires-progress-in var(--sires-dur-progress) var(--sires-ease-out) both;
+}
+@keyframes sires-progress-in {
+  from { transform: var(--sires-progress-from); }
+}
+
+/* Thanh không xác định thời lượng (build, tìm kiếm): một dải 30% chạy lặp tuyến tính trên rãnh. */
+[data-progress="indeterminate"] {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  background: #DBD3C7;
+  border-radius: 4px;
+}
+[data-progress="indeterminate"]::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: #0277DD;
+  border-radius: 4px;
+  animation: sires-sweep var(--sires-dur-sweep) linear infinite;
+}
+@keyframes sires-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(333%); }
+}
+
+/* Skeleton khi tải danh sách: khối nền control mờ dần lặp lại, không shimmer. */
+[data-skeleton] {
+  display: block;
+  background: #E5DED5;
+  border-radius: 4px;
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Giảm chuyển động: mọi vòng lặp đứng yên; thanh không xác định hiện cả rãnh màu nhạt thay vì dải chạy. */
+@media (prefers-reduced-motion: reduce) {
+  [data-running]::before,
+  [data-skeleton],
+  [style*="sires-pulse"] { animation: none !important; }
+  [data-progress="indeterminate"]::after { animation: none; width: 100%; opacity: .35; }
+}
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0}
-@keyframes sires-pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@media (prefers-reduced-motion: reduce){[style*="sires-pulse"]{animation:none!important}}
 </style>
 </helmet>
-<section aria-labelledby="agents-h" style="box-sizing: border-box; width: 100%; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 8px; color: {{t.text}}; font-family: Montserrat, system-ui, sans-serif">
-  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 14px 16px; border-bottom: 1px solid {{t.border}}">
-    <h2 id="agents-h" style="margin: 0; font-size: 16px; font-weight: 600">Agents</h2>
-    <span role="status" style="font-size: 13px; color: {{t.muted}}; font-variant-numeric: tabular-nums">{{summary}}</span>
+<section aria-labelledby="agents-h-{{themeKey}}" style="box-sizing: border-box; width: 100%; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 8px; color: {{t.text}}; font-family: Montserrat, system-ui, sans-serif; --sires-running-dot: {{t.brand}}">
+  <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-bottom: 1px solid {{t.border}}">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px">
+      <h2 id="agents-h-{{themeKey}}" style="margin: 0; font-size: 16px; font-weight: 600">Agents</h2>
+      <span role="status" aria-live="polite" style="font-size: 13px; color: {{t.muted}}; font-variant-numeric: tabular-nums">{{summary}}</span>
+    </div>
+    <span style="font-size: 12px; color: {{t.muted}}; font-variant-numeric: tabular-nums">{{scope}}</span>
   </div>
   <ul style="margin: 0; padding: 0; list-style: none">
-    <sc-for list="{{agents}}" as="a" hint-placeholder-count="7">
+    <sc-for list="{{agents}}" as="a" hint-placeholder-count="10">
       <li style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-top: {{a.div}}">
         <span aria-hidden="true" style="flex: none; width: 32px; height: 32px; border-radius: 16px; background: {{t.raised}}; color: {{t.text}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">{{a.mono}}</span>
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
           <span style="font-size: 14px; font-weight: 600; line-height: 1.35">{{a.name}}</span>
           <span style="font-size: 12px; color: {{t.muted}}; line-height: 1.4">{{a.role}}</span>
-          <sc-if value="{{a.hasTask}}" hint-placeholder-val="{{ false }}">
-            <span style="font-size: 12px; line-height: 1.45; color: {{t.muted}}"><a href="Plan.dc.html" style="font-family: 'JetBrains Mono', monospace; color: {{t.link}}">{{a.task}}</a> {{a.detail}}</span>
+          <sc-if value="{{a.hasDetail}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 12px; line-height: 1.45; color: {{t.muted}}"><sc-if value="{{a.hasTask}}" hint-placeholder-val="{{ true }}"><a href="{{a.href}}" style="font-family: 'JetBrains Mono', monospace; color: {{t.link}}">{{a.task}}</a> </sc-if>{{a.detail}}</span>
           </sc-if>
         </div>
-        <span style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 4px; border: 1px solid {{a.b}}; background: {{a.bg}}; color: {{a.fg}}; font-size: 12px; font-weight: 600; white-space: nowrap">
-          <sc-if value="{{a.running}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: {{t.brand}}; animation: sires-pulse 1.6s ease-in-out infinite"></span></sc-if>
-          <sc-if value="{{a.error}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>
+        <span data-running="{{a.running}}" style="flex: none; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 4px; border: 1.5px solid {{a.b}}; background: {{a.bg}}; color: {{a.fg}}; font-size: 12px; font-weight: 600; white-space: nowrap">
+          <sc-if value="{{a.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>
+          <sc-if value="{{a.warn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg></sc-if>
+          <sc-if value="{{a.error}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></sc-if>
           {{a.state}}
         </span>
       </li>
@@ -46,43 +220,59 @@ body{margin:0}
   </ul>
 </section>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted","deliberation","synthesis"],"default":"running"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":380,"height":560}}'>
+<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted","deliberation","synthesis","deliberation-failed","cancelled"],"default":"running"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":380,"height":800}}'>
 class Component extends DCLogic {
   renderVals() {
     const wf = this.props.wfState ?? 'running';
     const dark = (this.props.theme ?? 'light') === 'dark';
+    // Chip colours per agent state: [border, fill, text]. Only design.md 2.1 tokens (light table, dark table).
     const t = dark
       ? { surface: '#1C1B18', raised: '#2E2B26', border: '#3A372F', text: '#F6F2EE', muted: '#C9C2B6', link: '#7CC0FF', brand: '#3DA5FF',
-          run: ['#3DA5FF', '#0E2A45', '#F6F2EE'], idle: ['#3A372F', '#26241F', '#C9C2B6'], err: ['#F87171', '#3A1518', '#FCA5A5'] }
+          run: ['#3DA5FF', '#0E2A45', '#F6F2EE'], need: ['#7CC0FF', '#0E2A45', '#7CC0FF'], warn: ['#FB923C', '#1C1B18', '#FB923C'],
+          err: ['#F87171', '#3A1518', '#F87171'], idle: ['#3A372F', '#12110F', '#C9C2B6'] }
       : { surface: '#FCF9F5', raised: '#E5DED5', border: '#DBD3C7', text: '#1C1B18', muted: '#4D4A44', link: '#025FAC', brand: '#0277DD',
-          run: ['#0277DD', '#EAF4FE', '#1C1B18'], idle: ['#DBD3C7', '#F6F2EE', '#4D4A44'], err: ['#BE123C', '#FFF1F2', '#9F1239'] };
-    // Who is doing what in workflow wf-52d (T-2.3), per workflow state.
+          run: ['#0277DD', '#EAF4FE', '#1C1B18'], need: ['#80B9EE', '#EAF4FE', '#025FAC'], warn: ['#9A3412', '#FCF9F5', '#9A3412'],
+          err: ['#BE123C', '#FFF1F2', '#9F1239'], idle: ['#DBD3C7', '#F6F2EE', '#4D4A44'] };
+    // Scope: every agent of project "RAG trong tổng quan tài liệu" at the moment workflow wf-52d (T-2.3) is in the given state.
+    // 'waiting' is the same moment as Agent Activity (09:52). An agent with several jobs shows the most urgent one:
+    // Chờ bạn > Lỗi > Gián đoạn > Đang chạy > Đang rảnh.
+    // Diagram Agent cannot run anywhere: connection "Gemini cá nhân" was rejected (auth_failed, 30/10), see Agent Activity and T-2.6.
+    const dia = ['err', 'T-2.6', 'kết nối “Gemini cá nhân” bị từ chối (auth_failed)'];
+    const ref = ['need', '', 'wf-55e · metadata reference chờ bạn sửa và duyệt'];
     const plan = {
-      running: { orc: ['run', 'điều phối bước 3/5'], evi: ['run', 'bước 3/5 · 02:14'] },
-      waiting: { dis: ['run', 'bước 2/5 · chờ bạn trả lời prompt'] },
-      interrupted: { evi: ['err', 'gián đoạn ở bước 3/5 · 09:58'] },
+      running: { at: '09:46', orc: ['run', 'T-2.3', 'điều phối bước 3/5'], evi: ['run', 'T-2.3', 'bước 3/5 · 02:14'], ref, dia },
+      waiting: { at: '09:52', dis: ['need', 'T-2.3', 'bước 2/5 · chờ bạn trả lời prompt'], evi: ['run', 'T-2.2', 'bước 2/4 · 06:12'], ref, dia },
+      interrupted: { at: '09:58', evi: ['warn', 'T-2.3', 'gián đoạn ở bước 3/5 · 09:58'], dia },
       // Step 4/5 is a deliberation (8.7): Orchestrator and both Analysis Agent instances write in parallel.
-      deliberation: { orc: ['run', 'thảo luận bước 4/5 · Vòng 2'], anaA: ['run', 'thảo luận bước 4/5 · Vòng 2'], anaB: ['run', 'thảo luận bước 4/5 · Vòng 2'] },
-      synthesis: { orc: ['run', 'điều phối bước 5/5'], syn: ['run', 'bước 5/5 · theo phương án bạn đã chọn'] }
-    }[wf] || {};
-    const label = { run: 'Đang chạy', idle: 'Đang rảnh', err: 'Lỗi' };
+      deliberation: { at: '10:07', orc: ['run', 'T-2.3', 'thảo luận bước 4/5 · Vòng 2'], anaA: ['run', 'T-2.3', 'thảo luận bước 4/5 · Vòng 2'], anaB: ['run', 'T-2.3', 'thảo luận bước 4/5 · Vòng 2'], dia },
+      synthesis: { at: '10:31', orc: ['run', 'T-2.3', 'điều phối bước 5/5'], syn: ['run', 'T-2.3', 'bước 5/5 · theo phương án bạn đã chọn'], dia },
+      // ORCH-DELIB-002: B failed in round 1 after its retries, the session is Failed and the Orchestrator asks the Researcher.
+      'deliberation-failed': { at: '10:08', orc: ['need', 'T-2.3', 'bước 4/5 · chờ bạn chọn chạy lại phiên hoặc tiếp tục'], anaB: ['err', 'T-2.3', 'Vòng 1 · lỗi sau 3 lần thử (provider_unavailable)'], dia },
+      cancelled: { at: '10:12', dia }
+    }[wf] || { at: '', dia };
+    const label = { run: 'Đang chạy', need: 'Chờ bạn', warn: 'Gián đoạn', err: 'Lỗi', idle: 'Đang rảnh' };
     const roster = [
       ['orc', 'OR', 'Orchestrator', 'Điều phối, giao việc cho agent'],
       ['dis', 'DI', 'Discovery Agent', 'Tìm tài liệu học thuật'],
+      ['ref', 'RP', 'Reference Processing Agent', 'Chuẩn hóa metadata, chuẩn bị duyệt, indexing'],
       ['evi', 'ER', 'Evidence Retrieval Agent', 'Truy xuất evidence từ nguồn đã duyệt'],
-      ['anaA', 'AA', 'Analysis Agent A', 'Đề xuất và phản biện trong phiên thảo luận'],
-      ['anaB', 'AB', 'Analysis Agent B', 'Đề xuất và phản biện trong phiên thảo luận'],
       ['syn', 'SY', 'Synthesis Agent', 'Tổng hợp, lập ma trận so sánh'],
-      ['ver', 'VE', 'Verification Agent', 'Kiểm chứng claim và citation']
+      ['wri', 'WR', 'Writing Agent', 'Soạn và sửa section LaTeX'],
+      ['ver', 'VE', 'Verification Agent', 'Kiểm chứng claim và citation'],
+      ['dia', 'DG', 'Diagram Agent', 'Vẽ sơ đồ và hình minh họa'],
+      ['anaA', 'AA', 'Analysis Agent A', 'Đề xuất và phản biện trong phiên thảo luận'],
+      ['anaB', 'AB', 'Analysis Agent B', 'Đề xuất và phản biện trong phiên thảo luận']
     ];
     const agents = roster.map(([k, mono, name, role], i) => {
-      const [s, detail] = plan[k] || ['idle'];
-      const c = s === 'run' ? t.run : s === 'err' ? t.err : t.idle;
-      return { mono, name, role, state: label[s], running: s === 'run', error: s === 'err', hasTask: s !== 'idle', task: 'T-2.3', detail: detail || '', b: c[0], bg: c[1], fg: c[2], div: i === 0 ? '0' : '1px solid ' + t.border };
+      const [s, task, detail] = plan[k] || ['idle', '', ''];
+      const c = t[s];
+      return { mono, name, role, state: label[s], s, running: s === 'run', need: s === 'need', warn: s === 'warn', error: s === 'err',
+        hasDetail: s !== 'idle', hasTask: !!task, task: task || '', href: 'Plan.dc.html', detail: detail || '',
+        b: c[0], bg: c[1], fg: c[2], div: i === 0 ? '0' : '1px solid ' + t.border };
     });
-    const n = (s) => agents.filter((a) => a.state === label[s]).length;
-    const parts = [[n('run'), 'đang chạy'], [n('err'), 'lỗi'], [n('idle'), 'đang rảnh']].filter(([c]) => c > 0).map(([c, w]) => c + ' ' + w);
-    return { t, agents, summary: parts.join(', ') };
+    const n = (s) => agents.filter((a) => a.s === s).length;
+    const parts = [[n('run'), 'đang chạy'], [n('need'), 'chờ bạn'], [n('warn'), 'gián đoạn'], [n('err'), 'lỗi'], [n('idle'), 'đang rảnh']].filter(([c]) => c > 0).map(([c, w]) => c + ' ' + w);
+    return { t, themeKey: dark ? 'dark' : 'light', agents, summary: parts.join(', '), scope: 'Project RAG trong tổng quan tài liệu' + (plan.at ? ' · lúc ' + plan.at : '') };
   }
 }
 </script>

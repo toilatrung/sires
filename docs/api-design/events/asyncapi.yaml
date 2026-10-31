@@ -24,6 +24,7 @@ info:
     Vỏ và schema dùng chung: `../internal/schemas.yaml`. Trạng thái giữ đúng chuỗi PRD 18.2.
   license:
     name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    url: https://github.com/toilatrung/sires/blob/main/LICENSES.md
 defaultContentType: application/json
 
 servers:
@@ -31,6 +32,8 @@ servers:
     host: rabbitmq.sires.svc.cluster.local:5671
     protocol: amqps
     description: RabbitMQ managed, cụm 3 node, quorum queue; một vhost mỗi môi trường.
+    security:
+      - $ref: '#/components/securitySchemes/serviceCredentials'
 
 channels:
   events:
@@ -65,6 +68,7 @@ channels:
       deliberationStarted: { $ref: '#/components/messages/deliberationStarted' }
       deliberationRoundClosed: { $ref: '#/components/messages/deliberationRoundClosed' }
       deliberationEntryAdded: { $ref: '#/components/messages/deliberationEntryAdded' }
+      deliberationEntryFinalized: { $ref: '#/components/messages/deliberationEntryFinalized' }
       deliberationEntryRetracted: { $ref: '#/components/messages/deliberationEntryRetracted' }
       deliberationStatusChanged: { $ref: '#/components/messages/deliberationStatusChanged' }
       contextSnapshotOutdated: { $ref: '#/components/messages/contextSnapshotOutdated' }
@@ -140,6 +144,7 @@ operations:
   identityPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: identity phát
     messages:
       - $ref: '#/channels/events/messages/accountCreated'
@@ -152,6 +157,7 @@ operations:
   workspacePublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: workspace phát
     messages:
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
@@ -165,6 +171,7 @@ operations:
   planningPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: planning phát
     messages:
       - $ref: '#/channels/events/messages/planGenerationRequested'
@@ -177,6 +184,7 @@ operations:
   orchestrationPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: orchestration phát
     messages:
       - $ref: '#/channels/events/messages/workflowCreated'
@@ -186,6 +194,7 @@ operations:
       - $ref: '#/channels/events/messages/deliberationStarted'
       - $ref: '#/channels/events/messages/deliberationRoundClosed'
       - $ref: '#/channels/events/messages/deliberationEntryAdded'
+      - $ref: '#/channels/events/messages/deliberationEntryFinalized'
       - $ref: '#/channels/events/messages/deliberationEntryRetracted'
       - $ref: '#/channels/events/messages/deliberationStatusChanged'
       - $ref: '#/channels/events/messages/contextSnapshotOutdated'
@@ -194,6 +203,7 @@ operations:
   libraryPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: library phát
     messages:
       - $ref: '#/channels/events/messages/referenceStatusChanged'
@@ -205,6 +215,7 @@ operations:
   knowledgePublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: knowledge phát
     messages:
       - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
@@ -213,6 +224,7 @@ operations:
   researchPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: research phát
     messages:
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
@@ -221,6 +233,7 @@ operations:
   manuscriptPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: manuscript phát
     messages:
       - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
@@ -229,24 +242,29 @@ operations:
   auditPublishes:
     action: send
     channel: { $ref: '#/channels/events' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: audit phát
     messages:
       - $ref: '#/channels/events/messages/dataPurged'
   orchestrationSendsAgentRun:
     action: send
     channel: { $ref: '#/channels/agentRun' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: orchestration giao Agent Run
   knowledgeSendsIndex:
     action: send
     channel: { $ref: '#/channels/knowledgeIndex' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: knowledge xếp việc index
   manuscriptSendsSandboxJob:
     action: send
     channel: { $ref: '#/channels/sandboxBuild' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: manuscript gửi build LaTeX
   researchSendsSandboxJob:
     action: send
     channel: { $ref: '#/channels/sandboxBuild' }
+    traits: [{ $ref: '#/components/operationTraits/persistentSend' }]
     title: research gửi kiểm tra/render Mermaid
     reply:
       channel: { $ref: '#/channels/sandboxReply' }
@@ -268,6 +286,7 @@ operations:
       - $ref: '#/channels/events/messages/providerConnectionChanged'
       - $ref: '#/channels/events/messages/providerConnectionIssueReported'
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/messagePosted'
       - $ref: '#/channels/events/messages/pendingActionChanged'
       - $ref: '#/channels/events/messages/notificationCreated'
       - $ref: '#/channels/events/messages/planVersionStatusChanged'
@@ -339,6 +358,8 @@ operations:
       - $ref: '#/channels/events/messages/taskActivated'
       - $ref: '#/channels/events/messages/taskActivationCancelled'
       - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceMetadataUpdated'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
       - $ref: '#/channels/events/messages/researchContextVersioned'
       - $ref: '#/channels/events/messages/taskStatusChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
@@ -400,6 +421,7 @@ operations:
     title: agent-core báo Agent Run đang chạy cùng workflow có entry mới trên board (queue agent-core.events — Assumption)
     messages:
       - $ref: '#/channels/events/messages/deliberationEntryAdded'
+      - $ref: '#/channels/events/messages/deliberationEntryFinalized'
       - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   agentCoreReceivesAgentRun:
     action: receive
@@ -419,6 +441,13 @@ operations:
     title: research nhận kết quả Mermaid
 
 components:
+  securitySchemes:
+    serviceCredentials:
+      type: userPassword
+      description: |
+        Mỗi service một tài khoản RabbitMQ riêng, xác thực SASL qua TLS (amqps), quyền configure/write/read giới hạn đúng
+        exchange và queue trong `operations` của service đó; bí mật lấy từ kho bí mật, không ghi log. Áp dụng cho mọi
+        operation qua `servers.rabbitmq.security`. Assumption của biên soạn — architecture chưa chốt cơ chế xác thực broker.
   messageTraits:
     envelopeHeaders:
       headers:
@@ -426,6 +455,11 @@ components:
         properties:
           traceparent: { type: string, description: W3C trace context (NFR-OBS-004). }
           message_id: { type: string, description: Bằng `id` của vỏ sự kiện. }
+  operationTraits:
+    persistentSend:
+      description: |
+        Gửi bền (deliveryMode 2 = persistent) tới exchange/queue bền; relay outbox chờ publisher confirm. Theo AMQP
+        binding 0.3.0, `deliveryMode` thuộc operation binding, không thuộc message binding.
       bindings:
         amqp:
           deliveryMode: 2
@@ -522,7 +556,8 @@ components:
       title: Tài khoản đổi embedding model — index lại toàn bộ thư viện
       x-producer: identity
       x-consumers: [knowledge]
-      x-requirements: [INT-VECTOR-003, DEC-31]
+      x-requirements: [INT-VECTOR-003]
+      x-decisions: [DEC-31]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:
@@ -545,7 +580,8 @@ components:
       description: Routing key con theo `data.change` — `project.lifecycle_changed.<change>`. archived → prompt Expired; deleted → ẩn dữ liệu ở mọi service.
       x-producer: workspace
       x-consumers: [gateway, planning, orchestration, library, research, manuscript, knowledge]
-      x-requirements: [PROJ-CRUD-001, NFR-RET-002, DEC-29]
+      x-requirements: [PROJ-CRUD-001, NFR-RET-002]
+      x-decisions: [DEC-29]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:
@@ -579,9 +615,13 @@ components:
                   deletedAt: { type: string, format: date-time }
     messagePosted:
       name: message.posted
-      title: Researcher gửi tin nhắn — orchestration tạo lượt chat với Orchestrator (F-04)
+      title: Tin nhắn mới được lưu — của Researcher (orchestration tạo lượt chat, F-04) hoặc của Orchestrator
+      description: |
+        workspace phát cho mọi tin nhắn đã lưu: tin của Researcher (`POST …/messages`) và câu trả lời của Orchestrator
+        (`postAgentMessage`, F-04.4). orchestration chỉ xử lý khi `sender.type = researcher`; gateway đẩy SSE
+        `message.posted` để giao diện thay bản nháp từ `chat.delta` bằng tin nhắn đã lưu.
       x-producer: workspace
-      x-consumers: [orchestration]
+      x-consumers: [orchestration, gateway]
       x-requirements: [PROJ-CHAT-001, WS-CHAT-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
@@ -592,10 +632,12 @@ components:
               type: { const: message.posted }
               data:
                 type: object
-                required: [conversationId, messageId, scope]
+                required: [conversationId, messageId, scope, sender]
                 properties:
                   conversationId: { $ref: '#/components/schemas/Id' }
                   messageId: { $ref: '#/components/schemas/Id' }
+                  sender: { $ref: ../components/schemas/common.yaml#/ActorRef }
+                  agentRunId: { type: [string, 'null'], format: uuid, description: Agent Run tạo tin nhắn (khi sender là agent). }
                   scope: { type: string, enum: [global, project] }
                   activeTaskId: { $ref: '#/components/schemas/Id' }
     researchContextVersioned:
@@ -711,7 +753,8 @@ components:
                 properties:
                   taskId: { $ref: '#/components/schemas/Id' }
                   activationId:
-                    $ref: '#/components/schemas/Id'
+                    allOf:
+                      - $ref: '#/components/schemas/Id'
                     description: Dùng làm idempotencyKey của Workflow — sự kiện giao lại không tạo workflow thứ hai.
                   planVersionId: { $ref: '#/components/schemas/Id' }
                   executionLabel: { type: string }
@@ -854,7 +897,7 @@ components:
                       workflowId: { $ref: '#/components/schemas/Id' }
                       taskId: { $ref: '#/components/schemas/Id' }
 
-    # ---------- orchestration: Deliberation (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 đang viết) ----------
+    # ---------- orchestration: Deliberation (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 (Proposed)) ----------
     deliberationStarted:
       name: deliberation.started
       title: Phiên thảo luận được mở (Deliberation Running, Problem Brief và Context Snapshot đã ghi)
@@ -904,7 +947,7 @@ components:
                   workflowId: { $ref: '#/components/schemas/Id' }
                   deliberationId: { $ref: '#/components/schemas/Id' }
                   round: { type: integer }
-                  roundKind: { type: string, enum: [brief, independent, cross_critique, narrow, synthesis] }
+                  roundKind: { $ref: ../components/schemas/orchestration.yaml#/DeliberationRoundKind }
                   entryIds:
                     type: array
                     items: { $ref: '#/components/schemas/Id' }
@@ -939,6 +982,36 @@ components:
                   status: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryStatus }
                   author: { $ref: ../components/schemas/orchestration.yaml#/DeliberationAuthor }
                   supersedesEntryId: { type: [string, 'null'], format: uuid }
+    deliberationEntryFinalized:
+      name: deliberation.entry_finalized
+      title: Entry chuyển draft → final (tác giả xác nhận hoặc Agent Run Succeeded — CTX-BOARD-001, 18.2)
+      description: |
+        Phát trong cùng giao dịch với chuyển trạng thái (outbox). Từ lúc này đầu ra chính thức được tham chiếu entry (không
+        còn `draft_reference` — CTX-BOARD-003) và entry tính là entry final của vòng (ORCH-DELIB-002-AC04). Payload không
+        chứa nội dung; gateway không đẩy tới Researcher (entry chỉ hiển thị khi vòng đóng — OQ-101).
+      x-producer: orchestration
+      x-consumers: [agent-core]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-003, ORCH-DELIB-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.entry_finalized }
+              data:
+                type: object
+                required: [workflowId, entryId, entryType, author, trigger]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { type: [string, 'null'], format: uuid }
+                  round: { type: [integer, 'null'] }
+                  entryId: { $ref: '#/components/schemas/Id' }
+                  entryType: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryType }
+                  author: { $ref: ../components/schemas/orchestration.yaml#/DeliberationAuthor }
+                  trigger:
+                    type: string
+                    enum: [author_confirmed, agent_run_succeeded]
     deliberationEntryRetracted:
       name: deliberation.entry_retracted
       title: Entry bị rút lại — đánh dấu cần xem lại entry và đầu ra Draft đã tham chiếu (CTX-BOARD-003)
@@ -1001,8 +1074,8 @@ components:
       title: Context Snapshot của phiên lỗi thời — một entity trong snapshot có phiên bản mới (CTX-SNAPSHOT-001)
       description: |
         orchestration phát khi nhận sự kiện thay đổi của entity nằm trong snapshot (`research_context.versioned`,
-        `plan_version.status_changed`, `task.status_changed`, `research.object_status_changed`, `reference.status_changed`)
-        hoặc khi Context Item của chính nó đổi. Phiên vẫn chạy trên snapshot cũ. Chỉ phát một lần cho lần chuyển
+        `plan_version.status_changed`, `task.status_changed`, `research.object_status_changed`, `reference.status_changed`,
+        `reference.metadata_updated`, `project_reference.changed`) hoặc khi Context Item của chính nó đổi. Phiên vẫn chạy trên snapshot cũ. Chỉ phát một lần cho lần chuyển
         false → true; entity đổi thêm sau đó cập nhật `changedEntities` (lấy qua API), không phát lại (Assumption).
       x-producer: orchestration
       x-consumers: [gateway]
@@ -1053,9 +1126,12 @@ components:
     referenceMetadataUpdated:
       name: reference.metadata_updated
       title: Researcher sửa metadata (phiên bản mới — DEC-21) — manuscript sinh lại Bibliography Entry
+      description: |
+        orchestration: reference có trong Context Snapshot của phiên đang Running với `metadataVersion` cũ hơn thì đánh dấu
+        snapshot lỗi thời (CTX-SNAPSHOT-001).
       x-producer: library
-      x-consumers: [manuscript]
-      x-requirements: [LIB-METADATA-001, MS-BIB-001]
+      x-consumers: [manuscript, orchestration]
+      x-requirements: [LIB-METADATA-001, MS-BIB-001, CTX-SNAPSHOT-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:
@@ -1090,9 +1166,12 @@ components:
     projectReferenceChanged:
       name: project_reference.changed
       title: Reference được chọn hoặc bỏ chọn cho project — knowledge cập nhật phạm vi truy xuất
+      description: |
+        orchestration: selection của project nằm trong Context Snapshot của phiên đang Running đổi thì đánh dấu snapshot
+        lỗi thời (CTX-SNAPSHOT-001).
       x-producer: library
-      x-consumers: [knowledge, research, gateway]
-      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001]
+      x-consumers: [knowledge, research, gateway, orchestration]
+      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001, CTX-SNAPSHOT-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:

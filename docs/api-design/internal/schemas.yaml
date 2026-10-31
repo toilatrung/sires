@@ -112,10 +112,12 @@ AgentRunAssignment:
     taskId: { $ref: ../components/schemas/common.yaml#/Id }
     agent: { $ref: ../components/schemas/common.yaml#/AgentName }
     instance:
-      $ref: ../components/schemas/common.yaml#/AgentInstance
+      allOf:
+        - $ref: ../components/schemas/common.yaml#/AgentInstance
       description: Chỉ khi agent = `analysis` (DEC-47).
     deliberationId:
-      $ref: ../components/schemas/common.yaml#/Id
+      allOf:
+        - $ref: ../components/schemas/common.yaml#/Id
       description: Có khi Agent Run thuộc một phiên thảo luận (ORCH-DELIB-002).
     attempt: { type: integer, minimum: 1, maximum: 3, description: Lần thứ mấy của bước (tối đa 1 + 2 Agent Run mới — 8.5). }
     priority:
@@ -137,7 +139,8 @@ AgentRunWorkOrder:
     conversationId: { $ref: ../components/schemas/common.yaml#/Id }
     agent: { $ref: ../components/schemas/common.yaml#/AgentName }
     instance:
-      $ref: ../components/schemas/common.yaml#/AgentInstance
+      allOf:
+        - $ref: ../components/schemas/common.yaml#/AgentInstance
       description: Chỉ khi agent = `analysis`; Agent Model Assignment lấy theo (agent, instance).
     deliberation:
       type: object
@@ -148,7 +151,7 @@ AgentRunWorkOrder:
       properties:
         deliberationId: { $ref: ../components/schemas/common.yaml#/Id }
         round: { type: integer, minimum: 0 }
-        roundKind: { type: string, enum: [brief, independent, cross_critique, narrow, synthesis] }
+        roundKind: { $ref: ../components/schemas/orchestration.yaml#/DeliberationRoundKind }
         problemType: { $ref: ../components/schemas/orchestration.yaml#/ProblemType }
         perspective: { type: string, description: Góc nhìn Orchestrator giao cho bên này trong Problem Brief (ORCH-DELIB-005). }
         contextSnapshotId: { $ref: ../components/schemas/common.yaml#/Id }
@@ -182,17 +185,11 @@ AgentRunControl:
     cancelRequested: { type: boolean, description: Workflow bị hủy — agent-core hủy lời gọi provider đang chờ (architecture 5.5). }
 
 AgentRunUsage:
-  type: object
-  description: Usage chuẩn hóa (NFR-USAGE-001). `noData = true` khi provider không trả usage — không ước tính.
-  properties:
-    inputTokens: { type: integer }
-    outputTokens: { type: integer }
-    calls: { type: integer }
-    durationMs: { type: integer }
-    noData: { type: boolean }
-    extra:
-      type: object
-      additionalProperties: true
+  description: |
+    Dùng đúng schema `AgentRunUsage` của API công khai (NFR-USAGE-001): orchestration lưu nguyên giá trị agent-core gửi,
+    không ước tính, để tổng phiên và tổng theo bên (`UsageTotal`) cộng lại khớp tổng Agent Run (NFR-USAGE-005).
+  allOf:
+    - $ref: ../components/schemas/orchestration.yaml#/AgentRunUsage
 
 AgentOutput:
   type: object

@@ -60,8 +60,13 @@ Phase:
 TaskDefinition:
   type: object
   description: Định nghĩa Task theo Plan Version; bất biến (TASK-DEFINE-001).
-  required: [taskId, phaseId, title, objective, executionLabel, expectedOutputs, acceptanceCriteria]
+  required: [taskId, planVersionId, phaseId, title, objective, executionLabel, expectedOutputs, acceptanceCriteria]
   properties:
+    planVersionId:
+      allOf:
+        - $ref: common.yaml#/Id
+      readOnly: true
+      description: Plan Version sở hữu bản định nghĩa này (PRD 18.1); System đặt, client không gửi.
     taskId:
       $ref: common.yaml#/Id
       description: Định danh Task ổn định qua các Plan Version. Bỏ trống khi thêm Task mới vào Draft.
@@ -168,6 +173,14 @@ PlanVersion:
         createdByWorkflowId: { $ref: common.yaml#/Id }
         approval: { $ref: common.yaml#/ApprovalRecord }
         rejectionReason: { type: string }
+        provenance:
+          description: |
+            Provenance (18.3, DATA-PROV-001) — có với Plan Version do Orchestrator tạo; `null` khi Researcher tạo Draft.
+            `provenance.deliberation` tham chiếu Deliberation Record của phiên mà Plan dựa vào (`deliberated`), hoặc mang
+            nhãn “không qua thảo luận” (`skipped`) khi Researcher bỏ qua thảo luận (ORCH-PLAN-001, ORCH-DELIB-001).
+          oneOf:
+            - $ref: common.yaml#/Provenance
+            - type: 'null'
 
 PlanVersionCreate:
   type: object

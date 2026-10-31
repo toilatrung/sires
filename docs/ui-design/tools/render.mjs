@@ -18,6 +18,24 @@ const LOGO_LOCAL = '../assets/sires-logo.svg';
 // Shared shells and the token sheet: rendered once, no variants.
 const NO_VARIANTS = new Set(['TopBar', 'ProjectRail', 'Main', 'Components', 'States']);
 
+// Motion (design.md 2.4, DEC-51/52). assets/motion.css is the single source of truth. The canvas cannot
+// load ../assets, so every source carries a verbatim copy in <style data-sires-motion> inside its helmet.
+// This script refreshes that copy from motion.css before rendering, and strips it from the helmets it
+// collects, so a page links motion.css exactly once and never carries a second inline copy.
+const MOTION_FILE = path.join(ROOT, 'assets', 'motion.css');
+const MOTION_RE = /<style data-sires-motion>[\s\S]*?<\/style>\r?\n?/;
+function syncMotion(file) {
+  const raw = fs.readFileSync(file, 'utf8');
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  const css = fs.readFileSync(MOTION_FILE, 'utf8').replace(/\r\n/g, '\n').trim().split('\n').join(eol);
+  const block = '<style data-sires-motion>' + eol + '/* Bản chép từ assets/motion.css do tools/render.mjs tạo; sửa motion.css rồi chạy lại render. */' + eol + css + eol + '</style>' + eol;
+  let next;
+  if (MOTION_RE.test(raw)) next = raw.replace(MOTION_RE, () => block);
+  else next = raw.replace(/<helmet>\r?\n?/, (m) => m + block);
+  if (next !== raw) fs.writeFileSync(file, next);
+  return next !== raw;
+}
+
 class DCLogic {
   constructor(props) { this.props = props; this.state = {}; }
   setState(patch) { Object.assign(this.state, typeof patch === 'function' ? patch(this.state) : patch); }
@@ -30,7 +48,7 @@ function load(name) {
   const raw = fs.readFileSync(path.join(SRC, name + '.dc.html'), 'utf8');
   const title = (raw.match(/<title>([\s\S]*?)<\/title>/) || [, name])[1].trim();
   const xdc = raw.match(/<x-dc>([\s\S]*?)<\/x-dc>/)[1];
-  const helmet = (xdc.match(/<helmet>([\s\S]*?)<\/helmet>/) || [, ''])[1];
+  const helmet = (xdc.match(/<helmet>([\s\S]*?)<\/helmet>/) || [, ''])[1].replace(MOTION_RE, '');
   const template = xdc.replace(/<helmet>[\s\S]*?<\/helmet>/, '');
   const sm = raw.match(/<script type="text\/x-dc" data-dc-script data-props='([^']*)'>([\s\S]*?)<\/script>/);
   const props = JSON.parse(sm[1].replace(/&#39;/g, "'").replace(/&amp;/g, '&'));
@@ -171,6 +189,8 @@ for (const f of fs.readdirSync(OUT)) if (f.endsWith('.html')) fs.rmSync(path.joi
 const canvas = JSON.parse(fs.readFileSync(path.join(SRC, 'canvas.json'), 'utf8'));
 const groups = canvas.pages.map((p) => ({ id: p.id, name: p.name, items: [] }));
 const names = fs.readdirSync(SRC).filter((f) => f.endsWith('.dc.html')).map((f) => f.replace('.dc.html', ''));
+const synced = names.filter((n) => syncMotion(path.join(SRC, n + '.dc.html')));
+if (synced.length) console.log(`Refreshed the motion.css copy in ${synced.length} source(s)`);
 let count = 0;
 for (const name of names) {
   const def = load(name);
