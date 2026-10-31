@@ -56,3 +56,8 @@ Mỗi thư mục có README riêng mô tả cấu trúc chi tiết, quy ước v
 - **Mã ID** (chi tiết ở PRD 1.6): requirement `DOMAIN-CAPABILITY-NNN`, acceptance criterion `…-ACNN`, `GOAL-NN`, `PRB-NN`, `SCOPE-NN`, `OOS-NN`, `FUT-NN`, `OQ-NNN`, `DEC-NN`, `ASM-NN`, `RISK-NN`, `REL-NN`, kịch bản `TS-NN-MM`, workflow `WF-NN`, hình `FIG-NNN`. Mã không tái sử dụng.
 - **Trạng thái:** biên soạn (Khung / Đang viết / Chờ duyệt / Đã duyệt) và xác nhận (Confirmed / Assumption / Open Question) là hai trục độc lập.
 - **Kiểm tra sau khi sửa:** không có `id` trùng trong một trang, mọi liên kết và anchor nội bộ trỏ đúng, thẻ HTML cân bằng.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../LICENSES.md).

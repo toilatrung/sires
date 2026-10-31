@@ -28,7 +28,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | Đường dẫn | Nội dung |
 | --- | --- |
 | `docs/` | Tài liệu: `overview/` (PRD), `architecture/`, `api-design/`, `ui-design/`; trang vào `docs/index.html` |
-| `agent/skills/` | Skill cho agent (dựng và review UI theo thiết kế đã duyệt) |
+| `agent/skills/` | Skill cho agent: dựng và review UI theo thiết kế đã duyệt (`sires-ui-*`); dựng và giữ bộ tài liệu đặc tả theo mẫu `docs/` này (`spec-docs-skill`) |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html`) |
 | `scripts/agent/`, `scripts/deployment/`, `scripts/development/` | Chưa có nội dung |
 | `.github/CODEOWNERS` | PO là code owner của `docs/` |
