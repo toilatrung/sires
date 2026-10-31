@@ -78,7 +78,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <sc-for list="{{phases}}" as="p" hint-placeholder-count="3">
               <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 20px; border-top: {{p.div}}">
                 <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14px"><strong style="font-weight: 600">{{p.name}}</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{p.done}} Completed</span></div>
-                <div style="height: 4px; background: #DBD3C7; border-radius: 2px" role="img" aria-label="{{p.aria}}"><div style="height: 4px; width: {{p.pct}}; background: #0277DD; border-radius: 2px"></div></div>
+                <div style="height: 4px; background: #DBD3C7; border-radius: 2px" role="img" aria-label="{{p.aria}}"><div data-progress style="height: 4px; width: {{p.pct}}; background: #0277DD; border-radius: 2px"></div></div>
                 <span style="font-size: 12px; color: #4D4A44">{{p.breakdown}}</span>
               </div>
             </sc-for>
@@ -110,7 +110,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44; width: 48px">{{t.id}}</span>
               <span style="flex: 1 1 260px; font-weight: 600">{{t.title}}</span>
               <span style="font-size: 13px; color: #4D4A44">{{t.agent}}</span>
-              <span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{t.b}}; color: {{t.fg}}; background: {{t.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{t.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{t.state}}</span>
+              <span data-running="{{t.run}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{t.b}}; color: {{t.fg}}; background: {{t.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{t.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{t.state}}</span>
             </a>
           </sc-for>
         </section>
@@ -126,7 +126,7 @@ class Component extends DCLogic {
     const div = (i) => i === 0 ? '0' : '1px solid #DBD3C7';
     const ph = (name, done, total, breakdown) => ({ name, done: done + '/' + total, pct: Math.round(done / total * 100) + '%', aria: done + ' trên ' + total + ' Task Completed', breakdown });
     const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'] };
-    const t = (id, title, agent, state, k) => ({ id, title, agent, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need' });
+    const t = (id, title, agent, state, k) => ({ id, title, agent, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', run: k === 'run' });
     return {
       isArchived: s === 'archived', isRecovery: s === 'recovery', noPlan: s === 'no-plan', hasPlan: s !== 'no-plan',
       editTitle: s === 'archived' ? 'Project Archived — chỉ đọc' : 'Sửa research context',

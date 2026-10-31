@@ -1,6 +1,6 @@
 ---
 name: sires-ui-review
-description: Review implemented SIRes UI against the approved design (docs/ui-design/design.md and the reference HTML screens in docs/ui-design/pages). Use when asked to check, audit, QA, compare or "review giao diện" for SIRes screens, a PR that touches SIRes UI, or whether a built screen "đã giống thiết kế chưa". Runs a static token check, compares the running screen with the reference at the same viewport, and reports deviations with fixes.
+description: Review implemented SIRes UI against the approved design (docs/ui-design/design.md and the reference HTML screens in docs/ui-design/pages). Use when asked to check, audit, QA, compare or "review giao diện" for SIRes screens, a PR that touches SIRes UI, or whether a built screen "đã giống thiết kế chưa". Runs a static token and motion check, compares the running screen with the reference at the same viewport (including motion, reduced motion and long-running states), and reports deviations with fixes.
 ---
 
 # SIRes UI review
@@ -23,7 +23,7 @@ Chạy trên các file đã thay đổi (hoặc thư mục UI):
 node agent/skills/sires-ui-review/scripts/check-ui.mjs <file-hoặc-thư-mục> [...]
 ```
 
-Script báo `error` cho màu ngoài token, bo góc ngoài 8/6/4px, gradient, blur, font khác Montserrat/JetBrains Mono, màu palette Tailwind, emoji, chuỗi giống API key; báo `warn` cho bóng, bo tròn hoàn toàn, chữ hoa giãn chữ. Đối chiếu từng `warn` với ngữ cảnh (avatar, menu nổi là hợp lệ). Script chỉ đọc giá trị trên từng dòng; giá trị đến từ biến hoặc theme thì kiểm tra file theme.
+Script báo `error` cho màu ngoài token, bo góc ngoài 8/6/4px, gradient, blur, font khác Montserrat/JetBrains Mono, màu palette Tailwind, emoji, chuỗi giống API key; báo `warn` cho bóng, bo tròn hoàn toàn, chữ hoa giãn chữ, và chuyển động sai luật (animate width/height/top/left, ease-in, spinner xoay, nảy, nghiêng, shimmer, phóng to khi hover, file có animation mà không có đường reduced-motion). Đối chiếu từng `warn` với ngữ cảnh (avatar, menu nổi là hợp lệ). Script chỉ đọc giá trị trên từng dòng; giá trị đến từ biến hoặc theme thì kiểm tra file theme.
 
 ## 3. So sánh trực quan
 
@@ -32,7 +32,8 @@ Khi có trình duyệt (built-in browser, Playwright, Chrome):
 1. Mở màn đã triển khai và màn tham chiếu ở cùng khổ: 1440×900, rồi 390×844 cho các màn có trên điện thoại (Pending Actions, prompt, phê duyệt, tiến độ) và để kiểm tra không cuộn ngang.
 2. Chụp cả hai; đặt cạnh nhau. So từng vùng theo thứ tự: khung (top bar, rail, cột, panel phải) → thứ tự khối → component → trạng thái và nhãn → chữ → khoảng cách và kích thước.
 3. Dùng `getComputedStyle` để đo khi mắt không chắc: màu nền/viền/chữ, `border-radius`, `font-family`, cỡ chữ, chiều cao điều khiển.
-4. Kiểm tra các biến thể mà màn tham chiếu có (trống, lỗi, khôi phục, archived, outdated, citation lỗi…). Trạng thái thiếu là lỗi.
+4. Kiểm tra các biến thể mà màn tham chiếu có (trống, đang tải, đang chạy, lỗi, khôi phục, archived, outdated, citation lỗi…). Trạng thái thiếu là lỗi.
+5. Chuyển động: kích hoạt từng hiệu ứng (hover, bấm, mở dialog, tooltip, `<details>`, chip đang chạy, thanh tiến độ, skeleton), xem cả khung giữa animation (DevTools Animations ở 10%), đo `animation-duration`, `transition` bằng `getComputedStyle` và so với design.md §2.4. Bật reduced motion (`emulateMedia({ reducedMotion: 'reduce' })`): không còn dịch chuyển, vòng lặp đứng yên, mờ dần vẫn còn. Skill `agent/skills/vendor/animate-ui` (`references/review.md`, `rules.md`) giúp tìm animation giật hoặc chậm; luật cuối cùng vẫn là design.md.
 
 Không có trình duyệt: so DOM/JSX với HTML tham chiếu (cấu trúc, chữ, thuộc tính style) và ghi rõ “chưa kiểm tra trực quan”.
 
@@ -48,6 +49,8 @@ Không có trình duyệt: so DOM/JSX với HTML tham chiếu (cấu trúc, ch�
 - **Quyết định**: phê duyệt đặt cạnh đối tượng và hệ quả; phương án agent đề xuất không chọn sẵn; nút vô hiệu có lý do; Từ chối Plan bắt buộc lý do; prompt Expired/Cancelled ghi “Không được tính là đồng ý”.
 - **Câu chữ**: tiêu đề danh từ; lỗi nêu chuyện gì, cái gì đã lưu, làm gì tiếp, mã lỗi; không stack trace, không API key, không suy luận thô của model.
 - **A11y**: phần tử thật, nhãn cho ô nhập, `aria-label` cho nút icon, focus nhìn thấy (3px `#80B9EE`), thao tác phê duyệt/prompt bằng bàn phím, `aria-live` cho trạng thái động, tương phản ≥ 4.5:1, `prefers-reduced-motion`.
+- **Chuyển động**: đúng bảng design.md §2.4 (thời lượng, đường cong, chỉ `transform`/`opacity`); không blur, không nghiêng dialog, không nảy, không phóng to khi hover, không hiệu ứng trang trí; reduced-motion bỏ dịch chuyển, giữ mờ dần, dừng vòng lặp.
+- **Tác vụ chạy lâu** (design.md §2.4.1, UX-STATE-001): chip đang chạy có chấm; thẻ thao tác dài có bước hoặc thời gian đã chạy, ai làm, hoạt động gần nhất, hủy khi hủy được, ghi rời trang được; thanh tiến độ đúng loại (biết số bước / chưa biết thời lượng); skeleton chỉ cho tải danh sách ngắn, đúng bố cục dòng thật, có dòng `role="status"`; không spinner xoay.
 - **Song ngữ**: chuỗi qua i18n, đổi VI/EN không đổi nội dung nghiên cứu; ngày `dd/mm/yyyy`.
 - **Hành vi PRD**: các acceptance criterion UX-* của màn (mục 15 PRD) mà giao diện thể hiện được.
 
@@ -61,8 +64,8 @@ Kết luận một dòng trước: **Đạt**, **Đạt có điều kiện** (ch
 
 Mức độ:
 - **Blocker**: sai hành vi phê duyệt/an toàn (chọn sẵn đề xuất, hiện API key, thiếu hệ quả, mất dữ liệu đang nhập), vi phạm a11y chặn thao tác, thiếu trạng thái bắt buộc.
-- **Major**: lệch bố cục hoặc component so với tham chiếu, sai kiểu trạng thái, nhiều nút chính, màu/font ngoài token, cuộn ngang trên điện thoại.
-- **Minor**: lệch khoảng cách, cỡ chữ, câu chữ nhỏ.
+- **Major**: lệch bố cục hoặc component so với tham chiếu, sai kiểu trạng thái, nhiều nút chính, màu/font ngoài token, cuộn ngang trên điện thoại, chuyển động không tắt được khi reduced motion, tác vụ chạy lâu không cho biết đang làm gì.
+- **Minor**: lệch khoảng cách, cỡ chữ, câu chữ nhỏ, thời lượng hay đường cong chuyển động lệch bảng.
 
 Cuối báo cáo: những gì đã kiểm tra (màn, biến thể, khổ màn hình, công cụ), những gì chưa kiểm tra được và vì sao, kết quả `check-ui.mjs` (số error/warn). Kèm ảnh chụp đối chiếu nếu có.
 

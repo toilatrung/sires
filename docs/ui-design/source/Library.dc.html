@@ -91,8 +91,36 @@ a{color:#025FAC}a:hover{color:#1C1B18}
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><a href="Reference.dc.html" style="display: block; font-weight: 600; color: #1C1B18; text-decoration: none">{{r.title}}</a><span style="font-size: 13px; color: #4D4A44">{{r.meta}}</span></td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.key}}</td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.ab}}; color: {{r.af}}; font-size: 12px; font-weight: 600">{{r.ap}}</span></td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px {{r.ib}}; color: {{r.if}}; font: 500 11px 'JetBrains Mono', monospace">{{r.ix}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44">{{r.ixNote}}</span></td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span data-running="{{r.ixRun}}" style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px {{r.ib}}; color: {{r.if}}; font: 500 11px 'JetBrains Mono', monospace">{{r.ix}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44">{{r.ixNote}}</span></td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44">{{r.used}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+      <p role="status" style="margin: 0; font-size: 13px; color: #4D4A44">Đang tải Trusted Library…</p>
+      <div aria-hidden="true" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="text-align: left; font-size: 12px; color: #4D4A44">
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Reference</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">BibTeX key</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Duyệt</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Indexing</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Project dùng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{skeleton}}" as="s" hint-placeholder-count="6">
+              <tr>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7"><span data-skeleton style="width: {{s.w}}; height: 14px"></span><span data-skeleton style="width: 40%; height: 12px; margin-top: 8px"></span></td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7"><span data-skeleton style="width: 110px; height: 12px"></span></td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7"><span data-skeleton style="width: 64px; height: 24px"></span></td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7"><span data-skeleton style="width: 64px; height: 22px"></span></td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7"><span data-skeleton style="width: 70px; height: 12px"></span></td>
               </tr>
             </sc-for>
           </tbody>
@@ -102,16 +130,19 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","empty"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","empty","loading"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
-    const empty = (this.props.state ?? 'normal') === 'empty';
+    const state = this.props.state ?? 'normal';
+    const empty = state === 'empty';
+    const loading = state === 'loading';
     const div = (i) => i === 0 ? '0' : '1px solid #DBD3C7';
     const T = { ab: 'solid #1C1B18', af: '#1C1B18', ap: 'Trusted' };
     const R = { ab: 'solid #9A3412', af: '#9A3412', ap: 'Revoked' };
-    const ix = (k, note) => ({ ix: k, ixNote: note || '', ib: k === 'Failed' ? 'solid #BE123C' : k === 'Indexed' ? 'solid #1C1B18' : k === 'Indexing' ? 'solid #0277DD' : 'dashed #4D4A44', if: k === 'Failed' ? '#BE123C' : '#1C1B18' });
+    const ix = (k, note) => ({ ix: k, ixRun: k === 'Indexing', ixNote: note || '', ib: k === 'Failed' ? 'solid #BE123C' : k === 'Indexed' ? 'solid #1C1B18' : k === 'Indexing' ? 'solid #0277DD' : 'dashed #4D4A44', if: k === 'Failed' ? '#BE123C' : '#1C1B18' });
     return {
-      isEmpty: empty, hasData: !empty,
+      isEmpty: empty, hasData: state === 'normal', isLoading: loading,
+      skeleton: ['72%', '58%', '66%', '80%', '52%', '62%'].map((w) => ({ w })),
       queue: [
         { title: 'A Survey on Hallucination in Large Language Models', meta: 'Huang et al. · 2024 · ACM TOIS', checked: true, dup: false },
         { title: 'Benchmarking Large Language Models in Retrieval-Augmented Generation', meta: 'Chen et al. · 2024 · AAAI', checked: true, dup: true },

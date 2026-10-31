@@ -1,6 +1,6 @@
 # SIRes UI — hướng dẫn thiết kế
 
-Phiên bản 1.0, PO duyệt ngày 31/10/2026. Đây là bộ quy tắc cho bất kỳ ai, người hay agent, khi xây dựng hoặc review giao diện SIRes. Màn hình tham chiếu đã render nằm ở [`pages/`](pages/) và duyệt được qua [`index.html`](index.html). Nếu file này và màn tham chiếu mâu thuẫn, hãy nêu ra, đừng tự đoán.
+Phiên bản 1.2, PO duyệt ngày 31/10/2026; bổ sung mục 2.4 Chuyển động (DEC-51) và 2.4.1 Tác vụ chạy lâu (DEC-52) ngày 01/11/2026. Đây là bộ quy tắc cho bất kỳ ai, người hay agent, khi xây dựng hoặc review giao diện SIRes. Màn hình tham chiếu đã render nằm ở [`pages/`](pages/) và duyệt được qua [`index.html`](index.html). Nếu file này và màn tham chiếu mâu thuẫn, hãy nêu ra, đừng tự đoán.
 
 Bối cảnh sản phẩm: SIRes (Super Intelligence Researcher) là ứng dụng web thuộc nền tảng eTroy cho người làm nghiên cứu (học viên cao học, NCS, giảng viên). Đây là công cụ làm việc hằng ngày trong phiên dài: Plan, Task, evidence, bản thảo LaTeX và nhiều AI agent làm việc dưới sự phê duyệt của con người. PRD ở [`../overview/`](../overview/index.html); hành vi màn hình nằm ở PRD mục 4 (kiến trúc thông tin) và mục 15 (yêu cầu UI/UX).
 
@@ -67,6 +67,40 @@ Viết hoa kiểu câu ở mọi nơi. Không nhãn chữ hoa giãn chữ, khôn
 - **Chiều cao điều khiển** 40px (36px trong toolbar dày; 44–48px cho hành động chính trên điện thoại). Vùng bấm không dưới 40px.
 - **Không gradient, glass, blur, glow, emoji.** Icon nét 14–18px (stroke 1.8–2px) màu `ink` hoặc `muted`, không đặt trong ô vuông hay hình tròn tô màu.
 
+### 2.4 Chuyển động
+
+Chuyển động phải phục vụ một mục đích: phản hồi thao tác, cho biết vật thể đến từ đâu, hoặc báo trạng thái đã đổi. Không dùng để trang trí. Giá trị lấy từ token của Animate UI, áp dụng ở mức **subtle** (skill ở `agent/skills/vendor/animate-ui`, DEC-51). Bản CSS dùng chung là [`assets/motion.css`](assets/motion.css); `tools/render.mjs` gắn file này vào mọi trang trong `pages/`.
+
+| Thành phần | Chuyển động | Giá trị |
+| --- | --- | --- |
+| Đổi màu (hover, focus, chọn) của link, nút, tab, radio, công tắc, ô nhập | Chuyển màu chữ, nền, viền | 200ms, `cubic-bezier(0.25, 0.1, 0.25, 1)` |
+| Bấm nút, tab, radio, công tắc | Lún xuống 0.97; không phóng to khi hover | 160ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Dialog | Hiện dần, co từ 0.9, giữ nguyên tâm, không nghiêng | 400ms, `cubic-bezier(0.215, 0.61, 0.355, 1)` |
+| Tooltip, popover | Hiện dần, mọc từ phía nơi gọi nó, từ 0.85 | 220ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Thông báo lỗi (`role="alert"`) | Hiện dần, nhích lên 4px | 300ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Nội dung `<details>` khi mở | Hiện dần, trượt xuống 4px | 350ms, `cubic-bezier(0.215, 0.61, 0.355, 1)` |
+
+- Chỉ animate `transform` và `opacity` (cùng màu sắc). Không animate `width`, `height`, `top`, `left`, `margin`.
+- Không dùng ease-in cho thứ đi vào màn. Không blur, không nảy (bounce), không chạy khi tải trang ngoài dialog, tooltip và thông báo lỗi.
+- `prefers-reduced-motion: reduce`: bỏ mọi dịch chuyển và co giãn, giữ hiệu ứng mờ dần; chấm Đang chạy đứng yên.
+- Màn tham chiếu là HTML tĩnh nên chỉ thấy hiệu ứng lúc tải trang, hover và bấm. Menu, sheet, toast và chuyển tab khi triển khai thật dùng recipe tương ứng của skill (`references/recipes/`) ở cùng mức subtle.
+
+#### 2.4.1 Tác vụ chạy lâu
+
+Theo UX-STATE-001 (workflow, indexing, build, tìm kiếm). Chuyển động chỉ báo "đang làm"; chữ (bước, agent, thời gian đã chạy, hoạt động gần nhất) vẫn là thông tin chính.
+
+| Tình huống | Hiển thị | Cách gắn trong mẫu (`motion.css`) |
+| --- | --- | --- |
+| Chip đang chạy: Running, In Progress, Indexing, Đang build, Đang tìm | Chấm 7px `brand` nhấp nháy trước nhãn, 1.6s lặp | Thuộc tính `data-running` trên chip |
+| Thao tác biết số bước | Thanh 4px, phần tô trượt từ 0 tới giá trị trong 550ms, không vượt; kèm chữ "Bước 2/4" | `data-progress` trên phần tô |
+| Thao tác chưa biết thời lượng (build, tìm kiếm) | Rãnh 4px với dải `brand` 30% chạy lặp tuyến tính 1.4s; luôn kèm thời gian đã chạy | `data-progress="indeterminate"` trên rãnh |
+| Tải danh sách ngắn (Library, Discover, bảng) | Skeleton theo đúng bố cục dòng thật: khối `control`, bo 4px, mờ dần lặp 1.6s, không shimmer; dòng chữ `role="status"` nêu đang tải gì; khối skeleton `aria-hidden` | `data-skeleton` trên từng khối |
+
+- Thao tác của agent hay System không dùng skeleton mà dùng thẻ thao tác dài (`States`): tên thao tác, ai làm, thời gian đã chạy, thanh tiến độ, hoạt động gần nhất, nút hủy khi hủy được, ghi rõ rời trang được.
+- Một màn chỉ có một thanh tiến độ cho mỗi thao tác; không đặt spinner xoay.
+- `prefers-reduced-motion: reduce`: chấm và skeleton đứng yên, phần tô hiện ngay giá trị, thanh không xác định hiện cả rãnh màu nhạt.
+- Màn tham chiếu: `States` (thẻ thao tác dài, thao tác chưa biết thời lượng, đang tải danh sách), `Library` biến thể loading, `Discover` biến thể searching, `Manuscript` biến thể building.
+
 ## 3. Ngôn ngữ trạng thái
 
 Mỗi trạng thái chuẩn (PRD mục 5) có một nhãn duy nhất, cùng chữ và kiểu trên mọi màn. Tên trạng thái giữ tiếng Anh ở cả hai ngôn ngữ giao diện (UX-I18N-003).
@@ -76,7 +110,7 @@ Mỗi trạng thái chuẩn (PRD mục 5) có một nhãn duy nhất, cùng ch�
 | Đề xuất / chưa chốt | Viền 1.5px **nét đứt**, chữ brand-ink hoặc muted | Draft, Proposed, Discovered (“Chưa duyệt — không dùng làm nguồn”), Partially Supported |
 | Đã chốt | Viền 1.5px **nét liền** | Approved, Ready (brand), Accepted, Trusted, Completed, Succeeded (ink) |
 | **Cần bạn xử lý** | Nền `brand-tint`, viền `brand-line`, chữ `brand-ink`, kèm biểu tượng tròn có dấu chấm than | Waiting for User, In Review, Plan Proposed, Pending Approval, mọi pending action |
-| Đang chạy | Viền liền `brand`, nền `brand-tint`, chữ ink; Agent List thêm chấm 7px nhấp nháy, tắt khi `prefers-reduced-motion` | In Progress, Running, Đang chạy |
+| Đang chạy | Viền liền `brand`, nền `brand-tint`, chữ ink, chấm 7px nhấp nháy trước nhãn (mục 2.4.1), đứng yên khi `prefers-reduced-motion` | In Progress, Running, Indexing, Đang chạy, Đang build, Đang tìm |
 | Cảnh báo | Viền `warn` (liền = trạng thái, đứt = cờ nhẹ) | Blocked, Interrupted, Conflicting (liền); Unsupported, needs review (đứt) |
 | Lỗi | Viền `danger`, nền `danger-tint` | Failed, Invalid, Lỗi |
 | Trung tính / kết thúc | Viền `line`, nền `ground`, chữ muted | Queued, Cancelled, Superseded, Rejected, Paused, Đang rảnh |
@@ -131,6 +165,7 @@ WCAG 2.1 AA cho mọi màn của WF-01–WF-07: tương phản chữ ≥ 4.5:1 (
 ## 8. Không bao giờ
 
 - Nút hoặc ô nhập dạng viên thuốc, bo góc khác 8/6/4px, bóng trên thẻ tĩnh, gradient, glass, glow, emoji.
+- Chuyển động trang trí: hiệu ứng chữ, shimmer, nền chuyển động, phóng to khi hover, hiệu ứng vào trang cho nội dung chính.
 - Chip trạng thái màu đặc chữ trắng lặp khắp danh sách; màu brand trên điều hướng, tab hoặc mọi nút.
 - Hơn một nút chính tô màu trên một màn.
 - Mono cho giờ hay meta; nhãn chữ hoa nhỏ; dòng meta đặt phía trên tiêu đề (đặt bên dưới).
@@ -148,6 +183,7 @@ WCAG 2.1 AA cho mọi màn của WF-01–WF-07: tương phản chữ ≥ 4.5:1 (
 | `tools/render.mjs` | Dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs` | Phục vụ thư mục tại http://localhost:5178 |
 | `assets/sires-logo.svg` | Logo |
+| `assets/motion.css` | Token và quy tắc chuyển động (mục 2.4, 2.4.1) |
 
 ---
 
