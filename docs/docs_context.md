@@ -5,6 +5,10 @@ Tên chính thức (DEC-43, 31/10/2026): **SIRes (Super Intelligence Researcher)
 Cập nhật: 31/10/2026 (Asia/Saigon).
 Phiên bản: 1.0 — PO duyệt qua phiếu chốt PC-01 (31/10/2026); cả 22 section Đã hoàn thành.
 
+## Quyền ghi
+
+Mọi thay đổi trong `docs/` phải do PO yêu cầu hoặc duyệt; người dùng và agent khác không được ghi trực tiếp. Quy tắc chi tiết R-01–R-07: [README.md](README.md).
+
 ## Mục tiêu và nguồn nội dung
 
 Xây dựng PRD architecture-aware, workflow-first đủ rõ cho Product Owner, developers, coding agents và QA. Dùng outline 22 mục do người dùng cung cấp làm cơ sở; giữ nguyên thứ tự mục và đề mục con.
@@ -93,7 +97,7 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 | 13 | [Functional Requirements — Diagram Agent](overview/sections/13-diagram-agent.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
 | 14 | [Shared Context and Orchestration Architecture](overview/sections/14-shared-context-and-orchestration-architecture.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
 | 15 | [UI/UX Requirements](overview/sections/15-ui-ux-requirements.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
-| 16 | [Non-Functional Requirements](overview/sections/16-non-functional-requirements.html) | Đã duyệt; 16.10 Chờ duyệt | Đã duyệt 31/10/2026 (PC-01); 16.10 Evaluation và Eval Trace + NFR-OBS-006 chờ PO duyệt |
+| 16 | [Non-Functional Requirements](overview/sections/16-non-functional-requirements.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01); 16.10 Evaluation và Eval Trace + NFR-OBS-006 duyệt 31/10/2026 (DEC-46) |
 | 17 | [Integrations and External Dependencies](overview/sections/17-integrations-and-external-dependencies.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
 | 18 | [Data and State Specifications](overview/sections/18-data-and-state-specifications.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
 | 19 | [Acceptance Criteria and Test Scenarios](overview/sections/19-acceptance-criteria-and-test-scenarios.html) | Đã duyệt | Đã duyệt 31/10/2026 (PC-01) |
@@ -111,7 +115,7 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 
 ## Công việc đang thực hiện
 
-PRD v1.0 (31/10/2026): 21/22 section Đã hoàn thành; mục 16 mở lại để bổ sung 16.10 Evaluation và Eval Trace (chờ PO duyệt BL-16-01, BL-16-04; OQ-096, OQ-097 đã chốt — DEC-45). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
+PRD v1.0 (31/10/2026): cả 22 section Đã hoàn thành; mục 16 được bổ sung 16.10 Evaluation và Eval Trace và PO duyệt cùng ngày (DEC-45, DEC-46); Priority 256 requirement (167 P0, 88 P1, 1 P2). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
 
 ## Bước tiếp theo
 
@@ -171,3 +175,5 @@ SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. So
 - 31/10/2026: Tạo hợp đồng nội bộ theo architecture v0.2 (ADR-20): docs/api-design/internal/ — schemas.yaml (token nội bộ, ContextBundle, AgentRunWorkOrder/Result/Failure, AgentWriteMeta, WriteAck, ProviderSecretEnvelope, EventEnvelope, SandboxJob/Result), responses.yaml, và 9 file OpenAPI 3.1 (identity, orchestration, agent-core, workspace, planning, library, research, manuscript, knowledge; 50 endpoint, extension x-callers); docs/api-design/events/asyncapi.yaml (AsyncAPI 3.0: 29 sự kiện trên sires.events, lệnh agent.run, knowledge.index, sandbox.build, phản hồi sandbox.reply.research, stream chat.delta; operations ghi service phát/nghe). Cả 10 file qua redocly lint; mọi mã trong x-requirements có trong PRD. Chốt quy tắc routing key con theo trạng thái đích và đổi tên sự kiện trong architecture mục 3–7 cho khớp (ví dụ workflow.status_changed.running thay workflow.started). Cập nhật api-design README, index (#internal), architecture 3.3, 12, index.
 - 31/10/2026: PO chốt OQ-096, OQ-097 theo đề xuất (DEC-45): nhãn evidence cho 1 trong 5 đề tài (khoảng 100 claim, PO gán, QA hỗ trợ) để đo recall retrieval; dung sai cổng hồi quy 2 điểm phần trăm cho tỷ lệ khớp mức hỗ trợ và phát hiện citation không khớp, KPI-02 không giảm. Đã cập nhật 16.10, 19.13, 20.4, 21.1, 21.3, backlog. Mục 16 vẫn chờ PO duyệt 16.10/NFR-OBS-006 (BL-16-01) và FUT-06 (BL-16-04).
 - 31/10/2026: Đồng bộ thuật ngữ evaluation (BL-16-06): thêm bảng “Thuật ngữ đánh giá chất lượng agent” vào 1.5 (anchor s-1-5-eval, term-*) và bảng tương ứng ở phụ lục A (appendix-a-eval) gồm Retrieval, recall của retrieval, nhãn evidence, precision của nhãn Supported, eval harness, Eval Trace, baseline (đánh giá), hồi quy, cổng hồi quy, dung sai hồi quy (giá trị theo DEC-45); thêm tiền tố NFR-EVAL vào bảng mã 1.6. Trạng thái: bổ sung 31/10/2026, chờ PO duyệt cùng 16.10; thuật ngữ cũ giữ Đã duyệt; không sửa requirement.
+- 31/10/2026: PO duyệt phần bổ sung 16.10 (NFR-EVAL-001–004), NFR-OBS-006 ở P1, TS-13-10, TS-13-11, FUT-06 và thuật ngữ evaluation (BL-16-01, BL-16-04; DEC-46). Bảng Priority: 256 requirement, 167 P0, 88 P1, 1 P2 (mục 2.4, 20, 22). Mục 16 trở lại Đã hoàn thành. Theo yêu cầu PO, viết docs/README.md: cấu trúc docs/ và quy tắc chỉ ghi khi PO yêu cầu/duyệt (R-01–R-07).
+- 01/11/2026: Theo yêu cầu PO, sửa ghi chú trong README.md: docs/ đã nằm trong Git (toilatrung/sires) nhưng chưa có CODEOWNERS và bảo vệ nhánh.
