@@ -15,3 +15,8 @@ Chưa có ảnh xuất .svg/.png vì tài liệu không dùng tài nguyên mạn
 | FIG-108 | FIG-108-deployment.mmd | 11.2 |
 
 Quy ước giống `overview/figures/README.md`: nguồn là bản chỉnh sửa chính, giữ mã ổn định, ảnh xuất (nếu có) cùng tên.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

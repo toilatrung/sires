@@ -1,0 +1,265 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — library
+  version: 0.1.0-mvp
+  summary: API nội bộ của library — tool tìm nguồn, ghi đề xuất reference, tra cứu trạng thái reference, nội dung PDF.
+  description: |
+    library sở hữu DiscoveredResult, Reference, ApprovalRecord của reference, ProjectReferenceSelection và source adapter
+    (Scholar trung gian, OpenAlex/Semantic Scholar, DOI, BibTeX/RIS). knowledge và manuscript giữ bản sao chỉ đọc
+    trạng thái reference qua sự kiện; endpoint tra cứu dưới đây dùng cho đồng bộ ban đầu và readiness.
+    API công khai ở `paths/10-…`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://library.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Discovery tools
+    description: Tool `search_sources` của Discovery Agent (INT-SCHOLAR-001).
+  - name: Agent outputs
+    description: Ghi đầu ra của Reference Processing Agent (saga).
+  - name: Reference lookup
+    description: Trạng thái, metadata, selection, nội dung file.
+  - name: Search
+    description: Tìm reference cho WS-SEARCH.
+
+paths:
+  /internal/source-searches:
+    post:
+      tags: [Discovery tools]
+      operationId: searchSourcesTool
+      summary: Tìm qua source adapter và lưu DiscoveredResult New
+      description: |
+        Đi qua rate limiter của adapter (INT-SCHOLAR-005); không giải CAPTCHA, không vượt giới hạn (INT-SCHOLAR-002).
+        Khi nguồn không trả kết quả, `unavailable` mang lý do để Discovery Agent và giao diện đề nghị nhập thủ công
+        (INT-SCHOLAR-006). Kết quả đánh dấu `inTrustedLibrary` để tránh trùng.
+      x-callers: [agent-core]
+      x-requirements: [DISC-SCHOLAR-001, DISC-AUTHOR-001, DISC-ADAPTER-001, INT-SCHOLAR-001, INT-SCHOLAR-004]
+      x-milestone: M4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId]
+              properties:
+                projectId: { $ref: ../components/schemas/common.yaml#/Id }
+                search: { $ref: ../components/schemas/library.yaml#/DiscoverySearchRequest }
+                authorSearch: { $ref: ../components/schemas/library.yaml#/AuthorSearchRequest }
+      responses:
+        '200':
+          description: Kết quả đã lưu, hoặc lý do nguồn không khả dụng.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [source, items]
+                properties:
+                  source: { $ref: ../components/schemas/library.yaml#/DiscoverySource }
+                  items:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: ../components/schemas/library.yaml#/DiscoveredResult
+                        - type: object
+                          properties:
+                            inTrustedLibrary: { type: boolean }
+                  completeness:
+                    type: string
+                    enum: [complete, partial]
+                  nextPage: { type: string }
+                  unavailable:
+                    type: object
+                    properties:
+                      code: { type: string, enum: [rate_limited, provider_unavailable, no_results, terms_restricted] }
+                      retryAfterSeconds: { type: integer }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/projects/{projectId}/reference-proposals:
+    post:
+      tags: [Agent outputs]
+      operationId: createReferenceProposals
+      summary: Ghi Reference Pending Approval do Reference Processing Agent chuẩn hóa
+      description: |
+        Metadata chuẩn hóa theo schema 17.6, cảnh báo trùng gắn theo từng mục (DEC-21). Không bao giờ đặt Trusted —
+        phê duyệt là APR-04 (prompt duyệt theo lô do library mở qua orchestration).
+      x-callers: [orchestration]
+      x-requirements: [LIB-METADATA-001, LIB-APPROVAL-001, DATA-PROV-001]
+      x-milestone: M4
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, proposals]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                proposals:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [metadata]
+                    properties:
+                      discoveredResultId: { $ref: ../components/schemas/common.yaml#/Id }
+                      metadata: { $ref: ../components/schemas/library.yaml#/ReferenceMetadata }
+                      duplicateOf: { $ref: ../components/schemas/common.yaml#/Id }
+                      duplicateReason: { type: string }
+      responses:
+        '201':
+          description: Đã tạo Reference Pending Approval.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '400': { $ref: responses.yaml#/BadRequest }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/references/lookup:
+    post:
+      tags: [Reference lookup]
+      operationId: lookupReferences
+      summary: Trạng thái và metadata của nhiều reference
+      description: Dùng cho readiness (reference bắt buộc đã Trusted), context lớp 4 và bản sao chỉ đọc. Reference khác tài khoản không được trả.
+      x-callers: [planning, agent-core, research, manuscript, knowledge]
+      x-requirements: [TASK-READINESS-001, LIB-LIBRARY-001]
+      x-milestone: M4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [referenceIds]
+              properties:
+                referenceIds:
+                  type: array
+                  maxItems: 500
+                  items: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Reference tìm thấy; id không thấy nằm trong `notFound`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: ../components/schemas/library.yaml#/Reference }
+                  notFound:
+                    type: array
+                    items: { $ref: ../components/schemas/common.yaml#/Id }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/projects/{projectId}/reference-selection:
+    get:
+      tags: [Reference lookup]
+      operationId: getReferenceSelectionInternal
+      summary: Reference đang được chọn (Active) cho project
+      description: knowledge dùng để dựng lại phạm vi truy xuất khi khởi tạo hoặc đối soát (INT-VECTOR-001, OQ-053); sau đó cập nhật theo sự kiện.
+      x-callers: [knowledge, agent-core, manuscript]
+      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001]
+      x-milestone: M4
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      responses:
+        '200':
+          description: Danh sách selection Active kèm trạng thái duyệt của reference.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, asOfEventId]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [referenceId, approvalStatus]
+                      properties:
+                        referenceId: { $ref: ../components/schemas/common.yaml#/Id }
+                        approvalStatus: { $ref: ../components/schemas/library.yaml#/ReferenceApprovalStatus }
+                        bibtexKey: { type: string }
+                  asOfEventId:
+                    type: string
+                    description: Sự kiện cuối đã phản ánh; consumer bỏ qua sự kiện cũ hơn.
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/references/{referenceId}/content:
+    get:
+      tags: [Reference lookup]
+      operationId: getReferenceContentLocation
+      summary: Vị trí file PDF (hoặc liên kết truy cập mở hợp lệ) để index
+      x-callers: [knowledge]
+      x-requirements: [LIB-CONTENT-001, EVID-INDEX-001, INT-DOC-001]
+      x-milestone: M4
+      parameters:
+        - $ref: ../components/parameters.yaml#/ReferenceId
+      responses:
+        '200':
+          description: Nguồn nội dung; `kind = none` khi không có nội dung hợp lệ (indexing Unavailable).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [kind]
+                properties:
+                  kind: { type: string, enum: [uploaded_pdf, open_access_url, none] }
+                  url: { type: string, format: uri, description: Presigned URL đọc (5 phút) hoặc URL truy cập mở. }
+                  sha256: { type: string }
+                  sizeBytes: { type: integer }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/search:
+    get:
+      tags: [Search]
+      operationId: searchLibrary
+      summary: Tìm Trusted Library theo tiêu đề, tác giả, metadata
+      x-callers: [gateway]
+      x-requirements: [WS-SEARCH-001, NFR-PERF-002]
+      x-milestone: M4
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+        - $ref: ../components/parameters.yaml#/Limit
+      responses:
+        '200':
+          description: Kết quả có điểm.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/SearchHits }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

@@ -2,7 +2,7 @@
 
 Tài liệu thiết kế hệ thống cho SIRes ở mức MVP (milestone M1–M7): technology stack, thành phần, luồng hoạt động và phương án cho các bài toán kỹ thuật của hệ thống. Suy ra từ PRD v1.0 tại [../overview/index.html](../overview/index.html) và bám hợp đồng API tại [../api-design/index.html](../api-design/index.html).
 
-Trạng thái: **phiên bản 0.2 (31/10/2026).** Đã chốt hướng: backend nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE, các đề xuất stack còn lại của bản 0.1. Danh sách service, broker, hợp đồng nội bộ và công cụ monorepo (ADR-17–ADR-23) còn chờ xác nhận.
+Trạng thái: **phiên bản 0.2 (31/10/2026).** Đã chốt hướng: backend nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE, các đề xuất stack còn lại của bản 0.1. knowledge là service Python riêng (ADR-18). Danh sách service, broker, hợp đồng nội bộ và công cụ monorepo (ADR-17, ADR-19–ADR-23) còn chờ xác nhận.
 
 ## Cấu trúc thư mục
 
@@ -57,3 +57,8 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 2. Khi ADR được duyệt, đổi trạng thái `Accepted`, ghi ngày và người duyệt; cập nhật ASM-11 trong PRD 21.2 nếu liên quan stack.
 3. Sơ đồ: sửa file `.mmd` trong `figures/`, giữ mã FIG ổn định.
 4. Cập nhật nhật ký trong [../docs_context.md](../docs_context.md).
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../LICENSES.md).

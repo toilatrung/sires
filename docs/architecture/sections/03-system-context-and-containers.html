@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -65,7 +70,7 @@
 <tr><td><strong>agent-core</strong></td><td>Python, FastAPI</td><td>Thực thi Agent Run: Orchestrator và bảy Specialist Agent, agent registry, prompt template, Context Assembler, Model Gateway ba provider, tool của agent, kiểm tra kết nối provider.</td><td>Consumer + HTTP nội bộ</td></tr>
 <tr><td><strong>knowledge</strong></td><td>Python, FastAPI</td><td>SourceDocument, Chunk, vector: trích xuất PDF, chia chunk, embedding, pgvector, API truy xuất lai.</td><td>Consumer + HTTP nội bộ</td></tr>
 </tbody></table></div>
-<p><strong>Vì sao <code>knowledge</code> viết bằng Python:</strong> trích xuất PDF có bố cục, chia chunk và embedding là phần lõi của RAG, dùng cùng thư viện và đội GEN AI/AIE với agent-core (ADR-15 chọn <code>pypdfium2</code> + <code>pdfplumber</code>, phía TypeScript không có thư viện tương đương). Nếu muốn giữ đúng một service Python, có thể gộp knowledge vào agent-core thành hai loại tiến trình của cùng một service; ranh giới API không đổi.</p>
+<p><strong>Vì sao <code>knowledge</code> viết bằng Python:</strong> trích xuất PDF có bố cục, chia chunk và embedding là phần lõi của RAG, dùng cùng thư viện và đội GEN AI/AIE với agent-core (ADR-15 chọn <code>pypdfium2</code> + <code>pdfplumber</code>, phía TypeScript không có thư viện tương đương). Đã chốt ngày 31/10/2026: knowledge là service Python riêng, tách khỏi agent-core (ADR-18, AQ-07) — hai service scale độc lập (indexing chạy theo lô, Agent Run chạy theo phiên làm việc) và có nhóm sở hữu riêng được.</p>
 <pre><code>web ─► gateway ─REST─► identity · workspace · planning · orchestration · library · research · manuscript · audit
                  ▲                         │ outbox → RabbitMQ (sự kiện, lệnh)
                  └── sự kiện cho SSE ◄─────┤
@@ -93,7 +98,7 @@ PostgreSQL cluster: một database cho mỗi service · Object storage · KMS</c
 <tr><td>agent-core</td><td>Chỉ API nội bộ</td><td>AGENT-*, CTX-ASSEMBLY, INT-PROVIDER-001/003/004/006</td></tr>
 <tr><td>knowledge</td><td>Chỉ API nội bộ</td><td>EVID-INDEX, INT-DOC, INT-VECTOR</td></tr>
 </tbody></table></div>
-<p>Hợp đồng công khai giữ nguyên trong <code>docs/api-design/openapi.yaml</code> (gateway định tuyến theo tag/đường dẫn). Hợp đồng nội bộ giữa service ở <code>docs/api-design/internal/&lt;service&gt;.yaml</code> và sự kiện ở <code>docs/api-design/events/asyncapi.yaml</code> (ADR-20) — cần tạo ở M1.</p>
+<p>Hợp đồng công khai giữ nguyên trong <code>docs/api-design/openapi.yaml</code> (gateway định tuyến theo tag/đường dẫn). Hợp đồng nội bộ giữa service ở <a href="../../api-design/internal/schemas.yaml"><code>docs/api-design/internal/&lt;service&gt;.yaml</code></a> (9 file, 50 endpoint, mỗi operation có <code>x-callers</code>) và sự kiện, lệnh ở <a href="../../api-design/events/asyncapi.yaml"><code>docs/api-design/events/asyncapi.yaml</code></a> (29 sự kiện, 5 loại lệnh/stream) — bản 0.1.0-mvp, tạo ngày 31/10/2026, đã qua <code>redocly lint</code> (ADR-20). Danh mục và quy ước: <a href="../../api-design/index.html#internal">api-design</a>.</p>
 
 <h2 id="s-3-4">3.4. Cấu trúc monorepo</h2>
 <p>Toàn bộ frontend và backend trong một repo (ADR-16, ADR-21): pnpm workspace + Nx cho TypeScript, uv workspace cho Python; Nx điều phối cả hai để CI chỉ build và test phần bị ảnh hưởng.</p>
@@ -125,7 +130,7 @@ PostgreSQL cluster: một database cho mỗi service · Object storage · KMS</c
 <thead><tr><th>Kiểu</th><th>Dùng khi</th><th>Cơ chế</th></tr></thead>
 <tbody>
 <tr><td>REST đồng bộ</td><td>Cần câu trả lời ngay: gateway → service; readiness check đọc dữ liệu service khác; agent-core đọc context và gọi tool</td><td>HTTP nội bộ, JSON, theo OpenAPI nội bộ; token service (10.4); timeout 2 s mặc định, không retry lệnh ghi trừ khi có Idempotency-Key</td></tr>
-<tr><td>Sự kiện bất đồng bộ</td><td>Thông báo một việc đã xảy ra: <code>task.activated</code>, <code>reference.revoked</code>, <code>project.deleted</code>…</td><td>Outbox của service nguồn → relay → RabbitMQ topic exchange <code>sires.events</code>; consumer idempotent bằng bảng inbox (ADR-19)</td></tr>
+<tr><td>Sự kiện bất đồng bộ</td><td>Thông báo một việc đã xảy ra: <code>task.activated</code>, <code>reference.status_changed.revoked</code>, <code>project.lifecycle_changed.deleted</code>…</td><td>Outbox của service nguồn → relay → RabbitMQ topic exchange <code>sires.events</code>; consumer idempotent bằng bảng inbox (ADR-19)</td></tr>
 <tr><td>Lệnh bất đồng bộ (job)</td><td>Việc dài cần một worker nhận: chạy Agent Run, index tài liệu, build LaTeX</td><td>Queue riêng: <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; ack thủ công, prefetch giới hạn; trạng thái thật nằm ở DB của service gửi lệnh</td></tr>
 </tbody></table></div>
 <p>Không service nào đọc database của service khác. Không có giao dịch phân tán: chuỗi thay đổi xuyên service là saga có idempotency key, mỗi bước nguyên tử trong service của nó (mục 5.8, 6.4).</p>
@@ -143,7 +148,7 @@ PostgreSQL cluster: một database cho mỗi service · Object storage · KMS</c
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-technology-stack.html">← Mục 2</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="04-runtime-flows.html">Mục 4 →</a></nav>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

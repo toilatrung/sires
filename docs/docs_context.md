@@ -58,7 +58,7 @@ Không gắn ngưỡng đánh giá, công nghệ hoặc chính sách cụ thể 
 - CSS: overview/assets/styles.css.
 - Hình: overview/figures/; [hướng dẫn](overview/figures/README.md).
 - UI design (PO duyệt 31/10/2026): [ui-design/index.html](ui-design/index.html) xem mọi màn; [ui-design/design.md](ui-design/design.md) quy tắc thiết kế; nguồn ui-design/source/*.dc.html, trang tĩnh ui-design/pages/ (dựng bằng ui-design/tools/render.mjs); canvas https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK. Skill agent: agent/skills/sires-ui-executor, agent/skills/sires-ui-review.
-- API: [api/index.html](api/index.html) — OpenAPI 3.1 mức MVP; file gốc api/openapi.yaml, path theo mục PRD ở api/paths/NN-slug.yaml, schema ở api/components/; [quy ước](api/README.md).
+- API: [api-design/index.html](api-design/index.html) — OpenAPI 3.1 mức MVP; file gốc api-design/openapi.yaml, path theo mục PRD ở api-design/paths/NN-slug.yaml, schema ở api-design/components/; [quy ước](api-design/README.md); hợp đồng nội bộ ở api-design/internal/, sự kiện ở api-design/events/asyncapi.yaml.
 - Kiến trúc (v0.2; hướng đã chốt 31/10/2026, ADR-17–23 chờ xác nhận): [architecture/index.html](architecture/index.html) — 12 section ở architecture/sections/NN-slug.html, sơ đồ Mermaid FIG-101+ ở architecture/figures/, sổ ADR-NN, spike SPK-NN, câu hỏi kỹ thuật AQ-NN ở mục 12; [quy ước](architecture/README.md).
 - Anchor: s-5-1, s-9-8…; phụ lục: appendix-a…appendix-g.
 - Requirement đề xuất: DOMAIN-CAPABILITY-NNN, ví dụ TASK-READINESS-001; danh sách tiền tố DOMAIN ở mục 1.6.
@@ -111,16 +111,16 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 
 ## Công việc đang thực hiện
 
-PRD v1.0 (31/10/2026): 21/22 section Đã hoàn thành; mục 16 mở lại để bổ sung 16.10 Evaluation và Eval Trace (chờ PO duyệt, BL-16-01–04, OQ-096, OQ-097). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
+PRD v1.0 (31/10/2026): 21/22 section Đã hoàn thành; mục 16 mở lại để bổ sung 16.10 Evaluation và Eval Trace (chờ PO duyệt BL-16-01, BL-16-04; OQ-096, OQ-097 đã chốt — DEC-45). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
 
 ## Bước tiếp theo
 
 1. PO xác nhận cách hiểu ASM-13–ASM-16 (eTroy OIDC, URL hồ sơ Scholar, Ngưỡng kiểm chứng, FUT-05); kiểm tra INT-OIDC-001–004 với repo eTroy_OIDC.
-2. Câu hỏi mới phát sinh cấp mã từ OQ-096; chỉ ghi “Đã duyệt” khi PO duyệt rõ.
+2. Câu hỏi mới phát sinh cấp mã từ OQ-098; chỉ ghi “Đã duyệt” khi PO duyệt rõ.
 
 ## Câu hỏi mở và giả định
 
-- OQ mở: OQ-096 (nhãn evidence để đo recall retrieval), OQ-097 (dung sai hồi quy). Giả định kỹ thuật cần kiểm chứng: ASM-01–ASM-16 (21.2), đặc biệt ASM-01 (Scholar), ASM-13 (eTroy OIDC).
+- Không còn OQ mở (OQ-096, OQ-097 đã chốt 31/10/2026, DEC-45). Giả định kỹ thuật cần kiểm chứng: ASM-01–ASM-16 (21.2), đặc biệt ASM-01 (Scholar), ASM-13 (eTroy OIDC).
 - Chưa chốt technology stack, build toolchain cụ thể và vùng lưu trữ dữ liệu (DEC-27).
 
 ## Nhật ký
@@ -162,3 +162,12 @@ PRD v1.0 (31/10/2026): 21/22 section Đã hoàn thành; mục 16 mở lại đ�
 - 31/10/2026: Theo yêu cầu người dùng, bổ sung Evaluation và Eval Trace. Phạm vi đã thống nhất: Eval Trace chỉ ở thời điểm thiết kế/phát triển (eval harness offline trên bộ dữ liệu nghiệm thu 20.4, provider thật, key của đội); production giữ trace metadata (NFR-OBS-002 không đổi); thu Eval Trace từ dữ liệu người dùng để FUT-06. Thêm 16.10 NFR-EVAL-001–004, NFR-OBS-006 (metadata phiên bản prompt/model/retrieval trên Agent Run), TS-13-10, TS-13-11, FUT-06, OQ-096, OQ-097; cập nhật 20.4, 21.3, phụ lục E/G (256 requirement, 441 AC; 5 requirement P1 đề xuất ngoài DEC-44). OQ của mục 16 chuyển sang 16.11. Mục 16 chờ PO duyệt phần bổ sung.
 - 31/10/2026: Tạo docs/architecture — tài liệu thiết kế hệ thống v0.1 (Đề xuất, chờ Tech lead/PO duyệt), cấu trúc giống overview/api-design: index.html, README.md, 12 section (tổng quan và động lực kiến trúc; technology stack; context/container/module và cấu trúc repo; luồng F-01–F-12; workflow engine và Orchestrator; dữ liệu; RAG và pipeline tài liệu; Model Gateway và tích hợp; sandbox LaTeX/Mermaid; bảo mật; triển khai và vận hành; sổ ADR-01–16, spike SPK-01–09, rủi ro TR-01–07, câu hỏi AQ-01–06), 8 sơ đồ Mermaid FIG-101–108. Stack đề xuất: React+Vite (TS), Python 3.12 + FastAPI, modular monolith, workflow engine tự xây trên PostgreSQL 16 + pgvector, object storage S3, SSE qua outbox + LISTEN/NOTIFY, Model Gateway trên SDK chính thức, BFF OIDC, envelope encryption KMS, sandbox gVisor, Kubernetes + Terraform. Khi ADR được duyệt: cập nhật ASM-11 và DEC-27 trong PRD 21.
 - 31/10/2026: Theo chỉ đạo, cập nhật docs/architecture lên v0.2: backend tách thành nhiều service (gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, sandbox-runner viết bằng NestJS; agent-core và knowledge viết bằng Python), monorepo chung FE + BE (pnpm + Nx + uv); các đề xuất stack còn lại của v0.1 được chấp thuận (ADR-03–16 Accepted; ADR-01/02 Superseded by ADR-17/18). Quyết định mới phát sinh, Proposed: ADR-19 RabbitMQ, ADR-20 hợp đồng nội bộ OpenAPI/AsyncAPI + token service-to-service, ADR-21 công cụ monorepo, ADR-22 database theo service, ADR-23 audit tập trung qua outbox. Viết lại mục 2, 3, 4, 12, index; cập nhật mục 1, 5–11, FIG-102–105, FIG-108; thêm SPK-10, TR-08–09, AQ-07 (knowledge dùng Python hay gộp vào agent-core), AQ-08 (nhóm sở hữu service). Việc tiếp theo: tạo docs/api-design/internal và events/asyncapi.yaml.
+- 31/10/2026: Chốt giữ knowledge (PDF, chunk, embedding, truy xuất) là service Python riêng, tách khỏi agent-core: ADR-18 Accepted, AQ-07 đóng; cập nhật architecture mục 3, 12 và index.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../LICENSES.md).
+- 31/10/2026: Tạo hợp đồng nội bộ theo architecture v0.2 (ADR-20): docs/api-design/internal/ — schemas.yaml (token nội bộ, ContextBundle, AgentRunWorkOrder/Result/Failure, AgentWriteMeta, WriteAck, ProviderSecretEnvelope, EventEnvelope, SandboxJob/Result), responses.yaml, và 9 file OpenAPI 3.1 (identity, orchestration, agent-core, workspace, planning, library, research, manuscript, knowledge; 50 endpoint, extension x-callers); docs/api-design/events/asyncapi.yaml (AsyncAPI 3.0: 29 sự kiện trên sires.events, lệnh agent.run, knowledge.index, sandbox.build, phản hồi sandbox.reply.research, stream chat.delta; operations ghi service phát/nghe). Cả 10 file qua redocly lint; mọi mã trong x-requirements có trong PRD. Chốt quy tắc routing key con theo trạng thái đích và đổi tên sự kiện trong architecture mục 3–7 cho khớp (ví dụ workflow.status_changed.running thay workflow.started). Cập nhật api-design README, index (#internal), architecture 3.3, 12, index.
+- 31/10/2026: PO chốt OQ-096, OQ-097 theo đề xuất (DEC-45): nhãn evidence cho 1 trong 5 đề tài (khoảng 100 claim, PO gán, QA hỗ trợ) để đo recall retrieval; dung sai cổng hồi quy 2 điểm phần trăm cho tỷ lệ khớp mức hỗ trợ và phát hiện citation không khớp, KPI-02 không giảm. Đã cập nhật 16.10, 19.13, 20.4, 21.1, 21.3, backlog. Mục 16 vẫn chờ PO duyệt 16.10/NFR-OBS-006 (BL-16-01) và FUT-06 (BL-16-04).
+- 31/10/2026: Đồng bộ thuật ngữ evaluation (BL-16-06): thêm bảng “Thuật ngữ đánh giá chất lượng agent” vào 1.5 (anchor s-1-5-eval, term-*) và bảng tương ứng ở phụ lục A (appendix-a-eval) gồm Retrieval, recall của retrieval, nhãn evidence, precision của nhãn Supported, eval harness, Eval Trace, baseline (đánh giá), hồi quy, cổng hồi quy, dung sai hồi quy (giá trị theo DEC-45); thêm tiền tố NFR-EVAL vào bảng mã 1.6. Trạng thái: bổ sung 31/10/2026, chờ PO duyệt cùng 16.10; thuật ngữ cũ giữ Đã duyệt; không sửa requirement.

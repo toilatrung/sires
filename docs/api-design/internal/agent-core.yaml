@@ -1,0 +1,127 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — agent-core
+  version: 0.1.0-mvp
+  summary: API nội bộ của agent-core (Python) — agent registry và kiểm tra kết nối provider.
+  description: |
+    agent-core thực thi Agent Run nhận qua queue `agent.run` (events/asyncapi.yaml); phần lớn giao tiếp là agent-core
+    gọi ra (orchestration, các API đọc context, knowledge). Endpoint dưới đây là những gì service khác gọi vào.
+    agent-core không có entity nghiệp vụ (architecture 6.1).
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://agent-core.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Agent registry
+    description: Định nghĩa agent (AGENT-REGISTRY-001, architecture 5.10).
+  - name: Providers
+    description: Kiểm tra kết nối provider bằng Model Gateway (INT-PROVIDER-001).
+
+paths:
+  /internal/agents:
+    get:
+      tags: [Agent registry]
+      operationId: listAgentDefinitions
+      summary: Agent registry kèm phiên bản, phạm vi đọc/ghi và capability bắt buộc
+      description: |
+        orchestration dùng để kiểm tra StepPlan và cấp `agentScope` trong token; identity dùng để chặn/cảnh báo khi gán
+        model thiếu capability (OQ-034); gateway có thể chuyển tiếp cho màn Settings › Agent Models.
+      x-callers: [orchestration, identity, gateway]
+      x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001, NFR-MAINT-002]
+      x-milestone: M2
+      responses:
+        '200':
+          description: Danh sách tám agent của MVP.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [registryVersion, agents]
+                properties:
+                  registryVersion: { type: string }
+                  agents:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: ../components/schemas/account.yaml#/AgentDefinition
+                        - type: object
+                          required: [version, contextScope, writes]
+                          properties:
+                            version: { type: string }
+                            promptTemplateVersion: { type: string }
+                            contextScope:
+                              type: array
+                              items: { type: string }
+                            writes:
+                              type: array
+                              items: { type: string, examples: ["claim:Draft", "artifact_version:Draft(synthesis)"] }
+                            tools:
+                              type: array
+                              items: { type: string }
+                            recommendedCapabilities:
+                              type: array
+                              items: { type: string }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/provider-connections/test:
+    post:
+      tags: [Providers]
+      operationId: testProviderConnection
+      summary: Kiểm tra kết nối và liệt kê model của một Provider Connection
+      description: |
+        identity gọi khi Researcher bấm “Kiểm tra kết nối” hoặc sau khi lưu key/base URL. agent-core tự lấy envelope từ
+        identity, giải mã bằng KMS, gọi thao tác nhẹ của provider (liệt kê model), kiểm tra base URL https và không trỏ
+        tới địa chỉ nội bộ (SSRF). Kết quả do identity ghi vào Provider Connection.
+      x-callers: [identity]
+      x-requirements: [AGENT-PROVIDER-001, INT-PROVIDER-005, NFR-TRANSIT-001]
+      x-milestone: M1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [connectionId]
+              properties:
+                connectionId: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Kết quả kiểm tra (kể cả khi Invalid — không dùng mã lỗi HTTP cho kết quả nghiệp vụ).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, testedAt]
+                properties:
+                  status: { $ref: ../components/schemas/account.yaml#/ConnectionTestStatus }
+                  testedAt: { $ref: ../components/schemas/common.yaml#/Timestamp }
+                  error:
+                    type: object
+                    properties:
+                      code: { $ref: ../components/schemas/common.yaml#/ProviderErrorCode }
+                      message: { type: string }
+                  models:
+                    type: array
+                    items: { $ref: ../components/schemas/account.yaml#/ModelInfo }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

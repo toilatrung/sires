@@ -12,3 +12,8 @@ Ngày 30/10/2026 đã có 17 nguồn Mermaid (FIG-001–005, 010–013, 020–02
 - HTML tham chiếu hình bằng đường dẫn tương đối, kèm caption, mã hình và alt text.
 - Phụ lục B: user journeys; C: workflows/state machines; D: entity relationships.
 - Mỗi hình chỉ rõ section, workflow hoặc requirement liên quan khi được bổ sung.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

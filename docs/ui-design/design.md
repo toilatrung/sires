@@ -148,3 +148,8 @@ WCAG 2.1 AA cho mọi màn của WF-01–WF-07: tương phản chữ ≥ 4.5:1 (
 | `tools/render.mjs` | Dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs` | Phục vụ thư mục tại http://localhost:5178 |
 | `assets/sires-logo.svg` | Logo |
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../LICENSES.md).

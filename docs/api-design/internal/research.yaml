@@ -1,0 +1,397 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — research
+  version: 0.1.0-mvp
+  summary: API nội bộ của research — ghi evidence, claim, artifact, kết quả kiểm chứng; context đầu vào; tool sơ đồ; số liệu KPI-01.
+  description: |
+    research sở hữu Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion (kể cả sơ đồ).
+    Mọi bản ghi do agent tạo ở trạng thái Draft/Active kèm provenance; chấp nhận (APR-03, APR-06, APR-07) chỉ qua API công khai
+    `paths/11-…`, `paths/13-…`, `paths/14-…` bởi Researcher.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://research.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Agent outputs
+    description: Ghi đầu ra của Evidence Retrieval, Synthesis, Verification, Diagram Agent (saga, architecture 5.8).
+  - name: Research context
+    description: Artifact, claim, evidence cho lắp ráp context (lớp 4, 5) và readiness.
+  - name: Diagram tools
+    description: Kiểm tra và render Mermaid qua sandbox (INT-DIAGRAM).
+  - name: KPI and search
+    description: Số liệu KPI-01 cho audit và tìm kiếm artifact/claim.
+
+paths:
+  /internal/projects/{projectId}/evidence:
+    post:
+      tags: [Agent outputs]
+      operationId: createEvidenceBatch
+      summary: Ghi Evidence Active từ kết quả truy xuất
+      description: |
+        Với mỗi mục, research gọi knowledge `verifyQuotes` để xác nhận `quote` có thật trong chunk và lấy vị trí từ chunk,
+        không dùng vị trí do model viết (architecture 7.5). Reference phải Trusted và đang được chọn cho project.
+        Mục không đạt nằm trong `rejected` của WriteAck, không làm hỏng cả lô.
+      x-callers: [orchestration]
+      x-requirements: [EVID-RETRIEVAL-001, DATA-PROV-001, KPI-01]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, items]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                items:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [referenceId, chunkId, quote]
+                    properties:
+                      referenceId: { $ref: ../components/schemas/common.yaml#/Id }
+                      chunkId: { $ref: ../components/schemas/common.yaml#/Id }
+                      quote: { type: string }
+                      retrievalQuery: { type: string }
+                      relevanceScore: { type: number }
+                      taskId: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '201':
+          description: Evidence đã ghi; mục bị loại có lý do.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/claims:
+    post:
+      tags: [Agent outputs]
+      operationId: createClaimsBatch
+      summary: Ghi Claim Draft và Claim–Evidence Link do Synthesis Agent tạo
+      description: |
+        Mọi `evidenceId` phải tồn tại, Active và thuộc project. Claim không có liên kết `supports` được ghi với
+        supportStatus `Not Assessed` và chỉ có thể thành Unsupported sau kiểm chứng (DEC-32).
+      x-callers: [orchestration]
+      x-requirements: [CLAIM-MAPPING-001, DATA-PROV-001]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, claims]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                artifactOutputIndex:
+                  type: integer
+                  description: Chỉ số đầu ra artifact_version cùng Agent Run mà các claim thuộc về (nếu có).
+                claims:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [statement, links]
+                    properties:
+                      localId: { type: string, description: Định danh tạm trong Agent Run để artifact tham chiếu. }
+                      statement: { type: string }
+                      taskId: { $ref: ../components/schemas/common.yaml#/Id }
+                      links:
+                        type: array
+                        items:
+                          type: object
+                          required: [evidenceId, relation]
+                          properties:
+                            evidenceId: { $ref: ../components/schemas/common.yaml#/Id }
+                            relation: { type: string, enum: [supports, contradicts, context] }
+      responses:
+        '201':
+          description: Claim đã ghi (kèm ánh xạ localId → claimId trong refs).
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/artifact-versions:
+    post:
+      tags: [Agent outputs]
+      operationId: createArtifactVersionFromAgent
+      summary: Ghi Artifact Version Draft (synthesis, table, diagram, note, verification_report…)
+      x-callers: [orchestration]
+      x-requirements: [CTX-REGISTRY-001, SYN-PERSIST-001, DIAG-SOURCE-001]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, version]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                artifactId:
+                  $ref: ../components/schemas/common.yaml#/Id
+                  description: Bỏ trống để tạo Artifact mới.
+                artifactType: { $ref: ../components/schemas/artifact.yaml#/ArtifactType }
+                title: { type: string }
+                taskId: { $ref: ../components/schemas/common.yaml#/Id }
+                version: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersionCreate }
+      responses:
+        '201':
+          description: Đã tạo phiên bản Draft.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '400': { $ref: responses.yaml#/BadRequest }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/projects/{projectId}/verification-results:
+    post:
+      tags: [Agent outputs]
+      operationId: recordVerificationResults
+      summary: Ghi kết quả của Verification Agent và cập nhật mức hỗ trợ claim
+      description: |
+        `score` của từng liên kết được research ánh xạ sang SupportStatus bằng bản chụp `thresholdsUsed` (architecture 7.6);
+        Supported chỉ khi có ít nhất một evidence hỗ trợ trực tiếp đạt ngưỡng (DEC-32).
+      x-callers: [orchestration]
+      x-requirements: [CLAIM-SUPPORT-001, CLAIM-CITATION-001, CLAIM-CONFLICT-001, DEC-38]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, thresholdsUsed, results]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                thresholdsUsed: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }
+                results:
+                  type: array
+                  items:
+                    type: object
+                    required: [targetType, targetId, assessments]
+                    properties:
+                      targetType: { type: string, enum: [claim, citation, change_proposal] }
+                      targetId: { $ref: ../components/schemas/common.yaml#/Id }
+                      assessments:
+                        type: array
+                        items:
+                          type: object
+                          required: [relation, score]
+                          properties:
+                            evidenceId: { $ref: ../components/schemas/common.yaml#/Id }
+                            citationKey: { type: string }
+                            relation: { type: string, enum: [supports, contradicts, context, matches, mismatch] }
+                            score: { type: number, minimum: 0, maximum: 1 }
+                            rationale: { type: string }
+      responses:
+        '201':
+          description: Đã ghi VerificationResult.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/context-bundle:
+    post:
+      tags: [Research context]
+      operationId: getResearchContextBundle
+      summary: Nội dung artifact/claim/evidence theo tham chiếu cho lắp ráp context
+      description: Chỉ bản Accepted, trừ khi `includeDrafts` và bước đang xử lý chính bản nháp đó (CTX-ASSEMBLY-001-AC03).
+      x-callers: [agent-core]
+      x-requirements: [CTX-ASSEMBLY-001, CTX-ISOLATION-001]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: schemas.yaml#/ContextBundleRequest }
+      responses:
+        '200':
+          description: Bundle.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/ContextBundle }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/artifact-status:
+    post:
+      tags: [Research context]
+      operationId: getArtifactStatuses
+      summary: Trạng thái artifact/claim đầu vào cho readiness check
+      x-callers: [planning, manuscript]
+      x-requirements: [TASK-READINESS-001]
+      x-milestone: M3
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refs]
+              properties:
+                refs:
+                  type: array
+                  items: { $ref: ../components/schemas/common.yaml#/TypedRef }
+      responses:
+        '200':
+          description: Trạng thái theo từng tham chiếu.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [ref, status]
+                      properties:
+                        ref: { $ref: ../components/schemas/common.yaml#/TypedRef }
+                        status: { type: string, description: "Trạng thái PRD 18.2 (Accepted, Draft, Rejected…), hoặc not_found." }
+                        needsReview: { type: boolean }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/diagrams/validate:
+    post:
+      tags: [Diagram tools]
+      operationId: validateMermaidTool
+      summary: Tool validate_mermaid của Diagram Agent
+      description: Gửi `sandbox.build` loại mermaid_validate (ưu tiên cao) và chờ phản hồi ≤ 30 s (architecture 9.4).
+      x-callers: [agent-core]
+      x-requirements: [DIAG-VALIDATE-001, INT-DIAGRAM-001, INT-DIAGRAM-004]
+      x-milestone: M6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramValidationRequest }
+      responses:
+        '200':
+          description: Kết quả kiểm tra cú pháp (lỗi kèm dòng).
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramValidationResult }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '503': { $ref: responses.yaml#/ServiceUnavailable }
+
+  /internal/diagrams/render:
+    post:
+      tags: [Diagram tools]
+      operationId: renderMermaidTool
+      summary: Tool render_mermaid — SVG preview, PDF vector (PNG 300 dpi dự phòng)
+      x-callers: [agent-core]
+      x-requirements: [DIAG-GEN-001, INT-DIAGRAM-002, INT-DIAGRAM-003, INT-DIAGRAM-004]
+      x-milestone: M6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramValidationRequest }
+      responses:
+        '200':
+          description: Kết quả render; lỗi cú pháp và lỗi render phân biệt bằng `status`.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/SandboxResult }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '503': { $ref: responses.yaml#/ServiceUnavailable }
+
+  /internal/kpi/claim-evidence:
+    get:
+      tags: [KPI and search]
+      operationId: getKpi01Data
+      summary: Tử số và mẫu số KPI-01 theo project
+      description: Claim trong artifact synthesis Accepted; manuscript cung cấp claim trong revision hiện hành (16.9).
+      x-callers: [audit]
+      x-requirements: [NFR-KPI-001, KPI-01]
+      x-milestone: M5
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      responses:
+        '200':
+          description: Số liệu.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [claimsTotal, claimsWithEvidence, asOf]
+                properties:
+                  claimsTotal: { type: integer }
+                  claimsWithEvidence: { type: integer }
+                  asOf: { $ref: ../components/schemas/common.yaml#/Timestamp }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/search:
+    get:
+      tags: [KPI and search]
+      operationId: searchResearch
+      summary: Tìm artifact và claim theo tiêu đề/nội dung ngắn
+      x-callers: [gateway]
+      x-requirements: [WS-SEARCH-001]
+      x-milestone: M5
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+        - $ref: ../components/parameters.yaml#/Limit
+      responses:
+        '200':
+          description: Kết quả có điểm.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/SearchHits }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

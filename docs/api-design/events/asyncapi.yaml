@@ -1,0 +1,1064 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+asyncapi: 3.0.0
+info:
+  title: SIRes events and commands
+  version: 0.1.0-mvp
+  description: |
+    Hợp đồng messaging giữa các service SIRes qua RabbitMQ (ADR-19, ADR-20).
+
+    - **Sự kiện** trên topic exchange `sires.events`: routing key = `type` của sự kiện; với sự kiện đổi trạng thái
+      (data là StateChange hoặc có `change`) thêm một đoạn con = trạng thái đích viết thường, khoảng trắng thành `_`,
+      ví dụ `workflow.status_changed.waiting_for_user`, `reference.status_changed.trusted`,
+      `project.lifecycle_changed.archived` — consumer bind `workflow.status_changed.*` hoặc đúng trạng thái cần. Mỗi sự kiện được ghi vào bảng
+      outbox của service phát trong cùng giao dịch với thay đổi (architecture 6.4), relay publish với publisher confirm.
+      Giao ít nhất một lần; consumer idempotent bằng bảng inbox theo `id`, bỏ qua bản có `aggregate.version` cũ hơn.
+    - **Lệnh** trên queue riêng (`agent.run`, `knowledge.index`, `sandbox.build`): một consumer nhận, ack thủ công.
+      Trạng thái thật nằm ở database của service gửi lệnh; lệnh lỗi thời bị từ chối ở bước bắt tay.
+    - **Stream** trên exchange `sires.stream` (không bền): delta chat, mất thì bỏ qua.
+
+    Mỗi message ghi `x-producer` và `x-consumers`. Thêm consumer mới không cần sửa producer; đổi phá vỡ payload thì
+    tăng `schemaVersion` và phát song song hai phiên bản tới khi mọi consumer chuyển xong (architecture 3.6).
+    Vỏ và schema dùng chung: `../internal/schemas.yaml`. Trạng thái giữ đúng chuỗi PRD 18.2.
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+defaultContentType: application/json
+
+servers:
+  rabbitmq:
+    host: rabbitmq.sires.svc.cluster.local:5671
+    protocol: amqps
+    description: RabbitMQ managed, cụm 3 node, quorum queue; một vhost mỗi môi trường.
+
+channels:
+  events:
+    address: sires.events
+    title: Sự kiện domain
+    description: Topic exchange bền. Mỗi consumer có queue riêng `<service>.events` bind theo routing key cần nghe.
+    bindings:
+      amqp:
+        is: routingKey
+        exchange: { name: sires.events, type: topic, durable: true, autoDelete: false, vhost: / }
+    messages:
+      accountCreated: { $ref: '#/components/messages/accountCreated' }
+      accountDeletionRequested: { $ref: '#/components/messages/accountDeletionRequested' }
+      providerConnectionChanged: { $ref: '#/components/messages/providerConnectionChanged' }
+      providerConnectionIssueReported: { $ref: '#/components/messages/providerConnectionIssueReported' }
+      embeddingModelChanged: { $ref: '#/components/messages/embeddingModelChanged' }
+      projectLifecycleChanged: { $ref: '#/components/messages/projectLifecycleChanged' }
+      projectPurgeDue: { $ref: '#/components/messages/projectPurgeDue' }
+      messagePosted: { $ref: '#/components/messages/messagePosted' }
+      researchContextVersioned: { $ref: '#/components/messages/researchContextVersioned' }
+      pendingActionChanged: { $ref: '#/components/messages/pendingActionChanged' }
+      notificationCreated: { $ref: '#/components/messages/notificationCreated' }
+      planGenerationRequested: { $ref: '#/components/messages/planGenerationRequested' }
+      planVersionStatusChanged: { $ref: '#/components/messages/planVersionStatusChanged' }
+      taskActivated: { $ref: '#/components/messages/taskActivated' }
+      taskActivationCancelled: { $ref: '#/components/messages/taskActivationCancelled' }
+      taskStatusChanged: { $ref: '#/components/messages/taskStatusChanged' }
+      workflowCreated: { $ref: '#/components/messages/workflowCreated' }
+      workflowStatusChanged: { $ref: '#/components/messages/workflowStatusChanged' }
+      agentRunStatusChanged: { $ref: '#/components/messages/agentRunStatusChanged' }
+      promptStatusChanged: { $ref: '#/components/messages/promptStatusChanged' }
+      referenceStatusChanged: { $ref: '#/components/messages/referenceStatusChanged' }
+      referenceMetadataUpdated: { $ref: '#/components/messages/referenceMetadataUpdated' }
+      referenceDeleted: { $ref: '#/components/messages/referenceDeleted' }
+      projectReferenceChanged: { $ref: '#/components/messages/projectReferenceChanged' }
+      referenceIndexingStatusChanged: { $ref: '#/components/messages/referenceIndexingStatusChanged' }
+      researchObjectStatusChanged: { $ref: '#/components/messages/researchObjectStatusChanged' }
+      manuscriptObjectStatusChanged: { $ref: '#/components/messages/manuscriptObjectStatusChanged' }
+      auditRecorded: { $ref: '#/components/messages/auditRecorded' }
+      dataPurged: { $ref: '#/components/messages/dataPurged' }
+
+  agentRun:
+    address: agent.run
+    title: Lệnh chạy Agent Run
+    description: Quorum queue; prefetch giới hạn ở agent-core; không retry tự động (architecture 5.2, 5.6).
+    bindings:
+      amqp:
+        is: queue
+        queue: { name: agent.run, durable: true, exclusive: false, autoDelete: false, vhost: / }
+    messages:
+      agentRunRequested: { $ref: '#/components/messages/agentRunRequested' }
+
+  knowledgeIndex:
+    address: knowledge.index
+    title: Lệnh index tài liệu
+    description: Nội bộ knowledge; được tự thử lại tối đa 3 lần vì idempotent theo (referenceId, sha256, embeddingModel) — INT-DOC-003.
+    bindings:
+      amqp:
+        is: queue
+        queue: { name: knowledge.index, durable: true, exclusive: false, autoDelete: false, vhost: / }
+    messages:
+      indexRequested: { $ref: '#/components/messages/indexRequested' }
+
+  sandboxBuild:
+    address: sandbox.build
+    title: Lệnh build LaTeX / kiểm tra, render Mermaid
+    description: Priority queue (mermaid_validate > build do người dùng bấm > build tự động) — architecture 9.5.
+    bindings:
+      amqp:
+        is: queue
+        queue: { name: sandbox.build, durable: true, exclusive: false, autoDelete: false, vhost: / }
+    messages:
+      sandboxJobRequested: { $ref: '#/components/messages/sandboxJobRequested' }
+
+  sandboxReply:
+    address: sandbox.reply.research
+    title: Phản hồi Mermaid cho research
+    description: |
+      RPC qua `replyTo` + `correlationId` cho tool validate/render của Diagram Agent (research chờ ≤ 30 s / 120 s).
+      Kết quả build LaTeX không đi qua đây mà qua REST `POST /internal/builds/{buildId}/result` của manuscript.
+    bindings:
+      amqp:
+        is: queue
+        queue: { name: sandbox.reply.research, durable: false, exclusive: false, autoDelete: true, vhost: / }
+    messages:
+      sandboxJobCompleted: { $ref: '#/components/messages/sandboxJobCompleted' }
+
+  chatStream:
+    address: sires.stream
+    title: Stream chat
+    description: Topic exchange không bền; mỗi pod gateway có queue tạm (exclusive, autoDelete). Không ghi log, không phát lại.
+    bindings:
+      amqp:
+        is: routingKey
+        exchange: { name: sires.stream, type: topic, durable: false, autoDelete: false, vhost: / }
+    messages:
+      chatDelta: { $ref: '#/components/messages/chatDelta' }
+
+operations:
+  # ---- producer ----
+  identityPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: identity phát
+    messages:
+      - $ref: '#/channels/events/messages/accountCreated'
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/providerConnectionChanged'
+      - $ref: '#/channels/events/messages/providerConnectionIssueReported'
+      - $ref: '#/channels/events/messages/embeddingModelChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  workspacePublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: workspace phát
+    messages:
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/messagePosted'
+      - $ref: '#/channels/events/messages/researchContextVersioned'
+      - $ref: '#/channels/events/messages/pendingActionChanged'
+      - $ref: '#/channels/events/messages/notificationCreated'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  planningPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: planning phát
+    messages:
+      - $ref: '#/channels/events/messages/planGenerationRequested'
+      - $ref: '#/channels/events/messages/planVersionStatusChanged'
+      - $ref: '#/channels/events/messages/taskActivated'
+      - $ref: '#/channels/events/messages/taskActivationCancelled'
+      - $ref: '#/channels/events/messages/taskStatusChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  orchestrationPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: orchestration phát
+    messages:
+      - $ref: '#/channels/events/messages/workflowCreated'
+      - $ref: '#/channels/events/messages/workflowStatusChanged'
+      - $ref: '#/channels/events/messages/agentRunStatusChanged'
+      - $ref: '#/channels/events/messages/promptStatusChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  libraryPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: library phát
+    messages:
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceMetadataUpdated'
+      - $ref: '#/channels/events/messages/referenceDeleted'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  knowledgePublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: knowledge phát
+    messages:
+      - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  researchPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: research phát
+    messages:
+      - $ref: '#/channels/events/messages/researchObjectStatusChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  manuscriptPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: manuscript phát
+    messages:
+      - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/dataPurged'
+  auditPublishes:
+    action: send
+    channel: { $ref: '#/channels/events' }
+    title: audit phát
+    messages:
+      - $ref: '#/channels/events/messages/dataPurged'
+  orchestrationSendsAgentRun:
+    action: send
+    channel: { $ref: '#/channels/agentRun' }
+    title: orchestration giao Agent Run
+  knowledgeSendsIndex:
+    action: send
+    channel: { $ref: '#/channels/knowledgeIndex' }
+    title: knowledge xếp việc index
+  manuscriptSendsSandboxJob:
+    action: send
+    channel: { $ref: '#/channels/sandboxBuild' }
+    title: manuscript gửi build LaTeX
+  researchSendsSandboxJob:
+    action: send
+    channel: { $ref: '#/channels/sandboxBuild' }
+    title: research gửi kiểm tra/render Mermaid
+    reply:
+      channel: { $ref: '#/channels/sandboxReply' }
+  sandboxRunnerReplies:
+    action: send
+    channel: { $ref: '#/channels/sandboxReply' }
+    title: sandbox-runner trả kết quả Mermaid
+  agentCoreStreamsChat:
+    action: send
+    channel: { $ref: '#/channels/chatStream' }
+    title: agent-core phát delta chat
+
+  # ---- consumer ----
+  gatewayConsumesForSse:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: gateway đẩy SSE và ghi log sự kiện 24 giờ (F-03)
+    messages:
+      - $ref: '#/channels/events/messages/providerConnectionChanged'
+      - $ref: '#/channels/events/messages/providerConnectionIssueReported'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/pendingActionChanged'
+      - $ref: '#/channels/events/messages/notificationCreated'
+      - $ref: '#/channels/events/messages/planVersionStatusChanged'
+      - $ref: '#/channels/events/messages/taskStatusChanged'
+      - $ref: '#/channels/events/messages/workflowStatusChanged'
+      - $ref: '#/channels/events/messages/agentRunStatusChanged'
+      - $ref: '#/channels/events/messages/promptStatusChanged'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
+      - $ref: '#/channels/events/messages/researchObjectStatusChanged'
+      - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+  gatewayConsumesChat:
+    action: receive
+    channel: { $ref: '#/channels/chatStream' }
+    title: gateway chuyển delta thành SSE chat.delta
+  identityConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: identity theo dõi xác nhận xóa tài khoản
+    messages:
+      - $ref: '#/channels/events/messages/dataPurged'
+  workspaceConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: workspace tạo PendingAction, Notification; theo dõi purge project
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/providerConnectionIssueReported'
+      - $ref: '#/channels/events/messages/planVersionStatusChanged'
+      - $ref: '#/channels/events/messages/taskStatusChanged'
+      - $ref: '#/channels/events/messages/workflowStatusChanged'
+      - $ref: '#/channels/events/messages/promptStatusChanged'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
+      - $ref: '#/channels/events/messages/dataPurged'
+  planningConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: planning chuyển trạng thái Task theo workflow; gắn needs review
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/researchContextVersioned'
+      - $ref: '#/channels/events/messages/workflowCreated'
+      - $ref: '#/channels/events/messages/workflowStatusChanged'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/researchObjectStatusChanged'
+  orchestrationConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: orchestration tạo workflow, đóng/hủy prompt
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/messagePosted'
+      - $ref: '#/channels/events/messages/planGenerationRequested'
+      - $ref: '#/channels/events/messages/planVersionStatusChanged'
+      - $ref: '#/channels/events/messages/taskActivated'
+      - $ref: '#/channels/events/messages/taskActivationCancelled'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+  libraryConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: library cập nhật indexingStatus; xóa dữ liệu
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+  knowledgeConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: knowledge index, cập nhật phạm vi truy xuất, index lại khi đổi model
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/embeddingModelChanged'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceDeleted'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+  researchConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: research chuyển evidence Stale, gắn needs review
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceDeleted'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
+  manuscriptConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: manuscript cập nhật bản sao trạng thái reference và bibliography
+    messages:
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectLifecycleChanged'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+      - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/referenceMetadataUpdated'
+      - $ref: '#/channels/events/messages/referenceDeleted'
+  auditConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: audit lưu Audit Event chỉ ghi thêm (ADR-23); xóa theo vòng đời
+    messages:
+      - $ref: '#/channels/events/messages/auditRecorded'
+      - $ref: '#/channels/events/messages/accountDeletionRequested'
+      - $ref: '#/channels/events/messages/projectPurgeDue'
+  agentCoreReceivesAgentRun:
+    action: receive
+    channel: { $ref: '#/channels/agentRun' }
+    title: agent-core thực thi Agent Run (bắt tay start trước khi gọi provider)
+  knowledgeReceivesIndex:
+    action: receive
+    channel: { $ref: '#/channels/knowledgeIndex' }
+    title: knowledge chạy pipeline indexing
+  sandboxRunnerReceivesJob:
+    action: receive
+    channel: { $ref: '#/channels/sandboxBuild' }
+    title: sandbox-runner chạy job trong sandbox
+  researchReceivesSandboxReply:
+    action: receive
+    channel: { $ref: '#/channels/sandboxReply' }
+    title: research nhận kết quả Mermaid
+
+components:
+  messageTraits:
+    envelopeHeaders:
+      headers:
+        type: object
+        properties:
+          traceparent: { type: string, description: W3C trace context (NFR-OBS-004). }
+          message_id: { type: string, description: Bằng `id` của vỏ sự kiện. }
+      bindings:
+        amqp:
+          deliveryMode: 2
+          bindingVersion: 0.3.0
+
+  schemas:
+    Envelope:
+      $ref: ../internal/schemas.yaml#/EventEnvelope
+    StateChange:
+      $ref: ../internal/schemas.yaml#/StateChange
+    Id:
+      $ref: ../components/schemas/common.yaml#/Id
+
+  messages:
+    # ---------- identity ----------
+    accountCreated:
+      name: account.created
+      title: Tài khoản SIRes được tạo lần đầu từ eTroy OIDC
+      x-producer: identity
+      x-consumers: [audit]
+      x-requirements: [INT-OIDC-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: account.created }
+              data:
+                type: object
+                required: [issuer]
+                properties:
+                  issuer: { type: string }
+    accountDeletionRequested:
+      name: account.deletion_requested
+      title: Researcher yêu cầu xóa tài khoản — mọi service xóa dữ liệu trong ≤ 30 ngày
+      x-producer: identity
+      x-consumers: [gateway, workspace, planning, orchestration, library, research, manuscript, knowledge, audit]
+      x-requirements: [NFR-RET-004]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: account.deletion_requested }
+              data:
+                type: object
+                required: [purgeBefore]
+                properties:
+                  purgeBefore: { type: string, format: date-time }
+    providerConnectionChanged:
+      name: provider_connection.changed
+      title: Provider Connection tạo, sửa, xóa key hoặc đổi trạng thái kiểm tra
+      x-producer: identity
+      x-consumers: [gateway]
+      x-requirements: [AGENT-PROVIDER-001, NFR-SECRETS-003]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: provider_connection.changed }
+              data:
+                type: object
+                required: [connectionId, change]
+                properties:
+                  connectionId: { $ref: '#/components/schemas/Id' }
+                  change: { type: string, enum: [created, updated, key_replaced, key_deleted, deleted, test_status_changed] }
+                  testStatus: { type: string }
+    providerConnectionIssueReported:
+      name: provider_connection.issue_reported
+      title: Lỗi cố định của provider (auth_failed, quota_exceeded…) — tạo Notification Provider issue
+      x-producer: identity
+      x-consumers: [workspace, gateway]
+      x-requirements: [INT-PROVIDER-004]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: provider_connection.issue_reported }
+              data:
+                type: object
+                required: [connectionId, code]
+                properties:
+                  connectionId: { $ref: '#/components/schemas/Id' }
+                  code: { type: string }
+                  agentRunId: { $ref: '#/components/schemas/Id' }
+    embeddingModelChanged:
+      name: embedding_model.changed
+      title: Tài khoản đổi embedding model — index lại toàn bộ thư viện
+      x-producer: identity
+      x-consumers: [knowledge]
+      x-requirements: [INT-VECTOR-003, DEC-31]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: embedding_model.changed }
+              data:
+                type: object
+                required: [providerConnectionId, model]
+                properties:
+                  providerConnectionId: { $ref: '#/components/schemas/Id' }
+                  model: { type: string }
+                  previousModel: { type: string }
+
+    # ---------- workspace ----------
+    projectLifecycleChanged:
+      name: project.lifecycle_changed
+      title: Project tạo, lưu trữ, xóa mềm hoặc khôi phục
+      description: Routing key con theo `data.change` — `project.lifecycle_changed.<change>`. archived → prompt Expired; deleted → ẩn dữ liệu ở mọi service.
+      x-producer: workspace
+      x-consumers: [gateway, planning, orchestration, library, research, manuscript, knowledge]
+      x-requirements: [PROJ-CRUD-001, NFR-RET-002, DEC-29]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: project.lifecycle_changed }
+              data:
+                type: object
+                required: [change, status]
+                properties:
+                  change: { type: string, enum: [created, archived, unarchived, deleted, restored] }
+                  status: { type: string }
+                  purgeAfter: { type: string, format: date-time }
+    projectPurgeDue:
+      name: project.purge_due
+      title: Hết hạn 30 ngày xóa mềm — mọi service xóa vĩnh viễn dữ liệu cấp project và báo data.purged
+      x-producer: workspace
+      x-consumers: [planning, orchestration, library, research, manuscript, audit]
+      x-requirements: [NFR-RET-002, NFR-RET-008]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: project.purge_due }
+              data:
+                type: object
+                properties:
+                  deletedAt: { type: string, format: date-time }
+    messagePosted:
+      name: message.posted
+      title: Researcher gửi tin nhắn — orchestration tạo lượt chat với Orchestrator (F-04)
+      x-producer: workspace
+      x-consumers: [orchestration]
+      x-requirements: [PROJ-CHAT-001, WS-CHAT-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: message.posted }
+              data:
+                type: object
+                required: [conversationId, messageId, scope]
+                properties:
+                  conversationId: { $ref: '#/components/schemas/Id' }
+                  messageId: { $ref: '#/components/schemas/Id' }
+                  scope: { type: string, enum: [global, project] }
+                  activeTaskId: { $ref: '#/components/schemas/Id' }
+    researchContextVersioned:
+      name: research_context.versioned
+      title: Research Context có phiên bản mới — planning phân tích ảnh hưởng (9.11)
+      x-producer: workspace
+      x-consumers: [planning]
+      x-requirements: [PROJ-CONTEXT-001, PLAN-IMPACT-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: research_context.versioned }
+              data:
+                type: object
+                required: [contextVersionId, versionNumber]
+                properties:
+                  contextVersionId: { $ref: '#/components/schemas/Id' }
+                  versionNumber: { type: integer }
+                  changedFields:
+                    type: array
+                    items: { type: string }
+    pendingActionChanged:
+      name: pending_action.changed
+      title: Pending Action tạo hoặc đóng
+      x-producer: workspace
+      x-consumers: [gateway]
+      x-requirements: [UX-PENDING-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: pending_action.changed }
+              data: { $ref: '#/components/schemas/StateChange' }
+    notificationCreated:
+      name: notification.created
+      title: Thông báo trong ứng dụng (MVP không gửi ngoài ứng dụng — OQ-020)
+      x-producer: workspace
+      x-consumers: [gateway]
+      x-requirements: [UX-PENDING-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: notification.created }
+              data:
+                type: object
+                required: [notificationId, kind]
+                properties:
+                  notificationId: { $ref: '#/components/schemas/Id' }
+                  kind: { type: string }
+                  objectType: { type: string }
+                  objectId: { $ref: '#/components/schemas/Id' }
+
+    # ---------- planning ----------
+    planGenerationRequested:
+      name: plan.generation_requested
+      title: Yêu cầu lập hoặc sửa Plan — orchestration tạo workflow plan_proposal (F-05)
+      x-producer: planning
+      x-consumers: [orchestration]
+      x-requirements: [PLAN-GENERATE-001, ORCH-PLAN-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: plan.generation_requested }
+              data:
+                type: object
+                required: [requestId, mode]
+                properties:
+                  requestId: { $ref: '#/components/schemas/Id' }
+                  mode: { type: string, enum: [initial, revise] }
+                  basedOnVersionId: { $ref: '#/components/schemas/Id' }
+                  instructions: { type: string }
+    planVersionStatusChanged:
+      name: plan_version.status_changed
+      title: Plan Version Proposed, Approved (APR-01), Rejected, Superseded
+      x-producer: planning
+      x-consumers: [orchestration, workspace, gateway]
+      x-requirements: [PLAN-APPROVAL-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: plan_version.status_changed }
+              data: { $ref: '#/components/schemas/StateChange' }
+    taskActivated:
+      name: task.activated
+      title: Task Queued sau APR-02 — orchestration tạo workflow task_execution (F-06)
+      x-producer: planning
+      x-consumers: [orchestration]
+      x-requirements: [TASK-TRIGGER-001, CTX-CONSISTENCY-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: task.activated }
+              data:
+                type: object
+                required: [taskId, activationId, planVersionId, executionLabel]
+                properties:
+                  taskId: { $ref: '#/components/schemas/Id' }
+                  activationId:
+                    $ref: '#/components/schemas/Id'
+                    description: Dùng làm idempotencyKey của Workflow — sự kiện giao lại không tạo workflow thứ hai.
+                  planVersionId: { $ref: '#/components/schemas/Id' }
+                  executionLabel: { type: string }
+                  proposedAgent: { type: string }
+    taskActivationCancelled:
+      name: task.activation_cancelled
+      title: Researcher hủy kích hoạt hoặc hủy Task đang chạy (T-07, T-10) — orchestration hủy workflow
+      x-producer: planning
+      x-consumers: [orchestration]
+      x-requirements: [TASK-STATE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: task.activation_cancelled }
+              data:
+                type: object
+                required: [taskId]
+                properties:
+                  taskId: { $ref: '#/components/schemas/Id' }
+                  workflowId: { $ref: '#/components/schemas/Id' }
+    taskStatusChanged:
+      name: task.status_changed
+      title: Task đổi trạng thái (T-01–T-19); có reasonCode khi trả lại/chặn (KPI-04)
+      x-producer: planning
+      x-consumers: [workspace, gateway]
+      x-requirements: [TASK-STATE-001, NFR-KPI-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: task.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      transition: { type: string, examples: [T-06] }
+
+    # ---------- orchestration ----------
+    workflowCreated:
+      name: workflow.created
+      title: Workflow được tạo — planning ghi Task.activeWorkflowId
+      x-producer: orchestration
+      x-consumers: [planning]
+      x-requirements: [CTX-CONSISTENCY-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: workflow.created }
+              data:
+                type: object
+                required: [workflowId, workflowType]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  workflowType: { type: string }
+                  taskId: { $ref: '#/components/schemas/Id' }
+                  activationId: { $ref: '#/components/schemas/Id' }
+    workflowStatusChanged:
+      name: workflow.status_changed
+      title: Workflow đổi trạng thái (Running, Waiting for User, Paused, Interrupted, Succeeded, Failed, Cancelled)
+      description: |
+        Routing key con `workflow.status_changed.<toState>` (chữ thường, gạch dưới) để consumer chỉ bind trạng thái cần.
+        planning: Running lần đầu → Task In Progress (T-06); Succeeded → In Review; Failed → Failed.
+        workspace: Interrupted → Pending Action Recovery decision (WF-06).
+      x-producer: orchestration
+      x-consumers: [planning, workspace, gateway]
+      x-requirements: [CTX-RECOVERY-001, ORCH-FAILURE-001, TASK-STATE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: workflow.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      workflowType: { type: string }
+                      taskId: { $ref: '#/components/schemas/Id' }
+                      firstRun: { type: boolean, description: true ở lần đầu chuyển Running. }
+                      lastError:
+                        type: object
+                        properties:
+                          code: { type: string }
+                          message: { type: string }
+    agentRunStatusChanged:
+      name: agent_run.status_changed
+      title: Agent Run bắt đầu, đổi giai đoạn, kết thúc — nguồn của Agent Activity (OQ-033)
+      x-producer: orchestration
+      x-consumers: [gateway]
+      x-requirements: [UX-MONITOR-001, CTX-REGISTRY-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: agent_run.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      workflowId: { $ref: '#/components/schemas/Id' }
+                      agent: { type: string }
+                      provider: { type: string }
+                      model: { type: string }
+                      phase: { type: string }
+                      discarded: { type: boolean }
+    promptStatusChanged:
+      name: prompt.status_changed
+      title: Prompt Open, Answered, Cancelled, Expired
+      x-producer: orchestration
+      x-consumers: [workspace, gateway]
+      x-requirements: [PROMPT-LIFECYCLE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: prompt.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      promptType: { type: string }
+                      apr: { type: string }
+                      workflowId: { $ref: '#/components/schemas/Id' }
+                      taskId: { $ref: '#/components/schemas/Id' }
+
+    # ---------- library ----------
+    referenceStatusChanged:
+      name: reference.status_changed
+      title: Reference Pending Approval, Trusted (APR-04), Rejected, Revoked, khôi phục
+      description: |
+        knowledge: Trusted → xếp `knowledge.index`; Revoked → loại khỏi phạm vi truy xuất ngay (INT-VECTOR-002).
+        research: Revoked → Evidence Stale, claim needs review. manuscript, planning: cập nhật bản sao, needs review (OQ-018).
+      x-producer: library
+      x-consumers: [knowledge, research, manuscript, planning, orchestration, workspace, gateway]
+      x-requirements: [LIB-APPROVAL-001, LIB-LIFECYCLE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: reference.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      bibtexKey: { type: string }
+                      hasContent: { type: boolean }
+                      reason: { type: string }
+    referenceMetadataUpdated:
+      name: reference.metadata_updated
+      title: Researcher sửa metadata (phiên bản mới — DEC-21) — manuscript sinh lại Bibliography Entry
+      x-producer: library
+      x-consumers: [manuscript]
+      x-requirements: [LIB-METADATA-001, MS-BIB-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: reference.metadata_updated }
+              data:
+                type: object
+                required: [referenceId, metadataVersion]
+                properties:
+                  referenceId: { $ref: '#/components/schemas/Id' }
+                  metadataVersion: { type: integer }
+    referenceDeleted:
+      name: reference.deleted
+      title: Reference bị xóa (không project nào dùng — NFR-RET-003)
+      x-producer: library
+      x-consumers: [knowledge, research, manuscript]
+      x-requirements: [NFR-RET-003, INT-VECTOR-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: reference.deleted }
+              data:
+                type: object
+                required: [referenceId]
+                properties:
+                  referenceId: { $ref: '#/components/schemas/Id' }
+    projectReferenceChanged:
+      name: project_reference.changed
+      title: Reference được chọn hoặc bỏ chọn cho project — knowledge cập nhật phạm vi truy xuất
+      x-producer: library
+      x-consumers: [knowledge, research, gateway]
+      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: project_reference.changed }
+              data:
+                type: object
+                required: [referenceId, selectionStatus]
+                properties:
+                  referenceId: { $ref: '#/components/schemas/Id' }
+                  selectionStatus: { type: string, enum: [Active, Removed] }
+
+    # ---------- knowledge ----------
+    referenceIndexingStatusChanged:
+      name: reference.indexing_status_changed
+      title: Indexing Queued, Indexing, Indexed, Failed, Unavailable, cần index lại
+      x-producer: knowledge
+      x-consumers: [library, gateway]
+      x-requirements: [EVID-INDEX-001, INT-DOC-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: reference.indexing_status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      referenceId: { $ref: '#/components/schemas/Id' }
+                      embeddingModel: { type: string }
+                      errorCode: { type: string, enum: [no_text_layer, too_large, too_many_pages, corrupt, no_content, embedding_not_configured, provider_error] }
+
+    # ---------- research ----------
+    researchObjectStatusChanged:
+      name: research.object_status_changed
+      title: Evidence, Claim, Artifact Version đổi trạng thái (Accepted, Rejected, Stale, needs review)
+      description: Routing key con `research.object_status_changed.<objectType>`.
+      x-producer: research
+      x-consumers: [planning, gateway]
+      x-requirements: [CLAIM-SUPPORT-001, SYN-HUMAN-REVIEW-001, LIB-LIFECYCLE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: research.object_status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    properties:
+                      taskId: { $ref: '#/components/schemas/Id' }
+                      needsReview: { type: boolean }
+
+    # ---------- manuscript ----------
+    manuscriptObjectStatusChanged:
+      name: manuscript.object_status_changed
+      title: Change Proposal, Build, Revision đổi trạng thái
+      description: Routing key con `manuscript.object_status_changed.<objectType>`.
+      x-producer: manuscript
+      x-consumers: [workspace, gateway]
+      x-requirements: [MS-DIFF-001, MS-BUILD-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: manuscript.object_status_changed }
+              data: { $ref: '#/components/schemas/StateChange' }
+
+    # ---------- mọi service ----------
+    auditRecorded:
+      name: audit.recorded
+      title: Audit Event tạo trong giao dịch của service nguồn (ADR-23)
+      description: Không bao giờ chứa API key, nội dung tài liệu, toàn văn prompt (NFR-OBS-002).
+      x-producer: "* (mọi service có entity)"
+      x-consumers: [audit]
+      x-requirements: [CTX-AUDIT-001, NFR-DUR-001, NFR-RET-008]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: audit.recorded }
+              data: { $ref: ../components/schemas/orchestration.yaml#/AuditEvent }
+    dataPurged:
+      name: data.purged
+      title: Service xác nhận đã xóa vĩnh viễn dữ liệu của project hoặc tài khoản
+      x-producer: "* (mọi service có dữ liệu)"
+      x-consumers: [workspace, identity]
+      x-requirements: [NFR-RET-002, NFR-RET-004]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: data.purged }
+              data:
+                type: object
+                required: [scope, service]
+                properties:
+                  scope: { type: string, enum: [project, account] }
+                  service: { type: string }
+                  objectStorageCleared: { type: boolean }
+
+    # ---------- lệnh ----------
+    agentRunRequested:
+      name: agent.run
+      title: Chạy một Agent Run
+      x-producer: orchestration
+      x-consumers: [agent-core]
+      x-requirements: [CTX-ROUTING-001, CTX-RECOVERY-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload: { $ref: ../internal/schemas.yaml#/AgentRunAssignment }
+    indexRequested:
+      name: knowledge.index
+      title: Index (hoặc index lại) tài liệu của một reference
+      x-producer: knowledge
+      x-consumers: [knowledge]
+      x-requirements: [EVID-INDEX-001, INT-DOC-003, INT-VECTOR-003]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        type: object
+        required: [accountId, referenceId, reason]
+        properties:
+          accountId: { $ref: '#/components/schemas/Id' }
+          referenceId: { $ref: '#/components/schemas/Id' }
+          reason: { type: string, enum: [trusted, content_uploaded, embedding_model_changed, extractor_upgrade, retry] }
+          attempt: { type: integer, minimum: 1, maximum: 3 }
+    sandboxJobRequested:
+      name: sandbox.build
+      title: Build LaTeX, kiểm tra hoặc render Mermaid trong sandbox
+      x-producer: "manuscript, research"
+      x-consumers: [sandbox-runner]
+      x-requirements: [MS-BUILD-001, NFR-SANDBOX-001, INT-LATEX-002, INT-DIAGRAM-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload: { $ref: ../internal/schemas.yaml#/SandboxJob }
+    sandboxJobCompleted:
+      name: sandbox.reply
+      title: Kết quả job Mermaid (RPC theo correlationId)
+      x-producer: sandbox-runner
+      x-consumers: [research]
+      x-requirements: [INT-DIAGRAM-001, INT-DIAGRAM-004]
+      correlationId:
+        location: $message.header#/correlation_id
+      payload: { $ref: ../internal/schemas.yaml#/SandboxResult }
+    chatDelta:
+      name: chat.delta
+      title: Một đoạn câu trả lời đang stream của Orchestrator (NFR-PERF-005)
+      x-producer: agent-core
+      x-consumers: [gateway]
+      x-requirements: [NFR-PERF-005, PROJ-CHAT-001]
+      payload:
+        type: object
+        required: [accountId, conversationId, agentRunId, seq, text]
+        properties:
+          accountId: { $ref: '#/components/schemas/Id' }
+          conversationId: { $ref: '#/components/schemas/Id' }
+          agentRunId: { $ref: '#/components/schemas/Id' }
+          seq: { type: integer }
+          text: { type: string }
+          final: { type: boolean }

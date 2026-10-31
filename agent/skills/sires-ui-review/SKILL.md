@@ -65,3 +65,8 @@ Mức độ:
 - **Minor**: lệch khoảng cách, cỡ chữ, câu chữ nhỏ.
 
 Cuối báo cáo: những gì đã kiểm tra (màn, biến thể, khổ màn hình, công cụ), những gì chưa kiểm tra được và vì sao, kết quả `check-ui.mjs` (số error/warn). Kèm ảnh chụp đối chiếu nếu có.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

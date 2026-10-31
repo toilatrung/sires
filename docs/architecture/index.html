@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -17,7 +22,7 @@
 <h1>SIRes — Thiết kế kiến trúc hệ thống (MVP)</h1>
 <p class="meta">Suy ra từ <a href="../overview/index.html">PRD SIRes v1.0</a> (PO duyệt qua phiếu chốt PC-01, 31/10/2026) và <a href="../api-design/index.html">API 0.1.0-mvp</a> · Khởi tạo: 31/10/2026 · Phiên bản 0.2: tách backend thành nhiều service theo chỉ đạo ngày 31/10/2026</p>
 <p>Tài liệu mô tả <em>cách hiện thực</em> SIRes: technology stack, các service và ranh giới dữ liệu, luồng hoạt động giữa service, và phương án cho các bài toán kỹ thuật mà PRD đặt ra — workflow dài bền vững, điều phối đa agent độc lập provider, RAG có cách ly, sandbox build LaTeX, bảo vệ API key, khôi phục sau gián đoạn, nhất quán xuyên service. Đối tượng: SWE, GEN AI, AIE, coding agents và QA. Quy ước biên soạn: <a href="README.md"><code>README.md</code></a>.</p>
-<div class="note"><p><strong>Trạng thái quyết định (31/10/2026).</strong> Đã chốt: backend chia nhiều service; service hệ thống dùng TypeScript/NestJS, agent core dùng Python; monorepo chung FE + BE; các đề xuất còn lại của technology stack bản 0.1 (ADR-03–ADR-16) được chấp thuận. Còn ở trạng thái <code>Proposed</code>: danh sách service cụ thể, vị trí service knowledge, RabbitMQ, hợp đồng nội bộ, công cụ monorepo, database theo service, audit tập trung (ADR-17–ADR-23, <a href="sections/12-decisions-risks-and-open-issues.html#s-12-1">sổ ADR</a>). Khi tài liệu này khác PRD hoặc đặc tả API, PRD và API là chuẩn.</p></div>
+<div class="note"><p><strong>Trạng thái quyết định (31/10/2026).</strong> Đã chốt: backend chia nhiều service; service hệ thống dùng TypeScript/NestJS, agent core dùng Python; monorepo chung FE + BE; các đề xuất còn lại của technology stack bản 0.1 (ADR-03–ADR-16) được chấp thuận. knowledge là service Python riêng (ADR-18). Còn ở trạng thái <code>Proposed</code>: danh sách service cụ thể, RabbitMQ, hợp đồng nội bộ, công cụ monorepo, database theo service, audit tập trung (ADR-17, ADR-19–ADR-23, <a href="sections/12-decisions-risks-and-open-issues.html#s-12-1">sổ ADR</a>). Khi tài liệu này khác PRD hoặc đặc tả API, PRD và API là chuẩn.</p></div>
 
 <h2 id="summary">Tóm tắt kiến trúc</h2>
 <div class="table-wrap">
@@ -60,13 +65,13 @@
 
 <h2 id="next">Bước tiếp theo</h2>
 <ul>
-<li>Chốt ADR-17–ADR-23, đặc biệt danh sách service và vị trí knowledge (AQ-07), phân công nhóm sở hữu service (AQ-08); cập nhật ASM-11 và DEC-27 trong PRD 21.</li>
-<li>Tạo hợp đồng nội bộ <code>docs/api-design/internal/</code> và sự kiện <code>docs/api-design/events/asyncapi.yaml</code>; ánh xạ <code>paths/</code> công khai sang service (3.3).</li>
+<li>Chốt ADR-17 và ADR-19–ADR-23, đặc biệt danh sách service và phân công nhóm sở hữu service (AQ-08); cập nhật ASM-11 và DEC-27 trong PRD 21.</li>
+<li>Rà <a href="../api-design/index.html#internal">hợp đồng nội bộ và sự kiện</a> (đã tạo 31/10/2026) cùng nhóm sở hữu từng service; dựng khung service mẫu theo hợp đồng (SPK-10).</li>
 <li>Chạy SPK-01, SPK-02, SPK-10 trước M1 (<a href="sections/12-decisions-risks-and-open-issues.html#s-12-2">bảng spike</a>); khởi tạo monorepo theo <a href="sections/03-system-context-and-containers.html#s-3-4">3.4</a>.</li>
 </ul>
 <p>Ngữ cảnh và nhật ký biên soạn: <a href="../docs_context.md">docs_context.md</a>. Nguồn sơ đồ: <code>figures/</code> (<a href="figures/README.md">hướng dẫn</a>).</p>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2.</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

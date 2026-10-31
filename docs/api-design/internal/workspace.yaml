@@ -1,0 +1,205 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — workspace
+  version: 0.1.0-mvp
+  summary: API nội bộ của workspace — context project, hội thoại, tìm kiếm.
+  description: |
+    workspace sở hữu ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification.
+    PendingAction và Notification được tạo từ sự kiện (events/asyncapi.yaml), không có endpoint ghi nội bộ.
+    API công khai ở `paths/07-workspace-and-project.yaml`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://workspace.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Project context
+    description: Research Context và thông tin project cho lắp ráp context và readiness.
+  - name: Conversations
+    description: Lịch sử chat cho Orchestrator và ghi tin nhắn của agent.
+  - name: Search
+    description: Tìm kiếm phần của workspace cho WS-SEARCH.
+
+paths:
+  /internal/projects/{projectId}/context-bundle:
+    get:
+      tags: [Project context]
+      operationId: getProjectContextBundle
+      summary: Research Context hiện hành và tóm tắt project (lớp 6)
+      x-callers: [agent-core, planning]
+      x-requirements: [CTX-ASSEMBLY-001, PROJ-CONTEXT-001]
+      x-milestone: M2
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      responses:
+        '200':
+          description: Context của project; project Archived vẫn đọc được.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [project, researchContext, bundle]
+                properties:
+                  project: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+                  researchContext: { $ref: ../components/schemas/project.yaml#/ResearchContextVersion }
+                  missingEssentials:
+                    type: array
+                    description: Trường thiết yếu còn thiếu để lập Plan (6.2) — planning dùng ở F-05.
+                    items: { type: string }
+                  bundle: { $ref: schemas.yaml#/ContextBundle }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/accounts/{accountId}/project-directory:
+    get:
+      tags: [Project context]
+      operationId: getProjectDirectory
+      summary: Danh sách project (chỉ tên, trạng thái) cho Global AI Assistant
+      description: Không trả nội dung project (OQ-007, CTX-ISOLATION-001).
+      x-callers: [agent-core]
+      x-requirements: [WS-CHAT-001, CTX-ISOLATION-001]
+      x-milestone: M2
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Danh sách rút gọn.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [projectId, name, status]
+                      properties:
+                        projectId: { $ref: ../components/schemas/common.yaml#/Id }
+                        name: { type: string }
+                        status: { $ref: ../components/schemas/project.yaml#/ProjectStatus }
+                        lastActivityAt: { $ref: ../components/schemas/common.yaml#/Timestamp }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/conversations/{conversationId}/recent-messages:
+    get:
+      tags: [Conversations]
+      operationId: getRecentMessages
+      summary: Tối đa 20 tin gần nhất cho lớp 7 của Orchestrator
+      description: Tóm tắt cuốn chiếu nằm ở orchestration (Context Item summary), không ở đây (OQ-064).
+      x-callers: [agent-core]
+      x-requirements: [PROJ-CHAT-001, CTX-ASSEMBLY-001]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 20, default: 20 }
+      responses:
+        '200':
+          description: Tin nhắn mới nhất ở cuối.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: ../components/schemas/project.yaml#/Message }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/conversations/{conversationId}/agent-messages:
+    post:
+      tags: [Conversations]
+      operationId: postAgentMessage
+      summary: Ghi câu trả lời của Orchestrator vào hội thoại
+      description: orchestration gọi khi áp dụng đầu ra `message` (F-04.4). Idempotency key = `agentRunId:outputIndex`.
+      x-callers: [orchestration]
+      x-requirements: [PROJ-CHAT-001, WS-CHAT-001, CTX-REGISTRY-001]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, content]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                content: { type: string }
+                activeTaskId: { $ref: ../components/schemas/common.yaml#/Id }
+                embeddedPromptId: { $ref: ../components/schemas/common.yaml#/Id }
+                replyToMessageId: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '201':
+          description: Đã ghi.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+        '409': { $ref: responses.yaml#/Conflict }
+
+  /internal/search:
+    get:
+      tags: [Search]
+      operationId: searchWorkspace
+      summary: Tìm project và tin nhắn theo tiêu đề/metadata
+      description: gateway gọi song song các service rồi gộp (architecture 6.7); timeout phía gateway 1,5 s.
+      x-callers: [gateway]
+      x-requirements: [WS-SEARCH-001, NFR-PERF-002]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+        - $ref: ../components/parameters.yaml#/Limit
+      responses:
+        '200':
+          description: Kết quả có điểm để gateway xếp hạng.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/SearchHits }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.
+  parameters:
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+    Query:
+      name: q
+      in: query
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 200 }

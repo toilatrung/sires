@@ -1,0 +1,187 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — planning
+  version: 0.1.0-mvp
+  summary: API nội bộ của planning — context Task, ghi Plan Version do Orchestrator đề xuất, tìm kiếm.
+  description: |
+    planning sở hữu ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, ReadinessResult, TaskReview.
+    Chuyển trạng thái Task theo sự kiện workflow (events/asyncapi.yaml). API công khai ở `paths/09-…`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://planning.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Task context
+    description: Định nghĩa Task và baseline cho lắp ráp context (lớp 2, 4).
+  - name: Agent outputs
+    description: Ghi đầu ra của agent do orchestration áp dụng (saga, architecture 5.8).
+  - name: Search
+    description: Tìm Task cho WS-SEARCH.
+
+paths:
+  /internal/tasks/{taskId}/context-bundle:
+    get:
+      tags: [Task context]
+      operationId: getTaskContextBundle
+      summary: Định nghĩa Task theo baseline, acceptance criteria, đầu vào khai báo, đầu ra Task tiên quyết, phản hồi review gần nhất
+      description: |
+        Lớp 2 (định nghĩa Task) và một phần lớp 3 (phản hồi review gần nhất) và lớp 4 (tham chiếu đầu ra Task tiên quyết —
+        nội dung lấy từ research). Chỉ Task trong `agentScope.taskIds` của token.
+      x-callers: [agent-core]
+      x-requirements: [CTX-ASSEMBLY-001, TASK-DEFINE-001, TASK-DEPENDENCY-001]
+      x-milestone: M3
+      parameters:
+        - $ref: ../components/parameters.yaml#/TaskId
+      responses:
+        '200':
+          description: Context của Task.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [task, definition, bundle]
+                properties:
+                  task: { $ref: ../components/schemas/plan.yaml#/Task }
+                  definition: { $ref: ../components/schemas/plan.yaml#/TaskDefinition }
+                  latestReview: { $ref: ../components/schemas/plan.yaml#/TaskReview }
+                  prerequisiteOutputs:
+                    type: array
+                    items: { $ref: ../components/schemas/common.yaml#/TypedRef }
+                  bundle: { $ref: schemas.yaml#/ContextBundle }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/plan/baseline:
+    get:
+      tags: [Task context]
+      operationId: getPlanBaselineInternal
+      summary: Plan Version baseline (và bản Draft/Proposed đang mở) cho Orchestrator
+      x-callers: [agent-core]
+      x-requirements: [ORCH-PLAN-001, PLAN-REVIEW-001]
+      x-milestone: M3
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      responses:
+        '200':
+          description: Baseline và bản đang mở (nếu có).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  baseline: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+                  openDraft: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/plan/versions:
+    post:
+      tags: [Agent outputs]
+      operationId: createPlanVersionFromAgent
+      summary: Ghi Plan Version Draft do Orchestrator đề xuất
+      description: |
+        Kiểm tra cấu trúc 18.5 (DAG không chu trình, mọi Task có acceptance criteria, label hợp lệ). Đã có Draft/Proposed
+        mở → `409` (chỉ một bản mở, 5.2). Không bao giờ tạo bản Approved — phê duyệt là APR-01 của Researcher.
+      x-callers: [orchestration]
+      x-requirements: [PLAN-GENERATE-001, DATA-VALID-001, DATA-PROV-001]
+      x-milestone: M3
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, planVersion]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                planVersion: { $ref: ../components/schemas/plan.yaml#/PlanVersionCreate }
+      responses:
+        '201':
+          description: Đã tạo Draft.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '400': { $ref: responses.yaml#/BadRequest }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/Conflict }
+
+  /internal/tasks/{taskId}/readiness-semantic-results:
+    post:
+      tags: [Agent outputs]
+      operationId: recordSemanticReadiness
+      summary: Ghi kết quả phần kiểm tra ngữ nghĩa của readiness (workflow readiness_semantic)
+      x-callers: [orchestration]
+      x-requirements: [TASK-READINESS-001, ORCH-READINESS-001]
+      x-milestone: M3
+      parameters:
+        - $ref: ../components/parameters.yaml#/TaskId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, checks]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                checks:
+                  type: array
+                  items: { $ref: ../components/schemas/plan.yaml#/ReadinessCheck }
+      responses:
+        '201':
+          description: Đã ghi vào ReadinessResult.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/search:
+    get:
+      tags: [Search]
+      operationId: searchPlanning
+      summary: Tìm Task theo mã, tiêu đề
+      x-callers: [gateway]
+      x-requirements: [WS-SEARCH-001, NFR-PERF-002]
+      x-milestone: M3
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+        - $ref: ../components/parameters.yaml#/Limit
+      responses:
+        '200':
+          description: Kết quả có điểm.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/SearchHits }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

@@ -1,0 +1,311 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — identity
+  version: 0.1.0-mvp
+  summary: API nội bộ của service identity (tài khoản, Settings, Provider Connection, Agent Model).
+  description: |
+    Chỉ dùng giữa các service trong cụm; không đi qua gateway, không có Ingress.
+    Service sở hữu: Account, Profile, Preferences, VerificationThresholds, ProviderConnection, AgentModelAssignment,
+    danh mục model (architecture 3.2–3.3). API công khai của Settings ở `paths/15-settings-and-sign-in.yaml`
+    và `paths/08-ai-assistant-and-multi-agent-orchestration.yaml`.
+
+    Quy ước nội bộ: xem `internal/README` trong `docs/api-design/README.md` (token nội bộ, `x-callers`, idempotency).
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://identity.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Accounts
+    description: Liên kết tài khoản eTroy OIDC (INT-OIDC-002).
+  - name: Agent setup
+    description: Cấu hình agent, provider và tùy chọn tài khoản cho readiness và Agent Run.
+  - name: Provider secrets
+    description: Ciphertext API key cho agent-core và knowledge (ADR-10).
+
+paths:
+  /internal/accounts/resolve:
+    post:
+      tags: [Accounts]
+      operationId: resolveAccount
+      summary: Tìm hoặc tạo tài khoản SIRes theo (issuer, sub) sau khi đăng nhập
+      description: |
+        gateway gọi ở bước 4 của luồng F-01 sau khi đã kiểm tra ID token. Lần đầu với `sub` mới tạo Account + Profile
+        (họ tên, email từ claim); các lần sau trả tài khoản có sẵn, không cập nhật Profile đã chỉnh. Ghi Audit Event đăng nhập.
+      x-callers: [gateway]
+      x-requirements: [INT-OIDC-002, NFR-AUTH-001]
+      x-milestone: M1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [issuer, subject]
+              properties:
+                issuer: { type: string, format: uri }
+                subject: { type: string }
+                name: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Tài khoản đã có hoặc vừa tạo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [account, created]
+                properties:
+                  account: { $ref: ../components/schemas/account.yaml#/Account }
+                  created: { type: boolean }
+                  disabled: { type: boolean, description: true khi tài khoản đang trong quy trình xóa (NFR-RET-004) — gateway từ chối tạo phiên. }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/accounts/{accountId}/agent-setup:
+    get:
+      tags: [Agent setup]
+      operationId: getAgentSetup
+      summary: Cấu hình hiệu lực của từng agent (model, Provider Connection, trạng thái kết nối)
+      description: |
+        Dùng cho readiness check (RC kiểm tra Agent Model Assignment và Provider Connection Valid — WF-02.S4)
+        và khi orchestration giao Agent Run. Mỗi agent trả cấu hình hiệu lực (gán riêng hoặc thừa kế `default`).
+      x-callers: [planning, orchestration, agent-core]
+      x-requirements: [TASK-READINESS-001, AGENT-PROVIDER-002, NFR-SECRETS-003]
+      x-milestone: M1
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Cấu hình theo agent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agents]
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      required: [agent, ready]
+                      properties:
+                        agent: { $ref: ../components/schemas/common.yaml#/AgentName }
+                        providerConnectionId: { $ref: ../components/schemas/common.yaml#/Id }
+                        provider: { $ref: ../components/schemas/common.yaml#/ProviderName }
+                        model: { type: string }
+                        connectionStatus: { $ref: ../components/schemas/account.yaml#/ConnectionTestStatus }
+                        missingCapabilities:
+                          type: array
+                          items: { type: string }
+                        ready:
+                          type: boolean
+                          description: false khi chưa gán, kết nối không Valid, đã xóa key, hoặc thiếu capability bắt buộc.
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/accounts/{accountId}/agent-preferences:
+    get:
+      tags: [Agent setup]
+      operationId: getAgentPreferences
+      summary: Tùy chọn tài khoản ảnh hưởng tới Agent Run
+      description: |
+        Ngôn ngữ phản hồi của agent, chế độ debug, và lĩnh vực nghiên cứu — `researchField` chỉ có giá trị khi
+        Researcher bật “Dùng lĩnh vực nghiên cứu làm context cho agent”; mọi trường cá nhân khác không bao giờ được trả (DEC-24).
+      x-callers: [orchestration, agent-core]
+      x-requirements: [CTX-ASSEMBLY-001, CTX-REGISTRY-002, NFR-PRIV-001]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Tùy chọn hiện hành.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [agentResponseLanguage, debugMode, researchFieldEnabled]
+                properties:
+                  agentResponseLanguage: { $ref: ../components/schemas/common.yaml#/Language }
+                  debugMode: { type: boolean }
+                  researchFieldEnabled: { type: boolean }
+                  researchField: { type: string }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/accounts/{accountId}/verification-thresholds:
+    get:
+      tags: [Agent setup]
+      operationId: getVerificationThresholdsInternal
+      summary: Ngưỡng kiểm chứng hiện hành để Verification Agent chụp lại
+      x-callers: [agent-core, research]
+      x-requirements: [CLAIM-SUPPORT-001, DEC-38]
+      x-milestone: M5
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Bộ ngưỡng (kèm `updatedAt` để ghi `thresholdsUsed`).
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/accounts/{accountId}/embedding-settings:
+    get:
+      tags: [Agent setup]
+      operationId: getEmbeddingSettingsInternal
+      summary: Embedding model và Provider Connection của tài khoản
+      x-callers: [knowledge]
+      x-requirements: [INT-VECTOR-003, DEC-31]
+      x-milestone: M4
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: Cấu hình embedding; `configured = false` khi chưa có Provider Connection OpenAI/Gemini (ASM-12).
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../components/schemas/account.yaml#/EmbeddingSettings
+                  - type: object
+                    properties:
+                      configured: { type: boolean }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/model-catalog:
+    get:
+      tags: [Agent setup]
+      operationId: getModelCatalog
+      summary: Danh mục capability model do hệ thống duy trì
+      description: Context window, tool calling, structured output, streaming, embedding dim, giá (nếu có) — architecture 8.3.
+      x-callers: [agent-core, knowledge]
+      x-requirements: [AGENT-PROVIDER-003, NFR-USAGE-003]
+      x-milestone: M1
+      responses:
+        '200':
+          description: Danh mục.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, models]
+                properties:
+                  version: { type: string }
+                  models:
+                    type: array
+                    items:
+                      type: object
+                      required: [provider, modelPattern]
+                      properties:
+                        provider: { $ref: ../components/schemas/common.yaml#/ProviderName }
+                        modelPattern: { type: string }
+                        capabilities:
+                          type: array
+                          items: { type: string }
+                        contextWindow: { type: integer }
+                        maxOutputTokens: { type: integer }
+                        embeddingDimensions: { type: integer }
+                        pricing:
+                          type: object
+                          properties:
+                            inputPerMillion: { type: number }
+                            outputPerMillion: { type: number }
+                            currency: { type: string }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/provider-connections/{connectionId}/secret:
+    get:
+      tags: [Provider secrets]
+      operationId: getProviderSecretEnvelope
+      summary: Ciphertext API key để giải mã tại thời điểm gọi provider
+      description: |
+        Trả envelope đã mã hóa; identity không có quyền KMS Decrypt nên không thể trả key rõ (ADR-10, NFR-SECRETS-001).
+        Token phải mang `accountId` trùng chủ kết nối. Không cache ở bên gọi quá 5 phút. Không ghi log nội dung phản hồi.
+      x-callers: [agent-core, knowledge]
+      x-requirements: [NFR-SECRETS-001, NFR-SECRETS-003, INT-PROVIDER-001]
+      x-milestone: M1
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+      responses:
+        '200':
+          description: Envelope.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/ProviderSecretEnvelope }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/provider-connections/{connectionId}/issues:
+    post:
+      tags: [Provider secrets]
+      operationId: reportProviderIssue
+      summary: Báo lỗi cố định của Provider Connection (auth_failed, quota_exceeded)
+      description: |
+        Đánh dấu kết nối cần kiểm tra (testStatus Invalid), phát `provider_connection.issue_reported` để workspace tạo
+        Notification Provider issue (INT-PROVIDER-004). Gửi lại cùng `Idempotency-Key` không tạo thêm thông báo.
+      x-callers: [agent-core, knowledge]
+      x-requirements: [INT-PROVIDER-004]
+      x-milestone: M1
+      parameters:
+        - $ref: '#/components/parameters/ConnectionId'
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  enum: [auth_failed, permission_denied, quota_exceeded, model_not_found]
+                agentRunId: { $ref: ../components/schemas/common.yaml#/Id }
+                message: { type: string, description: Thông điệp đã chuẩn hóa; không chứa key hay header. }
+      responses:
+        '204': { $ref: ../components/responses.yaml#/NoContent }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      description: Phải trùng `accountId` trong token nội bộ (trừ khi token của service hệ thống không gắn tài khoản).
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+    ConnectionId:
+      name: connectionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }

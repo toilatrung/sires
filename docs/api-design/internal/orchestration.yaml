@@ -1,0 +1,271 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — orchestration
+  version: 0.1.0-mvp
+  summary: API nội bộ của orchestration — vòng đời Agent Run với agent-core, Shared Context, prompt từ service khác.
+  description: |
+    orchestration giữ workflow engine (architecture mục 5): Workflow, WorkflowStep, AgentRun, Checkpoint,
+    InteractiveAgentPrompt, ContextItem. agent-core nhận lệnh `agent.run` qua RabbitMQ (events/asyncapi.yaml) rồi gọi
+    các endpoint dưới đây theo thứ tự: `start` → `heartbeat` (mỗi 30 s) → `result` hoặc `failure`.
+    API công khai của workflow, prompt và Shared Context ở `paths/08-…` và `paths/14-…`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://orchestration.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Agent runs
+    description: Bắt tay, heartbeat và kết quả Agent Run (architecture 5.2–5.8, F-07).
+  - name: Shared context
+    description: Context Item cho Context Assembler (CTX-STORE-001, lớp 3 và 7).
+  - name: Prompts
+    description: Prompt do service khác yêu cầu mở (8.4).
+
+paths:
+  /internal/agent-runs/{agentRunId}/start:
+    post:
+      tags: [Agent runs]
+      operationId: startAgentRun
+      summary: Bắt tay khi agent-core nhận lệnh agent.run
+      description: |
+        Chỉ chấp nhận khi AgentRun còn Pending, là run hiện hành của bước và workflow Running (hoặc Created với run đầu tiên).
+        Thành công: AgentRun → Running, bắt đầu theo dõi heartbeat, trả chi tiết công việc kèm token nội bộ có phạm vi agent.
+        Message giao lại sau sự cố nhận `409` — agent-core ack và bỏ, không gọi provider (NFR-REC-002).
+        Gọi lại `start` cho run đã Running bởi cùng `consumerId` trả lại cùng work order (idempotent).
+      x-callers: [agent-core]
+      x-requirements: [CTX-CONSISTENCY-001, CTX-ROUTING-001, NFR-REC-002]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consumerId]
+              properties:
+                consumerId: { type: string, description: Định danh pod/tác vụ agent-core đang giữ message. }
+      responses:
+        '200':
+          description: Được phép chạy.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/AgentRunWorkOrder }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+
+  /internal/agent-runs/{agentRunId}/heartbeat:
+    post:
+      tags: [Agent runs]
+      operationId: heartbeatAgentRun
+      summary: Heartbeat 30 giây của Agent Run đang chạy
+      description: |
+        Cập nhật `workflow.heartbeatAt`. Không có heartbeat trong 110 s → sweeper chuyển Interrupted (CTX-RECOVERY-001).
+        Phản hồi mang `cancelRequested` khi Researcher hủy workflow. `409` nghĩa là run đã bị coi là gián đoạn hoặc hủy —
+        agent-core dừng ngay, không gửi kết quả.
+      x-callers: [agent-core]
+      x-requirements: [CTX-RECOVERY-001, NFR-REC-001, ORCH-FAILURE-001]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [assembling_context, calling_model, running_tool, validating]
+                  description: Dùng cho Agent Activity (OQ-033 — cập nhật theo sự kiện, không stream token).
+                toolName: { type: string }
+      responses:
+        '200':
+          description: Tiếp tục chạy.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/AgentRunControl }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+
+  /internal/agent-runs/{agentRunId}/result:
+    post:
+      tags: [Agent runs]
+      operationId: submitAgentRunResult
+      summary: Gửi kết quả thành công của Agent Run
+      description: |
+        orchestration khóa hàng workflow, kiểm tra run hiện hành, lưu manifest/structured output/usage, rồi áp dụng
+        từng `outputs[i]` vào service sở hữu (saga, idempotency key `agentRunId:i` — architecture 5.8). Trả `202` ngay sau
+        khi lưu; agent-core ack message sau khi nhận `202`. Gửi lại cùng run trả `202` (idempotent).
+        Run không còn hiện hành: lưu AgentRun với `discarded = true` và trả `409`.
+      x-callers: [agent-core]
+      x-requirements: [CTX-REGISTRY-001, CTX-REGISTRY-002, CTX-CONSISTENCY-002, NFR-USAGE-001, NFR-OBS-006, INT-PROVIDER-006]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: schemas.yaml#/AgentRunResult }
+      responses:
+        '202':
+          description: Đã nhận; đầu ra được áp dụng bất đồng bộ, theo dõi qua sự kiện `agent_run.status_changed`.
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+
+  /internal/agent-runs/{agentRunId}/failure:
+    post:
+      tags: [Agent runs]
+      operationId: submitAgentRunFailure
+      summary: Báo Agent Run thất bại sau khi lớp adapter đã hết lượt thử lại
+      description: |
+        AgentRun → Failed với mã chuẩn (8.6). orchestration quyết định tạo Agent Run mới (tối đa 2, chỉ lỗi tạm thời)
+        hoặc chuyển bước/workflow Failed (ORCH-FAILURE-001). Lỗi `auth_failed`/`quota_exceeded` do agent-core báo riêng
+        cho identity (reportProviderIssue).
+      x-callers: [agent-core]
+      x-requirements: [ORCH-FAILURE-001, INT-PROVIDER-003, INT-PROVIDER-004]
+      x-milestone: M2
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: schemas.yaml#/AgentRunFailure }
+      responses:
+        '202':
+          description: Đã ghi nhận.
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+
+  /internal/projects/{projectId}/context-items:
+    get:
+      tags: [Shared context]
+      operationId: listContextItemsForAssembly
+      summary: Context Item Active cho lắp ráp context (lớp 3 và tóm tắt cuốn chiếu lớp 7)
+      description: |
+        Trả Context Item phạm vi project và phạm vi các Task trong `agentScope.taskIds` của token (CTX-ISOLATION-001 điều 4).
+        Item Superseded/Retracted không bao giờ trả.
+      x-callers: [agent-core]
+      x-requirements: [CTX-STORE-001, CTX-ASSEMBLY-001, CTX-ISOLATION-001]
+      x-milestone: M2
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - name: taskId
+          in: query
+          required: false
+          schema: { $ref: ../components/schemas/common.yaml#/Id }
+        - name: kinds
+          in: query
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: ../components/schemas/orchestration.yaml#/ContextItemKind }
+        - name: conversationId
+          in: query
+          required: false
+          description: Khi có, trả thêm tóm tắt cuốn chiếu của hội thoại (lớp 7, OQ-064).
+          schema: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Context dạng mục có tham chiếu.
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/ContextBundle }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/prompts:
+    post:
+      tags: [Prompts]
+      operationId: openPromptOnBehalfOfService
+      summary: Mở Interactive Agent Prompt do service khác yêu cầu
+      description: |
+        Dùng khi service hệ thống cần hỏi Researcher trong một workflow đang có: planning thiếu thông tin thiết yếu
+        của Research Context (6.2), library mở prompt duyệt reference theo lô (DEC-21). Prompt gắn `objectVersion`;
+        đối tượng đổi phiên bản thì prompt Cancelled (CTX-CONSISTENCY-003). Workflow chuyển Waiting for User.
+      x-callers: [planning, library]
+      x-requirements: [PROMPT-LIFECYCLE-001, PROMPT-APPROVAL-001, LIB-APPROVAL-001]
+      x-milestone: M2
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workflowId, type, question, pendingAction]
+              properties:
+                workflowId: { $ref: ../components/schemas/common.yaml#/Id }
+                taskId: { $ref: ../components/schemas/common.yaml#/Id }
+                type: { $ref: ../components/schemas/orchestration.yaml#/PromptType }
+                question: { type: string }
+                pendingAction:
+                  type: object
+                  required: [objectType, objectId, objectVersion]
+                  properties:
+                    apr: { $ref: ../components/schemas/common.yaml#/AprCode }
+                    objectType: { type: string }
+                    objectId: { $ref: ../components/schemas/common.yaml#/Id }
+                    objectVersion: { type: integer }
+                    approveEndpoint:
+                      type: string
+                      description: Endpoint nội bộ của service sở hữu mà orchestration gọi khi Researcher duyệt (F-08.3).
+                choices:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      label: { type: string }
+                      consequence: { type: string }
+                      recommended: { type: boolean }
+                editablePayload:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Prompt đã mở.
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/orchestration.yaml#/InteractiveAgentPrompt }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+        '409': { $ref: responses.yaml#/Conflict }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.
+  parameters:
+    AgentRunId:
+      name: agentRunId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
