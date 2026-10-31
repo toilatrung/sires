@@ -36,7 +36,7 @@
 </tr></thead><tbody>
 <tr><td>Researcher</td><td>Con người, là chủ tài khoản. Vai trò con người duy nhất trong MVP.</td><td>Sở hữu toàn bộ tài nguyên của tài khoản; là bên duy nhất có quyền phê duyệt.</td></tr>
 <tr><td>Orchestrator</td><td>AI agent điều phối, một cho mỗi phiên làm việc của project hoặc của Global AI Assistant.</td><td>Được ủy quyền trong phạm vi yêu cầu của Researcher và Plan baseline; không có quyền phê duyệt.</td></tr>
-<tr><td>Specialist Agent</td><td>AI agent chuyên trách, bảy agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>.</td><td>Chỉ hành động khi được Orchestrator giao, trong phạm vi một Task hoặc một workflow cụ thể.</td></tr>
+<tr><td>Specialist Agent</td><td>AI agent chuyên trách, tám agent (gồm Analysis Agent bổ sung 01/11/2026, DEC-47) theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>.</td><td>Chỉ hành động khi được Orchestrator giao, trong phạm vi một Task hoặc một workflow cụ thể.</td></tr>
 <tr><td>System</td><td>Logic xác định của ứng dụng, không dùng AI model: kiểm soát truy cập, chuyển trạng thái, readiness check, lưu trữ, audit, khôi phục.</td><td>Thực thi các quy tắc trong PRD. Không tự đưa ra quyết định thay Researcher.</td></tr>
 </tbody></table></div>
 <p class="status">Bốn actor: Confirmed (mẫu requirement, mục 1). Định nghĩa System là logic xác định không dùng AI: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
@@ -109,6 +109,7 @@
 <li>Kết quả agent tạo ra luôn là <em>bản mới hoặc bản đề xuất</em>, có provenance. Agent không sửa hay ghi đè phiên bản đã được Researcher chấp nhận.</li>
 <li>Agent không tạo hay sửa định nghĩa agent và không đổi model của chính nó.</li>
 <li>Verification Agent không kiểm chứng nội dung do chính lượt chạy của nó tạo ra.</li>
+<li>Analysis Agent chỉ chạy trong phiên thảo luận do Orchestrator mở (8.7); chỉ ghi Deliberation Entry lên Deliberation Board và chỉ xem entry được System cho phép theo vòng (14.9). Bổ sung 01/11/2026 (DEC-47).</li>
 </ul>
 <h3>Phạm vi truy cập theo agent</h3>
 <div class="table-wrap"><table><thead><tr>
@@ -123,6 +124,7 @@
 <tr><td>Synthesis</td><td>Evidence, claim và artifact đã duyệt liên quan đến Task</td><td>Claim, bản tổng hợp, ma trận so sánh</td><td>Không</td></tr>
 <tr><td>Writing</td><td>File bản thảo liên quan, evidence và claim đã duyệt, Trusted Reference (BibTeX)</td><td>Đề xuất sửa đổi dạng diff</td><td>Không</td></tr>
 <tr><td>Verification</td><td>Claim, citation, evidence, Trusted Reference và nội dung cần kiểm</td><td>Kết quả kiểm chứng (mức hỗ trợ của claim), artifact verification_report</td><td>Không (chỉ công cụ truy xuất nội bộ)</td></tr>
+<tr><td>Analysis (mỗi instance)</td><td>Problem Brief; entity trong Context Snapshot của phiên; Deliberation Entry được phép xem theo vòng; Trusted Reference đã index của project qua công cụ truy xuất chỉ đọc</td><td>Deliberation Entry (lập trường, phản biện, phát hiện)</td><td>Không (chỉ công cụ truy xuất và đọc board nội bộ)</td></tr>
 <tr><td>Diagram</td><td>Yêu cầu Task, artifact đã duyệt liên quan, loại sơ đồ</td><td>Diagram artifact (mã nguồn và preview)</td><td>Không (chỉ công cụ kiểm tra và render nội bộ)</td></tr>
 </tbody></table></div>
 
@@ -184,6 +186,7 @@
 <tr><td>Artifact</td><td>R C E A D</td><td>R c*</td><td>c* (theo vai trò)</td><td>R, lưu phiên bản, provenance</td></tr>
 <tr><td>File bản thảo LaTeX</td><td>R C E D, chấp nhận diff (A)</td><td>R</td><td>R; c* dạng diff (Writing)</td><td>R, revision, compile</td></tr>
 <tr><td>Diagram</td><td>R E A D</td><td>R</td><td>c* (Diagram)</td><td>R, kiểm tra cú pháp</td></tr>
+<tr><td>Deliberation Board và Deliberation Record (DEC-47)</td><td>R; bỏ qua hoặc yêu cầu mở thảo luận; chọn phương án qua prompt</td><td>R C (Problem Brief, lập trường, tổng hợp)</td><td>C entry (Analysis Agent; Specialist Agent ghi finding trong bước song song); R theo quyền xem theo vòng</td><td>R, quyền xem theo vòng, Context Snapshot, lưu Record</td></tr>
 <tr><td>Shared Context</td><td>R (qua giao diện)</td><td>R, định tuyến</td><td>Chỉ phần được lắp ráp</td><td>R E</td></tr>
 <tr><td>Audit trail</td><td>R</td><td>—</td><td>—</td><td>C (chỉ ghi thêm)</td></tr>
 <tr><td>Provider Connection và gán model</td><td>R C E D (key hiển thị dạng che)</td><td>—</td><td>—</td><td>Dùng key khi gọi provider; không lộ ra ngoài</td></tr>

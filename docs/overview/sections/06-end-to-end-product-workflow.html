@@ -81,7 +81,8 @@
 <h2 id="s-6-3">6.3. Multi-Agent Analysis</h2>
 <p class="status">Confirmed (outline): Orchestrator giao phân tích cho Specialist Agent liên quan; agent tạo đề xuất và phát hiện có cấu trúc; Orchestrator tổng hợp phương án, bất đồng, giả định, rủi ro.</p>
 <ul>
-<li><strong>Luồng:</strong> Orchestrator tạo Workflow loại <code>plan_proposal</code> → giao bước phân tích cho agent phù hợp (ví dụ Discovery khảo sát nhanh hướng tài liệu, Synthesis đề xuất cấu trúc literature review, Writing đề xuất cấu trúc sản phẩm đầu ra) → mỗi Agent Run trả kết quả có cấu trúc → Orchestrator tổng hợp.</li>
+<li><strong>Thảo luận (bổ sung 01/11/2026, DEC-47):</strong> bước phân tích chạy như một phiên thảo luận (8.7): Orchestrator nêu vấn đề bằng Problem Brief (định hướng, cấu trúc Plan, phương pháp); Orchestrator và tối thiểu hai Analysis Agent đề xuất độc lập, phản biện chéo; Orchestrator tổng hợp đồng thuận, bất đồng và đánh đổi. Specialist Agent có thể được giao bước khảo sát đầu vào chạy song song (14.9). Researcher có thể bỏ qua thảo luận; khi đó Plan mang nhãn “không qua thảo luận”.</li>
+<li><strong>Luồng (bản 31/10/2026, áp dụng cho bước khảo sát đầu vào):</strong> Orchestrator tạo Workflow loại <code>plan_proposal</code> → giao bước phân tích cho agent phù hợp (ví dụ Discovery khảo sát nhanh hướng tài liệu, Synthesis đề xuất cấu trúc literature review, Writing đề xuất cấu trúc sản phẩm đầu ra) → mỗi Agent Run trả kết quả có cấu trúc → Orchestrator tổng hợp.</li>
 <li><strong>Quy tắc:</strong> phân tích ở bước này không tạo Trusted Reference, evidence hay claim chính thức; kết quả là Artifact Version <code>Draft</code> loại note đính kèm Plan đề xuất. Toàn bộ hiển thị ở Agent Activity (SCOPE-12).</li>
 </ul>
 
@@ -140,13 +141,13 @@
 <h3 id="wf-01">WF-01 — Research Planning and Approval</h3>
 <p class="status">Chuỗi bước Confirmed (outline): tạo project → cung cấp context → Orchestrator phân tích → agent con đề xuất → tổng hợp Plan → người dùng chỉnh sửa → phê duyệt → lưu phiên bản Plan chính thức.</p>
 <div class="table-wrap"><table><tbody>
-<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, Specialist Agent (phân tích), System</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, Analysis Agent (thảo luận), Specialist Agent (khảo sát), System</td></tr>
 <tr><th scope="row">Trigger</th><td>Researcher yêu cầu lập Plan trong Project AI Chat, hoặc yêu cầu thay đổi baseline.</td></tr>
 <tr><th scope="row">Điều kiện trước</th><td>Project <code>Active</code>; Research Context có tối thiểu câu hỏi hoặc chủ đề; Orchestrator có Agent Model Assignment hợp lệ; không có Plan Version <code>Draft</code>/<code>Proposed</code> khác đang mở.</td></tr>
 <tr><th scope="row">Luồng chính</th><td><ol>
 <li><strong>S1</strong> Orchestrator kiểm tra thông tin thiết yếu; hỏi bổ sung nếu thiếu (6.2).</li>
-<li><strong>S2</strong> System tạo Workflow <code>plan_proposal</code>; Orchestrator giao phân tích cho Specialist Agent (6.3).</li>
-<li><strong>S3</strong> Orchestrator tổng hợp: phase, Task, dependency, deliverable, label đề xuất, rủi ro, giả định, các bất đồng giữa agent.</li>
+<li><strong>S2</strong> System tạo Workflow <code>plan_proposal</code>; Orchestrator mở phiên thảo luận với các Analysis Agent và có thể giao bước khảo sát cho Specialist Agent (6.3, 8.7).</li>
+<li><strong>S3</strong> Orchestrator tổng hợp từ Deliberation Record: phase, Task, dependency, deliverable, label đề xuất, rủi ro, giả định, các bất đồng giữa agent.</li>
 <li><strong>S4</strong> System tạo Plan Version <code>Draft</code> và kiểm tra cấu trúc (không chu trình, Task đủ trường bắt buộc).</li>
 <li><strong>S5</strong> Researcher xem, sửa, sắp xếp lại, thêm/xóa Task hoặc yêu cầu Orchestrator sửa; mỗi lượt sửa của agent là đề xuất cần Researcher áp dụng.</li>
 <li><strong>S6</strong> Researcher trình duyệt → <code>Proposed</code>; tạo pending action Plan approval request.</li>

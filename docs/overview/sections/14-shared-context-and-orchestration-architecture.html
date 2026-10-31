@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 14</p><h1>14. Shared Context and Orchestration Architecture</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả các cơ chế xuyên suốt giúp nhiều agent làm việc chung một cách nhất quán qua nhiều phiên: lưu Shared Context, lắp ráp và định tuyến context cho từng Agent Run, registry artifact và event, cách ly, nhất quán trạng thái, khôi phục và audit trail. Mục này mô tả <em>hành vi bắt buộc</em>, không chọn công nghệ. Kiến trúc multi-agent độc lập provider có shared context là <strong>Confirmed</strong> (21.1); actor trên mọi phê duyệt và thay đổi, tách ownership tài khoản/project là <strong>Confirmed</strong> (OQ-004, giải quyết SYNC-11). Quy tắc chi tiết do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Thông tin cá nhân trong context (OQ-015), vòng đời và export audit trail (OQ-061), nội dung lưu của Agent Run (OQ-062): <strong>Confirmed</strong> — PO chốt 31/10/2026 (PC-01). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-5">5.5</a>; khôi phục theo <a href="06-end-to-end-product-workflow.html#wf-06">WF-06</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-14-0">Kiến trúc logic</a></li>
+<p class="eyebrow">Product Requirements Document · Section 14</p><h1>14. Shared Context and Orchestration Architecture</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả các cơ chế xuyên suốt giúp nhiều agent làm việc chung một cách nhất quán qua nhiều phiên: lưu Shared Context, lắp ráp và định tuyến context cho từng Agent Run, registry artifact và event, cách ly, nhất quán trạng thái, khôi phục, audit trail, và Deliberation Board cùng Context Snapshot cho thảo luận và làm việc song song (14.9, bổ sung 01/11/2026, DEC-47; PO duyệt cùng ngày, DEC-48). Mục này mô tả <em>hành vi bắt buộc</em>, không chọn công nghệ. Kiến trúc multi-agent độc lập provider có shared context là <strong>Confirmed</strong> (21.1); actor trên mọi phê duyệt và thay đổi, tách ownership tài khoản/project là <strong>Confirmed</strong> (OQ-004, giải quyết SYNC-11). Quy tắc chi tiết do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Thông tin cá nhân trong context (OQ-015), vòng đời và export audit trail (OQ-061), nội dung lưu của Agent Run (OQ-062): <strong>Confirmed</strong> — PO chốt 31/10/2026 (PC-01). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-5">5.5</a>; khôi phục theo <a href="06-end-to-end-product-workflow.html#wf-06">WF-06</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-14-0">Kiến trúc logic</a></li>
 <li><a href="#s-14-1">14.1. Shared Context Store</a></li>
 <li><a href="#s-14-2">14.2. Context Assembly</a></li>
 <li><a href="#s-14-3">14.3. Context Routing</a></li>
@@ -27,7 +27,8 @@
 <li><a href="#s-14-6">14.6. State Consistency</a></li>
 <li><a href="#s-14-7">14.7. Recovery and Resumption</a></li>
 <li><a href="#s-14-8">14.8. Audit Trail</a></li>
-<li><a href="#s-14-oq">14.9. Open Questions của mục 14</a></li>
+<li><a href="#s-14-9">14.9. Deliberation Board and Context Snapshot</a></li>
+<li><a href="#s-14-oq">14.10. Open Questions của mục 14</a></li>
 </ul></details>
 
 <h2 id="s-14-0">Kiến trúc logic</h2>
@@ -50,7 +51,8 @@
 <p><strong>Nguyên tắc (Assumption):</strong></p>
 <ol>
 <li><strong>System là nguồn sự thật về trạng thái.</strong> Agent đề xuất kết quả; System kiểm tra quyền và trạng thái rồi mới ghi (3.0, 3.4).</li>
-<li><strong>Không dựa vào lịch sử chat.</strong> Agent nhận context có cấu trúc do System lắp ráp; chuyển giao giữa agent bằng tham chiếu entity, không bằng văn bản chat (8.3).</li>
+<li><strong>Không dựa vào lịch sử chat.</strong> Agent nhận context có cấu trúc do System lắp ráp; chuyển giao giữa agent bằng tham chiếu entity, không bằng văn bản chat (8.3). Trao đổi trong phiên thảo luận và kết quả trung gian giữa các bước song song đi qua Deliberation Board (14.9), cũng do System quản lý.</li>
+<li><strong>Kho bền vững là nguồn sự thật; cache chỉ để tăng tốc.</strong> Shared Context Store và Deliberation Board được lưu bền vững. Mọi lớp cache (ví dụ cache context đã lắp ráp, prompt caching của provider) chỉ là lớp tăng tốc: mất cache không làm mất dữ liệu, trạng thái hay provenance (DEC-47).</li>
 <li><strong>Mọi lần gọi model đều tái lập được về mặt nguồn gốc</strong>: Agent Run lưu context manifest liệt kê chính xác các entity và phiên bản đã đưa vào, cùng đầu ra có cấu trúc; toàn văn prompt/phản hồi chỉ lưu khi người dùng bật chế độ debug (CTX-REGISTRY-002, OQ-062).</li>
 </ol>
 
@@ -339,7 +341,116 @@
 <tr><th scope="row">Open Questions</th><td>— (OQ-061 đã đóng 31/10/2026, PC-01)</td></tr>
 </tbody></table></div>
 
-<h2 id="s-14-oq">14.9. Open Questions của mục 14</h2>
+<h2 id="s-14-9">14.9. Deliberation Board and Context Snapshot</h2>
+<p class="status">Confirmed — PO chốt 01/11/2026 (DEC-47): các agent thảo luận và chia sẻ ngữ cảnh qua một nơi dùng chung, cho phép các agent làm việc song song mà không phải chờ nhau khi không phụ thuộc dữ liệu. Nơi dùng chung tách thành ba lớp: Shared Context Store (14.1, đã có), Deliberation Board (mới, bền vững) và cache kỹ thuật (chỉ tăng tốc). Câu chữ PO duyệt 01/11/2026 (DEC-48). Công nghệ lưu trữ và cache là quyết định kiến trúc, không thuộc PRD.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Lớp</th>
+<th scope="col">Vai trò</th>
+<th scope="col">Bền vững</th>
+</tr></thead><tbody>
+<tr><td>Shared Context Store (14.1)</td><td>Nguồn sự thật của project: Research Context, quyết định, entity chính thức, provenance.</td><td>Có</td></tr>
+<tr><td>Deliberation Board</td><td>Nơi các bên trong một workflow đọc và ghi: Problem Brief, lập trường, phản biện, phát hiện trung gian, bản tổng hợp.</td><td>Có</td></tr>
+<tr><td>Cache kỹ thuật</td><td>Tăng tốc và giảm chi phí: context đã lắp ráp, phần đầu prompt dùng chung (prompt caching của provider).</td><td>Không; mất cache không mất dữ liệu</td></tr>
+</tbody></table></div>
+<p><strong>Song song được và vẫn phải chờ.</strong> Board cho phép các Agent Run không phụ thuộc dữ liệu chạy đồng thời và dùng phát hiện trung gian của nhau. Board không gỡ được phụ thuộc logic (ví dụ Synthesis cần Evidence, Writing cần Claim <code>Accepted</code>) và không bỏ được điểm chờ Researcher duyệt (APR). Agent Run song song trên cùng Provider Connection vẫn chịu giới hạn tốc độ của provider.</p>
+
+<h3 id="req-ctx-snapshot-001">CTX-SNAPSHOT-001 — Context Snapshot dùng chung</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi bên trong một phiên thảo luận làm việc trên cùng một bản context, không bên nào thấy dữ liệu mới hơn bên khác.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Orchestrator mở phiên thảo luận (ORCH-DELIB-001).</td></tr>
+<tr><th scope="row">Trigger</th><td>Deliberation được tạo.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System tạo Context Snapshot bất biến: danh sách tham chiếu entity kèm phiên bản (Research Context Version, Plan Version, Task, Context Item, Evidence, Claim, artifact <code>Accepted</code>, Trusted Reference được chọn) theo Problem Brief.</li>
+<li>Context của mọi Agent Run trong phiên được lắp ráp từ snapshot này (CTX-ASSEMBLY-001), trong phạm vi đọc của từng agent (3.3).</li>
+<li>Khi một entity trong snapshot có phiên bản mới trong lúc phiên chạy, System đánh dấu snapshot <em>lỗi thời</em> và ghi entity đã đổi; phiên vẫn chạy trên snapshot cũ.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Snapshot lỗi thời khi tổng hợp: xử lý theo ORCH-DELIB-004 (nêu rõ thay đổi, cho chọn chạy lại phiên).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Snapshot không chứa nội dung sao chép của entity, chỉ tham chiếu và phiên bản; không chứa API key hay dữ liệu project khác (14.5). Snapshot được giữ cùng Deliberation Record.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Context Snapshot (5.5); cờ lỗi thời và danh sách entity đã đổi.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-SNAPSHOT-001-AC01</strong> Given phiên thảo luận đang ở Vòng 2, When Researcher lưu Research Context Version mới, Then context manifest của các Agent Run còn lại trong phiên vẫn trỏ tới phiên bản cũ và snapshot được đánh dấu lỗi thời.</li>
+<li><strong>CTX-SNAPSHOT-001-AC02</strong> Given ba Agent Run của Vòng 1, When so context manifest, Then cả ba trỏ tới cùng phiên bản của mọi entity dùng chung trong phạm vi đọc của mình.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-ASSEMBLY-001, CTX-ISOLATION-001, ORCH-DELIB-001, ORCH-DELIB-004</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ctx-board-001">CTX-BOARD-001 — Deliberation Board bền vững, chỉ ghi thêm</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Nội dung trao đổi giữa các agent khôi phục được sau gián đoạn, truy vết được, và ghi đồng thời mà không xung đột.</td></tr>
+<tr><th scope="row">Actor</th><td>System; Orchestrator, Analysis Agent, Specialist Agent (ghi qua System)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow <code>Running</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Một Agent Run ghi entry; Orchestrator mở phiên thảo luận.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Mỗi Workflow có một Deliberation Board; mỗi phiên thảo luận là một phần của board, nhận diện bằng deliberationId.</li>
+<li>Agent ghi Deliberation Entry gồm: entryId, workflowId, deliberationId (nếu có), vòng, tác giả (agent, instance, agentRunId), loại (<code>problem_brief</code>, <code>position</code>, <code>critique</code>, <code>finding</code>, <code>synthesis</code>, <code>retraction</code>), nội dung có cấu trúc, tham chiếu nguồn, trạng thái (<code>draft</code>, <code>final</code>, <code>retracted</code>), <code>supersedes</code>, thời điểm.</li>
+<li>System kiểm tra quyền và schema, ghi entry bền vững, rồi phát sự kiện entry mới cho các bên đang chạy trong workflow.</li>
+<li>Khi đóng một vòng thảo luận, System lưu checkpoint của phiên.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Gián đoạn: khôi phục theo CTX-RECOVERY-001; entry đã ghi được giữ; vòng đã đóng không chạy lại; vòng dở chỉ chạy lại Agent Run của bên chưa có entry <code>final</code>. Lớp cache bị mất: dữ liệu đọc lại từ board, không ảnh hưởng nghiệp vụ.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Entry bất biến: không sửa tại chỗ; đổi nội dung tạo entry mới với <code>supersedes</code>, rút lại tạo entry <code>retraction</code> và chuyển entry gốc sang <code>retracted</code>. Chỉ System chuyển trạng thái entry. Board thuộc project, theo cách ly của 14.5. Board là nguồn sự thật cho trao đổi giữa agent; cache (nếu có) không phải nguồn sự thật. Board và entry được giữ cùng vòng đời Workflow và Deliberation Record.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation Board; Deliberation Entry; Checkpoint theo vòng; event entry mới trong registry (CTX-REGISTRY-001).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-BOARD-001-AC01</strong> Given hai Agent Run ghi entry vào cùng board tại cùng thời điểm, When cả hai hoàn tất, Then cả hai entry tồn tại và không entry nào bị ghi đè.</li>
+<li><strong>CTX-BOARD-001-AC02</strong> Given phiên đã đóng Vòng 1 và workflow bị gián đoạn, When khôi phục, Then các lập trường của Vòng 1 còn nguyên và không Agent Run nào của Vòng 1 được chạy lại.</li>
+<li><strong>CTX-BOARD-001-AC03</strong> Given bất kỳ agent nào, When yêu cầu sửa nội dung một entry đã ghi, Then yêu cầu bị từ chối.</li>
+<li><strong>CTX-BOARD-001-AC04</strong> Given lớp cache bị xóa giữa phiên, When phiên tiếp tục, Then mọi entry đã ghi vẫn đọc được và kết quả phiên không đổi.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-RECOVERY-001, CTX-REGISTRY-001, CTX-ISOLATION-001, DATA-PERSIST-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ctx-board-002">CTX-BOARD-002 — Quyền xem entry theo vòng</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47); thời điểm Researcher thấy entry: Confirmed — PO chốt 01/11/2026 (OQ-101, DEC-48)</td></tr>
+<tr><th scope="row">Purpose</th><td>Lập trường ở Vòng 1 thật sự độc lập: không bên nào bám theo bên viết trước.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Deliberation <code>Running</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Lắp ráp context hoặc agent đọc board.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Trong Vòng 1, entry <code>position</code> của mỗi bên bị ẩn với các bên còn lại cho đến khi vòng đóng.</li>
+<li>Khi vòng đóng, System mở quyền xem toàn bộ entry của vòng cho mọi bên tham gia.</li>
+<li>Từ Vòng 2, mỗi bên xem được mọi entry của các vòng đã đóng và entry của vòng hiện tại sau khi chúng chuyển <code>final</code>.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Agent yêu cầu đọc entry đang bị ẩn: System trả kết quả rỗng cho entry đó và ghi Audit Event truy cập bị từ chối.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Quyền xem được System thực thi khi lắp ráp context và khi agent gọi công cụ đọc board, không dựa vào chỉ dẫn trong prompt. Board chung không có nghĩa mọi entry luôn mở cho mọi bên. Chốt (OQ-101, DEC-48): Researcher thấy entry ở Agent Activity khi vòng chứa entry đóng.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Trạng thái hiển thị của entry theo vòng; Audit Event khi bị từ chối.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-BOARD-002-AC01</strong> Given Analysis Agent A đã ghi lập trường Vòng 1 và Analysis Agent B đang chạy Vòng 1, When context manifest của B được lắp ráp hoặc B đọc board, Then B không nhận được lập trường của A.</li>
+<li><strong>CTX-BOARD-002-AC02</strong> Given Vòng 1 đã đóng, When Agent Run Vòng 2 của B được lắp ráp, Then context chứa lập trường Vòng 1 của Orchestrator và A.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-ASSEMBLY-001, CTX-BOARD-001, ORCH-DELIB-002</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-101</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ctx-board-003">CTX-BOARD-003 — Chia sẻ kết quả trung gian giữa bước song song</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Các bước song song dùng được phát hiện của nhau mà không phải chờ bước kia hoàn tất, nhưng đầu ra chính thức không dựa trên nội dung chưa chắc chắn.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Specialist Agent, Analysis Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow có các bước chạy song song theo ORCH-DELEGATE-001 (không phụ thuộc nhau, không ghi cùng entity).</td></tr>
+<tr><th scope="row">Trigger</th><td>Một Agent Run ghi entry loại <code>finding</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Agent ghi phát hiện trung gian lên board dưới dạng entry <code>finding</code> với trạng thái <code>draft</code>, kèm tham chiếu nguồn; khi agent xác nhận, System chuyển entry sang <code>final</code>.</li>
+<li>Agent của bước song song khác nhận sự kiện entry mới và đọc entry qua công cụ đọc board trong Agent Run, trong phạm vi đọc của mình.</li>
+<li>Agent được dùng entry <code>draft</code> để định hướng (ví dụ chọn truy vấn); đầu ra chính thức (Evidence, Claim, Artifact Version, Change Proposal, Plan Version <code>Draft</code>) chỉ được dựa trên entry <code>final</code> hoặc entity chính thức.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Entry bị rút lại (<code>retracted</code>): System đánh dấu <em>cần xem lại</em> các entry và đầu ra Draft đã tham chiếu nó, và Orchestrator nêu điều này khi tổng hợp (ORCH-CONSOLIDATE-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Đầu ra chính thức tham chiếu entry <code>draft</code> bị System từ chối. Đọc board không tạo phụ thuộc giữa bước; bước sau không chờ bước trước trừ khi StepPlan khai báo phụ thuộc. Agent Run song song trên cùng Provider Connection chịu giới hạn tốc độ của provider; thời gian chờ hiển thị ở Agent Activity.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation Entry <code>finding</code>; cờ <em>cần xem lại</em> trên entry và đầu ra Draft liên quan.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-BOARD-003-AC01</strong> Given hai bước song song A và B không phụ thuộc nhau, When A ghi finding <code>draft</code>, Then B đọc được finding đó trong lúc B đang chạy và B không phải chờ A hoàn tất.</li>
+<li><strong>CTX-BOARD-003-AC02</strong> Given Synthesis Agent tạo Claim chỉ tham chiếu một finding <code>draft</code>, When System kiểm tra đầu ra, Then Claim bị từ chối.</li>
+<li><strong>CTX-BOARD-003-AC03</strong> Given finding F đã được một artifact Draft tham chiếu, When F bị rút lại, Then artifact đó mang cờ cần xem lại và bản tổng hợp của workflow nêu điều này.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>ORCH-DELEGATE-001, ORCH-CONSOLIDATE-001, CTX-BOARD-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-oq">14.10. Open Questions của mục 14</h2>
 <div class="table-wrap"><table><thead><tr>
 <th scope="col">Mã</th>
 <th scope="col">Câu hỏi</th>
@@ -349,6 +460,7 @@
 <tr><td>OQ-062</td><td>Agent Run chỉ lưu context manifest (tham chiếu) hay lưu cả toàn văn prompt và phản hồi của model (để debug, đổi lại tốn dung lượng và nhạy cảm hơn)? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Agent Run lưu context manifest và đầu ra có cấu trúc; toàn văn prompt/phản hồi chỉ lưu khi người dùng bật chế độ debug, giữ 30 ngày (CTX-REGISTRY-002, NFR-RET-009).</td><td>14.2, 16.1, 16.5, 18.3</td></tr>
 <tr><td>OQ-063</td><td>Ngưỡng thời gian không tiến triển để System coi workflow là <code>Interrupted</code>, và có cần checkpoint giữa chừng cho Agent Run chạy rất lâu không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> heartbeat mỗi 30 giây, không có heartbeat trong 2 phút thì workflow chuyển <code>Interrupted</code>; không checkpoint giữa một Agent Run, Agent Run dở được chạy lại bằng Agent Run mới (CTX-RECOVERY-001); PO duyệt 31/10/2026 (PC-01).</td><td>14.7, 16.2, WF-06</td></tr>
 <tr><td>OQ-064</td><td>Orchestrator trong Project AI Chat được nhận bao nhiêu lịch sử hội thoại (chỉ tóm tắt hay N tin gần nhất)? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> tóm tắt cuốn chiếu của toàn bộ hội thoại cộng tối đa 20 tin gần nhất, trong giới hạn lớp 7 của bảng ưu tiên context (14.2); PO duyệt 31/10/2026 (PC-01).</td><td>14.2, 7.4</td></tr>
+<tr><td>OQ-101</td><td>Researcher xem thảo luận trực tiếp trong lúc phiên chạy, hay chỉ khi phiên kết thúc? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: entry hiển thị ở Agent Activity khi vòng chứa nó đóng (CTX-BOARD-002). Sổ chính: 21.3.</td><td>14.9, 15.10</td></tr>
 </tbody></table></div>
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="13-diagram-agent.html">← Mục 13</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="15-ui-ux-requirements.html">Mục 15 →</a></nav>
 </main>

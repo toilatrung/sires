@@ -123,9 +123,9 @@
 <th scope="col">Entity</th>
 <th scope="col">Thuộc tính chính</th>
 </tr></thead><tbody>
-<tr><td>Workflow</td><td>workflowId, projectId, loại (plan_proposal, task_execution, discovery, indexing, synthesis, manuscript_edit, diagram, recovery…), taskId (nếu có), Plan Version baseline, người kích hoạt, trạng thái, bước hiện tại, thời điểm bắt đầu/kết thúc, lỗi cuối, checkpoint gần nhất.</td></tr>
+<tr><td>Workflow</td><td>workflowId, projectId, loại (plan_proposal, task_execution, discovery, indexing, synthesis, manuscript_edit, diagram, deliberation, recovery…), taskId (nếu có), Plan Version baseline, người kích hoạt, trạng thái, bước hiện tại, thời điểm bắt đầu/kết thúc, lỗi cuối, checkpoint gần nhất.</td></tr>
 <tr><td>Workflow Step</td><td>Thứ tự, mô tả, agent được giao, trạng thái, đầu vào (tham chiếu), đầu ra (tham chiếu), prompt đang chờ.</td></tr>
-<tr><td>Agent Run</td><td>agentRunId, agent (Orchestrator hoặc một trong bảy Specialist Agent), Provider Connection và model thực tế, tóm tắt context đầu vào, đầu ra (tham chiếu artifact, evidence, claim…), hành động/công cụ đã gọi, usage, thời gian, trạng thái, lỗi, số lần thử.</td></tr>
+<tr><td>Agent Run</td><td>agentRunId, agent (Orchestrator hoặc một trong tám Specialist Agent; với Analysis Agent ghi thêm instance), Provider Connection và model thực tế, tóm tắt context đầu vào, đầu ra (tham chiếu artifact, evidence, claim…), hành động/công cụ đã gọi, usage, thời gian, trạng thái, lỗi, số lần thử.</td></tr>
 <tr><td>Checkpoint</td><td>Workflow, bước, thời điểm, trạng thái các bước, tham chiếu đầu ra đã lưu.</td></tr>
 </tbody></table></div>
 <p><strong>Trạng thái Workflow:</strong> <code>Created</code> → <code>Running</code> ⇄ <code>Waiting for User</code>; <code>Running</code> ⇄ <code>Paused</code>; kết thúc ở <code>Succeeded</code>, <code>Failed</code> hoặc <code>Cancelled</code>. <code>Interrupted</code> là trạng thái do System gán khi phát hiện workflow dừng ngoài ý muốn (mất phiên, lỗi hạ tầng); chỉ thoát ra qua khôi phục (WF-06).</p>
@@ -145,9 +145,23 @@
 <tr><td>Trạng thái Plan/Task</td><td>Plan Version baseline, Task và trạng thái.</td></tr>
 <tr><td>Nguồn và kết quả</td><td>Trusted Reference được chọn, evidence, claim accepted, artifact accepted.</td></tr>
 <tr><td>Trạng thái điều phối</td><td>Workflow và checkpoint.</td></tr>
+<tr><td>Trao đổi giữa agent</td><td>Deliberation Board của workflow; Deliberation và Context Snapshot (14.9; bổ sung 01/11/2026, DEC-47).</td></tr>
 </tbody></table></div>
 <p><strong>Context Item:</strong> itemId, projectId, phạm vi (<em>project</em> hoặc <em>task</em> kèm taskId), loại, nội dung có cấu trúc, nguồn (actor, Agent Run, prompt, tin nhắn), trạng thái (<code>Active</code>, <code>Superseded</code>, <code>Retracted</code>), thời điểm.</p>
 <p><strong>Invariant:</strong> Context Item không bị sửa tại chỗ; thay đổi tạo item mới và đánh dấu item cũ <code>Superseded</code>. Context Item phạm vi task chỉ được đưa vào Agent Run của Task đó hoặc Task phụ thuộc trực tiếp vào nó. Shared Context không bao giờ chứa API key hay thông tin xác thực.</p>
+
+<h3 id="s-5-5-deliberation">Deliberation, Deliberation Entry, Context Snapshot</h3>
+<p class="status">Confirmed — PO chốt 01/11/2026 (DEC-47); thuộc tính: PO duyệt 01/11/2026 (DEC-48). Hành vi ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-7">8.7</a> và <a href="14-shared-context-and-orchestration-architecture.html#s-14-9">14.9</a>; schema ở 18.1.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Deliberation</td><td>deliberationId, projectId, workflowId, stepId, problemType, Problem Brief (vấn đề, ràng buộc, tiêu chí, phương án đã biết, góc nhìn theo instance), người tham gia (Orchestrator, các instance Analysis Agent), vòng hiện tại, số vòng tối đa, contextSnapshotId, trạng thái, Deliberation Record, usage cộng dồn.</td></tr>
+<tr><td>Deliberation Entry</td><td>entryId, workflowId, deliberationId (nếu có), vòng, tác giả (agent, instance, agentRunId), loại (<code>problem_brief</code>, <code>position</code>, <code>critique</code>, <code>finding</code>, <code>synthesis</code>, <code>retraction</code>), nội dung có cấu trúc, tham chiếu nguồn, nhãn giả định, trạng thái, supersedes, cờ cần xem lại, thời điểm.</td></tr>
+<tr><td>Context Snapshot</td><td>snapshotId, projectId, deliberationId, danh sách tham chiếu entity kèm phiên bản, cờ lỗi thời, entity đã đổi, thời điểm.</td></tr>
+</tbody></table></div>
+<p><strong>Trạng thái Deliberation:</strong> <code>Running</code> → <code>Completed</code> | <code>Failed</code> | <code>Cancelled</code>. <strong>Trạng thái Deliberation Entry:</strong> <code>draft</code> → <code>final</code>; <code>draft</code>/<code>final</code> → <code>retracted</code>.</p>
+<p><strong>Invariant:</strong> Deliberation Entry và Context Snapshot bất biến; chỉ System chuyển trạng thái. Deliberation Board không chứa API key hay dữ liệu project khác. Đầu ra chính thức không tham chiếu entry <code>draft</code> hay <code>retracted</code>.</p>
 
 <h2 id="s-5-6">5.6. Reference, Evidence and Claim</h2>
 <div class="table-wrap"><table><thead><tr>
@@ -178,7 +192,7 @@
 <th scope="col">Entity</th>
 <th scope="col">Thuộc tính chính</th>
 </tr></thead><tbody>
-<tr><td>Artifact</td><td>artifactId, projectId, loại (note, table, synthesis, diagram, draft_section, file, manual_submission, verification_report), tiêu đề, Task liên quan, phiên bản hiện hành accepted.</td></tr>
+<tr><td>Artifact</td><td>artifactId, projectId, loại (note, table, synthesis, diagram, draft_section, file, manual_submission, verification_report, deliberation_record), tiêu đề, Task liên quan, phiên bản hiện hành accepted.</td></tr>
 <tr><td>Artifact Version</td><td>Số phiên bản, nội dung hoặc file, định dạng, provenance (actor, Agent Run, Task, Workflow, đầu vào: evidence, reference, artifact khác), trạng thái, người và thời điểm chấp nhận/từ chối, ghi chú review.</td></tr>
 </tbody></table></div>
 <p id="s-5-7-states"><strong>Trạng thái Artifact Version</strong> (giải quyết BL-03-07): <code>Draft</code> (mới tạo), <code>Accepted</code> (Researcher chấp nhận), <code>Rejected</code>, <code>Superseded</code> (từng accepted, đã có bản accepted mới hơn).</p>

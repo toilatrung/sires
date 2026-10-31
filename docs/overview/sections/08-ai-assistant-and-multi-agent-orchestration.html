@@ -18,17 +18,18 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 08</p><h1>8. Functional Requirements — AI Assistant and Multi-Agent Orchestration</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–7, mục 21.1</p><div class="note"><p>Mục này đặc tả Orchestrator, bảy Specialist Agent, cách chuyển giao kết quả giữa agent, Interactive Agent Prompt, xử lý xung đột và lỗi, và giao diện model không phụ thuộc provider. Vai trò và quyền theo <a href="03-user-roles-and-permissions.html">mục 3</a>; danh sách agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>; entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-9">5.9</a>. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline và 21.1 (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria là <strong>Assumption</strong> trừ khi ghi khác. Các câu hỏi đã đóng được ghi ở <a href="#s-8-oq">8.7</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-8-1">8.1. Orchestrator Responsibilities</a></li>
+<p class="eyebrow">Product Requirements Document · Section 08</p><h1>8. Functional Requirements — AI Assistant and Multi-Agent Orchestration</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–7, mục 21.1</p><div class="note"><p>Mục này đặc tả Orchestrator, tám Specialist Agent (gồm Analysis Agent bổ sung 01/11/2026, DEC-47), phiên thảo luận (8.7), cách chuyển giao kết quả giữa agent, Interactive Agent Prompt, xử lý xung đột và lỗi, và giao diện model không phụ thuộc provider. Vai trò và quyền theo <a href="03-user-roles-and-permissions.html">mục 3</a>; danh sách agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>; entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-9">5.9</a>. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline và 21.1 (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria là <strong>Assumption</strong> trừ khi ghi khác. Các câu hỏi được ghi ở <a href="#s-8-oq">8.8</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-8-1">8.1. Orchestrator Responsibilities</a></li>
 <li><a href="#s-8-2">8.2. Specialist Agent Responsibilities</a></li>
 <li><a href="#s-8-3">8.3. Agent-to-Agent Handoffs</a></li>
 <li><a href="#s-8-4">8.4. Interactive Agent Prompts</a></li>
 <li><a href="#s-8-5">8.5. Conflict and Failure Handling</a></li>
 <li><a href="#s-8-6">8.6. Provider-Agnostic Model Interface</a></li>
-<li><a href="#s-8-oq">8.7. Open Questions của mục 8</a></li>
+<li><a href="#s-8-7">8.7. Agent Deliberation</a></li>
+<li><a href="#s-8-oq">8.8. Open Questions của mục 8</a></li>
 </ul></details>
 
 <h2 id="s-8-0">Mô hình điều phối</h2>
-<p>Orchestrator là điểm vào duy nhất từ chat tới các Specialist Agent. Specialist Agent không giao tiếp trực tiếp với nhau; mọi chuyển giao đi qua Orchestrator dưới dạng kết quả có cấu trúc và tham chiếu entity (8.3). System — không phải agent — thực hiện chuyển trạng thái, kiểm tra quyền, lưu checkpoint và ghi audit (3.4). Mỗi sự kiện điều phối (bắt đầu/kết thúc Agent Run, tool call, handoff, prompt, lỗi) được đẩy lên Agent Activity gần thời gian thực; MVP không streaming từng token đầu ra (chốt — biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</p>
+<p>Orchestrator là điểm vào duy nhất từ chat tới các Specialist Agent. Specialist Agent không giao tiếp trực tiếp với nhau; mọi chuyển giao đi qua Orchestrator dưới dạng kết quả có cấu trúc và tham chiếu entity (8.3). Ngoại lệ có kiểm soát (DEC-47): trong phiên thảo luận (8.7), Orchestrator và các Analysis Agent trao đổi lập trường qua Deliberation Board do System quản lý (14.9); các agent vẫn không nhắn trực tiếp cho nhau, và System kiểm soát bên nào được xem entry nào. System — không phải agent — thực hiện chuyển trạng thái, kiểm tra quyền, lưu checkpoint và ghi audit (3.4). Mỗi sự kiện điều phối (bắt đầu/kết thúc Agent Run, tool call, handoff, prompt, lỗi) được đẩy lên Agent Activity gần thời gian thực; MVP không streaming từng token đầu ra (chốt — biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</p>
 <pre><code>Researcher ─chat/prompt─► Orchestrator ─giao bước─► Specialist Agent
      ▲                         │  ▲                       │
      │                         │  └──── handoff envelope ─┘
@@ -66,18 +67,18 @@
 <h3 id="orch-plan-001">ORCH-PLAN-001 — Lập Plan đề xuất</h3>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline, 6.3–6.4)</td></tr>
-<tr><th scope="row">Purpose</th><td>Tạo Plan Version <code>Draft</code> từ ngữ cảnh và phân tích multi-agent.</td></tr>
-<tr><th scope="row">Actor</th><td>Orchestrator, Specialist Agent, System</td></tr>
+<tr><th scope="row">Purpose</th><td>Tạo Plan Version <code>Draft</code> từ ngữ cảnh và phiên thảo luận giữa Orchestrator và các Analysis Agent (8.7).</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Analysis Agent, Specialist Agent, System</td></tr>
 <tr><th scope="row">Preconditions</th><td>Như WF-01.</td></tr>
 <tr><th scope="row">Trigger</th><td>WF-01.S2.</td></tr>
-<tr><th scope="row">Main Flow</th><td>Theo WF-01.S1–S4. Orchestrator chọn agent phân tích, tổng hợp và đưa kết quả vào PLAN-GENERATE-001.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Theo WF-01.S1–S4. Orchestrator mở phiên thảo luận loại <code>research_direction</code>, <code>plan_structure</code> hoặc <code>methodology</code> (ORCH-DELIB-001); Specialist Agent có thể được giao bước khảo sát đầu vào cho phiên (ví dụ Discovery khảo sát nhanh hướng tài liệu); bản tổng hợp của phiên (ORCH-DELIB-004) được đưa vào PLAN-GENERATE-001. Bổ sung 01/11/2026 (DEC-47).</td></tr>
 <tr><th scope="row">Alternative / Error Flows</th><td>Theo WF-01 A1, E2.</td></tr>
-<tr><th scope="row">Business Rules</th><td>Plan đề xuất phải ghi các bất đồng giữa agent và giả định chưa được xác nhận; không được che bằng một phương án duy nhất.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Plan đề xuất phải ghi các bất đồng giữa agent và giả định chưa được xác nhận; không được che bằng một phương án duy nhất. Plan đề xuất tham chiếu Deliberation Record của phiên; khi Researcher bỏ qua thảo luận, Plan mang nhãn “không qua thảo luận” (ORCH-DELIB-001).</td></tr>
 <tr><th scope="row">Data &amp; State Changes</th><td>Workflow <code>plan_proposal</code>; Plan Version <code>Draft</code>; Artifact note.</td></tr>
 <tr><th scope="row">Acceptance Criteria</th><td><ul>
-<li><strong>ORCH-PLAN-001-AC01</strong> Given hai Specialist Agent đề xuất phương pháp khác nhau, When Plan Version <code>Draft</code> được tạo, Then Plan ghi cả hai phương án và lý do chọn phương án đề xuất.</li>
+<li><strong>ORCH-PLAN-001-AC01</strong> Given hai bên trong phiên thảo luận đề xuất phương pháp khác nhau, When Plan Version <code>Draft</code> được tạo, Then Plan ghi cả hai phương án và lý do chọn phương án đề xuất.</li>
 </ul></td></tr>
-<tr><th scope="row">Dependencies</th><td>WF-01, PLAN-GENERATE-001</td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-01, PLAN-GENERATE-001, ORCH-DELIB-001, ORCH-DELIB-004</td></tr>
 <tr><th scope="row">Open Questions</th><td>OQ-025 (đã giải quyết)</td></tr>
 </tbody></table></div>
 
@@ -142,7 +143,7 @@
 </tbody></table></div>
 
 <h2 id="s-8-2">8.2. Specialist Agent Responsibilities</h2>
-<p class="status">Confirmed (outline, SCOPE-14): bảy vai trò và yêu cầu định nghĩa năng lực, đầu vào, đầu ra, hành động được phép. Nội dung bảng: Assumption (giải quyết SYNC-02).</p>
+<p class="status">Confirmed (outline, SCOPE-14): bảy vai trò ban đầu, thêm Analysis Agent (PO chốt 01/11/2026, DEC-47), và yêu cầu định nghĩa năng lực, đầu vào, đầu ra, hành động được phép. Nội dung bảng: Assumption (giải quyết SYNC-02).</p>
 <h3 id="s-8-2-catalog">Danh mục agent</h3>
 <div class="table-wrap"><table><thead><tr>
 <th scope="col">Agent</th>
@@ -160,6 +161,7 @@
 <tr><td>Synthesis Agent</td><td>Tổng hợp literature review, ma trận so sánh, research gap; tạo claim và liên kết evidence.</td><td>Evidence, claim và artifact <code>Accepted</code></td><td>Claim <code>Draft</code>, Claim–Evidence Link, Artifact Version <code>Draft</code> (synthesis, table)</td><td>Không gọi bên ngoài</td><td>Structured output; context dài</td><td>WF-05</td></tr>
 <tr><td>Writing Agent</td><td>Soạn và sửa section LaTeX theo chỉ dẫn và nguồn đã duyệt.</td><td>File bản thảo liên quan, claim/artifact <code>Accepted</code>, Bibliography Entry</td><td>Change Proposal</td><td>Không gọi bên ngoài</td><td>Structured output; context dài</td><td>WF-05, WF-07.S7</td></tr>
 <tr><td>Verification Agent</td><td>Đánh giá mức hỗ trợ claim, kiểm tra citation, phát hiện mâu thuẫn, theo Ngưỡng kiểm chứng trong Settings cá nhân.</td><td>Claim, evidence, citation, nội dung cần kiểm, Ngưỡng kiểm chứng hiện hành</td><td>Kết quả kiểm chứng (cập nhật mức hỗ trợ), Artifact verification_report</td><td>Gọi công cụ truy xuất nội bộ</td><td>Structured output</td><td>WF-05, WF-03.A1</td></tr>
+<tr><td>Analysis Agent (tối thiểu 2 instance, DEC-47)</td><td>Cùng Orchestrator thảo luận phương án và giải pháp: đề xuất lập trường độc lập, phản biện chéo (8.7).</td><td>Problem Brief, entity trong Context Snapshot của phiên, Deliberation Entry được phép xem</td><td>Deliberation Entry</td><td>Gọi công cụ truy xuất nội bộ ở chế độ chỉ đọc</td><td>Structured output; tool calling</td><td>6.3, 8.7 (WF-01, WF-02, WF-05)</td></tr>
 <tr><td>Diagram Agent</td><td>Tạo và sửa sơ đồ Mermaid (MVP chỉ hỗ trợ Mermaid, 13.2).</td><td>Yêu cầu Task, artifact <code>Accepted</code> liên quan, loại sơ đồ</td><td>Artifact Version <code>Draft</code> loại diagram</td><td>Gọi công cụ kiểm tra cú pháp và render (17.5)</td><td>Structured output</td><td>WF-07</td></tr>
 </tbody></table></div>
 <p>“Hành động không được phép” của từng agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>; phạm vi đọc theo <a href="03-user-roles-and-permissions.html#s-3-3">3.3</a>.</p>
@@ -174,7 +176,7 @@
 <tr><th scope="row">Trigger</th><td>System khởi động; Orchestrator chọn agent cho một bước.</td></tr>
 <tr><th scope="row">Main Flow</th><td>Định nghĩa agent gồm: agentKey, tên hiển thị, mô tả năng lực, loại bước nhận, schema đầu vào, schema đầu ra (entity được tạo), công cụ được gọi, phạm vi đọc context, năng lực model tối thiểu, phiên bản định nghĩa. Orchestrator chỉ giao bước cho agent có năng lực phù hợp trong registry.</td></tr>
 <tr><th scope="row">Alternative / Error Flows</th><td>Đầu ra Agent Run không khớp schema sau khi adapter đã yêu cầu sửa định dạng (INT-PROVIDER-003): Agent Run <code>Failed</code> với mã <code>invalid_response</code>, áp dụng ORCH-FAILURE-001.</td></tr>
-<tr><th scope="row">Business Rules</th><td>Registry trong MVP gồm đúng 8 định nghĩa (Orchestrator + 7). Researcher không sửa được registry; danh sách bảy Specialist Agent cố định, custom agent thuộc FUT-04 (OQ-013 đã giải quyết). Agent Run ghi phiên bản định nghĩa đã dùng.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Registry trong MVP gồm đúng 9 định nghĩa (Orchestrator + 8 Specialist Agent; Analysis Agent bổ sung 01/11/2026, DEC-47). Analysis Agent là một định nghĩa chạy thành tối thiểu hai instance trong mỗi phiên thảo luận (AGENT-ANALYSIS-001). Researcher không sửa được registry; danh sách agent cố định, custom agent thuộc FUT-04 (OQ-013 đã giải quyết). Agent Run ghi phiên bản định nghĩa đã dùng.</td></tr>
 <tr><th scope="row">Data &amp; State Changes</th><td>Agent Run.agentDefinitionVersion.</td></tr>
 <tr><th scope="row">Acceptance Criteria</th><td><ul>
 <li><strong>AGENT-REGISTRY-001-AC01</strong> Given Synthesis Agent trả về đầu ra thiếu trường evidence link bắt buộc, When System nhận kết quả, Then Agent Run <code>Failed</code> với mã <code>invalid_response</code> và không có Claim nào được ghi.</li>
@@ -310,7 +312,7 @@
 <tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
 <tr><th scope="row">Purpose</th><td>Không để Orchestrator lặng lẽ chọn một bên khi các agent hoặc nguồn mâu thuẫn.</td></tr>
 <tr><th scope="row">Actor</th><td>Orchestrator, Researcher</td></tr>
-<tr><th scope="row">Preconditions</th><td>Hai Agent Run cho kết quả mâu thuẫn (ví dụ Synthesis kết luận claim được hỗ trợ, Verification đánh giá Unsupported), hoặc evidence mâu thuẫn.</td></tr>
+<tr><th scope="row">Preconditions</th><td>Hai Agent Run cho kết quả mâu thuẫn (ví dụ Synthesis kết luận claim được hỗ trợ, Verification đánh giá Unsupported), hoặc evidence mâu thuẫn. Khi cách diễn giải mâu thuẫn cần phán đoán, Orchestrator có thể mở phiên thảo luận loại <code>evidence_conflict</code> (8.7) trước khi tạo prompt; kết quả của Verification Agent không bị thảo luận ghi đè (bổ sung 01/11/2026, DEC-47).</td></tr>
 <tr><th scope="row">Trigger</th><td>Orchestrator phát hiện mâu thuẫn khi tổng hợp.</td></tr>
 <tr><th scope="row">Main Flow</th><td>Orchestrator trình bày hai phía kèm tham chiếu → tạo prompt <code>choice</code> với các lựa chọn: chấp nhận một phía, giữ cả hai và đánh dấu <code>Conflicting</code>, hoặc đề xuất follow-up Task (thêm vào Plan qua WF-01).</td></tr>
 <tr><th scope="row">Alternative / Error Flows</th><td>Researcher chưa quyết: kết quả giữ trạng thái <code>Draft</code>; Task có thể vào <code>In Review</code> với mâu thuẫn được nêu rõ.</td></tr>
@@ -422,7 +424,7 @@
 <tr><th scope="row">Trigger</th><td>Researcher mở Settings › Agent Models.</td></tr>
 <tr><th scope="row">Main Flow</th><td><ol>
 <li>Researcher đặt cấu hình <em>default</em> (kết nối + model) áp dụng cho mọi agent.</li>
-<li>Researcher có thể ghi đè cho từng agent trong 8 agent.</li>
+<li>Researcher có thể ghi đè cho từng agent: Orchestrator, từng Specialist Agent và từng instance Analysis Agent (A, B; bổ sung 01/11/2026, DEC-47).</li>
 <li>System so năng lực model (lấy từ provider khi có, hoặc bảng năng lực đã biết) với “Năng lực model cần” của agent (8.2): tool calling, structured output, độ dài context, đầu vào tệp.</li>
 <li>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): thiếu năng lực bắt buộc của agent (tool calling với agent có công cụ; structured output với mọi agent) thì chặn lưu và nêu năng lực thiếu; thiếu năng lực khuyến nghị (độ dài context, đầu vào tệp) thì cảnh báo nhưng vẫn cho lưu.</li>
 </ol></td></tr>
@@ -435,11 +437,199 @@
 <li><strong>AGENT-PROVIDER-003-AC04</strong> Given model có context window nhỏ hơn mức khuyến nghị được gán cho Synthesis Agent, When lưu, Then cấu hình được lưu kèm cảnh báo.</li>
 <li><strong>AGENT-PROVIDER-003-AC03</strong> Given Agent Run đang chạy, When Researcher đổi model của agent đó, Then Agent Run đang chạy giữ model cũ.</li>
 </ul></td></tr>
-<tr><th scope="row">Dependencies</th><td>AGENT-PROVIDER-002, TASK-READINESS-001</td></tr>
+<tr><th scope="row">Dependencies</th><td>AGENT-PROVIDER-002, TASK-READINESS-001, ORCH-DELIB-005</td></tr>
 <tr><th scope="row">Open Questions</th><td>OQ-034 (đã giải quyết)</td></tr>
 </tbody></table></div>
 
-<h2 id="s-8-oq">8.7. Open Questions của mục 8</h2>
+<h2 id="s-8-7">8.7. Agent Deliberation</h2>
+<p class="status">Confirmed — PO chốt 01/11/2026 (DEC-47): Orchestrator vẫn là mô hình điều phối; thêm Analysis Agent, tối thiểu 2 agent, cùng Orchestrator thảo luận phương án và giải pháp cho vấn đề Orchestrator nêu ra; thảo luận theo phiên có cấu trúc trên Deliberation Board (14.9), không chat tự do. Câu chữ và Priority PO duyệt 01/11/2026 (DEC-48); OQ-098–OQ-102 PO chốt cùng ngày theo đề xuất (8.8).</p>
+<p><strong>Thảo luận để làm gì.</strong> Một số vấn đề cần phán đoán và có nhiều phương án hợp lý; một agent duy nhất dễ bỏ sót phương án hoặc rủi ro. Deliberation cho phép Orchestrator và các Analysis Agent đề xuất độc lập, phản biện lẫn nhau, rồi trình Researcher bản tổng hợp gồm đồng thuận, bất đồng và đánh đổi. Researcher là người quyết định (3.1); thảo luận không thay phê duyệt APR.</p>
+
+<h3 id="s-8-7-topics">Vấn đề được và không được đưa ra thảo luận</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Loại vấn đề (problemType)</th>
+<th scope="col">Ví dụ</th>
+<th scope="col">Nơi phát sinh</th>
+</tr></thead><tbody>
+<tr><td><code>research_direction</code> — định hướng và phạm vi nghiên cứu</td><td>Câu hỏi nghiên cứu quá rộng thì thu hẹp theo hướng nào; đề tài có khả thi với nguồn lực của Researcher không.</td><td>6.2, 6.3</td></tr>
+<tr><td><code>plan_structure</code> — cấu trúc Plan</td><td>Chia phase, thứ tự Task, Task nào nên gắn <code>Manual editor requirement</code>.</td><td>6.3, 6.4, WF-01</td></tr>
+<tr><td><code>methodology</code> — phương pháp luận</td><td>Định tính hay định lượng, khung lý thuyết, cách chọn mẫu, tiêu chí lọc tài liệu.</td><td>6.3, 6.7</td></tr>
+<tr><td><code>evidence_conflict</code> — mâu thuẫn bằng chứng</td><td>Hai nhóm nguồn kết luận ngược nhau thì diễn giải và trình bày thế nào.</td><td>WF-05.A1, ORCH-CONFLICT-001</td></tr>
+<tr><td><code>recovery_option</code> — sự cố có nhiều cách xử lý</td><td>Task bị chặn hoặc thiếu evidence: tìm thêm tài liệu, đổi phạm vi hay hạ mức kết luận.</td><td>WF-02, WF-05.A2</td></tr>
+<tr><td><code>major_change_impact</code> — tác động của thay đổi lớn</td><td>Đánh giá tác động của thay đổi MC-01–MC-08 trước khi trình Researcher.</td><td>9.11</td></tr>
+</tbody></table></div>
+<p><strong>Không đưa ra thảo luận:</strong> (1) workflow cố định như indexing, reference_processing; (2) câu hỏi về sự kiện — phải tra bằng RAG (11.2) và kiểm chứng bằng Verification Agent, không quyết bằng tranh luận; (3) mọi hành động APR-01–APR-10; (4) việc ghi entity chính thức (Trusted Reference, Evidence, Claim, Plan Version, Change Proposal).</p>
+
+<h3 id="s-8-7-flow">Quy trình phiên thảo luận</h3>
+<pre><code>Vòng 0  Orchestrator ── Problem Brief ──► Deliberation Board (14.9) + Context Snapshot
+Vòng 1  Orchestrator │ Analysis Agent A │ Analysis Agent B   ← song song, lập trường bị ẩn với nhau
+Vòng 2  mỗi bên đọc lập trường của hai bên kia ─► phản biện chéo (song song)
+        [vòng hẹp tùy chọn: chỉ cho một điểm bất đồng giải quyết được bằng thêm thông tin]
+Vòng 3  Orchestrator tổng hợp ─► Deliberation Record (artifact) + prompt choice ─► Researcher quyết định</code></pre>
+<p class="status">FIG-034 — Quy trình phiên thảo luận. Nguồn: <a href="../figures/FIG-034-deliberation-flow.mmd">figures/FIG-034-deliberation-flow.mmd</a>.</p>
+
+<h3 id="agent-analysis-001">AGENT-ANALYSIS-001 — Analysis Agent</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Có ít nhất hai góc nhìn độc lập với Orchestrator khi phân tích phương án và giải pháp.</td></tr>
+<tr><th scope="row">Actor</th><td>Analysis Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Mỗi phiên bản (instance) Analysis Agent tham gia có Agent Model Assignment hợp lệ (AGENT-PROVIDER-003).</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator mở phiên thảo luận (ORCH-DELIB-001).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Registry có một định nghĩa Analysis Agent; mỗi phiên thảo luận dùng tối thiểu hai instance, định danh <em>Analysis Agent A</em>, <em>Analysis Agent B</em>.</li>
+<li>Mỗi instance nhận Problem Brief, context lắp ráp từ Context Snapshot (CTX-SNAPSHOT-001) và góc nhìn được giao (ORCH-DELIB-005).</li>
+<li>Instance ghi lập trường, phản biện hoặc phát hiện lên Deliberation Board dưới dạng Deliberation Entry có cấu trúc (ORCH-DELIB-003).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Agent Run của một instance lỗi: áp dụng ORCH-FAILURE-001 cho Agent Run đó; xử lý phiên khi thiếu lập trường theo ORCH-DELIB-002.</td></tr>
+<tr><th scope="row">Business Rules</th><td><ul>
+<li><strong>Đầu ra duy nhất</strong> là Deliberation Entry. Analysis Agent không tạo Reference, Evidence, Claim, Artifact chính thức, Plan Version hay Change Proposal; không thực hiện hành động APR; không gọi dịch vụ bên ngoài.</li>
+<li><strong>Phạm vi đọc</strong> (3.3): Problem Brief, các entity trong Context Snapshot của phiên, Deliberation Entry mà nó được phép xem (CTX-BOARD-002); được gọi công cụ truy xuất nội bộ (11.2) ở chế độ chỉ đọc trên Trusted Reference đã index của project. Không đọc Discovered Result làm nguồn, không đọc Provider Connection.</li>
+<li>Số instance tối thiểu là 2 (DEC-47). MVP dùng đúng 2 instance (OQ-098, DEC-48).</li>
+</ul></td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run (agentKey <code>analysis</code>, instance A/B); Deliberation Entry.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-ANALYSIS-001-AC01</strong> Given phiên thảo luận được mở, When Vòng 1 bắt đầu, Then có ít nhất hai Agent Run của Analysis Agent với instance khác nhau, cùng một Agent Run của Orchestrator.</li>
+<li><strong>AGENT-ANALYSIS-001-AC02</strong> Given Analysis Agent đang chạy, When nó yêu cầu tạo Claim hoặc sửa Plan Version, Then yêu cầu bị từ chối (AGENT-SCOPE-001) và Audit Event được ghi.</li>
+<li><strong>AGENT-ANALYSIS-001-AC03</strong> Given Analysis Agent B, When context của Agent Run được lắp ráp, Then context manifest chỉ chứa entity thuộc Context Snapshot của phiên và không chứa Discovered Result hay entity của project khác.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>SCOPE-14, 3.3, AGENT-REGISTRY-001, AGENT-SCOPE-001, CTX-SNAPSHOT-001, CTX-BOARD-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-098</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delib-001">ORCH-DELIB-001 — Mở phiên thảo luận và Problem Brief</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47); cách kích hoạt: Confirmed — PO chốt 01/11/2026 (OQ-099, DEC-48)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi bên thảo luận cùng một vấn đề, cùng ràng buộc và cùng tiêu chí đánh giá.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Vấn đề thuộc một problemType ở <a href="#s-8-7-topics">bảng trên</a>; project <code>Active</code>; các Analysis Agent tham gia có cấu hình hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator gặp vấn đề thuộc danh sách trong một workflow (ví dụ 6.3), hoặc Researcher yêu cầu thảo luận một vấn đề trong Project AI Chat.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator lập Problem Brief: vấn đề cần giải quyết; problemType; tham chiếu context (Research Context, Plan, Task, entity liên quan); ràng buộc; tiêu chí đánh giá (ví dụ khả thi, chặt chẽ về phương pháp, đủ evidence, thời gian); phương án đã biết nếu có.</li>
+<li>System kiểm tra Problem Brief đủ trường và problemType hợp lệ, tạo Deliberation <code>Running</code>, tạo Context Snapshot (CTX-SNAPSHOT-001) và ghi Problem Brief làm entry đầu tiên trên Deliberation Board.</li>
+<li>Phiên chạy như một Workflow Step loại <code>deliberation</code> trong workflow hiện hành; khi Researcher yêu cầu từ chat, System tạo Workflow loại <code>deliberation</code>.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul>
+<li>Vấn đề thuộc nhóm không được thảo luận: System từ chối mở phiên, Orchestrator nêu lý do và hướng xử lý (ví dụ chạy WF-05 để tra evidence).</li>
+<li>Analysis Agent thiếu cấu hình hợp lệ: không mở phiên; Orchestrator báo cấu hình còn thiếu và Researcher chọn cấu hình lại hoặc tiếp tục không thảo luận.</li>
+</ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Researcher được bỏ qua thảo luận cho một vấn đề, hoặc yêu cầu mở thảo luận cho vấn đề Orchestrator không đề xuất. Kết quả không qua thảo luận được ghi nhãn “không qua thảo luận”. Chốt (OQ-099, DEC-48): Orchestrator đề xuất mở phiên và Researcher xác nhận trước khi phiên chạy, trừ bước phân tích của 6.3 được mở trong workflow <code>plan_proposal</code> mà không cần xác nhận riêng.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation <code>Running</code>; Context Snapshot; Deliberation Entry loại <code>problem_brief</code>; Workflow Step <code>deliberation</code>; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELIB-001-AC01</strong> Given workflow <code>plan_proposal</code> đến bước phân tích, When Orchestrator mở phiên, Then Deliberation <code>Running</code> có Problem Brief đủ trường và Context Snapshot được tạo trước Agent Run đầu tiên của Vòng 1.</li>
+<li><strong>ORCH-DELIB-001-AC02</strong> Given Researcher hỏi “bài báo X có kết luận Y không”, When Orchestrator xử lý, Then không có phiên thảo luận nào được mở vì đây là câu hỏi về sự kiện.</li>
+<li><strong>ORCH-DELIB-001-AC03</strong> Given Researcher chọn bỏ qua thảo luận, When Orchestrator đưa ra phương án, Then kết quả mang nhãn “không qua thảo luận” và Audit Event ghi lựa chọn bỏ qua.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>6.3, WF-01, CTX-SNAPSHOT-001, CTX-BOARD-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-099</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delib-002">ORCH-DELIB-002 — Các vòng thảo luận và điều kiện dừng</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Thảo luận có phản biện thật nhưng có giới hạn về số vòng, thời gian và chi phí.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Analysis Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Deliberation <code>Running</code> có Problem Brief.</td></tr>
+<tr><th scope="row">Trigger</th><td>ORCH-DELIB-001 hoàn tất.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li><strong>Vòng 1 — đề xuất độc lập:</strong> Orchestrator và mọi Analysis Agent viết lập trường đồng thời; lập trường của mỗi bên bị ẩn với các bên còn lại (CTX-BOARD-002). Vòng đóng khi mọi bên đã ghi lập trường <code>final</code>.</li>
+<li><strong>Vòng 2 — phản biện chéo:</strong> mỗi bên đọc lập trường của các bên kia và trả lời theo từng điểm: đồng ý, phản đối kèm lý do, hoặc bổ sung thông tin; được sửa lập trường theo ORCH-DELIB-003. Các bên chạy đồng thời.</li>
+<li><strong>Vòng hẹp (tùy chọn):</strong> khi một điểm bất đồng có thể giải quyết bằng thêm thông tin, Orchestrator mở một vòng chỉ cho điểm đó.</li>
+<li><strong>Tổng hợp:</strong> chuyển sang ORCH-DELIB-004.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul>
+<li>Agent Run của một bên lỗi sau khi đã thử lại theo ORCH-FAILURE-001: phiên chỉ tiếp tục khi còn ít nhất hai lập trường từ Analysis Agent cùng lập trường của Orchestrator; nếu không, Deliberation <code>Failed</code> và Orchestrator tạo prompt <code>choice</code>: chạy lại phiên, hoặc tiếp tục không thảo luận.</li>
+<li>Workflow bị gián đoạn: khôi phục theo CTX-BOARD-001; vòng đã đóng được giữ, vòng dở chỉ chạy lại Agent Run của bên chưa có entry <code>final</code>.</li>
+<li>Researcher hủy workflow: Deliberation <code>Cancelled</code>; entry đã ghi được giữ để xem lại.</li>
+</ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Dừng khi một trong các điều kiện xảy ra: các bên đồng thuận; hết số vòng tối đa — mặc định 2 vòng sau Vòng 1 (Vòng 2 và một vòng hẹp), cấu hình ở cấp hệ thống, tính vào giới hạn chống vòng lặp của workflow (RISK-07); bất đồng chỉ còn là lựa chọn giá trị, để Researcher quyết. Agent Run chạy song song vẫn tuân theo giới hạn tốc độ của Provider Connection; thời gian chờ do giới hạn này hiển thị ở Agent Activity. Tổng usage của phiên (token, chi phí theo provider trả về) được cộng dồn và hiển thị (NFR-USAGE-001).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation.currentRound; Deliberation Entry; Agent Run; Deliberation <code>Failed</code>/<code>Cancelled</code> khi có lỗi hoặc hủy.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELIB-002-AC01</strong> Given phiên có Orchestrator và hai Analysis Agent, When Vòng 1 chạy, Then ba Agent Run được khởi động mà không Agent Run nào chờ Agent Run khác hoàn tất, trừ khi bị giới hạn tốc độ của Provider Connection.</li>
+<li><strong>ORCH-DELIB-002-AC02</strong> Given cấu hình mặc định, When các bên vẫn bất đồng sau Vòng 2 và một vòng hẹp, Then không có vòng phản biện thứ tư và phiên chuyển sang tổng hợp với bất đồng được giữ.</li>
+<li><strong>ORCH-DELIB-002-AC03</strong> Given Analysis Agent B lỗi ở Vòng 1 sau khi đã thử lại và phiên chỉ có hai Analysis Agent, When System xử lý, Then Deliberation <code>Failed</code> và Researcher nhận prompt chạy lại hoặc tiếp tục không thảo luận.</li>
+<li><strong>ORCH-DELIB-002-AC04</strong> Given workflow gián đoạn giữa Vòng 2 khi Analysis Agent A đã ghi phản biện <code>final</code>, When khôi phục, Then chỉ Agent Run của các bên chưa có phản biện <code>final</code> được chạy lại.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>ORCH-FAILURE-001, CTX-BOARD-001, CTX-BOARD-002, CTX-RECOVERY-001, NFR-USAGE-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delib-003">ORCH-DELIB-003 — Quy tắc lập trường và phản biện</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Lập trường so sánh được, có căn cứ, và không đổi chỉ để chiều theo bên khác.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Analysis Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Deliberation <code>Running</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Một bên ghi Deliberation Entry loại <code>position</code> hoặc <code>critique</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Lập trường (<code>position</code>) theo mẫu cố định: phương án đề xuất; lý do theo từng tiêu chí của Problem Brief; giả định; rủi ro; tham chiếu nguồn; độ tin cậy (thấp, trung bình, cao).</li>
+<li>Phản biện (<code>critique</code>) trỏ tới từng điểm của lập trường bị phản biện, với một trong ba loại: đồng ý, phản đối kèm lý do, bổ sung thông tin.</li>
+<li>System kiểm tra entry đúng schema trước khi ghi; sai schema thì áp dụng như đầu ra không hợp lệ (AGENT-REGISTRY-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Nhận định về tài liệu không có tham chiếu Trusted Reference hoặc Evidence: System không từ chối entry nhưng gắn nhãn <em>giả định</em> cho nhận định đó, và nhãn được giữ trong bản tổng hợp.</td></tr>
+<tr><th scope="row">Business Rules</th><td><ul>
+<li>Đổi lập trường phải tạo entry mới trỏ về entry cũ (<code>supersedes</code>) và ghi lập luận hoặc thông tin mới dẫn tới thay đổi; không có lý do thì System từ chối entry đổi lập trường.</li>
+<li>Lập trường của Orchestrator được gắn nhãn tác giả như các bên khác; Orchestrator không có quyền phân xử cuối cùng.</li>
+<li>Tham chiếu nguồn chỉ được trỏ tới Trusted Reference, Evidence, Claim hoặc artifact của project; không trỏ tới Discovered Result.</li>
+</ul></td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation Entry (<code>position</code>, <code>critique</code>) với <code>supersedes</code>, nhãn giả định.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELIB-003-AC01</strong> Given Analysis Agent A nêu “phương pháp X phổ biến trong lĩnh vực” mà không có tham chiếu, When entry được ghi, Then nhận định mang nhãn giả định trên board và trong bản tổng hợp.</li>
+<li><strong>ORCH-DELIB-003-AC02</strong> Given Analysis Agent B ở Vòng 2 đổi phương án đề xuất nhưng không nêu lý do, When ghi entry, Then entry bị từ chối và lập trường cũ vẫn có hiệu lực.</li>
+<li><strong>ORCH-DELIB-003-AC03</strong> Given một critique, When xem trên Agent Activity, Then thấy điểm bị phản biện, loại phản hồi và tác giả.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>AGENT-REGISTRY-001, CTX-BOARD-001, 11.2</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delib-004">ORCH-DELIB-004 — Tổng hợp và chuyển Researcher quyết định</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher thấy đầy đủ đồng thuận, bất đồng và đánh đổi trước khi quyết định.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, System, Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Điều kiện dừng của ORCH-DELIB-002 xảy ra.</td></tr>
+<tr><th scope="row">Trigger</th><td>Vòng cuối đóng.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator viết bản tổng hợp: điểm đồng thuận; bất đồng còn lại kèm lập trường của từng bên; bảng phương án và đánh đổi theo tiêu chí của Problem Brief; khuyến nghị kèm lý do; câu hỏi cho Researcher.</li>
+<li>System kiểm tra bản tổng hợp tham chiếu lập trường cuối cùng của mọi bên và không bỏ sót điểm nào đang bị phản đối; thiếu thì từ chối và yêu cầu Orchestrator viết lại.</li>
+<li>System lưu Deliberation Record (Artifact Version <code>Draft</code> loại <code>deliberation_record</code>) gồm Problem Brief, toàn bộ entry và bản tổng hợp; Deliberation → <code>Completed</code>.</li>
+<li>Orchestrator tạo prompt <code>choice</code> (PROMPT-LIFECYCLE-001) với các phương án và lựa chọn đề xuất; Researcher chọn → Context Item <em>decision</em>; workflow tiếp tục theo lựa chọn.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Context Snapshot đã lỗi thời khi tổng hợp (CTX-SNAPSHOT-001): bản tổng hợp nêu rõ entity đã thay đổi; prompt có thêm lựa chọn chạy lại phiên trên context mới.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không ép bất đồng thành đồng thuận. Kết quả thảo luận không tự ghi vào Plan, Claim hay Manuscript; với 6.3, bản tổng hợp là đầu vào cho Plan Version <code>Draft</code> (ORCH-PLAN-001). Lựa chọn của Researcher không thay phê duyệt APR khi bước sau cần APR.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Deliberation Entry loại <code>synthesis</code>; Artifact Version <code>Draft</code> loại <code>deliberation_record</code>; Deliberation <code>Completed</code>; prompt <code>choice</code>; Context Item <em>decision</em>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELIB-004-AC01</strong> Given Analysis Agent B vẫn phản đối phương án của Orchestrator sau vòng cuối, When bản tổng hợp được lưu, Then bất đồng của B xuất hiện cùng lý do, và prompt <code>choice</code> có phương án của B.</li>
+<li><strong>ORCH-DELIB-004-AC02</strong> Given bản tổng hợp không nhắc tới một critique đang phản đối, When System kiểm tra, Then bản tổng hợp bị từ chối và Deliberation chưa <code>Completed</code>.</li>
+<li><strong>ORCH-DELIB-004-AC03</strong> Given phiên hoàn tất, When Researcher mở Deliberation Record, Then thấy Problem Brief, lập trường và phản biện của từng bên theo vòng, bản tổng hợp và lựa chọn đã chọn.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>PROMPT-LIFECYCLE-001, ORCH-PLAN-001, ORCH-CONFLICT-001, CTX-SNAPSHOT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-101</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delib-005">ORCH-DELIB-005 — Đa dạng góc nhìn và gán model cho Analysis Agent</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 (PO duyệt 01/11/2026, DEC-48) · Confirmed — PO chốt 01/11/2026 (DEC-47) về yêu cầu các bên khác nhau thật; cách giao góc nhìn và chính sách provider: Confirmed — PO chốt 01/11/2026 (OQ-100, OQ-102, DEC-48)</td></tr>
+<tr><th scope="row">Purpose</th><td>Giảm khả năng các bên sai giống nhau.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Researcher đã gán model cho các instance Analysis Agent trong Settings › Agent Models.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher lưu cấu hình Agent Models; Orchestrator mở phiên.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Mỗi instance Analysis Agent có Agent Model Assignment riêng (AGENT-PROVIDER-003).</li>
+<li>Khi mở phiên, mỗi instance nhận một góc nhìn ghi trong Problem Brief, ví dụ: một bên xây dựng phương án, một bên tìm rủi ro và phương án thay thế.</li>
+<li>System cảnh báo khi hai instance dùng cùng provider và cùng model, ở Settings và trong Deliberation Record.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher chỉ có một Provider Connection <code>Valid</code>: vẫn cho lưu, kèm cảnh báo.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Cảnh báo không chặn lưu. Orchestrator giao góc nhìn theo từng vấn đề (OQ-100). Không bắt buộc khác provider (OQ-102). PO chốt 01/11/2026 (DEC-48).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Model Assignment theo instance; Problem Brief.perspectives; cảnh báo trong Deliberation Record.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELIB-005-AC01</strong> Given Analysis Agent A và B cùng gán một model của OpenAI, When Researcher lưu, Then cấu hình được lưu kèm cảnh báo, và Deliberation Record của phiên sau ghi cảnh báo này.</li>
+<li><strong>ORCH-DELIB-005-AC02</strong> Given phiên được mở, When xem Problem Brief, Then mỗi Analysis Agent có một góc nhìn được ghi rõ.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>AGENT-PROVIDER-003, SCOPE-13</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-100, OQ-102</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-oq">8.8. Open Questions của mục 8</h2>
 <div class="table-wrap"><table><thead><tr>
 <th scope="col">Mã</th>
 <th scope="col">Câu hỏi</th>
@@ -449,6 +639,11 @@
 <tr><td>OQ-033</td><td>Agent Activity có hiển thị đầu ra của agent theo thời gian thực (streaming), hay chỉ cập nhật khi mỗi bước kết thúc? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> cập nhật gần thời gian thực theo sự kiện (bắt đầu/kết thúc Agent Run, tool call, prompt, lỗi); không streaming từng token trong MVP; PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-12, 15, 16.3</td></tr>
 <tr><td>OQ-034</td><td>Khi model được gán thiếu năng lực agent cần: chỉ cảnh báo (đề xuất hiện tại) hay chặn lưu cấu hình? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> chặn khi thiếu năng lực bắt buộc (tool calling, structured output); chỉ cảnh báo khi thiếu năng lực khuyến nghị; PO duyệt 31/10/2026 (PC-01).</td><td>AGENT-PROVIDER-003, 17.1</td></tr>
 <tr><td>OQ-035</td><td>Khi context vượt giới hạn model: chỉ lược bỏ theo thứ tự ưu tiên (đề xuất hiện tại), hay cho phép tóm tắt tự động bằng model? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> cắt theo thứ tự ưu tiên ở 14.2 và dùng tóm tắt đã có; không gọi thêm model để tóm tắt khi lắp ráp; PO duyệt 31/10/2026 (PC-01).</td><td>ORCH-DELEGATE-001, 14.2</td></tr>
+<tr><td id="oq-098">OQ-098</td><td>Số Analysis Agent trong một phiên: cố định 2, hay tối thiểu 2 và Researcher thêm được? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: đúng 2 instance.</td><td>AGENT-ANALYSIS-001, SCOPE-14, 15.12</td></tr>
+<tr><td id="oq-099">OQ-099</td><td>Phiên thảo luận tự mở theo danh sách problemType, hay chỉ mở khi Orchestrator đề xuất và Researcher đồng ý (chi phí tính trên API key của Researcher)? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: Researcher xác nhận, trừ bước phân tích của 6.3.</td><td>ORCH-DELIB-001, 6.3, 16.6</td></tr>
+<tr><td id="oq-100">OQ-100</td><td>Góc nhìn của từng Analysis Agent cố định (ví dụ A xây dựng, B phản biện), hay Orchestrator giao theo từng vấn đề? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: Orchestrator giao theo vấn đề.</td><td>ORCH-DELIB-005</td></tr>
+<tr><td id="oq-101">OQ-101</td><td>Researcher xem thảo luận trực tiếp trong lúc phiên chạy, hay chỉ xem khi phiên kết thúc? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: entry hiển thị ở Agent Activity khi vòng chứa nó đóng.</td><td>ORCH-DELIB-004, CTX-BOARD-002, 15.10</td></tr>
+<tr><td id="oq-102">OQ-102</td><td>Ưu tiên đa dạng (hai Analysis Agent khác provider) hay chi phí (cùng provider, tận dụng prompt caching của provider)? <strong>Đã đóng 01/11/2026 (DEC-48):</strong> PO chốt theo đề xuất: không bắt buộc khác provider; System cảnh báo khi cùng model.</td><td>ORCH-DELIB-005, 16.6</td></tr>
 </tbody></table></div>
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="07-workspace-and-project.html">← Mục 7</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="09-research-plan-and-task-management.html">Mục 9 →</a></nav>
 </main>

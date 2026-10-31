@@ -2,8 +2,8 @@
 
 Tên chính thức (DEC-43, 31/10/2026): **SIRes (Super Intelligence Researcher)**, thuộc nền tảng eTroy, phát triển bởi đội ngũ SWE, GEN AI, AIE và PO của eTroy.
 
-Cập nhật: 31/10/2026 (Asia/Saigon).
-Phiên bản: 1.0 — PO duyệt qua phiếu chốt PC-01 (31/10/2026); cả 22 section Đã hoàn thành.
+Cập nhật: 01/11/2026 (Asia/Saigon).
+Phiên bản: 1.0 — PO duyệt qua phiếu chốt PC-01 (31/10/2026). Ngày 01/11/2026 bổ sung DEC-47 (Analysis Agent, phiên thảo luận), PO duyệt cùng ngày (DEC-48); cả 22 section Đã hoàn thành.
 
 ## Quyền ghi
 
@@ -38,6 +38,8 @@ Nguồn quyết định chính: mục 21.1 trong PRD.
 - Nhãn Available for agent và Manual editor requirement.
 - LaTeX khởi tạo Default hoặc Blank.
 - Multi-agent độc lập provider, có shared context.
+- (01/11/2026, DEC-47) Orchestrator vẫn là mô hình điều phối; thêm Analysis Agent (tối thiểu 2 instance) cùng Orchestrator thảo luận phương án và giải pháp cho vấn đề Orchestrator nêu ra. Thảo luận theo phiên có cấu trúc: Vòng 1 đề xuất độc lập (lập trường bị ẩn với nhau), Vòng 2 phản biện chéo, vòng hẹp tùy chọn, Orchestrator tổng hợp giữ nguyên bất đồng, Researcher chọn qua prompt. Chỉ thảo luận vấn đề cần phán đoán (định hướng, cấu trúc Plan, phương pháp, mâu thuẫn bằng chứng, cách xử lý sự cố, tác động thay đổi lớn); không thảo luận câu hỏi về sự kiện, APR, ghi entity chính thức. Chia sẻ ngữ cảnh qua Deliberation Board bền vững, chỉ ghi thêm, và Context Snapshot; board cho phép bước song song dùng kết quả trung gian, đầu ra chính thức chỉ dựa trên entry final. Kho bền vững là nguồn sự thật, cache chỉ tăng tốc. OQ-098–OQ-102 PO chốt theo đề xuất (DEC-48): đúng 2 Analysis Agent; Researcher xác nhận trước khi phiên chạy, trừ bước phân tích 6.3; Orchestrator giao góc nhìn theo vấn đề; entry hiển thị cho Researcher khi vòng đóng; không bắt buộc khác provider, cảnh báo khi cùng model.
+- (01/11/2026, DEC-48) PO duyệt câu chữ bổ sung DEC-47 và Priority 13 requirement mới: 9 P0, 4 P1 (tổng 269: 176 P0, 92 P1, 1 P2).
 - (29/10/2026) Có giao diện giám sát, theo dõi các agent phối hợp làm việc (human-in-the-loop) — SCOPE-12.
 - (29/10/2026) Settings MVP: thông tin cá nhân; tùy chỉnh URL và API key cho Orchestrator và từng Specialist Agent; tối thiểu Claude, OpenAI, Gemini — SCOPE-13.
 - (29/10/2026, OQ-001) Giảm hallucination bằng RAG trên Trusted Reference được index vào vector database (PRB-03).
@@ -115,16 +117,17 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 
 ## Công việc đang thực hiện
 
-PRD v1.0 (31/10/2026): cả 22 section Đã hoàn thành; mục 16 được bổ sung 16.10 Evaluation và Eval Trace và PO duyệt cùng ngày (DEC-45, DEC-46); Priority 256 requirement (167 P0, 88 P1, 1 P2). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
+01/11/2026: bổ sung DEC-47 vào PRD — 8.7 Agent Deliberation (AGENT-ANALYSIS-001, ORCH-DELIB-001–005), 14.9 Deliberation Board and Context Snapshot (CTX-SNAPSHOT-001, CTX-BOARD-001–003), UX-MONITOR-006–007, NFR-USAGE-005, FIG-034, TS-02-06–09, TS-11-06–08, đồng bộ SYNC-12; 13 requirement mới, Priority 9 P0, 4 P1; PO duyệt và chốt OQ-098–OQ-102 cùng ngày (DEC-48). Chưa đồng bộ docs/architecture, docs/api-design, docs/ui-design. PRD v1.0 (31/10/2026): cả 22 section Đã hoàn thành; mục 16 được bổ sung 16.10 Evaluation và Eval Trace và PO duyệt cùng ngày (DEC-45, DEC-46); Priority 256 requirement (167 P0, 88 P1, 1 P2). Trước đó cả 22 section Đã hoàn thành; Priority đã duyệt (DEC-44). Toàn bộ OQ (OQ-001–OQ-095, trừ mã không cấp) đã đóng. Phiếu chốt: [overview/phieu-chot-backlog.html](overview/phieu-chot-backlog.html) (bản PO xuất: phieu-chot-backlog-2026-10-31-PC-01.md). Chưa chọn technology stack; 17 figure source Mermaid chưa có ảnh xuất.
 
 ## Bước tiếp theo
 
+1. Đồng bộ DEC-47/DEC-48 sang docs/architecture (mục 5, 6, ADR mới), docs/api-design (internal/orchestration.yaml, events/asyncapi.yaml) và docs/ui-design (màn Workflow: chế độ xem thảo luận; Settings › Agent Models: Analysis Agent A/B).
 1. PO xác nhận cách hiểu ASM-13–ASM-16 (eTroy OIDC, URL hồ sơ Scholar, Ngưỡng kiểm chứng, FUT-05); kiểm tra INT-OIDC-001–004 với repo eTroy_OIDC.
-2. Câu hỏi mới phát sinh cấp mã từ OQ-098; chỉ ghi “Đã duyệt” khi PO duyệt rõ.
+2. Câu hỏi mới phát sinh cấp mã từ OQ-103; quyết định mới từ DEC-49; rủi ro từ RISK-12; figure từ FIG-035; chỉ ghi “Đã duyệt” khi PO duyệt rõ.
 
 ## Câu hỏi mở và giả định
 
-- Không còn OQ mở (OQ-096, OQ-097 đã chốt 31/10/2026, DEC-45). Giả định kỹ thuật cần kiểm chứng: ASM-01–ASM-16 (21.2), đặc biệt ASM-01 (Scholar), ASM-13 (eTroy OIDC).
+- Không còn OQ mở: OQ-098–OQ-102 PO chốt 01/11/2026 (DEC-48). OQ-096, OQ-097 đã chốt 31/10/2026 (DEC-45). Giả định kỹ thuật cần kiểm chứng: ASM-01–ASM-16 (21.2), đặc biệt ASM-01 (Scholar), ASM-13 (eTroy OIDC).
 - Chưa chốt technology stack, build toolchain cụ thể và vùng lưu trữ dữ liệu (DEC-27).
 
 ## Nhật ký
@@ -136,6 +139,8 @@ PRD v1.0 (31/10/2026): cả 22 section Đã hoàn thành; mục 16 được bổ
 - 29/10/2026: Người dùng duyệt mục 2 (OQ-006–015 vẫn mở). Đã viết chi tiết mục 3: bốn actor (Researcher, Orchestrator, Specialist Agent, System), nguyên tắc “agent đề xuất, System kiểm soát, Researcher quyết định”, quyền phê duyệt độc quyền APR-01–10, được phép/không được phép của Orchestrator, phạm vi đọc/tạo của 7 Specialist Agent, cách ly project/task, artifact draft/accepted, thẩm quyền phê duyệt, permission matrix R/C/E/A/X/V/D với c* cho bản đề xuất, OQ-016–019. Thêm mã APR.
 - 29/10/2026: Theo yêu cầu người dùng, tạo overview/back-log.html: định nghĩa DONE-1/2/3, tổng quan tiến độ, nhóm Đã hoàn thành (chưa có), nhóm Đang thực hiện (mục 1, 2, 3 với 24 việc BL), sổ OQ-001–019, SYNC-01–07, danh sách section chưa bắt đầu, hướng dẫn và mẫu cập nhật. Cập nhật “Hướng biên soạn tiếp theo” ở index (trước đó còn ghi bắt đầu từ mục 5) và thêm liên kết backlog.
 - 29/10/2026: Xử lý tồn đọng mục 1 theo backlog: đồng bộ glossary 1.5 (System, Provider Connection, 7 Specialist Agent, artifact draft/accepted, RAG) và bảng mã ID 1.6 (SCOPE/OOS/FUT, APR, KPI, BL/SYNC); PO trả lời OQ-001–005, nội dung mục 1 và 21.1 cập nhật theo; thêm SYNC-08–11 trong backlog.
+- 01/11/2026: PO chốt DEC-47 trong phiên làm việc (Analysis Agent tối thiểu 2, cùng Orchestrator thảo luận theo phiên có cấu trúc; chia sẻ ngữ cảnh qua Deliberation Board và Context Snapshot; cho phép làm việc song song). Trên nhánh docs/analysis-agent-deliberation: viết 8.7 (AGENT-ANALYSIS-001, ORCH-DELIB-001–005) và 14.9 (CTX-SNAPSHOT-001, CTX-BOARD-001–003); Analysis Agent là Specialist Agent thứ tám (registry 9 định nghĩa); đồng bộ 1.5 (thuật ngữ deliberation), 2 (SCOPE-12–14), 3.3/3.5, 5.5, 6.3/WF-01, 15.10 (UX-MONITOR-006–007), UX-SETTINGS-003, 16.6 (NFR-USAGE-005), 18 (enum, schema, state), 19 (TS-02-06–09, TS-11-06–08), 21 (DEC-47, OQ-098–102, RISK-11), 22 (phụ lục A, C, E, G); tạo figures/FIG-034-deliberation-flow.mmd; backlog mở lại mục 8, 14 (BL-08-01–03, BL-14-01–02, SYNC-12); index cập nhật và thay mục “16.10 chưa được duyệt” đã lỗi thời (16.10 đã duyệt theo DEC-46). Điểm PO chưa chốt ghi thành OQ, không tự quyết.
+- 01/11/2026: PO duyệt toàn bộ bổ sung DEC-47 và chốt OQ-098–OQ-102 theo đề xuất (DEC-48). Cập nhật trạng thái ở 1, 5, 8, 14, 15, 16, 21, 22, FIG-034, backlog (mục 8, 14 trở lại Đã hoàn thành), index.
 
 ## Kiểm tra bộ khung
 

@@ -27,6 +27,7 @@
 <tr><td>P1</td><td>NFR-AVAIL-001; NFR-PERF-001–007; NFR-SCALE-001, NFR-SCALE-002, NFR-SCALE-003; NFR-OBS-001, NFR-OBS-003, NFR-OBS-004, NFR-OBS-005; NFR-USAGE-001, NFR-USAGE-002, NFR-USAGE-003; NFR-MAINT-001, NFR-MAINT-002, NFR-MAINT-004, NFR-MAINT-005; NFR-RET-004, NFR-RET-005, NFR-RET-006, NFR-RET-007, NFR-RET-009; NFR-KPI-001</td></tr>
 <tr><td>P2</td><td>NFR-USAGE-004 (giới hạn ngân sách và dashboard hạn mức thuộc FUT-05)</td></tr>
 <tr><td>P1</td><td>NFR-OBS-006; NFR-EVAL-001–NFR-EVAL-004 (bổ sung 31/10/2026 sau PC-01; PO duyệt Priority P1, DEC-46)</td></tr>
+<tr><td>P1 (PO duyệt 01/11/2026, DEC-48)</td><td>NFR-USAGE-005 (bổ sung 01/11/2026, DEC-47)</td></tr>
 </tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-16-1">16.1. Security and Privacy</a></li>
 <li><a href="#s-16-2">16.2. Reliability and Durability</a></li>
 <li><a href="#s-16-3">16.3. Performance</a></li>
@@ -165,12 +166,14 @@
 <tr><td id="req-nfr-usage-002">NFR-USAGE-002</td><td>Người dùng xem usage tổng hợp theo project, Task, agent, Provider Connection và khoảng thời gian.</td><td>Tổng hợp khớp tổng của các Agent Run (sai lệch 0).</td><td>Test giao diện với dữ liệu mẫu.</td></tr>
 <tr><td id="req-nfr-usage-003">NFR-USAGE-003</td><td>Chi phí ước tính chỉ hiển thị khi có bảng giá cho model; luôn ghi rõ là ước tính.</td><td>0 chi phí hiển thị khi thiếu bảng giá; 100% chi phí có nhãn “ước tính”.</td><td>Review giao diện.</td></tr>
 <tr><td id="req-nfr-usage-004">NFR-USAGE-004</td><td>MVP không giới hạn ngân sách và không cảnh báo usage theo project hay provider; chỉ ghi và hiển thị usage (NFR-USAGE-001–003) (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-077)). Dashboard kiểm tra hạn mức và tiêu thụ của provider thuộc FUT-05 (2.3), không thuộc MVP.</td><td>0 chức năng chặn hoặc cảnh báo theo ngân sách trong MVP.</td><td>Review giao diện và cấu hình.</td></tr>
+<tr><td id="req-nfr-usage-005">NFR-USAGE-005</td><td>Mỗi phiên thảo luận (8.7) cộng dồn usage của mọi Agent Run trong phiên, hiển thị theo từng bên (Orchestrator, từng instance Analysis Agent) và tổng, ở Agent Activity và trong Deliberation Record. Bổ sung 01/11/2026 (DEC-47); P1 (PO duyệt 01/11/2026, DEC-48).</td><td>Tổng của phiên khớp tổng các Agent Run (sai lệch 0).</td><td>Test với dữ liệu mẫu.</td></tr>
 </tbody></table></div>
 <p class="status">Người dùng tự cung cấp API key; hệ thống không có key hay hạn mức mặc định (SCOPE-13; Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014)). Chi phí provider phát sinh trên tài khoản provider của người dùng; hệ thống chỉ ghi nhận và hiển thị.</p>
 <p><strong>Acceptance criteria</strong></p>
 <ul>
 <li><strong>NFR-USAGE-001-AC01</strong> — Given một provider không trả usage cho một lời gọi, When Agent Run kết thúc, Then trường usage ghi “không có dữ liệu” và không có giá trị ước tính.</li>
 <li><strong>NFR-USAGE-002-AC01</strong> — Given 10 Agent Run mẫu với usage đã biết, When xem usage theo project, Then tổng hiển thị bằng tổng của 10 Agent Run.</li>
+<li><strong>NFR-USAGE-005-AC01</strong> — Given phiên thảo luận có 7 Agent Run với usage đã biết, When phiên kết thúc, Then usage của phiên bằng tổng của 7 Agent Run và hiển thị theo từng bên.</li>
 <li><strong>NFR-USAGE-003-AC01</strong> — Given model không có bảng giá, When xem usage, Then chỉ hiển thị token, không hiển thị chi phí.</li>
 </ul>
 
