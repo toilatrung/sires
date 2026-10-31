@@ -10,13 +10,14 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 63 trang HTML tĩnh (33 nguồn + biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 66 trang HTML tĩnh (33 nguồn + biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
 | `assets/sires-logo.svg` | Logo |
+| `assets/motion.css` | Chuyển động dùng chung (design.md 2.4, DEC-51; tác vụ chạy lâu 2.4.1, DEC-52), `render.mjs` gắn vào mọi trang |
 
-Skill cho agent (gốc repo): `agent/skills/sires-ui-executor` (dựng UI theo thiết kế) và `agent/skills/sires-ui-review` (đối chiếu UI đã triển khai với thiết kế, kèm `scripts/check-ui.mjs`).
+Skill cho agent (gốc repo): `agent/skills/sires-ui-executor` (dựng UI theo thiết kế) và `agent/skills/sires-ui-review` (đối chiếu UI đã triển khai với thiết kế, kèm `scripts/check-ui.mjs`). Skill bên thứ ba `agent/skills/vendor/animate-ui` (Animate UI, giấy phép MIT + Commons Clause trong thư mục đó) là nguồn token chuyển động.
 
 Phong cách: **Cream** (typeui.sh/design-skills/cream), thay cho phong cách phẳng kiểu Overleaf của DEC-18 theo yêu cầu 31/10/2026. Nền kem #F6F2EE, thẻ #FCF9F5, ô nhập #E5DED5, viền #DBD3C7; Montserrat cho mọi chữ, JetBrains Mono cho LaTeX/mã; brand #0277DD (nền nút, viền), #025FAC (chữ, liên kết); bo góc chặt (thẻ 8px, nút và ô nhập 6px, nhãn 4px) thay cho bo 24px/viên thuốc của Cream gốc; không đổ bóng. Quy ước trạng thái: nét đứt = đề xuất, nét liền = đã chốt, nền xanh nhạt + biểu tượng = cần bạn xử lý. Bản DEC-18 trước khi đổi được lưu trong lịch sử phiên bản của canvas (phiên bản 14).
 
@@ -32,8 +33,8 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | — | AgentList, AgentListPreview | Danh sách agent (gồm Analysis Agent A, B) và trạng thái (Đang chạy, Đang rảnh, Lỗi), light và dark; gắn ở P9 | SCOPE-12, UX-MONITOR-001, AGENT-ANALYSIS-001 |
 | G1 | Dashboard | Dashboard (biến thể recovery, first-run) | 15.1, UX-STATE-005, UX-SETTINGS-002 |
 | G2 | Projects | Research Projects + tạo project | 7.2 |
-| G3 | Discover | Tìm Google Scholar + nhập thủ công | 10.1–10.4 |
-| G4 | Library | Trusted Library, duyệt theo lô (biến thể empty) | 10.6–10.8, UX-REF-001/002 |
+| G3 | Discover | Tìm Google Scholar + nhập thủ công (biến thể đang tìm) | 10.1–10.4, UX-STATE-001 |
+| G4 | Library | Trusted Library, duyệt theo lô (biến thể empty, loading) | 10.6–10.8, UX-REF-001/002 |
 | G5 | Reference | Chi tiết Reference + provenance | UX-REF-003 |
 | G6 | Assistant | Global AI Assistant (khung bên) | UX-LAYOUT-002 |
 | G7 | GlobalTasks | Tasks & Plan tổng hợp (chỉ đọc) | 9.12 |
@@ -48,10 +49,10 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
 | P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
 | P7 | Artifacts | Research Artifacts, phiên bản, provenance | 5.7, 13 |
-| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision | 15.7 |
+| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision (biến thể đang build) | 15.7, UX-STATE-001 |
 | P9 | Workflow | Chi tiết workflow + Agent Run + Recovery decision + chế độ xem thảo luận (đang chạy, hoàn tất) | UX-MONITOR-002–004, UX-MONITOR-006, WF-06 |
 | P10 | History | Activity and History | 14.8 |
-| X1 | States | Loading, trống, lỗi, khôi phục, notification | 15.8 |
+| X1 | States | Thao tác dài (biết và chưa biết thời lượng), đang tải danh sách, trống, lỗi, khôi phục, notification | 15.8 |
 | M1–M2 | Mobile* | Pending Actions và trả lời prompt ở 390px | UX-RESP-001 |
 
 ## Ghi chú thiết kế (đã duyệt)

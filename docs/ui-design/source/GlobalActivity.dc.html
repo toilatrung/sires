@@ -51,7 +51,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <tr>
               <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><a href="Workflow.dc.html" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500">{{r.type}}</a></td>
               <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="display: block; font-weight: 600">{{r.project}}</span><span style="font-size: 13px; color: #4D4A44">{{r.task}}</span></td>
-              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.b}}; color: {{r.fg}}; background: {{r.bg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><sc-if value="{{r.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{r.state}}</span></td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span data-running="{{r.run}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.b}}; color: {{r.fg}}; background: {{r.bg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><sc-if value="{{r.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{r.state}}</span></td>
               <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{r.step}}</span> {{r.agent}}</td>
               <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.time}}</td>
               <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7">{{r.prompt}}</td>
@@ -77,7 +77,7 @@ class Component extends DCLogic {
   renderVals() {
     const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'], fail: ['solid #BE123C', '#BE123C', '#FFF1F2'], muted: ['solid #DBD3C7', '#4D4A44', '#F6F2EE'] };
     const P1 = 'RAG trong tổng quan tài liệu';
-    const r = (type, project, task, state, k, step, agent, time, prompt, ctl) => ({ type, project, task, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', step, agent, time, prompt, canPause: ctl === 'run', canResume: ctl === 'paused', canCancel: ctl === 'run' || ctl === 'wait' || ctl === 'paused', ended: ctl === 'end' });
+    const r = (type, project, task, state, k, step, agent, time, prompt, ctl) => ({ type, project, task, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', run: k === 'run', step, agent, time, prompt, canPause: ctl === 'run', canResume: ctl === 'paused', canCancel: ctl === 'run' || ctl === 'wait' || ctl === 'paused', ended: ctl === 'end' });
     return {
       rows: [
         r('task_execution', P1, 'T-2.3 So sánh phương pháp đo', 'Waiting for User', 'need', '2/5', 'Discovery Agent', '14:05', '1 · choice', 'wait'),

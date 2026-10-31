@@ -6,7 +6,7 @@
 // Static check of UI code against the SIRes design tokens (docs/ui-design/design.md).
 // Usage: node check-ui.mjs <file-or-dir> [...more]  [--json]
 // Scans .css .scss .html .jsx .tsx .vue .svelte .astro .js .ts for colours, radii, shadows,
-// gradients, fonts and Tailwind classes that break the design. Exit code 1 when any error is found.
+// gradients, fonts, Tailwind classes and motion that break the design. Exit code 1 when any error is found.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,7 +63,14 @@ function scan(file) {
     }
     if (/box-shadow\s*:\s*(?!none)/i.test(ln)) add('warn', file, n, 'shadow', ln, 'shadows only on menus, popovers and dialogs (0 4px 16px rgba(28,27,24,.10))');
     if (/(linear|radial|conic)-gradient\(/i.test(ln)) add('error', file, n, 'gradient', ln, 'no gradients; use a flat token colour');
-    if (/backdrop-filter|filter\s*:\s*blur/i.test(ln)) add('error', file, n, 'glass', ln, 'no blur or glass; use an opaque surface');
+    if (/backdrop-filter|filter\s*:\s*['"]?blur/i.test(ln)) add('error', file, n, 'glass', ln, 'no blur or glass (also not as a motion bridge); use an opaque surface and fade');
+
+    // Motion (design.md §2.4, §2.4.1)
+    if (/transition(-property)?\s*:[^;"}]*\b(width|height|top|left|right|bottom|margin[\w-]*)\b/i.test(ln)) add('warn', file, n, 'motion', ln, 'animate transform and opacity only; height only for a disclosure that must push content');
+    if (/\bease-in\b(?!-out)|easeIn\b(?!Out)/.test(ln)) add('warn', file, n, 'motion', ln, 'no ease-in on what enters; use ease-out cubic-bezier(0.23, 1, 0.32, 1) or the soft curve');
+    if (/rotate\(\s*360deg|\banimate-spin\b|@keyframes\s+[\w-]*spin/i.test(ln)) add('warn', file, n, 'spinner', ln, 'no spinning loaders; use a progress bar (data-progress) or the running dot with text');
+    if (/\banimate-(bounce|ping)\b|rotateX\(|\bshimmer\b/i.test(ln)) add('warn', file, n, 'motion', ln, 'decorative motion (bounce, ping, tilt, shimmer) is not in design.md §2.4');
+    if (/:hover[^{]*\{[^}]*transform\s*:\s*scale|\bhover:scale-|whileHover=\{\{[^}]*scale/.test(ln)) add('warn', file, n, 'motion', ln, 'nothing scales on hover; hover changes colour only');
     for (const m of ln.matchAll(/font-family\s*:\s*([^;"}]+)/gi)) {
       const first = m[1].split(',')[0].replace(/['"]/g, '').trim();
       if (!FONT_OK.test(first)) add('error', file, n, 'font', ln, `font "${first}": use Montserrat (JetBrains Mono for IDs/code)`);
@@ -81,6 +88,11 @@ function scan(file) {
     if (/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(ln)) add('error', file, n, 'emoji', ln, 'no emoji in UI; use words or an outline icon');
     if (/(sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,})/.test(ln)) add('error', file, n, 'secret', ln, 'looks like an API key in UI code; never render keys');
   });
+  // A file that animates must also handle reduced motion (CSS media query or Motion's helpers).
+  const animates = lines.findIndex((ln) => /@keyframes|\banimation\s*:|<motion\.|\bmotion\.\w+\(|\banimate=\{/.test(ln));
+  if (animates >= 0 && !/prefers-reduced-motion|motion\.css|ReducedMotionConfig|useShouldReduceMotion|useReducedMotion|motion-reduce:/.test(src)) {
+    add('warn', file, animates + 1, 'reduced-motion', lines[animates], 'animation without a reduced-motion path: drop movement, keep fades, stop loops (design.md §2.4)');
+  }
 }
 
 function walk(p) {

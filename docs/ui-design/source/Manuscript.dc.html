@@ -24,8 +24,8 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 16px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
       <a href="Overview.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 8px; text-decoration: none; color: #4D4A44"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Project</a>
-      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid {{buildBorder}}; color: {{buildColor}}; font-size: 12px; font-weight: 600">{{buildLabel}}</span>
-      <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">revision 18 · đã lưu 09:41</span>
+      <span data-running="{{building}}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid {{buildBorder}}; color: {{buildColor}}; background: {{buildBg}}; font-size: 12px; font-weight: 600">{{buildLabel}}</span>
+      <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{savedLabel}}</span>
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 8px">
       <div role="tablist" aria-label="Vùng phải" style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
@@ -33,7 +33,8 @@ a{color:#025FAC}a:hover{color:#1C1B18}
           <button role="tab" aria-selected="{{t.sel}}" style="height: 34px; padding: 0 12px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 13px Montserrat, sans-serif">{{t.label}}</button>
         </sc-for>
       </div>
-      <button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Build PDF</button>
+      <sc-if value="{{notBuilding}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Build PDF</button></sc-if>
+      <sc-if value="{{building}}" hint-placeholder-val="{{ false }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy build</button></sc-if>
     </div>
   </div>
 
@@ -95,7 +96,15 @@ a{color:#025FAC}a:hover{color:#1C1B18}
 
     <sc-if value="{{showPdf}}" hint-placeholder-val="{{ true }}">
       <section aria-label="Xem trước PDF" style="flex: 1 1 360px; min-width: 0; background: #EFEAE3; padding: 18px; display: flex; flex-direction: column; gap: 10px">
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #4D4A44"><span>Xem trước PDF</span><span style="font-family: 'JetBrains Mono', monospace">Trang 1 / 6</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #4D4A44"><span>Xem trước PDF{{pdfRev}}</span><span style="font-family: 'JetBrains Mono', monospace">Trang 1 / 6</span></div>
+        <sc-if value="{{building}}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 6px">
+            <span style="font-size: 14px; font-weight: 600">Đang build revision 19 · pdfLaTeX</span>
+            <span style="font-size: 13px; color: #4D4A44">System · đã chạy 00:12 · rời trang được, kết quả báo qua notification</span>
+            <div data-progress="indeterminate" role="img" aria-label="Chưa biết thời lượng còn lại"></div>
+            <span style="font-size: 12px; color: #4D4A44">Gần nhất 09:52:10 — đang chạy bibtex</span>
+          </div>
+        </sc-if>
         <article style="background: #FCF9F5; border: 1px solid #DBD3C7; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px; font-family: 'Times New Roman', Times, serif; color: #1C1B18">
           <h2 style="margin: 0; text-align: center; font-weight: 600; font-size: 20px; line-height: 1.25">Retrieval over Vetted Sources for LLM-assisted Literature Review</h2>
           <p style="margin: 0; text-align: center; font-size: 13px">[Tác giả] · [Đơn vị]</p>
@@ -147,7 +156,7 @@ LaTeX Warning: Citation `gao2023survy' undefined.</pre>
   </footer>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"rightPane":{"editor":"enum","options":["pdf","build-log","history"],"default":"pdf"},"proposal":{"editor":"enum","options":["ok","citation-error","outdated"],"default":"ok"},"$preview":{"width":1440,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"rightPane":{"editor":"enum","options":["pdf","build-log","history"],"default":"pdf"},"proposal":{"editor":"enum","options":["ok","citation-error","outdated"],"default":"ok"},"building":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const pane = this.props.rightPane ?? 'pdf';
@@ -155,10 +164,16 @@ class Component extends DCLogic {
     const cmd = '#025FAC', txt = '#1C1B18', dim = '#4D4A44';
     const line = (n, t, color) => ({ n: String(n), t, color: color || txt });
     const failed = pane === 'build-log';
+    // Build in progress (UX-STATE-001): revision 19 saved 09:52 is building; the preview keeps revision 18.
+    const building = !!this.props.building && !failed;
     return {
+      building, notBuilding: !building,
+      savedLabel: building ? 'revision 19 · đã lưu 09:52' : 'revision 18 · đã lưu 09:41',
+      pdfRev: building ? ' · revision 18 (bản build gần nhất)' : '',
+      buildBg: building ? '#EAF4FE' : 'transparent',
       showPdf: pane === 'pdf', showLog: failed, showHistory: pane === 'history',
       tabs: [['pdf', 'PDF'], ['build-log', 'Build log'], ['history', 'Lịch sử']].map(([k, label]) => ({ label, sel: k === pane ? 'true' : 'false', bg: k === pane ? '#1C1B18' : '#FFFFFF', fg: k === pane ? '#FFFFFF' : '#4D4A44' })),
-      buildLabel: failed ? 'Build lỗi · 08:52' : 'Build OK · 09:41', buildBorder: failed ? '#BE123C' : '#1C1B18', buildColor: failed ? '#BE123C' : '#1C1B18',
+      buildLabel: building ? 'Đang build · 00:12' : failed ? 'Build lỗi · 08:52' : 'Build OK · 09:41', buildBorder: building ? '#0277DD' : failed ? '#BE123C' : '#1C1B18', buildColor: failed ? '#BE123C' : '#1C1B18',
       propState: p === 'outdated' ? 'Outdated' : 'Proposed', propBorder: p === 'outdated' ? '#4D4A44' : '#025FAC', propBg: p === 'outdated' ? '#F6F2EE' : '#FFFFFF',
       isOutdated: p === 'outdated', notOutdated: p !== 'outdated', canAccept: p === 'ok', citeBlocked: p === 'citation-error',
       citeLabel: p === 'citation-error' ? 'Citation lỗi: asai2024selfrg' : 'Citation: 2/2 phân giải', citeBorder: p === 'citation-error' ? '#BE123C' : '#1C1B18', citeColor: p === 'citation-error' ? '#BE123C' : '#1C1B18',

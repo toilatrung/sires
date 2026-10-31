@@ -48,7 +48,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         <div style="display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; min-width: 1040px">
           <sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
             <section style="display: flex; flex-direction: column; gap: 8px">
-              <h2 style="margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{c.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{c.state}}</span><span style="font-size: 12px; font-weight: 500; color: #4D4A44">{{c.n}}</span></h2>
+              <h2 style="margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px"><span data-running="{{c.run}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{c.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{c.state}}</span><span style="font-size: 12px; font-weight: 500; color: #4D4A44">{{c.n}}</span></h2>
               <sc-for list="{{c.cards}}" as="t" hint-placeholder-count="2">
                 <a href="Plan.dc.html" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #FCF9F5; border: {{t.border}}; border-radius: 6px; text-decoration: none; color: #1C1B18">
                   <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">{{t.id}}</span>
@@ -108,7 +108,7 @@ class Component extends DCLogic {
   renderVals() {
     const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], ok: ['solid #0277DD', '#025FAC', '#FFFFFF'], warn: ['solid #9A3412', '#9A3412', '#FFFFFF'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'] };
     const card = (id, title, manual, note, warn, sel) => ({ id, title, manual, agentL: !manual, note: note || '', noteColor: warn ? '#9A3412' : '#4D4A44', border: sel ? '2px solid #025FAC' : '1px solid #DBD3C7' });
-    const col = (state, k, cards) => ({ state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', n: String(cards.length), cards });
+    const col = (state, k, cards) => ({ state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', run: k === 'run', n: String(cards.length), cards });
     return {
       cols: [
         col('Blocked', 'warn', [card('T-2.5', 'Ma trận so sánh phương pháp', false, 'Chờ T-2.3', true, true), card('T-2.6', 'Sơ đồ kiến trúc RAG', false, 'Diagram Agent chưa có kết nối hợp lệ', true)]),

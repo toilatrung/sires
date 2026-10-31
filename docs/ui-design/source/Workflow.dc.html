@@ -30,7 +30,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         <div style="display: flex; flex-direction: column; gap: 8px">
           <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
             <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">T-2.3 So sánh phương pháp đo</h1>
-            <span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{wfB}}; color: {{wfFg}}; background: {{wfBg}}; font-size: 12px; font-weight: 600"><sc-if value="{{wfNeed}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{wfState}}</span>
+            <span data-running="{{wfRun}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{wfB}}; color: {{wfFg}}; background: {{wfBg}}; font-size: 12px; font-weight: 600"><sc-if value="{{wfNeed}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{wfState}}</span>
             <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">14:05 đã chạy</span>
           </div>
           <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">wf-52d · task_execution · baseline v3 · kích hoạt bởi Nguyễn Thanh 09:37</span>
@@ -83,7 +83,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
               <h2 id="dl-h" style="margin: 0; font-size: 18px; font-weight: 600">Phiên thảo luận dl-3c1</h2>
               <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 11px">methodology</span>
-              <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{d.chipB}}; background: {{d.chipBg}}; font-size: 12px; font-weight: 600">{{d.status}}</span>
+              <span data-running="{{d.isRun}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{d.chipB}}; background: {{d.chipBg}}; font-size: 12px; font-weight: 600">{{d.status}}</span>
               <span style="font-size: 13px; color: #4D4A44">{{d.roundNote}}</span>
             </div>
             <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">bước 4/5 · deliberation · mở 10:02 · Context Snapshot cs-2a (7 entity) · tối đa 2 vòng sau Vòng 1</span>
@@ -216,7 +216,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
       <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
         <h2 id="ar" style="margin: 0; font-size: 17px; font-weight: 600">{{run.agent}}</h2>
         <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{run.id}}</span>
-        <span style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{run.chipB}}; background: {{run.chipBg}}; font-size: 12px; font-weight: 600">{{run.status}}</span>
+        <span data-running="{{run.isRun}}" style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{run.chipB}}; background: {{run.chipBg}}; font-size: 12px; font-weight: 600">{{run.status}}</span>
       </div>
       <dl style="margin: 0; padding: 14px 20px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 9px 12px; font-size: 13px; line-height: 1.45; border-bottom: 1px solid #DBD3C7">
         <dt style="color: #4D4A44">Provider Connection</dt><dd style="margin: 0">{{run.conn}}</dd>
@@ -323,7 +323,7 @@ class Component extends DCLogic {
     if (dDone) warnings.push({ title: 'Context Snapshot lỗi thời.', text: 'R-15 được duyệt vào Trusted Library lúc 10:20, sau khi phiên mở; bản tổng hợp không dùng R-15. Prompt có thêm lựa chọn chạy lại phiên trên context mới.' });
     const d = {
       done: dDone, notDone: !dDone,
-      status: dDone ? 'Completed' : 'Running', chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? '#FCF9F5' : '#EAF4FE',
+      status: dDone ? 'Completed' : 'Running', isRun: !dDone, chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? '#FCF9F5' : '#EAF4FE',
       roundNote: dDone ? 'kết thúc sau Vòng 2 · bất đồng còn lại là lựa chọn giá trị' : 'Vòng 2/3',
       warnings,
       brief: [
@@ -355,7 +355,7 @@ class Component extends DCLogic {
       chosen: 'A — benchmark kèm trục cơ chế đo'
     };
     const runInfo = isDelib
-      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81c4 · bước 4 · Vòng 2 · instance B', status: dDone ? 'Succeeded' : 'Running', chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? 'transparent' : '#EAF4FE',
+      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81c4 · bước 4 · Vòng 2 · instance B', status: dDone ? 'Succeeded' : 'Running', isRun: !dDone, chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? 'transparent' : '#EAF4FE',
           conn: 'OpenAI cá nhân', model: 'gpt-5', ctx: 'Problem Brief · Context Snapshot cs-2a (7 entity) · lập trường Vòng 1 của Orchestrator và A',
           tools: 'retrieval.search × 2 (chỉ đọc, Trusted Reference đã index)', out: dDone ? '2 critique trên Deliberation Board' : 'đang viết, mở khi vòng đóng', outHref: '#dl-h',
           usage: dDone ? '8 150 in · 1 600 out' : '—', time: dDone ? '48 giây · lần 1/3' : '00:37 · lần 1/3' }
@@ -367,7 +367,7 @@ class Component extends DCLogic {
       wfKey, isInterrupted: intr, notInterrupted: !intr,
       agentBasis: isDelib ? '100%' : '300px',
       agentState: isDelib ? (dDone ? 'synthesis' : 'deliberation') : wfKey,
-      wfState: chip[3], wfB: chip[0], wfFg: chip[1], wfBg: chip[2], wfNeed: chip[4],
+      wfState: chip[3], wfB: chip[0], wfFg: chip[1], wfBg: chip[2], wfNeed: chip[4], wfRun: chip[3] === 'Running',
       debug: dbg, debugNote: dbg ? 'Chế độ debug bật khi chạy: toàn văn được lưu đến 30/11/2026.' : 'Không lưu toàn văn (chế độ debug tắt). Xem context manifest và đầu ra có cấu trúc ở trên.',
       tabs, isTimeline: !isDelib, isDelib, d, run: runInfo,
       events
