@@ -1,0 +1,25 @@
+%% FIG-010 — Orchestration sequence for one agent task (section 8)
+sequenceDiagram
+  actor R as Researcher
+  participant S as System
+  participant O as Orchestrator
+  participant A as Specialist Agent
+  R->>S: APR-02 trigger task (after readiness)
+  S->>S: Task Queued -> In Progress, Workflow Running
+  S->>O: start workflow (task, baseline)
+  loop each Workflow Step
+    O->>S: create step (agent, inputs, expected outputs)
+    S->>S: assemble context (scope, limits)
+    S->>A: Agent Run via provider adapter
+    A-->>S: handoff envelope + entities
+    S->>S: save entities, envelope, checkpoint
+    opt decision needed
+      O->>S: Interactive Agent Prompt
+      S->>R: pending action (Waiting for User)
+      R-->>S: response
+      S->>O: decision (Context Item)
+    end
+  end
+  O->>S: consolidate results
+  S->>S: Workflow Succeeded, Task In Review
+  R->>S: APR-03 accept -> Completed

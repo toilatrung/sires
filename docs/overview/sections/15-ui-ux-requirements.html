@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>15. UI/UX Requirements | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 15</p><h1>15. UI/UX Requirements</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặt yêu cầu về cách giao diện trình bày thông tin và quyết định, dựa trên cấu trúc khu vực ở <a href="04-information-architecture-and-navigation.html">mục 4</a>. Đây không phải mockup: yêu cầu mô tả <em>phải hiển thị gì và hành xử thế nào</em>, không quy định màu sắc hay kích thước cụ thể. Màu sắc, kích thước, component và màn hình tham chiếu nằm trong design system đã duyệt (<a href="21-assumptions-constraints-and-open-questions.html#dec-18">DEC-18</a>): <a href="../../ui-design/design.md">ui-design/design.md</a> và <a href="../../ui-design/index.html">ui-design/index.html</a>. Mỗi requirement có ít nhất một acceptance criterion. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20) (bảng dưới). Các đề mục 15.1–15.9 theo outline (<strong>Confirmed</strong>); nội dung requirement do biên soạn đề xuất (<strong>Assumption</strong> trừ khi ghi khác), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Mục 15.10–15.11 bổ sung theo SYNC-04 và SYNC-10. Mục 15.12 (Settings và đăng nhập) bổ sung theo quyết định PC-01 (OQ-014, OQ-015, OQ-051, OQ-062, OQ-073, OQ-092). Bảng Open Questions ở <a href="#s-15-oq">15.13</a>.</p></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Priority</th>
+<th scope="col">Requirement</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>UX-LAYOUT-001, UX-LAYOUT-003; UX-CHAT-001; UX-PROMPT-001, UX-PROMPT-002, UX-PROMPT-003, UX-PROMPT-004; UX-PLAN-002; UX-TASK-001, UX-TASK-003, UX-TASK-005, UX-TASK-006; UX-LABEL-001, UX-LABEL-002; UX-STATUS-001, UX-STATUS-002; UX-REF-001, UX-REF-002, UX-REF-003; UX-EVID-001; UX-CLAIM-001; UX-MS-001, UX-MS-002, UX-MS-003, UX-MS-006; UX-STATE-004, UX-STATE-005; UX-MONITOR-001, UX-MONITOR-003, UX-MONITOR-004; UX-PENDING-001; UX-SETTINGS-002, UX-SETTINGS-003; UX-AUTH-001</td></tr>
+<tr><td>P1</td><td>UX-LAYOUT-002, UX-LAYOUT-004; UX-OVERVIEW-001, UX-OVERVIEW-002, UX-OVERVIEW-003; UX-CHAT-002; UX-PROMPT-005; UX-PLAN-001; UX-TASK-002, UX-TASK-004; UX-MS-004, UX-MS-005; UX-STATE-001, UX-STATE-002, UX-STATE-003, UX-STATE-006; UX-A11Y-001, UX-A11Y-002, UX-A11Y-003; UX-RESP-001; UX-MONITOR-002, UX-MONITOR-005; UX-PENDING-002; UX-I18N-001–004; UX-SETTINGS-001, UX-SETTINGS-004, UX-SETTINGS-005; UX-AUTH-002</td></tr>
+<tr><td>P2</td><td>— (dashboard provider bất kỳ và kiểm tra hạn mức thuộc FUT-05, không đặc tả giao diện ở mục này)</td></tr>
+</tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-15-0">Nguyên tắc giao diện</a></li>
+<li><a href="#s-15-1">15.1. Global Workspace Layout</a></li>
+<li><a href="#s-15-2">15.2. Research Project Overview</a></li>
+<li><a href="#s-15-3">15.3. Chat and Interactive Agent Prompts</a></li>
+<li><a href="#s-15-4">15.4. Task &amp; Plan Workspace</a></li>
+<li><a href="#s-15-5">15.5. Execution Labels and Statuses</a></li>
+<li><a href="#s-15-6">15.6. Reference and Evidence Views</a></li>
+<li><a href="#s-15-7">15.7. Manuscript Workspace</a></li>
+<li><a href="#s-15-8">15.8. Loading, Empty, Error and Recovery States</a></li>
+<li><a href="#s-15-9">15.9. Accessibility and Responsive Behavior</a></li>
+<li><a href="#s-15-10">15.10. Agent Activity and Pending Actions</a></li>
+<li><a href="#s-15-11">15.11. Bilingual Interface</a></li>
+<li><a href="#s-15-12">15.12. Settings and Sign-in</a></li>
+<li><a href="#s-15-oq">15.13. Open Questions của mục 15</a></li>
+</ul></details>
+
+<h2 id="s-15-0">Nguyên tắc giao diện</h2>
+<ol>
+<li><strong>Quyết định luôn có ngữ cảnh:</strong> mọi thao tác phê duyệt (APR-01–APR-10) được thực hiện cạnh đối tượng được duyệt và hệ quả của nó, không từ một danh sách trống ngữ cảnh (4.4).</li>
+<li><strong>Phân biệt đề xuất và kết quả đã chốt:</strong> nội dung <code>Draft</code>, <code>Proposed</code>, Discovered Result và Claim <code>Unsupported</code> phải nhìn khác nội dung <code>Accepted</code>, <code>Approved</code>, <code>Trusted</code>.</li>
+<li><strong>Không ẩn agent:</strong> người dùng luôn biết agent nào đang làm gì (SCOPE-12).</li>
+<li><strong>Không chỉ dựa vào màu:</strong> trạng thái và nhãn luôn có chữ hoặc biểu tượng kèm theo (15.9).</li>
+<li><strong>Thuật ngữ thống nhất:</strong> tên entity và trạng thái theo mục 5; nhãn hiển thị được dịch theo ngôn ngữ giao diện nhưng giữ mã trạng thái chuẩn trong tooltip và dữ liệu (15.11).</li>
+</ol>
+
+<h2 id="s-15-1">15.1. Global Workspace Layout</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-layout-001">UX-LAYOUT-001</td><td>Thanh điều hướng cố định ở mọi màn hình gồm: chỉ báo ngữ cảnh hiện tại (“Global” hoặc tên project), bộ chuyển project nhanh, các khu vực của ngữ cảnh hiện tại (4.1, 4.2), số đếm Pending Actions, bộ chuyển ngôn ngữ, truy cập Settings.</td><td>4.3</td></tr>
+<tr><td id="req-ux-layout-002">UX-LAYOUT-002</td><td>Global AI Assistant mở được dạng khung bên cạnh từ mọi trang của Global Workspace mà không rời trang hiện tại. Khung hiển thị rõ “Global — không có ngữ cảnh project”.</td><td>SCOPE-02, 4.3</td></tr>
+<tr><td id="req-ux-layout-003">UX-LAYOUT-003</td><td>Khi đang ở Project Workspace, khu vực Global vẫn truy cập được bằng một thao tác; chuyển sang Global đổi chỉ báo ngữ cảnh ngay lập tức.</td><td>4.3</td></tr>
+<tr><td id="req-ux-layout-004">UX-LAYOUT-004</td><td>Dashboard hiển thị theo thứ tự: pending actions, workflow đang chạy, project gần đây kèm tiến độ, trạng thái bản thảo, lỗi gần đây.</td><td>7.1, GOAL-02</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-LAYOUT-001-AC01</strong> — Given người dùng ở bất kỳ màn hình nào, When nhìn thanh điều hướng, Then thấy ngữ cảnh hiện tại, số Pending Actions và bộ chuyển ngôn ngữ.</li>
+<li><strong>UX-LAYOUT-002-AC01</strong> — Given đang ở Trusted Library, When mở Global AI Assistant, Then khung trợ lý mở cạnh danh sách và danh sách vẫn hiển thị.</li>
+<li><strong>UX-LAYOUT-004-AC01</strong> — Given có 2 pending action và 1 workflow đang chạy, When mở Dashboard, Then 2 pending action xuất hiện trên cùng, trước danh sách project.</li>
+<li><strong>UX-LAYOUT-003-AC01</strong> — Given đang ở Project Workspace của P1, When chọn Global trên thanh điều hướng, Then chỉ báo ngữ cảnh đổi thành “Global” ngay và khu vực Global hiển thị.</li>
+</ul>
+
+<h2 id="s-15-2">15.2. Research Project Overview</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-overview-001">UX-OVERVIEW-001</td><td>Overview hiển thị: research context hiện hành (câu hỏi, mục tiêu, ràng buộc, các giả định còn mở); Plan baseline và tiến độ theo Phase (số Task theo trạng thái); Task đang hoạt động; pending action của project; bước tiếp theo gợi ý; trạng thái bản thảo và build gần nhất.</td><td>4.2, 6.9</td></tr>
+<tr><td id="req-ux-overview-002">UX-OVERVIEW-002</td><td>Khi project chưa có Plan baseline, Overview hướng người dùng tới Project AI Chat để làm rõ ngữ cảnh và đề xuất Plan.</td><td>WF-01</td></tr>
+<tr><td id="req-ux-overview-003">UX-OVERVIEW-003</td><td>Project <code>Archived</code> hiển thị nhãn “Archived — chỉ đọc”; mọi nút thay đổi bị vô hiệu và có giải thích.</td><td>5.1</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-OVERVIEW-001-AC01</strong> — Given Plan baseline có 3 Phase, When mở Overview, Then mỗi Phase hiển thị số Task Completed trên tổng số Task.</li>
+<li><strong>UX-OVERVIEW-003-AC01</strong> — Given project Archived, When mở Overview, Then nút sửa research context bị vô hiệu kèm lý do.</li>
+<li><strong>UX-OVERVIEW-002-AC01</strong> — Given project chưa có Plan baseline, When mở Overview, Then có lời nhắc và nút mở Project AI Chat để làm rõ ngữ cảnh và đề xuất Plan.</li>
+</ul>
+
+<h2 id="s-15-3">15.3. Chat and Interactive Agent Prompts</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-chat-001">UX-CHAT-001</td><td>Project AI Chat hiển thị chỉ báo active task (nếu có) ngay trên ô nhập; bỏ active task bằng một thao tác. Tin nhắn gửi khi có active task ghi kèm tham chiếu Task trong lịch sử.</td><td>4.3, 7.4</td></tr>
+<tr><td id="req-ux-chat-002">UX-CHAT-002</td><td>Tin nhắn của agent nêu agent nào trả lời (Orchestrator hoặc Specialist Agent) và liên kết tới Agent Run tương ứng.</td><td>SCOPE-12</td></tr>
+<tr><td id="req-ux-prompt-001">UX-PROMPT-001</td><td>Interactive Agent Prompt hiển thị trong luồng chat dạng thẻ có cấu trúc: loại prompt, câu hỏi, đối tượng liên quan (liên kết), các lựa chọn và hệ quả của từng lựa chọn, agent tạo prompt, thời điểm tạo. Prompt không có thời hạn theo thời gian.</td><td>5.9, 8.4</td></tr>
+<tr><td id="req-ux-prompt-002">UX-PROMPT-002</td><td>Lựa chọn agent đề xuất được đánh dấu “Đề xuất của agent” kèm lý do, nhưng <em>không</em> được chọn sẵn. Người dùng phải thao tác chọn rõ ràng.</td><td>3.4, DEC-03 (21.1)</td></tr>
+<tr><td id="req-ux-prompt-003">UX-PROMPT-003</td><td>Thẻ prompt <code>edit_and_approve</code> cho sửa nội dung ngay trong thẻ trước khi duyệt; nội dung gốc và nội dung đã sửa được lưu.</td><td>8.4</td></tr>
+<tr><td id="req-ux-prompt-004">UX-PROMPT-004</td><td>Thẻ prompt có bốn trạng thái hiển thị: <code>Open</code> (thao tác được), <code>Answered</code> (chỉ đọc, hiện câu trả lời, người và thời điểm), <code>Expired</code> (project đã được lưu trữ khi prompt còn mở) và <code>Cancelled</code> (workflow bị hủy, hoặc đối tượng chờ duyệt đã đổi phiên bản) — cả hai chỉ đọc, hiện lý do, ghi rõ “không được tính là đồng ý”.</td><td>5.9</td></tr>
+<tr><td id="req-ux-prompt-005">UX-PROMPT-005</td><td>Cùng một prompt xuất hiện ở Project AI Chat, Agent Activity và Pending Actions; trả lời ở một nơi cập nhật mọi nơi khác trong vòng thời gian cập nhật trạng thái (NFR-PERF-003).</td><td>4.4</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-PROMPT-002-AC01</strong> — Given prompt <code>choice</code> có lựa chọn đề xuất, When thẻ hiển thị, Then không lựa chọn nào ở trạng thái đã chọn và nút xác nhận bị vô hiệu cho đến khi người dùng chọn.</li>
+<li><strong>UX-PROMPT-004-AC01</strong> — Given prompt bị Cancelled vì Plan Version chờ duyệt đã có phiên bản mới, When xem thẻ, Then thẻ chỉ đọc, nêu lý do và hiển thị câu “không được tính là đồng ý”.</li>
+<li><strong>UX-PROMPT-005-AC01</strong> — Given prompt Open hiển thị ở chat và Pending Actions, When trả lời ở Pending Actions, Then thẻ trong chat chuyển Answered mà không cần tải lại trang.</li>
+<li><strong>UX-CHAT-001-AC01</strong> — Given active task T-012, When gửi tin nhắn, Then chỉ báo T-012 hiện trên ô nhập và tin nhắn trong lịch sử có tham chiếu T-012.</li>
+<li><strong>UX-CHAT-002-AC01</strong> — Given Synthesis Agent trả lời trong chat, When xem tin nhắn, Then thấy tên agent và liên kết tới Agent Run tương ứng.</li>
+<li><strong>UX-PROMPT-001-AC01</strong> — Given prompt <code>approval</code> cho một Plan Version, When thẻ hiển thị, Then có loại prompt, câu hỏi, liên kết tới Plan Version, các lựa chọn kèm hệ quả và agent tạo prompt.</li>
+<li><strong>UX-PROMPT-003-AC01</strong> — Given prompt <code>edit_and_approve</code> cho metadata reference, When sửa tiêu đề rồi duyệt, Then cả nội dung gốc và nội dung đã sửa được lưu.</li>
+</ul>
+
+<h2 id="s-15-4">15.4. Task &amp; Plan Workspace</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-plan-001">UX-PLAN-001</td><td>Plan overview hiển thị Plan Version đang xem, trạng thái của nó, và bộ chọn version. Có chế độ so sánh hai version: Task thêm, xóa, sửa; dependency và label thay đổi; mục tiêu và phương pháp thay đổi.</td><td>9.2, 6.5</td></tr>
+<tr><td id="req-ux-plan-002">UX-PLAN-002</td><td>Plan Version <code>Proposed</code> có thanh hành động Duyệt / Từ chối (bắt buộc lý do khi từ chối). Các giả định còn mở (Context Item <em>assumption</em>) hiển thị nổi bật trước nút Duyệt.</td><td>WF-01.S7, A1</td></tr>
+<tr><td id="req-ux-task-001">UX-TASK-001</td><td>Task board nhóm Task theo trạng thái chuẩn (5.3), lọc được theo Phase, label, agent chịu trách nhiệm.</td><td>9.12</td></tr>
+<tr><td id="req-ux-task-002">UX-TASK-002</td><td>Dependency graph hiển thị Task và quan hệ tiên quyết; Task bị chặn được đánh dấu cùng Task gây chặn; khi soạn Plan, chu trình được tô rõ và nêu các Task trong chu trình.</td><td>9.4, WF-01.E1</td></tr>
+<tr><td id="req-ux-task-003">UX-TASK-003</td><td>Panel chi tiết Task gồm: định nghĩa (theo version), label, trạng thái, kết quả readiness gần nhất, checklist và acceptance criteria, lịch sử workflow, artifact tạo ra, phản hồi review, cờ needs review.</td><td>9.3, 9.9</td></tr>
+<tr><td id="req-ux-task-004">UX-TASK-004</td><td>Kết quả readiness hiển thị từng lý do chặn kèm nút hành động (mở Task tiên quyết, trả lời câu hỏi, chọn reference, mở Settings → Agent Models).</td><td>WF-02.S6</td></tr>
+<tr><td id="req-ux-task-005">UX-TASK-005</td><td>Nút “Thực thi” chỉ khả dụng khi Task <code>Ready</code> và readiness Đạt; luôn yêu cầu xác nhận (APR-02). Không có thao tác chạy nhiều Task cùng lúc.</td><td>9.6, 21.1</td></tr>
+<tr><td id="req-ux-task-006">UX-TASK-006</td><td>Màn hình review Task (<code>In Review</code>) hiển thị đầu ra cạnh acceptance criteria; nút Nghiệm thu chỉ khả dụng khi mọi criterion được đánh dấu đạt và đầu ra bắt buộc có version <code>Accepted</code>.</td><td>6.8, APR-03</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-TASK-005-AC01</strong> — Given Task <code>Blocked</code>, When mở chi tiết Task, Then nút Thực thi bị vô hiệu và hiển thị lý do chặn.</li>
+<li><strong>UX-TASK-006-AC01</strong> — Given Task In Review có 1 criterion chưa đánh dấu, When xem màn hình review, Then nút Nghiệm thu bị vô hiệu.</li>
+<li><strong>UX-PLAN-001-AC01</strong> — Given hai Plan Version khác nhau ở một dependency, When so sánh, Then dependency đó được đánh dấu thay đổi.</li>
+<li><strong>UX-PLAN-002-AC01</strong> — Given Plan Version <code>Proposed</code> có 2 Context Item <em>assumption</em>, When mở thanh hành động, Then 2 giả định hiển thị trước nút Duyệt, và nút Từ chối yêu cầu nhập lý do.</li>
+<li><strong>UX-TASK-001-AC01</strong> — Given board có Task ở nhiều trạng thái, When lọc theo label <code>Manual editor requirement</code>, Then chỉ Task manual hiển thị, vẫn nhóm theo trạng thái.</li>
+<li><strong>UX-TASK-002-AC01</strong> — Given Task B bị chặn bởi Task A, When xem dependency graph, Then B được đánh dấu bị chặn và có liên kết tới A.</li>
+<li><strong>UX-TASK-003-AC01</strong> — Given Task đã chạy hai lần, When mở panel chi tiết, Then thấy cả hai workflow trong lịch sử cùng artifact của từng lần.</li>
+<li><strong>UX-TASK-004-AC01</strong> — Given readiness không đạt vì agent chưa có kết nối hợp lệ, When xem kết quả, Then lý do đó có nút mở Settings → Agent Models.</li>
+</ul>
+
+<h2 id="s-15-5">15.5. Execution Labels and Statuses</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-label-001">UX-LABEL-001</td><td><code>Available for agent</code> và <code>Manual editor requirement</code> có biểu tượng và chữ riêng, hiển thị ở mọi nơi có Task (board, graph, chi tiết, chat, Pending Actions). Task manual được nhận ra mà không cần mở chi tiết.</td><td>Confirmed — 21.1; 9.7</td></tr>
+<tr><td id="req-ux-label-002">UX-LABEL-002</td><td>Task manual không có nút “giao cho agent”; thay vào đó hiển thị “Bạn cần thực hiện” cùng yêu cầu và đầu ra bắt buộc (WF-03.S2).</td><td>WF-03</td></tr>
+<tr><td id="req-ux-status-001">UX-STATUS-001</td><td>Mỗi trạng thái chuẩn của mục 5 có một nhãn hiển thị thống nhất ở mọi màn hình (cùng chữ, cùng biểu tượng). Trạng thái chờ người dùng (<code>Waiting for User</code>, <code>In Review</code>, <code>Proposed</code>, <code>Pending Approval</code>) có cùng một dấu hiệu “cần bạn xử lý”.</td><td>5, 18.2</td></tr>
+<tr><td id="req-ux-status-002">UX-STATUS-002</td><td>Cờ needs review (Task, claim, citation bị ảnh hưởng bởi thay đổi hoặc thu hồi) hiển thị cạnh trạng thái, kèm nguyên nhân và liên kết tới thay đổi gây ra.</td><td>5.3, 9.11, 10.8</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-LABEL-001-AC01</strong> — Given board có Task manual và Task agent, When xem board ở chế độ thang xám, Then vẫn phân biệt được hai loại nhờ biểu tượng và chữ.</li>
+<li><strong>UX-STATUS-002-AC01</strong> — Given Task Completed có đầu vào bị thu hồi, When xem Task, Then thấy cờ needs review và liên kết tới Reference bị thu hồi.</li>
+<li><strong>UX-LABEL-002-AC01</strong> — Given Task manual <code>Ready</code>, When mở chi tiết, Then không có nút giao cho agent và hiển thị “Bạn cần thực hiện” kèm đầu ra bắt buộc.</li>
+<li><strong>UX-STATUS-001-AC01</strong> — Given một Task <code>Waiting for User</code> và một Reference <code>Pending Approval</code>, When xem Dashboard, Then cả hai mang cùng dấu hiệu “cần bạn xử lý”.</li>
+</ul>
+
+<h2 id="s-15-6">15.6. Reference and Evidence Views</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-ref-001">UX-REF-001</td><td>Discovered Result và Reference <code>Trusted</code> không bao giờ xuất hiện trong cùng một danh sách mà không có nhãn phân biệt; Discovered Result ghi rõ “Chưa duyệt — không dùng làm nguồn”.</td><td>10.2, GOAL-03</td></tr>
+<tr><td id="req-ux-ref-002">UX-REF-002</td><td>Mỗi Reference hiển thị trạng thái duyệt và trạng thái indexing riêng biệt; <code>Unavailable</code> giải thích “dùng được cho citation, không dùng được cho evidence”.</td><td>5.6, WF-04.S6</td></tr>
+<tr><td id="req-ux-ref-003">UX-REF-003</td><td>Trang Reference hiển thị provenance: nguồn phát hiện, truy vấn, người duyệt, thời điểm, các phiên bản metadata, project đang dùng.</td><td>10.8</td></tr>
+<tr><td id="req-ux-evid-001">UX-EVID-001</td><td>Evidence Inspector hiển thị: metadata Reference, đoạn trích được đánh dấu trong văn cảnh xung quanh, vị trí (trang, đoạn), claim đang dùng evidence này, trạng thái <code>Active</code>/<code>Excluded</code>/<code>Stale</code>.</td><td>11.3</td></tr>
+<tr><td id="req-ux-claim-001">UX-CLAIM-001</td><td>Claim hiển thị mức hỗ trợ (<code>Supported</code>, <code>Partially Supported</code>, <code>Unsupported</code>, <code>Conflicting</code>, <code>Not Assessed</code>) bằng nhãn có chữ ở mọi nơi claim xuất hiện, kể cả trong artifact và gợi ý trên bản thảo. Claim <code>Conflicting</code> hiển thị cả evidence hỗ trợ và phản bác.</td><td>11.5, 11.7, KPI-01</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-REF-001-AC01</strong> — Given kết quả tìm kiếm chứa tài liệu đã có trong Trusted Library, When xem kết quả, Then tài liệu đó có nhãn “Đã có trong Trusted Library”, các kết quả khác có nhãn “Chưa duyệt”.</li>
+<li><strong>UX-CLAIM-001-AC01</strong> — Given bản tổng hợp chứa một claim Unsupported, When xem bản tổng hợp, Then claim đó có nhãn Unsupported ngay tại câu.</li>
+<li><strong>UX-REF-002-AC01</strong> — Given Reference <code>Trusted</code> có indexing <code>Unavailable</code>, When xem Reference, Then thấy hai trạng thái riêng và giải thích “dùng được cho citation, không dùng được cho evidence”.</li>
+<li><strong>UX-REF-003-AC01</strong> — Given Reference nhập từ Google Scholar, When mở trang Reference, Then thấy truy vấn gốc, người duyệt, thời điểm duyệt và các project đang dùng.</li>
+<li><strong>UX-EVID-001-AC01</strong> — Given evidence nằm ở trang 7, When mở Evidence Inspector, Then đoạn trích được đánh dấu trong văn cảnh, có số trang và danh sách claim đang dùng nó.</li>
+</ul>
+
+<h2 id="s-15-7">15.7. Manuscript Workspace</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-ms-001">UX-MS-001</td><td>Bố cục ba vùng: file tree, editor (tô cú pháp LaTeX, gợi ý citation key từ Trusted Reference được chọn), PDF preview. Vùng PDF có thể ẩn.</td><td>12.3, 12.7</td></tr>
+<tr><td id="req-ux-ms-002">UX-MS-002</td><td>Change Proposal hiển thị dạng diff theo file (thêm/xóa/sửa) kèm: Task, claim và evidence được dùng, kết quả kiểm tra citation. Thao tác Chấp nhận / Từ chối áp dụng cho cả proposal. Muốn áp dụng một phần, Researcher từ chối và yêu cầu Writing Agent tạo proposal nhỏ hơn, hoặc sửa trực tiếp file (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)).</td><td>12.5, WF-05.S7</td></tr>
+<tr><td id="req-ux-ms-003">UX-MS-003</td><td>Proposal <code>Outdated</code> hiển thị lý do (file đã đổi từ revision gốc) và nút yêu cầu tạo lại; không cho chấp nhận.</td><td>5.8, WF-05.A3</td></tr>
+<tr><td id="req-ux-ms-004">UX-MS-004</td><td>Build log hiển thị hai lớp: tóm tắt lỗi diễn giải bằng ngôn ngữ giao diện (lỗi gì, ở file/dòng nào, cách sửa gợi ý) và log gốc mở rộng được. Nhấn vào lỗi nhảy tới dòng trong editor.</td><td>SYNC-10, OQ-002, 12.7</td></tr>
+<tr><td id="req-ux-ms-005">UX-MS-005</td><td>Citation trong editor và trong PDF preview hiển thị khi rê chuột: Reference, claim tại vị trí, kết quả kiểm tra; citation không phân giải được đánh dấu lỗi.</td><td>12.6, KPI-02</td></tr>
+<tr><td id="req-ux-ms-006">UX-MS-006</td><td>Lịch sử revision liệt kê actor, nguồn (sửa trực tiếp hoặc proposal), Task liên quan; xem được diff giữa hai revision.</td><td>12.10</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-MS-004-AC01</strong> — Given build thất bại do thiếu package, When xem build log ở giao diện tiếng Việt, Then tóm tắt nêu tên package thiếu bằng tiếng Việt và log gốc vẫn xem được.</li>
+<li><strong>UX-MS-002-AC01</strong> — Given proposal có citation lỗi, When xem diff, Then nút Chấp nhận bị vô hiệu và citation lỗi được đánh dấu.</li>
+<li><strong>UX-MS-001-AC01</strong> — Given Trusted Reference có key <code>smith2020</code> được chọn cho project, When gõ <code>\cite{smi</code> trong editor, Then editor gợi ý <code>smith2020</code>.</li>
+<li><strong>UX-MS-003-AC01</strong> — Given proposal <code>Outdated</code>, When mở proposal, Then không có nút Chấp nhận và có nút yêu cầu tạo lại kèm lý do.</li>
+<li><strong>UX-MS-005-AC01</strong> — Given một citation key không phân giải, When xem editor, Then key được đánh dấu lỗi và rê chuột hiển thị kết quả kiểm tra.</li>
+<li><strong>UX-MS-006-AC01</strong> — Given hai revision của cùng file, When chọn so sánh, Then hiển thị diff cùng actor và nguồn của từng revision.</li>
+</ul>
+
+<h2 id="s-15-8">15.8. Loading, Empty, Error and Recovery States</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-state-001">UX-STATE-001</td><td>Thao tác dài (workflow, indexing, build, tìm kiếm) hiển thị: đang làm bước nào, agent nào, thời gian đã chạy, hoạt động gần nhất. Người dùng rời trang được mà thao tác vẫn tiếp tục; kết quả báo qua notification.</td><td>9.10, 4.4</td></tr>
+<tr><td id="req-ux-state-002">UX-STATE-002</td><td>Màn hình trống nêu lý do và hành động tiếp theo (ví dụ Trusted Library trống → “Tìm tài liệu ở Discover”).</td><td>—</td></tr>
+<tr><td id="req-ux-state-003">UX-STATE-003</td><td>Thông báo lỗi nêu: điều gì xảy ra, ảnh hưởng gì (dữ liệu nào đã lưu, cái gì chưa), người dùng có thể làm gì; có mã lỗi để tra cứu. Không hiển thị stack trace hay nội dung API key.</td><td>16.5</td></tr>
+<tr><td id="req-ux-state-004">UX-STATE-004</td><td>Nội dung người dùng đang nhập (chat, sửa Plan, sửa file) không mất khi thao tác lỗi; với editor bản thảo, thay đổi chưa lưu được giữ cục bộ và đề nghị khôi phục khi mở lại.</td><td>GOAL-02</td></tr>
+<tr><td id="req-ux-state-005">UX-STATE-005</td><td>Khi quay lại sau gián đoạn, Dashboard và Overview hiển thị banner khôi phục: workflow bị gián đoạn, prompt đang chờ, Recovery decision cần chọn.</td><td>WF-06.S3</td></tr>
+<tr><td id="req-ux-state-006">UX-STATE-006</td><td>Lỗi provider hiển thị tên Provider Connection và agent bị ảnh hưởng, kèm liên kết tới Settings → Provider Connections.</td><td>SCOPE-13, 17.1</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-STATE-001-AC01</strong> — Given workflow đang chạy, When người dùng chuyển sang project khác, Then workflow tiếp tục và notification báo khi kết thúc.</li>
+<li><strong>UX-STATE-005-AC01</strong> — Given một workflow Interrupted, When người dùng đăng nhập lại, Then banner khôi phục hiển thị trên Dashboard với nút mở Recovery decision.</li>
+<li><strong>UX-STATE-002-AC01</strong> — Given Trusted Library trống, When mở Trusted Library, Then thấy lý do và nút “Tìm tài liệu ở Discover”.</li>
+<li><strong>UX-STATE-003-AC01</strong> — Given một thao tác lỗi do hệ thống, When hiển thị lỗi, Then có mô tả, phần dữ liệu đã lưu, hành động gợi ý và mã lỗi; không có stack trace.</li>
+<li><strong>UX-STATE-004-AC01</strong> — Given đang sửa file bản thảo chưa lưu và mất kết nối, When mở lại editor, Then được đề nghị khôi phục thay đổi chưa lưu.</li>
+<li><strong>UX-STATE-006-AC01</strong> — Given Agent Run lỗi <code>auth_failed</code>, When xem thông báo, Then thấy tên Provider Connection, agent bị ảnh hưởng và liên kết tới Settings → Provider Connections.</li>
+</ul>
+
+<h2 id="s-15-9">15.9. Accessibility and Responsive Behavior</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-a11y-001">UX-A11Y-001</td><td>Giao diện đáp ứng WCAG 2.1 mức AA cho các luồng WF-01–WF-07: tương phản, nhãn cho điều khiển, focus nhìn thấy được, không truyền thông tin chỉ bằng màu.</td><td>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)</td></tr>
+<tr><td id="req-ux-a11y-002">UX-A11Y-002</td><td>Mọi thao tác phê duyệt và trả lời prompt thực hiện được hoàn toàn bằng bàn phím.</td><td>Assumption</td></tr>
+<tr><td id="req-ux-a11y-003">UX-A11Y-003</td><td>Cập nhật trạng thái động (workflow, prompt mới) được thông báo cho trình đọc màn hình mà không chuyển focus.</td><td>Assumption</td></tr>
+<tr><td id="req-ux-resp-001">UX-RESP-001</td><td>Hỗ trợ đầy đủ trên desktop (chiều rộng ≥ 1280px). Tablet (768–1279px): mọi khu vực dùng được, Manuscript có thể chuyển ba vùng thành tab. Điện thoại (&lt; 768px): xem tiến độ, Pending Actions, trả lời prompt, phê duyệt; không cam kết soạn bản thảo.</td><td>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-A11Y-002-AC01</strong> — Given prompt Open, When chỉ dùng bàn phím, Then người dùng chọn được phương án và xác nhận.</li>
+<li><strong>UX-RESP-001-AC01</strong> — Given màn hình 375px, When mở Pending Actions, Then trả lời được một prompt <code>approval</code> mà không cuộn ngang.</li>
+<li><strong>UX-A11Y-001-AC01</strong> — Given các màn hình của WF-01–WF-07, When kiểm tra tự động và thủ công theo WCAG 2.1 AA, Then không có lỗi mức A hoặc AA.</li>
+<li><strong>UX-A11Y-003-AC01</strong> — Given trình đọc màn hình đang bật, When một prompt mới xuất hiện, Then trình đọc thông báo prompt mà focus không đổi.</li>
+</ul>
+
+<h2 id="s-15-10">15.10. Agent Activity and Pending Actions</h2>
+<p class="status">Giải quyết SYNC-04. Chức năng confirmed ở <a href="02-product-scope.html#s-2-1-monitoring">SCOPE-12</a>; cách trình bày là Assumption.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-monitor-001">UX-MONITOR-001</td><td>Danh sách workflow (Agent Activity cấp project và cấp Global) hiển thị mỗi workflow: loại, Task, trạng thái, bước hiện tại, agent hiện tại, thời gian chạy, prompt đang chờ. Lọc theo trạng thái; workflow đang hoạt động ở trên cùng.</td><td>4.1, 4.2</td></tr>
+<tr><td id="req-ux-monitor-002">UX-MONITOR-002</td><td>Chi tiết workflow có hai chế độ xem: <em>dòng thời gian</em> (Orchestrator giao việc, handoff, đầu ra, prompt, lỗi theo thời gian) và <em>danh sách bước</em> (mỗi bước với agent, trạng thái, đầu vào/đầu ra dạng liên kết).</td><td>SCOPE-12</td></tr>
+<tr><td id="req-ux-monitor-003">UX-MONITOR-003</td><td>Chi tiết Agent Run hiển thị: agent, Provider Connection và model, tóm tắt context đầu vào, hành động/công cụ đã gọi, đầu ra, usage, thời gian, số lần thử, lỗi. Không hiển thị suy luận nội bộ thô của model và không hiển thị API key. Nếu Agent Run được chạy khi chế độ debug bật, có thêm phần “Toàn văn prompt/phản hồi (debug)” thu gọn mặc định, ghi ngày tự xóa (30 ngày); nếu không, ghi “Không lưu toàn văn (chế độ debug tắt)” (CTX-REGISTRY-002, OQ-062).</td><td>SCOPE-12, 16.1, 14.4</td></tr>
+<tr><td id="req-ux-monitor-004">UX-MONITOR-004</td><td>Nút Tạm dừng, Tiếp tục, Hủy, Chạy lại bước chỉ hiển thị khi chuyển trạng thái đó hợp lệ (18.2). Hủy yêu cầu xác nhận và nêu hệ quả cho Task.</td><td>8.5, 18.2</td></tr>
+<tr><td id="req-ux-monitor-005">UX-MONITOR-005</td><td>Trạng thái trong Agent Activity tự cập nhật theo từng event (bước bắt đầu/kết thúc, handoff, prompt, lỗi), gần thời gian thực, trong giới hạn NFR-PERF-003, không cần tải lại trang. Không stream từng token đầu ra của agent.</td><td>16.3</td></tr>
+<tr><td id="req-ux-pending-001">UX-PENDING-001</td><td>Pending Actions liệt kê theo loại (4.4), project và thời điểm phát sinh; việc phát sinh sớm nhất ở trên. Mở một việc đưa tới đúng đối tượng trong đúng ngữ cảnh.</td><td>4.4</td></tr>
+<tr><td id="req-ux-pending-002">UX-PENDING-002</td><td>Việc đã hết hiệu lực hiển thị ở nhóm riêng “Hết hiệu lực” kèm lý do cho đến khi người dùng đánh dấu đã xem.</td><td>4.4</td></tr>
+</tbody></table></div>
+<p class="status">FIG-033 — Bố cục màn hình chi tiết workflow (dạng khối). Nguồn: <a href="../figures/FIG-033-agent-activity-layout.mmd">figures/FIG-033-agent-activity-layout.mmd</a>.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-MONITOR-002-AC01</strong> — Given workflow có 3 bước do 2 agent thực hiện, When mở chế độ dòng thời gian, Then thấy lần Orchestrator giao việc cho từng agent và handoff giữa hai agent.</li>
+<li><strong>UX-MONITOR-003-AC01</strong> — Given Agent Run đã kết thúc, When mở chi tiết, Then thấy provider và model thực tế, và không có giá trị API key nào trên màn hình.</li>
+<li><strong>UX-MONITOR-003-AC02</strong> — Given Agent Run chạy khi chế độ debug tắt, When mở chi tiết, Then thấy context manifest và đầu ra có cấu trúc kèm dòng “Không lưu toàn văn (chế độ debug tắt)”; Given chế độ debug bật, Then có phần toàn văn prompt/phản hồi thu gọn kèm ngày tự xóa.</li>
+<li><strong>UX-MONITOR-004-AC01</strong> — Given workflow Succeeded, When xem chi tiết, Then không có nút Tạm dừng hay Hủy.</li>
+<li><strong>UX-MONITOR-001-AC01</strong> — Given 2 workflow đang chạy và 3 đã kết thúc, When mở Agent Activity, Then 2 workflow đang chạy ở trên cùng kèm bước và agent hiện tại.</li>
+<li><strong>UX-MONITOR-005-AC01</strong> — Given Agent Activity đang mở, When một bước kết thúc, Then trạng thái cập nhật trong giới hạn NFR-PERF-003 mà không cần tải lại trang.</li>
+<li><strong>UX-PENDING-001-AC01</strong> — Given hai pending action phát sinh ở hai thời điểm khác nhau, When mở Pending Actions, Then việc phát sinh sớm hơn nằm trên, và mở việc đó chuyển tới đúng project và đối tượng.</li>
+<li><strong>UX-PENDING-002-AC01</strong> — Given một prompt đã <code>Cancelled</code> vì workflow bị hủy, When mở Pending Actions, Then prompt nằm trong nhóm “Hết hiệu lực” kèm lý do cho tới khi được đánh dấu đã xem.</li>
+</ul>
+
+<h2 id="s-15-11">15.11. Bilingual Interface</h2>
+<p class="status">Giải quyết phần giao diện của SYNC-10. Confirmed — UI tiếng Việt và tiếng Anh (21.1, OQ-002).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-i18n-001">UX-I18N-001</td><td>Mọi chuỗi giao diện (nhãn, thông báo, lỗi, trạng thái, email nếu có) có bản tiếng Việt và tiếng Anh. Ngôn ngữ mặc định theo Preferences; lần đầu theo ngôn ngữ trình duyệt, mặc định English nếu không xác định được.</td><td>Confirmed (2 ngôn ngữ); mặc định: Assumption</td></tr>
+<tr><td id="req-ux-i18n-002">UX-I18N-002</td><td>Đổi ngôn ngữ áp dụng ngay, không mất trạng thái màn hình, không đổi nội dung nghiên cứu (research context, artifact, bản thảo, tin nhắn đã gửi).</td><td>4.3</td></tr>
+<tr><td id="req-ux-i18n-003">UX-I18N-003</td><td>Thuật ngữ cố định ở 1.5 (Task, Plan, Artifact, Trusted Reference…) và tên execution label giữ nguyên tiếng Anh ở cả hai ngôn ngữ; có thể kèm chú thích tiếng Việt.</td><td>1.5</td></tr>
+<tr><td id="req-ux-i18n-004">UX-I18N-004</td><td>Định dạng ngày giờ và số theo ngôn ngữ giao diện; thời gian hiển thị theo múi giờ của trình duyệt.</td><td>Assumption</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-I18N-002-AC01</strong> — Given đang sửa Plan Version Draft, When đổi từ tiếng Việt sang English, Then nội dung đang sửa còn nguyên và nhãn giao diện chuyển sang English.</li>
+<li><strong>UX-I18N-001-AC01</strong> — Given giao diện tiếng Việt, When xảy ra lỗi provider, Then thông báo lỗi hiển thị bằng tiếng Việt.</li>
+<li><strong>UX-I18N-003-AC01</strong> — Given giao diện tiếng Việt, When xem Task board, Then nhãn <code>Available for agent</code>, <code>Manual editor requirement</code> và thuật ngữ Task giữ nguyên tiếng Anh.</li>
+<li><strong>UX-I18N-004-AC01</strong> — Given giao diện tiếng Việt và trình duyệt ở múi giờ Asia/Saigon, When xem thời điểm tạo project, Then thời điểm hiển thị dạng dd/mm/yyyy theo giờ địa phương.</li>
+</ul>
+
+<h2 id="s-15-12">15.12. Settings and Sign-in</h2>
+<p class="status">Bổ sung theo PC-01. Cấu trúc bốn trang con của Settings theo <a href="04-information-architecture-and-navigation.html#s-4-1-settings">4.1</a> và nhóm cài đặt theo <a href="02-product-scope.html#s-2-1-settings">SCOPE-13</a>. Provider và API key: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014). Trường cá nhân, ngôn ngữ, không có tham số nâng cao, lĩnh vực nghiên cứu vào context chỉ khi bật: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015). Đăng nhập duy nhất qua eTroy OIDC: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073). Embedding model: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051). Chế độ debug: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062). Ngưỡng kiểm chứng mặc định chỉnh được: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092). Họ tên/email lấy từ eTroy OIDC: Assumption (ASM-13); liên kết Google Scholar là trường URL: Assumption (ASM-14); cách tổ chức nhóm “Ngưỡng kiểm chứng”: Assumption (ASM-15); vị trí công tắc debug và bố cục màn hình: Assumption.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td id="req-ux-auth-001">UX-AUTH-001</td><td>Màn hình đăng nhập chỉ có một hành động chính “Đăng nhập bằng eTroy”, chuyển tới eTroy OIDC (INT-OIDC-001). Không có form email/mật khẩu, không có “Đăng ký”, “Quên mật khẩu” hay đăng nhập bằng Google. Màn hình nêu SIRes thuộc nền tảng eTroy và tài khoản do eTroy quản lý.</td><td>OQ-073 (PC-01); NFR-AUTH-001; ASM-13</td></tr>
+<tr><td id="req-ux-auth-002">UX-AUTH-002</td><td>Đăng nhập thất bại (người dùng hủy ở eTroy, token không hợp lệ) hoặc eTroy OIDC không khả dụng: quay về màn hình đăng nhập với thông báo dễ hiểu nêu nguyên nhân và hành động gợi ý (thử lại sau, liên hệ quản trị eTroy); không có phương thức đăng nhập dự phòng. Phiên hết hạn khi đang làm việc: thông báo và chuyển tới đăng nhập lại, giữ nội dung đang nhập theo UX-STATE-004.</td><td>OQ-073 (PC-01); INT-OIDC-003; 17</td></tr>
+<tr><td id="req-ux-settings-001">UX-SETTINGS-001</td><td><strong>Profile</strong> gồm các trường: họ tên hiển thị, đơn vị công tác, lĩnh vực nghiên cứu, ảnh đại diện, URL hồ sơ Google Scholar (trường URL, kiểm tra định dạng; không phải đăng nhập Google). Họ tên và email lần đầu điền từ claim eTroy OIDC; email chỉ đọc, ghi “do eTroy quản lý”. Có tùy chọn “Dùng lĩnh vực nghiên cứu làm context cho agent” (mặc định tắt) kèm giải thích: chỉ lĩnh vực nghiên cứu được gửi cho agent khi bật, các trường khác không bao giờ được gửi. Không có trường mật khẩu hay đổi phương thức đăng nhập.</td><td>OQ-015, OQ-073 (PC-01); ASM-13, ASM-14; CTX-ASSEMBLY-001</td></tr>
+<tr><td id="req-ux-settings-002">UX-SETTINGS-002</td><td><strong>Provider Connections</strong>: chọn provider từ đúng ba lựa chọn OpenAI, Anthropic Claude, Google Gemini; base URL điền sẵn endpoint chính thức, sửa được kèm ghi chú “phải tương thích API chính thức của provider đã chọn”; API key do người dùng tự nhập, hiển thị dạng che sau khi lưu. Nút “Kiểm tra kết nối” bắt buộc thành công trước khi kết nối ở trạng thái hợp lệ. Khi tài khoản chưa có kết nối nào, trang và Dashboard hiển thị hướng dẫn “Thêm API key của bạn để agent hoạt động” — hệ thống không có key hay hạn mức mặc định.</td><td>OQ-014 (PC-01); SCOPE-13; 8.6; 17.1</td></tr>
+<tr><td id="req-ux-settings-003">UX-SETTINGS-003</td><td><strong>Agent Models</strong>: bảng Orchestrator và bảy Specialist Agent (cấu hình mặc định, ghi đè theo agent, cảnh báo thiếu năng lực) và một dòng riêng <strong>Embedding model</strong> của tài khoản, chỉ chọn được từ Provider Connection OpenAI hoặc Google Gemini. Đổi embedding model hiển thị hộp xác nhận nêu số Reference phải index lại toàn bộ và việc tiêu thụ usage trước khi lưu (EVID-INDEX-003). Không có tham số nâng cao của model (temperature, giới hạn token…).</td><td>OQ-015, OQ-051 (PC-01); SCOPE-13, SCOPE-14; 11.1</td></tr>
+<tr><td id="req-ux-settings-004">UX-SETTINGS-004</td><td><strong>Preferences</strong>: ngôn ngữ giao diện (Tiếng Việt / English); ngôn ngữ phản hồi mặc định của agent; công tắc <strong>Chế độ debug</strong> (mặc định tắt) kèm giải thích: khi bật, toàn văn prompt và phản hồi của các Agent Run sau đó được lưu 30 ngày rồi tự xóa, chỉ chủ tài khoản xem được; tắt không xóa toàn văn đã lưu trước hạn.</td><td>OQ-015, OQ-062 (PC-01); CTX-REGISTRY-002; NFR-RET-009</td></tr>
+<tr><td id="req-ux-settings-005">UX-SETTINGS-005</td><td>Nhóm <strong>Ngưỡng kiểm chứng</strong> (trong Preferences): liệt kê các ngưỡng Verification Agent dùng để gán mức hỗ trợ claim và báo citation không khớp; mỗi ngưỡng hiển thị giá trị hiện hành, giá trị mặc định và ghi chú “giá trị mặc định được hiệu chỉnh để đạt độ chính xác mức hỗ trợ ≥ 85% và phát hiện citation không khớp ≥ 95%”. Ngưỡng khác mặc định được đánh dấu “đã chỉnh”. Có nút “Khôi phục mặc định”. Lưu thay đổi hiển thị lưu ý “áp dụng từ lần kiểm chứng sau; kết quả đã có không đổi” và ghi Audit Event.</td><td>OQ-092 (PC-01); ASM-15; CLAIM-SUPPORT-001, CLAIM-CITATION-001</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>UX-AUTH-001-AC01</strong> — Given người dùng chưa đăng nhập, When mở SIRes, Then màn hình đăng nhập chỉ có nút “Đăng nhập bằng eTroy” và không có ô nhập email hay mật khẩu.</li>
+<li><strong>UX-AUTH-002-AC01</strong> — Given eTroy OIDC không khả dụng, When người dùng bấm “Đăng nhập bằng eTroy”, Then quay về màn hình đăng nhập với thông báo nêu nguyên nhân và gợi ý thử lại, không có phương thức đăng nhập khác.</li>
+<li><strong>UX-SETTINGS-001-AC01</strong> — Given người dùng đăng nhập lần đầu qua eTroy OIDC, When mở Profile, Then họ tên và email đã được điền từ eTroy, email chỉ đọc, và tùy chọn dùng lĩnh vực nghiên cứu làm context ở trạng thái tắt.</li>
+<li><strong>UX-SETTINGS-001-AC02</strong> — Given người dùng nhập URL hồ sơ Google Scholar không đúng định dạng URL, When lưu, Then System báo lỗi trường đó và không lưu.</li>
+<li><strong>UX-SETTINGS-002-AC01</strong> — Given tạo Provider Connection, When mở danh sách provider, Then chỉ có OpenAI, Anthropic Claude và Google Gemini; When chưa kiểm tra kết nối thành công, Then kết nối không ở trạng thái hợp lệ.</li>
+<li><strong>UX-SETTINGS-002-AC02</strong> — Given tài khoản mới chưa có Provider Connection, When mở Dashboard, Then thấy hướng dẫn thêm API key và liên kết tới Settings → Provider Connections.</li>
+<li><strong>UX-SETTINGS-003-AC01</strong> — Given tài khoản có Provider Connection Anthropic Claude và OpenAI, When chọn embedding model, Then chỉ model của kết nối OpenAI được liệt kê; When đổi sang model khác khi đã có Reference được index, Then hộp xác nhận nêu số Reference phải index lại.</li>
+<li><strong>UX-SETTINGS-004-AC01</strong> — Given chế độ debug đang tắt, When bật công tắc, Then giao diện hiển thị giải thích lưu 30 ngày và Audit Event ghi việc bật.</li>
+<li><strong>UX-SETTINGS-005-AC01</strong> — Given người dùng đã chỉnh một ngưỡng kiểm chứng, When bấm “Khôi phục mặc định” và xác nhận, Then mọi ngưỡng trở về giá trị mặc định, nhãn “đã chỉnh” biến mất và Audit Event ghi thay đổi.</li>
+</ul>
+
+<h2 id="s-15-oq">15.13. Open Questions của mục 15</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-070</td><td>Người dùng có được chấp nhận từng phần (từng hunk) của Change Proposal không, hay chỉ chấp nhận/từ chối cả proposal trong MVP? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> MVP chỉ chấp nhận hoặc từ chối cả proposal; muốn áp dụng một phần thì yêu cầu proposal nhỏ hơn hoặc sửa trực tiếp (UX-MS-002); PO duyệt 31/10/2026 (PC-01).</td><td>15.7, 12.5, 5.8, APR-05</td></tr>
+<tr><td>OQ-071</td><td>Phạm vi hỗ trợ màn hình: phương án desktop đầy đủ, tablet dùng được, điện thoại chỉ theo dõi và phê duyệt có được chấp nhận không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> áp dụng ba mức hỗ trợ màn hình ở UX-RESP-001 (desktop đầy đủ, tablet dùng được, điện thoại theo dõi và phê duyệt); PO duyệt 31/10/2026 (PC-01).</td><td>15.9, 16.3</td></tr>
+<tr><td>OQ-072</td><td>Mục tiêu accessibility là WCAG 2.1 AA cho các luồng chính, hay mức khác? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> WCAG 2.1 mức AA cho các màn hình của WF-01–WF-07 (UX-A11Y-001); PO duyệt 31/10/2026 (PC-01).</td><td>15.9, 19</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="14-shared-context-and-orchestration-architecture.html">← Mục 14</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="16-non-functional-requirements.html">Mục 16 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

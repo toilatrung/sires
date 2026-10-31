@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>11. Evidence, RAG and Research Synthesis | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 11</p><h1>11. Functional Requirements — Evidence, RAG and Research Synthesis</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả cách hệ thống biến Trusted Reference thành evidence truy xuất được, liên kết claim với evidence, kiểm chứng citation và tạo bản tổng hợp có căn cứ. Cơ chế giảm hallucination là <strong>Retrieval-Augmented Generation (RAG) trên vector database</strong> chứa Trusted Reference đã index (Confirmed — 21.1, PRB-03). Danh mục năng lực lấy từ outline (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Tên entity và trạng thái theo <a href="05-core-domain-model.html#s-5-6">5.6</a>; bước workflow theo <a href="06-end-to-end-product-workflow.html#wf-05">WF-05</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-11-0">Tổng quan pipeline</a></li>
+<li><a href="#s-11-1">11.1. Trusted Corpus Indexing</a></li>
+<li><a href="#s-11-2">11.2. Evidence Retrieval</a></li>
+<li><a href="#s-11-3">11.3. Evidence Inspector</a></li>
+<li><a href="#s-11-4">11.4. Claim-to-Evidence Mapping</a></li>
+<li><a href="#s-11-5">11.5. Claim Support Assessment</a></li>
+<li><a href="#s-11-6">11.6. Citation Verification</a></li>
+<li><a href="#s-11-7">11.7. Conflicting Evidence</a></li>
+<li><a href="#s-11-8">11.8. Literature Review Synthesis</a></li>
+<li><a href="#s-11-9">11.9. Human Review</a></li>
+<li><a href="#s-11-10">11.10. Research Artifact Persistence</a></li>
+<li><a href="#s-11-oq">11.11. Open Questions của mục 11</a></li>
+</ul></details>
+
+<h2 id="s-11-0">Tổng quan pipeline</h2>
+<pre><code>Reference (Trusted) ─► Source Document ─► extract text ─► chunk (passageId, vị trí)
+                                                          │
+                                                          ▼
+                                           embed ─► vector database (index theo account)
+                                                          │  lọc: account + Project Reference Selection
+                                                          ▼
+Task / câu hỏi ─► Evidence Retrieval Agent ─► Evidence (referenceId, passageId, trích dẫn)
+                                                          │
+                                                          ▼
+               Synthesis Agent ─► Claim (Draft) ─► Claim–Evidence Link ─► Verification Agent
+                                                          │                     │
+                                                          ▼                     ▼
+                                                 Researcher review (APR-06)  mức hỗ trợ
+                                                          │
+                                                          ▼
+                                 Claim/Artifact Accepted ─► Writing Agent (mục 12)</code></pre>
+<p class="status">FIG-020 — RAG và chuỗi evidence-to-claim. Nguồn: <a href="../figures/FIG-020-rag-evidence-pipeline.mmd">figures/FIG-020-rag-evidence-pipeline.mmd</a>.</p>
+<p><strong>Nguyên tắc chung (Assumption):</strong></p>
+<ul>
+<li>Chỉ Reference <code>Trusted</code> có Source Document <code>Indexed</code> mới là nguồn của evidence (5.6). Discovered Result, kiến thức nền của model và nội dung chat không bao giờ là evidence.</li>
+<li>Mọi văn bản do agent sinh ra trong mục này phải dẫn được về <em>evidenceId → referenceId → passageId</em>, hoặc mang nhãn <code>Unsupported</code> hiển thị rõ.</li>
+<li>Agent tạo bản <code>Draft</code>; chỉ Researcher chuyển claim và bản tổng hợp sang <code>Accepted</code> (APR-06).</li>
+</ul>
+
+<h2 id="s-11-1">11.1. Trusted Corpus Indexing</h2>
+<p class="status">Confirmed (outline): trích xuất, chia đoạn, embed và index nội dung nguồn đủ điều kiện; theo dõi trạng thái và lỗi indexing. Vector database: Confirmed (21.1). Giải quyết SYNC-08 (phần 11.1). Định dạng và dung lượng file: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-050). Embedding model: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051).</p>
+
+<h3 id="req-evid-index-001">EVID-INDEX-001 — Index nội dung Trusted Reference</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực; định dạng file và embedding model — PC-01, OQ-050, OQ-051), Assumption (chi tiết còn lại)</td></tr>
+<tr><th scope="row">Purpose</th><td>Đưa nội dung tài liệu tin cậy vào vector database để truy xuất evidence có định danh nguồn (PRB-03).</td></tr>
+<tr><th scope="row">Actor</th><td>System; Reference Processing Agent khởi động yêu cầu indexing (3.3)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Reference <code>Trusted</code>; có nội dung truy cập hợp lệ (file người dùng tải lên hoặc nguồn mở được phép, OOS-06). Nội dung là PDF có lớp văn bản, dung lượng tối đa 50 MB/file (OQ-050). Tài khoản đã chọn embedding model qua một Provider Connection OpenAI hoặc Google Gemini hợp lệ (OQ-051).</td></tr>
+<tr><th scope="row">Trigger</th><td>Reference vừa được duyệt (WF-04.S6); Researcher cung cấp file mới; Researcher yêu cầu index lại.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System tạo Workflow loại <code>indexing</code>; trạng thái indexing → <code>Queued</code> → <code>Indexing</code>.</li>
+<li>Kiểm tra file: đúng định dạng PDF, có lớp văn bản, không vượt 50 MB.</li>
+<li>Trích xuất văn bản và cấu trúc (tiêu đề mục, số trang) từ Source Document.</li>
+<li>Chia văn bản thành đoạn (chunk); mỗi đoạn có <em>passageId</em> ổn định, vị trí (trang, mục, thứ tự đoạn) và văn bản gốc.</li>
+<li>Tạo embedding cho từng đoạn bằng embedding model của tài khoản, gọi qua Provider Connection của người dùng (OQ-051).</li>
+<li>Ghi vào vector database kèm metadata: accountId, referenceId, phiên bản nội dung, passageId, vị trí.</li>
+<li>Trạng thái → <code>Indexed</code>; ghi số đoạn, thời điểm, model embedding đã dùng.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul>
+<li>Không có nội dung truy cập được: trạng thái <code>Unavailable</code>; reference vẫn dùng cho citation, không cho evidence (WF-04.S6).</li>
+<li>File không đạt điều kiện (không phải PDF, PDF scan không có lớp văn bản, vượt 50 MB) hoặc trích xuất thất bại (file hỏng): <code>Failed</code> kèm lý do cụ thể và hành động gợi ý (tải PDF có lớp văn bản, giảm dung lượng); System không chạy OCR. Reference vẫn <code>Trusted</code> và dùng được ở mức metadata cho citation, không cho evidence (như <code>Unavailable</code>); Researcher thử lại hoặc tải file khác (OQ-050).</li>
+<li>Lỗi embedding provider: thử lại theo chính sách 8.5; hết lượt → <code>Failed</code>.</li>
+<li>Tài khoản chưa có embedding model hoặc Provider Connection dùng cho embedding không hợp lệ: indexing không bắt đầu, trạng thái giữ <code>Not Indexed</code> và Researcher được dẫn tới Settings (<a href="04-information-architecture-and-navigation.html#s-4-1-settings">4.1</a>, <a href="15-ui-ux-requirements.html#s-15-12">15.12</a>) (OQ-051).</li>
+</ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Không index Reference khác <code>Trusted</code>. Index lại thay nội dung cũ theo phiên bản: đoạn của phiên bản cũ không còn được truy xuất; evidence trỏ tới đoạn cũ chuyển <code>Stale</code>. Nội dung đã index thuộc cấp tài khoản và dùng lại giữa các project; bộ lọc theo Project Reference Selection đảm bảo cách ly (OQ-024 đã chốt). Chỉ index PDF có lớp văn bản, tối đa 50 MB/file; MVP không OCR (OQ-050). Embedding gọi qua Provider Connection của người dùng (OpenAI hoặc Google Gemini; Anthropic không cung cấp embedding API); hệ thống không cung cấp embedding model riêng. Mỗi tài khoản dùng một embedding model duy nhất cho toàn bộ thư viện (OQ-051).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Source Document (văn bản, đoạn, vector); trạng thái indexing của Reference; Workflow, Agent Run; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>EVID-INDEX-001-AC01</strong> Given một Reference <code>Trusted</code> có PDF văn bản hợp lệ, When indexing hoàn tất, Then trạng thái là <code>Indexed</code> và mỗi đoạn trong vector database có referenceId, passageId và vị trí trang.</li>
+<li><strong>EVID-INDEX-001-AC02</strong> Given một Reference <code>Pending Approval</code>, When có yêu cầu index, Then System từ chối và không ghi gì vào vector database.</li>
+<li><strong>EVID-INDEX-001-AC03</strong> Given một Reference đã <code>Indexed</code>, When được index lại với file mới, Then truy xuất chỉ trả về đoạn của phiên bản mới và evidence cũ chuyển <code>Stale</code>.</li>
+<li><strong>EVID-INDEX-001-AC04</strong> Given một Reference <code>Trusted</code> có file là PDF scan không có lớp văn bản hoặc lớn hơn 50 MB, When indexing chạy, Then trạng thái là <code>Failed</code> với lý do cụ thể, System không chạy OCR, và reference vẫn chèn được citation trong bản thảo.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>LIB (10.5, 10.8); tích hợp document processing và vector database (17.3); embedding provider (17.1).</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-050, OQ-051 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="req-evid-index-002">EVID-INDEX-002 — Trạng thái và lỗi indexing</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cho Researcher và readiness check biết nguồn nào đã sẵn sàng làm evidence.</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Reference <code>Trusted</code> đã có yêu cầu indexing (EVID-INDEX-001).</td></tr>
+<tr><th scope="row">Trigger</th><td>Trạng thái indexing của một Reference thay đổi; Researcher mở Trusted Library hoặc References and Evidence.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Trạng thái indexing (<code>Not Indexed</code>, <code>Queued</code>, <code>Indexing</code>, <code>Indexed</code>, <code>Failed</code>, <code>Unavailable</code>) hiển thị ở Trusted Library và References and Evidence; lỗi có lý do và hành động gợi ý (thử lại, tải file khác). Readiness check (WF-02.S3) dùng trạng thái này.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Indexing đứng ở <code>Indexing</code> quá ngưỡng phát hiện gián đoạn (16.2): Workflow <code>indexing</code> → <code>Interrupted</code> và xử lý theo WF-06; trạng thái hiển thị “bị gián đoạn” thay vì “đang xử lý”.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Task cần evidence bị chặn nếu reference bắt buộc chưa <code>Indexed</code>. Lỗi indexing tạo notification loại Failure (4.4).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Trạng thái indexing của Reference; Notification loại Failure khi <code>Failed</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>EVID-INDEX-002-AC01</strong> Given indexing thất bại, When Researcher mở reference, Then thấy trạng thái <code>Failed</code>, lý do và nút thử lại.</li>
+<li><strong>EVID-INDEX-002-AC02</strong> Given một Task khai báo cần evidence từ reference R chưa <code>Indexed</code>, When chạy readiness check, Then kết quả không Đạt và nêu tên R.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-INDEX-001; TASK readiness (9.5)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-050 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="req-evid-index-003">EVID-INDEX-003 — Đổi embedding model và index lại toàn bộ</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051), Assumption (chi tiết luồng)</td></tr>
+<tr><th scope="row">Purpose</th><td>Giữ mọi vector trong thư viện của một tài khoản cùng một embedding model, để truy xuất không trả kết quả sai lệch mà người dùng không phát hiện được.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher (chọn hoặc đổi model); System (index lại)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Provider Connection OpenAI hoặc Google Gemini hợp lệ cung cấp embedding model.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn embedding model lần đầu, hoặc đổi sang model khác, trong Settings.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Lần chọn đầu: System lưu embedding model của tài khoản; các Reference <code>Trusted</code> chưa index được đưa vào hàng đợi (EVID-INDEX-001).</li>
+<li>Khi đổi model: trước khi lưu, System hiển thị cảnh báo gồm số Reference sẽ phải index lại, việc index lại tiêu thụ usage của Provider Connection được chọn, và evidence hiện có sẽ chuyển <code>Stale</code> khi đoạn nguồn được thay thế.</li>
+<li>Researcher xác nhận → System lưu model mới và tạo Workflow <code>indexing</code> index lại toàn bộ Reference đã index của tài khoản bằng model mới.</li>
+<li>Trong thời gian index lại, truy xuất evidence chỉ dùng các đoạn đã index bằng model mới; Reference chưa xong hiển thị trạng thái <code>Queued</code>/<code>Indexing</code> và readiness check xử lý như chưa <code>Indexed</code>.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher hủy ở bước cảnh báo: giữ nguyên model và index cũ. Index lại một Reference thất bại: Reference đó <code>Failed</code> theo EVID-INDEX-002; các Reference khác tiếp tục.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Một tài khoản chỉ có một embedding model tại một thời điểm; không trộn vector của hai model trong truy xuất. Không có lựa chọn đổi model mà không index lại. Đổi model ghi Audit Event (actor Researcher, model cũ, model mới).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Cấu hình embedding model của tài khoản; Workflow <code>indexing</code>; trạng thái indexing của Reference; Evidence <code>Stale</code>; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>EVID-INDEX-003-AC01</strong> Given tài khoản đã index 10 Reference bằng model M1, When Researcher chọn model M2, Then System hiển thị cảnh báo nêu 10 Reference cần index lại trước khi lưu; When Researcher hủy, Then model vẫn là M1.</li>
+<li><strong>EVID-INDEX-003-AC02</strong> Given Researcher xác nhận đổi sang M2, When index lại hoàn tất, Then mọi đoạn trong vector database của tài khoản ghi model M2 và không truy vấn nào trả về đoạn index bằng M1.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-INDEX-001; EVID-INDEX-002; Settings (<a href="04-information-architecture-and-navigation.html#s-4-1-settings">4.1</a>, <a href="15-ui-ux-requirements.html#s-15-12">15.12</a>); 17.1</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-051 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-2">11.2. Evidence Retrieval</h2>
+<p class="status">Confirmed (outline): truy xuất đoạn liên quan từ nguồn đã duyệt và truy cập được; giữ định danh nguồn và đoạn. Giải quyết SYNC-08 (phần 11.2).</p>
+
+<h3 id="req-evid-retrieval-001">EVID-RETRIEVAL-001 — Truy xuất evidence bằng RAG</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cung cấp đoạn trích có nguồn làm căn cứ cho claim và văn bản sinh ra.</td></tr>
+<tr><th scope="row">Actor</th><td>Evidence Retrieval Agent; System (thực thi truy vấn vector)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow đang hoạt động trong một project; project có ít nhất một Project Reference Selection <code>Active</code> với Reference <code>Indexed</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S1; Researcher tìm evidence trong References and Evidence; Orchestrator cần evidence khi lắp ráp context (14.2).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Agent tạo một hoặc nhiều truy vấn từ câu hỏi hoặc yêu cầu Task.</li>
+<li>System truy vấn vector database với bộ lọc bắt buộc: accountId và tập referenceId đang được chọn cho project.</li>
+<li>Trả về các đoạn xếp hạng theo độ liên quan, kèm referenceId, passageId, vị trí, văn bản gốc.</li>
+<li>Agent chọn đoạn phù hợp; System lưu Evidence <code>Active</code> với truy vấn, Task, Agent Run và điểm liên quan.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul>
+<li>Không có đoạn đủ liên quan: trả kết quả rỗng có giải thích; không tạo evidence giả; Orchestrator có thể gợi ý tìm thêm tài liệu (WF-05.A2).</li>
+<li>Vector database không khả dụng: bước thất bại theo 8.5; không chuyển sang “trả lời từ kiến thức model”.</li>
+</ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Bộ lọc account và project là bắt buộc ở tầng System, không phụ thuộc agent (CTX-ISOLATION-001). Văn bản evidence là trích nguyên văn từ đoạn đã index, không phải diễn giải. Phạm vi truy xuất chỉ là reference đã chọn cho project; muốn dùng thêm reference thì thêm nó vào project (LIB-PROJECT-001) (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Evidence <code>Active</code>; Agent Run (truy vấn, số kết quả).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>EVID-RETRIEVAL-001-AC01</strong> Given project P chọn reference A nhưng không chọn B (cả hai <code>Indexed</code>), When truy xuất evidence trong P, Then không kết quả nào có referenceId của B.</li>
+<li><strong>EVID-RETRIEVAL-001-AC02</strong> Given một Evidence vừa tạo, When kiểm tra, Then văn bản của nó trùng nguyên văn với đoạn passageId trong Source Document.</li>
+<li><strong>EVID-RETRIEVAL-001-AC03</strong> Given không có đoạn liên quan, When truy xuất, Then không tạo Evidence nào và người dùng thấy thông báo không tìm thấy.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-INDEX-001; CTX-ISOLATION-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-3">11.3. Evidence Inspector</h2>
+<p class="status">Confirmed (outline): hiển thị metadata nguồn, đoạn liên quan và ngữ cảnh xung quanh.</p>
+
+<h3 id="req-evid-inspector-001">EVID-INSPECTOR-001 — Xem evidence trong ngữ cảnh nguồn</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cho Researcher tự kiểm chứng đoạn trích trước khi tin claim.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Evidence thuộc project đang mở.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn một evidence từ claim, artifact, citation hoặc danh sách evidence.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mở một Evidence (từ claim, artifact, citation hoặc danh sách) → hiển thị metadata Reference (tác giả, năm, tiêu đề, venue, DOI/liên kết), đoạn trích được tô sáng, đoạn trước và sau, vị trí (trang/mục), các claim đang dùng evidence này → điều hướng tới Reference trong Trusted Library (4.3).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Evidence <code>Stale</code>: hiển thị cảnh báo và lý do (reference bị thu hồi hoặc index lại). Researcher có thể loại evidence (<code>Excluded</code>).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Ngữ cảnh xung quanh lấy từ Source Document đã index, không sinh lại bằng model.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Không (xem); khi loại evidence: Evidence → <code>Excluded</code>, Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>EVID-INSPECTOR-001-AC01</strong> Given một claim có evidence, When Researcher mở evidence, Then thấy metadata nguồn, đoạn trích tô sáng, ít nhất một đoạn ngữ cảnh liền kề và số trang (nếu có).</li>
+<li><strong>EVID-INSPECTOR-001-AC02</strong> Given Researcher chọn loại một evidence, When lưu, Then evidence chuyển <code>Excluded</code>, các claim liên quan được tính lại mức hỗ trợ ở lần kiểm chứng sau và Audit Event ghi actor Researcher.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-RETRIEVAL-001; UX 15.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-4">11.4. Claim-to-Evidence Mapping</h2>
+<p class="status">Confirmed (outline): liên kết claim với evidence hỗ trợ, phản bác hoặc chưa đủ.</p>
+
+<h3 id="req-claim-mapping-001">CLAIM-MAPPING-001 — Liên kết claim với evidence</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi phát biểu nghiên cứu truy vết được về nguồn (GOAL-03).</td></tr>
+<tr><th scope="row">Actor</th><td>Synthesis Agent (tạo); Researcher (sửa liên kết)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow tổng hợp đang hoạt động, hoặc Researcher đang sửa claim trong project.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S2; Researcher thêm hoặc sửa claim thủ công.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Synthesis Agent tách bản tổng hợp thành các claim nguyên tử → mỗi claim tạo Claim <code>Draft</code> (support status <code>Not Assessed</code>) → tạo Claim–Evidence Link với quan hệ <code>supports</code>, <code>contradicts</code> hoặc <code>context</code> → claim không tìm được evidence vẫn được lưu, không có link.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Evidence được liên kết chuyển <code>Stale</code> hoặc <code>Excluded</code>: link được giữ để truy vết nhưng không tính khi đánh giá mức hỗ trợ; claim được kiểm chứng lại (CLAIM-SUPPORT-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Link chỉ trỏ tới Evidence cùng project và <code>Active</code>. Researcher được thêm, xóa, đổi quan hệ link; mọi thay đổi ghi actor. Claim không có link <code>supports</code> nào không được đánh giá <code>Supported</code>.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Claim <code>Draft</code>; Claim–Evidence Link.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CLAIM-MAPPING-001-AC01</strong> Given Synthesis Agent tạo bản tổng hợp, When hoàn tất, Then mỗi claim được lưu riêng, có Agent Run nguồn và có 0..n link với quan hệ hợp lệ.</li>
+<li><strong>CLAIM-MAPPING-001-AC02</strong> Given evidence thuộc project khác, When thử tạo link, Then System từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-RETRIEVAL-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-5">11.5. Claim Support Assessment</h2>
+<p class="status">Confirmed (outline): phân biệt supported, partially supported, unsupported và conflicting. Điều kiện của <code>Supported</code>: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-052). Ngưỡng nghiệm thu mặc định 85% (mức hỗ trợ) và 95% (citation không khớp), người dùng chỉnh được trong Settings: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092); cách tổ chức nhóm “Ngưỡng kiểm chứng”: Assumption (ASM-15).</p>
+
+<h3 id="req-claim-support-001">CLAIM-SUPPORT-001 — Đánh giá mức hỗ trợ của claim</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực; điều kiện <code>Supported</code> — PC-01, OQ-052; ngưỡng mặc định — PC-01, OQ-092), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cho Researcher biết claim nào có căn cứ đầy đủ; đo KPI-01.</td></tr>
+<tr><th scope="row">Actor</th><td>Verification Agent; Researcher (ghi đè có lý do)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Claim có trạng thái duyệt <code>Draft</code> hoặc <code>Accepted</code>; Verification Agent có kết nối provider hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S3; link của claim thay đổi; evidence liên quan chuyển <code>Stale</code> hoặc <code>Excluded</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Verification Agent đọc claim và các evidence đã liên kết (văn bản gốc) → gán mức hỗ trợ kèm lý do ngắn trỏ tới evidence cụ thể, theo các ngưỡng kiểm chứng đang áp dụng của tài khoản (mặc định hoặc do người dùng chỉnh trong Settings): <code>Supported</code> (ít nhất một evidence <code>Active</code> nói trực tiếp điều claim nói), <code>Partially Supported</code> (chỉ một phần, hoặc claim khái quát hơn evidence), <code>Unsupported</code> (không có evidence hỗ trợ), <code>Conflicting</code> (có cả evidence hỗ trợ và phản bác).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Agent Run kiểm chứng lỗi: thử lại theo hai lớp 17.1 và 8.5; nếu vẫn lỗi, claim giữ mức hỗ trợ cũ (hoặc <code>Not Assessed</code>) và Researcher có thể chạy lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Verification Agent không kiểm chứng claim do chính Agent Run của nó tạo (3.3). Researcher có thể ghi đè mức hỗ trợ, bắt buộc ghi lý do; hiển thị là “đã ghi đè”. Claim <code>Accepted</code> phải có mức hỗ trợ khác <code>Not Assessed</code> (5.6). <strong>Điều kiện <code>Supported</code> (OQ-052):</strong> không đặt ngưỡng số evidence theo claim; claim chỉ là <code>Supported</code> khi có ít nhất một evidence hỗ trợ trực tiếp và kết luận đó do Verification Agent đưa ra (hoặc Researcher ghi đè có lý do). <strong>Ngưỡng kiểm chứng (OQ-092, ASM-15):</strong> các ngưỡng Verification Agent dùng để gán mức hỗ trợ nằm trong nhóm “Ngưỡng kiểm chứng” của Settings cá nhân; giá trị mặc định được hiệu chỉnh để độ chính xác đánh giá mức hỗ trợ đạt ≥ 85% so với nhãn chuyên gia; nghiệm thu MVP đo với giá trị mặc định. Người dùng đổi ngưỡng thì thay đổi được ghi Audit Event và áp dụng từ lần kiểm chứng sau; kết quả kiểm chứng cũ giữ nguyên và ghi bộ ngưỡng đã dùng. KPI-01 = số claim <code>Accepted</code> có mức <code>Supported</code> hoặc <code>Partially Supported</code> với link hợp lệ / tổng claim <code>Accepted</code> trong tổng hợp và bản thảo (ngưỡng ≥ 95%, 1.3; cách đo ở <a href="16-non-functional-requirements.html#s-16-9">16.9</a>).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Support status và kết quả kiểm chứng gần nhất của Claim; artifact verification_report.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CLAIM-SUPPORT-001-AC01</strong> Given claim không có link <code>supports</code>, When đánh giá, Then mức là <code>Unsupported</code>.</li>
+<li><strong>CLAIM-SUPPORT-001-AC02</strong> Given claim có cả link <code>supports</code> và <code>contradicts</code>, When đánh giá, Then mức là <code>Conflicting</code>.</li>
+<li><strong>CLAIM-SUPPORT-001-AC03</strong> Given một evidence hỗ trợ duy nhất của claim chuyển <code>Stale</code>, When kiểm chứng lại, Then claim không còn <code>Supported</code> và được gắn cờ cần xem lại.</li>
+<li><strong>CLAIM-SUPPORT-001-AC04</strong> Given Researcher ghi đè mức hỗ trợ mà không nhập lý do, When lưu, Then System từ chối.</li>
+<li><strong>CLAIM-SUPPORT-001-AC05</strong> Given bộ dữ liệu nghiệm thu có nhãn chuyên gia và ngưỡng kiểm chứng ở giá trị mặc định, When Verification Agent đánh giá mức hỗ trợ toàn bộ claim, Then tỷ lệ trùng với nhãn chuyên gia ≥ 85%.</li>
+<li><strong>CLAIM-SUPPORT-001-AC06</strong> Given Researcher đổi một ngưỡng kiểm chứng trong Settings, When lưu, Then Audit Event ghi giá trị cũ và mới, claim đã đánh giá giữ kết quả cũ, và lần kiểm chứng sau dùng giá trị mới.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CLAIM-MAPPING-001; AGENT Verification (8.2); Settings — Ngưỡng kiểm chứng (<a href="15-ui-ux-requirements.html#s-15-12">15.12</a>)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-052 đã đóng 31/10/2026, PC-01; ngưỡng theo OQ-092)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-6">11.6. Citation Verification</h2>
+<p class="status">Confirmed (outline): kiểm tra citation phân giải được và câu được trích khớp với nguồn. Ngưỡng phát hiện citation không khớp mặc định ≥ 95%, người dùng chỉnh được trong Settings: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092); diễn giải nhóm “Ngưỡng kiểm chứng”: Assumption (ASM-15).</p>
+
+<h3 id="req-claim-citation-001">CLAIM-CITATION-001 — Kiểm tra citation</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực; ngưỡng mặc định 95% — PC-01, OQ-092), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không citation nào trỏ tới nguồn không tồn tại hoặc không nói điều được gán (KPI-02 = 100%).</td></tr>
+<tr><th scope="row">Actor</th><td>System (phân giải); Verification Agent (đối chiếu nội dung)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project có Manuscript; có Change Proposal cần kiểm tra hoặc bản thảo có ít nhất một lệnh citation.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S6 trên Change Proposal; Researcher yêu cầu kiểm tra toàn bản thảo; trước mỗi Build (chỉ phần phân giải).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li><strong>Phân giải</strong> (System, xác định): mỗi lệnh citation (<code>\cite</code>, <code>\citep</code>, <code>\citet</code>…) trỏ tới một Bibliography Entry, và entry đó gắn với Reference <code>Trusted</code>.</li>
+<li><strong>Đối chiếu</strong> (Verification Agent): với câu chứa citation, tìm claim tương ứng; kiểm tra claim có link <code>supports</code> tới evidence của chính reference được trích; gán kết quả: <em>khớp</em>, <em>khớp một phần</em>, <em>không khớp</em>, <em>không có claim</em>.</li>
+<li>Ghi kết quả vào Change Proposal hoặc báo cáo kiểm tra bản thảo, liên kết từng citation tới evidence.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Key không phân giải hoặc reference <code>Revoked</code>/<code>Rejected</code>: lỗi chặn; Change Proposal không được chấp nhận đến khi sửa (WF-05.E1). Không khớp nội dung: cảnh báo, Researcher quyết định.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Lỗi phân giải luôn chặn; lỗi đối chiếu nội dung là cảnh báo (Researcher có thể chấp nhận kèm xác nhận). Citation tới reference bị thu hồi xử lý theo LIB-LIFECYCLE-001: luôn báo lỗi cho đến khi Researcher thay citation hoặc duyệt lại reference. Bước đối chiếu dùng các ngưỡng trong nhóm “Ngưỡng kiểm chứng” của Settings cá nhân (OQ-092, ASM-15); giá trị mặc định được hiệu chỉnh để phát hiện ≥ 95% citation không khớp nguồn; người dùng đổi ngưỡng thì ghi Audit Event và áp dụng từ lần kiểm tra sau. Ngưỡng không áp dụng cho bước phân giải (luôn xác định).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Kết quả kiểm tra citation gắn với Change Proposal hoặc báo cáo kiểm tra (artifact verification_report); cờ cần xem lại trên citation.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CLAIM-CITATION-001-AC01</strong> Given Change Proposal chứa <code>\cite{x}</code> mà x không có Bibliography Entry, When kiểm tra, Then proposal bị đánh dấu lỗi và nút chấp nhận bị vô hiệu.</li>
+<li><strong>CLAIM-CITATION-001-AC02</strong> Given citation tới reference A nhưng claim của câu chỉ có evidence từ B, When đối chiếu, Then kết quả là <em>không khớp</em> và hiển thị cho Researcher.</li>
+<li><strong>CLAIM-CITATION-001-AC03</strong> Given bản thảo đã chấp nhận, When đo KPI-02, Then 100% citation phân giải về Trusted Reference.</li>
+<li><strong>CLAIM-CITATION-001-AC04</strong> Given bộ dữ liệu nghiệm thu có các citation không khớp nguồn đã gán nhãn và ngưỡng kiểm chứng ở giá trị mặc định, When đối chiếu, Then ≥ 95% citation không khớp được phát hiện (<em>không khớp</em> hoặc <em>khớp một phần</em>).</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-BIB-001; CLAIM-MAPPING-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-7">11.7. Conflicting Evidence</h2>
+<p class="status">Confirmed (outline): phát hiện bất đồng giữa nguồn và giữ nguyên sự không chắc chắn.</p>
+
+<h3 id="req-claim-conflict-001">CLAIM-CONFLICT-001 — Ghi nhận evidence mâu thuẫn</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không che giấu bất đồng trong tài liệu để bản tổng hợp trông chắc chắn hơn thực tế.</td></tr>
+<tr><th scope="row">Actor</th><td>Verification Agent, Synthesis Agent; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Claim có ít nhất một link <code>contradicts</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>CLAIM-SUPPORT-001 gán mức <code>Conflicting</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Khi claim có evidence <code>contradicts</code> → mức <code>Conflicting</code> → bản tổng hợp liên quan phải nêu cả hai phía, mỗi phía có evidence riêng → hiển thị nhóm “Bất đồng giữa nguồn” trong References and Evidence.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher loại evidence phản bác (<code>Excluded</code>) kèm lý do: claim được kiểm chứng lại và có thể rời mức <code>Conflicting</code>; Audit Event ghi actor Researcher.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Agent không tự chọn một phía là đúng. Researcher có thể ghi kết luận của mình thành Context Item loại <em>decision</em>, kèm lý do; claim vẫn giữ link tới cả hai phía.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Support status <code>Conflicting</code>; Context Item loại <em>decision</em> nếu Researcher ghi kết luận.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CLAIM-CONFLICT-001-AC01</strong> Given claim <code>Conflicting</code>, When Synthesis Agent viết bản tổng hợp dùng claim đó, Then văn bản nêu cả quan điểm hỗ trợ và phản bác, mỗi quan điểm có evidence.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CLAIM-SUPPORT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-8">11.8. Literature Review Synthesis</h2>
+<p class="status">Confirmed (outline): tạo tóm tắt có căn cứ, ma trận so sánh và gợi ý research gap.</p>
+
+<h3 id="req-syn-review-001">SYN-REVIEW-001 — Tạo bản tổng hợp literature review</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Hỗ trợ viết literature review dựa trên evidence thay vì kiến thức nền của model.</td></tr>
+<tr><th scope="row">Actor</th><td>Synthesis Agent</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task tổng hợp đã kích hoạt (APR-02); có evidence từ reference đã chọn.</td></tr>
+<tr><th scope="row">Trigger</th><td>Bước tổng hợp của Workflow <code>task_execution</code> (WF-05.S2).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Theo yêu cầu Task, tạo một hoặc nhiều Artifact Version <code>Draft</code>: (a) <strong>synthesis</strong> — tóm tắt theo chủ đề, mỗi câu khẳng định gắn claim; (b) <strong>comparison matrix</strong> — bảng reference × tiêu chí (phương pháp, dữ liệu, kết quả…), mỗi ô trỏ tới evidence hoặc ghi “không có thông tin”; (c) <strong>research gap</strong> — gợi ý khoảng trống, mỗi gợi ý nêu căn cứ (evidence hoặc sự vắng mặt evidence trong tập đã chọn).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Evidence quá ít so với yêu cầu Task: Synthesis Agent vẫn tạo bản nháp, ghi rõ phần thiếu căn cứ và Orchestrator gợi ý Task tìm thêm tài liệu (không tự chạy, WF-05.A2).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Ngôn ngữ đầu ra mặc định theo ngôn ngữ bản thảo của project (thường là tiếng Anh, 1.4). Research gap luôn ghi rõ phạm vi: chỉ dựa trên tập reference đã chọn, không khẳng định bao phủ toàn bộ tài liệu. Ô ma trận không được điền suy đoán.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Artifact Version <code>Draft</code> (synthesis, table); Claim <code>Draft</code>; Claim–Evidence Link.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>SYN-REVIEW-001-AC01</strong> Given bản tổng hợp vừa tạo, When kiểm tra, Then mọi câu khẳng định gắn với một claim, và claim không có evidence mang nhãn <code>Unsupported</code> hiển thị.</li>
+<li><strong>SYN-REVIEW-001-AC02</strong> Given comparison matrix, When một ô có nội dung, Then ô đó có ít nhất một evidence; ô không có evidence hiển thị “không có thông tin”.</li>
+<li><strong>SYN-REVIEW-001-AC03</strong> Given gợi ý research gap, When hiển thị, Then kèm câu nêu phạm vi tập reference đã dùng.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>EVID-RETRIEVAL-001; CLAIM-MAPPING-001; CLAIM-SUPPORT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-9">11.9. Human Review</h2>
+<p class="status">Confirmed (outline): người dùng chấp nhận, sửa hoặc từ chối claim và đầu ra tổng hợp. APR-06 (3.1).</p>
+
+<h3 id="req-syn-human-review-001">SYN-HUMAN-REVIEW-001 — Researcher duyệt claim và bản tổng hợp</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực, APR-06), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Chỉ nội dung được con người chấp nhận mới đi vào bản thảo và Task sau.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có claim hoặc Artifact Version tổng hợp ở <code>Draft</code> trong project.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S4; Task tổng hợp vào <code>In Review</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher xem từng claim cạnh evidence và mức hỗ trợ → <em>chấp nhận</em> (<code>Accepted</code>), <em>sửa</em> (tạo claim mới thay thế, cần kiểm chứng lại), hoặc <em>từ chối</em> (<code>Rejected</code>) → chấp nhận hoặc từ chối Artifact Version tổng hợp; có thao tác chấp nhận hàng loạt các claim <code>Supported</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Claim bị sửa sau khi đã dùng trong Change Proposal chưa chấp nhận: proposal được đánh dấu cần tạo lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không chấp nhận claim <code>Not Assessed</code>. Chấp nhận claim <code>Unsupported</code> hoặc <code>Conflicting</code> cần xác nhận thêm; claim vẫn giữ nhãn. Artifact tổng hợp chỉ <code>Accepted</code> khi mọi claim trong nó đã được quyết định (chấp nhận hoặc từ chối). Sửa claim do Researcher thực hiện ghi actor Researcher.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Claim <code>Accepted</code>/<code>Rejected</code>; Artifact Version <code>Accepted</code>/<code>Rejected</code>; Audit Event với APR-06.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>SYN-HUMAN-REVIEW-001-AC01</strong> Given claim <code>Not Assessed</code>, When Researcher chấp nhận, Then System yêu cầu chạy kiểm chứng trước.</li>
+<li><strong>SYN-HUMAN-REVIEW-001-AC02</strong> Given agent hoặc Orchestrator, When cố chuyển claim sang <code>Accepted</code>, Then System từ chối và ghi Audit Event.</li>
+<li><strong>SYN-HUMAN-REVIEW-001-AC03</strong> Given artifact tổng hợp còn claim chưa quyết định, When Researcher chấp nhận artifact, Then System chỉ ra các claim còn lại và không cho chấp nhận.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CLAIM-SUPPORT-001; PROMPT (8.4)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-10">11.10. Research Artifact Persistence</h2>
+<p class="status">Confirmed (outline): lưu kết quả đã duyệt và liên kết với Task, nguồn và section bản thảo.</p>
+
+<h3 id="req-syn-persist-001">SYN-PERSIST-001 — Lưu và liên kết kết quả đã duyệt</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Kết quả tổng hợp dùng lại được ở phiên sau, ở Task sau và trong bản thảo, với provenance đầy đủ.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Claim hoặc Artifact Version vừa chuyển <code>Accepted</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Chuyển trạng thái <code>Accepted</code>; Change Proposal dùng claim hoặc artifact được chấp nhận.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Khi claim hoặc artifact được chấp nhận → ghi vào Shared Context (5.5) → liên kết hai chiều với Task, Reference, Evidence (4.3) → khi được dùng trong bản thảo, ghi vị trí sử dụng (file, revision) từ Change Proposal đã chấp nhận.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Ghi vào Shared Context thất bại: toàn bộ chuyển trạng thái được hoàn tác trong cùng giao dịch (18.4); Researcher thấy lỗi và thử lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Artifact Version bất biến (5.7). Thay đổi tạo version mới; vị trí sử dụng trong bản thảo vẫn trỏ tới version đã dùng và cảnh báo khi có version accepted mới hơn.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Context Item; liên kết provenance; vị trí sử dụng trong bản thảo.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>SYN-PERSIST-001-AC01</strong> Given claim được dùng trong bản thảo, When mở claim, Then thấy file và revision nơi nó xuất hiện; When mở vị trí đó, Then điều hướng được ngược về claim và evidence.</li>
+<li><strong>SYN-PERSIST-001-AC02</strong> Given Researcher quay lại sau nhiều phiên, When mở project, Then mọi claim và artifact đã chấp nhận còn nguyên cùng liên kết.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-REGISTRY-001; MS-REVISION-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-oq">11.11. Open Questions của mục 11</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-050</td><td>Định dạng tài liệu được index trong MVP (chỉ PDF có lớp văn bản, hay thêm DOCX, HTML, PDF scan cần OCR) và giới hạn dung lượng mỗi file? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Chỉ PDF có lớp văn bản, tối đa 50 MB/file; không OCR. File không đạt → <code>Failed</code> kèm lý do; reference vẫn dùng được ở mức metadata cho citation (EVID-INDEX-001).</td><td>11.1, 10.4, 16, 17.3</td></tr>
+<tr><td>OQ-051</td><td>Embedding model lấy từ đâu: dùng Provider Connection của người dùng (OpenAI hoặc Gemini; Anthropic không cung cấp embedding API), hay hệ thống cung cấp một embedding model cố định? Đổi embedding model có bắt buộc index lại toàn bộ thư viện không? (OQ-080 ở 17 trùng câu hỏi này và đã đóng theo OQ-051.) <strong>Đã đóng 31/10/2026 (PC-01):</strong> Dùng Provider Connection của người dùng (OpenAI hoặc Gemini); một embedding model cho mỗi tài khoản; đổi model bắt buộc index lại toàn bộ, có cảnh báo trước (EVID-INDEX-003).</td><td>11.1, 2 (SCOPE-13), 17.1, 21.2</td></tr>
+<tr><td>OQ-052</td><td>Ngoài KPI-01 ở cấp tổng thể, có ngưỡng chấp nhận theo từng claim (ví dụ số evidence tối thiểu cho <code>Supported</code>) không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Không đặt ngưỡng số. <code>Supported</code> cần ít nhất một evidence hỗ trợ trực tiếp và đã qua Verification Agent (CLAIM-SUPPORT-001).</td><td>11.5, 19</td></tr>
+<tr><td>OQ-053</td><td>Truy xuất evidence chỉ trong reference đã chọn cho project, hay cho phép mở rộng sang toàn bộ Trusted Library khi Researcher đồng ý? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Chỉ trong reference đã chọn cho project; mở rộng bằng cách thêm reference vào project (LIB-PROJECT-001), giữ nguyên cách ly và provenance theo dự án; PO duyệt 31/10/2026 (PC-01).</td><td>11.2, 10.6, 14.2</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="10-academic-discovery-and-trusted-library.html">← Mục 10</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="12-latex-manuscript-workspace.html">Mục 12 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

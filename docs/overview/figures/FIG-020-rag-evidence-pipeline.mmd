@@ -1,0 +1,17 @@
+%% FIG-020 — RAG and evidence-to-claim pipeline (section 11)
+flowchart TD
+  R[Reference: Trusted] --> SD[Source Document]
+  SD --> EX[Extract text + structure]
+  EX --> CH[Chunk: passageId, page, section]
+  CH --> EM[Embed]
+  EM --> VDB[(Vector database<br/>filter: accountId + referenceId)]
+  Q[Task / question] --> ERA[Evidence Retrieval Agent]
+  ERA -->|query + project reference filter| VDB
+  VDB --> EV[Evidence: referenceId, passageId, verbatim text]
+  EV --> SA[Synthesis Agent]
+  SA --> CL[Claim: Draft]
+  CL --> LK[Claim-Evidence Link<br/>supports / contradicts / context]
+  LK --> VA[Verification Agent]
+  VA --> SS{Support status}
+  SS --> HR[Researcher review APR-06]
+  HR -->|Accepted| WR[Writing Agent - section 12]

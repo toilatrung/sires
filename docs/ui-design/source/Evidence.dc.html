@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — References and Evidence</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="References and Evidence" hint-size="100%,57px"></dc-import>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="evidence" hint-size="240px,943px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 24px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
+        <div role="tablist" aria-label="Chế độ" style="display: flex; gap: 2px">
+          <button role="tab" aria-selected="false" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">References · 14</button>
+          <button role="tab" aria-selected="true" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Claims · 23</button>
+          <button role="tab" aria-selected="false" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Evidence · 61</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px"><input type="checkbox" checked>Chỉ liên quan T-2.3</label>
+          <a href="Library.dc.html" style="display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Thêm từ Trusted Library</a>
+        </div>
+      </div>
+      <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+        <section aria-label="Claim" style="flex: 1 1 420px; min-width: 0; border-right: 1px solid #DBD3C7">
+          <sc-for list="{{claims}}" as="c" hint-placeholder-count="6">
+            <a href="Evidence.dc.html" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 20px; border-bottom: 1px solid #DBD3C7; background: {{c.bg}}; text-decoration: none; color: #1C1B18">
+              <span style="font-family: Montserrat, system-ui, sans-serif; font-size: 16px; line-height: 1.5">{{c.text}}</span>
+              <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: #4D4A44">
+                <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; font-weight: 600">{{c.level}}</span>
+                {{c.meta}}
+                <sc-if value="{{c.review}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-weight: 600">needs review · reference bị thu hồi</span></sc-if>
+              </span>
+            </a>
+          </sc-for>
+        </section>
+
+        <aside aria-labelledby="ei" style="flex: 1 1 420px; min-width: 0; background: #FCF9F5; display: flex; flex-direction: column">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
+            <h2 id="ei" style="margin: 0; font-size: 15px; font-weight: 600">Evidence Inspector</h2>
+            <span style="font-size: 13px; color: #4D4A44">Claim <strong style="color: #1C1B18">Conflicting</strong> — hiển thị cả evidence hỗ trợ và phản bác</span>
+          </div>
+          <sc-for list="{{ev}}" as="e" hint-placeholder-count="2">
+            <article style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px">
+                <span style="font-weight: 600; color: {{e.roleColor}}">{{e.role}}</span>
+                <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid #1C1B18; font: 500 11px 'JetBrains Mono', monospace">{{e.state}}</span>
+              </div>
+              <a href="Reference.dc.html" style="font-size: 14px; font-weight: 600">{{e.ref}}</a>
+              <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{e.loc}}</span>
+              <blockquote style="margin: 0; padding: 12px 14px; background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; font-family: 'Times New Roman', Times, serif; font-size: 15px; line-height: 1.6; color: #4D4A44">{{e.before}} <mark style="background: #CFE6FC; color: #1C1B18; padding: 1px 2px">{{e.hit}}</mark> {{e.after}}</blockquote>
+              <span style="font-size: 12px; color: #4D4A44">{{e.used}}</span>
+              <div style="display: flex; gap: 8px"><button style="height: 34px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif">Loại evidence (Excluded)</button><button style="height: 34px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 13px Montserrat, sans-serif">Mở PDF tại trang</button></div>
+            </article>
+          </sc-for>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = { Supported: ['solid #0277DD', '#025FAC'], 'Partially Supported': ['dashed #0277DD', '#025FAC'], Unsupported: ['dashed #9A3412', '#9A3412'], Conflicting: ['solid #9A3412', '#9A3412'], 'Not Assessed': ['solid #DBD3C7', '#4D4A44'] };
+    const c = (text, level, meta, sel, review) => ({ text, level, b: L[level][0], fg: L[level][1], meta, bg: sel ? '#EAF4FE' : '#F6F2EE', review: !!review });
+    return {
+      claims: [
+        c('Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.', 'Conflicting', '2 hỗ trợ · 1 phản bác · T-2.3', true),
+        c('Hallucination là nội dung không trung thành với nguồn hoặc không có căn cứ.', 'Supported', '3 hỗ trợ · T-2.1'),
+        c('Ngữ cảnh dài làm mô hình bỏ sót thông tin ở giữa.', 'Supported', '1 hỗ trợ · index Unavailable → chỉ citation'),
+        c('Intrinsic và extrinsic hallucination cần thước đo khác nhau.', 'Partially Supported', '1 hỗ trợ · T-2.1'),
+        c('RAG giảm một nửa hallucination ở mọi miền.', 'Unsupported', '0 evidence · T-2.1'),
+        c('Bộ phát hiện hallucination dựa trên entropy đạt độ chính xác cao.', 'Supported', 'Stale · T-1.3', false, true)
+      ],
+      ev: [
+        { role: 'Hỗ trợ', roleColor: '#025FAC', state: 'Active', ref: 'Lewis et al. 2020 — Retrieval-Augmented Generation', loc: 'trang 7 · đoạn 3 · chunk #58', before: '[câu đứng trước]', hit: '[đoạn trích hỗ trợ: mô hình có truy xuất cho câu trả lời đúng sự thật hơn mô hình chỉ dùng tham số]', after: '[câu đứng sau]', used: 'Dùng bởi 2 claim · 1 artifact · 1 citation trong main.tex' },
+        { role: 'Phản bác', roleColor: '#9A3412', state: 'Active', ref: 'Shi et al. 2023 — Distracted by Irrelevant Context', loc: 'trang 2 · đoạn 1 · chunk #4', before: '[câu đứng trước]', hit: '[đoạn trích phản bác: độ chính xác giảm khi ngữ cảnh truy xuất chứa thông tin không liên quan]', after: '[câu đứng sau]', used: 'Dùng bởi 1 claim' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

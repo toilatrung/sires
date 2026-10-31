@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>16. Non-Functional Requirements | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 16</p><h1>16. Non-Functional Requirements</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01); phần bổ sung 16.10 và NFR-OBS-006: Chờ duyệt · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mỗi yêu cầu phi chức năng gồm: phát biểu, chỉ tiêu đo được và cách kiểm chứng. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Chỉ tiêu KPI-01–KPI-04 là <strong>Confirmed</strong> (21.1). Các chỉ tiêu ở 16.2 (availability, RPO/RTO), 16.3, 16.4 và chính sách 16.8 là <strong>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-075, OQ-076, OQ-078)</strong>; phương thức authentication là <strong>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073)</strong>. Các giá trị ghi “Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)” là chi tiết kỹ thuật do biên soạn chốt theo ủy quyền của PO và đã được PO duyệt. Mục 16.9 bổ sung theo SYNC-09. Mục 16.10 và NFR-OBS-006 bổ sung ngày 31/10/2026 sau PC-01, đang chờ PO duyệt. Bảng Open Questions ở <a href="#s-16-oq">16.11</a>.</p></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Priority</th>
+<th scope="col">Requirement</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>NFR-AUTH-001, NFR-AUTHZ-001, NFR-ISOL-001, NFR-SECRETS-001, NFR-SECRETS-002, NFR-SECRETS-003, NFR-TRANSIT-001, NFR-PRIV-001, NFR-SANDBOX-001; NFR-DUR-001, NFR-REC-001, NFR-REC-002, NFR-BACKUP-001; NFR-SCALE-004; NFR-OBS-002; NFR-MAINT-003; NFR-RET-001, NFR-RET-002, NFR-RET-003, NFR-RET-008</td></tr>
+<tr><td>P1</td><td>NFR-AVAIL-001; NFR-PERF-001–007; NFR-SCALE-001, NFR-SCALE-002, NFR-SCALE-003; NFR-OBS-001, NFR-OBS-003, NFR-OBS-004, NFR-OBS-005; NFR-USAGE-001, NFR-USAGE-002, NFR-USAGE-003; NFR-MAINT-001, NFR-MAINT-002, NFR-MAINT-004, NFR-MAINT-005; NFR-RET-004, NFR-RET-005, NFR-RET-006, NFR-RET-007, NFR-RET-009; NFR-KPI-001</td></tr>
+<tr><td>P2</td><td>NFR-USAGE-004 (giới hạn ngân sách và dashboard hạn mức thuộc FUT-05)</td></tr>
+<tr><td>P1 (đề xuất, chờ PO duyệt)</td><td>NFR-OBS-006; NFR-EVAL-001–NFR-EVAL-004 (bổ sung 31/10/2026 sau PC-01, chưa thuộc bảng Priority DEC-44)</td></tr>
+</tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-16-1">16.1. Security and Privacy</a></li>
+<li><a href="#s-16-2">16.2. Reliability and Durability</a></li>
+<li><a href="#s-16-3">16.3. Performance</a></li>
+<li><a href="#s-16-4">16.4. Scalability</a></li>
+<li><a href="#s-16-5">16.5. Observability</a></li>
+<li><a href="#s-16-6">16.6. Cost and Usage</a></li>
+<li><a href="#s-16-7">16.7. Maintainability</a></li>
+<li><a href="#s-16-8">16.8. Data Retention and Deletion</a></li>
+<li><a href="#s-16-9">16.9. Đo lường KPI-01–KPI-04</a></li>
+<li><a href="#s-16-10">16.10. Evaluation và Eval Trace</a></li>
+<li><a href="#s-16-ac">Acceptance criteria cho requirement dạng bảng</a></li>
+<li><a href="#s-16-oq">16.11. Open Questions của mục 16</a></li>
+</ul></details>
+
+<h2 id="s-16-1">16.1. Security and Privacy</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-auth-001">NFR-AUTH-001</td><td>Mọi truy cập vào dữ liệu và chức năng phải qua authentication. Authentication duy nhất qua SSO của tổ chức bằng eTroy OIDC (INT-OIDC-001, 17.7); SIRes thuộc nền tảng eTroy và quản lý người dùng do eTroy đảm nhận. Không có đăng ký email/mật khẩu riêng, không đăng nhập OAuth Google. SIRes không lưu mật khẩu; phiên đăng nhập dựa trên token do eTroy OIDC cấp (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073)). Chi tiết claim dùng (họ tên, email ban đầu) và vòng đời phiên là Assumption (ASM-13).</td><td>0 endpoint dữ liệu truy cập được khi chưa đăng nhập; 0 mật khẩu người dùng lưu trong SIRes.</td><td>Quét tự động toàn bộ endpoint không kèm phiên đăng nhập; review schema dữ liệu tài khoản.</td></tr>
+<tr><td id="req-nfr-authz-001">NFR-AUTHZ-001</td><td>Authorization được kiểm tra phía server cho mọi yêu cầu, theo permission matrix 3.5 và quyền theo trạng thái 18.2. Không dựa vào việc giao diện ẩn nút.</td><td>100% thao tác ghi kiểm tra quyền và trạng thái trước khi thực hiện.</td><td>Test API trực tiếp với yêu cầu vượt quyền (agent tự phê duyệt, nghiệm thu Task không ở In Review…).</td></tr>
+<tr><td id="req-nfr-isol-001">NFR-ISOL-001</td><td>Cách ly tài khoản và project (3.4): truy cập tài nguyên của tài khoản khác trả về “không tìm thấy”, không tiết lộ sự tồn tại.</td><td>0 rò rỉ chéo tài khoản; 0 dữ liệu project khác trong context gửi provider.</td><td>Test cách ly tự động (19.12); kiểm tra context đã lắp ráp chỉ chứa định danh của project đang thực thi.</td></tr>
+<tr><td id="req-nfr-secrets-001">NFR-SECRETS-001</td><td>API key của Provider Connection được mã hóa khi lưu bằng khóa do hệ thống quản lý khóa riêng (không lưu cùng dữ liệu); chỉ giải mã trong provider adapter tại thời điểm gọi.</td><td>0 API key ở dạng rõ trong database, log, Shared Context, prompt, artifact, Audit Event, thông báo lỗi.</td><td>Quét log và dữ liệu sau bộ test có key mẫu đã biết; review mã adapter.</td></tr>
+<tr><td id="req-nfr-secrets-002">NFR-SECRETS-002</td><td>Sau khi lưu, API key chỉ hiển thị dạng che (tối đa 4 ký tự cuối). Không có API trả về key đầy đủ cho client.</td><td>Như phát biểu.</td><td>Test API và giao diện Settings.</td></tr>
+<tr><td id="req-nfr-secrets-003">NFR-SECRETS-003</td><td>Xóa hoặc thay API key có hiệu lực cho mọi Agent Run bắt đầu sau thời điểm đó; key cũ bị xóa khỏi kho lưu trữ.</td><td>Agent Run mới không dùng key cũ.</td><td>Test: xóa key rồi kích hoạt Task dùng agent đó → readiness chặn.</td></tr>
+<tr><td id="req-nfr-transit-001">NFR-TRANSIT-001</td><td>Mọi kết nối giữa trình duyệt và server, và giữa server với provider/dịch vụ ngoài, dùng TLS. Base URL tùy chỉnh (proxy, gateway, model tự host tương thích API chính thức của provider, OQ-014) không dùng HTTPS bị từ chối.</td><td>100% lưu lượng ra ngoài qua TLS (trừ ngoại lệ được PO duyệt).</td><td>Kiểm tra cấu hình; test tạo Provider Connection với URL http.</td></tr>
+<tr><td id="req-nfr-priv-001">NFR-PRIV-001</td><td>Người dùng được thông báo rõ rằng nội dung gửi cho agent sẽ được gửi tới provider họ đã cấu hình. Chỉ context do Orchestrator lắp ráp cho Agent Run được gửi. Trong thông tin cá nhân, chỉ lĩnh vực nghiên cứu được đưa vào context, và chỉ khi người dùng bật công tắc tương ứng trong Settings (OQ-015, PC-01).</td><td>Thông báo hiển thị khi tạo Provider Connection đầu tiên.</td><td>Review giao diện; kiểm tra context mẫu.</td></tr>
+<tr><td id="req-nfr-sandbox-001">NFR-SANDBOX-001</td><td>Build LaTeX và render sơ đồ chạy trong môi trường cô lập: không truy cập mạng, không shell-escape, giới hạn CPU, bộ nhớ, thời gian và dung lượng; mỗi build một workspace riêng.</td><td>Build hoặc render vượt 120 giây hoặc 2 GB bộ nhớ bị dừng và báo lỗi rõ ràng; người vận hành cấu hình được giới hạn (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)).</td><td>Test với tài liệu cố gắng đọc file hệ thống, gọi mạng, vòng lặp vô hạn.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-AUTH-001-AC01</strong> — Given không có phiên đăng nhập, When gọi bất kỳ endpoint dữ liệu nào, Then nhận lỗi yêu cầu đăng nhập và không có dữ liệu trả về.</li>
+<li><strong>NFR-AUTH-001-AC02</strong> — Given người dùng chưa đăng nhập mở SIRes, When chọn đăng nhập, Then được chuyển tới eTroy OIDC; giao diện SIRes không có form email/mật khẩu hay nút đăng nhập Google.</li>
+<li><strong>NFR-SECRETS-002-AC01</strong> — Given đã lưu API key, When mở Settings hoặc gọi API đọc Provider Connection, Then chỉ thấy tối đa 4 ký tự cuối của key.</li>
+<li><strong>NFR-SECRETS-003-AC01</strong> — Given đã xóa API key của kết nối mà Synthesis Agent dùng, When kích hoạt Task cần Synthesis Agent, Then readiness không đạt và không Agent Run nào dùng key cũ.</li>
+<li><strong>NFR-TRANSIT-001-AC01</strong> — Given tạo Provider Connection với base URL <code>http://</code>, When lưu, Then hệ thống từ chối lưu và nêu lý do yêu cầu HTTPS.</li>
+<li><strong>NFR-PRIV-001-AC01</strong> — Given người dùng tạo Provider Connection đầu tiên, When lưu, Then thông báo về việc gửi nội dung tới provider hiển thị và cần xác nhận đã đọc.</li>
+<li><strong>NFR-SECRETS-001-AC01</strong> — Given Provider Connection lưu key mẫu “sk-test-KNOWN”, When chạy một Task agent và tìm chuỗi đó trong log, database dạng rõ, Audit Event và context đã gửi, Then không tìm thấy.</li>
+<li><strong>NFR-AUTHZ-001-AC01</strong> — Given Task ở trạng thái In Progress, When gọi API nghiệm thu Task trực tiếp, Then yêu cầu bị từ chối và trạng thái không đổi.</li>
+<li><strong>NFR-ISOL-001-AC01</strong> — Given tài khoản A, When mở URL project của tài khoản B, Then nhận “không tìm thấy” giống như project không tồn tại.</li>
+<li><strong>NFR-SANDBOX-001-AC01</strong> — Given file .tex cố đọc /etc/passwd qua \input, When build, Then build thất bại hoặc không đọc được file ngoài workspace.</li>
+</ul>
+
+<h2 id="s-16-2">16.2. Reliability and Durability</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-dur-001">NFR-DUR-001</td><td>Mọi thay đổi trạng thái được xác nhận cho người dùng chỉ sau khi đã ghi bền vững; chuyển trạng thái và Audit Event ghi trong cùng một giao dịch (18.4).</td><td>0 thay đổi đã xác nhận bị mất khi server khởi động lại.</td><td>Fault injection: dừng tiến trình ngay sau khi xác nhận.</td></tr>
+<tr><td id="req-nfr-rec-001">NFR-REC-001</td><td>Workflow lưu checkpoint sau mỗi bước hoàn tất và trước mỗi điểm chờ người dùng; workflow dừng ngoài ý muốn được phát hiện và chuyển <code>Interrupted</code>.</td><td>Phát hiện trong ≤ 2 phút kể từ heartbeat cuối (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01), CTX-RECOVERY-001); KPI-03 ≥ 99% (Confirmed).</td><td>Fault injection ở từng loại bước; đo theo 16.9.</td></tr>
+<tr><td id="req-nfr-rec-002">NFR-REC-002</td><td>Không chạy lại tự động bước có tác động (gọi provider, ghi dữ liệu) sau gián đoạn khi chưa có Recovery decision (WF-06).</td><td>0 trường hợp chạy lại không có xác nhận.</td><td>Kiểm tra Audit Event sau fault injection.</td></tr>
+<tr><td id="req-nfr-avail-001">NFR-AVAIL-001</td><td>Dịch vụ sẵn sàng liên tục cho người dùng; thời gian bảo trì được báo trước trong ứng dụng.</td><td>99,5% mỗi tháng, không tính bảo trì báo trước (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-075)).</td><td>Giám sát uptime.</td></tr>
+<tr><td id="req-nfr-backup-001">NFR-BACKUP-001</td><td>Dữ liệu được sao lưu định kỳ và khôi phục được.</td><td>RPO ≤ 24 giờ, RTO ≤ 8 giờ (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-075)).</td><td>Diễn tập khôi phục mỗi quý.</td></tr>
+</tbody></table></div>
+<p class="status">Mô hình triển khai: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-091). MVP triển khai trên cloud do đội phát triển vận hành; đội phát triển chịu trách nhiệm uptime, sao lưu và diễn tập khôi phục ở bảng trên. Vùng lưu trữ dữ liệu được chốt khi chọn hạ tầng.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-REC-001-AC01</strong> — Given workflow đang ở bước 3/5, When tiến trình worker bị dừng đột ngột, Then workflow chuyển Interrupted và đầu ra bước 1–2 còn nguyên khi khôi phục.</li>
+<li><strong>NFR-DUR-001-AC01</strong> — Given Researcher vừa duyệt Plan và nhận xác nhận, When server khởi động lại, Then Plan Version vẫn Approved và có Audit Event tương ứng.</li>
+<li><strong>NFR-REC-002-AC01</strong> — Given workflow chuyển Interrupted, When chưa có Recovery decision, Then không có Agent Run mới và không có lời gọi provider nào cho workflow đó.</li>
+<li><strong>NFR-AVAIL-001-AC01</strong> — Given số liệu giám sát uptime của một tháng, When tính tỷ lệ sẵn sàng không tính bảo trì báo trước, Then đạt ≥ 99,5%.</li>
+<li><strong>NFR-BACKUP-001-AC01</strong> — Given bản sao lưu gần nhất, When diễn tập khôi phục vào môi trường trống, Then dữ liệu được khôi phục trong ≤ 8 giờ (RTO) và dữ liệu mất không quá 24 giờ (RPO).</li>
+</ul>
+
+<h2 id="s-16-3">16.3. Performance</h2>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-075): duyệt nguyên văn toàn bộ chỉ tiêu. Không tính thời gian xử lý của model provider, vốn ngoài kiểm soát của hệ thống.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Thao tác</th>
+<th scope="col">Chỉ tiêu (p95)</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-perf-001">NFR-PERF-001</td><td>Chuyển màn hình, mở project, mở Task, lưu sửa đổi Plan hoặc file</td><td>≤ 1 giây</td><td>Đo trên dữ liệu mẫu theo 16.4</td></tr>
+<tr><td id="req-nfr-perf-002">NFR-PERF-002</td><td>Tìm kiếm trong Trusted Library, project, Task, artifact (7.5)</td><td>≤ 2 giây với 5.000 reference</td><td>Load test</td></tr>
+<tr><td id="req-nfr-perf-003">NFR-PERF-003</td><td>Độ trễ cập nhật trạng thái (workflow, prompt, Task) từ lúc thay đổi tới lúc hiển thị</td><td>≤ 5 giây</td><td>Đo thời gian giữa Audit Event và hiển thị</td></tr>
+<tr><td id="req-nfr-perf-004">NFR-PERF-004</td><td>Phần kiểm tra xác định của readiness check (WF-02.S1–S4)</td><td>≤ 2 giây</td><td>Test với Plan 200 Task</td></tr>
+<tr><td id="req-nfr-perf-005">NFR-PERF-005</td><td>Phản hồi chat: hiển thị trạng thái “đang xử lý” và nội dung stream đầu tiên khi provider hỗ trợ stream</td><td>Trạng thái ≤ 1 giây; nội dung theo provider</td><td>Đo trên ba provider</td></tr>
+<tr><td id="req-nfr-perf-006">NFR-PERF-006</td><td>Truy xuất evidence từ vector database (không tính embedding truy vấn)</td><td>≤ 3 giây cho project 500 reference đã index</td><td>Load test</td></tr>
+<tr><td id="req-nfr-perf-007">NFR-PERF-007</td><td>Bắt đầu build LaTeX sau khi yêu cầu</td><td>≤ 10 giây chờ hàng đợi</td><td>Đo thời gian Build Queued → Running</td></tr>
+</tbody></table></div>
+
+<h2 id="s-16-4">16.4. Scalability</h2>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-076): duyệt nguyên văn mức dung lượng MVP.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-scale-001">NFR-SCALE-001</td><td>Project dài hạn: hiệu năng 16.3 giữ nguyên khi project có lịch sử lớn.</td><td>Mỗi project: 200 Task/Plan Version, 50 Plan Version, 2.000 workflow, 20.000 Agent Run, 500 reference được chọn, 10.000 evidence, 2.000 artifact version, bản thảo 200 file / 2.000 revision.</td></tr>
+<tr><td id="req-nfr-scale-002">NFR-SCALE-002</td><td>Trusted Library tăng dần qua nhiều project.</td><td>5.000 reference / tài khoản; 2.000 Source Document đã index; mỗi file PDF tối đa 50 MB (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-050); INT-DOC-001).</td></tr>
+<tr><td id="req-nfr-scale-003">NFR-SCALE-003</td><td>Nhiều Agent Run song song.</td><td>Mỗi tài khoản chạy được tối thiểu 3 workflow đồng thời mà không suy giảm chỉ tiêu 16.3; hệ thống phục vụ tối thiểu 100 tài khoản hoạt động đồng thời ở giai đoạn đầu. Đây là chỉ tiêu kỹ thuật, không phải giới hạn sản phẩm: sản phẩm chỉ giới hạn một Workflow hoạt động mỗi Task (5.3).</td></tr>
+<tr><td id="req-nfr-scale-004">NFR-SCALE-004</td><td>Context gửi model không tăng theo kích thước project: Orchestrator lắp ráp context theo Task và giới hạn token của model (14.2).</td><td>Context của mỗi Agent Run không vượt giới hạn của model được gán; không lỗi do vượt giới hạn trên project theo NFR-SCALE-001.</td></tr>
+</tbody></table></div>
+<p><strong>Kiểm chứng:</strong> tạo bộ dữ liệu mẫu theo NFR-SCALE-001/002 và chạy lại các phép đo 16.3.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-PERF-001-AC01</strong> — Given project có dữ liệu ở mức NFR-SCALE-001, When đo 100 lần mở Task, Then p95 ≤ 1 giây.</li>
+<li><strong>NFR-PERF-003-AC01</strong> — Given một prompt được trả lời ở tab A, When đo thời gian tới khi tab B hiển thị Answered, Then p95 ≤ 5 giây.</li>
+<li><strong>NFR-SCALE-002-AC01</strong> — Given tài khoản có 5.000 reference, When tìm trong Trusted Library, Then đạt chỉ tiêu NFR-PERF-002.</li>
+<li><strong>NFR-SCALE-003-AC01</strong> — Given một tài khoản có 3 workflow ở ba Task khác nhau chạy đồng thời, When đo các thao tác 16.3, Then vẫn đạt chỉ tiêu, và không workflow nào bị từ chối vì số lượng.</li>
+<li><strong>NFR-SCALE-004-AC01</strong> — Given project ở mức NFR-SCALE-001, When chạy một Task agent, Then context manifest của mọi Agent Run nằm trong giới hạn model được gán.</li>
+</ul>
+<p class="status">Các phép đo còn lại của 16.3–16.4 (NFR-PERF-002, 004–007, NFR-SCALE-001) dùng cùng mẫu: đo p95 trên bộ dữ liệu mẫu và so với chỉ tiêu ở cột tương ứng.</p>
+
+<h2 id="s-16-5">16.5. Observability</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-obs-001">NFR-OBS-001</td><td>Log có cấu trúc, mỗi bản ghi mang các định danh tương quan có liên quan: accountId (dạng ẩn danh hóa), projectId, taskId, workflowId, agentRunId, buildId, mã yêu cầu.</td><td>100% bản ghi log của workflow mang workflowId và mã yêu cầu.</td><td>Review mẫu log.</td></tr>
+<tr><td id="req-nfr-obs-002">NFR-OBS-002</td><td>Log và trace không chứa API key, nội dung tài liệu, nội dung bản thảo hoặc prompt đầy đủ; chỉ chứa metadata và độ dài. Agent Run (không phải log) lưu context manifest và đầu ra có cấu trúc; toàn văn prompt và phản hồi chỉ được lưu khi người dùng bật chế độ debug, giữ 30 ngày, được coi là dữ liệu nhạy cảm: mã hóa khi lưu, chỉ chủ tài khoản xem được, không đưa vào log (NFR-RET-009; Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062)).</td><td>0 bản ghi chứa chuỗi mẫu.</td><td>Quét log bằng chuỗi mẫu đã biết.</td></tr>
+<tr><td id="req-nfr-obs-003">NFR-OBS-003</td><td>Metric tối thiểu: số workflow theo trạng thái, tỷ lệ lỗi Agent Run theo provider và mã lỗi, độ trễ provider, thời gian indexing, thời gian và tỷ lệ lỗi build, số lần thử lại, và bốn KPI (16.9).</td><td>Đủ mọi metric liệt kê.</td><td>Dashboard vận hành hiển thị đủ metric.</td></tr>
+<tr><td id="req-nfr-obs-004">NFR-OBS-004</td><td>Trace xuyên suốt một workflow: từ yêu cầu người dùng, qua các Agent Run và lời gọi provider, tới ghi dữ liệu.</td><td>100% workflow có trace nối đủ các bước.</td><td>Mở một trace mẫu đi đủ các bước.</td></tr>
+<tr><td id="req-nfr-obs-005">NFR-OBS-005</td><td>Lỗi có mã ổn định và thông điệp hành động được (UX-STATE-003); lỗi provider dùng bộ mã chuẩn ở 8.6.</td><td>100% lỗi trả về có mã thuộc danh mục.</td><td>Danh mục mã lỗi được tài liệu hóa; test lỗi mẫu.</td></tr>
+<tr><td id="req-nfr-obs-006">NFR-OBS-006</td><td>Mỗi Agent Run ghi metadata phiên bản: agent, provider, model, phiên bản prompt template và phiên bản cấu hình retrieval (chunking, embedding model, top-k). Log và trace vận hành mang các trường này để đối chiếu với kết quả đánh giá offline cùng cấu hình (16.10). Chỉ là metadata; không ghi nội dung (NFR-OBS-002). (Đề xuất, biên soạn 31/10/2026 — chờ PO duyệt.)</td><td>100% Agent Run có đủ năm trường.</td><td>Kiểm tra mẫu Agent Run trên ba provider.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-OBS-006-AC01</strong> — Given một Agent Run trên production với chế độ debug tắt, When xem bản ghi Agent Run và trace của workflow, Then có agent, provider, model, phiên bản prompt template và phiên bản cấu hình retrieval, và không có toàn văn prompt.</li>
+</ul>
+
+<h2 id="s-16-6">16.6. Cost and Usage</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-usage-001">NFR-USAGE-001</td><td>Mỗi Agent Run ghi usage do provider trả về (input/output tokens, số lời gọi; các trường khác nếu có) đã chuẩn hóa (17.1). Nếu provider không trả về, ghi “không có dữ liệu”, không ước tính ngầm.</td><td>100% Agent Run có trường usage (giá trị hoặc “không có dữ liệu”).</td><td>Kiểm tra Agent Run trên ba provider.</td></tr>
+<tr><td id="req-nfr-usage-002">NFR-USAGE-002</td><td>Người dùng xem usage tổng hợp theo project, Task, agent, Provider Connection và khoảng thời gian.</td><td>Tổng hợp khớp tổng của các Agent Run (sai lệch 0).</td><td>Test giao diện với dữ liệu mẫu.</td></tr>
+<tr><td id="req-nfr-usage-003">NFR-USAGE-003</td><td>Chi phí ước tính chỉ hiển thị khi có bảng giá cho model; luôn ghi rõ là ước tính.</td><td>0 chi phí hiển thị khi thiếu bảng giá; 100% chi phí có nhãn “ước tính”.</td><td>Review giao diện.</td></tr>
+<tr><td id="req-nfr-usage-004">NFR-USAGE-004</td><td>MVP không giới hạn ngân sách và không cảnh báo usage theo project hay provider; chỉ ghi và hiển thị usage (NFR-USAGE-001–003) (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-077)). Dashboard kiểm tra hạn mức và tiêu thụ của provider thuộc FUT-05 (2.3), không thuộc MVP.</td><td>0 chức năng chặn hoặc cảnh báo theo ngân sách trong MVP.</td><td>Review giao diện và cấu hình.</td></tr>
+</tbody></table></div>
+<p class="status">Người dùng tự cung cấp API key; hệ thống không có key hay hạn mức mặc định (SCOPE-13; Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014)). Chi phí provider phát sinh trên tài khoản provider của người dùng; hệ thống chỉ ghi nhận và hiển thị.</p>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-USAGE-001-AC01</strong> — Given một provider không trả usage cho một lời gọi, When Agent Run kết thúc, Then trường usage ghi “không có dữ liệu” và không có giá trị ước tính.</li>
+<li><strong>NFR-USAGE-002-AC01</strong> — Given 10 Agent Run mẫu với usage đã biết, When xem usage theo project, Then tổng hiển thị bằng tổng của 10 Agent Run.</li>
+<li><strong>NFR-USAGE-003-AC01</strong> — Given model không có bảng giá, When xem usage, Then chỉ hiển thị token, không hiển thị chi phí.</li>
+</ul>
+
+<h2 id="s-16-7">16.7. Maintainability</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-maint-001">NFR-MAINT-001</td><td>Provider adapter tách biệt sau một interface chung (17.1). Thêm provider mới không sửa Orchestrator, agent hay domain logic.</td><td>Thêm adapter mẫu: 0 thay đổi ngoài adapter và phần đăng ký adapter.</td><td>Review kiến trúc; adapter giả lập dùng được trong test.</td></tr>
+<tr><td id="req-nfr-maint-002">NFR-MAINT-002</td><td>Agent được định nghĩa trong agent registry (vai trò, đầu vào, đầu ra, hành động được phép, quyền context) (SCOPE-14).</td><td>Thêm agent mẫu: 0 thay đổi lõi Orchestrator.</td><td>Thêm agent mẫu trong môi trường test.</td></tr>
+<tr><td id="req-nfr-maint-003">NFR-MAINT-003</td><td>State machine của các entity (18.2) được hiện thực ở một nơi duy nhất và là nguồn duy nhất kiểm tra chuyển trạng thái.</td><td>100% chuyển trạng thái ở 18.2 có test hợp lệ và không hợp lệ.</td><td>Báo cáo độ bao phủ test.</td></tr>
+<tr><td id="req-nfr-maint-004">NFR-MAINT-004</td><td>Domain logic (readiness, chuyển trạng thái, quyền, provenance) kiểm thử được mà không gọi provider thật hay dịch vụ ngoài.</td><td>Bộ test domain chạy đạt khi không có mạng.</td><td>Chạy bộ test offline với adapter giả lập.</td></tr>
+<tr><td id="req-nfr-maint-005">NFR-MAINT-005</td><td>Source adapter (17.2, 17.6), document processing, LaTeX toolchain và diagram renderer thay thế được độc lập.</td><td>Thay một thành phần không đổi interface của thành phần khác.</td><td>Review kiến trúc; test thay thế bằng bản giả lập.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-16-8">16.8. Data Retention and Deletion</h2>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-078): duyệt nguyên văn chính sách mặc định. Audit trail (NFR-RET-008) theo OQ-061 và toàn văn prompt chế độ debug (NFR-RET-009) theo OQ-062, cùng PC-01.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Dữ liệu / hành động</th>
+<th scope="col">Chính sách đề xuất</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-ret-001">NFR-RET-001</td><td>Project Active / Archived</td><td>Giữ không thời hạn khi tài khoản còn hoạt động.</td><td>Không có tác vụ xóa tự động nào cho project Active hoặc Archived.</td></tr>
+<tr><td id="req-nfr-ret-002">NFR-RET-002</td><td>Xóa project (APR-08)</td><td>Xóa mềm: ẩn ngay, khôi phục được trong 30 ngày, sau đó xóa vĩnh viễn toàn bộ dữ liệu cấp project, kể cả Audit Event của project và vector của evidence riêng project. Trusted Reference không bị ảnh hưởng (OWN-04).</td><td>NFR-RET-002-AC01; test xóa vĩnh viễn sau hạn.</td></tr>
+<tr><td id="req-nfr-ret-003">NFR-RET-003</td><td>Xóa Trusted Reference</td><td>Chỉ cho phép khi không project nào đang dùng; nếu đang dùng, dùng thu hồi (<code>Revoked</code>). Xóa thì xóa Source Document và vector tương ứng.</td><td>NFR-RET-003-AC01.</td></tr>
+<tr><td id="req-nfr-ret-004">NFR-RET-004</td><td>Xóa tài khoản</td><td>Xóa vĩnh viễn mọi dữ liệu SIRes của tài khoản và API key trong 30 ngày; API key bị vô hiệu ngay khi yêu cầu. Chỉ xóa dữ liệu trong SIRes; tài khoản eTroy do eTroy quản lý và không bị xóa (Assumption — ASM-13).</td><td>Test: sau yêu cầu xóa, mọi lời gọi provider bị từ chối; sau hạn không còn dữ liệu.</td></tr>
+<tr><td id="req-nfr-ret-005">NFR-RET-005</td><td>Export</td><td>Người dùng xuất được một project: mã nguồn bản thảo (zip), PDF build gần nhất, artifact accepted, danh sách reference (BibTeX), Plan baseline. Bản thảo xuất dạng PDF và zip mã nguồn kèm .bib (OQ-058, PC-01); audit trail xuất theo NFR-RET-008.</td><td>Mở gói export trên máy khác và build lại được bản thảo.</td></tr>
+<tr><td id="req-nfr-ret-006">NFR-RET-006</td><td>Dữ liệu đã gửi provider</td><td>Ngoài kiểm soát của hệ thống; thông báo cho người dùng rằng chính sách lưu giữ của provider áp dụng (NFR-PRIV-001).</td><td>Review giao diện thông báo.</td></tr>
+<tr><td id="req-nfr-ret-007">NFR-RET-007</td><td>Log vận hành</td><td>Giữ 30 ngày; không chứa nội dung nghiên cứu (NFR-OBS-002).</td><td>Kiểm tra cấu hình lưu giữ log.</td></tr>
+<tr><td id="req-nfr-ret-008">NFR-RET-008</td><td>Audit trail</td><td>Audit Event giữ cùng vòng đời project (Audit Event cấp project) và tài khoản (Audit Event cấp tài khoản); bị xóa cùng project theo NFR-RET-002 hoặc cùng tài khoản theo NFR-RET-004, không bị xóa riêng. Researcher export audit trail theo project dạng JSON và CSV (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-061)).</td><td>NFR-RET-008-AC01.</td></tr>
+<tr><td id="req-nfr-ret-009">NFR-RET-009</td><td>Toàn văn prompt/phản hồi của Agent Run (chế độ debug)</td><td>Chỉ lưu khi người dùng bật chế độ debug; giữ 30 ngày kể từ khi lưu rồi xóa tự động. Là dữ liệu nhạy cảm: mã hóa khi lưu, chỉ chủ tài khoản xem được, không đưa vào log, không export mặc định. Context manifest và đầu ra có cấu trúc giữ theo vòng đời Agent Run (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062)).</td><td>NFR-RET-009-AC01.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-RET-002-AC01</strong> — Given project vừa bị xóa, When người dùng khôi phục trong 30 ngày, Then project trở lại với đầy đủ Plan, Task, artifact và bản thảo.</li>
+<li><strong>NFR-RET-003-AC01</strong> — Given Reference đang được 1 project dùng, When yêu cầu xóa, Then bị từ chối và gợi ý thu hồi.</li>
+<li><strong>NFR-RET-008-AC01</strong> — Given project có Audit Event từ 6 tháng trước, When Researcher chọn export audit trail của project, Then nhận được file JSON và CSV chứa đủ Audit Event của project, kể cả bản ghi cũ nhất.</li>
+<li><strong>NFR-RET-009-AC01</strong> — Given chế độ debug tắt, When chạy một Agent Run, Then chỉ có context manifest và đầu ra có cấu trúc, không có toàn văn prompt; Given chế độ debug bật, When toàn văn đã lưu quá 30 ngày, Then bản toàn văn bị xóa, context manifest vẫn còn.</li>
+</ul>
+
+<h2 id="s-16-9">16.9. Đo lường KPI-01–KPI-04</h2>
+<p class="status">Giải quyết SYNC-09. Chỉ báo và ngưỡng: Confirmed (21.1, 1.3). Định nghĩa đo: Assumption.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-kpi-001">NFR-KPI-001</td><td>Hệ thống ghi đủ dữ liệu và tính KPI-01–KPI-04 theo định nghĩa ở bảng dưới, cho dashboard vận hành (NFR-OBS-003) và cho báo cáo nghiệm thu (20.4).</td><td>KPI-01 ≥ 95%, KPI-02 = 100%, KPI-03 ≥ 99%, KPI-04 ≤ 10% (Confirmed).</td><td>Kịch bản TS-13-02–TS-13-05 (19.13) và các AC dưới đây.</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">KPI</th>
+<th scope="col">Tử số / mẫu số</th>
+<th scope="col">Dữ liệu cần ghi</th>
+<th scope="col">Thời điểm đo</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td>KPI-01 ≥ 95%</td><td>Tử: claim có ít nhất một Claim–Evidence Link <em>supports</em> tới Evidence <code>Active</code> của Reference <code>Trusted</code>, và mức hỗ trợ <code>Supported</code> hoặc <code>Partially Supported</code>. Mẫu: mọi claim xuất hiện trong artifact synthesis <code>Accepted</code> và trong revision bản thảo hiện hành.</td><td>Claim, Claim–Evidence Link, trạng thái Evidence và Reference, vị trí claim trong artifact/bản thảo.</td><td>Khi chấp nhận artifact synthesis, khi chấp nhận Change Proposal, theo yêu cầu.</td><td>Bộ đề tài mẫu (19.7): tính KPI tự động và đối chiếu thủ công một mẫu.</td></tr>
+<tr><td>KPI-02 = 100%</td><td>Tử: citation key trong revision hiện hành phân giải tới Bibliography Entry của Reference <code>Trusted</code>. Mẫu: mọi citation key trong revision hiện hành.</td><td>Danh sách citation key trích từ file .tex; Bibliography Entry; trạng thái Reference.</td><td>Trước khi chấp nhận Change Proposal (cổng chặn) và mỗi Build.</td><td>Test: chèn key không tồn tại → proposal bị chặn; build báo lỗi.</td></tr>
+<tr><td>KPI-03 ≥ 99%</td><td>Tử: workflow <code>Interrupted</code> được khôi phục mà mọi đầu ra của bước đã hoàn tất trước gián đoạn còn nguyên. Mẫu: mọi workflow từng vào <code>Interrupted</code>.</td><td>Audit Event chuyển trạng thái; checkpoint; danh sách đầu ra theo bước trước và sau khôi phục.</td><td>Liên tục; báo cáo theo tháng.</td><td>Fault injection có kiểm soát trên mọi loại workflow.</td></tr>
+<tr><td>KPI-04 ≤ 10%</td><td>Tử: Task có ít nhất một lần bị trả lại (T-13) hoặc chặn khi review (T-15) với mã lý do <code>missing_input</code>. Mẫu: Task đã đi từ <code>Queued</code> tới <code>Completed</code>.</td><td><code>reasonCode</code> bắt buộc tại T-13 và T-15 (18.1 TaskReview, 18.2).</td><td>Theo tháng, theo project.</td><td>Kiểm tra mọi lần trả lại đều có mã lý do; tính trên dữ liệu thử nghiệm người dùng.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-KPI-001-AC01</strong> — Given bản thảo có 20 citation trong đó 1 key không phân giải, When tính KPI-02, Then kết quả 95% và hệ thống đánh dấu không đạt ngưỡng 100%.</li>
+<li><strong>NFR-KPI-001-AC02</strong> — Given Researcher trả lại Task, When lưu thao tác trả lại, Then hệ thống bắt buộc chọn mã lý do.</li>
+<li><strong>NFR-KPI-001-AC03</strong> — Given 20 Task đã Completed trong đó 2 Task từng bị trả lại với <code>missing_input</code>, When tính KPI-04, Then kết quả 10% và đạt ngưỡng.</li>
+</ul>
+
+<h2 id="s-16-10">16.10. Evaluation và Eval Trace</h2>
+<p class="status">Đề xuất (biên soạn, 31/10/2026) — chờ PO duyệt. Bổ sung sau phiếu PC-01; chưa thuộc bảng Priority DEC-44. Phạm vi: thời điểm thiết kế và phát triển, trên bộ dữ liệu nghiệm thu (20.4). MVP không thu Eval Trace từ dữ liệu người dùng (FUT-06, 2.3).</p>
+<div class="note"><p><strong>Trace vận hành và Eval Trace khác nhau.</strong> Trace vận hành (NFR-OBS-001, NFR-OBS-004) chạy trên production, chỉ chứa metadata và dùng để gỡ lỗi, theo dõi độ trễ và tính KPI. Eval Trace chạy offline trên dữ liệu của đội phát triển, chứa đủ đầu vào và đầu ra của Agent Run, và dùng để chấm chất lượng agent: retrieval có tìm đúng evidence không, Synthesis Agent có viết claim vượt quá evidence không, Verification Agent có chấm đúng không.</p><p>Lý do cần Eval Trace: KPI-01 đếm claim mà Verification Agent tự gán <code>Supported</code> hoặc <code>Partially Supported</code>, nên nếu Verification Agent chấm dễ dãi thì KPI-01 vẫn đạt. TS-13-08 kiểm tra điều này một lần khi nghiệm thu; 16.10 biến phép kiểm tra đó thành phép đo lặp lại được cho từng provider, model và phiên bản prompt.</p></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Phát biểu</th>
+<th scope="col">Chỉ tiêu</th>
+<th scope="col">Kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td id="req-nfr-eval-001">NFR-EVAL-001</td><td>Đội phát triển có bộ chạy đánh giá offline (eval harness) thực thi các Agent Run của Retrieval Agent, Synthesis Agent, Verification Agent và Writing Agent trên bộ dữ liệu nghiệm thu (20.4), với provider thật và Provider Connection của đội phát triển (DEC-40). Harness chạy ở môi trường tách khỏi production và không đọc dữ liệu tài khoản người dùng.</td><td>Chạy lại được toàn bộ bộ dữ liệu cho từng provider trong ba provider MVP; 0 truy cập dữ liệu người dùng.</td><td>Review cấu hình môi trường; chạy thử một lượt đầy đủ (TS-13-10).</td></tr>
+<tr><td id="req-nfr-eval-002">NFR-EVAL-002</td><td>Mỗi Agent Run trong harness ghi một Eval Trace gồm: workflowId, agentRunId, agent, provider, model, phiên bản prompt template, phiên bản cấu hình retrieval, context manifest, toàn văn prompt và phản hồi, danh sách evidence được truy xuất kèm điểm, đầu ra có cấu trúc (claim, Claim–Evidence Link, mức hỗ trợ), nhãn chuyên gia tương ứng, usage (NFR-USAGE-001) và thời gian. Vì dữ liệu thuộc bộ nghiệm thu của đội phát triển, Eval Trace được lưu toàn văn; NFR-OBS-002 vẫn áp dụng cho log vận hành, NFR-SECRETS-001 áp dụng cho Eval Trace.</td><td>100% Agent Run của harness có Eval Trace đủ trường; 0 API key trong Eval Trace.</td><td>Kiểm tra mẫu; quét bằng chuỗi key mẫu đã biết.</td></tr>
+<tr><td id="req-nfr-eval-003">NFR-EVAL-003</td><td>Mỗi lượt chạy harness tạo báo cáo tách theo agent và theo tổ hợp provider, model, phiên bản prompt: (a) KPI-01, KPI-02 trên bộ dữ liệu; (b) tỷ lệ khớp mức hỗ trợ với nhãn chuyên gia (như TS-13-08) và precision riêng của nhãn <code>Supported</code>; (c) tỷ lệ phát hiện citation không khớp nguồn (như TS-13-09); (d) recall của retrieval trên evidence đã gán nhãn, khi bộ dữ liệu có nhãn này (OQ-096); (e) usage và độ trễ. Mỗi kết quả lệch nhãn mở được Eval Trace tương ứng.</td><td>(a) theo REL-03; (b), (c) theo REL-10; precision của <code>Supported</code>, (d), (e) ghi làm baseline, chưa gắn ngưỡng (Assumption).</td><td>TS-13-10.</td></tr>
+<tr><td id="req-nfr-eval-004">NFR-EVAL-004</td><td>Cổng hồi quy: mọi thay đổi prompt template của agent, cấu hình retrieval (chunking, embedding model, top-k), logic đánh giá của Verification Agent hoặc provider adapter phải chạy lại harness và so với baseline đã duyệt trước khi phát hành. Metric giảm vượt dung sai (OQ-097) thì thay đổi không được phát hành cho tới khi đội phát triển sửa hoặc ghi lý do chấp nhận. Baseline chỉ được thay kèm lý do ghi lại.</td><td>100% thay đổi thuộc danh sách có báo cáo so sánh với baseline trước khi phát hành.</td><td>TS-13-11; review lịch sử phát hành.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>NFR-EVAL-001-AC01</strong> — Given harness được cấu hình cho một provider, When chạy trọn bộ dữ liệu nghiệm thu, Then mọi Agent Run hoàn tất hoặc kết thúc với mã lỗi chuẩn (8.6), và không có truy vấn nào tới dữ liệu tài khoản người dùng.</li>
+<li><strong>NFR-EVAL-002-AC01</strong> — Given một lượt chạy harness, When chọn ngẫu nhiên 20 Eval Trace, Then mỗi bản ghi đủ trường bắt buộc, nối được về workflowId và agentRunId, và quét chuỗi key mẫu không tìm thấy.</li>
+<li><strong>NFR-EVAL-003-AC01</strong> — Given lượt chạy trên ba provider, When mở báo cáo, Then thấy đủ metric (a)–(e) tách theo agent và provider, model, phiên bản prompt; chọn một claim Verification Agent gán khác nhãn chuyên gia thì mở được Eval Trace của claim đó.</li>
+<li><strong>NFR-EVAL-004-AC01</strong> — Given baseline đã duyệt, When một thay đổi prompt của Verification Agent làm tỷ lệ khớp giảm vượt dung sai, Then báo cáo đánh dấu không đạt và thay đổi không được phát hành; When thay đổi không làm metric giảm vượt dung sai, Then báo cáo đánh dấu đạt.</li>
+</ul>
+
+<h3 id="s-16-ac">Acceptance criteria cho requirement dạng bảng</h3>
+<p>Các requirement dưới đây được mô tả bằng phát biểu, chỉ tiêu và phương pháp kiểm chứng trong bảng. Theo quy ước 1.6 (mỗi requirement có ít nhất một AC), mỗi requirement có một AC chuẩn hóa từ chính các cột đó; chỉ tiêu là Assumption khi bảng gốc ghi như vậy.</p>
+<ul>
+<li><strong>NFR-PERF-002-AC01</strong> — Given kiểm chứng bằng: Load test, When kiểm tra yêu cầu “Tìm kiếm trong Trusted Library, project, Task, artifact (7.5)”, Then đạt chỉ tiêu: ≤ 2 giây với 5.000 reference.</li>
+<li><strong>NFR-PERF-004-AC01</strong> — Given kiểm chứng bằng: Test với Plan 200 Task, When kiểm tra yêu cầu “Phần kiểm tra xác định của readiness check (WF-02.S1–S4)”, Then đạt chỉ tiêu: ≤ 2 giây.</li>
+<li><strong>NFR-PERF-005-AC01</strong> — Given kiểm chứng bằng: Đo trên ba provider, When kiểm tra yêu cầu “Phản hồi chat: hiển thị trạng thái “đang xử lý” và nội dung stream đầu tiên khi provider hỗ trợ stream”, Then đạt chỉ tiêu: Trạng thái ≤ 1 giây; nội dung theo provider.</li>
+<li><strong>NFR-PERF-006-AC01</strong> — Given kiểm chứng bằng: Load test, When kiểm tra yêu cầu “Truy xuất evidence từ vector database (không tính embedding truy vấn)”, Then đạt chỉ tiêu: ≤ 3 giây cho project 500 reference đã index.</li>
+<li><strong>NFR-PERF-007-AC01</strong> — Given kiểm chứng bằng: Đo thời gian Build Queued → Running, When kiểm tra yêu cầu “Bắt đầu build LaTeX sau khi yêu cầu”, Then đạt chỉ tiêu: ≤ 10 giây chờ hàng đợi.</li>
+<li><strong>NFR-SCALE-001-AC01</strong> — Given project mẫu có dữ liệu ở mức chỉ tiêu (200 Task mỗi Plan Version, 50 Plan Version, 2.000 workflow, 20.000 Agent Run, 500 reference được chọn, 10.000 evidence, 2.000 artifact version, bản thảo 200 file / 2.000 revision), When đo lại các thao tác ở 16.3, Then mọi chỉ tiêu 16.3 vẫn đạt.</li>
+<li><strong>NFR-OBS-001-AC01</strong> — Given kiểm chứng bằng: Review mẫu log, When kiểm tra yêu cầu “Log có cấu trúc, mỗi bản ghi mang các định danh tương quan có liên quan: accountId (dạng ẩn danh hóa), projectId, taskId, workflowId, agentRunId, buildId, mã yêu cầu”, Then đạt chỉ tiêu: 100% bản ghi log của workflow mang workflowId và mã yêu cầu.</li>
+<li><strong>NFR-OBS-002-AC01</strong> — Given kiểm chứng bằng: Quét log bằng chuỗi mẫu đã biết, When kiểm tra yêu cầu “Log và trace không chứa API key, nội dung tài liệu, nội dung bản thảo hoặc prompt đầy đủ; chỉ chứa metadata và độ dài; toàn văn prompt chỉ lưu trong Agent Run khi bật chế độ debug (NFR-RET-009)”, Then đạt chỉ tiêu: 0 bản ghi chứa chuỗi mẫu.</li>
+<li><strong>NFR-OBS-003-AC01</strong> — Given kiểm chứng bằng: Dashboard vận hành hiển thị đủ metric, When kiểm tra yêu cầu “Metric tối thiểu: số workflow theo trạng thái, tỷ lệ lỗi Agent Run theo provider và mã lỗi, độ trễ provider, thời gian indexing, thời gian và tỷ lệ lỗi build, số lần thử lại, và bốn KPI (16.9)”, Then đạt chỉ tiêu: Đủ mọi metric liệt kê.</li>
+<li><strong>NFR-OBS-004-AC01</strong> — Given kiểm chứng bằng: Mở một trace mẫu đi đủ các bước, When kiểm tra yêu cầu “Trace xuyên suốt một workflow: từ yêu cầu người dùng, qua các Agent Run và lời gọi provider, tới ghi dữ liệu”, Then đạt chỉ tiêu: 100% workflow có trace nối đủ các bước.</li>
+<li><strong>NFR-OBS-005-AC01</strong> — Given kiểm chứng bằng: Danh mục mã lỗi được tài liệu hóa; test lỗi mẫu, When kiểm tra yêu cầu “Lỗi có mã ổn định và thông điệp hành động được (UX-STATE-003); lỗi provider dùng bộ mã chuẩn ở 8.6”, Then đạt chỉ tiêu: 100% lỗi trả về có mã thuộc danh mục.</li>
+<li><strong>NFR-USAGE-004-AC01</strong> — Given tài khoản đã phát sinh usage lớn trên một Provider Connection, When người dùng tiếp tục chạy Agent Run, Then không có chặn hay cảnh báo theo ngân sách; usage vẫn được ghi và hiển thị theo NFR-USAGE-001–003.</li>
+<li><strong>NFR-MAINT-001-AC01</strong> — Given kiểm chứng bằng: Review kiến trúc; adapter giả lập dùng được trong test, When kiểm tra yêu cầu “Provider adapter tách biệt sau một interface chung (17.1). Thêm provider mới không sửa Orchestrator, agent hay domain logic”, Then đạt chỉ tiêu: Thêm adapter mẫu: 0 thay đổi ngoài adapter và phần đăng ký adapter.</li>
+<li><strong>NFR-MAINT-002-AC01</strong> — Given kiểm chứng bằng: Thêm agent mẫu trong môi trường test, When kiểm tra yêu cầu “Agent được định nghĩa trong agent registry (vai trò, đầu vào, đầu ra, hành động được phép, quyền context) (SCOPE-14)”, Then đạt chỉ tiêu: Thêm agent mẫu: 0 thay đổi lõi Orchestrator.</li>
+<li><strong>NFR-MAINT-003-AC01</strong> — Given kiểm chứng bằng: Báo cáo độ bao phủ test, When kiểm tra yêu cầu “State machine của các entity (18.2) được hiện thực ở một nơi duy nhất và là nguồn duy nhất kiểm tra chuyển trạng thái”, Then đạt chỉ tiêu: 100% chuyển trạng thái ở 18.2 có test hợp lệ và không hợp lệ.</li>
+<li><strong>NFR-MAINT-004-AC01</strong> — Given kiểm chứng bằng: Chạy bộ test offline với adapter giả lập, When kiểm tra yêu cầu “Domain logic (readiness, chuyển trạng thái, quyền, provenance) kiểm thử được mà không gọi provider thật hay dịch vụ ngoài”, Then đạt chỉ tiêu: Bộ test domain chạy đạt khi không có mạng.</li>
+<li><strong>NFR-MAINT-005-AC01</strong> — Given kiểm chứng bằng: Review kiến trúc; test thay thế bằng bản giả lập, When kiểm tra yêu cầu “Source adapter (17.2, 17.6), document processing, LaTeX toolchain và diagram renderer thay thế được độc lập”, Then đạt chỉ tiêu: Thay một thành phần không đổi interface của thành phần khác.</li>
+<li><strong>NFR-RET-001-AC01</strong> — Given kiểm chứng bằng: Không có tác vụ xóa tự động nào cho project Active hoặc Archived, When kiểm tra yêu cầu “Project Active / Archived”, Then đạt chỉ tiêu: Giữ không thời hạn khi tài khoản còn hoạt động.</li>
+<li><strong>NFR-RET-004-AC01</strong> — Given kiểm chứng bằng test: sau yêu cầu xóa, mọi lời gọi provider bị từ chối; sau hạn không còn dữ liệu, When kiểm tra yêu cầu “Xóa tài khoản”, Then đạt chỉ tiêu: Xóa vĩnh viễn mọi dữ liệu SIRes và API key trong 30 ngày; API key bị vô hiệu ngay khi yêu cầu; tài khoản eTroy không bị ảnh hưởng (ASM-13).</li>
+<li><strong>NFR-RET-005-AC01</strong> — Given kiểm chứng bằng: Mở gói export trên máy khác và build lại được bản thảo, When kiểm tra yêu cầu “Export”, Then đạt chỉ tiêu: Người dùng xuất được một project: mã nguồn bản thảo (zip), PDF build gần nhất, artifact accepted, danh sách reference (BibTeX), Plan baseline. Bản thảo xuất dạng PDF và zip mã nguồn kèm .bib (OQ-058, PC-01).</li>
+<li><strong>NFR-RET-006-AC01</strong> — Given kiểm chứng bằng: Review giao diện thông báo, When kiểm tra yêu cầu “Dữ liệu đã gửi provider”, Then đạt chỉ tiêu: Ngoài kiểm soát của hệ thống; thông báo cho người dùng rằng chính sách lưu giữ của provider áp dụng (NFR-PRIV-001).</li>
+<li><strong>NFR-RET-007-AC01</strong> — Given kiểm chứng bằng: Kiểm tra cấu hình lưu giữ log, When kiểm tra yêu cầu “Log vận hành”, Then đạt chỉ tiêu: Giữ 30 ngày; không chứa nội dung nghiên cứu (NFR-OBS-002).</li>
+</ul>
+
+<h2 id="s-16-oq">16.11. Open Questions của mục 16</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-073</td><td>Phương thức authentication của MVP: email/mật khẩu, OAuth (Google…), hay SSO tổ chức? (cụ thể hóa câu hỏi ở 21.3) <strong>Đã đóng 31/10/2026 (PC-01):</strong> SSO của tổ chức, duy nhất qua eTroy OIDC; không email/mật khẩu riêng, không OAuth Google; SIRes không lưu mật khẩu, phiên theo token OIDC (NFR-AUTH-001, INT-OIDC-001–004). Chi tiết claim và xử lý tài khoản: ASM-13.</td><td>16.1, 7, 18.1</td></tr>
+<tr><td>OQ-074</td><td>Giới hạn tài nguyên cho build LaTeX và render sơ đồ (đề xuất 120 giây, 2 GB) có phù hợp không? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> dùng 120 giây và 2 GB làm mặc định, người vận hành cấu hình được; vượt giới hạn thì dừng và báo lỗi rõ ràng (NFR-SANDBOX-001).</td><td>16.1, 17.4, 17.5</td></tr>
+<tr><td>OQ-075</td><td>Xác nhận chỉ tiêu hiệu năng (16.3), availability 99,5%, RPO 24 giờ / RTO 8 giờ. <strong>Đã đóng 31/10/2026 (PC-01):</strong> duyệt nguyên văn.</td><td>16.2, 16.3, 19</td></tr>
+<tr><td>OQ-076</td><td>Xác nhận mức dung lượng MVP ở 16.4 (Task, reference, workflow, tài khoản đồng thời). <strong>Đã đóng 31/10/2026 (PC-01):</strong> duyệt nguyên văn.</td><td>16.4</td></tr>
+<tr><td>OQ-077</td><td>MVP có cần giới hạn ngân sách hoặc cảnh báo usage theo project/provider không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> không; chỉ ghi và hiển thị usage (NFR-USAGE-001–004). Dashboard hạn mức và tiêu thụ để sau MVP (FUT-05).</td><td>16.6, 8</td></tr>
+<tr><td>OQ-078</td><td>Duyệt chính sách retention, xóa và export mặc định ở 16.8 (xóa mềm 30 ngày, xóa tài khoản 30 ngày, log 30 ngày); liên quan OQ-061 (audit trail) và OQ-062 (toàn văn prompt). <strong>Đã đóng 31/10/2026 (PC-01):</strong> duyệt nguyên văn 16.8; audit trail giữ cùng vòng đời project/tài khoản, export JSON/CSV (NFR-RET-008, OQ-061); toàn văn prompt chỉ lưu khi bật debug, giữ 30 ngày (NFR-RET-009, OQ-062).</td><td>16.8, 18, 21.3</td></tr>
+<tr><td id="oq-096">OQ-096</td><td>Bộ dữ liệu nghiệm thu có gán thêm nhãn evidence liên quan cho từng claim (đoạn nào trong reference là căn cứ) để đo recall của retrieval (NFR-EVAL-003 (d)) không? Ai gán? <strong>Mở</strong> (31/10/2026).</td><td>16.10, 20.4</td></tr>
+<tr><td id="oq-097">OQ-097</td><td>Dung sai hồi quy cho cổng NFR-EVAL-004: metric được giảm tối đa bao nhiêu so với baseline (ví dụ 2 điểm phần trăm cho tỷ lệ khớp) trước khi chặn phát hành? <strong>Mở</strong> (31/10/2026).</td><td>16.10, 20.4</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="15-ui-ux-requirements.html">← Mục 15</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="17-integrations-and-external-dependencies.html">Mục 17 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+%% FIG-004 — Task and workflow state machines (sections 5.3, 5.4, 9.8 TASK-STATE-001, 18.2, appendix C)
+%% Task transition codes T-01..T-19 follow the authoritative table in 9.8.
+stateDiagram-v2
+  state "Task" as T {
+    [*] --> Draft
+    Draft --> Blocked: T-01 plan approved, not ready
+    Draft --> Ready: T-02 plan approved, ready
+    Draft --> [*]: T-17 removed from draft / plan rejected
+    Blocked --> Ready: T-03 readiness passed
+    Ready --> Blocked: T-04 readiness failed
+    Ready --> Queued: T-05 APR-02 (Researcher)
+    Failed --> Queued: T-05 controlled re-run (Researcher)
+    Queued --> InProgress: T-06 workflow running / WF-03.S1
+    Queued --> Ready: T-07 cancel before start
+    InProgress --> WaitingForUser: T-08 waiting / paused / interrupted
+    WaitingForUser --> InProgress: T-09 workflow running again
+    InProgress --> Ready: T-10 workflow cancelled (or Blocked)
+    WaitingForUser --> Ready: T-10 workflow cancelled (or Blocked)
+    InProgress --> InReview: T-11 outputs ready
+    InProgress --> Failed: T-12 workflow failed
+    WaitingForUser --> Failed: T-12 workflow failed
+    InReview --> Ready: T-13 returned (reasonCode)
+    InReview --> Completed: T-14 APR-03 (Researcher)
+    InReview --> Blocked: T-15 blocked on review (reasonCode)
+    Failed --> Blocked: T-16 readiness failed
+    Blocked --> Cancelled: T-18
+    Ready --> Cancelled: T-18
+    Queued --> Cancelled: T-18
+    InReview --> Cancelled: T-18
+    Failed --> Cancelled: T-18
+    Completed --> Ready: T-19 reopen (or Blocked)
+    Cancelled --> [*]
+  }
+  state "Workflow" as W {
+    [*] --> Created
+    Created --> Running
+    Running --> Waiting: prompt open
+    Waiting --> Running: answered
+    Running --> Paused: user pause
+    Paused --> Running: resume
+    Running --> Interrupted: system detected stop
+    Interrupted --> Running: recovery decision
+    Running --> Succeeded
+    Running --> Failed
+    Running --> Cancelled
+    Waiting --> Cancelled
+    Paused --> Cancelled
+    Interrupted --> Cancelled
+  }

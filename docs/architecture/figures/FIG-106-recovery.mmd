@@ -1,0 +1,10 @@
+%% FIG-106 — Interruption detection and recovery (architecture F-12, 5.4)
+stateDiagram-v2
+  [*] --> Running
+  Running --> Running: heartbeat mỗi 30 s
+  Running --> Interrupted: sweeper (mỗi 10 s) thấy heartbeat cũ hơn 110 s (phát hiện ≤ 2 phút)\nAgentRun Failed(interrupted), PendingAction Recovery decision
+  Interrupted --> Interrupted: không tạo job (NFR-REC-002)
+  Interrupted --> Running: Researcher: tiếp tục / chạy lại bước (Agent Run mới)
+  Interrupted --> Cancelled: Researcher: hủy
+  Running --> Succeeded
+  Running --> Failed

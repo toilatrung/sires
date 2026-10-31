@@ -1,0 +1,24 @@
+%% FIG-013 — Reference lifecycle (sections 5.6, 10.8)
+stateDiagram-v2
+  state "Discovered Result" as DR {
+    [*] --> New
+    New --> Selected
+    New --> RejectedDR: rejected
+    Selected --> Imported: reference approved
+  }
+  state "Approval" as AP {
+    [*] --> PendingApproval
+    PendingApproval --> Trusted: APR-04
+    PendingApproval --> Rejected
+    Trusted --> Revoked: APR-04 revoke (reason)
+    Revoked --> Trusted: re-approved
+  }
+  state "Indexing" as IX {
+    [*] --> NotIndexed
+    NotIndexed --> Queued
+    Queued --> Indexing
+    Indexing --> Indexed
+    Indexing --> Failed
+    Failed --> Queued: retry
+    NotIndexed --> Unavailable: no accessible content
+  }

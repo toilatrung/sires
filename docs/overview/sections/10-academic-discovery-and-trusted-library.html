@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>10. Functional Requirements — Academic Discovery and Trusted Library | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 10</p><h1>10. Functional Requirements — Academic Discovery and Trusted Library</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–9, mục 21.1</p><div class="note"><p>Mục này đặc tả tìm tài liệu trên Google Scholar, review kết quả, tìm theo tác giả, nhập và duyệt reference, Trusted Library cấp tài khoản, quản lý metadata và trùng lặp, vòng đời reference và giao diện nguồn mở rộng. Luồng chính là <a href="06-end-to-end-product-workflow.html#wf-04">WF-04</a>; entity theo <a href="05-core-domain-model.html#s-5-6">5.6</a>. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline và 21.1 (<strong>Confirmed</strong>); chi tiết là <strong>Assumption</strong> trừ khi ghi khác. Phương thức discovery đã chốt (Confirmed — PO chốt 31/10/2026, PC-01, OQ-006, OQ-081): Google Scholar qua dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả; nếu Google Scholar không khả thi, dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface 10.9, kèm nhập DOI/BibTeX; WF-04 giữ nguyên. Nhập thủ công DOI, BibTeX, PDF (OQ-008) và duyệt theo lô (OQ-039, OQ-090) đã chốt. Các câu hỏi đã đóng được ghi ở <a href="#s-10-oq">10.10</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-10-1">10.1. Google Scholar Discovery</a></li>
+<li><a href="#s-10-2">10.2. Search Result Review</a></li>
+<li><a href="#s-10-3">10.3. Author Publication Discovery</a></li>
+<li><a href="#s-10-4">10.4. Individual and Batch Import</a></li>
+<li><a href="#s-10-5">10.5. Reference Approval</a></li>
+<li><a href="#s-10-6">10.6. Account-Level Trusted Library</a></li>
+<li><a href="#s-10-7">10.7. Metadata and Duplicate Management</a></li>
+<li><a href="#s-10-8">10.8. Reference Lifecycle</a></li>
+<li><a href="#s-10-9">10.9. Future Source Adapters</a></li>
+<li><a href="#s-10-oq">10.10. Open Questions của mục 10</a></li>
+</ul></details>
+
+<h2 id="s-10-1">10.1. Google Scholar Discovery</h2>
+<p class="status">Confirmed (outline, 21.1): tìm theo query, tiêu đề, tác giả, từ khóa; hiển thị metadata có sẵn và liên kết tới bản ghi nguồn; kiểm chứng tính khả thi và phương thức truy cập được phép.</p>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-081, OQ-006): Google Scholar được tích hợp qua dịch vụ trung gian theo hợp đồng; khi dịch vụ không trả kết quả, Researcher dùng luồng nhập do người dùng hỗ trợ (nhập DOI, BibTeX hoặc PDF, LIB-IMPORT-002). Nếu Google Scholar không khả thi, MVP dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface nguồn 10.9, kèm nhập DOI/BibTeX; WF-04 giữ nguyên.</p>
+
+<h3 id="disc-scholar-001">DISC-SCHOLAR-001 — Tìm kiếm Google Scholar</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tìm tài liệu học thuật từ nguồn discovery chính của MVP.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Discovery Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Phương thức truy cập đã qua DISC-SCHOLAR-002; Discovery Agent có kết nối hợp lệ (khi tìm qua agent).</td></tr>
+<tr><th scope="row">Trigger</th><td>(a) Researcher nhập truy vấn ở Discover; (b) Discovery Agent chạy bước tìm kiếm trong một Task (WF-04.S1).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Truy vấn có các trường: từ khóa tự do, tiêu đề, tác giả, khoảng năm (nếu nguồn hỗ trợ).</li>
+<li>Tìm trực tiếp ở Discover: System gọi adapter với truy vấn của Researcher. Tìm trong Task: Discovery Agent lập một hoặc nhiều truy vấn từ chỉ dẫn và Research Context, ghi rõ truy vấn đã dùng.</li>
+<li>Mỗi kết quả lưu thành Discovered Result <code>New</code>: metadata có sẵn (tiêu đề, tác giả, năm, venue, đoạn mô tả, số trích dẫn nếu có), liên kết tới bản ghi nguồn, truy vấn, thời điểm, Agent Run (nếu có).</li>
+<li>Kết quả trùng với Trusted Reference đã có được đánh dấu “đã có trong thư viện”.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Không có kết quả: gợi ý sửa truy vấn.</li><li>Nguồn từ chối, giới hạn tốc độ hoặc yêu cầu xác minh người dùng: dừng, báo lỗi rõ ràng, không thử vượt (OOS-06); ghi lỗi vào Agent Run.</li><li>Dịch vụ trung gian không trả kết quả hoặc không khả dụng: báo lỗi nguồn và gợi ý luồng nhập do người dùng hỗ trợ (LIB-IMPORT-002, OQ-081).</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Discovered Result không phải Trusted Reference và không dùng được làm nguồn evidence hay citation. Không khẳng định bao phủ đầy đủ. Tốc độ gọi nguồn tuân thủ giới hạn của phương thức truy cập được phép.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Discovered Result <code>New</code>; Agent Run.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DISC-SCHOLAR-001-AC01</strong> Given truy vấn có kết quả, When tìm ở Discover, Then mỗi kết quả hiển thị metadata có sẵn và liên kết tới bản ghi nguồn.</li>
+<li><strong>DISC-SCHOLAR-001-AC02</strong> Given nguồn trả về yêu cầu xác minh người dùng, When tìm kiếm, Then hệ thống dừng, báo lỗi và không gửi thêm yêu cầu tự động.</li>
+<li><strong>DISC-SCHOLAR-001-AC03</strong> Given Discovery Agent tìm trong Task, When xem Agent Run, Then thấy các truy vấn đã dùng và số kết quả mỗi truy vấn.</li>
+<li><strong>DISC-SCHOLAR-001-AC04</strong> Given kết quả trùng Trusted Reference R, When hiển thị, Then kết quả có nhãn “đã có trong thư viện” và liên kết tới R.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DISC-SCHOLAR-002, DISC-ADAPTER-001, LIB-IMPORT-002, 17.2</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-006, OQ-081 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="disc-scholar-002">DISC-SCHOLAR-002 — Cổng kiểm chứng phương thức truy cập</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline: verify feasibility and permitted method)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không triển khai discovery dựa trên phương thức truy cập chưa được phép hoặc không ổn định.</td></tr>
+<tr><th scope="row">Actor</th><td>Đội sản phẩm và kỹ thuật (trước khi triển khai); System (khi vận hành)</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Trước khi bắt đầu milestone discovery (20.1).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Phương thức đã chốt là dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ (OQ-081). Đánh giá các dịch vụ trung gian ứng viên theo tiêu chí: được phép theo điều khoản của nguồn và hợp đồng, độ ổn định, giới hạn tốc độ, trường metadata trả về, chi phí, khả năng tìm theo tác giả.</li>
+<li>Ghi dịch vụ được chọn vào 17.2 và 21.2.</li>
+<li>Nếu không có dịch vụ đạt (Google Scholar không khả thi): triển khai adapter của một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua DISC-ADAPTER-001, kèm nhập DOI/BibTeX (LIB-IMPORT-002); WF-04 giữ nguyên (OQ-006).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Phương thức đã chọn ngừng hoạt động khi vận hành: System báo lỗi nguồn ở Discover; Trusted Library và các chức năng khác vẫn hoạt động.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không dùng kỹ thuật vượt cơ chế chống bot, CAPTCHA hay giới hạn truy cập (OOS-06).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Tài liệu quyết định ở 17.2, 21.2.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DISC-SCHOLAR-002-AC01</strong> Given milestone discovery, When bắt đầu triển khai, Then có dịch vụ trung gian cụ thể (hoặc nguồn API thay thế theo OQ-006) được chọn và ghi ở 17.2.</li>
+<li><strong>DISC-SCHOLAR-002-AC02</strong> Given nguồn discovery không khả dụng, When Researcher mở Trusted Library hoặc chạy WF-05 với reference đã có, Then các chức năng đó hoạt động bình thường.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>17.2, 20.2, 21.2</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-006, OQ-081 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-2">10.2. Search Result Review</h2>
+<p class="status">Confirmed (outline): xem, chọn, loại kết quả trước khi nhập; phân biệt rõ kết quả tìm thấy với reference đã duyệt.</p>
+
+<h3 id="disc-review-001">DISC-REVIEW-001 — Review kết quả tìm kiếm</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher chọn lọc trước khi bất cứ thứ gì đi vào thư viện.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Discovered Result <code>New</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher xem kết quả ở Discover hoặc trong Task.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher xem chi tiết từng kết quả (metadata, liên kết nguồn) → chọn (<code>Selected</code>) hoặc loại (<code>Rejected</code>) từng kết quả, nhiều kết quả, hoặc tất cả trên trang → gửi các kết quả <code>Selected</code> vào nhập (LIB-IMPORT-001).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Đổi ý: <code>Rejected</code> có thể chọn lại thành <code>Selected</code> khi chưa nhập.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Giao diện dùng nhãn và kiểu hiển thị khác nhau cho Discovered Result và Trusted Reference (15.6). Discovered Result không xuất hiện trong References and Evidence của project.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Discovered Result.status.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DISC-REVIEW-001-AC01</strong> Given 10 kết quả, When Researcher chọn 3 và loại 2, Then 3 <code>Selected</code>, 2 <code>Rejected</code>, 5 <code>New</code>.</li>
+<li><strong>DISC-REVIEW-001-AC02</strong> Given một Discovered Result <code>Selected</code> chưa duyệt, When mở References and Evidence của project, Then kết quả đó không xuất hiện.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DISC-SCHOLAR-001, 15.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-3">10.3. Author Publication Discovery</h2>
+<p class="status">Confirmed (outline): tìm danh sách công bố của tác giả khi có dữ liệu; chọn từng bài, một phần hoặc tất cả kết quả đủ điều kiện; không khẳng định bao phủ đầy đủ.</p>
+
+<h3 id="disc-author-001">DISC-AUTHOR-001 — Tìm công bố theo tác giả</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Thu thập nhanh công bố của một tác giả quan trọng với đề tài.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Discovery Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Phương thức truy cập hỗ trợ tìm theo tác giả (DISC-SCHOLAR-002).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher tìm theo tên tác giả, hoặc chọn tác giả từ một kết quả.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System trả về các hồ sơ tác giả có thể khớp (nếu nguồn có); Researcher chọn đúng tác giả.</li>
+<li>System lấy danh sách công bố có sẵn → Discovered Result <code>New</code>, ghi nguồn là hồ sơ tác giả.</li>
+<li>Researcher chọn từng bài, chọn theo bộ lọc (năm, từ khóa), hoặc “chọn tất cả kết quả đủ điều kiện” (kết quả chưa có trong thư viện và có đủ metadata tối thiểu).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Không xác định được tác giả duy nhất: hiển thị các ứng viên, không tự chọn. Nguồn không có dữ liệu tác giả: thông báo và gợi ý tìm theo từ khóa.</li><li>Công bố của chính Researcher: nếu Researcher đã khai báo liên kết hồ sơ Google Scholar trong thông tin cá nhân (OQ-015), Discover có lối tắt “Công bố của tôi” dùng URL hồ sơ đó làm điểm vào để lấy danh sách công bố (bỏ qua bước 1), khi adapter đang bật hỗ trợ tìm theo hồ sơ tác giả. Liên kết chỉ là trường URL, không phải đăng nhập Google. Assumption (ASM-14).</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Giao diện luôn ghi “danh sách có thể không đầy đủ”. Chọn tất cả không bỏ qua bước duyệt (LIB-APPROVAL-001). Mỗi lô tối đa 50 mục; muốn nhiều hơn thì chạy nhiều lô (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01); giá trị là cấu hình hệ thống).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Discovered Result.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DISC-AUTHOR-001-AC01</strong> Given hai hồ sơ tác giả cùng tên, When tìm, Then cả hai được hiển thị để chọn và không có danh sách công bố nào được tải trước khi chọn.</li>
+<li><strong>DISC-AUTHOR-001-AC02</strong> Given danh sách công bố của tác giả, When hiển thị, Then có ghi chú danh sách có thể không đầy đủ.</li>
+<li><strong>DISC-AUTHOR-001-AC03</strong> Given Researcher chọn tất cả kết quả đủ điều kiện, When nhập, Then các reference tạo ra ở <code>Pending Approval</code>, không phải <code>Trusted</code>.</li>
+<li><strong>DISC-AUTHOR-001-AC04</strong> Given Researcher đã lưu URL hồ sơ Google Scholar và adapter hỗ trợ tìm theo hồ sơ, When chọn “Công bố của tôi”, Then danh sách công bố của hồ sơ đó hiển thị dưới dạng Discovered Result <code>New</code> có ghi chú danh sách có thể không đầy đủ; khi chưa lưu URL, lối tắt không hiển thị.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DISC-SCHOLAR-001, LIB-IMPORT-001, thông tin cá nhân trong Settings (OQ-015)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-4">10.4. Individual and Batch Import</h2>
+<p class="status">Confirmed (outline): nhập một hoặc nhiều reference đã chọn; theo dõi trạng thái nhập và lỗi.</p>
+
+<h3 id="lib-import-001">LIB-IMPORT-001 — Nhập từng reference hoặc theo lô</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Chuyển kết quả đã chọn thành reference chờ duyệt, có theo dõi lỗi.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Reference Processing Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Discovered Result <code>Selected</code>; Reference Processing Agent có kết nối hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Nhập” (WF-04.S3).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System tạo một lô nhập với danh sách mục; mỗi mục có trạng thái: chờ, đang xử lý, đã tạo reference, trùng lặp, lỗi.</li>
+<li>Reference Processing Agent chuẩn hóa metadata (LIB-METADATA-001), kiểm tra trùng, tạo Reference <code>Pending Approval</code>.</li>
+<li>Khi lô xong: tạo prompt duyệt (LIB-APPROVAL-001) và hiển thị tóm tắt lô (số tạo, trùng, lỗi).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Một mục lỗi (thiếu metadata tối thiểu, lấy metadata thất bại): mục đó ở trạng thái lỗi kèm lý do; các mục khác tiếp tục; Researcher có thể thử lại mục lỗi. Lô bị gián đoạn: tiếp tục theo WF-06, không tạo reference trùng.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Metadata tối thiểu để tạo reference: tiêu đề, ít nhất một tác giả, năm (hoặc ghi rõ thiếu năm). Mỗi lô tối đa 50 mục (như DISC-AUTHOR-001). Nhập là idempotent theo Discovered Result (16, 18.4).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Reference <code>Pending Approval</code>; trạng thái mục lô; Agent Run.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-IMPORT-001-AC01</strong> Given lô 5 mục trong đó 1 mục thiếu tiêu đề, When nhập, Then 4 reference <code>Pending Approval</code> được tạo và 1 mục lỗi kèm lý do.</li>
+<li><strong>LIB-IMPORT-001-AC02</strong> Given lô bị gián đoạn sau 2 mục, When khôi phục, Then chỉ 3 mục còn lại được xử lý và không có reference trùng.</li>
+<li><strong>LIB-IMPORT-001-AC03</strong> Given một mục trùng Trusted Reference, When nhập, Then mục ở trạng thái trùng lặp kèm đề xuất gộp, không tạo reference mới.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>LIB-METADATA-001, LIB-APPROVAL-001, WF-06</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-008 (đã đóng 31/10/2026, PC-01; xem LIB-IMPORT-002)</td></tr>
+</tbody></table></div>
+
+<h3 id="lib-import-002">LIB-IMPORT-002 — Nhập reference thủ công (DOI, BibTeX, PDF)</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed — PO chốt 31/10/2026 (PC-01, OQ-008, OQ-081); Assumption (chi tiết luồng)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher đưa tài liệu vào thư viện khi nguồn tìm kiếm không trả kết quả hoặc đã có sẵn định danh, BibTeX hay tệp; đây cũng là luồng nhập do người dùng hỗ trợ của OQ-081.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Reference Processing Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đã đăng nhập; Reference Processing Agent có kết nối hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Nhập thủ công” ở Discover hoặc Trusted Library.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Researcher chọn một trong ba cách: nhập một hoặc nhiều DOI; dán hoặc tải lên nội dung BibTeX (một hoặc nhiều mục); tải lên tệp PDF.</li>
+<li>System tạo lô nhập như LIB-IMPORT-001 (mỗi DOI, mục BibTeX hoặc tệp là một mục).</li>
+<li>DOI: Reference Processing Agent lấy metadata theo DOI từ nguồn được phép. BibTeX: phân tích các trường. PDF: kiểm tra định dạng và dung lượng, trích metadata từ tệp.</li>
+<li>Mọi mục qua chuẩn hóa metadata và kiểm tra trùng (LIB-METADATA-001) như WF-04, rồi tạo Reference <code>Pending Approval</code> và prompt duyệt (LIB-APPROVAL-001).</li>
+<li>Với PDF: sau khi reference được duyệt, tệp trở thành Source Document và vào indexing (LIB-CONTENT-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>DOI không phân giải được hoặc BibTeX thiếu metadata tối thiểu: mục lỗi kèm lý do; Researcher sửa rồi thử lại.</li><li>PDF không có lớp văn bản hoặc vượt 50 MB: từ chối tệp kèm lý do (không OCR, OQ-050).</li><li>Mục trùng Trusted Reference: xử lý như LIB-IMPORT-001-AC03; không tạo reference mới.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Reference nhập thủ công không bao giờ vào thẳng <code>Trusted</code>; luôn qua <code>Pending Approval</code> và APR-04. Metadata tối thiểu và giới hạn 50 mục mỗi lô như LIB-IMPORT-001. Provenance ghi cách nhập (DOI, BibTeX, PDF) thay cho Discovered Result. Chỉ PDF có lớp văn bản, tối đa 50 MB/file (OQ-050).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Reference <code>Pending Approval</code>; trạng thái mục lô; Source Document (PDF, sau khi duyệt); Agent Run.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-IMPORT-002-AC01</strong> Given Researcher nhập 3 DOI hợp lệ, When nhập xong, Then có 3 Reference <code>Pending Approval</code> với metadata chuẩn hóa và provenance “DOI”, không reference nào ở <code>Trusted</code>.</li>
+<li><strong>LIB-IMPORT-002-AC02</strong> Given tệp BibTeX có một mục trùng DOI với Trusted Reference R, When nhập, Then mục đó ở trạng thái trùng lặp kèm đề xuất liên kết vào R.</li>
+<li><strong>LIB-IMPORT-002-AC03</strong> Given PDF chỉ chứa ảnh quét (không có lớp văn bản) hoặc lớn hơn 50 MB, When tải lên, Then tệp bị từ chối kèm lý do và không tạo reference.</li>
+<li><strong>LIB-IMPORT-002-AC04</strong> Given PDF hợp lệ đã tạo Reference <code>Pending Approval</code>, When Researcher duyệt, Then reference <code>Trusted</code> và indexing <code>Queued</code>.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>LIB-IMPORT-001, LIB-METADATA-001, LIB-APPROVAL-001, LIB-CONTENT-001, WF-04.A3</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-008, OQ-081, OQ-050 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-5">10.5. Reference Approval</h2>
+<p class="status">Confirmed (outline): dùng Interactive Agent Prompt để duyệt khi cần; không để reference chưa duyệt lặng lẽ trở thành nguồn tin cậy.</p>
+
+<h3 id="lib-approval-001">LIB-APPROVAL-001 — Duyệt reference</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline, APR-04); duyệt theo lô và chính sách duyệt: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-039, OQ-090)</td></tr>
+<tr><th scope="row">Purpose</th><td>Chỉ tài liệu Researcher đồng ý mới thành Trusted Reference (GOAL-03).</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Reference <code>Pending Approval</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Prompt APR-04 sau khi nhập; hoặc Researcher mở danh sách chờ duyệt trong Trusted Library.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Prompt hiển thị cho từng reference: metadata chuẩn hóa, liên kết nguồn, cảnh báo (thiếu trường, nghi trùng), project và Task yêu cầu (nếu có).</li>
+<li>Researcher duyệt, sửa metadata rồi duyệt (<code>edit_and_approve</code>), hoặc từ chối — từng reference hoặc theo lô trong một prompt: Researcher chọn nhiều reference rồi duyệt một lần (OQ-039).</li>
+<li>Reference có cảnh báo trùng (trùng chắc chắn hoặc nghi trùng) không nằm trong lô; Researcher xử lý riêng từng reference đó (gộp, giữ riêng, từ chối) theo LIB-METADATA-001.</li>
+<li>Duyệt: Reference → <code>Trusted</code>; Discovered Result → <code>Imported</code>; tạo BibTeX key; nếu có nội dung truy cập hợp lệ, indexing → <code>Queued</code> (LIB-CONTENT-001); Audit Event APR-04. Khi duyệt theo lô, audit trail vẫn ghi một phê duyệt APR-04 riêng cho từng reference (referenceId, phiên bản metadata).</li>
+<li>Nếu yêu cầu đến từ Task: đề xuất thêm vào Project Reference Selection (LIB-PROJECT-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Từ chối: Reference → <code>Rejected</code>; không dùng được ở đâu; vẫn lưu để tránh đề xuất lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không có đường nào khác đưa Reference vào <code>Trusted</code> ngoài APR-04. Phê duyệt gắn với phiên bản metadata tại thời điểm duyệt. Không có duyệt tự động theo tiêu chí và không có mức tin cậy tự động theo nguồn: reference từ mọi nguồn (dịch vụ trung gian, nguồn API thay thế, DOI, BibTeX, PDF) đều qua APR-04. Sau khi duyệt, chỉ Researcher sửa được metadata và mỗi lần sửa tạo phiên bản metadata mới (LIB-METADATA-001). Confirmed — PO chốt 31/10/2026 (PC-01, OQ-039, OQ-090).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Reference; Discovered Result; Bibliography key; indexing status; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-APPROVAL-001-AC01</strong> Given Reference <code>Pending Approval</code>, When Evidence Retrieval Agent truy xuất, Then reference đó không được dùng.</li>
+<li><strong>LIB-APPROVAL-001-AC02</strong> Given Researcher sửa năm xuất bản rồi duyệt, When kiểm tra, Then Reference <code>Trusted</code> với năm đã sửa và Audit Event ghi phiên bản metadata đã duyệt.</li>
+<li><strong>LIB-APPROVAL-001-AC03</strong> Given mọi agent, When cố đổi Reference sang <code>Trusted</code>, Then bị từ chối (AGENT-SCOPE-001).</li>
+<li><strong>LIB-APPROVAL-001-AC04</strong> Given Reference <code>Rejected</code>, When tìm lại cùng tài liệu, Then kết quả hiển thị nhãn “đã từ chối trước đây”.</li>
+<li><strong>LIB-APPROVAL-001-AC05</strong> Given prompt duyệt theo lô gồm 20 reference, When Researcher duyệt cả lô trong một thao tác, Then 20 reference <code>Trusted</code> và audit trail có 20 phê duyệt APR-04 riêng, mỗi phê duyệt gắn một referenceId và phiên bản metadata.</li>
+<li><strong>LIB-APPROVAL-001-AC06</strong> Given lô nhập có 1 reference nghi trùng, When prompt duyệt theo lô được tạo, Then reference nghi trùng không nằm trong lô và chỉ chuyển trạng thái sau khi Researcher xử lý riêng.</li>
+<li><strong>LIB-APPROVAL-001-AC07</strong> Given reference đến từ nguồn API có uy tín (ví dụ có DOI hợp lệ), When nhập xong, Then reference vẫn ở <code>Pending Approval</code> cho đến khi Researcher duyệt.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>PROMPT-APPROVAL-001, LIB-CONTENT-001, LIB-METADATA-001, 21.3</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-039, OQ-090 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-6">10.6. Account-Level Trusted Library</h2>
+<p class="status">Confirmed (outline, 21.1): lưu reference đã duyệt để dùng lại qua các project; cho phép project chọn reference từ thư viện.</p>
+
+<h3 id="lib-library-001">LIB-LIBRARY-001 — Trusted Library</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (21.1)</td></tr>
+<tr><th scope="row">Purpose</th><td>Một thư viện tin cậy duy nhất cho mọi project của Researcher.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đã đăng nhập.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mở Trusted Library.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Danh sách reference với: metadata, trạng thái duyệt, trạng thái indexing, project đang dùng, ngày duyệt. Lọc theo trạng thái, năm, tác giả, project; tìm theo từ khóa. Mở chi tiết: metadata và lịch sử phiên bản, provenance (Discovered Result, truy vấn, lô nhập), evidence đang dùng nó ở các project (chỉ số lượng và liên kết).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Thư viện rỗng: gợi ý mở Discover.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Thư viện thuộc cấp tài khoản (OWN-02); xóa hoặc lưu trữ project không xóa reference (OWN-04).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Không (xem).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-LIBRARY-001-AC01</strong> Given reference R được duyệt khi làm project A, When mở project B, Then R chọn được từ Trusted Library mà không cần duyệt lại.</li>
+<li><strong>LIB-LIBRARY-001-AC02</strong> Given R được dùng ở A và B, When mở chi tiết R, Then thấy cả hai project.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.6, 4.1</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="lib-project-001">LIB-PROJECT-001 — Chọn reference cho project</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Giới hạn nguồn mà agent của một project được dùng.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; Orchestrator (đề xuất)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>; Reference <code>Trusted</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher thêm từ References and Evidence hoặc Trusted Library; hoặc xác nhận đề xuất ở WF-04.S7.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System tạo Project Reference Selection <code>Active</code> (người chọn, thời điểm, lý do tùy chọn) → reference xuất hiện trong References and Evidence của project và trong phạm vi truy xuất evidence của project. Bỏ chọn → <code>Removed</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Bỏ chọn reference đang có evidence hoặc citation trong project: cảnh báo danh sách phụ thuộc; evidence giữ nguyên nhưng không truy xuất mới từ reference đó.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ reference <code>Trusted</code> được chọn. Orchestrator chỉ đề xuất (c*).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Project Reference Selection; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-PROJECT-001-AC01</strong> Given R <code>Trusted</code> nhưng chưa chọn cho project P, When Evidence Retrieval Agent chạy trong P, Then không có evidence nào từ R.</li>
+<li><strong>LIB-PROJECT-001-AC02</strong> Given Reference <code>Pending Approval</code>, When Researcher cố thêm vào project, Then bị từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.6, 11.2</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="lib-content-001">LIB-CONTENT-001 — Nội dung để indexing</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Assumption (PRB-03, 21.1 RAG)</td></tr>
+<tr><th scope="row">Purpose</th><td>Trusted Reference có nội dung hợp lệ để index vào vector database phục vụ truy xuất evidence.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Reference <code>Trusted</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Duyệt reference có nội dung truy cập mở; hoặc Researcher đính kèm tệp (ví dụ PDF mình có quyền truy cập) vào Trusted Reference — được phép trong MVP (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)).</td></tr>
+<tr><th scope="row">Main Flow</th><td>System lưu Source Document → indexing <code>Queued</code> → <code>Indexing</code> (trích xuất văn bản, chia đoạn có vị trí, tạo embedding — 11.1, 17.3) → <code>Indexed</code>. Không có nội dung: <code>Unavailable</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Trích xuất thất bại: <code>Failed</code> kèm lý do; thử lại hoặc đính kèm tệp khác. Tệp không khớp reference (tiêu đề khác rõ rệt): cảnh báo trước khi index.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ dùng nội dung truy cập mở hoặc do Researcher cung cấp (OOS-06). Source Document thuộc cấp tài khoản, được index một lần và dùng lại ở mọi project; truy xuất lọc theo Project Reference Selection (OQ-024 đã chốt). Reference <code>Unavailable</code> vẫn dùng được cho citation, không cho evidence. Định dạng và dung lượng tệp: chỉ PDF có lớp văn bản, tối đa 50 MB/file; không OCR (Confirmed — PO chốt 31/10/2026, PC-01, OQ-050; 11.1, 17.3).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Source Document; indexing status.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-CONTENT-001-AC01</strong> Given Trusted Reference không có nội dung, When duyệt, Then indexing <code>Unavailable</code> và reference vẫn có BibTeX key.</li>
+<li><strong>LIB-CONTENT-001-AC02</strong> Given Researcher đính kèm PDF hợp lệ, When indexing xong, Then reference <code>Indexed</code> và truy xuất được evidence có số trang.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>11.1, 17.3, 5.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-050 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-7">10.7. Metadata and Duplicate Management</h2>
+<p class="status">Confirmed (outline): chuẩn hóa metadata, phát hiện trùng lặp và hỗ trợ sửa.</p>
+
+<h3 id="lib-metadata-001">LIB-METADATA-001 — Chuẩn hóa, phát hiện trùng và sửa metadata</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Metadata nhất quán để citation đúng và không có reference trùng.</td></tr>
+<tr><th scope="row">Actor</th><td>Reference Processing Agent, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Nhập reference; Researcher sửa metadata.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Chuẩn hóa theo schema không phụ thuộc nguồn (17.6): tiêu đề, danh sách tác giả (họ, tên), năm, venue, loại tài liệu, DOI/định danh, URL, tóm tắt (nếu có).</li>
+<li>Phát hiện trùng: trùng DOI là trùng chắc chắn; tiêu đề chuẩn hóa gần giống kèm năm và tác giả đầu trùng là nghi trùng.</li>
+<li>Trùng chắc chắn: không tạo reference mới; đề xuất liên kết vào reference có sẵn. Nghi trùng: Researcher chọn gộp hoặc giữ riêng.</li>
+<li>Researcher sửa metadata của Trusted Reference: mỗi lần sửa tạo phiên bản metadata mới; BibTeX sinh lại; bản thảo dùng key cũ vẫn phân giải được.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Gộp hai Trusted Reference: evidence, selection và citation của reference bị gộp chuyển sang reference giữ lại; reference bị gộp giữ làm bí danh để key cũ vẫn phân giải.</td></tr>
+<tr><th scope="row">Business Rules</th><td>BibTeX key ổn định sau khi tạo. Sửa metadata không đổi trạng thái <code>Trusted</code>. Sau khi duyệt, chỉ Researcher sửa được metadata; agent (kể cả Reference Processing Agent) không sửa metadata của Trusted Reference. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-090).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Reference metadata version; quan hệ gộp; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-METADATA-001-AC01</strong> Given Trusted Reference có DOI D, When nhập kết quả có DOI D, Then không có reference mới được tạo.</li>
+<li><strong>LIB-METADATA-001-AC02</strong> Given bản thảo trích dẫn key K của R, When Researcher sửa tiêu đề R, Then K vẫn phân giải và BibTeX có tiêu đề mới.</li>
+<li><strong>LIB-METADATA-001-AC03</strong> Given gộp R2 vào R1, When bản thảo có key của R2, Then key đó phân giải về R1.</li>
+<li><strong>LIB-METADATA-001-AC04</strong> Given Trusted Reference R, When Reference Processing Agent yêu cầu sửa metadata của R, Then yêu cầu bị từ chối (AGENT-SCOPE-001); When Researcher sửa hai lần, Then R có thêm hai phiên bản metadata, mỗi phiên bản ghi người sửa và thời điểm.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>17.6, 12.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-090 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-8">10.8. Reference Lifecycle</h2>
+<p class="status">Confirmed (outline): theo dõi duyệt, thu hồi, phiên bản, provenance và trạng thái indexing.</p>
+
+<h3 id="lib-lifecycle-001">LIB-LIFECYCLE-001 — Vòng đời và thu hồi reference</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline), Assumption (hệ quả thu hồi; OQ-018 đã chốt theo requirement này)</td></tr>
+<tr><th scope="row">Purpose</th><td>Trạng thái reference luôn rõ ràng và hệ quả của thu hồi được kiểm soát.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Duyệt, từ chối, thu hồi, sửa metadata, sự kiện indexing.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Trạng thái duyệt: <code>Pending Approval</code> → <code>Trusted</code> | <code>Rejected</code>; <code>Trusted</code> → <code>Revoked</code> (APR-04, kèm lý do); <code>Revoked</code> → <code>Trusted</code> khi Researcher duyệt lại.</li>
+<li>Trạng thái indexing độc lập: <code>Not Indexed</code> → <code>Queued</code> → <code>Indexing</code> → <code>Indexed</code> | <code>Failed</code>; <code>Unavailable</code> khi không có nội dung.</li>
+<li>Thu hồi: System áp dụng IMP-03 (9.11) — evidence → <code>Stale</code>, claim và citation phụ thuộc gắn cờ cần xem lại, Task bị ảnh hưởng xử lý theo quy tắc; tạo Impact warning liệt kê đối tượng ở mọi project.</li>
+<li>Mọi chuyển trạng thái và phiên bản metadata được ghi provenance và Audit Event.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Bản thảo có citation tới reference <code>Revoked</code>: build vẫn chạy nhưng kiểm tra citation báo lỗi (KPI-02) cho đến khi Researcher thay citation hoặc duyệt lại reference.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không xóa vật lý reference đang được provenance tham chiếu (OWN-05). Evidence <code>Stale</code> không được dùng cho claim mới.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Reference status, indexing status, metadata version; Evidence; cờ trên Claim, citation, Task; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>LIB-LIFECYCLE-001-AC01</strong> Given R <code>Trusted</code> có 4 evidence ở hai project, When Researcher thu hồi R, Then 4 evidence → <code>Stale</code> và có Impact warning ở cả hai project.</li>
+<li><strong>LIB-LIFECYCLE-001-AC02</strong> Given R <code>Revoked</code>, When Synthesis Agent tạo claim mới, Then không evidence nào của R được liên kết.</li>
+<li><strong>LIB-LIFECYCLE-001-AC03</strong> Given bản thảo trích dẫn R đã <code>Revoked</code>, When kiểm tra citation, Then citation đó được báo lỗi.</li>
+<li><strong>LIB-LIFECYCLE-001-AC04</strong> Given R ở mọi trạng thái, When mở chi tiết, Then thấy lịch sử trạng thái, người thực hiện và lý do.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.6, PLAN-IMPACT-001, 11, 12.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<p class="status">FIG-013 — Vòng đời reference. Nguồn: <a href="../figures/FIG-013-reference-lifecycle.mmd">figures/FIG-013-reference-lifecycle.mmd</a>.</p>
+
+<h2 id="s-10-9">10.9. Future Source Adapters</h2>
+<p class="status">Confirmed (outline): định nghĩa interface nguồn mở rộng được nhưng không mở rộng discovery của MVP ngoài phạm vi đã chốt.</p>
+
+<h3 id="disc-adapter-001">DISC-ADAPTER-001 — Interface source adapter</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (outline, OOS-02, FUT-01)</td></tr>
+<tr><th scope="row">Purpose</th><td>Thêm nguồn học thuật sau MVP mà không đổi luồng duyệt và Trusted Library.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Discovery Agent hoặc Discover gọi tìm kiếm.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mọi nguồn đi qua một interface gồm: <em>search</em>(truy vấn) → danh sách kết quả chuẩn hóa; <em>searchAuthor</em>(tên) → hồ sơ ứng viên; <em>listAuthorPublications</em>(hồ sơ) → kết quả; <em>getRecord</em>(định danh) → metadata đầy đủ; khai báo năng lực (tìm theo tác giả, lọc năm…) và giới hạn tốc độ. Kết quả theo schema metadata chuẩn hóa (17.6).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Năng lực không hỗ trợ: giao diện ẩn chức năng tương ứng.</td></tr>
+<tr><th scope="row">Business Rules</th><td>MVP triển khai đúng một adapter tìm kiếm: Google Scholar qua dịch vụ trung gian theo hợp đồng (OQ-081); nếu Google Scholar không khả thi, adapter của một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) (OQ-006). Luồng duyệt và Trusted Library không đổi theo adapter. Nhập thủ công DOI, BibTeX, PDF (LIB-IMPORT-002) không phải adapter tìm kiếm. Discovered Result ghi adapter nguồn. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-006, OQ-081).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Discovered Result.source.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DISC-ADAPTER-001-AC01</strong> Given adapter khai báo không hỗ trợ tìm theo tác giả, When mở Discover, Then chức năng tìm theo tác giả không hiển thị.</li>
+<li><strong>DISC-ADAPTER-001-AC02</strong> Given MVP, When liệt kê adapter đang bật, Then chỉ có một adapter.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>17.2, 17.6, FUT-01</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-006, OQ-081 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-oq">10.10. Open Questions của mục 10</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-038</td><td>Researcher có được đính kèm tệp (PDF) vào Trusted Reference để index trong MVP không? (Khác với OQ-008 là tạo reference mới bằng nhập thủ công.) <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Có; RAG theo DEC-13 cần nội dung để index và RISK-01, ASM-06 đã dựa vào việc người dùng cung cấp tệp hợp lệ, nên đính kèm tệp là cách duy nhất cho tài liệu không truy cập mở; định dạng và dung lượng theo OQ-050; PO duyệt 31/10/2026 (PC-01).</td><td>LIB-CONTENT-001, 11.1, 17.3</td></tr>
+<tr><td>OQ-039</td><td>Có cho phép duyệt nhiều reference trong một thao tác (duyệt theo lô), hay phải duyệt từng reference? <strong>Đã đóng 31/10/2026 (PC-01):</strong> có; duyệt theo lô trong một prompt; audit trail vẫn ghi phê duyệt riêng cho từng reference; reference có cảnh báo trùng phải xử lý riêng. Chính sách duyệt liên quan (OQ-090, 21.3) cũng đã đóng: không có mức tin cậy tự động theo nguồn; chỉ Researcher sửa metadata sau duyệt, mỗi lần sửa tạo phiên bản mới.</td><td>LIB-APPROVAL-001, PROMPT-APPROVAL-001, LIB-METADATA-001</td></tr>
+<tr><td>OQ-040</td><td>Giới hạn số kết quả trong một lô “chọn tất cả” khi tìm theo tác giả hoặc nhập theo lô là bao nhiêu? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Tối đa 50 mục mỗi lô, là giá trị cấu hình hệ thống; Researcher chạy nhiều lô nếu cần, mỗi reference vẫn phải qua APR-04; PO duyệt 31/10/2026 (PC-01).</td><td>DISC-AUTHOR-001, LIB-IMPORT-001, 16.4</td></tr>
+<tr><td>OQ-006, OQ-081, OQ-008</td><td>Nhắc lại các câu hỏi thuộc mục 2 và 17 có ảnh hưởng tới mục 10. <strong>Đã đóng 31/10/2026 (PC-01):</strong> Google Scholar qua dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả (OQ-081); nếu Google Scholar không khả thi, dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface 10.9, kèm nhập DOI/BibTeX, WF-04 giữ nguyên (OQ-006); có nhập thủ công DOI, BibTeX, PDF, đều vào chờ duyệt, qua chuẩn hóa metadata và kiểm tra trùng (OQ-008).</td><td>DISC-SCHOLAR-001, DISC-SCHOLAR-002, DISC-ADAPTER-001, LIB-IMPORT-002</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="09-research-plan-and-task-management.html">← Mục 9</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="11-evidence-rag-and-research-synthesis.html">Mục 11 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

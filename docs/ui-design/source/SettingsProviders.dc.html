@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Settings: Provider Connections</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="settings" hint-size="100%,57px"></dc-import>
+  <div style="max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 240px; display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0 0 12px; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 28px">Settings</h1>
+      <sc-for list="{{nav}}" as="n" hint-placeholder-count="4">
+        <a href="{{n.href}}" aria-current="{{n.current}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: {{n.w}}; color: #1C1B18; background: {{n.bg}}">{{n.label}}</a>
+      </sc-for>
+    </nav>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+        <h2 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 24px">Provider Connections</h2>
+        <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Thêm kết nối</button>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44">Bạn tự cung cấp API key; SIRes không có key hay hạn mức mặc định. Key được mã hóa và chỉ hiển thị dạng che.</p>
+      <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px">
+          <thead><tr style="text-align: left; font-size: 12px; color: #4D4A44">
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Tên</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Provider</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Base URL</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">API key</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Kiểm tra</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Agent dùng</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{conns}}" as="c" hint-placeholder-count="3">
+              <tr>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">{{c.name}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7">{{c.provider}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{c.url}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{c.key}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600">{{c.status}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44">{{c.note}}</span></td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44">{{c.agents}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+
+      <section aria-labelledby="nc" style="background: #FCF9F5; border: 1.5px dashed #0277DD; border-radius: 8px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+        <h3 id="nc" style="margin: 0; font-size: 17px; font-weight: 600">Kết nối mới · Untested</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Tên kết nối
+            <input value="Claude phòng lab" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Provider
+            <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Anthropic Claude</option><option>OpenAI</option><option>Google Gemini</option></select>
+          </label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Base URL
+          <input value="https://api.anthropic.com" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace">
+          <span style="font-weight: 400; font-size: 12px; color: #4D4A44">Điền sẵn endpoint chính thức. Sửa được (proxy, gateway, tự host) nhưng phải tương thích API chính thức của provider đã chọn.</span>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">API key
+          <input type="password" value="placeholder-key" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace">
+        </label>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Kiểm tra kết nối</button>
+          <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Lưu</button>
+          <span style="font-size: 13px; color: #4D4A44">Lưu được sau khi kiểm tra thành công.</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const nav = [['profile', 'Profile', 'SettingsProfile.dc.html'], ['providers', 'Provider Connections', 'SettingsProviders.dc.html'], ['agents', 'Agent Models', 'SettingsAgents.dc.html'], ['prefs', 'Preferences', 'SettingsPreferences.dc.html']];
+    const V = { status: 'Valid', b: 'solid #1C1B18', fg: '#1C1B18', bg: '#FFFFFF' };
+    const I = { status: 'Invalid', b: 'solid #BE123C', fg: '#BE123C', bg: '#FFF1F2' };
+    return {
+      nav: nav.map(([k, label, href]) => ({ label, href, current: k === 'providers' ? 'page' : 'false', w: k === 'providers' ? 600 : 500, bg: k === 'providers' ? '#E5DED5' : 'transparent' })),
+      conns: [
+        { name: 'Claude cá nhân', provider: 'Anthropic Claude', url: 'https://api.anthropic.com', key: 'sk-ant-••••••••4f2a', ...V, note: 'Kiểm tra 31/10 08:02', agents: 'Orchestrator, Synthesis, Writing, Verification' },
+        { name: 'OpenAI cá nhân', provider: 'OpenAI', url: 'https://api.openai.com/v1', key: 'sk-••••••••9c1d', ...V, note: 'Kiểm tra 30/10 17:40', agents: 'Discovery, Reference Processing, Evidence Retrieval, Embedding' },
+        { name: 'Gemini cá nhân', provider: 'Google Gemini', url: 'https://generativelanguage.googleapis.com', key: '••••••••a7e0', ...I, note: 'auth_failed · 30/10 21:15', agents: 'Diagram' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

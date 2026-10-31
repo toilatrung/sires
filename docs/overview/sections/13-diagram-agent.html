@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>13. Diagram Agent | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 13</p><h1>13. Functional Requirements — Diagram Agent</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6</p><div class="note"><p>Mục này đặc tả việc tạo sơ đồ bằng Diagram Agent theo <a href="06-end-to-end-product-workflow.html#wf-07">WF-07</a>. Diagram generation là năng lực SCOPE-10 thuộc MVP (OQ-009 đã chốt). Danh mục năng lực lấy từ outline (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Diagram lưu dưới dạng Artifact loại <em>diagram</em> (<a href="05-core-domain-model.html#s-5-7">5.7</a>).</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-13-1">13.1. Diagram Generation</a></li>
+<li><a href="#s-13-2">13.2. Supported Diagram Types</a></li>
+<li><a href="#s-13-3">13.3. Editable Source and Preview</a></li>
+<li><a href="#s-13-4">13.4. Validation</a></li>
+<li><a href="#s-13-5">13.5. Human Review</a></li>
+<li><a href="#s-13-oq">13.6. Open Questions của mục 13</a></li>
+</ul></details>
+
+<pre><code>Yêu cầu (Task / chat + active task) ─► context đã duyệt ─► Diagram Agent ─► nguồn Mermaid
+                                                                         │
+                                         validate cú pháp ◄──────────────┘
+                                         │ lỗi: tự sửa (giới hạn thử lại) → vẫn lỗi: Draft kèm lỗi
+                                         ▼
+                                  render preview ─► Artifact Version Draft ─► Researcher review
+                                                                               │ sửa → version mới
+                                                                               ▼
+                                                                    Accepted (APR-07) ─► MS-DIAGRAM-001</code></pre>
+<p class="status">FIG-022 — Luồng tạo sơ đồ. Nguồn: <a href="../figures/FIG-022-diagram-generation.mmd">figures/FIG-022-diagram-generation.mmd</a>.</p>
+
+<h2 id="s-13-1">13.1. Diagram Generation</h2>
+<p class="status">Confirmed (outline): tạo sơ đồ Mermaid hoặc UML từ yêu cầu Task và context đã duyệt.</p>
+<h3 id="req-diag-gen-001">DIAG-GEN-001 — Tạo sơ đồ từ yêu cầu</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Minh họa quy trình, kiến trúc, mô hình nghiên cứu bằng sơ đồ chỉnh sửa được.</td></tr>
+<tr><th scope="row">Actor</th><td>Diagram Agent; Orchestrator (lắp ráp context); Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Task đã kích hoạt cần sơ đồ, hoặc Researcher yêu cầu trong Project AI Chat với active task; Diagram Agent có Agent Model Assignment hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-07.S1.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator xác định loại sơ đồ (13.2) từ yêu cầu; nếu không rõ, hỏi bằng prompt <code>choice</code>.</li>
+<li>Orchestrator lắp ráp context: yêu cầu Task, artifact <code>Accepted</code> và claim liên quan, mô tả của Researcher (14.2).</li>
+<li>Diagram Agent tạo nguồn sơ đồ Mermaid kèm tiêu đề và mô tả ngắn các thành phần.</li>
+<li>Chuyển sang kiểm tra (DIAG-VALIDATE-001) và lưu (DIAG-SOURCE-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Context không đủ để vẽ (ví dụ thiếu các bước của quy trình): Diagram Agent nêu phần thiếu qua prompt <code>information_request</code>, không tự bịa thành phần.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Sơ đồ chỉ dùng thông tin trong context được cấp; thành phần do agent giả định phải được ghi trong mô tả. Diagram Agent không ghi vào bản thảo (3.3).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run; Artifact Version <code>Draft</code> loại diagram.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DIAG-GEN-001-AC01</strong> Given Task yêu cầu sơ đồ quy trình có ba bước đã mô tả trong artifact accepted, When Diagram Agent hoàn tất, Then sơ đồ có đúng các bước đó và artifact ghi Task và Agent Run tạo ra.</li>
+<li><strong>DIAG-GEN-001-AC02</strong> Given yêu cầu không xác định được loại sơ đồ, When bắt đầu, Then Researcher nhận prompt chọn loại trước khi agent tạo nguồn.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-ASSEMBLY-001; AGENT Diagram (8.2)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-2">13.2. Supported Diagram Types</h2>
+<p class="status">Confirmed (outline): sequence, component, activity, state và workflow diagram khi phù hợp. Ánh xạ cú pháp: Assumption.</p>
+<h3 id="req-diag-types-001">DIAG-TYPES-001 — Loại sơ đồ hỗ trợ</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năm loại), Assumption (cú pháp)</td></tr>
+<tr><th scope="row">Purpose</th><td>Giới hạn rõ loại sơ đồ MVP hỗ trợ để kiểm tra và render được một cách xác định.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator (chọn loại), Diagram Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>DIAG-GEN-001 đang chạy.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-07.S1 xác định loại sơ đồ.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator ánh xạ yêu cầu vào một trong năm loại ở bảng trên → Diagram Agent tạo nguồn bằng cú pháp tương ứng.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Yêu cầu khớp nhiều loại: hỏi Researcher bằng prompt <code>choice</code> (DIAG-GEN-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>MVP chỉ dùng Mermaid cho cả năm loại; PlantUML để sau MVP (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)). Yêu cầu loại sơ đồ ngoài danh sách: Diagram Agent báo không hỗ trợ và đề xuất loại gần nhất.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Loại sơ đồ và cú pháp ghi trong Artifact Version.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DIAG-TYPES-001-AC01</strong> Given yêu cầu state diagram, When tạo, Then nguồn dùng Mermaid <code>stateDiagram-v2</code> và qua kiểm tra cú pháp.</li>
+<li><strong>DIAG-TYPES-001-AC02</strong> Given yêu cầu loại không hỗ trợ (ví dụ Gantt), When xử lý, Then Researcher nhận thông báo không hỗ trợ kèm loại gợi ý.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DIAG-GEN-001; INT 17.5</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Loại</th>
+<th scope="col">Cú pháp mặc định</th>
+<th scope="col">Dùng cho</th>
+</tr></thead><tbody>
+<tr><td>Sequence</td><td>Mermaid <code>sequenceDiagram</code></td><td>Tương tác giữa các bên theo thời gian</td></tr>
+<tr><td>Component</td><td>Mermaid <code>flowchart</code> với subgraph cho từng thành phần</td><td>Kiến trúc, thành phần hệ thống</td></tr>
+<tr><td>Activity</td><td>Mermaid <code>flowchart</code></td><td>Quy trình có rẽ nhánh</td></tr>
+<tr><td>State</td><td>Mermaid <code>stateDiagram-v2</code></td><td>Trạng thái và chuyển trạng thái</td></tr>
+<tr><td>Workflow</td><td>Mermaid <code>flowchart</code></td><td>Quy trình nghiên cứu, pipeline</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-3">13.3. Editable Source and Preview</h2>
+<p class="status">Confirmed (outline): lưu mã nguồn, preview, version và Task liên quan.</p>
+<h3 id="req-diag-source-001">DIAG-SOURCE-001 — Lưu nguồn, preview và phiên bản</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Sơ đồ luôn chỉnh sửa được từ nguồn và truy vết được về Task và phiên bản.</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Diagram Agent hoặc Researcher vừa tạo hoặc sửa nguồn sơ đồ.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-07.S4; Researcher lưu nguồn đã sửa (WF-07.S5).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mỗi Artifact Version diagram lưu: cú pháp (Mermaid trong MVP), mã nguồn, preview đã render (SVG), trạng thái kiểm tra, Task, Agent Run hoặc actor Researcher. Researcher mở editor nguồn cạnh preview; lưu sửa tạo version mới.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Render preview thất bại: vẫn lưu version với nguồn và trạng thái kiểm tra lỗi (DIAG-VALIDATE-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mã nguồn là bản chính; preview luôn được render lại từ nguồn của cùng version, không sửa riêng. Version bất biến (5.7).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Artifact Version loại diagram (nguồn, preview SVG, trạng thái kiểm tra).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DIAG-SOURCE-001-AC01</strong> Given Researcher sửa nguồn và lưu, When xem lịch sử, Then có version mới với actor Researcher và version cũ không đổi.</li>
+<li><strong>DIAG-SOURCE-001-AC02</strong> Given một version diagram, When mở, Then thấy cả nguồn và preview khớp với nguồn đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-REGISTRY-001; INT 17.5</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-4">13.4. Validation</h2>
+<p class="status">Confirmed (outline): phát hiện lỗi cú pháp và báo lỗi render.</p>
+<h3 id="req-diag-validate-001">DIAG-VALIDATE-001 — Kiểm tra cú pháp và render</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không sơ đồ lỗi nào được chấp nhận hay đưa vào bản thảo.</td></tr>
+<tr><th scope="row">Actor</th><td>System; Diagram Agent</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có nguồn sơ đồ mới hoặc vừa sửa.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-07.S3; mỗi lần lưu nguồn.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System phân tích cú pháp nguồn bằng trình phân tích Mermaid → hợp lệ thì render preview → lỗi cú pháp: trả thông điệp lỗi (dòng, mô tả) cho Diagram Agent sửa, trong giới hạn thử lại (WF-07.E1) → vẫn lỗi: lưu Draft kèm lỗi cho Researcher sửa tay.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Cú pháp đúng nhưng render lỗi (quá lớn, quá thời gian): lưu nguồn, báo lỗi render (WF-07.E2).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Kiểm tra cú pháp là xác định, không dựa vào model. Diagram có lỗi không chấp nhận được (DIAG-REVIEW-001). Diagram Agent tự sửa lỗi cú pháp tối đa 2 lần (mỗi lần một Agent Run mới), tương ứng giới hạn Agent Run mới của Orchestrator ở 8.5.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Trạng thái kiểm tra (<code>valid</code>, <code>syntax_error</code>, <code>render_error</code>) và preview trong Artifact Version; Agent Run cho các lượt tự sửa.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DIAG-VALIDATE-001-AC01</strong> Given nguồn Mermaid có lỗi cú pháp, When kiểm tra, Then hiển thị dòng lỗi và mô tả; không render preview cũ như thể hợp lệ.</li>
+<li><strong>DIAG-VALIDATE-001-AC02</strong> Given Diagram Agent hết lượt tự sửa, When kết thúc, Then artifact <code>Draft</code> được lưu với trạng thái kiểm tra lỗi.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>INT 17.5</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-5">13.5. Human Review</h2>
+<p class="status">Confirmed (outline): người dùng sửa sơ đồ và duyệt trước khi đưa vào sản phẩm cuối. APR-07 (3.1).</p>
+<h3 id="req-diag-review-001">DIAG-REVIEW-001 — Researcher duyệt sơ đồ</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực, APR-07), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Sơ đồ chỉ vào sản phẩm cuối khi Researcher đồng ý (APR-07).</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Artifact diagram có version <code>Draft</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-07.S5; Task chứa sơ đồ vào <code>In Review</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher xem preview và nguồn → sửa trực tiếp, yêu cầu Diagram Agent sửa (kèm chỉ dẫn, tạo version mới), chấp nhận (<code>Accepted</code>) hoặc từ chối (<code>Rejected</code>) → version accepted mới làm version cũ <code>Superseded</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher từ chối: version → <code>Rejected</code>; có thể yêu cầu Diagram Agent tạo lại kèm chỉ dẫn.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ version qua kiểm tra cú pháp và render mới chấp nhận được. Chỉ diagram <code>Accepted</code> được chèn vào bản thảo (MS-DIAGRAM-001) hoặc dùng làm đầu vào Task khác.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Artifact Version → <code>Accepted</code>/<code>Rejected</code>; version accepted cũ → <code>Superseded</code>; Audit Event APR-07.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>DIAG-REVIEW-001-AC01</strong> Given diagram có lỗi cú pháp, When Researcher chấp nhận, Then System từ chối.</li>
+<li><strong>DIAG-REVIEW-001-AC02</strong> Given Diagram Agent, When cố chuyển version sang <code>Accepted</code>, Then System từ chối và ghi Audit Event.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DIAG-VALIDATE-001; MS-DIAGRAM-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-oq">13.6. Open Questions của mục 13</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-059</td><td>MVP hỗ trợ PlantUML (cần dịch vụ render riêng) hay chỉ Mermaid cho mọi loại sơ đồ? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Chỉ Mermaid trong MVP; cả năm loại ở 13.2 biểu diễn được bằng Mermaid nên không cần thêm dịch vụ render PlantUML, PlantUML để sau MVP; PO duyệt 31/10/2026 (PC-01).</td><td>13.2, 13.4, 17.5</td></tr>
+<tr><td>OQ-060</td><td>Định dạng hình xuất vào bản thảo LaTeX: PDF vector (chuyển từ SVG) hay PNG độ phân giải cao? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> PDF vector chuyển từ SVG (pdfLaTeX và XeLaTeX đều chèn được); nếu chuyển đổi lỗi thì dùng PNG 300 dpi và ghi cảnh báo trong Change Proposal; PO duyệt 31/10/2026 (PC-01).</td><td>12.9, 13.3, 17.5</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="12-latex-manuscript-workspace.html">← Mục 12</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="14-shared-context-and-orchestration-architecture.html">Mục 14 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

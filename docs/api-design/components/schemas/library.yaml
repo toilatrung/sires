@@ -1,0 +1,283 @@
+# Discovery và Trusted Library — PRD 5.6, 10, 17.2, 17.6 (schema metadata chuẩn hóa), 18.1, 18.2.
+
+ReferenceMetadata:
+  type: object
+  description: Schema metadata chuẩn hóa (17.6).
+  required: [title, authors, identifiers, source, retrievedAt]
+  properties:
+    title: { type: string, minLength: 1 }
+    authors:
+      type: array
+      items:
+        type: object
+        required: [name]
+        properties:
+          name: { type: string }
+          affiliation: { type: string }
+          sourceAuthorId: { type: string }
+    year: { type: integer }
+    venue: { type: string }
+    publicationType:
+      type: string
+      enum: [article, conference, thesis, book, chapter, preprint, report, other]
+    identifiers:
+      type: object
+      required: [sourceId, url]
+      properties:
+        doi: { type: string }
+        arxivId: { type: string }
+        isbn: { type: string }
+        sourceId: { type: string }
+        url: { type: string, format: uri }
+    abstractOrSnippet: { type: string }
+    citationCount: { type: integer }
+    citationCountAt: { $ref: common.yaml#/Timestamp }
+    source:
+      type: string
+      examples: [google_scholar, openalex, semantic_scholar, doi, bibtex, pdf]
+    retrievedAt: { $ref: common.yaml#/Timestamp }
+    raw:
+      type: object
+      additionalProperties: true
+      description: Bản gốc để đối chiếu.
+
+DiscoverySource:
+  type: object
+  description: capabilities() của source adapter (17.6) và cổng kiểm chứng phương thức truy cập (DISC-SCHOLAR-002).
+  required: [source, available]
+  properties:
+    source: { type: string, examples: [google_scholar, openalex, semantic_scholar] }
+    role:
+      type: string
+      enum: [primary, fallback]
+    available: { type: boolean }
+    accessMethod:
+      type: string
+      enum: [contracted_intermediary, official_api, user_assisted_import]
+    supportedFilters:
+      type: array
+      items: { type: string }
+    supportsAuthorSearch: { type: boolean }
+    hasFullText: { type: boolean }
+    rateLimit: { type: string }
+    termsNotice: { type: string }
+
+DiscoverySearchRequest:
+  type: object
+  description: Khởi chạy workflow discovery (DISC-SCHOLAR-001). Kết quả là Discovered Result, chưa phải Reference.
+  required: [query]
+  properties:
+    query: { type: string, minLength: 1 }
+    source:
+      type: string
+      default: google_scholar
+    filters:
+      type: object
+      properties:
+        title: { type: string }
+        author: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        yearFrom: { type: integer }
+        yearTo: { type: integer }
+    projectId:
+      $ref: common.yaml#/Id
+      description: Project cung cấp ngữ cảnh xếp hạng (không bắt buộc).
+    taskId: { $ref: common.yaml#/Id }
+    maxResults: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+AuthorSearchRequest:
+  type: object
+  required: [author]
+  properties:
+    author:
+      type: string
+      description: Tên tác giả hoặc URL hồ sơ Google Scholar.
+    source: { type: string, default: google_scholar }
+
+DiscoveredResultStatus:
+  type: string
+  enum: [New, Selected, Rejected, Imported]
+
+DiscoveredResult:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [source, query, metadata, sourceUrl, status]
+      properties:
+        searchWorkflowId: { $ref: common.yaml#/Id }
+        source: { type: string }
+        query: { type: string }
+        metadata: { $ref: '#/ReferenceMetadata' }
+        sourceUrl: { type: string, format: uri }
+        status: { $ref: '#/DiscoveredResultStatus' }
+        importedReferenceId: { $ref: common.yaml#/Id }
+        createdByAgentRunId: { $ref: common.yaml#/Id }
+        relevanceNote:
+          type: string
+          description: Lý do agent cho là phù hợp — chỉ để tham khảo, không phải mức tin cậy tự động (OQ-090).
+        duplicateOfReferenceId:
+          $ref: common.yaml#/Id
+          description: Đã có trong Trusted Library.
+
+ReferenceApprovalStatus:
+  type: string
+  enum: [Pending Approval, Trusted, Rejected, Revoked]
+
+IndexingStatus:
+  type: string
+  enum: [Not Indexed, Queued, Indexing, Indexed, Failed, Unavailable]
+
+Reference:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [metadata, metadataVersion, bibtexKey, origin, approvalStatus, indexingStatus]
+      properties:
+        metadata: { $ref: '#/ReferenceMetadata' }
+        metadataVersion: { type: integer }
+        bibtexKey:
+          type: string
+          description: Duy nhất trong tài khoản.
+        origin:
+          type: string
+          enum: [discovered, manual]
+        discoveredResultId: { $ref: common.yaml#/Id }
+        approvalStatus: { $ref: '#/ReferenceApprovalStatus' }
+        indexingStatus: { $ref: '#/IndexingStatus' }
+        indexingError:
+          type: object
+          properties:
+            code:
+              type: string
+              examples: [pdf_without_text_layer, file_too_large, extraction_failed, embedding_failed]
+            message: { type: string }
+        document: { $ref: '#/SourceDocument' }
+        duplicateWarnings:
+          type: array
+          readOnly: true
+          description: DOI/metadata trùng trong tài khoản — cảnh báo và đề xuất gộp, không chặn cứng (18.5).
+          items:
+            type: object
+            properties:
+              referenceId: { $ref: common.yaml#/Id }
+              matchedOn:
+                type: string
+                enum: [doi, title_author_year]
+        approval: { $ref: common.yaml#/ApprovalRecord }
+        revocation:
+          allOf:
+            - $ref: common.yaml#/ApprovalRecord
+          description: Kèm lý do thu hồi.
+        mergedIntoId: { $ref: common.yaml#/Id }
+        usedInProjectCount: { type: integer, readOnly: true }
+
+ReferenceManualCreate:
+  description: Nhập thủ công DOI hoặc BibTeX (LIB-IMPORT-002). Reference tạo ra ở Pending Approval. PDF dùng `/references/pdf-imports`.
+  oneOf:
+    - type: object
+      title: Theo DOI
+      required: [doi]
+      properties:
+        doi:
+          type: string
+          pattern: '^10\.\d{4,9}/\S+$'
+    - type: object
+      title: Theo BibTeX
+      required: [bibtex]
+      properties:
+        bibtex:
+          type: string
+          description: Một hoặc nhiều entry BibTeX; mỗi entry thành một Reference.
+
+ReferenceUpdate:
+  type: object
+  description: Sửa metadata tạo metadataVersion mới (LIB-METADATA-001).
+  properties:
+    metadata: { $ref: '#/ReferenceMetadata' }
+    bibtexKey: { type: string }
+
+ReferenceApprovalBatch:
+  type: object
+  description: |
+    Duyệt theo lô (APR-04, OQ-039): mỗi reference ghi ApprovalRecord riêng; reference có cảnh báo trùng phải
+    được quyết định riêng (không đi kèm `applyToAll`).
+  required: [decisions]
+  properties:
+    decisions:
+      type: array
+      minItems: 1
+      maxItems: 200
+      items:
+        type: object
+        required: [referenceId, decision]
+        properties:
+          referenceId: { $ref: common.yaml#/Id }
+          decision:
+            type: string
+            enum: [approve, reject]
+          metadataVersion:
+            type: integer
+            description: Phiên bản metadata Researcher đã xem.
+          editedMetadata:
+            $ref: '#/ReferenceMetadata'
+            description: Sửa rồi duyệt (edit_and_approve).
+          reason: { type: string }
+
+ReferenceApprovalResult:
+  type: object
+  properties:
+    results:
+      type: array
+      items:
+        type: object
+        properties:
+          referenceId: { $ref: common.yaml#/Id }
+          outcome:
+            type: string
+            enum: [trusted, rejected, skipped]
+          problem: { $ref: common.yaml#/Problem }
+
+SourceDocument:
+  type: object
+  readOnly: true
+  description: Cấp tài khoản, index một lần và dùng lại cho mọi project (OQ-024).
+  properties:
+    id: { $ref: common.yaml#/Id }
+    contentHash: { type: string }
+    fileName: { type: string }
+    sizeBytes: { type: integer, maximum: 52428800 }
+    pageCount: { type: integer }
+    embeddingModel: { type: string }
+    indexedAt: { $ref: common.yaml#/Timestamp }
+    chunkCount: { type: integer }
+
+ProjectReferenceSelection:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [referenceId, status, selectedBy]
+      properties:
+        referenceId: { $ref: common.yaml#/Id }
+        reference: { $ref: '#/Reference' }
+        status:
+          type: string
+          enum: [Active, Removed]
+        reason: { type: string }
+        selectedBy: { $ref: common.yaml#/ActorRef }
+
+ReferenceUsage:
+  type: object
+  readOnly: true
+  properties:
+    referenceId: { $ref: common.yaml#/Id }
+    projects:
+      type: array
+      items:
+        type: object
+        properties:
+          projectId: { $ref: common.yaml#/Id }
+          name: { type: string }
+          evidenceCount: { type: integer }
+          citationCount: { type: integer }

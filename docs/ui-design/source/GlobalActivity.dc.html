@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Agent Activity (Global)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="activity" hint-size="100%,57px"></dc-import>
+  <main style="max-width: 1320px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Agent Activity</h1>
+        <p style="margin: 0; font-size: 14px; color: #4D4A44">Mọi workflow của tài khoản. Cập nhật theo từng event, không cần tải lại. <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">Cập nhật 09:52:14</span></p>
+      </div>
+      <div role="tablist" aria-label="Lọc trạng thái" style="display: flex; gap: 2px; border-bottom: 1px solid #DBD3C7">
+        <button role="tab" aria-selected="true" style="height: 40px; padding: 0 12px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Đang hoạt động · 3</button>
+        <button role="tab" aria-selected="false" style="height: 40px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Đã kết thúc · 26</button>
+        <button role="tab" aria-selected="false" style="height: 40px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Tất cả</button>
+      </div>
+    </div>
+    <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+      <table style="width: 100%; min-width: 1100px; border-collapse: collapse; font-size: 14px">
+        <thead>
+          <tr style="text-align: left; font-size: 12px; color: #4D4A44">
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Workflow</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Project · Task</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Trạng thái</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Bước · agent hiện tại</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Thời gian</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Prompt chờ</th>
+            <th style="padding: 10px 14px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Điều khiển</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+            <tr>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><a href="Workflow.dc.html" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500">{{r.type}}</a></td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="display: block; font-weight: 600">{{r.project}}</span><span style="font-size: 13px; color: #4D4A44">{{r.task}}</span></td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.b}}; color: {{r.fg}}; background: {{r.bg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><sc-if value="{{r.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{r.state}}</span></td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7"><span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{r.step}}</span> {{r.agent}}</td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.time}}</td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7">{{r.prompt}}</td>
+              <td style="padding: 12px 14px; border-bottom: 1px solid #DBD3C7">
+                <span style="display: flex; gap: 6px">
+                  <sc-if value="{{r.canPause}}" hint-placeholder-val="{{ true }}"><button style="height: 32px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif; color: #1C1B18">Tạm dừng</button></sc-if>
+                  <sc-if value="{{r.canResume}}" hint-placeholder-val="{{ false }}"><button style="height: 32px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif; color: #1C1B18">Tiếp tục</button></sc-if>
+                  <sc-if value="{{r.canCancel}}" hint-placeholder-val="{{ true }}"><button style="height: 32px; padding: 0 10px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif; color: #BE123C">Hủy</button></sc-if>
+                  <sc-if value="{{r.ended}}" hint-placeholder-val="{{ false }}"><a href="Workflow.dc.html" style="font-size: 13px">Xem chi tiết</a></sc-if>
+                </span>
+              </td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin: 0; font-size: 13px; color: #4D4A44">Chỉ hiện điều khiển hợp lệ với trạng thái (18.2). Hủy luôn hỏi xác nhận và nêu hệ quả cho Task.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'], fail: ['solid #BE123C', '#BE123C', '#FFF1F2'], muted: ['solid #DBD3C7', '#4D4A44', '#F6F2EE'] };
+    const P1 = 'RAG trong tổng quan tài liệu';
+    const r = (type, project, task, state, k, step, agent, time, prompt, ctl) => ({ type, project, task, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', step, agent, time, prompt, canPause: ctl === 'run', canResume: ctl === 'paused', canCancel: ctl === 'run' || ctl === 'wait' || ctl === 'paused', ended: ctl === 'end' });
+    return {
+      rows: [
+        r('task_execution', P1, 'T-2.3 So sánh phương pháp đo', 'Waiting for User', 'need', '2/5', 'Discovery Agent', '14:05', '1 · choice', 'wait'),
+        r('task_execution', P1, 'T-2.2 Tìm nghiên cứu 2019–2026', 'Running', 'run', '2/4', 'Evidence Retrieval Agent', '06:12', '—', 'run'),
+        r('indexing', 'Trusted Library', '3 Source Document', 'Running', 'run', '1/2', 'Reference Processing Agent', '01:40', '—', 'run'),
+        r('manuscript_edit', P1, 'T-2.1 Tổng hợp định nghĩa', 'Succeeded', 'done', '4/4', 'Writing Agent', '09:48', '—', 'end'),
+        r('diagram', 'Học máy trong chẩn đoán ảnh', 'T-3.5 Sơ đồ pipeline', 'Failed', 'fail', '1/2', 'Diagram Agent · auth_failed', '00:21', '—', 'end')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

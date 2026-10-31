@@ -1,0 +1,21 @@
+%% FIG-030 — Integration architecture (section 17)
+flowchart LR
+  subgraph App[AI Research Assistant]
+    O[Orchestrator] --> AR[Agent registry]
+    AR --> SA[Specialist Agents]
+    O --> PA[Provider adapter interface]
+    SA --> PA
+    SA --> SAD[Source adapter interface]
+    SA --> RET[Retrieval service]
+    IDX[Indexing pipeline] --> VDB[(Vector database)]
+    RET --> VDB
+    MS[Manuscript service] --> LB[LaTeX build sandbox]
+    DG[Diagram service] --> DR[Diagram renderer sandbox]
+    SEC[(Secret store)] -. decrypt per call .-> PA
+  end
+  PA --> C[Anthropic Claude]
+  PA --> OA[OpenAI]
+  PA --> G[Google Gemini]
+  SAD --> GS[Google Scholar<br/>method per spike]
+  IDX --> EMB[Embedding model]
+  RET --> EMB

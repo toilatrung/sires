@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>7. Functional Requirements — Workspace and Project | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 07</p><h1>7. Functional Requirements — Workspace and Project</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả yêu cầu chức năng cho Dashboard, vòng đời Research Project, Research Context, chat ở hai cấp và tìm kiếm. Khu vực và điều hướng theo <a href="04-information-architecture-and-navigation.html">mục 4</a>; entity và trạng thái theo <a href="05-core-domain-model.html#s-5-1">5.1</a>. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria do biên soạn đề xuất, đã được PO duyệt nội dung trong PC-01 (31/10/2026). Mọi requirement yêu cầu Researcher đã đăng nhập giả định đăng nhập qua eTroy OIDC (16, PC-01, OQ-073). Các câu hỏi của mục đã đóng, xem <a href="#s-7-oq">7.6</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-7-1">7.1. Dashboard</a></li>
+<li><a href="#s-7-2">7.2. Project CRUD</a></li>
+<li><a href="#s-7-3">7.3. Research Context</a></li>
+<li><a href="#s-7-4">7.4. Global and Project Chat</a></li>
+<li><a href="#s-7-5">7.5. Search and Navigation</a></li>
+<li><a href="#s-7-oq">7.6. Open Questions của mục 7</a></li>
+</ul></details>
+
+<h2 id="s-7-1">7.1. Dashboard</h2>
+<p class="status">Confirmed (outline): project gần đây, tiến độ task, việc chờ duyệt, task đang chạy và trạng thái bản thảo.</p>
+
+<h3 id="ws-dashboard-001">WS-DASHBOARD-001 — Tổng quan tài khoản khi mở sản phẩm</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (nội dung), Assumption (luồng)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cho Researcher biết ngay việc gì đang chạy, việc gì chờ mình và nên làm gì tiếp (GOAL-02).</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Researcher đã đăng nhập qua eTroy OIDC.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mở sản phẩm, hoặc chọn Dashboard.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System tải các khối theo thứ tự ưu tiên: (1) Pending Actions, (2) Workflow đang chạy hoặc <code>Interrupted</code>, (3) Project gần đây, (4) tiến độ Task, (5) trạng thái bản thảo, (6) lỗi và cảnh báo gần đây.</li>
+<li>Mỗi mục có liên kết mở đúng đối tượng trong Project Workspace (4.3).</li>
+<li>Khối rỗng hiển thị trạng thái rỗng có hành động gợi ý (ví dụ “Tạo project đầu tiên”).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Một khối không tải được: hiển thị lỗi tại khối đó, các khối khác vẫn hiển thị.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ hiển thị project <code>Active</code> trong khối project gần đây và tiến độ; project <code>Archived</code> không sinh pending action. Dashboard chỉ đọc; không có thao tác phê duyệt trực tiếp trên Dashboard (4.4).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Không đổi dữ liệu. Ghi lần hoạt động cuối của tài khoản.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>WS-DASHBOARD-001-AC01</strong> Given có 2 Interactive Agent Prompt <code>Open</code> ở hai project, When mở Dashboard, Then khối Pending Actions hiển thị đủ 2 mục, mỗi mục ghi tên project và mở đúng prompt khi chọn.</li>
+<li><strong>WS-DASHBOARD-001-AC02</strong> Given một Workflow ở trạng thái <code>Interrupted</code>, When mở Dashboard, Then workflow đó hiển thị trong khối workflow kèm hành động mở Recovery decision.</li>
+<li><strong>WS-DASHBOARD-001-AC03</strong> Given tài khoản chưa có project, When mở Dashboard, Then hiển thị trạng thái rỗng với nút tạo project.</li>
+<li><strong>WS-DASHBOARD-001-AC04</strong> Given một project <code>Archived</code>, When mở Dashboard, Then project đó không xuất hiện trong khối project gần đây.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>4.1, 4.4, PROJ-CRUD-001, TASK-PROGRESS-001, 15.1</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-2">7.2. Project CRUD</h2>
+<p class="status">Confirmed (outline): tạo, sửa, lưu trữ và mở lại project.</p>
+
+<h3 id="proj-crud-001">PROJ-CRUD-001 — Tạo Research Project</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (6.1)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tạo đơn vị làm việc bền vững cho một đề tài.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Researcher đã đăng nhập qua eTroy OIDC.</td></tr>
+<tr><th scope="row">Trigger</th><td>Chọn “Tạo project” ở Dashboard hoặc Research Projects, hoặc xác nhận đề xuất tạo project của Global AI Assistant.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Researcher nhập tên (bắt buộc) và câu hỏi hoặc chủ đề nghiên cứu (bắt buộc); có thể nhập thêm các trường Research Context (7.3).</li>
+<li>System kiểm tra dữ liệu và tạo: Research Project <code>Active</code>, Research Plan rỗng, Shared Context, Research Context phiên bản 1, Audit Event.</li>
+<li>System mở Project Workspace tại Project AI Chat; Orchestrator chào và bắt đầu 6.2.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Thiếu trường bắt buộc: không tạo; chỉ rõ trường thiếu.</li><li>Tạo từ Global AI Assistant: assistant điền sẵn tên và chủ đề từ hội thoại; project chỉ được tạo sau khi Researcher xác nhận form.</li><li>Lỗi lưu: không tạo project dở dang; báo lỗi và giữ dữ liệu đã nhập trên form.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Tên project không bắt buộc duy nhất nhưng System cảnh báo khi trùng với project <code>Active</code> khác. Manuscript không được tạo ở bước này (12.1). Tạo project là thao tác nguyên tử.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Tạo Research Project, Research Plan, Shared Context, Research Context v1, Conversation của project, Audit Event (actor Researcher).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CRUD-001-AC01</strong> Given form có tên và câu hỏi nghiên cứu, When Researcher xác nhận, Then project <code>Active</code> được tạo và Project AI Chat mở trong ngữ cảnh project mới.</li>
+<li><strong>PROJ-CRUD-001-AC02</strong> Given form thiếu câu hỏi nghiên cứu, When xác nhận, Then không có project nào được tạo và trường thiếu được chỉ rõ.</li>
+<li><strong>PROJ-CRUD-001-AC03</strong> Given project vừa tạo, When Researcher đăng xuất rồi đăng nhập lại, Then project và Research Context v1 vẫn còn nguyên.</li>
+<li><strong>PROJ-CRUD-001-AC04</strong> Given Global AI Assistant đề xuất tạo project, When Researcher chưa xác nhận form, Then không có project nào được tạo.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.1, 6.1, PROJ-CONTEXT-001, WS-CHAT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="proj-crud-002">PROJ-CRUD-002 — Sửa thông tin project</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cập nhật tên, mô tả ngắn và cấu hình project.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn sửa ở Overview hoặc Research Projects.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher sửa tên, mô tả, ngôn ngữ phản hồi của agent cho project → System lưu và ghi Audit Event với giá trị trước/sau.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Project <code>Archived</code>: không cho sửa; gợi ý mở lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Sửa Research Context theo PROJ-CONTEXT-001 (có phiên bản), không theo requirement này.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Cập nhật thuộc tính Identity/Configuration; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CRUD-002-AC01</strong> Given project <code>Active</code>, When Researcher đổi tên, Then tên mới hiển thị ở mọi khu vực và Activity and History có sự kiện đổi tên với tên cũ và mới.</li>
+<li><strong>PROJ-CRUD-002-AC02</strong> Given project <code>Archived</code>, When mở form sửa, Then các trường ở chế độ chỉ đọc.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.1, 14.8</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="proj-crud-003">PROJ-CRUD-003 — Lưu trữ, mở lại và xóa project</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline: archive, reopen); xóa mềm 30 ngày: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-030)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cất project không còn làm việc mà không mất dữ liệu; mở lại khi cần; xóa project không còn dùng với thời hạn khôi phục để tránh mất dữ liệu ngoài ý muốn.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Lưu trữ: project <code>Active</code>. Xóa: project <code>Active</code> hoặc <code>Archived</code>. Với cả hai: không có Workflow ở trạng thái <code>Running</code>, <code>Waiting for User</code>, <code>Paused</code> hoặc <code>Interrupted</code>. Mở lại: project <code>Archived</code>. Khôi phục: project đã xóa mềm chưa quá 30 ngày.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Lưu trữ”, “Mở lại”, “Xóa” hoặc “Khôi phục”.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Lưu trữ: System kiểm tra điều kiện → Researcher xác nhận (APR-08) → project <code>Archived</code>; pending action của project chuyển <code>Expired</code> với lý do “project đã lưu trữ”.</li>
+<li>Mở lại: Researcher chọn → project <code>Active</code>; System tính lại trạng thái Task theo baseline hiện hành.</li>
+<li>Xóa: System kiểm tra điều kiện → hiển thị cảnh báo nêu dữ liệu sẽ bị xóa (Plan, Task, evidence, artifact, bản thảo, lịch sử chat) và hạn khôi phục 30 ngày → Researcher xác nhận (APR-08) → System xóa mềm: ghi <code>deletedAt</code>, ẩn project khỏi mọi khu vực, tìm kiếm và context của agent; pending action của project chuyển <code>Expired</code> với lý do “project đã xóa”.</li>
+<li>Khôi phục: trong 30 ngày kể từ khi xóa, Researcher mở danh sách project đã xóa ở Research Projects và chọn khôi phục → project trở lại trạng thái trước khi xóa (<code>Active</code> hoặc <code>Archived</code>) với đầy đủ dữ liệu.</li>
+<li>Hết 30 ngày: System xóa vĩnh viễn toàn bộ dữ liệu cấp project theo NFR-RET-002; Trusted Reference không bị ảnh hưởng.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Còn workflow hoạt động: không cho lưu trữ hoặc xóa; liệt kê workflow và cho phép hủy từng cái (ORCH-FAILURE-001).</li><li>Researcher hủy hộp thoại xác nhận xóa: không thay đổi gì.</li><li>Khôi phục sau 30 ngày: không còn trong danh sách project đã xóa; không khôi phục được.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Project <code>Archived</code> chỉ đọc (5.1). Lưu trữ và xóa không ảnh hưởng Trusted Reference (OWN-04). Project đã xóa mềm không sửa được, không chạy được Task và không xuất hiện ở Dashboard hay Global AI Assistant; chỉ thấy ở danh sách project đã xóa kèm ngày xóa vĩnh viễn dự kiến. Xóa vĩnh viễn chỉ do System thực hiện khi hết hạn; không có thao tác xóa vĩnh viễn ngay trong MVP. Agent không được xóa project (3.4). Chính sách theo NFR-RET-002 và 16.8 (PC-01, OQ-030, OQ-078).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Research Project.status; Research Project.deletedAt (18); Pending Action → <code>Expired</code>; Audit Event cấp tài khoản cho xóa và khôi phục (actor Researcher); xóa vĩnh viễn dữ liệu cấp project khi hết hạn.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CRUD-003-AC01</strong> Given project có một Workflow <code>Running</code>, When Researcher chọn lưu trữ, Then thao tác bị chặn và workflow được liệt kê.</li>
+<li><strong>PROJ-CRUD-003-AC02</strong> Given project <code>Archived</code>, When Researcher cố kích hoạt một Task, Then hệ thống từ chối và không tạo Workflow.</li>
+<li><strong>PROJ-CRUD-003-AC03</strong> Given project <code>Archived</code> dùng reference R, When mở Trusted Library, Then R vẫn <code>Trusted</code> và dùng được ở project khác.</li>
+<li><strong>PROJ-CRUD-003-AC04</strong> Given project vừa mở lại, When mở Plan and Tasks, Then trạng thái Task khớp với baseline và dependency hiện hành.</li>
+<li><strong>PROJ-CRUD-003-AC05</strong> Given project <code>Active</code> không có workflow hoạt động, When Researcher xác nhận xóa, Then project biến khỏi Dashboard, Research Projects, tìm kiếm và Global AI Assistant, và xuất hiện trong danh sách project đã xóa kèm ngày xóa vĩnh viễn dự kiến.</li>
+<li><strong>PROJ-CRUD-003-AC06</strong> Given project đã xóa mềm 10 ngày trước, When Researcher chọn khôi phục, Then project trở lại trạng thái trước khi xóa với đầy đủ Plan, Task, artifact và bản thảo.</li>
+<li><strong>PROJ-CRUD-003-AC07</strong> Given project đã xóa mềm quá 30 ngày, When System chạy tác vụ dọn dữ liệu, Then toàn bộ dữ liệu cấp project bị xóa vĩnh viễn, project không còn khôi phục được, và Trusted Reference từng dùng trong project vẫn <code>Trusted</code>.</li>
+<li><strong>PROJ-CRUD-003-AC08</strong> Given project có một Workflow <code>Waiting for User</code>, When Researcher chọn xóa, Then thao tác bị chặn và workflow được liệt kê.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.0, 5.1, OWN-04, ORCH-FAILURE-001, TASK-STATE-001, NFR-RET-002, 16.8</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-030 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-3">7.3. Research Context</h2>
+<p class="status">Confirmed (outline): câu hỏi nghiên cứu, lĩnh vực, từ khóa, ràng buộc, mục tiêu và citation preferences.</p>
+
+<h3 id="proj-context-001">PROJ-CONTEXT-001 — Nhập và sửa Research Context có phiên bản</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (trường), Assumption (phiên bản)</td></tr>
+<tr><th scope="row">Purpose</th><td>Lưu ngữ cảnh nghiên cứu có cấu trúc làm nền cho Plan và mọi Agent Run.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher sửa Research Context ở Overview, hoặc xác nhận đề xuất của Orchestrator (PROJ-CONTEXT-002).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Form gồm: câu hỏi nghiên cứu (bắt buộc), mục tiêu, lĩnh vực, từ khóa, phạm vi, ràng buộc (thời gian, phương pháp, nguồn), loại sản phẩm đầu ra, ngôn ngữ bản thảo (mặc định English — DEC-14), citation style ưa thích.</li>
+<li>System lưu thành phiên bản Research Context mới; phiên bản cũ giữ nguyên.</li>
+<li>Nếu có baseline <code>Approved</code>, System hiển thị cảnh báo: thay đổi mục tiêu, câu hỏi, phạm vi hoặc phương pháp có thể là thay đổi lớn và gợi ý xem lại Plan (PLAN-IMPACT-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Xóa trống câu hỏi nghiên cứu: không cho lưu.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mỗi Plan Version ghi phiên bản Research Context nó dựa vào (5.1). Citation style chỉ là ưu tiên cho bản thảo; không đổi Trusted Reference.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Research Context version mới; Context Item không đổi; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CONTEXT-001-AC01</strong> Given Research Context phiên bản 2, When Researcher đổi từ khóa và lưu, Then phiên bản 3 được tạo và phiên bản 2 vẫn xem được.</li>
+<li><strong>PROJ-CONTEXT-001-AC02</strong> Given có baseline <code>Approved</code>, When Researcher đổi câu hỏi nghiên cứu, Then hệ thống hiển thị cảnh báo ảnh hưởng tới Plan.</li>
+<li><strong>PROJ-CONTEXT-001-AC03</strong> Given Plan Version v2 tạo khi Research Context ở phiên bản 3, When xem v2, Then thấy tham chiếu tới Research Context phiên bản 3.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.1, 5.2, PLAN-IMPACT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="proj-context-002">PROJ-CONTEXT-002 — Orchestrator đề xuất cập nhật Research Context</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Assumption (6.2)</td></tr>
+<tr><th scope="row">Purpose</th><td>Biến thông tin trao đổi trong chat thành ngữ cảnh có cấu trúc mà không để agent tự ghi.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>; hội thoại trong Project AI Chat có thông tin mới về ngữ cảnh.</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator nhận diện thông tin ngữ cảnh mới hoặc mâu thuẫn với Research Context hiện hành.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator tạo Interactive Agent Prompt <code>edit_and_approve</code> nêu trường, giá trị hiện tại và giá trị đề xuất → Researcher duyệt, sửa rồi duyệt, hoặc từ chối → khi duyệt, System tạo Research Context phiên bản mới và Context Item loại <em>decision</em>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher từ chối: không đổi gì; Orchestrator ghi Context Item <em>assumption</em> nếu vẫn cần giả định để tiếp tục.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Orchestrator không bao giờ ghi trực tiếp Research Context (3.5: c*).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Interactive Agent Prompt; Research Context version (nếu duyệt); Context Item.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CONTEXT-002-AC01</strong> Given Researcher nêu ràng buộc mới trong chat, When Orchestrator xử lý, Then một prompt đề xuất cập nhật được tạo và Research Context chưa thay đổi.</li>
+<li><strong>PROJ-CONTEXT-002-AC02</strong> Given prompt đề xuất cập nhật, When Researcher duyệt, Then Research Context có phiên bản mới với actor Researcher và nguồn là prompt đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>PROMPT-LIFECYCLE-001, 5.5</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-025 (đã giải quyết, 6.2)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-4">7.4. Global and Project Chat</h2>
+<p class="status">Confirmed (outline): duy trì lịch sử hội thoại và ngữ cảnh project/task rõ ràng.</p>
+
+<h3 id="ws-chat-001">WS-CHAT-001 — Global AI Assistant</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (SCOPE-02; phạm vi chốt ở OQ-007)</td></tr>
+<tr><th scope="row">Purpose</th><td>Hỗ trợ ở cấp tài khoản: điều hướng, tạo project, tra cứu Trusted Library.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator (phiên global)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Orchestrator có Agent Model Assignment với Provider Connection <code>Valid</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher gửi tin nhắn ở Global AI Assistant.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator nhận tin nhắn cùng context global (danh sách project: tên, trạng thái; metadata Trusted Library) → trả lời, gợi ý điều hướng (liên kết tới khu vực), đề xuất tạo project (PROJ-CRUD-001) hoặc trả về reference phù hợp trong Trusted Library.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Yêu cầu cần dữ liệu trong project (ví dụ “tóm tắt evidence của project X”): assistant giải thích giới hạn và đưa liên kết mở Project AI Chat của project đó.</li><li>Chưa cấu hình provider: hiển thị thông báo và liên kết tới Settings › Agent Models.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Không thực thi Task, không tạo Plan, không đọc nội dung project (SCOPE-02, 4.3). Lịch sử Global Conversation lưu bền vững.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Conversation/Message cấp tài khoản; Agent Run của Orchestrator.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>WS-CHAT-001-AC01</strong> Given hai project có evidence, When Researcher hỏi Global AI Assistant về nội dung evidence, Then context gửi cho model không chứa evidence của project nào và câu trả lời dẫn tới Project AI Chat.</li>
+<li><strong>WS-CHAT-001-AC02</strong> Given Trusted Library có reference chứa từ khóa K, When Researcher hỏi tài liệu về K, Then câu trả lời liệt kê reference đó kèm liên kết.</li>
+<li><strong>WS-CHAT-001-AC03</strong> Given Researcher quay lại sau khi đăng xuất, When mở Global AI Assistant, Then lịch sử hội thoại trước đó còn nguyên.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>4.1, ORCH-INTENT-001, CTX-ISOLATION-001 (14.5)</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-007 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h3 id="proj-chat-001">PROJ-CHAT-001 — Project AI Chat với lịch sử và ngữ cảnh rõ ràng</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Kênh làm việc chính với Orchestrator trong một project.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code> (project <code>Archived</code>: chỉ đọc lịch sử).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher gửi tin nhắn trong Project AI Chat.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System lưu Message với projectId và active task (nếu có).</li>
+<li>Orchestrator nhận context do System lắp ráp từ Shared Context (14.2), không chỉ từ lịch sử chat.</li>
+<li>Orchestrator trả lời, tạo prompt, hoặc khởi động workflow được phép (ORCH-INTENT-001).</li>
+<li>Interactive Agent Prompt hiển thị nhúng trong luồng chat và trả lời được tại chỗ (15.3).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Provider lỗi: tin nhắn của Researcher vẫn được lưu; hiển thị lỗi kèm nút thử lại (ORCH-FAILURE-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Lịch sử chat không phải nguồn sự thật duy nhất: quyết định quan trọng phải được ghi thành Context Item hoặc phê duyệt có cấu trúc (3.2). Context gửi model chỉ gồm dữ liệu của project này (3.4).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Message; Agent Run; có thể sinh Context Item <em>summary</em> định kỳ.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CHAT-001-AC01</strong> Given hai project A và B, When Researcher chat trong A, Then context gửi Orchestrator không chứa Message, Context Item hay evidence của B.</li>
+<li><strong>PROJ-CHAT-001-AC02</strong> Given một quyết định đã trả lời qua prompt ở phiên trước, When Researcher mở phiên chat mới, Then Orchestrator nhận quyết định đó qua Shared Context.</li>
+<li><strong>PROJ-CHAT-001-AC03</strong> Given provider trả lỗi, When Researcher gửi tin nhắn, Then tin nhắn được lưu và có nút thử lại.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.5, 5.11, 14.2, PROMPT-LIFECYCLE-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="proj-chat-002">PROJ-CHAT-002 — Active task context</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Assumption (4.3)</td></tr>
+<tr><th scope="row">Purpose</th><td>Cho Researcher chỉ rõ Task đang làm để Orchestrator dùng đúng context phạm vi task.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task thuộc baseline của project.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Làm việc với Task này” ở chi tiết Task hoặc chọn Task trong chat.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System đặt active task cho phiên chat → hiển thị chỉ báo Task → Message mang taskId → Orchestrator thêm Context Item phạm vi task của Task đó vào context → bộ lọc “liên quan đến Task này” có ở Artifacts, Evidence, Manuscript.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Task bị <code>Cancelled</code> hoặc loại khỏi baseline khi đang active: System bỏ active task và thông báo.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Active task không kích hoạt thực thi (APR-02 vẫn riêng).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Trạng thái phiên chat; Message.taskId.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROJ-CHAT-002-AC01</strong> Given active task T1, When Researcher gửi tin nhắn, Then Message lưu taskId T1 và context có Context Item phạm vi task của T1 nhưng không có của Task T2 không liên quan.</li>
+<li><strong>PROJ-CHAT-002-AC02</strong> Given active task T1 ở trạng thái <code>Ready</code>, When đặt active task, Then T1 vẫn <code>Ready</code> (không bị kích hoạt).</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>4.3, 5.5, TASK-TRIGGER-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-5">7.5. Search and Navigation</h2>
+<p class="status">Confirmed (outline): tìm trên project, reference, task và artifact theo quyền.</p>
+
+<h3 id="ws-search-001">WS-SEARCH-001 — Tìm kiếm toàn cục theo quyền</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (phạm vi), Assumption (hành vi)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tìm nhanh đối tượng và mở đúng ngữ cảnh.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đã đăng nhập qua eTroy OIDC.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher nhập từ khóa vào ô tìm kiếm (có ở mọi màn hình).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Ở ngữ cảnh Global: tìm trên tên và mô tả project, metadata Trusted Reference, tiêu đề Task, tiêu đề Artifact của mọi project thuộc tài khoản.</li>
+<li>Ở ngữ cảnh project: mặc định giới hạn trong project, có tùy chọn mở rộng ra toàn tài khoản.</li>
+<li>Kết quả nhóm theo loại, mỗi kết quả ghi project chứa nó; chọn kết quả → chuyển ngữ cảnh và mở đối tượng (4.3).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Không có kết quả: gợi ý tìm trên Google Scholar qua Discover (nếu là tìm tài liệu).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ trả về đối tượng của tài khoản hiện tại (OWN-03). Tìm kiếm không gọi AI model và không đi qua Orchestrator. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): MVP chỉ tìm trên tiêu đề, tên và metadata (project, Trusted Reference, Task, Artifact); không tìm toàn văn nội dung artifact, evidence hay lịch sử chat. Tìm theo nội dung tài liệu dùng Evidence Retrieval (11.2).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Không.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>WS-SEARCH-001-AC01</strong> Given hai tài khoản đều có Task tên chứa “survey”, When tài khoản A tìm “survey”, Then chỉ Task của A được trả về.</li>
+<li><strong>WS-SEARCH-001-AC02</strong> Given đang ở project P, When tìm, Then mặc định chỉ kết quả của P và có tùy chọn mở rộng.</li>
+<li><strong>WS-SEARCH-001-AC03</strong> Given kết quả là Artifact của project Q, When chọn, Then giao diện chuyển sang ngữ cảnh Q và mở Artifact đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>4.3, 3.4, 16.3</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-031 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-oq">7.6. Open Questions của mục 7</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-030</td><td>MVP có cho xóa vĩnh viễn project (kèm evidence, artifact, bản thảo) không, hay chỉ lưu trữ? Nếu có, có thời gian chờ khôi phục không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> có lưu trữ và xóa; xóa là xóa mềm, khôi phục được trong 30 ngày, sau đó xóa vĩnh viễn (NFR-RET-002); đặc tả ở PROJ-CRUD-003.</td><td>PROJ-CRUD-003, 5.0, 16.8, 21.3</td></tr>
+<tr><td>OQ-031</td><td>Tìm kiếm có bao gồm nội dung artifact, evidence và lịch sử chat (full text), hay chỉ tiêu đề và metadata? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> MVP chỉ tìm trên tiêu đề, tên và metadata; tìm theo nội dung tài liệu dùng Evidence Retrieval (11.2); PO duyệt 31/10/2026 (PC-01).</td><td>WS-SEARCH-001, 16.3</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="06-end-to-end-product-workflow.html">← Mục 6</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="08-ai-assistant-and-multi-agent-orchestration.html">Mục 8 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

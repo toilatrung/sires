@@ -1,0 +1,17 @@
+%% FIG-023 — Shared context and orchestration (section 14)
+flowchart TD
+  U[Researcher UI] -->|commands, approvals| S[System: workflow engine, state machine, access control]
+  S -->|assign step| O[Orchestrator]
+  O -->|step command with entity references| S
+  S --> CA[Context Assembler]
+  CS[(Shared Context Store)] --> CA
+  VDB[(Vector database)] -->|RAG evidence| CA
+  CA -->|context + manifest| SA[Specialist Agent]
+  SA --> MG[Model Gateway: Claude / OpenAI / Gemini]
+  O -->|own Agent Runs| MG
+  MG --> SA
+  SA -->|structured result| S
+  S --> REG[(Artifact & Event Registry)]
+  S --> AUD[(Audit trail, append-only)]
+  REG --> CS
+  S --> CP[(Checkpoints)]

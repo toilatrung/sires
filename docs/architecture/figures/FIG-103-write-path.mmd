@@ -1,0 +1,20 @@
+%% FIG-103 — Standard write path (architecture F-02), v0.2
+sequenceDiagram
+  participant W as web
+  participant G as gateway
+  participant S as service sở hữu (NestJS)
+  participant D as database của service
+  participant Q as RabbitMQ
+  participant A as audit / consumer khác
+  W->>G: POST lệnh + Idempotency-Key + If-Match + X-CSRF-Token
+  G->>G: phiên, CSRF, rate limit, ký token nội bộ
+  G->>S: REST + token nội bộ + traceparent
+  S->>D: BEGIN; SET LOCAL app.account_id; nạp entity (404 ngoài tenant)
+  S->>S: state machine: trạng thái, actor, APR, điều kiện
+  S->>D: UPDATE entity (row_version) + INSERT outbox (event + audit) + idempotency_key; COMMIT
+  S-->>G: 200/202
+  G-->>W: phản hồi
+  S->>Q: outbox relay publish (publisher confirm)
+  Q-->>A: audit.recorded, sự kiện domain (inbox idempotent)
+  Q-->>G: sự kiện → SSE
+  G-->>W: SSE event

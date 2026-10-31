@@ -1,0 +1,222 @@
+# PRD 15.12 Settings and Sign-in · 17.7 eTroy OIDC · 18.1 Account / Profile — milestone M1.
+# Path Item được tham chiếu từ ../openapi.yaml bằng JSON Pointer (~1 = "/").
+
+/auth/login:
+  get:
+    tags: [Auth]
+    operationId: startLogin
+    summary: Bắt đầu đăng nhập qua eTroy OIDC
+    description: |
+      Chuyển hướng tới eTroy OIDC theo luồng authorization code (có state, nonce, PKCE).
+      Không có phương thức đăng nhập khác (NFR-AUTH-001).
+    x-requirements: [INT-OIDC-001]
+    x-priority: P0
+    x-milestone: M1
+    security: []
+    parameters:
+      - name: returnTo
+        in: query
+        description: Đường dẫn nội bộ quay lại sau khi đăng nhập (chỉ nhận đường dẫn tương đối).
+        schema: { type: string, pattern: '^/' }
+    responses:
+      '302':
+        description: Chuyển tới endpoint authorize của eTroy OIDC.
+        headers:
+          Location: { schema: { type: string, format: uri } }
+      '503':
+        $ref: ../components/responses.yaml#/ServiceUnavailable
+
+/auth/callback:
+  get:
+    tags: [Auth]
+    operationId: completeLogin
+    summary: Callback của eTroy OIDC
+    description: |
+      Kiểm tra state, nonce, chữ ký, issuer, audience, thời hạn ID token rồi tạo phiên (INT-OIDC-001).
+      Lần đầu với một `sub` mới tạo tài khoản SIRes (họ tên, email từ claim); các lần sau dùng lại (INT-OIDC-002).
+    x-requirements: [INT-OIDC-001, INT-OIDC-002]
+    x-priority: P0
+    x-milestone: M1
+    security: []
+    parameters:
+      - { name: code, in: query, required: true, schema: { type: string } }
+      - { name: state, in: query, required: true, schema: { type: string } }
+    responses:
+      '302':
+        description: Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về trang đăng nhập kèm mã lỗi.
+        headers:
+          Location: { schema: { type: string } }
+          Set-Cookie: { schema: { type: string } }
+
+/auth/logout:
+  post:
+    tags: [Auth]
+    operationId: logout
+    summary: Đăng xuất
+    description: Kết thúc phiên SIRes và thu hồi token phía server (INT-OIDC-003).
+    x-requirements: [INT-OIDC-003]
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+
+/auth/session:
+  get:
+    tags: [Auth]
+    operationId: getSession
+    summary: Trạng thái phiên hiện tại
+    description: Trả thông tin phiên và CSRF token. Không bao giờ trả access/ID token.
+    x-requirements: [INT-OIDC-003]
+    x-priority: P0
+    x-milestone: M1
+    responses:
+      '200':
+        description: Phiên hợp lệ.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId, expiresAt, csrfToken]
+              properties:
+                accountId: { $ref: ../components/schemas/common.yaml#/Id }
+                expiresAt: { $ref: ../components/schemas/common.yaml#/Timestamp }
+                csrfToken: { type: string }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+
+/me:
+  get:
+    tags: [Account & Settings]
+    operationId: getMe
+    summary: Tài khoản, Profile và Preferences
+    x-requirements: [INT-OIDC-002, UX-I18N-001]
+    x-priority: P0
+    x-milestone: M1
+    responses:
+      '200':
+        description: Tài khoản hiện tại.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/Account }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+
+/me/profile:
+  patch:
+    tags: [Account & Settings]
+    operationId: updateProfile
+    summary: Sửa thông tin cá nhân (APR-09)
+    x-requirements: [UX-SETTINGS-001]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/account.yaml#/Profile }
+    responses:
+      '200':
+        description: Đã cập nhật; ghi AuditEvent.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/Account }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/me/preferences:
+  patch:
+    tags: [Account & Settings]
+    operationId: updatePreferences
+    summary: Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug
+    x-requirements: [UX-I18N-001, CTX-ASSEMBLY-001, CTX-REGISTRY-002]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/account.yaml#/Preferences }
+    responses:
+      '200':
+        description: Đã cập nhật.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/Account }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/me/verification-thresholds:
+  get:
+    tags: [Account & Settings]
+    operationId: getVerificationThresholds
+    summary: Xem Ngưỡng kiểm chứng
+    x-requirements: [CLAIM-SUPPORT-001, CLAIM-CITATION-001]
+    x-priority: P0
+    x-milestone: M5
+    responses:
+      '200':
+        description: Bộ ngưỡng hiện hành của tài khoản.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }
+  put:
+    tags: [Account & Settings]
+    operationId: updateVerificationThresholds
+    summary: Sửa Ngưỡng kiểm chứng (APR-09)
+    description: Áp dụng từ lần kiểm chứng sau; giá trị phải nằm trong miền hợp lệ do hệ thống quy định (18.5).
+    x-requirements: [CLAIM-SUPPORT-001]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }
+    responses:
+      '200':
+        description: Đã cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/me/verification-thresholds/reset:
+  post:
+    tags: [Account & Settings]
+    operationId: resetVerificationThresholds
+    summary: Khôi phục Ngưỡng kiểm chứng mặc định
+    x-requirements: [CLAIM-SUPPORT-001]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Đã khôi phục mặc định (85% / 95%).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/VerificationThresholds }

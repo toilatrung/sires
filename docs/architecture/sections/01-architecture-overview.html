@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — tổng quan, động lực kiến trúc và nguyên tắc.">
+<title>1. Architecture Overview | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 1</p><h1>1. Architecture Overview</h1>
+<p class="meta">Trạng thái: bản 0.2 — cập nhật theo chỉ đạo 31/10/2026 (tách service) · Cơ sở: PRD <a href="../../overview/sections/01-document-overview.html">1</a>, <a href="../../overview/sections/02-product-scope.html">2</a>, <a href="../../overview/sections/14-shared-context-and-orchestration-architecture.html">14</a>, <a href="../../overview/sections/16-non-functional-requirements.html">16</a>, <a href="../../overview/sections/21-assumptions-constraints-and-open-questions.html">21</a></p>
+<div class="note"><p>Mục này xác định tài liệu kiến trúc dùng để làm gì, phạm vi, các yêu cầu của PRD chi phối thiết kế (architecture drivers) và các nguyên tắc mà mọi section sau phải tuân theo.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-1-1">1.1. Mục đích và phạm vi</a></li>
+<li><a href="#s-1-2">1.2. Động lực kiến trúc</a></li>
+<li><a href="#s-1-3">1.3. Ràng buộc đã chốt</a></li>
+<li><a href="#s-1-4">1.4. Nguyên tắc kiến trúc</a></li>
+<li><a href="#s-1-5">1.5. Bức tranh tổng thể</a></li>
+<li><a href="#s-1-6">1.6. Thuật ngữ kiến trúc</a></li>
+</ul></details>
+
+<h2 id="s-1-1">1.1. Mục đích và phạm vi</h2>
+<ul>
+<li><strong>Mục đích:</strong> chốt cách hiện thực PRD v1.0 trước M1 (ASM-11), để đội SWE, GEN AI, AIE và coding agents xây cùng một hệ thống nhất quán, và để QA biết thành phần nào kiểm chứng requirement nào.</li>
+<li><strong>Phạm vi:</strong> MVP, milestone M1–M7 (PRD 20.1). Gồm: stack, thành phần, luồng, dữ liệu, tích hợp, bảo mật, triển khai, vận hành, eval harness (NFR-EVAL, đang chờ PO duyệt).</li>
+<li><strong>Ngoài phạm vi:</strong> thành viên và chia sẻ project (OWN-06, FUT-02), custom agent (FUT-04), provider ngoài ba provider và dashboard hạn mức (FUT-05), thông báo ngoài ứng dụng (OQ-020), OCR (DEC-30). Kiến trúc chỉ <em>không chặn</em> các hướng này (xem 1.4, nguyên tắc 7).</li>
+<li><strong>Không lặp lại PRD:</strong> hành vi, trạng thái, quyền và tiêu chí nghiệm thu dẫn chiếu về PRD; hợp đồng HTTP dẫn chiếu về <a href="../../api-design/index.html">api-design</a>.</li>
+</ul>
+
+<h2 id="s-1-2">1.2. Động lực kiến trúc</h2>
+<p>Những yêu cầu dưới đây quyết định hình dạng của hệ thống. Mỗi dòng chỉ tới section xử lý.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Động lực</th><th>Nguồn PRD</th><th>Hệ quả thiết kế</th><th>Section</th></tr></thead>
+<tbody>
+<tr><td>AD-01</td><td>Workflow nhiều bước, chạy lâu, qua nhiều phiên; khôi phục sau gián đoạn với KPI-03 ≥ 99%; không tự chạy lại bước có tác động.</td><td>KPI-03, CTX-RECOVERY-001, NFR-REC-001/002, WF-06</td><td>Workflow engine bền vững, checkpoint là entity của domain, heartbeat + sweeper, Recovery decision do người quyết định.</td><td><a href="05-workflow-engine-and-orchestration.html">5</a></td></tr>
+<tr><td>AD-02</td><td>System là nguồn sự thật về trạng thái; agent chỉ đề xuất; APR-01–APR-10 chỉ Researcher.</td><td>3.0, CTX-CONSISTENCY-003, NFR-AUTHZ-001, NFR-MAINT-003</td><td>Mỗi entity có đúng một service sở hữu và một state machine; agent-core không có quyền ghi, mọi đầu ra đi qua orchestration tới service sở hữu.</td><td><a href="03-system-context-and-containers.html">3</a>, <a href="06-data-architecture.html">6</a></td></tr>
+<tr><td>AD-03</td><td>Độc lập provider: Claude, OpenAI, Gemini; base URL và key theo từng agent; khác biệt được chuẩn hóa.</td><td>DEC-10, DEC-12, DEC-23, AGENT-PROVIDER-001, INT-PROVIDER-001–006</td><td>Model Gateway với adapter cùng interface, danh mục capability, bộ mã lỗi chuẩn.</td><td><a href="08-model-gateway-and-integrations.html">8</a></td></tr>
+<tr><td>AD-04</td><td>Giảm hallucination bằng RAG trên Trusted Reference; claim phải có evidence; citation phân giải 100%.</td><td>DEC-13, KPI-01, KPI-02, EVID-*, CLAIM-*</td><td>Pipeline indexing có vị trí đoạn ổn định, truy xuất có lọc bắt buộc, Verification Agent tách biệt, cổng kiểm tra citation xác định.</td><td><a href="07-rag-and-document-pipeline.html">7</a></td></tr>
+<tr><td>AD-05</td><td>Cách ly tài khoản và project tuyệt đối, kể cả khi model hoạt động sai.</td><td>NFR-ISOL-001, CTX-ISOLATION-001, INT-VECTOR-001</td><td>Kiểm tra quyền ở service sở hữu (kể cả khi agent-core gọi), Row-Level Security trong database từng service, bộ lọc vector bắt buộc.</td><td><a href="06-data-architecture.html">6</a>, <a href="10-security-architecture.html">10</a></td></tr>
+<tr><td>AD-06</td><td>API key của người dùng không bao giờ lộ (DB, log, context, prompt, artifact, audit).</td><td>NFR-SECRETS-001–003, RISK-06</td><td>Envelope encryption, kho khóa tách biệt, giải mã chỉ trong Model Gateway, bộ lọc log.</td><td><a href="10-security-architecture.html">10</a></td></tr>
+<tr><td>AD-07</td><td>Truy vết nguồn gốc: context manifest, provenance của mọi đầu ra, audit chỉ ghi thêm trong cùng giao dịch.</td><td>CTX-REGISTRY-001/002, CTX-AUDIT-001, NFR-DUR-001, 18.3</td><td>Trong mỗi service: ghi trạng thái + Audit Event + outbox trong một giao dịch; audit tập trung ở service audit (ADR-23); Agent Run bất biến sau khi kết thúc.</td><td><a href="06-data-architecture.html">6</a></td></tr>
+<tr><td>AD-08</td><td>Chạy mã không tin cậy: build LaTeX, render Mermaid.</td><td>NFR-SANDBOX-001, INT-LATEX-002, INT-DIAGRAM-002</td><td>Sandbox container không mạng, giới hạn 120 s / 2 GB, pool khởi động sẵn để đạt NFR-PERF-007.</td><td><a href="09-sandbox-latex-and-diagrams.html">9</a></td></tr>
+<tr><td>AD-09</td><td>Realtime: cập nhật trạng thái ≤ 5 s; Agent Activity theo sự kiện; chat stream khi provider hỗ trợ.</td><td>NFR-PERF-003, NFR-PERF-005, OQ-033, SCOPE-12</td><td>Outbox → RabbitMQ → gateway → SSE.</td><td><a href="04-runtime-flows.html">4</a>, <a href="06-data-architecture.html">6</a></td></tr>
+<tr><td>AD-10</td><td>Đội nhỏ, cloud do đội tự vận hành, 99,5% uptime, RPO 24 h / RTO 8 h, khoảng 100 tài khoản đồng thời giai đoạn đầu.</td><td>DEC-27, DEC-36, NFR-AVAIL-001, NFR-BACKUP-001, NFR-SCALE-003</td><td>Dùng dịch vụ managed (PostgreSQL, RabbitMQ, object storage, KMS); thư viện platform chung cho mọi service; mở rộng ngang theo service.</td><td><a href="02-technology-stack.html">2</a>, <a href="11-deployment-and-operations.html">11</a></td></tr>
+<tr><td>AD-11</td><td>Thay thế được độc lập: provider adapter, source adapter, document processing, LaTeX toolchain, diagram renderer; test domain không cần mạng.</td><td>NFR-MAINT-001–005</td><td>Interface (port) cho mọi phụ thuộc ngoài, adapter giả lập cho test.</td><td><a href="03-system-context-and-containers.html">3</a>, <a href="08-model-gateway-and-integrations.html">8</a></td></tr>
+<tr><td>AD-12</td><td>Đo lường chất lượng agent lặp lại được, cổng hồi quy khi đổi prompt hoặc cấu hình retrieval.</td><td>NFR-EVAL-001–004, NFR-OBS-006 (chờ PO duyệt)</td><td>Prompt template và cấu hình retrieval có phiên bản; eval harness tách môi trường.</td><td><a href="11-deployment-and-operations.html#s-11-7">11.7</a></td></tr>
+</tbody></table></div>
+
+<h2 id="s-1-3">1.3. Ràng buộc đã chốt</h2>
+<p>Các quyết định sản phẩm sau là đầu vào cố định của kiến trúc (PRD 21.1):</p>
+<ul>
+<li>Web application, người dùng cá nhân trước (DEC-01); UI tiếng Việt và tiếng Anh (DEC-14); desktop đầy đủ, tablet dùng được, điện thoại theo dõi và phê duyệt (OQ-071).</li>
+<li>Đăng nhập duy nhất qua eTroy OIDC, không lưu mật khẩu (DEC-26).</li>
+<li>Người dùng tự cấp API key; chỉ ba provider; base URL tương thích API chính thức (DEC-23).</li>
+<li>Embedding qua Provider Connection OpenAI hoặc Gemini của người dùng, một model mỗi tài khoản (DEC-31).</li>
+<li>Chỉ PDF có lớp văn bản ≤ 50 MB, không OCR (DEC-30).</li>
+<li>Chỉ Mermaid; pdfLaTeX/XeLaTeX + BibTeX/natbib; không shell-escape; build 120 s / 2 GB (OQ-055, OQ-056, OQ-059, OQ-074, OQ-083).</li>
+<li>Toàn văn prompt chỉ lưu ở chế độ debug, 30 ngày; audit theo vòng đời project/tài khoản; xóa mềm project 30 ngày (DEC-29, DEC-34, DEC-35).</li>
+<li>Cloud do đội phát triển vận hành; vùng dữ liệu chốt khi chọn hạ tầng (DEC-27).</li>
+<li>Heartbeat 30 s, Interrupted sau 2 phút; adapter thử lại tối đa 3 lần, Orchestrator tối đa 2 Agent Run mới (OQ-017, OQ-063).</li>
+</ul>
+
+<h2 id="s-1-4">1.4. Nguyên tắc kiến trúc</h2>
+<ol>
+<li><strong>System quyết định trạng thái, agent chỉ đề xuất.</strong> agent-core trả đầu ra có cấu trúc cho orchestration; service sở hữu kiểm tra quyền, trạng thái, phiên bản rồi mới ghi. agent-core không có database nghiệp vụ, chỉ có API đọc với phạm vi agent.</li>
+<li><strong>Một nguồn sự thật cho mỗi loại trạng thái.</strong> Mỗi entity nằm trong database của đúng một service; workflow và checkpoint ở orchestration. Bản sao ở service khác chỉ đọc, cập nhật bằng sự kiện. Không có trạng thái trong engine bên ngoài (ADR-03).</li>
+<li><strong>Ghi nguyên tử trong service, saga giữa service.</strong> Thay đổi trạng thái, Audit Event và bản ghi outbox ghi trong một giao dịch của service; mọi thông báo, SSE, việc ở service khác phát sinh từ outbox qua RabbitMQ; không có giao dịch phân tán.</li>
+<li><strong>Cách ly ở tầng dữ liệu, không ở prompt.</strong> Mọi truy vấn mang <code>account_id</code>; RLS là lớp phòng thủ thứ hai; context lắp ráp chỉ từ entity đã qua kiểm tra quyền.</li>
+<li><strong>Phụ thuộc ngoài đứng sau interface.</strong> Provider, nguồn học thuật, DOI, OIDC, xử lý PDF, TeX, Mermaid, object storage, KMS đều có port và adapter; test domain chạy với adapter giả lập, không cần mạng (NFR-MAINT-004).</li>
+<li><strong>Hợp đồng là ranh giới.</strong> Service giao tiếp chỉ qua OpenAPI (đồng bộ) và AsyncAPI (sự kiện); không đọc database của nhau; hợp đồng sửa trước, mã theo sau (ADR-14, ADR-20).</li>
+<li><strong>Sẵn đường cho tương lai, không xây trước.</strong> Actor trên mọi thay đổi, ownership tách account/project (DEC-16) chuẩn bị cho cộng tác; adapter registry chuẩn bị cho FUT-01, FUT-05; agent registry chuẩn bị cho FUT-04.</li>
+<li><strong>Mọi thứ ảnh hưởng chất lượng agent đều có phiên bản.</strong> Prompt template, định nghĩa agent, cấu hình retrieval, adapter được ghi phiên bản vào Agent Run (NFR-OBS-006) để so với eval harness.</li>
+</ol>
+
+<h2 id="s-1-5">1.5. Bức tranh tổng thể</h2>
+<pre><code>  Trình duyệt (SPA React) ──HTTPS: REST /api/v1 + SSE /events──► gateway (NestJS, BFF, OIDC RP) ◄── eTroy OIDC
+                                                                   │ REST nội bộ (OpenAPI)
+      ┌──────────────┬──────────────┬──────────────┬───────────────┼──────────────┬──────────────┬─────────────┐
+   identity      workspace       planning     orchestration      library       research     manuscript     audit
+   (NestJS — mỗi service một database PostgreSQL, outbox → RabbitMQ)  │                          │
+                                                                   │ queue agent.run            │ queue sandbox.build
+                                                                   ▼                            ▼
+                               agent-core (Python) ──HTTPS──► Claude / OpenAI / Gemini    sandbox-runner (gVisor)
+                               knowledge (Python: PDF, chunk, embedding, pgvector)
+                               Object storage · KMS · RabbitMQ</code></pre>
+<p class="status">FIG-102 — Service và luồng giao tiếp. Nguồn: <a href="../figures/FIG-102-containers.mmd">figures/FIG-102-containers.mmd</a>. Chi tiết ở <a href="03-system-context-and-containers.html">mục 3</a>.</p>
+
+<h2 id="s-1-6">1.6. Thuật ngữ kiến trúc</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Thuật ngữ</th><th>Nghĩa trong tài liệu này</th></tr></thead>
+<tbody>
+<tr><td>System</td><td>Phần backend do SIRes kiểm soát, không phải model: gateway, các service NestJS, state machine, workflow engine; agent-core khi kiểm tra tất định (đúng nghĩa actor System ở PRD 3).</td></tr>
+<tr><td>Service sở hữu</td><td>Service duy nhất được phép ghi một loại entity; kiểm tra quyền, state machine, phiên bản; ghi audit và outbox (3.3).</td></tr>
+<tr><td>Workflow engine</td><td>Thành phần lập lịch và thực thi Workflow Step, lưu checkpoint, phát hiện gián đoạn (mục 5).</td></tr>
+<tr><td>Model Gateway</td><td>Module trong agent-core gọi model chuẩn hóa ba provider (PRD 8.6, 17.1); cùng embedding ở knowledge là nơi duy nhất giải mã API key.</td></tr>
+<tr><td>Port / adapter</td><td>Interface trừu tượng cho một phụ thuộc ngoài / hiện thực cụ thể của interface đó.</td></tr>
+<tr><td>Outbox / inbox</td><td>Bảng sự kiện ghi cùng giao dịch với thay đổi nghiệp vụ, được relay đẩy lên RabbitMQ / bảng ghi event id đã xử lý để consumer idempotent.</td></tr>
+<tr><td>Sandbox</td><td>Môi trường container cô lập chạy TeX hoặc Mermaid, không mạng, giới hạn tài nguyên.</td></tr>
+<tr><td>Tenant</td><td>Một tài khoản SIRes (Account). MVP không có tổ chức hay nhóm nhiều người.</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a href="../index.html">← Mục lục</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="02-technology-stack.html">Mục 2 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

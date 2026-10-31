@@ -1,0 +1,99 @@
+# PRD 13 Diagram Agent · 17.5 diagram rendering — WF-07 — milestone M6. Chỉ Mermaid (OQ-059).
+# Sơ đồ là Artifact loại diagram; duyệt qua /projects/{projectId}/artifacts/.../accept (APR-07).
+
+/diagram-types:
+  get:
+    tags: [Diagrams]
+    operationId: listDiagramTypes
+    summary: Loại sơ đồ hỗ trợ
+    x-requirements: [DIAG-TYPES-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Danh sách loại.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/manuscript.yaml#/DiagramType }
+
+/projects/{projectId}/diagrams:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Diagrams]
+    operationId: requestDiagram
+    summary: Yêu cầu Diagram Agent tạo hoặc sửa sơ đồ
+    description: |
+      Khởi tạo workflow `diagram`. Agent sinh mã Mermaid, System kiểm tra cú pháp và render (DIAG-VALIDATE-001); lỗi được
+      sửa trong giới hạn thử lại. Kết quả là Artifact Version diagram ở Draft kèm nguồn và preview.
+    x-requirements: [DIAG-GEN-001, DIAG-SOURCE-001, DIAG-VALIDATE-001, DATA-IDEMP-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramRequest }
+    responses:
+      '202': { $ref: ../components/responses.yaml#/WorkflowAccepted }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/diagrams/validate:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Diagrams]
+    operationId: validateDiagramSource
+    summary: Kiểm tra cú pháp và render preview mã Mermaid
+    description: Dùng khi Researcher sửa nguồn trước khi lưu thành version mới. Renderer cô lập, không truy cập mạng.
+    x-requirements: [DIAG-VALIDATE-001, INT-DIAGRAM-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramValidationRequest }
+    responses:
+      '200':
+        description: Kết quả kiểm tra.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramValidationResult }
+
+/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+    - $ref: ../components/parameters.yaml#/VersionId
+  get:
+    tags: [Diagrams]
+    operationId: getDiagramPreview
+    summary: Bản preview của một version sơ đồ
+    x-requirements: [DIAG-SOURCE-001, DIAG-REVIEW-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - name: format
+        in: query
+        schema: { type: string, enum: [svg, png], default: svg }
+    responses:
+      '200':
+        description: Ảnh preview.
+        content:
+          image/svg+xml:
+            schema: { type: string }
+          image/png:
+            schema: { type: string, contentMediaType: image/png }
+      '404': { $ref: ../components/responses.yaml#/NotFound }

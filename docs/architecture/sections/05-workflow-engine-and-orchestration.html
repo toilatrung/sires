@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — workflow engine bền vững và điều phối đa agent.">
+<title>5. Workflow Engine and Orchestration | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 5</p><h1>5. Workflow Engine and Orchestration</h1>
+<p class="meta">Trạng thái: ADR-03 Accepted (31/10/2026), bản 0.2 điều chỉnh cho kiến trúc nhiều service · Cơ sở: PRD <a href="../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html">8</a>, <a href="../../overview/sections/14-shared-context-and-orchestration-architecture.html#s-14-6">14.6–14.7</a>, 18.2 (Workflow, Agent Run), WF-06; ADR-03, ADR-08, ADR-19</p>
+<div class="note"><p><strong>Bài toán:</strong> chạy workflow nhiều bước, có bước chờ người dùng hàng ngày, có lời gọi model tốn tiền, qua khởi động lại server, sao cho (1) không mất đầu ra đã hoàn tất (KPI-03 ≥ 99%), (2) không chạy trùng, (3) không tự chạy lại bước có tác động khi chưa có Recovery decision, (4) kết quả muộn không ghi đè kết quả mới, (5) mọi việc hiển thị được ở Agent Activity. <strong>Phương án:</strong> workflow engine nhỏ, tự xây, nằm trong service <strong>orchestration</strong> (NestJS); Workflow/WorkflowStep/AgentRun/Checkpoint trong database của orchestration là nguồn sự thật. <strong>agent-core</strong> (Python) chỉ thực thi từng Agent Run nhận qua queue <code>agent.run</code> và trả kết quả; nó không giữ trạng thái workflow, nên có thể scale hoặc khởi động lại bất kỳ lúc nào.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-5-1">5.1. Mô hình thực thi</a></li>
+<li><a href="#s-5-2">5.2. Giao việc qua RabbitMQ và lập lịch</a></li>
+<li><a href="#s-5-3">5.3. Chuyển trạng thái do engine thực hiện</a></li>
+<li><a href="#s-5-4">5.4. Heartbeat và phát hiện gián đoạn</a></li>
+<li><a href="#s-5-5">5.5. Tạm dừng, tiếp tục, hủy</a></li>
+<li><a href="#s-5-6">5.6. Thử lại hai lớp</a></li>
+<li><a href="#s-5-7">5.7. Bước song song</a></li>
+<li><a href="#s-5-8">5.8. Idempotency và kết quả lỗi thời</a></li>
+<li><a href="#s-5-9">5.9. Orchestrator</a></li>
+<li><a href="#s-5-10">5.10. Agent registry</a></li>
+<li><a href="#s-5-11">5.11. Vì sao không dùng Temporal ở MVP</a></li>
+</ul></details>
+
+<h2 id="s-5-1">5.1. Mô hình thực thi</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Khái niệm</th><th>Bảng</th><th>Vai trò trong engine</th></tr></thead>
+<tbody>
+<tr><td>Workflow</td><td><code>workflow</code></td><td>Một lần thực thi có mục tiêu (loại theo WorkflowType 18.2). Mang <code>status</code>, <code>heartbeat_at</code>, <code>lease_owner</code>, <code>idempotency_key</code>, <code>last_checkpoint_id</code>, <code>pause_requested</code>.</td></tr>
+<tr><td>Workflow Step</td><td><code>workflow_step</code></td><td>Một việc giao cho một agent (hoặc System). Có <code>depends_on[]</code>, <code>write_set[]</code> (loại entity sẽ ghi), <code>status</code>, <code>attempt_count</code>, <code>current_agent_run_id</code>, <code>open_prompt_id</code>.</td></tr>
+<tr><td>Agent Run</td><td><code>agent_run</code></td><td>Đơn vị nguyên tử: một lần lắp ráp context + gọi model (kể cả vòng tool calling) + ghi kết quả. Không checkpoint giữa chừng (OQ-063).</td></tr>
+<tr><td>Checkpoint</td><td><code>checkpoint</code></td><td>Bản chụp nhất quán: trạng thái mọi bước, tham chiếu đầu ra đã đăng ký, prompt đang mở. Ghi trong cùng giao dịch với kết quả bước.</td></tr>
+<tr><td>Message <code>agent.run</code></td><td>(RabbitMQ)</td><td>Lời nhắc “chạy Agent Run X”. Không mang trạng thái nghiệp vụ; gửi qua outbox của orchestration nên không mất khi orchestration khởi động lại; message trùng hoặc lỗi thời bị bỏ qua (5.8).</td></tr>
+</tbody></table></div>
+<p>Hệ quả quan trọng: <strong>khôi phục = đọc bảng</strong>. Không cần replay lịch sử sự kiện; trạng thái Workflow/Step trong database của orchestration luôn là sự thật, checkpoint là bản chụp để hiển thị và đối chiếu khi Researcher ra Recovery decision.</p>
+
+<h2 id="s-5-2">5.2. Giao việc qua RabbitMQ và lập lịch</h2>
+<ul>
+<li><strong>Giao việc:</strong> khi một bước sẵn sàng, orchestration tạo AgentRun Pending và ghi message <code>agent.run</code> vào outbox trong cùng giao dịch; relay đẩy lên RabbitMQ (quorum queue, ack thủ công). agent-core lấy message với prefetch giới hạn (mặc định 8 Agent Run async mỗi pod) và chỉ ack sau khi đã gửi kết quả cho orchestration.</li>
+<li><strong>Bắt tay khi nhận:</strong> agent-core gọi <code>POST /internal/agent-runs/{id}/start</code>; orchestration chỉ chấp nhận nếu run còn Pending và là run hiện hành của bước (không → <code>409</code>, agent-core ack và bỏ message). Nhờ vậy message giao lại sau sự cố không tạo lời gọi provider thứ hai.</li>
+<li><strong>Công bằng giữa tài khoản:</strong> orchestration chỉ phát message khi tài khoản có ít hơn giới hạn mềm Agent Run đang chạy (mặc định 3, đáp ứng NFR-SCALE-003); bước vượt giới hạn chờ trong DB của orchestration ở trạng thái “đợi lượt” và được phát khi có run kết thúc. Giới hạn là cấu hình vận hành, không phải giới hạn sản phẩm (OQ-021).</li>
+<li><strong>Vị trí chờ:</strong> Task Queued hiển thị thứ hạng bước đợi lượt của nó trong tài khoản (9.6), tính từ DB của orchestration, không hỏi RabbitMQ.</li>
+<li><strong>Queue khác:</strong> <code>knowledge.index</code> (indexing, embedding) do knowledge tự phát và tiêu thụ; <code>sandbox.build</code> do manuscript/research phát, sandbox-runner tiêu thụ.</li>
+<li><strong>Job định kỳ</strong> trong orchestration (<code>@nestjs/schedule</code> + khóa leader trong DB): sweeper 10 s, phát bước đợi lượt, dọn idempotency key quá 24 giờ. Purge, KPI và dọn dẹp khác thuộc service sở hữu dữ liệu tương ứng.</li>
+</ul>
+
+<h2 id="s-5-3">5.3. Chuyển trạng thái do engine thực hiện</h2>
+<p>Engine không tự định nghĩa trạng thái: mọi chuyển đổi gọi state machine trong module domain của service orchestration (PRD 18.2). Bảng dưới ghi chuyển nào do engine kích hoạt và trong giao dịch nào.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Sự kiện</th><th>Workflow</th><th>Step / Agent Run</th><th>Ghi kèm</th></tr></thead>
+<tbody>
+<tr><td>agent-core bắt tay <code>start</code> cho run đầu tiên</td><td>Created → Running</td><td>Step Pending → Running; Run Pending → Running</td><td>evt:<code>workflow.started</code> → planning chuyển Task Queued → In Progress (T-06)</td></tr>
+<tr><td>Agent Run trả kết quả hợp lệ</td><td>giữ Running</td><td>Run → Succeeded; Step → Succeeded</td><td>Đầu ra Draft đã được service sở hữu xác nhận (5.8), Checkpoint, Audit, outbox → message bước kế</td></tr>
+<tr><td>Đầu ra yêu cầu người dùng</td><td>Running → Waiting for User</td><td>Step → Waiting</td><td>Prompt, PendingAction, Checkpoint (trước điểm chờ, WF-06.S1)</td></tr>
+<tr><td>Prompt được trả lời</td><td>Waiting for User → Running</td><td>Step → Pending/Succeeded tùy loại</td><td>Context Item decision, message bước kế</td></tr>
+<tr><td>Hết thử lại ở cả hai lớp</td><td>Running → Failed</td><td>Run → Failed (mã chuẩn 8.6)</td><td>evt:<code>workflow.failed</code> → planning chuyển Task → Failed theo 9.8; workspace tạo Notification</td></tr>
+<tr><td>Mọi đầu ra mong đợi đã có</td><td>Running → Succeeded</td><td>—</td><td>evt:<code>workflow.succeeded</code> → planning: Task → In Review; workspace: PendingAction nghiệm thu</td></tr>
+<tr><td>Không heartbeat 2 phút</td><td>Running → Interrupted</td><td>Run → Failed (<code>interrupted</code>)</td><td>PendingAction Recovery decision</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5-4">5.4. Heartbeat và phát hiện gián đoạn</h2>
+<ul>
+<li>Trong khi chạy Agent Run, agent-core gọi <code>POST /internal/agent-runs/{id}/heartbeat</code> mỗi 30 giây bằng một tác vụ nền độc lập với lời gọi model; orchestration cập nhật <code>workflow.heartbeat_at</code>. Phản hồi heartbeat mang cờ <code>cancel_requested</code> (5.5).</li>
+<li>Sweeper chạy mỗi 10 giây: <code>status = 'Running' AND heartbeat_at &lt; now() - interval '110 seconds'</code> → chuyển Interrupted trong một giao dịch với khóa hàng, đảm bảo không đua với kết quả đang được áp dụng (bước áp dụng kết quả cũng khóa hàng workflow và kiểm tra trạng thái).</li>
+<li>Ngưỡng 110 giây + chu kỳ quét 10 giây cho thời gian phát hiện trong khoảng 110–120 giây kể từ heartbeat cuối, đúng yêu cầu “≤ 2 phút” (NFR-REC-001) và “không có heartbeat trong 2 phút” (CTX-RECOVERY-001). Chi phí: một truy vấn có index partial trên <code>status = 'Running'</code> mỗi 10 giây.</li>
+<li>Workflow Waiting for User và Paused không cần heartbeat; không bao giờ bị chuyển Interrupted vì người dùng đi vắng (WF-06.A1).</li>
+<li>Pod agent-core bị tắt có kiểm soát (deploy): nhận SIGTERM → hủy consumer, chờ Agent Run đang chạy tối đa 10 phút (<code>terminationGracePeriodSeconds</code>); quá hạn thì để sweeper xử lý như gián đoạn. Orchestration khởi động lại không ảnh hưởng Agent Run đang chạy: agent-core thử lại heartbeat và gửi kết quả với backoff (idempotent).</li>
+</ul>
+
+<h2 id="s-5-5">5.5. Tạm dừng, tiếp tục, hủy</h2>
+<p>Theo ORCH-FAILURE-001: “Workflow → Paused sau khi Agent Run đang chạy kết thúc hoặc bị hủy”.</p>
+<ul>
+<li><strong>Tạm dừng</strong> (<code>POST /workflows/{id}/pause</code>): đặt <code>pause_requested = true</code>. Engine kiểm tra cờ ở ranh giới bước: Agent Run đang chạy được hoàn tất và đăng ký đầu ra, sau đó Workflow → Paused, không phát message tiếp.</li>
+<li><strong>Tiếp tục</strong>: Paused → Running, phát message cho các bước sẵn sàng từ checkpoint.</li>
+<li><strong>Hủy</strong>: Workflow → Cancelled ngay; Agent Run đang chạy nhận tín hiệu hủy (agent-core đọc cờ <code>cancel_requested</code> trong phản hồi heartbeat và hủy lời gọi provider đang chờ); kết quả về muộn bị <code>discarded</code>. Prompt mở → Cancelled.</li>
+</ul>
+
+<h2 id="s-5-6">5.6. Thử lại hai lớp</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Lớp</th><th>Ai quyết định</th><th>Lỗi được thử lại</th><th>Giới hạn</th><th>Ghi nhận</th></tr></thead>
+<tbody>
+<tr><td>Adapter (trong một Agent Run)</td><td>Model Gateway</td><td><code>rate_limited</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>network_error</code>; <code>invalid_response</code> = yêu cầu sửa định dạng</td><td>3 lần gọi lại, backoff lũy thừa có jitter, tôn trọng <code>Retry-After</code>; sửa định dạng 2 lần</td><td><code>AgentRun.attempts</code></td></tr>
+<tr><td>Orchestrator (Agent Run mới)</td><td>Engine theo chính sách ORCH-FAILURE-001</td><td>Cùng nhóm lỗi tạm thời sau khi lớp adapter hết lượt</td><td>2 Agent Run mới cho cùng bước</td><td><code>Step.attempt_count</code>, event thử lại</td></tr>
+<tr><td>Không thử lại</td><td>—</td><td><code>auth_failed</code>, <code>permission_denied</code>, <code>model_not_found</code>, <code>quota_exceeded</code>, <code>context_too_long</code>, <code>content_refused</code>, <code>interrupted</code></td><td>0</td><td>Step Failed; <code>auth_failed</code>/<code>quota_exceeded</code> tạo Provider issue</td></tr>
+</tbody></table></div>
+<p>Queue <code>agent.run</code> không có retry tự động: message được RabbitMQ giao lại sau khi pod chết bị từ chối ở bước bắt tay (5.2); sự cố được xử lý qua đường Interrupted, không âm thầm chạy lại (NFR-REC-002). Queue <code>sandbox.build</code> không gọi model. Queue <code>knowledge.index</code> chỉ gọi model để embedding, theo cùng chính sách adapter; job indexing được phép tự chạy lại (tối đa 3 lần) vì idempotent theo (referenceId, hash, model) (INT-DOC-003) và không phải bước workflow cần Recovery decision.</p>
+
+<h2 id="s-5-7">5.7. Bước song song</h2>
+<p>OQ-032: chạy song song các bước không phụ thuộc nhau và không ghi cùng entity.</p>
+<ul>
+<li>Orchestrator khai báo cho mỗi bước <code>depends_on</code> và <code>write_set</code> (ví dụ <code>evidence</code>, <code>claim:artifact#12</code>).</li>
+<li>Engine chỉ phát message cho bước có mọi phụ thuộc Succeeded và <code>write_set</code> không giao với bước đang chạy cùng workflow.</li>
+<li>Bước song song cùng tính vào giới hạn đồng thời của tài khoản (5.2).</li>
+<li>Checkpoint ghi sau mỗi bước hoàn tất; một bước song song lỗi không hủy bước kia; Orchestrator nhận cả hai kết quả khi lập bước kế.</li>
+</ul>
+
+<h2 id="s-5-8">5.8. Idempotency và kết quả lỗi thời</h2>
+<ul>
+<li><strong>Lệnh từ client:</strong> bảng <code>idempotency_key(account_id, key, request_hash, response, created_at)</code>, giữ 24 giờ (F-02).</li>
+<li><strong>Kích hoạt Task:</strong> ràng buộc duy nhất một phần (partial unique index) “mỗi Task tối đa một Workflow ở trạng thái Created/Running/Waiting for User/Paused/Interrupted” — chặn chạy trùng ngay ở database, kể cả khi hai request đến đồng thời.</li>
+<li><strong>Bước:</strong> bắt tay <code>start</code> theo <code>agentRunId</code> (5.2); message trùng hoặc lỗi thời nhận <code>409</code> và bị bỏ.</li>
+<li><strong>Áp dụng đầu ra xuyên service (saga):</strong> orchestration gọi API nội bộ của service sở hữu (planning, research, library, manuscript, workspace) để ghi từng đầu ra, idempotency key = <code>agentRunId</code>:chỉ số; chỉ khi mọi ghi được xác nhận mới chuyển Step Succeeded + Checkpoint. Service đích tạm lỗi: thử lại lời gọi ghi với backoff (an toàn vì idempotent, không gọi lại model); quá 10 phút → Step Failed với mã <code>apply_failed</code>, đầu ra đã ghi vẫn ở Draft và hiển thị trong Recovery decision. Job đối soát hằng giờ báo đầu ra Draft có <code>agentRunId</code> không thuộc bước Succeeded nào.</li>
+<li><strong>Kết quả muộn:</strong> giao dịch ghi kết quả khóa hàng workflow, kiểm tra <code>status = Running</code> và <code>step.current_agent_run_id = run.id</code>; sai thì chỉ cập nhật Agent Run với <code>discarded = true</code> (CTX-CONSISTENCY-002).</li>
+<li><strong>Ghi entity:</strong> mọi entity sửa được có <code>row_version</code>; ghi từ agent dùng phiên bản đã đọc khi lắp ráp context; lệch thì đầu ra thành bản mới cạnh tranh hoặc bị từ chối tùy loại (Change Proposal → Outdated).</li>
+</ul>
+
+<h2 id="s-5-9">5.9. Orchestrator</h2>
+<p>Orchestrator là một agent đặc biệt: đầu ra có cấu trúc của nó là <em>kế hoạch bước</em>, không phải nội dung nghiên cứu.</p>
+<pre><code>vòng lặp của workflow task_execution
+  1. Bước "plan_next" (Agent Run của Orchestrator)
+       vào : định nghĩa Task, trạng thái các bước, tham chiếu đầu ra đã có, lỗi gần nhất
+       ra  : StepPlan { steps[]: {agent, goal, inputRefs[], expectedOutput, dependsOn[], writeSet[]},
+                        done: bool, promptForUser?: {...}, conflict?: {...} }
+  2. Engine kiểm tra StepPlan: agent có trong registry, inputRefs trong phạm vi agent (3.3),
+     writeSet hợp lệ, tổng số bước của workflow ≤ giới hạn (mặc định 30)
+  3. Engine chạy các bước; xong thì quay lại 1
+  4. done = true và mọi expectedOutputs bắt buộc của Task đã có → Succeeded</code></pre>
+<ul>
+<li><strong>Giới hạn an toàn:</strong> tối đa 30 bước và 10 vòng <code>plan_next</code> mỗi workflow (cấu hình) để tránh vòng lặp vô hạn và chi phí ngoài dự kiến (RISK-07); chạm giới hạn → Orchestrator phải mở prompt hỏi Researcher.</li>
+<li><strong>Workflow cố định:</strong> các loại <code>indexing</code>, <code>reference_processing</code>, <code>verification</code>, <code>readiness_semantic</code> có chuỗi bước định sẵn trong mã, không cần Orchestrator lập kế hoạch — rẻ và tất định hơn.</li>
+<li><strong>Mâu thuẫn</strong> (ORCH-CONFLICT-001): StepPlan có <code>conflict</code> → engine mở prompt <code>choice</code>.</li>
+<li><strong>Chuyển giao giữa agent</strong> chỉ bằng tham chiếu entity trong <code>inputRefs</code>; không chuyển văn bản chat (CTX-ROUTING-001).</li>
+</ul>
+
+<h2 id="s-5-10">5.10. Agent registry</h2>
+<p>Mỗi agent là một định nghĩa khai báo trong agent-core (NFR-MAINT-002); thêm agent không sửa lõi engine. agent-core công bố registry qua <code>GET /internal/agents</code> (vai trò, <code>context_scope</code>, <code>writes</code>, capability, phiên bản); orchestration dùng để kiểm tra StepPlan và phạm vi, identity dùng để kiểm tra capability khi gán model.</p>
+<pre><code>AgentDefinition(
+  key="synthesis", version="1.3.0",
+  role_template="prompts/synthesis/system.v3.j2",
+  input_schema=SynthesisInput, output_schema=SynthesisOutput,      # Pydantic
+  tools=["get_evidence", "get_artifact"],                            # chỉ tool đọc
+  context_scope={"read": ["evidence", "claim", "artifact:Accepted", "research_context"]},
+  writes=["claim:Draft", "claim_evidence_link", "artifact_version:Draft(synthesis,table)"],
+  required_capabilities={"structured_output"},
+  recommended_capabilities={"long_context"},
+)</code></pre>
+<ul>
+<li><code>required_capabilities</code> dùng để chặn lưu Agent Model Assignment thiếu năng lực bắt buộc, cảnh báo khi thiếu năng lực khuyến nghị (OQ-034).</li>
+<li><code>context_scope</code> là nguồn cho kiểm tra phạm vi ở F-07.S2 và cho bộ lọc của tool.</li>
+<li><code>version</code> của định nghĩa và của template ghi vào Agent Run (NFR-OBS-006); đổi phiên bản kích hoạt cổng hồi quy của eval harness (NFR-EVAL-004).</li>
+</ul>
+
+<h2 id="s-5-11">5.11. Vì sao không dùng Temporal ở MVP</h2>
+<p>Temporal (hoặc engine tương tự) đã được cân nhắc nghiêm túc. Lý do chọn engine tự xây (ADR-03):</p>
+<ol>
+<li>PRD đã định nghĩa Workflow, Step, Checkpoint, Interrupted, Recovery decision là <em>entity hiển thị cho người dùng</em>; dùng Temporal vẫn phải lưu các entity này trong PostgreSQL → hai nguồn trạng thái cần đồng bộ.</li>
+<li>Mặc định của Temporal là tự retry activity và tự tiếp tục sau khi worker chết, trái NFR-REC-002; phải tắt retry và tự xây lại logic Interrupted.</li>
+<li>Bước của SIRes thô (mỗi bước một Agent Run vài giây đến vài phút, số lượng thấp); không cần timer phức tạp hay hàng triệu workflow.</li>
+<li>Thêm một cụm (Temporal server + database riêng) cho đội nhỏ tự vận hành.</li>
+</ol>
+<p><strong>Điều kiện xem lại:</strong> cần workflow lồng nhau phức tạp, timer dài có lịch, saga xuyên dịch vụ, hoặc engine tự xây vượt ~1.500 dòng và có lỗi đồng bộ lặp lại. Interface <code>WorkflowEngine</code> trong service orchestration giữ cho việc thay thế không chạm vào agent-core và các service khác.</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="04-runtime-flows.html">← Mục 4</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="06-data-architecture.html">Mục 6 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

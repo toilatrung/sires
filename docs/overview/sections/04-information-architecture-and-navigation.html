@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>4. Information Architecture and Navigation | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 04</p><h1>4. Information Architecture and Navigation</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–3, mục 21.1</p><div class="note"><p>Mục này mô tả các khu vực của sản phẩm, nội dung từng khu vực và cách người dùng di chuyển giữa chúng. Đây là cấu trúc thông tin, không phải thiết kế giao diện; bố cục và trạng thái hiển thị ở <a href="15-ui-ux-requirements.html">mục 15</a>, yêu cầu chức năng ở các mục 7–13. Danh sách khu vực lấy từ outline (<strong>Confirmed</strong>). Khu vực bổ sung và quy tắc điều hướng là <strong>Assumption</strong>. Điểm chưa quyết định ở <a href="#s-4-5">4.5</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-4-0">Sơ đồ tổng thể</a></li>
+<li><a href="#s-4-1">4.1. Global Workspace</a></li>
+<li><a href="#s-4-2">4.2. Project Workspace</a></li>
+<li><a href="#s-4-3">4.3. Navigation and Context Switching</a></li>
+<li><a href="#s-4-4">4.4. Notifications and Pending Actions</a></li>
+<li><a href="#s-4-5">4.5. Open Questions của mục 4</a></li>
+</ul></details>
+
+<h2 id="s-4-0">Sơ đồ tổng thể</h2>
+<p>Sản phẩm theo kiến trúc <em>hybrid workspace</em> (Confirmed — 21.1): <strong>Global Workspace</strong> chứa những gì thuộc cấp tài khoản và dùng chung giữa các project; <strong>Project Workspace</strong> chứa mọi thứ của một đề tài. Ranh giới hai cấp trùng với ranh giới ownership ở <a href="03-user-roles-and-permissions.html#s-3-4-isolation">3.4</a>: tài nguyên cấp tài khoản (Trusted Library, Settings, Provider Connection) chỉ xuất hiện ở Global Workspace và được <em>tham chiếu</em> từ project.</p>
+<pre><code>Account
+├── Global Workspace
+│   ├── Dashboard
+│   ├── Global AI Assistant
+│   ├── Research Projects
+│   ├── Discover
+│   ├── Trusted Library
+│   ├── Tasks &amp; Plan            (tổng hợp nhiều project)
+│   ├── Agent Activity          (bổ sung — SCOPE-12)
+│   ├── Pending Actions         (bổ sung — 4.4)
+│   └── Settings
+│       ├── Profile
+│       ├── Provider Connections
+│       ├── Agent Models
+│       └── Preferences
+└── Project Workspace  (một cho mỗi Research Project)
+    ├── Overview
+    ├── Project AI Chat
+    ├── Plan and Tasks
+    ├── References and Evidence
+    ├── Research Artifacts
+    ├── Manuscript
+    ├── Agent Activity          (bổ sung — SCOPE-12)
+    └── Activity and History</code></pre>
+<p class="status">FIG-001 — Sơ đồ khu vực sản phẩm. Nguồn Mermaid: <a href="../figures/FIG-001-information-architecture.mmd">figures/FIG-001-information-architecture.mmd</a>. Khu vực có ghi “bổ sung” là Assumption, phát sinh từ SCOPE-12 và SYNC-01.</p>
+
+<h2 id="s-4-1">4.1. Global Workspace</h2>
+<p>Global Workspace là điểm vào sau khi đăng nhập qua eTroy OIDC (DEC-26); SIRes không có màn hình đăng ký hay đặt mật khẩu riêng. Ở đây không có “project đang hoạt động”; mọi dữ liệu project chỉ được hiển thị dạng tóm tắt và dẫn sang Project Workspace để thao tác.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Khu vực</th>
+<th scope="col">Mục đích</th>
+<th scope="col">Nội dung chính</th>
+<th scope="col">Thao tác chính</th>
+<th scope="col">Phạm vi dữ liệu</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td id="area-dashboard">Dashboard</td><td>Cho biết ngay việc gì đang chạy, việc gì đang chờ người dùng và nên làm gì tiếp.</td><td>Project gần đây; tiến độ Plan; Task đang chạy; việc chờ duyệt; trạng thái bản thảo; lỗi gần đây.</td><td>Mở project, mở việc đang chờ, tạo project mới.</td><td>Tóm tắt mọi project của tài khoản</td><td><a href="07-workspace-and-project.html#s-7-1">7.1</a>, <a href="15-ui-ux-requirements.html#s-15-1">15.1</a></td></tr>
+<tr><td id="area-global-assistant">Global AI Assistant</td><td>Trợ lý ở cấp tài khoản cho việc không gắn với một project.</td><td>Hội thoại; gợi ý điều hướng; tra cứu Trusted Library.</td><td>Hỏi đáp, tạo project từ hội thoại, tìm reference trong thư viện, mở project.</td><td>Trusted Library; danh sách project (tên, trạng thái). Không bao giờ đọc nội dung project (OQ-007 đã giải quyết)</td><td><a href="02-product-scope.html#scope-02">SCOPE-02</a>, <a href="07-workspace-and-project.html#s-7-4">7.4</a></td></tr>
+<tr><td id="area-projects">Research Projects</td><td>Quản lý danh sách project.</td><td>Danh sách project với trạng thái, tiến độ, lần hoạt động cuối; bộ lọc Active/Archived.</td><td>Tạo, mở, sửa thông tin, lưu trữ, mở lại project.</td><td>Mọi project của tài khoản</td><td><a href="07-workspace-and-project.html#s-7-2">7.2</a></td></tr>
+<tr><td id="area-discover">Discover</td><td>Tìm tài liệu học thuật ngoài ngữ cảnh một Task.</td><td>Ô tìm kiếm Google Scholar; kết quả; tìm theo tác giả; trạng thái nhập.</td><td>Tìm, chọn/loại kết quả, gửi kết quả đã chọn vào luồng duyệt reference.</td><td>Cấp tài khoản; kết quả đã duyệt vào Trusted Library, không tự gắn vào project</td><td><a href="10-academic-discovery-and-trusted-library.html#s-10-1">10.1–10.4</a>, WF-04</td></tr>
+<tr><td id="area-library">Trusted Library</td><td>Thư viện Trusted Reference dùng lại qua các project.</td><td>Danh sách reference với trạng thái duyệt và indexing; metadata; cảnh báo trùng lặp; project nào đang dùng reference.</td><td>Xem, sửa metadata, duyệt reference chờ duyệt, thu hồi, thêm reference vào một project.</td><td>Cấp tài khoản</td><td><a href="10-academic-discovery-and-trusted-library.html#s-10-6">10.6–10.8</a></td></tr>
+<tr><td id="area-global-tasks">Tasks &amp; Plan</td><td>Nhìn tổng hợp Task của mọi project.</td><td>Task theo trạng thái (Ready, Waiting for User, In Review, Blocked…), theo project.</td><td>Lọc, mở Task trong Project Workspace. Không kích hoạt thực thi từ đây (Assumption).</td><td>Chỉ đọc, mọi project</td><td><a href="09-research-plan-and-task-management.html#s-9-12">9.12</a></td></tr>
+<tr><td id="area-global-activity">Agent Activity</td><td>Giám sát mọi workflow đang chạy hoặc đang chờ ở cấp tài khoản.</td><td>Danh sách workflow theo project: agent hiện tại, bước, trạng thái, thời gian chạy.</td><td>Mở màn hình giám sát chi tiết trong project; tạm dừng, hủy.</td><td>Mọi project, chỉ metadata workflow</td><td><a href="02-product-scope.html#s-2-1-monitoring">SCOPE-12</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a></td></tr>
+<tr><td id="area-pending">Pending Actions</td><td>Một nơi duy nhất cho mọi việc đang chờ người dùng.</td><td>Xem <a href="#s-4-4">4.4</a>.</td><td>Mở và xử lý từng việc trong đúng ngữ cảnh.</td><td>Mọi project và cấp tài khoản</td><td><a href="#s-4-4">4.4</a></td></tr>
+<tr><td id="area-settings">Settings</td><td>Cấu hình tài khoản và AI provider.</td><td>Bốn trang con, xem bảng dưới.</td><td>Xem bảng dưới.</td><td>Cấp tài khoản</td><td><a href="02-product-scope.html#s-2-1-settings">SCOPE-13</a></td></tr>
+</tbody></table></div>
+<p class="status">Dashboard, Global AI Assistant, Research Projects, Discover, Trusted Library, Tasks &amp; Plan, Settings: Confirmed (outline 4.1). Agent Activity, Pending Actions: Assumption, phát sinh từ SCOPE-12 và 4.4.</p>
+
+<h3 id="s-4-1-settings">Cấu trúc Settings</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trang con</th>
+<th scope="col">Nội dung</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td>Profile</td><td>Họ tên hiển thị, đơn vị công tác, lĩnh vực nghiên cứu, ảnh đại diện, liên kết hồ sơ Google Scholar (URL). Họ tên và email ban đầu lấy từ eTroy OIDC; không có mật khẩu riêng.</td><td>SCOPE-13; Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015, OQ-073)</td></tr>
+<tr><td>Provider Connections</td><td>Danh sách kết nối (tên, provider, base URL, API key dạng che, trạng thái kiểm tra); tạo, sửa, xóa, kiểm tra kết nối. Người dùng tự nhập API key; không có key mặc định.</td><td>SCOPE-13 (Claude, OpenAI, Gemini); DEC-23</td></tr>
+<tr><td>Agent Models</td><td>Bảng Orchestrator và bảy Specialist Agent: kết nối và model đang dùng; cấu hình mặc định; ghi đè theo agent; cảnh báo thiếu năng lực. Dòng Embedding model (OpenAI hoặc Gemini, một model mỗi tài khoản; đổi model phải index lại). Không có tham số nâng cao của model.</td><td>SCOPE-13, SCOPE-14; DEC-23, DEC-24, DEC-31</td></tr>
+<tr><td>Preferences</td><td>Ngôn ngữ giao diện (Tiếng Việt / English); ngôn ngữ phản hồi mặc định của agent; công tắc đưa lĩnh vực nghiên cứu vào context của agent (mặc định tắt); công tắc chế độ debug lưu toàn văn prompt/phản hồi 30 ngày (DEC-35); Ngưỡng kiểm chứng (mặc định theo DEC-38). Chi tiết UI ở <a href="15-ui-ux-requirements.html#s-15-12">15.12</a>.</td><td>Confirmed — OQ-002; PO chốt 31/10/2026 (PC-01, OQ-015, OQ-092). Cách hiểu Ngưỡng kiểm chứng: ASM-15</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4-2">4.2. Project Workspace</h2>
+<p>Khi mở một project, toàn bộ điều hướng chuyển sang ngữ cảnh của project đó. Mọi khu vực dưới đây chỉ hiển thị dữ liệu của project đang mở, cộng với các Trusted Reference đã được chọn cho project.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Khu vực</th>
+<th scope="col">Mục đích</th>
+<th scope="col">Nội dung chính</th>
+<th scope="col">Thao tác chính</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td id="area-overview">Overview</td><td>Trang chủ của project.</td><td>Research context (câu hỏi, mục tiêu, ràng buộc…); trạng thái Plan và tiến độ; Task đang hoạt động; việc chờ người dùng; bước tiếp theo đề xuất; trạng thái bản thảo.</td><td>Sửa research context, đi tới Task/Plan/việc chờ.</td><td><a href="07-workspace-and-project.html#s-7-3">7.3</a>, <a href="15-ui-ux-requirements.html#s-15-2">15.2</a></td></tr>
+<tr><td id="area-project-chat">Project AI Chat</td><td>Làm việc với Orchestrator trong ngữ cảnh project.</td><td>Hội thoại với Orchestrator; Interactive Agent Prompt hiển thị trong luồng chat; chỉ báo Task đang là ngữ cảnh.</td><td>Trao đổi, làm rõ ngữ cảnh, yêu cầu đề xuất Plan, kích hoạt Task đã Ready, trả lời prompt.</td><td><a href="07-workspace-and-project.html#s-7-4">7.4</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a>, <a href="15-ui-ux-requirements.html#s-15-3">15.3</a></td></tr>
+<tr><td id="area-plan-tasks">Plan and Tasks</td><td>Quản lý kế hoạch và công việc.</td><td>Plan overview và phiên bản; task board; checklist; dependency graph; chi tiết Task; activity timeline.</td><td>Sửa, so sánh, phê duyệt Plan; chọn Task, chạy readiness check, kích hoạt, review, nghiệm thu.</td><td><a href="09-research-plan-and-task-management.html">9</a>, <a href="15-ui-ux-requirements.html#s-15-4">15.4</a></td></tr>
+<tr><td id="area-refs-evidence">References and Evidence</td><td>Nguồn tài liệu và bằng chứng của project.</td><td>Trusted Reference được chọn cho project; trạng thái indexing; evidence; claim và mức hỗ trợ; Evidence Inspector.</td><td>Thêm/bỏ reference từ Trusted Library, tìm evidence, xem và duyệt claim.</td><td><a href="10-academic-discovery-and-trusted-library.html">10</a>, <a href="11-evidence-rag-and-research-synthesis.html">11</a>, <a href="15-ui-ux-requirements.html#s-15-6">15.6</a></td></tr>
+<tr><td id="area-artifacts">Research Artifacts</td><td>Sản phẩm đầu ra có phiên bản.</td><td>Ghi chú, bảng, bản tổng hợp, sơ đồ, bản nháp section; trạng thái draft/accepted; provenance; Task tạo ra.</td><td>Xem, so sánh phiên bản, chấp nhận/từ chối, mở Task hoặc evidence liên quan.</td><td><a href="05-core-domain-model.html#s-5-7">5.7</a>, <a href="13-diagram-agent.html">13</a></td></tr>
+<tr><td id="area-manuscript">Manuscript</td><td>Bản thảo LaTeX.</td><td>File tree, editor, diff đề xuất, bibliography, build log, PDF preview, lịch sử revision.</td><td>Khởi tạo Default/Blank, sửa file, chấp nhận/từ chối diff, compile.</td><td><a href="12-latex-manuscript-workspace.html">12</a>, <a href="15-ui-ux-requirements.html#s-15-7">15.7</a></td></tr>
+<tr><td id="area-project-activity">Agent Activity</td><td>Giám sát agent phối hợp trong project (SCOPE-12).</td><td>Workflow đang chạy và đã kết thúc; bước, agent, handoff; chi tiết Agent Run; prompt đang chờ.</td><td>Trả lời prompt, tạm dừng, tiếp tục, hủy, chạy lại có kiểm soát.</td><td><a href="02-product-scope.html#s-2-1-monitoring">SCOPE-12</a>, <a href="14-shared-context-and-orchestration-architecture.html">14</a></td></tr>
+<tr><td id="area-history">Activity and History</td><td>Lịch sử có thể kiểm tra của project.</td><td>Audit trail: phê duyệt, thay đổi, quyết định, sự kiện agent; lọc theo actor, loại, Task.</td><td>Lọc, mở đối tượng liên quan. Chỉ đọc.</td><td><a href="14-shared-context-and-orchestration-architecture.html#s-14-8">14.8</a></td></tr>
+</tbody></table></div>
+<p class="status">Overview, Project AI Chat, Plan and Tasks, References and Evidence, Research Artifacts, Manuscript, Activity and History: Confirmed (outline 4.2). Agent Activity: Assumption (SCOPE-12, SYNC-01).</p>
+<p><strong>Phân biệt Agent Activity và Activity and History (Assumption):</strong> Agent Activity là màn hình <em>vận hành</em> — theo dõi và điều khiển workflow ở lớp điều phối. Activity and History là <em>nhật ký</em> — audit trail bất biến của mọi actor, kể cả Researcher. Một sự kiện agent có thể xuất hiện ở cả hai, với mức chi tiết khác nhau.</p>
+
+<h2 id="s-4-3">4.3. Navigation and Context Switching</h2>
+<h3>Ngữ cảnh global và ngữ cảnh project</h3>
+<p class="status">Assumption — quy tắc đề xuất.</p>
+<ul>
+<li>Tại mọi thời điểm, giao diện chỉ ở một trong hai ngữ cảnh: <em>Global</em> hoặc <em>Project X</em>. Ngữ cảnh hiện tại luôn hiển thị (tên project hoặc “Global”) ở thanh điều hướng.</li>
+<li>Chat luôn gắn với ngữ cảnh nơi nó được mở: Global AI Assistant không bao giờ nhận context của project; Project AI Chat chỉ nhận context của project đó (cách ly, 3.4).</li>
+<li>Chuyển project không dừng workflow đang chạy ở project cũ. Workflow tiếp tục; việc chờ người dùng của project cũ vẫn hiện ở Pending Actions.</li>
+<li>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): sản phẩm không giới hạn số workflow chạy đồng thời giữa các project hoặc giữa các Task trong một project; ràng buộc duy nhất ở mức sản phẩm là mỗi Task có tối đa một Workflow đang hoạt động (5.3). Giới hạn tải kỹ thuật ở cấp tài khoản do <a href="16-non-functional-requirements.html#s-16-4">16.4</a> quy định (NFR-SCALE-003); khi đạt giới hạn, Task được kích hoạt chờ ở <code>Queued</code> (TASK-TRIGGER-001).</li>
+<li>Mở một mục từ Global (ví dụ một Task trong Tasks &amp; Plan, một việc ở Pending Actions) sẽ chuyển sang ngữ cảnh project tương ứng trước khi hiển thị mục đó.</li>
+</ul>
+
+<h3>Project selection và active task context</h3>
+<ul>
+<li><strong>Project selection:</strong> chọn từ Dashboard, Research Projects, thanh chuyển project nhanh, hoặc liên kết trực tiếp. Mở lại sản phẩm sẽ về Global Dashboard (Assumption).</li>
+<li><strong>Active task context:</strong> trong Project Workspace, người dùng có thể đặt một Task làm ngữ cảnh đang làm việc. Khi có active task, Project AI Chat hiển thị chỉ báo Task đó; tin nhắn và yêu cầu gửi Orchestrator mang theo tham chiếu Task; khu vực Artifacts, Evidence và Manuscript có bộ lọc nhanh “liên quan đến Task này”.</li>
+<li>Active task chỉ là ngữ cảnh hiển thị và hội thoại; nó <em>không</em> kích hoạt thực thi. Kích hoạt vẫn là hành động riêng APR-02 sau readiness check.</li>
+<li>Bỏ active task đưa chat về ngữ cảnh cấp project.</li>
+</ul>
+
+<h3 id="s-4-3-links">Điều hướng giữa task, artifact, evidence và manuscript</h3>
+<p>Mọi liên kết provenance phải điều hướng được theo cả hai chiều (Assumption):</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Từ</th>
+<th scope="col">Đi tới</th>
+</tr></thead><tbody>
+<tr><td>Task</td><td>Plan version chứa Task; dependency (Task trước/sau); workflow và Agent Run đã chạy; artifact tạo ra; evidence và claim liên quan; prompt đã trả lời.</td></tr>
+<tr><td>Artifact</td><td>Task và Agent Run tạo ra nó; các phiên bản; evidence và reference được dùng; vị trí được dùng trong bản thảo.</td></tr>
+<tr><td>Claim</td><td>Evidence hỗ trợ/phản bác; Trusted Reference; artifact và vị trí trong bản thảo chứa claim; kết quả kiểm chứng.</td></tr>
+<tr><td>Evidence</td><td>Trusted Reference và vị trí đoạn trích (Evidence Inspector); claim dùng evidence này.</td></tr>
+<tr><td>Citation trong bản thảo</td><td>Trusted Reference; claim tại vị trí đó; kết quả kiểm tra citation.</td></tr>
+<tr><td>Agent Run</td><td>Workflow; Task; đầu vào, đầu ra; provider và model.</td></tr>
+</tbody></table></div>
+
+<h3 id="s-4-3-urls">Địa chỉ liên kết trực tiếp</h3>
+<p class="status">Assumption — cấu trúc minh họa; tên đường dẫn cụ thể là quyết định kỹ thuật.</p>
+<p>Mọi đối tượng chính có địa chỉ ổn định để mở trực tiếp, đánh dấu và quay lại sau gián đoạn (GOAL-02):</p>
+<pre><code>/dashboard
+/library, /library/{referenceId}
+/discover
+/settings/{profile|providers|agents|preferences}
+/projects/{projectId}/overview
+/projects/{projectId}/chat
+/projects/{projectId}/plan, /plan/versions/{versionId}
+/projects/{projectId}/tasks/{taskId}
+/projects/{projectId}/evidence, /claims/{claimId}
+/projects/{projectId}/artifacts/{artifactId}
+/projects/{projectId}/manuscript/{path}
+/projects/{projectId}/activity/workflows/{workflowId}
+/projects/{projectId}/history</code></pre>
+<p>Địa chỉ không chứa dữ liệu cá nhân hay nội dung nghiên cứu, chỉ chứa định danh. Mở địa chỉ của tài nguyên không thuộc tài khoản phải trả về “không tìm thấy”, không tiết lộ tài nguyên có tồn tại hay không (3.4, 16.1).</p>
+
+<h3>Ngôn ngữ giao diện</h3>
+<p>Bộ chuyển ngôn ngữ Tiếng Việt / English có ở mọi màn hình (Confirmed — OQ-002). Đổi ngôn ngữ giao diện không đổi ngôn ngữ của nội dung nghiên cứu, bản thảo hay thuật ngữ cố định (1.5).</p>
+
+<h2 id="s-4-4">4.4. Notifications and Pending Actions</h2>
+<p>Một <strong>pending action</strong> là việc hệ thống không thể tiếp tục nếu người dùng chưa xử lý. Một <strong>notification</strong> là thông tin người dùng nên biết nhưng không chặn công việc. Hai loại được tách riêng để việc chờ không bị chìm giữa thông báo.</p>
+<h3>Loại pending action</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Loại</th>
+<th scope="col">Phát sinh khi</th>
+<th scope="col">Xử lý tại</th>
+<th scope="col">Kết thúc khi</th>
+</tr></thead><tbody>
+<tr><td>Plan approval request</td><td>Plan version được đề xuất hoặc có thay đổi lớn cần duyệt lại (APR-01).</td><td>Plan and Tasks</td><td>Duyệt, từ chối hoặc sửa thành bản nháp mới.</td></tr>
+<tr><td>Interactive Agent Prompt</td><td>Agent cần quyết định hoặc thông tin (8.4).</td><td>Project AI Chat hoặc Agent Activity</td><td>Được trả lời, hết hạn hoặc bị hủy.</td></tr>
+<tr><td>Reference approval</td><td>Có reference chờ duyệt (APR-04).</td><td>Trusted Library</td><td>Duyệt hoặc từ chối.</td></tr>
+<tr><td>Task review request</td><td>Task chuyển sang In Review (APR-03).</td><td>Chi tiết Task</td><td>Nghiệm thu, trả lại hoặc hủy.</td></tr>
+<tr><td>Manual work required</td><td>Task <code>Manual editor requirement</code> đã Ready và được người dùng chọn làm (WF-03).</td><td>Chi tiết Task</td><td>Người dùng gửi kết quả hoặc hủy Task.</td></tr>
+<tr><td>Manuscript change proposal</td><td>Writing Agent tạo diff (APR-05).</td><td>Manuscript</td><td>Chấp nhận, từ chối, hoặc diff hết hiệu lực vì file đã đổi.</td></tr>
+<tr><td>Recovery decision</td><td>Khôi phục sau gián đoạn có bước chưa hoàn tất cần người dùng quyết định (WF-06).</td><td>Agent Activity</td><td>Tiếp tục, chạy lại hoặc hủy.</td></tr>
+</tbody></table></div>
+<h3>Loại notification</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Loại</th>
+<th scope="col">Ví dụ</th>
+</tr></thead><tbody>
+<tr><td>Blocked task</td><td>Readiness check không đạt; Task bị chặn do dependency hoặc thiếu kết nối provider.</td></tr>
+<tr><td>Failure</td><td>Workflow hoặc Agent Run thất bại sau khi hết số lần thử lại; indexing thất bại; build LaTeX lỗi.</td></tr>
+<tr><td>Completion</td><td>Workflow hoàn tất; indexing xong; build thành công.</td></tr>
+<tr><td>Impact warning</td><td>Thay đổi Plan, thu hồi reference hoặc sửa artifact làm Task, claim hay citation phụ thuộc cần xem lại (9.11). Khi thu hồi reference: evidence chuyển <code>Stale</code>; claim, citation và Task phụ thuộc mang cờ needs review; citation tới reference đã thu hồi không qua kiểm tra (LIB-LIFECYCLE-001).</td></tr>
+<tr><td>Provider issue</td><td>Kết nối không hợp lệ, hết hạn mức hoặc bị từ chối.</td></tr>
+</tbody></table></div>
+<h3>Quy tắc</h3>
+<p class="status">Assumption — quy tắc đề xuất.</p>
+<ul>
+<li>Pending action được lưu bền vững, tồn tại qua nhiều phiên cho đến khi được xử lý hoặc hết hiệu lực. Khi người dùng quay lại, Dashboard và Overview của project hiển thị chúng đầu tiên (GOAL-02, WF-06).</li>
+<li>Pending Actions ở Global Workspace hiển thị mọi pending action; Project Workspace hiển thị pending action của project đó. Số đếm hiển thị trên thanh điều hướng ở cả hai cấp.</li>
+<li>Mở một pending action đưa người dùng tới đúng ngữ cảnh và đúng đối tượng để xử lý; không xử lý quyết định từ một danh sách không có ngữ cảnh.</li>
+<li>Pending action đã hết hiệu lực (prompt hết hạn, diff lỗi thời) vẫn hiển thị ở trạng thái “hết hiệu lực” kèm lý do, cho đến khi người dùng xem.</li>
+<li>Notification có trạng thái đã đọc/chưa đọc và không chặn công việc.</li>
+<li>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): MVP chỉ thông báo trong ứng dụng (thanh điều hướng, Dashboard, Pending Actions). Thông báo ngoài ứng dụng (email, push trình duyệt) không thuộc MVP vì 2.1 không có năng lực này và nó cần thêm xử lý dữ liệu liên hệ.</li>
+</ul>
+
+<h2 id="s-4-5">4.5. Open Questions của mục 4</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-020</td><td>MVP có gửi thông báo ngoài ứng dụng (email, push trình duyệt) cho pending action và workflow kết thúc không? <strong>Đã giải quyết (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> không; MVP chỉ thông báo trong ứng dụng, thông báo ngoài ứng dụng để phạm vi tương lai.</td><td>4.4, 15, 16, 17</td></tr>
+<tr><td>OQ-021</td><td>Có giới hạn số workflow chạy đồng thời trên một tài khoản hoặc một project không (ví dụ chỉ một Task In Progress mỗi project)? <strong>Đã giải quyết (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> không giới hạn ở mức sản phẩm ngoài quy tắc một Workflow hoạt động cho mỗi Task; giới hạn tải kỹ thuật theo NFR-SCALE-003 (16.4), Task vượt giới hạn chờ ở Queued.</td><td>4.3, 8, 9.6, 16.4</td></tr>
+</tbody></table></div>
+<p>Phạm vi Global AI Assistant đã chốt (OQ-007): chỉ điều hướng, tạo project, đọc Trusted Library và danh sách project; không bao giờ đọc nội dung project. 4.1 và 4.3 đã viết theo quyết định này.</p>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="03-user-roles-and-permissions.html">← Mục 3</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="05-core-domain-model.html">Mục 5 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

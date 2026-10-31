@@ -1,0 +1,221 @@
+# Project, Research Context, hội thoại, Pending Action, Notification — PRD 4.4, 5.1, 5.11, 7, 18.1.
+
+ProjectStatus:
+  type: string
+  enum: [Active, Archived]
+
+ResearchProject:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [name, status, currentContextVersionId, lastActivityAt]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        shortDescription: { type: string, maxLength: 1000 }
+        status: { $ref: '#/ProjectStatus' }
+        currentContextVersionId: { $ref: common.yaml#/Id }
+        agentResponseLanguage: { $ref: common.yaml#/Language }
+        activeTaskId:
+          $ref: common.yaml#/Id
+          description: Active task của Project AI Chat (PROJ-CHAT-002).
+        lastActivityAt: { $ref: common.yaml#/Timestamp }
+        archivedAt: { $ref: common.yaml#/Timestamp }
+        purgeAfter:
+          $ref: common.yaml#/Timestamp
+          description: deletedAt + 30 ngày (OQ-030); chỉ có khi đã xóa mềm.
+        statusBeforeDeletion: { $ref: '#/ProjectStatus' }
+        summary:
+          type: object
+          readOnly: true
+          description: Số liệu cho Overview (UX-OVERVIEW).
+          properties:
+            taskCounts:
+              type: object
+              additionalProperties: { type: integer }
+            openPendingActions: { type: integer }
+            activeWorkflows: { type: integer }
+            hasApprovedPlan: { type: boolean }
+
+ResearchContextInput:
+  type: object
+  required: [researchQuestion]
+  properties:
+    researchQuestion: { type: string, minLength: 1 }
+    objectives:
+      type: array
+      items: { type: string }
+    domain: { type: string }
+    keywords:
+      type: array
+      items: { type: string }
+    scope: { type: string }
+    constraints:
+      type: array
+      items: { type: string }
+    outputType:
+      type: string
+      enum: [article, thesis, report, other]
+    manuscriptLanguage: { $ref: common.yaml#/Language }
+    citationStyle:
+      type: string
+      examples: [plainnat]
+
+ResearchContextVersion:
+  description: Bất biến; sửa Research Context tạo version mới (PROJ-CONTEXT-001).
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - $ref: '#/ResearchContextInput'
+    - type: object
+      required: [versionNumber, confirmedBy]
+      properties:
+        versionNumber: { type: integer, minimum: 1, readOnly: true }
+        sourceMessageId:
+          $ref: common.yaml#/Id
+          description: Tin nhắn mà Orchestrator dùng để đề xuất cập nhật (PROJ-CONTEXT-002).
+        confirmedBy: { $ref: common.yaml#/ActorRef }
+
+ProjectCreate:
+  type: object
+  required: [name, context]
+  properties:
+    name: { type: string, minLength: 1, maxLength: 200 }
+    shortDescription: { type: string, maxLength: 1000 }
+    agentResponseLanguage: { $ref: common.yaml#/Language }
+    context: { $ref: '#/ResearchContextInput' }
+
+ProjectUpdate:
+  type: object
+  minProperties: 1
+  properties:
+    name: { type: string, minLength: 1, maxLength: 200 }
+    shortDescription: { type: string, maxLength: 1000 }
+    agentResponseLanguage: { $ref: common.yaml#/Language }
+
+Conversation:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [scope]
+      properties:
+        scope:
+          type: string
+          enum: [global, project]
+        title: { type: string }
+        lastMessageAt: { $ref: common.yaml#/Timestamp }
+
+Message:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [conversationId, sender, content]
+      properties:
+        conversationId: { $ref: common.yaml#/Id }
+        sender: { $ref: common.yaml#/ActorRef }
+        activeTaskId:
+          $ref: common.yaml#/Id
+          description: Active task tại thời điểm gửi (PROJ-CHAT-002).
+        content: { type: string }
+        embeddedPromptId:
+          $ref: common.yaml#/Id
+          description: Interactive Agent Prompt nhúng trong tin nhắn (UX-PROMPT).
+        agentRunId: { $ref: common.yaml#/Id }
+        links:
+          type: array
+          description: Gợi ý điều hướng do Orchestrator trả về (WS-CHAT-001).
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              objectType: { type: string }
+              objectId: { $ref: common.yaml#/Id }
+
+MessageCreate:
+  type: object
+  required: [content]
+  properties:
+    content: { type: string, minLength: 1, maxLength: 20000 }
+    activeTaskId: { $ref: common.yaml#/Id }
+
+MessageAccepted:
+  type: object
+  description: Tin nhắn đã lưu; phản hồi của Orchestrator đến qua `GET /events` (message.created).
+  required: [message]
+  properties:
+    message: { $ref: '#/Message' }
+    workflowId:
+      $ref: common.yaml#/Id
+      description: Workflow được khởi tạo nếu yêu cầu cần điều phối.
+
+PendingActionKind:
+  type: string
+  description: Loại pending action (4.4).
+  enum: [plan_approval, interactive_prompt, reference_approval, task_review, manual_work, manuscript_change_proposal, recovery_decision]
+
+PendingAction:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [kind, objectType, objectId, status]
+      properties:
+        kind: { $ref: '#/PendingActionKind' }
+        objectType: { type: string }
+        objectId: { $ref: common.yaml#/Id }
+        title: { type: string }
+        status:
+          type: string
+          enum: [Open, Resolved, Expired]
+        expiryReason: { type: string }
+        resolvedBy: { $ref: common.yaml#/ActorRef }
+        resolvedAt: { $ref: common.yaml#/Timestamp }
+        deepLink:
+          type: string
+          description: Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4).
+
+Notification:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [kind, message, status]
+      properties:
+        kind:
+          type: string
+          enum: [blocked_task, failure, completion, impact_warning, provider_issue]
+        objectType: { type: string }
+        objectId: { $ref: common.yaml#/Id }
+        message: { type: string }
+        status:
+          type: string
+          enum: [Unread, Read]
+
+Dashboard:
+  type: object
+  description: Tổng quan tài khoản (WS-DASHBOARD-001). Pending action và workflow Interrupted hiển thị đầu tiên.
+  properties:
+    pendingActions:
+      type: array
+      items: { $ref: '#/PendingAction' }
+    interruptedWorkflows:
+      type: array
+      items: { $ref: orchestration.yaml#/Workflow }
+    recentProjects:
+      type: array
+      items: { $ref: '#/ResearchProject' }
+    unreadNotifications: { type: integer }
+    library:
+      type: object
+      properties:
+        trusted: { type: integer }
+        pendingApproval: { type: integer }
+        indexingFailed: { type: integer }
+
+SearchResult:
+  type: object
+  required: [objectType, objectId, title]
+  properties:
+    objectType:
+      type: string
+      enum: [project, task, reference, artifact, claim, manuscript_file, message]
+    objectId: { $ref: common.yaml#/Id }
+    projectId: { $ref: common.yaml#/Id }
+    title: { type: string }
+    snippet: { type: string }

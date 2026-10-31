@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — ngữ cảnh hệ thống, service, ranh giới dữ liệu và cấu trúc monorepo.">
+<title>3. System Context and Services | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 3</p><h1>3. System Context and Services</h1>
+<p class="meta">Trạng thái: Đề xuất (Assumption) — bản 0.2 theo chỉ đạo ngày 31/10/2026 (tách service, NestJS + Python) · Cơ sở: PRD <a href="../../overview/sections/03-user-roles-and-permissions.html">3</a>, <a href="../../overview/sections/05-core-domain-model.html">5</a>, <a href="../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html">8</a>, <a href="../../overview/sections/14-shared-context-and-orchestration-architecture.html">14</a>, <a href="../../overview/sections/17-integrations-and-external-dependencies.html">17</a>; ADR-17–ADR-23</p>
+<div class="note"><p>Backend chia thành các service độc lập để nhiều nhóm code song song mà không chạm luồng của nhau: mỗi service sở hữu một nhóm entity, một database riêng và một hợp đồng Swagger riêng. Service xử lý hệ thống viết bằng TypeScript/NestJS; service agent core và xử lý tri thức (PDF, embedding, truy xuất) viết bằng Python. Mục này mô tả ngữ cảnh, danh sách service, ranh giới dữ liệu, cách giao tiếp và cấu trúc monorepo.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-3-1">3.1. Ngữ cảnh hệ thống</a></li>
+<li><a href="#s-3-2">3.2. Danh sách service</a></li>
+<li><a href="#s-3-3">3.3. Sở hữu dữ liệu và API</a></li>
+<li><a href="#s-3-4">3.4. Cấu trúc monorepo</a></li>
+<li><a href="#s-3-5">3.5. Giao tiếp giữa service</a></li>
+<li><a href="#s-3-6">3.6. Quy tắc cho người viết service</a></li>
+</ul></details>
+
+<h2 id="s-3-1">3.1. Ngữ cảnh hệ thống</h2>
+<pre><code>                        ┌──────────────────────┐
+     Researcher ───────►│        SIRes         │◄─── Đội vận hành (dashboard, cảnh báo)
+   (trình duyệt)        └──┬───┬───┬───┬───┬───┘
+                           │   │   │   │   │
+       eTroy OIDC ◄────────┘   │   │   │   └────► Object storage, KMS (nhà cloud)
+       (đăng nhập, DEC-26)     │   │   │
+   Claude / OpenAI / Gemini ◄──┘   │   └────────► Crossref / DataCite (phân giải DOI)
+   (key của người dùng, DEC-23)    │
+                                   └────────────► Dịch vụ trung gian Google Scholar
+                                                  hoặc OpenAlex / Semantic Scholar (DEC-19)</code></pre>
+<p class="status">FIG-101 — Ngữ cảnh hệ thống. Nguồn: <a href="../figures/FIG-101-system-context.mmd">figures/FIG-101-system-context.mmd</a>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Hệ thống ngoài</th><th>Service gọi</th><th>Giao thức</th><th>Thông tin xác thực</th><th>Khi không khả dụng</th></tr></thead>
+<tbody>
+<tr><td>eTroy OIDC</td><td>gateway</td><td>OIDC authorization code + PKCE</td><td>Client secret trong secret manager</td><td>Không đăng nhập mới; phiên còn hạn vẫn chạy (INT-OIDC-004)</td></tr>
+<tr><td>Anthropic, OpenAI, Google</td><td>agent-core, knowledge (embedding)</td><td>HTTPS, SDK chính thức, base URL tùy chỉnh</td><td>API key của người dùng, mã hóa ở identity</td><td>Thử lại theo 8.5/17.1, sau đó dừng và báo Provider issue</td></tr>
+<tr><td>Dịch vụ trung gian Scholar / nguồn API dự phòng</td><td>library</td><td>HTTPS REST qua source adapter</td><td>Key hợp đồng của đội phát triển</td><td>Hiển thị lý do, đề nghị nhập thủ công (INT-SCHOLAR-006)</td></tr>
+<tr><td>Crossref, DataCite</td><td>library</td><td>HTTPS REST</td><td>Không cần key</td><td>Người dùng nhập metadata thủ công</td></tr>
+<tr><td>Object storage, KMS, secret manager</td><td>Theo quyền từng service (10.3)</td><td>SDK nhà cloud, workload identity</td><td>Không key tĩnh</td><td>Sự cố hạ tầng, theo RTO 8 giờ</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-2">3.2. Danh sách service</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Service</th><th>Ngôn ngữ</th><th>Trách nhiệm</th><th>Loại tiến trình</th></tr></thead>
+<tbody>
+<tr><td><strong>web</strong></td><td>TypeScript, React + Vite</td><td>Giao diện SPA song ngữ; chỉ nói chuyện với gateway.</td><td>Bản build tĩnh (CDN)</td></tr>
+<tr><td><strong>gateway</strong></td><td>TypeScript, NestJS</td><td>BFF duy nhất ra Internet: eTroy OIDC RP, phiên, CSRF, rate limit, định tuyến <code>/api/v1/*</code> tới service sở hữu, SSE <code>/events</code>, tìm kiếm toàn cục (gọi song song rồi gộp). Không có logic nghiệp vụ.</td><td>HTTP</td></tr>
+<tr><td><strong>identity</strong></td><td>TypeScript, NestJS</td><td>Account, Profile, Preferences, VerificationThresholds, ProviderConnection (mã hóa API key), AgentModelAssignment, danh mục capability.</td><td>HTTP</td></tr>
+<tr><td><strong>workspace</strong></td><td>TypeScript, NestJS</td><td>ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification; vòng đời project (lưu trữ, xóa mềm).</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>planning</strong></td><td>TypeScript, NestJS</td><td>ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, readiness check, TaskReview, phân tích ảnh hưởng.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>orchestration</strong></td><td>TypeScript, NestJS</td><td>Workflow engine: Workflow, WorkflowStep, AgentRun (bản ghi), Checkpoint, InteractiveAgentPrompt, ContextItem (Shared Context Store); điều phối bước, heartbeat, sweeper, Recovery decision, usage.</td><td>HTTP + consumer + scheduler</td></tr>
+<tr><td><strong>library</strong></td><td>TypeScript, NestJS</td><td>DiscoveredResult, Reference, phê duyệt reference, ProjectReferenceSelection, source adapter (Scholar trung gian, OpenAlex/Semantic Scholar), DOI, BibTeX/RIS, tải lên PDF.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>research</strong></td><td>TypeScript, NestJS</td><td>Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion (gồm sơ đồ); registry đầu ra.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>manuscript</strong></td><td>TypeScript, NestJS</td><td>Manuscript, ManuscriptFile, ManuscriptRevision, ChangeProposal, BibliographyEntry, Build; cổng citation; điều phối build và render qua sandbox.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>audit</strong></td><td>TypeScript, NestJS</td><td>Kho Audit Event chỉ ghi thêm, truy vấn, export JSON/CSV; tính KPI định kỳ.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>sandbox-runner</strong></td><td>TypeScript (controller) + image TeX Live, mermaid-cli</td><td>Build LaTeX, kiểm tra và render Mermaid trong sandbox gVisor không mạng (mục 9).</td><td>Consumer + pool sandbox</td></tr>
+<tr><td><strong>agent-core</strong></td><td>Python, FastAPI</td><td>Thực thi Agent Run: Orchestrator và bảy Specialist Agent, agent registry, prompt template, Context Assembler, Model Gateway ba provider, tool của agent, kiểm tra kết nối provider.</td><td>Consumer + HTTP nội bộ</td></tr>
+<tr><td><strong>knowledge</strong></td><td>Python, FastAPI</td><td>SourceDocument, Chunk, vector: trích xuất PDF, chia chunk, embedding, pgvector, API truy xuất lai.</td><td>Consumer + HTTP nội bộ</td></tr>
+</tbody></table></div>
+<p><strong>Vì sao <code>knowledge</code> viết bằng Python:</strong> trích xuất PDF có bố cục, chia chunk và embedding là phần lõi của RAG, dùng cùng thư viện và đội GEN AI/AIE với agent-core (ADR-15 chọn <code>pypdfium2</code> + <code>pdfplumber</code>, phía TypeScript không có thư viện tương đương). Nếu muốn giữ đúng một service Python, có thể gộp knowledge vào agent-core thành hai loại tiến trình của cùng một service; ranh giới API không đổi.</p>
+<pre><code>web ─► gateway ─REST─► identity · workspace · planning · orchestration · library · research · manuscript · audit
+                 ▲                         │ outbox → RabbitMQ (sự kiện, lệnh)
+                 └── sự kiện cho SSE ◄─────┤
+                                           ├─► agent-core (Python) ─HTTPS─► LLM providers
+                                           │      └─ REST nội bộ (đọc context, truy xuất) ─► service sở hữu dữ liệu
+                                           ├─► knowledge (Python) ─► embedding API; pgvector
+                                           └─► sandbox-runner (gVisor, không mạng)
+PostgreSQL cluster: một database cho mỗi service · Object storage · KMS</code></pre>
+<p class="status">FIG-102 — Service và luồng giao tiếp. Nguồn: <a href="../figures/FIG-102-containers.mmd">figures/FIG-102-containers.mmd</a>.</p>
+
+<h2 id="s-3-3">3.3. Sở hữu dữ liệu và API</h2>
+<p>Mỗi entity PRD 18.1 có đúng một service sở hữu; chỉ service đó ghi và chỉ service đó chứa state machine của entity (NFR-MAINT-003). Service khác đọc qua API hoặc giữ bản sao chỉ đọc cập nhật bằng sự kiện.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Service</th><th>File API công khai (<code>docs/api-design/paths</code>)</th><th>Requirement chính</th></tr></thead>
+<tbody>
+<tr><td>gateway</td><td>15 (phần <code>/auth/*</code>), <code>/events</code>, tìm kiếm toàn cục</td><td>INT-OIDC, NFR-AUTH, WS-SEARCH</td></tr>
+<tr><td>identity</td><td>15 (Settings), 08 (Provider Connections, Agent Models)</td><td>AGENT-PROVIDER, INT-PROVIDER-002/005, NFR-SECRETS</td></tr>
+<tr><td>workspace</td><td>07</td><td>WS-*, PROJ-*</td></tr>
+<tr><td>planning</td><td>09</td><td>PLAN-*, TASK-*, ORCH-READINESS (phần xác định)</td></tr>
+<tr><td>orchestration</td><td>08 (Prompts), 14 (Workflows, Agent Runs, Shared Context)</td><td>ORCH-*, PROMPT-*, CTX-STORE, CTX-ROUTING, CTX-CONSISTENCY, CTX-RECOVERY, CTX-REGISTRY-002, NFR-USAGE</td></tr>
+<tr><td>library</td><td>10</td><td>DISC-*, LIB-*, INT-SCHOLAR</td></tr>
+<tr><td>research</td><td>11, 13, 14 (Artifacts)</td><td>EVID-RETRIEVAL/INSPECTOR, CLAIM-*, SYN-*, DIAG-*, CTX-REGISTRY-001</td></tr>
+<tr><td>manuscript</td><td>12</td><td>MS-*, INT-LATEX, KPI-02</td></tr>
+<tr><td>audit</td><td>14 (Audit)</td><td>CTX-AUDIT, NFR-RET-008, NFR-KPI-001</td></tr>
+<tr><td>agent-core</td><td>Chỉ API nội bộ</td><td>AGENT-*, CTX-ASSEMBLY, INT-PROVIDER-001/003/004/006</td></tr>
+<tr><td>knowledge</td><td>Chỉ API nội bộ</td><td>EVID-INDEX, INT-DOC, INT-VECTOR</td></tr>
+</tbody></table></div>
+<p>Hợp đồng công khai giữ nguyên trong <code>docs/api-design/openapi.yaml</code> (gateway định tuyến theo tag/đường dẫn). Hợp đồng nội bộ giữa service ở <code>docs/api-design/internal/&lt;service&gt;.yaml</code> và sự kiện ở <code>docs/api-design/events/asyncapi.yaml</code> (ADR-20) — cần tạo ở M1.</p>
+
+<h2 id="s-3-4">3.4. Cấu trúc monorepo</h2>
+<p>Toàn bộ frontend và backend trong một repo (ADR-16, ADR-21): pnpm workspace + Nx cho TypeScript, uv workspace cho Python; Nx điều phối cả hai để CI chỉ build và test phần bị ảnh hưởng.</p>
+<pre><code>sires/
+├─ apps/
+│  ├─ web/                         React + Vite
+│  ├─ gateway/                     NestJS
+│  ├─ identity/  workspace/  planning/  orchestration/
+│  ├─ library/   research/   manuscript/  audit/
+│  ├─ sandbox-runner/              NestJS controller + sandbox/{latex,mermaid}/Dockerfile
+│  ├─ agent-core/                  Python (uv), FastAPI
+│  │  ├─ src/agent_core/{agents,registry,context,gateway,tools,prompts}
+│  │  └─ tests/
+│  └─ knowledge/                   Python (uv), FastAPI
+├─ libs/
+│  ├─ ts/platform/                 tenancy (RLS), transaction, outbox, inbox, idempotency, audit-emit,
+│  │                               problem+json, otel, logger che dữ liệu, service-auth guard
+│  ├─ ts/contracts/                type sinh từ OpenAPI công khai, nội bộ và AsyncAPI
+│  ├─ ts/testing/                  Testcontainers, fake OIDC, fake broker
+│  └─ py/sires_common/             tenancy, service-auth, otel, logger, client sinh từ OpenAPI nội bộ
+├─ eval/                           eval harness (Python, dùng agent-core và knowledge)
+├─ infra/{terraform,helm}/
+├─ docs/                           overview, api-design (+ internal/, events/), ui-design, architecture
+├─ nx.json  pnpm-workspace.yaml  pyproject.toml (uv workspace)
+└─ agent/skills/</code></pre>
+
+<h2 id="s-3-5">3.5. Giao tiếp giữa service</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Kiểu</th><th>Dùng khi</th><th>Cơ chế</th></tr></thead>
+<tbody>
+<tr><td>REST đồng bộ</td><td>Cần câu trả lời ngay: gateway → service; readiness check đọc dữ liệu service khác; agent-core đọc context và gọi tool</td><td>HTTP nội bộ, JSON, theo OpenAPI nội bộ; token service (10.4); timeout 2 s mặc định, không retry lệnh ghi trừ khi có Idempotency-Key</td></tr>
+<tr><td>Sự kiện bất đồng bộ</td><td>Thông báo một việc đã xảy ra: <code>task.activated</code>, <code>reference.revoked</code>, <code>project.deleted</code>…</td><td>Outbox của service nguồn → relay → RabbitMQ topic exchange <code>sires.events</code>; consumer idempotent bằng bảng inbox (ADR-19)</td></tr>
+<tr><td>Lệnh bất đồng bộ (job)</td><td>Việc dài cần một worker nhận: chạy Agent Run, index tài liệu, build LaTeX</td><td>Queue riêng: <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; ack thủ công, prefetch giới hạn; trạng thái thật nằm ở DB của service gửi lệnh</td></tr>
+</tbody></table></div>
+<p>Không service nào đọc database của service khác. Không có giao dịch phân tán: chuỗi thay đổi xuyên service là saga có idempotency key, mỗi bước nguyên tử trong service của nó (mục 5.8, 6.4).</p>
+
+<h2 id="s-3-6">3.6. Quy tắc cho người viết service</h2>
+<ol>
+<li><strong>Swagger trước, code sau.</strong> Thêm hoặc đổi endpoint: sửa OpenAPI (công khai hoặc nội bộ) và AsyncAPI trước; CI kiểm tra code khớp spec (ADR-14).</li>
+<li><strong>Một entity, một chủ.</strong> Không tạo bảng chứa entity của service khác; cần dữ liệu thì gọi API hoặc giữ bản sao chỉ đọc từ sự kiện, ghi rõ trong README của service.</li>
+<li><strong>Ghi = trạng thái + audit + outbox trong một giao dịch</strong>, dùng thư viện chung <code>libs/ts/platform</code> (hoặc <code>sires_common</code>).</li>
+<li><strong>Consumer idempotent</strong> theo event id (bảng inbox); xử lý được sự kiện đến trùng hoặc lệch thứ tự.</li>
+<li><strong>Kiểm tra quyền ở service sở hữu</strong>, kể cả khi được gọi từ gateway hay agent-core; không tin service gọi đã kiểm tra.</li>
+<li><strong>Đổi phá vỡ</strong> hợp đồng nội bộ hoặc sự kiện: thêm phiên bản mới, giữ bản cũ tới khi mọi consumer chuyển xong.</li>
+<li><strong>Chỉ agent-core và knowledge</strong> import SDK provider; chỉ hai service này có quyền giải mã API key.</li>
+</ol>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-technology-stack.html">← Mục 2</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="04-runtime-flows.html">Mục 4 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — sổ quyết định kiến trúc, spike, rủi ro và câu hỏi mở.">
+<title>12. Decisions, Risks and Open Issues | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 12</p><h1>12. Decisions, Risks and Open Issues</h1>
+<p class="meta">Trạng thái: bản 0.2 · Cơ sở: PRD <a href="../../overview/sections/21-assumptions-constraints-and-open-questions.html">21</a>, 20.2; chỉ đạo ngày 31/10/2026</p>
+<div class="note"><p>Nơi tổng hợp duy nhất của quyết định kiến trúc (ADR), spike kiểm chứng giả định kỹ thuật của PRD, rủi ro kỹ thuật và câu hỏi còn mở. Khi ADR bị thay, ghi <code>Superseded by ADR-NN</code>, không xóa.</p>
+<p><strong>Ngày 31/10/2026:</strong> chỉ đạo tách backend thành nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE; các đề xuất còn lại của technology stack được chấp thuận. ADR-01, ADR-02 bị thay bằng ADR-17, ADR-18. ADR-03, ADR-04, ADR-07, ADR-08 được chấp thuận về hướng chính và điều chỉnh phạm vi cho kiến trúc nhiều service. ADR-19–ADR-23 là quyết định mới phát sinh, ở trạng thái Proposed.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-12-1">12.1. Sổ quyết định kiến trúc (ADR)</a></li>
+<li><a href="#s-12-2">12.2. Spike kiểm chứng</a></li>
+<li><a href="#s-12-3">12.3. Rủi ro kỹ thuật</a></li>
+<li><a href="#s-12-4">12.4. Câu hỏi mở</a></li>
+</ul></details>
+
+<h2 id="s-12-1">12.1. Sổ quyết định kiến trúc (ADR)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Quyết định</th><th>Phương án đã cân nhắc</th><th>Hệ quả / điều kiện xem lại</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr id="adr-01"><td>ADR-01</td><td>Modular monolith một codebase backend.</td><td>—</td><td>—</td><td>Superseded by ADR-17 (31/10/2026)</td></tr>
+<tr id="adr-02"><td>ADR-02</td><td>Backend Python 3.12 + FastAPI cho toàn bộ hệ thống.</td><td>—</td><td>—</td><td>Superseded by ADR-18 (31/10/2026)</td></tr>
+<tr id="adr-03"><td>ADR-03</td><td>Workflow engine tự xây, nằm trong service <strong>orchestration</strong>; Workflow/Step/AgentRun/Checkpoint trong database của orchestration là nguồn sự thật; Agent Run gửi tới agent-core qua queue <code>agent.run</code>; heartbeat 30 s, sweeper 10 s, Interrupted khi không có heartbeat 110–120 s (≤ 2 phút).</td><td>Temporal; Celery; framework agent có checkpoint (LangGraph); engine trong agent-core.</td><td>Không trạng thái kép, không auto-retry trái NFR-REC-002. Điều kiện xem lại ở 5.11.</td><td>Accepted (31/10/2026), phạm vi điều chỉnh ở 0.2</td></tr>
+<tr id="adr-04"><td>ADR-04</td><td>PostgreSQL 16+ managed (HA, PITR) là kho dữ liệu chính; RLS theo <code>account_id</code>.</td><td>NoSQL; PostgreSQL + Redis.</td><td>Vai trò hàng đợi và kênh sự kiện chuyển sang RabbitMQ (ADR-19); một database mỗi service (ADR-22).</td><td>Accepted (31/10/2026), phạm vi điều chỉnh ở 0.2</td></tr>
+<tr id="adr-05"><td>ADR-05</td><td>pgvector ≥ 0.8, nằm trong database của service knowledge; bảng theo embedding model; truy xuất lai, RRF.</td><td>Qdrant, Weaviate, Pinecone, OpenSearch.</td><td>Xem lại khi tổng vector &gt; ~50 triệu hoặc p95 truy xuất &gt; 3 s sau tối ưu.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-06"><td>ADR-06</td><td>Object storage S3-compatible, khóa theo service + tài khoản + sha256, presigned URL, versioning.</td><td>Blob trong PostgreSQL.</td><td>—</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-07"><td>ADR-07</td><td>Realtime: SSE ở gateway; nguồn sự kiện là outbox của từng service qua RabbitMQ; phát lại theo <code>Last-Event-ID</code> 24 giờ từ log sự kiện của gateway.</td><td>WebSocket; polling.</td><td>Thay LISTEN/NOTIFY của bản 0.1 vì sự kiện đến từ nhiều database.</td><td>Accepted (31/10/2026), cơ chế điều chỉnh ở 0.2</td></tr>
+<tr id="adr-08"><td>ADR-08</td><td>Model Gateway trong agent-core trên SDK chính thức ba provider. Framework agent (ví dụ Pydantic AI, LangGraph) được dùng bên trong ranh giới một Agent Run, không giữ trạng thái workflow hay checkpoint.</td><td>LiteLLM; LangChain toàn phần.</td><td>Chọn framework cụ thể sau SPK-01.</td><td>Accepted (31/10/2026), nới phạm vi framework ở 0.2</td></tr>
+<tr id="adr-09"><td>ADR-09</td><td>BFF: gateway là OIDC RP (authorization code + PKCE) của eTroy OIDC; phiên server-side; cookie <code>sires_session</code>; CSRF token.</td><td>SPA giữ token; JWT stateless.</td><td>Phụ thuộc chi tiết eTroy (SPK-02).</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-10"><td>ADR-10</td><td>Envelope encryption AES-256-GCM, KEK trong KMS; identity chỉ Encrypt; agent-core và knowledge Decrypt.</td><td>Secret manager một bí mật mỗi key.</td><td>—</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-11"><td>ADR-11</td><td>Sandbox gVisor không mạng, pool sẵn sàng; TeX Live cố định + latexmk; mermaid-cli.</td><td>Container thường; microVM; dịch vụ build ngoài.</td><td>SPK-06, SPK-07.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-12"><td>ADR-12</td><td>Kubernetes managed; Terraform + Helm; một vùng, nhiều zone.</td><td>PaaS container; VM.</td><td>Kiến trúc nhiều service càng cần Kubernetes.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-13"><td>ADR-13</td><td>OpenTelemetry; Prometheus/Grafana/Loki/Tempo hoặc managed.</td><td>APM độc quyền.</td><td>Trace nối qua HTTP và header của message RabbitMQ.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-14"><td>ADR-14</td><td>Spec-first: OpenAPI trong <code>docs/api-design</code> là hợp đồng; client sinh tự động; Schemathesis kiểm tra trong CI.</td><td>Code-first.</td><td>Mở rộng sang hợp đồng nội bộ và sự kiện ở ADR-20.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-15"><td>ADR-15</td><td><code>pypdfium2</code> + <code>pdfplumber</code> trong knowledge; không dùng thư viện AGPL.</td><td>PyMuPDF; GROBID.</td><td>SPK-05.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-16"><td>ADR-16</td><td>Monorepo chung FE + BE.</td><td>Nhiều repo.</td><td>Công cụ cụ thể ở ADR-21.</td><td>Accepted (31/10/2026)</td></tr>
+<tr id="adr-17"><td>ADR-17</td><td>Microservices theo domain: gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, sandbox-runner, agent-core, knowledge (3.2). Mỗi service sở hữu entity, database, hợp đồng của mình.</td><td>Modular monolith (ADR-01); ít service hơn (gộp research + manuscript; gộp knowledge vào agent-core).</td><td>Nhiều người code song song; đổi lại phải xử lý nhất quán xuyên service bằng saga + outbox (5.8, 6.4). Có thể gộp service ít thay đổi khi đội nhỏ, giữ nguyên hợp đồng.</td><td>Accepted về hướng (31/10/2026); danh sách service: Proposed</td></tr>
+<tr id="adr-18"><td>ADR-18</td><td>TypeScript + NestJS (SWC, Fastify adapter, Drizzle) cho gateway và service hệ thống; Python 3.12+ (FastAPI, uv) cho agent-core và knowledge; frontend React + Vite.</td><td>Toàn Python (ADR-02); toàn NestJS.</td><td>Xếp knowledge vào nhóm Python vì là phần lõi RAG (3.2) — cần xác nhận (AQ-07).</td><td>Accepted về hướng (31/10/2026); vị trí knowledge: Proposed</td></tr>
+<tr id="adr-19"><td>ADR-19</td><td>RabbitMQ managed (quorum queue) cho sự kiện (topic exchange <code>sires.events</code>) và job (<code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>); outbox ở mỗi service, inbox idempotent ở consumer.</td><td>Kafka; NATS JetStream; hàng đợi PostgreSQL dùng chung.</td><td>Thêm một hạ tầng cần vận hành (dùng bản managed). Xem lại nếu cần lưu sự kiện dài hạn để phát lại (Kafka).</td><td>Proposed</td></tr>
+<tr id="adr-20"><td>ADR-20</td><td>Hợp đồng nội bộ: OpenAPI cho từng service (<code>docs/api-design/internal/</code>), AsyncAPI cho sự kiện (<code>docs/api-design/events/</code>); xác thực service-to-service bằng token ký nội bộ (JWT ngắn hạn, khóa trong KMS) mang <code>sub</code>=service, <code>act</code>=actor, <code>account_id</code>, <code>project_id</code>, phạm vi agent; mTLS ở lớp mạng nếu dùng service mesh.</td><td>Mạng nội bộ tin cậy, không xác thực; gRPC.</td><td>Mọi service tự kiểm tra quyền theo token, kể cả khi gọi từ agent-core (10.4).</td><td>Proposed</td></tr>
+<tr id="adr-21"><td>ADR-21</td><td>Công cụ monorepo: pnpm workspace + Nx (affected, remote cache) cho TS; uv workspace cho Python, gọi qua target Nx; thư viện chung <code>libs/ts/platform</code>, <code>libs/ts/contracts</code>, <code>libs/py/sires_common</code>.</td><td>Turborepo; Lerna; Bazel.</td><td>Nx hỗ trợ NestJS và React sẵn, đồ thị phụ thuộc cho CI nhanh.</td><td>Proposed</td></tr>
+<tr id="adr-22"><td>ADR-22</td><td>Một cụm PostgreSQL, một database + một vai trò cho mỗi service; không truy vấn chéo database; bản sao chỉ đọc qua sự kiện khi cần.</td><td>Database dùng chung một schema; cụm riêng mỗi service.</td><td>Chi phí thấp như một cụm, ranh giới như nhiều cụm. Tách cụm cho service tải cao (knowledge) khi cần.</td><td>Proposed</td></tr>
+<tr id="adr-23"><td>ADR-23</td><td>Audit: mỗi service ghi Audit Event vào outbox cùng giao dịch với thay đổi; service audit tiêu thụ và lưu chỉ ghi thêm, idempotent theo event id; truy vấn và export ở audit.</td><td>Mỗi service tự lưu và tự export audit; audit qua gọi HTTP đồng bộ.</td><td>Giữ yêu cầu “audit nguyên tử với thay đổi” ở service nguồn (CTX-AUDIT-001); audit hiển thị sau vài giây (nhất quán cuối cùng).</td><td>Proposed</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-2">12.2. Spike kiểm chứng</h2>
+<p>Mỗi spike kiểm chứng giả định của PRD 21.2 hoặc một ADR; kết quả ghi ở đây và cập nhật ASM tương ứng.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Nội dung</th><th>Kiểm chứng</th><th>Trước</th><th>Kết quả</th></tr></thead>
+<tbody>
+<tr><td>SPK-01</td><td>Ba adapter trong agent-core: tool calling, structured output cùng schema, streaming, usage, base URL tùy chỉnh, ánh xạ lỗi; chọn framework dùng trong Agent Run</td><td>ASM-02, ASM-03, ASM-10; ADR-08</td><td>M1</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-02</td><td>eTroy OIDC với <code>openid-client</code>: discovery, PKCE, claim, hạn token, refresh, logout, môi trường thử</td><td>ASM-13; ADR-09</td><td>M1</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-03</td><td>Dịch vụ trung gian Google Scholar; dự phòng OpenAlex/Semantic Scholar; parser BibTeX/RIS phía TS</td><td>ASM-01, ASM-14; DEC-19</td><td>M4</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-04</td><td>pgvector: truy xuất có lọc 500 reference, quét chính xác vs HNSW iterative scan, <code>halfvec</code>, p95 ≤ 3 s</td><td>ASM-05, NFR-PERF-006; ADR-05</td><td>M4</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-05</td><td>Trích xuất PDF đa ngành</td><td>ASM-06; ADR-15</td><td>M4</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-06</td><td>Sandbox LaTeX dưới gVisor</td><td>ASM-07, NFR-PERF-007; ADR-11</td><td>M6</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-07</td><td>mermaid-cli + Chromium dưới gVisor không mạng</td><td>ASM-08; ADR-11</td><td>M6</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-08</td><td>Kích thước context theo agent; độ trễ đọc context qua API nội bộ từ nhiều service</td><td>ASM-04; ADR-17</td><td>M2</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-09</td><td>Fault injection: dừng orchestration, agent-core, consumer, RabbitMQ ở từng bước; đo KPI-03</td><td>ASM-09; ADR-03, ADR-19</td><td>M2 (bản đầu), M7</td><td>Chưa chạy</td></tr>
+<tr><td>SPK-10</td><td>Khung service mẫu NestJS (platform lib: RLS, outbox, inbox, audit, service token) và đo thời gian CI với Nx affected</td><td>ADR-18, ADR-21</td><td>M1</td><td>Chưa chạy</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-3">12.3. Rủi ro kỹ thuật</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Rủi ro</th><th>Khả năng · Tác động</th><th>Giảm thiểu</th></tr></thead>
+<tbody>
+<tr><td>TR-01</td><td>Workflow engine có lỗi đồng thời (sweeper và kết quả Agent Run đua nhau, message trùng).</td><td>Trung bình · Cao</td><td>Khóa hàng workflow ở mọi chuyển trạng thái; ràng buộc duy nhất; inbox idempotent; SPK-09 từ M2.</td></tr>
+<tr><td>TR-02</td><td>Nhất quán xuyên service: đầu ra đã ghi ở research nhưng orchestration chưa ghi nhận bước (hoặc ngược lại).</td><td>Trung bình · Cao</td><td>Saga có idempotency key = <code>agentRunId</code>; bước chỉ Succeeded sau khi service sở hữu xác nhận; đối soát định kỳ đầu ra không gắn bước (5.8).</td></tr>
+<tr><td>TR-03</td><td>API provider thay đổi làm hỏng adapter.</td><td>Cao · Trung bình</td><td>Ghim SDK; test adapter định kỳ trên staging.</td></tr>
+<tr><td>TR-04</td><td>gVisor không tương thích Chromium hoặc làm TeX chậm.</td><td>Trung bình · Trung bình</td><td>SPK-06/07; dự phòng container thường + seccomp hoặc microVM.</td></tr>
+<tr><td>TR-05</td><td>eTroy OIDC không có refresh token.</td><td>Trung bình · Trung bình</td><td>SPK-02 trước M1.</td></tr>
+<tr><td>TR-06</td><td>Trích xuất PDF kém kéo KPI-01.</td><td>Trung bình · Cao</td><td>SPK-05; eval harness; GROBID.</td></tr>
+<tr><td>TR-07</td><td>Chi phí embedding bất ngờ cho người dùng.</td><td>Trung bình · Thấp</td><td>Ước tính token trước khi index lại.</td></tr>
+<tr><td>TR-08</td><td>Chi phí vận hành nhiều service (deploy, quan sát, phiên bản hợp đồng) vượt năng lực đội nhỏ.</td><td>Trung bình · Trung bình</td><td>Thư viện platform chung, Helm chart mẫu, một pipeline CI sinh từ Nx; cho phép gộp service ít thay đổi.</td></tr>
+<tr><td>TR-09</td><td>Lắp ráp context gọi nhiều service làm tăng độ trễ và điểm lỗi cho mỗi Agent Run.</td><td>Trung bình · Trung bình</td><td>API “context bundle” theo lô ở mỗi service; gọi song song; timeout và lỗi rõ (bước Failed có thể thử lại); đo ở SPK-08.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-4">12.4. Câu hỏi mở</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Câu hỏi</th><th>Ảnh hưởng</th><th>Trước</th></tr></thead>
+<tbody>
+<tr><td>AQ-01</td><td>Nhà cung cấp cloud và vùng dữ liệu (DEC-27); ràng buộc của nền tảng eTroy?</td><td>ADR-10–12, ADR-19; chi phí</td><td>M1</td></tr>
+<tr><td>AQ-02</td><td>Repo đặt ở đâu, CI dùng gì?</td><td>11.3, ADR-21</td><td>M1</td></tr>
+<tr><td>AQ-03</td><td>Hạn phiên khi không hoạt động (đề xuất 12 giờ); single logout eTroy?</td><td>10.2</td><td>M1</td></tr>
+<tr><td>AQ-04</td><td>Ngân sách kiểm thử xâm nhập độc lập?</td><td>10.8</td><td>M7</td></tr>
+<tr><td>AQ-05</td><td>Năng lực vận hành Kubernetes và RabbitMQ (hay dùng bản managed)?</td><td>ADR-12, ADR-19</td><td>M1</td></tr>
+<tr><td>AQ-06</td><td>Dung sai hồi quy eval (OQ-097) — đề xuất 2 điểm phần trăm cho tỷ lệ khớp, 0 cho KPI-02.</td><td>11.7</td><td>M5</td></tr>
+<tr><td>AQ-07</td><td>Xác nhận service knowledge (PDF, chunk, embedding, truy xuất) viết bằng Python; hay gộp vào agent-core thành một service Python?</td><td>ADR-17, ADR-18</td><td>M1</td></tr>
+<tr><td>AQ-08</td><td>Phân công nhóm sở hữu từng service (ownership) để quy tắc 3.6 có người chịu trách nhiệm.</td><td>3.2, CODEOWNERS</td><td>M1</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="11-deployment-and-operations.html">← Mục 11</a><a href="../index.html">Mục lục kiến trúc</a><a href="../index.html">Về mục lục →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

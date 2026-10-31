@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Settings: Agent Models</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="position: relative; min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="settings" hint-size="100%,57px"></dc-import>
+  <div style="max-width: 1240px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 240px; display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0 0 12px; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 28px">Settings</h1>
+      <sc-for list="{{nav}}" as="n" hint-placeholder-count="4">
+        <a href="{{n.href}}" aria-current="{{n.current}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: {{n.w}}; color: #1C1B18; background: {{n.bg}}">{{n.label}}</a>
+      </sc-for>
+    </nav>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h2 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 24px">Agent Models</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44; max-width: 68ch">Mỗi agent chạy trên một Provider Connection của bạn. Chọn connection trước, sau đó chọn một model mà connection đó cung cấp. <a href="SettingsProviders.dc.html">Quản lý Provider Connections</a></p>
+      </div>
+
+      <section aria-labelledby="def" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+        <span id="def" style="font-size: 14px; font-weight: 600">Mặc định</span>
+        <select aria-label="Connection mặc định" style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Claude cá nhân</option><option>OpenAI cá nhân</option></select>
+        <select aria-label="Model mặc định, từ Claude cá nhân" style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px 'JetBrains Mono', monospace"><option>claude-sonnet-5-5</option><option>claude-opus-5-5</option><option>claude-haiku-5-5</option></select>
+        <span style="font-size: 13px; color: #4D4A44">Agent chọn “Dùng mặc định” sẽ theo cấu hình này.</span>
+      </section>
+
+      <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <div style="min-width: 760px; font-size: 14px">
+          <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-size: 12px; font-weight: 600; color: #4D4A44">
+            <span>Agent</span><span>Connection</span><span>Model</span><span>Trạng thái</span><span></span>
+          </div>
+          <sc-for list="{{before}}" as="a" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; min-height: 52px; padding: 6px 16px; border-bottom: 1px solid #DBD3C7">
+              <span style="font-weight: 600">{{a.name}}</span>
+              <span style="color: {{a.connColor}}">{{a.conn}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{a.connColor}}">{{a.model}}</span>
+              <span style="font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}">{{a.cap}}</span>
+              <a href="#" style="font-size: 14px">Sửa</a>
+            </div>
+          </sc-for>
+
+          <section aria-labelledby="edit-agent" style="padding: 16px; border-bottom: 1px solid #DBD3C7; background: #F6F2EE; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px">
+              <h3 id="edit-agent" style="margin: 0; font-size: 16px; font-weight: 600">Evidence Retrieval Agent</h3>
+              <span style="font-size: 13px; color: #4D4A44">Đang sửa</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+              <fieldset style="flex: 1 1 280px; min-width: 0; margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+                <legend style="padding: 0 0 8px; font-size: 13px; font-weight: 600">1. Connection</legend>
+                <sc-for list="{{conns}}" as="c" hint-placeholder-count="4">
+                  <div role="radio" aria-checked="{{c.checked}}" aria-disabled="{{c.disabled}}" style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; box-sizing: border-box; background: {{c.bg}}; border: 1px solid {{c.border}}; border-radius: 6px; opacity: {{c.op}}">
+                    <span style="flex-shrink: 0; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: {{c.ring}}; background: #FCF9F5"></span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-size: 14px; font-weight: 600">{{c.name}}</span>
+                      <span style="font-size: 12px; color: #4D4A44">{{c.meta}}</span>
+                    </span>
+                    <span style="font-size: 12px; font-weight: 600; color: {{c.statusColor}}">{{c.status}}</span>
+                  </div>
+                </sc-for>
+                <a href="SettingsProviders.dc.html" style="font-size: 14px; padding-top: 4px">Thêm connection mới</a>
+              </fieldset>
+              <fieldset style="flex: 1 1 280px; min-width: 0; margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+                <legend style="padding: 0 0 8px; font-size: 13px; font-weight: 600">2. Model từ “OpenAI cá nhân”</legend>
+                <sc-for list="{{models}}" as="m" hint-placeholder-count="3">
+                  <div role="radio" aria-checked="{{m.checked}}" style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; box-sizing: border-box; background: {{m.bg}}; border: 1px solid {{m.border}}; border-radius: 6px">
+                    <span style="flex-shrink: 0; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: {{m.ring}}; background: #FCF9F5"></span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                      <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">{{m.id}}</span>
+                      <span style="font-size: 12px; color: #4D4A44">{{m.note}}</span>
+                    </span>
+                  </div>
+                </sc-for>
+                <span style="font-size: 12px; color: #4D4A44; padding-top: 4px">Danh sách lấy từ connection lúc 09:30. <a href="#">Làm mới</a></span>
+              </fieldset>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+              <a href="SettingsAgents.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #E5DED5; color: #1C1B18; text-decoration: none; font-size: 14px">Hủy</a>
+              <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Lưu cho agent này</button>
+            </div>
+          </section>
+
+          <sc-for list="{{after}}" as="a" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; min-height: 52px; padding: 6px 16px; border-bottom: 1px solid #DBD3C7">
+              <span style="font-weight: 600">{{a.name}}</span>
+              <span style="color: {{a.connColor}}">{{a.conn}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{a.connColor}}">{{a.model}}</span>
+              <span style="font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}">{{a.cap}}</span>
+              <a href="#" style="font-size: 14px">Sửa</a>
+            </div>
+          </sc-for>
+
+          <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; padding: 14px 16px; background: #F6F2EE">
+            <span style="font-weight: 600">Embedding model<span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">Một model cho cả tài khoản</span></span>
+            <select aria-label="Connection cho embedding, chỉ OpenAI hoặc Google Gemini" style="height: 36px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>OpenAI cá nhân</option></select>
+            <select aria-label="Model embedding từ OpenAI cá nhân" style="height: 36px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 12px 'JetBrains Mono', monospace"><option>text-embedding-3-small</option><option>text-embedding-3-large</option></select>
+            <span style="font-size: 13px; color: #4D4A44">Chỉ OpenAI hoặc Gemini. Đổi model phải index lại.</span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{showConfirm}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="dlg" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px">Đổi embedding model?</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Chuyển từ <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">text-embedding-3-small</code> sang <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">text-embedding-3-large</code>.</p>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6">
+          <li><strong>38 Reference</strong> phải index lại toàn bộ.</li>
+          <li>Việc index tiêu thụ usage trên kết nối “OpenAI cá nhân”.</li>
+          <li>Trong lúc index lại, truy xuất evidence của các Reference này tạm không khả dụng.</li>
+        </ul>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <a href="SettingsAgents.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Giữ model hiện tại</a>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Đổi và index lại</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","confirm-embedding"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const nav = [['profile', 'Profile', 'SettingsProfile.dc.html'], ['providers', 'Provider Connections', 'SettingsProviders.dc.html'], ['agents', 'Agent Models', 'SettingsAgents.dc.html'], ['prefs', 'Preferences', 'SettingsPreferences.dc.html']];
+    // inherit = true: agent follows the default connection/model
+    const a = (name, conn, model, inherit, cap) => ({
+      name, model,
+      conn: inherit ? 'Dùng mặc định (' + conn + ')' : conn,
+      connColor: inherit ? '#4D4A44' : '#1C1B18',
+      cap: cap || 'Sẵn sàng', capColor: cap ? '#BE123C' : '#4D4A44', capW: cap ? 600 : 400
+    });
+    const pick = (on) => ({ checked: on ? 'true' : 'false', bg: on ? '#EAF4FE' : '#FCF9F5', border: on ? '#80B9EE' : '#DBD3C7', ring: on ? '5px solid #0277DD' : '1px solid #C7C7C7' });
+    const conn = (name, meta, status, on, invalid) => Object.assign(pick(on), {
+      name, meta, status, disabled: invalid ? 'true' : 'false', op: invalid ? 0.7 : 1,
+      statusColor: invalid ? '#BE123C' : '#4D4A44'
+    });
+    const model = (id, note, on) => Object.assign(pick(on), { id, note });
+    return {
+      showConfirm: (this.props.state ?? 'normal') === 'confirm-embedding',
+      nav: nav.map(([k, label, href]) => ({ label, href, current: k === 'agents' ? 'page' : 'false', w: k === 'agents' ? 600 : 500, bg: k === 'agents' ? '#E5DED5' : 'transparent' })),
+      before: [
+        a('Orchestrator', 'Claude cá nhân', 'claude-sonnet-5-5', true),
+        a('Discovery Agent', 'OpenAI cá nhân', 'gpt-5-mini', false),
+        a('Reference Processing Agent', 'OpenAI cá nhân', 'gpt-5-mini', false)
+      ],
+      conns: [
+        conn('Dùng mặc định', 'Claude cá nhân · claude-sonnet-5-5', '', false),
+        conn('Claude cá nhân', 'Anthropic · 4 model', 'Active', false),
+        conn('OpenAI cá nhân', 'OpenAI · 3 model', 'Active', true),
+        conn('Gemini cá nhân', 'Google · không lấy được danh sách model', 'Invalid', false, true)
+      ],
+      models: [
+        model('gpt-5', 'Model mạnh nhất của connection này', true),
+        model('gpt-5-mini', 'Nhanh hơn, chi phí thấp hơn', false),
+        model('gpt-5-nano', 'Rẻ nhất, phù hợp tác vụ ngắn', false)
+      ],
+      after: [
+        a('Synthesis Agent', 'Claude cá nhân', 'claude-sonnet-5-5', true),
+        a('Writing Agent', 'Claude cá nhân', 'claude-sonnet-5-5', true),
+        a('Verification Agent', 'Claude cá nhân', 'claude-opus-5-5', false),
+        a('Diagram Agent', 'Gemini cá nhân', 'gemini-2.5-pro', false, 'Connection Invalid, Task cần agent này sẽ bị Blocked')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

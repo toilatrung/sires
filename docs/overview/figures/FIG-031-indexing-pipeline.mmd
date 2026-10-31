@@ -1,0 +1,12 @@
+%% FIG-031 — Document indexing pipeline (section 17.3)
+flowchart LR
+  A[Trusted Reference] --> B{Valid content?}
+  B -- no --> U[Indexing: Unavailable]
+  B -- yes --> C[Extract text<br/>pages, paragraphs]
+  C --> D[Extract metadata<br/>compare with Reference]
+  D --> E[Chunk with stable IDs<br/>and locations]
+  E --> F[Embed chunks<br/>record model + version]
+  F --> G[(Vector DB<br/>accountId, referenceId, chunkId)]
+  G --> H[Indexing: Indexed]
+  C -- error --> X[Indexing: Failed + reason]
+  F -- error --> X

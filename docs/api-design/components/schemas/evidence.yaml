@@ -1,0 +1,162 @@
+# Evidence, Claim, kiểm chứng — PRD 5.6, 11, 18.1, 18.2.
+
+EvidenceStatus:
+  type: string
+  enum: [Active, Excluded, Stale]
+
+Evidence:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Luôn tham chiếu một Trusted Reference và vị trí cụ thể; không có evidence “không nguồn” (5.6).
+      required: [referenceId, chunkId, quote, location, status]
+      properties:
+        referenceId: { $ref: common.yaml#/Id }
+        chunkId: { $ref: common.yaml#/Id }
+        quote: { type: string }
+        location:
+          type: object
+          properties:
+            page: { type: integer }
+            paragraph: { type: integer }
+            charStart: { type: integer }
+            charEnd: { type: integer }
+        retrievalQuery: { type: string }
+        taskId: { $ref: common.yaml#/Id }
+        createdByAgentRunId: { $ref: common.yaml#/Id }
+        relevanceScore: { type: number }
+        status: { $ref: '#/EvidenceStatus' }
+        statusReason: { type: string }
+
+EvidenceInContext:
+  description: Evidence kèm đoạn văn xung quanh trong nguồn (EVID-INSPECTOR-001).
+  allOf:
+    - $ref: '#/Evidence'
+    - type: object
+      properties:
+        reference: { $ref: library.yaml#/Reference }
+        before: { type: string }
+        after: { type: string }
+        linkedClaimIds:
+          type: array
+          items: { $ref: common.yaml#/Id }
+
+EvidenceRetrievalRequest:
+  type: object
+  description: |
+    Truy xuất RAG trên Trusted Reference được chọn Active và Indexed của project (EVID-RETRIEVAL-001).
+    Kết quả là ứng viên; chỉ lưu thành Evidence khi `persist = true` hoặc khi agent dùng trong workflow.
+  required: [query]
+  properties:
+    query: { type: string, minLength: 1 }
+    taskId: { $ref: common.yaml#/Id }
+    referenceIds:
+      type: array
+      description: Giới hạn trong các reference này (phải thuộc selection Active).
+      items: { $ref: common.yaml#/Id }
+    topK: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    persist: { type: boolean, default: false }
+
+EvidenceRetrievalResult:
+  type: object
+  properties:
+    query: { type: string }
+    embeddingModel: { type: string }
+    candidates:
+      type: array
+      items:
+        type: object
+        properties:
+          referenceId: { $ref: common.yaml#/Id }
+          chunkId: { $ref: common.yaml#/Id }
+          quote: { type: string }
+          location:
+            type: object
+            properties:
+              page: { type: integer }
+              paragraph: { type: integer }
+          relevanceScore: { type: number }
+          evidenceId:
+            $ref: common.yaml#/Id
+            description: Có khi persist = true.
+
+SupportStatus:
+  type: string
+  enum: [Supported, Partially Supported, Unsupported, Conflicting, Not Assessed]
+
+ClaimApprovalStatus:
+  type: string
+  enum: [Draft, Accepted, Rejected]
+
+ClaimEvidenceLink:
+  type: object
+  required: [evidenceId, relation]
+  properties:
+    claimId: { $ref: common.yaml#/Id }
+    evidenceId: { $ref: common.yaml#/Id }
+    relation:
+      type: string
+      enum: [supports, contradicts, context]
+    createdBy: { $ref: common.yaml#/ActorRef }
+
+Claim:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Claim Unsupported được phép tồn tại nhưng luôn mang nhãn rõ ràng (KPI-01).
+      required: [statement, approvalStatus, supportStatus, needsReview]
+      properties:
+        statement: { type: string }
+        taskId: { $ref: common.yaml#/Id }
+        artifactVersionId: { $ref: common.yaml#/Id }
+        approvalStatus: { $ref: '#/ClaimApprovalStatus' }
+        supportStatus: { $ref: '#/SupportStatus' }
+        evidenceLinks:
+          type: array
+          items: { $ref: '#/ClaimEvidenceLink' }
+        lastVerification: { $ref: '#/VerificationResult' }
+        needsReview: { type: boolean }
+        approval: { $ref: common.yaml#/ApprovalRecord }
+        provenance: { $ref: common.yaml#/Provenance }
+
+ClaimUpdate:
+  type: object
+  description: Sửa phát biểu; claim Accepted quay về Draft và support về Not Assessed cho đến khi kiểm chứng lại.
+  required: [statement]
+  properties:
+    statement: { type: string, minLength: 1 }
+
+SupportStatusOverride:
+  type: object
+  description: Researcher điều chỉnh mức hỗ trợ, lý do bắt buộc (18.2).
+  required: [supportStatus, reason]
+  properties:
+    supportStatus:
+      type: string
+      enum: [Supported, Partially Supported, Unsupported, Conflicting]
+    reason: { type: string, minLength: 1 }
+
+VerificationResult:
+  type: object
+  readOnly: true
+  required: [id, targetType, targetId, agentRunId, outcome, thresholdsUsed, at]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    targetType:
+      type: string
+      enum: [claim, citation, change_proposal]
+    targetId: { $ref: common.yaml#/Id }
+    agentRunId: { $ref: common.yaml#/Id }
+    outcome:
+      type: string
+      description: SupportStatus với claim; resolved / unresolved / mismatch với citation.
+      examples: [Supported, mismatch]
+    details:
+      type: array
+      items:
+        type: object
+        additionalProperties: true
+    thresholdsUsed:
+      $ref: account.yaml#/VerificationThresholds
+      description: Bản chụp ngưỡng tại thời điểm kiểm chứng (OQ-092).
+    at: { $ref: common.yaml#/Timestamp }

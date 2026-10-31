@@ -1,0 +1,686 @@
+# PRD 14 Shared Context and Orchestration Architecture · 8.5 lỗi và khôi phục · WF-06 — milestone M2, M7.
+# Workflow, Agent Run, Context Item, Artifact registry, Audit trail, luồng sự kiện.
+
+/workflows:
+  get:
+    tags: [Orchestration]
+    operationId: listWorkflows
+    summary: Danh sách workflow (Agent Activity)
+    x-requirements: [UX-MONITOR-001, CTX-RECOVERY-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: status
+        in: query
+        style: form
+        explode: false
+        schema:
+          type: array
+          items: { $ref: ../components/schemas/orchestration.yaml#/WorkflowStatus }
+      - name: type
+        in: query
+        schema: { $ref: ../components/schemas/orchestration.yaml#/WorkflowType }
+      - name: taskId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang workflow.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+
+/workflows/{workflowId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  get:
+    tags: [Orchestration]
+    operationId: getWorkflow
+    summary: Chi tiết workflow, các bước và checkpoint gần nhất
+    x-requirements: [UX-MONITOR-001, ORCH-CONSOLIDATE-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Workflow.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/workflows/{workflowId}/pause:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  post:
+    tags: [Orchestration]
+    operationId: pauseWorkflow
+    summary: Tạm dừng (Running → Paused)
+    description: Agent Run đang chạy hoàn tất bước hiện tại; không bắt đầu bước mới.
+    x-requirements: [ORCH-FAILURE-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Workflow Paused.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/workflows/{workflowId}/resume:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  post:
+    tags: [Orchestration]
+    operationId: resumeWorkflow
+    summary: Tiếp tục workflow Paused (Paused → Running)
+    description: Workflow Interrupted phải đi qua `recovery-decision`.
+    x-requirements: [ORCH-FAILURE-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Workflow Running.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/workflows/{workflowId}/cancel:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  post:
+    tags: [Orchestration]
+    operationId: cancelWorkflow
+    summary: Hủy workflow
+    description: |
+      Running/Waiting for User/Paused/Interrupted → Cancelled. Prompt Open của workflow → Cancelled; Task về Ready hoặc
+      Blocked theo readiness (T-10); đầu ra đã lưu giữ ở Draft. Agent Run trả kết quả sau đó bị đánh dấu discarded
+      (DATA-IDEMP-003-AC01).
+    x-requirements: [ORCH-FAILURE-001, CTX-CONSISTENCY-002]
+    x-transition: [T-10]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: { type: string }
+    responses:
+      '200':
+        description: Workflow Cancelled.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/workflows/{workflowId}/recovery-decision:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  post:
+    tags: [Orchestration]
+    operationId: decideWorkflowRecovery
+    summary: Recovery decision cho workflow Interrupted (WF-06)
+    description: |
+      `continue` tiếp tục từ checkpoint nhất quán gần nhất; `rerun_step` chạy lại bước (Agent Run mới); `cancel` hủy.
+      Trước quyết định này không có Agent Run mới hay lời gọi provider nào (NFR-REC-002-AC01).
+    x-requirements: [CTX-RECOVERY-001, NFR-REC-002]
+    x-priority: P0
+    x-milestone: M7
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/orchestration.yaml#/RecoveryDecision }
+    responses:
+      '200':
+        description: Workflow sau quyết định.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/Workflow }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/workflows/{workflowId}/agent-runs:
+  parameters:
+    - $ref: ../components/parameters.yaml#/WorkflowId
+  get:
+    tags: [Orchestration]
+    operationId: listAgentRuns
+    summary: Agent Run của workflow
+    x-requirements: [UX-MONITOR-001, CTX-REGISTRY-002]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Agent Run theo thứ tự bước.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/orchestration.yaml#/AgentRun }
+
+/agent-runs/{agentRunId}:
+  parameters:
+    - name: agentRunId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Orchestration]
+    operationId: getAgentRun
+    summary: Chi tiết Agent Run — provider, model, usage, context manifest, đầu ra có cấu trúc
+    x-requirements: [CTX-ASSEMBLY-001, CTX-REGISTRY-002, AGENT-PROVIDER-001, NFR-USAGE-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Agent Run.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/AgentRun }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/agent-runs/{agentRunId}/debug-transcript:
+  parameters:
+    - name: agentRunId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Orchestration]
+    operationId: getAgentRunDebugTranscript
+    summary: Toàn văn prompt/phản hồi (chỉ khi bật debug, giữ 30 ngày)
+    description: Không có hoặc đã hết hạn trả `404`. Chỉ chủ tài khoản xem được; không nằm trong export mặc định.
+    x-requirements: [CTX-REGISTRY-002, NFR-RET-009]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Transcript.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/DebugTranscript }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/shared-context:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Shared Context]
+    operationId: getSharedContext
+    summary: Khung nhìn hợp nhất Shared Context
+    x-requirements: [CTX-STORE-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Shared Context.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/SharedContextView }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/context-items:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Shared Context]
+    operationId: listContextItems
+    summary: Context Item (quyết định, ràng buộc, sự kiện, giả định, tóm tắt)
+    x-requirements: [CTX-STORE-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - name: kind
+        in: query
+        schema: { $ref: ../components/schemas/orchestration.yaml#/ContextItemKind }
+      - name: status
+        in: query
+        schema: { type: string, enum: [Active, Superseded, Retracted], default: Active }
+      - name: taskId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang Context Item.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/ContextItem }
+  post:
+    tags: [Shared Context]
+    operationId: createContextItem
+    summary: Researcher thêm hoặc thay thế Context Item
+    description: Không sửa tại chỗ; `supersedesId` đánh dấu item cũ Superseded. Không bao giờ chứa API key.
+    x-requirements: [CTX-STORE-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/orchestration.yaml#/ContextItemCreate }
+    responses:
+      '201':
+        description: Item mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/ContextItem }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/context-items/{contextItemId}/retract:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - name: contextItemId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  post:
+    tags: [Shared Context]
+    operationId: retractContextItem
+    summary: Rút lại Context Item (Active → Retracted)
+    x-requirements: [CTX-STORE-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: { type: string }
+    responses:
+      '200':
+        description: Item Retracted.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/ContextItem }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/artifacts:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Artifacts]
+    operationId: listArtifacts
+    summary: Artifact registry của project
+    x-requirements: [CTX-REGISTRY-001, SYN-PERSIST-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - name: type
+        in: query
+        schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactType }
+      - name: taskId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: hasAccepted
+        in: query
+        schema: { type: boolean }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang artifact.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/artifact.yaml#/Artifact }
+
+/projects/{projectId}/artifacts/{artifactId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+  get:
+    tags: [Artifacts]
+    operationId: getArtifact
+    summary: Chi tiết artifact
+    x-requirements: [CTX-REGISTRY-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Artifact.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/artifact.yaml#/Artifact }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  delete:
+    tags: [Artifacts]
+    operationId: deleteArtifact
+    summary: Xóa mềm artifact (APR-08)
+    description: Bị chặn nếu version Accepted đang là đầu vào của Task, bản thảo hoặc synthesis (OWN-05).
+    x-requirements: [CTX-REGISTRY-001]
+    x-apr: APR-08
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/artifacts/{artifactId}/versions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+  get:
+    tags: [Artifacts]
+    operationId: listArtifactVersions
+    summary: Các version của artifact
+    x-requirements: [CTX-REGISTRY-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Version, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersion }
+  post:
+    tags: [Artifacts]
+    operationId: createArtifactVersion
+    summary: Researcher sửa nội dung — tạo version Draft mới
+    x-requirements: [CTX-REGISTRY-001, DIAG-REVIEW-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersionCreate }
+    responses:
+      '201':
+        description: Version Draft mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+    - $ref: ../components/parameters.yaml#/VersionId
+  get:
+    tags: [Artifacts]
+    operationId: getArtifactVersion
+    summary: Nội dung và provenance của một version
+    x-requirements: [DATA-PROV-001, SYN-PERSIST-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Artifact Version.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersion }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/accept:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+    - $ref: ../components/parameters.yaml#/VersionId
+  post:
+    tags: [Artifacts]
+    operationId: acceptArtifactVersion
+    summary: Chấp nhận version (APR-03 / APR-06 / APR-07 theo loại)
+    description: |
+      Draft → Accepted; version Accepted cũ → Superseded trong cùng giao dịch. Synthesis cần mọi claim liên kết đã được
+      quyết định (SYN-HUMAN-REVIEW-001); diagram cần đã qua kiểm tra cú pháp (DIAG-REVIEW-001).
+    x-requirements: [SYN-HUMAN-REVIEW-001, SYN-PERSIST-001, DIAG-REVIEW-001, CTX-CONSISTENCY-003]
+    x-apr: [APR-03, APR-06, APR-07]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactDecision }
+    responses:
+      '200':
+        description: Version Accepted.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/reject:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ArtifactId
+    - $ref: ../components/parameters.yaml#/VersionId
+  post:
+    tags: [Artifacts]
+    operationId: rejectArtifactVersion
+    summary: Từ chối version
+    x-requirements: [SYN-HUMAN-REVIEW-001, DIAG-REVIEW-001]
+    x-apr: [APR-03, APR-06, APR-07]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactDecision }
+    responses:
+      '200':
+        description: Version Rejected.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/artifact.yaml#/ArtifactVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/uploads:
+  post:
+    tags: [Artifacts]
+    operationId: uploadFile
+    summary: Tải file tạm (kết quả manual, hình cho bản thảo, file artifact)
+    description: |
+      Lưu theo địa chỉ nội dung (contentHash, DATA-STORE-001); trả `fileUploadId` để tham chiếu trong lệnh khác.
+      File chưa được tham chiếu bị dọn sau thời hạn cấu hình.
+    x-requirements: [DATA-STORE-001, TASK-CHECKLIST-001, MS-EDITOR-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [file]
+            properties:
+              file:
+                type: string
+                contentMediaType: application/octet-stream
+              projectId: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '201':
+        description: Đã tải lên.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileUploadId, contentHash, sizeBytes]
+              properties:
+                fileUploadId: { $ref: ../components/schemas/common.yaml#/Id }
+                contentHash: { type: string }
+                sizeBytes: { type: integer }
+                mediaType: { type: string }
+      '413': { $ref: ../components/responses.yaml#/PayloadTooLarge }
+
+/projects/{projectId}/audit-events:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Audit]
+    operationId: listProjectAuditEvents
+    summary: Activity and History của project
+    x-requirements: [CTX-AUDIT-001, DATA-AUDIT-001]
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - name: objectType
+        in: query
+        schema: { type: string }
+      - name: objectId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: actorType
+        in: query
+        schema: { type: string, enum: [researcher, agent, system] }
+      - { name: from, in: query, schema: { type: string, format: date-time } }
+      - { name: to, in: query, schema: { type: string, format: date-time } }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang Audit Event, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/AuditEvent }
+
+/projects/{projectId}/audit-events/export:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Audit]
+    operationId: exportProjectAuditEvents
+    summary: Export audit trail của một project (JSON hoặc CSV)
+    description: Chỉ event của project này, không gồm event cấp tài khoản; không chứa API key. Ghi AuditEvent cho thao tác export.
+    x-requirements: [CTX-AUDIT-002, NFR-RET-008]
+    x-priority: P1
+    x-milestone: M7
+    parameters:
+      - name: format
+        in: query
+        required: true
+        schema: { type: string, enum: [json, csv] }
+    responses:
+      '200':
+        description: File export.
+        headers:
+          Content-Disposition: { schema: { type: string } }
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: ../components/schemas/orchestration.yaml#/AuditEvent }
+          text/csv:
+            schema: { type: string }
+
+/me/audit-events:
+  get:
+    tags: [Audit]
+    operationId: listAccountAuditEvents
+    summary: Audit Event cấp tài khoản (Settings, Provider Connection, Trusted Library)
+    x-requirements: [CTX-AUDIT-001]
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang Audit Event.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/AuditEvent }
+
+/events:
+  get:
+    tags: [Events]
+    operationId: streamEvents
+    summary: Luồng sự kiện realtime (Server-Sent Events)
+    description: |
+      Phát sau khi giao dịch commit (outbox, DATA-PERSIST-001) để giao diện cập nhật Agent Activity, prompt, Task,
+      build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; nếu quá xa, client tải lại trạng thái bằng
+      các endpoint GET. Sự kiện chỉ thuộc tài khoản của phiên.
+    x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: Last-Event-ID
+        in: header
+        schema: { type: string }
+    responses:
+      '200':
+        description: |
+          Luồng `text/event-stream`; mỗi bản ghi có `id`, `event` (= Event.type) và `data` (JSON của Event).
+        content:
+          text/event-stream:
+            schema: { type: string }
+            x-event-schema: { $ref: ../components/schemas/orchestration.yaml#/Event }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }

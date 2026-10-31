@@ -1,0 +1,12 @@
+%% FIG-105 — Agent Run pipeline (architecture F-07), v0.2
+flowchart LR
+  M[agent-core nhận agent.run] --> ST{start ở orchestration<br/>run còn hiện hành?}
+  ST -- 409 --> ACK[ack, bỏ message]
+  ST -- ok --> CA[Context Assembler<br/>REST context bundle các service, truy xuất knowledge,<br/>cắt theo token, manifest]
+  CA --> MG[Model Gateway<br/>giải mã key KMS, tool loop, retry ≤3, sửa định dạng ≤2]
+  MG --> V[Validate schema + kiểm tra tất định]
+  V --> RES[REST result tới orchestration, rồi ack]
+  RES --> W{orchestration: workflow Running<br/>và run hiện hành?}
+  W -- không --> DIS[AgentRun discarded]
+  W -- có --> AP[Saga: ghi đầu ra Draft vào service sở hữu<br/>idempotency = agentRunId]
+  AP --> TX[TX orchestration: AgentRun + Step Succeeded,<br/>Checkpoint, outbox]

@@ -1,0 +1,10 @@
+%% FIG-011 — Interactive Agent Prompt lifecycle (sections 5.9, 8.4)
+%% No time-based expiry in MVP (5.9, closed OQ-023).
+stateDiagram-v2
+  [*] --> Open: created by Orchestrator
+  Open --> Answered: Researcher responds (once)
+  Open --> Expired: project archived while prompt open (non-blocking prompts only)
+  Open --> Cancelled: workflow cancelled / target version changed
+  Answered --> [*]
+  Expired --> [*]
+  Cancelled --> [*]

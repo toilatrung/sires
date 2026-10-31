@@ -1,0 +1,456 @@
+# PRD 11 Evidence, RAG and Research Synthesis — WF-05 S1–S4 — milestone M4 (indexing) và M5.
+# Bản tổng hợp (synthesis) là Artifact; duyệt qua /projects/{projectId}/artifacts/... (APR-06).
+
+/me/embedding-settings:
+  get:
+    tags: [Evidence & Claims]
+    operationId: getEmbeddingSettings
+    summary: Embedding model của tài khoản
+    x-requirements: [EVID-INDEX-001, INT-VECTOR-001]
+    x-priority: P0
+    x-milestone: M4
+    responses:
+      '200':
+        description: Cấu hình hiện hành và tiến độ index lại (nếu có).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/EmbeddingSettings }
+      '404':
+        description: Chưa cấu hình — Reference Trusted ở Not Indexed cho đến khi có.
+        content:
+          application/problem+json:
+            schema: { $ref: ../components/schemas/common.yaml#/Problem }
+  put:
+    tags: [Evidence & Claims]
+    operationId: setEmbeddingSettings
+    summary: Chọn hoặc đổi embedding model (APR-09)
+    description: |
+      Chỉ Provider Connection `openai` hoặc `google` (OQ-051). Đổi model đưa mọi Source Document đã Indexed về Queued
+      để index lại toàn bộ (EVID-INDEX-003); evidence có chunk không còn chuyển Stale.
+    x-requirements: [EVID-INDEX-003]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M4
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/account.yaml#/EmbeddingSettings }
+    responses:
+      '200':
+        description: Đã lưu; index lại chạy nền.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/EmbeddingSettings }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/evidence:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Evidence & Claims]
+    operationId: listEvidence
+    summary: Evidence của project
+    x-requirements: [EVID-RETRIEVAL-001, UX-EVID-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - name: referenceId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: taskId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: status
+        in: query
+        schema: { $ref: ../components/schemas/evidence.yaml#/EvidenceStatus }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang evidence.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/evidence.yaml#/Evidence }
+
+/projects/{projectId}/evidence/retrievals:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Evidence & Claims]
+    operationId: retrieveEvidence
+    summary: Truy xuất evidence bằng RAG
+    description: |
+      Truy vấn vector database, luôn lọc theo Project Reference Selection Active và reference Indexed (OQ-024).
+      Không có reference Indexed: trả danh sách rỗng kèm `suggestedAction` (RC-05).
+    x-requirements: [EVID-RETRIEVAL-001, INT-VECTOR-002, CTX-ISOLATION-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/evidence.yaml#/EvidenceRetrievalRequest }
+    responses:
+      '200':
+        description: Ứng viên evidence, xếp theo điểm liên quan.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/EvidenceRetrievalResult }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/evidence/{evidenceId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/EvidenceId
+  get:
+    tags: [Evidence & Claims]
+    operationId: getEvidence
+    summary: Evidence Inspector — evidence trong ngữ cảnh nguồn
+    x-requirements: [EVID-INSPECTOR-001]
+    x-priority: P0
+    x-milestone: M5
+    responses:
+      '200':
+        description: Evidence kèm đoạn trước/sau, reference và claim liên kết.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/EvidenceInContext }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/evidence/{evidenceId}/exclude:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/EvidenceId
+  post:
+    tags: [Evidence & Claims]
+    operationId: excludeEvidence
+    summary: Loại evidence (Active → Excluded)
+    description: Claim liên kết được đánh dấu needsReview.
+    x-requirements: [EVID-INSPECTOR-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: { type: string }
+    responses:
+      '200':
+        description: Evidence Excluded.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Evidence }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/evidence/{evidenceId}/restore:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/EvidenceId
+  post:
+    tags: [Evidence & Claims]
+    operationId: restoreEvidence
+    summary: Khôi phục evidence (Excluded → Active)
+    x-requirements: [EVID-INSPECTOR-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Evidence Active.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Evidence }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/claims:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Evidence & Claims]
+    operationId: listClaims
+    summary: Claim của project
+    x-requirements: [CLAIM-MAPPING-001, UX-CLAIM-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - name: approvalStatus
+        in: query
+        schema: { $ref: ../components/schemas/evidence.yaml#/ClaimApprovalStatus }
+      - name: supportStatus
+        in: query
+        schema: { $ref: ../components/schemas/evidence.yaml#/SupportStatus }
+      - name: taskId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: artifactVersionId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: needsReview
+        in: query
+        schema: { type: boolean }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang claim.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/evidence.yaml#/Claim }
+
+/projects/{projectId}/claims/{claimId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  get:
+    tags: [Evidence & Claims]
+    operationId: getClaim
+    summary: Chi tiết claim, evidence liên kết và kết quả kiểm chứng
+    x-requirements: [CLAIM-MAPPING-001, CLAIM-SUPPORT-001]
+    x-priority: P0
+    x-milestone: M5
+    responses:
+      '200':
+        description: Claim.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  patch:
+    tags: [Evidence & Claims]
+    operationId: updateClaimStatement
+    summary: Sửa phát biểu claim
+    description: Claim Accepted quay về Draft (giữ lịch sử); mức hỗ trợ về Not Assessed cho đến khi kiểm chứng lại.
+    x-requirements: [SYN-HUMAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/evidence.yaml#/ClaimUpdate }
+    responses:
+      '200':
+        description: Claim cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/projects/{projectId}/claims/{claimId}/evidence-links:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  post:
+    tags: [Evidence & Claims]
+    operationId: linkEvidenceToClaim
+    summary: Liên kết evidence với claim (supports / contradicts / context)
+    description: Evidence phải Active và thuộc reference Trusted đang được chọn. Liên kết `contradicts` ghi nhận mâu thuẫn (CLAIM-CONFLICT-001).
+    x-requirements: [CLAIM-MAPPING-001, CLAIM-CONFLICT-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/evidence.yaml#/ClaimEvidenceLink }
+    responses:
+      '201':
+        description: Claim với liên kết mới; mức hỗ trợ cần kiểm chứng lại.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/claims/{claimId}/evidence-links/{evidenceId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+    - $ref: ../components/parameters.yaml#/EvidenceId
+  delete:
+    tags: [Evidence & Claims]
+    operationId: unlinkEvidenceFromClaim
+    summary: Bỏ liên kết evidence
+    x-requirements: [CLAIM-MAPPING-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/claims/{claimId}/verify:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  post:
+    tags: [Evidence & Claims]
+    operationId: verifyClaim
+    summary: Yêu cầu Verification Agent đánh giá mức hỗ trợ
+    description: |
+      Dùng Ngưỡng kiểm chứng hiện hành của tài khoản; VerificationResult ghi bản chụp ngưỡng. Supported cần ít nhất một
+      evidence hỗ trợ trực tiếp (OQ-052).
+    x-requirements: [CLAIM-SUPPORT-001, DATA-IDEMP-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '202': { $ref: ../components/responses.yaml#/WorkflowAccepted }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/claims/{claimId}/support-status:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  put:
+    tags: [Evidence & Claims]
+    operationId: overrideClaimSupportStatus
+    summary: Researcher điều chỉnh mức hỗ trợ (lý do bắt buộc)
+    x-requirements: [CLAIM-SUPPORT-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/evidence.yaml#/SupportStatusOverride }
+    responses:
+      '200':
+        description: Claim cập nhật; ghi AuditEvent.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/projects/{projectId}/claims/{claimId}/accept:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  post:
+    tags: [Evidence & Claims]
+    operationId: acceptClaim
+    summary: Chấp nhận claim (APR-06)
+    description: Chỉ khi supportStatus ≠ Not Assessed. Claim Unsupported được chấp nhận vẫn mang nhãn ở mọi nơi dùng (KPI-01).
+    x-requirements: [SYN-HUMAN-REVIEW-001, CTX-CONSISTENCY-003]
+    x-apr: APR-06
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rowVersion:
+                type: integer
+                description: Phiên bản claim Researcher đã xem.
+    responses:
+      '200':
+        description: Claim Accepted.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/claims/{claimId}/reject:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ClaimId
+  post:
+    tags: [Evidence & Claims]
+    operationId: rejectClaim
+    summary: Từ chối claim
+    x-requirements: [SYN-HUMAN-REVIEW-001]
+    x-apr: APR-06
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: { type: string }
+    responses:
+      '200':
+        description: Claim Rejected.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/evidence.yaml#/Claim }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/verification-results:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Evidence & Claims]
+    operationId: listVerificationResults
+    summary: Kết quả kiểm chứng claim, citation, change proposal
+    x-requirements: [CLAIM-SUPPORT-001, CLAIM-CITATION-001]
+    x-priority: P0
+    x-milestone: M5
+    parameters:
+      - name: targetType
+        in: query
+        schema: { type: string, enum: [claim, citation, change_proposal] }
+      - name: targetId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang kết quả.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/evidence.yaml#/VerificationResult }

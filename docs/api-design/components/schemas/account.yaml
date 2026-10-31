@@ -1,0 +1,240 @@
+# Entity cấp tài khoản — PRD 5.11, 18.1 (Account / Profile, VerificationThresholds, ProviderConnection, AgentModelAssignment).
+
+Profile:
+  type: object
+  description: Thông tin cá nhân (15.12, DEC-24). Sửa thuộc APR-09.
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+      maxLength: 200
+      description: Ban đầu lấy từ claim OIDC, người dùng sửa được (ASM-13).
+    email:
+      type: string
+      format: email
+      readOnly: true
+      description: Lấy từ claim OIDC.
+    affiliation: { type: string, maxLength: 300 }
+    researchField: { type: string, maxLength: 300 }
+    avatarUrl:
+      type: string
+      format: uri
+      readOnly: true
+    googleScholarProfileUrl:
+      type: string
+      format: uri
+      pattern: '^https://'
+      description: Chỉ là liên kết, không phải đăng nhập Google (ASM-14).
+
+Preferences:
+  type: object
+  properties:
+    uiLanguage: { $ref: common.yaml#/Language }
+    defaultAgentLanguage: { $ref: common.yaml#/Language }
+    includeResearchFieldInContext:
+      type: boolean
+      default: false
+      description: Bật thì chỉ `researchField` được đưa vào context agent (OQ-015).
+    timezone:
+      type: string
+      examples: [Asia/Saigon]
+    debugMode:
+      type: boolean
+      default: false
+      description: Bật thì lưu toàn văn prompt/phản hồi model 30 ngày (OQ-062, CTX-REGISTRY-002).
+
+Account:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [authIdentity, profile, preferences]
+      properties:
+        authIdentity:
+          type: object
+          readOnly: true
+          description: Cặp (issuer, subject) duy nhất toàn hệ thống (INT-OIDC-002). Không có trường mật khẩu.
+          required: [issuer, subject]
+          properties:
+            issuer: { type: string, format: uri }
+            subject: { type: string }
+        profile: { $ref: '#/Profile' }
+        preferences: { $ref: '#/Preferences' }
+        setup:
+          type: object
+          readOnly: true
+          description: Trạng thái thiết lập ban đầu — tài khoản mới chưa có Provider Connection Valid.
+          properties:
+            hasValidProviderConnection: { type: boolean }
+            hasEmbeddingSettings: { type: boolean }
+
+VerificationThresholds:
+  type: object
+  description: |
+    “Ngưỡng kiểm chứng” (OQ-092, ASM-15). Giá trị mặc định do hệ thống hiệu chỉnh để đạt ≥ 85% (mức hỗ trợ claim)
+    và ≥ 95% (phát hiện citation không khớp). Thay đổi áp dụng từ lần kiểm chứng sau và ghi AuditEvent.
+  required: [claimSupport, citationMismatch, isDefault]
+  properties:
+    claimSupport:
+      type: object
+      description: Ngưỡng điểm để gán mức hỗ trợ claim.
+      properties:
+        supported: { type: number, minimum: 0, maximum: 1 }
+        partiallySupported: { type: number, minimum: 0, maximum: 1 }
+    citationMismatch:
+      type: object
+      properties:
+        mismatch: { type: number, minimum: 0, maximum: 1 }
+    isDefault: { type: boolean, readOnly: true }
+    updatedAt: { $ref: common.yaml#/Timestamp }
+    updatedBy: { $ref: common.yaml#/ActorRef }
+
+ConnectionTestStatus:
+  type: string
+  enum: [Untested, Valid, Invalid]
+
+ProviderConnection:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [name, provider, baseUrl, keyHint, testStatus]
+      properties:
+        name: { type: string, description: Duy nhất trong tài khoản. }
+        provider: { $ref: common.yaml#/ProviderName }
+        baseUrl:
+          type: string
+          format: uri
+          description: HTTPS, tương thích API chính thức của provider (INT-PROVIDER-005).
+        keyHint:
+          type: string
+          maxLength: 4
+          description: Tối đa 4 ký tự cuối của API key. Key đầy đủ không bao giờ được trả ra (REL-07).
+        testStatus: { $ref: '#/ConnectionTestStatus' }
+        lastTestedAt: { $ref: common.yaml#/Timestamp }
+        lastError:
+          type: object
+          properties:
+            code: { $ref: common.yaml#/ProviderErrorCode }
+            message: { type: string }
+        availableModels:
+          type: array
+          items: { $ref: '#/ModelInfo' }
+        assignedAgents:
+          type: array
+          readOnly: true
+          items:
+            oneOf:
+              - $ref: common.yaml#/AgentName
+              - const: default
+
+ProviderConnectionCreate:
+  type: object
+  required: [name, provider, apiKey]
+  properties:
+    name: { type: string, minLength: 1, maxLength: 100 }
+    provider: { $ref: common.yaml#/ProviderName }
+    baseUrl:
+      type: string
+      format: uri
+      pattern: '^https://'
+      description: |
+        Bỏ trống dùng endpoint chính thức: https://api.anthropic.com, https://api.openai.com/v1,
+        https://generativelanguage.googleapis.com.
+    apiKey:
+      type: string
+      writeOnly: true
+      minLength: 8
+      description: Mã hóa trong kho bí mật; không vào log, context, audit (NFR-SECRETS).
+
+ProviderConnectionUpdate:
+  type: object
+  description: Sửa `baseUrl` hoặc `apiKey` đưa kết nối về Untested.
+  minProperties: 1
+  properties:
+    name: { type: string, minLength: 1, maxLength: 100 }
+    baseUrl:
+      type: string
+      format: uri
+      pattern: '^https://'
+    apiKey:
+      type: string
+      writeOnly: true
+      minLength: 8
+
+ModelInfo:
+  type: object
+  required: [id]
+  properties:
+    id: { type: string, examples: [claude-sonnet-5-5, gpt-5, gemini-2.5-pro] }
+    capabilities:
+      type: array
+      items:
+        type: string
+        enum: [tool_use, structured_output, long_context, vision, embedding]
+    verified:
+      type: boolean
+      description: false khi người dùng nhập tay vì không lấy được danh sách model.
+
+AgentModelAssignment:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [agent, providerConnectionId, model]
+      properties:
+        agent:
+          description: '`default` áp dụng cho mọi agent chưa gán riêng.'
+          oneOf:
+            - $ref: common.yaml#/AgentName
+            - const: default
+        providerConnectionId: { $ref: common.yaml#/Id }
+        model: { type: string }
+        capabilityWarnings:
+          type: array
+          readOnly: true
+          description: Cảnh báo model thiếu năng lực agent cần (AGENT-PROVIDER-003).
+          items:
+            type: object
+            properties:
+              capability: { type: string }
+              message: { type: string }
+        effective:
+          type: boolean
+          readOnly: true
+          description: true nếu đây là cấu hình đang áp dụng (gán riêng hoặc thừa kế default).
+
+AgentDefinition:
+  type: object
+  description: Định nghĩa agent trong registry (AGENT-REGISTRY-001, 8.2). Chỉ đọc trong MVP; custom agent là FUT-04.
+  required: [agent, displayName, role]
+  properties:
+    agent: { $ref: common.yaml#/AgentName }
+    displayName: { type: string }
+    role: { type: string }
+    requiredCapabilities:
+      type: array
+      items: { type: string }
+    canRead:
+      type: array
+      items: { type: string }
+    canCreate:
+      type: array
+      description: Loại bản đề xuất agent được tạo (luôn ở trạng thái Draft/Proposed).
+      items: { type: string }
+    outputSchemaRef: { type: string }
+
+EmbeddingSettings:
+  type: object
+  description: |
+    Một embedding model mỗi tài khoản, qua Provider Connection OpenAI hoặc Gemini của người dùng (OQ-051).
+    Đổi model đưa mọi Source Document về Queued để index lại (EVID-INDEX-003).
+  required: [providerConnectionId, model]
+  properties:
+    providerConnectionId: { $ref: common.yaml#/Id }
+    model: { type: string, examples: [text-embedding-3-large, gemini-embedding-001] }
+    reindex:
+      type: object
+      readOnly: true
+      properties:
+        total: { type: integer }
+        queued: { type: integer }
+        indexed: { type: integer }
+        failed: { type: integer }

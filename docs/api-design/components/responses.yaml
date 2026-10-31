@@ -1,0 +1,86 @@
+# Phản hồi lỗi và phản hồi dùng chung. Mọi lỗi dùng application/problem+json (RFC 9457).
+
+BadRequest:
+  description: Dữ liệu không hợp lệ (DATA-VALID-001) — trường bắt buộc thiếu, enum sai, vượt giới hạn.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/validation_failed
+        title: Dữ liệu không hợp lệ
+        status: 400
+        code: validation_failed
+        errors:
+          - field: researchQuestion
+            code: required
+Unauthorized:
+  description: Chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới `GET /auth/login`.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+Forbidden:
+  description: Thiếu hoặc sai `X-CSRF-Token`.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+NotFound:
+  description: |
+    Không tồn tại, hoặc thuộc tài khoản/project khác (NFR-ISOL, OWN-03) — hai trường hợp không phân biệt.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+Conflict:
+  description: |
+    Xung đột trạng thái. `code` một trong: `invalid_transition` (DATA-STATE-001), `action_not_allowed_in_state`
+    (DATA-STATE-002), `project_archived`, `active_workflow_exists` (DATA-IDEMP-002), `readiness_failed`,
+    `open_plan_version_exists`, `base_revision_mismatch`, `citation_check_failed`, `connection_in_use`,
+    `duplicate_name`, `restore_window_expired`.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/invalid_transition
+        title: Chuyển trạng thái không hợp lệ
+        status: 409
+        code: invalid_transition
+        detail: Task đang Ready, không thể chuyển thẳng sang Completed.
+        currentState: Ready
+PreconditionFailed:
+  description: "`If-Match` không khớp rowVersion hiện hành — tải lại rồi thử lại (DATA-CONC-001)."
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+PreconditionRequired:
+  description: Thiếu `If-Match` hoặc `Idempotency-Key`.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+PayloadTooLarge:
+  description: File vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+UnprocessableEntity:
+  description: |
+    Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
+    `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+ServiceUnavailable:
+  description: Dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) — INT-OIDC-004, 17.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+
+WorkflowAccepted:
+  description: Đã nhận yêu cầu; Workflow được tạo (Created/Running). Theo dõi qua `Location` hoặc `GET /events`.
+  headers:
+    Location:
+      description: URL của Workflow.
+      schema: { type: string }
+  content:
+    application/json:
+      schema: { $ref: schemas/orchestration.yaml#/Workflow }
+NoContent:
+  description: Thành công, không có nội dung.

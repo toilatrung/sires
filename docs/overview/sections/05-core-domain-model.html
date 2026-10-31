@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>5. Core Domain Model | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 05</p><h1>5. Core Domain Model</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–4, mục 21.1</p><div class="note"><p>Mục này định nghĩa các entity của sản phẩm ở mức khái niệm: mục đích, thuộc tính chính, ownership, vòng đời và các quy tắc luôn phải đúng (<em>invariant</em>). Schema chi tiết, enumeration và chuyển trạng thái đầy đủ ở <a href="18-data-and-state-specifications.html">mục 18</a>. Tên trạng thái trong mục này là chuẩn cho toàn PRD. Nhóm entity lấy từ outline (<strong>Confirmed</strong>); thuộc tính, trạng thái và invariant là <strong>Assumption</strong> trừ khi ghi khác. Điểm chưa quyết định ở <a href="#s-5-12">5.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-5-0">Nguyên tắc mô hình</a></li>
+<li><a href="#s-5-1">5.1. Research Project</a></li>
+<li><a href="#s-5-2">5.2. Research Plan</a></li>
+<li><a href="#s-5-3">5.3. Task</a></li>
+<li><a href="#s-5-4">5.4. Workflow and Agent Run</a></li>
+<li><a href="#s-5-5">5.5. Shared Context</a></li>
+<li><a href="#s-5-6">5.6. Reference, Evidence and Claim</a></li>
+<li><a href="#s-5-7">5.7. Artifact</a></li>
+<li><a href="#s-5-8">5.8. Manuscript</a></li>
+<li><a href="#s-5-9">5.9. Interactive Agent Prompt</a></li>
+<li><a href="#s-5-10">5.10. Entity Relationships</a></li>
+<li><a href="#s-5-11">5.11. Entity hỗ trợ</a></li>
+<li><a href="#s-5-12">5.12. Open Questions của mục 5</a></li>
+</ul></details>
+
+<h2 id="s-5-0">Nguyên tắc mô hình</h2>
+<ol>
+<li><strong>Hai cấp ownership</strong> (Confirmed — OQ-004): mọi entity thuộc đúng một <em>Account</em>; entity cấp project thuộc thêm đúng một <em>Research Project</em>. Trusted Reference, Provider Connection, Agent Model Assignment, Profile là cấp tài khoản; mọi entity còn lại là cấp project.</li>
+<li><strong>Actor trên mọi thay đổi</strong> (Confirmed — OQ-004): mỗi bản ghi tạo, sửa, phê duyệt hay chuyển trạng thái ghi actor (Researcher, agent cụ thể kèm Agent Run, hoặc System) và thời điểm.</li>
+<li><strong>Phiên bản bất biến</strong>: nội dung đã được phê duyệt hoặc chấp nhận (Plan Version đã duyệt, Artifact Version accepted, Manuscript Revision) không bị sửa tại chỗ; thay đổi tạo bản mới.</li>
+<li><strong>Tách ba lớp</strong> (1.2): trạng thái nghiên cứu (Plan, Task) tách khỏi trạng thái điều phối (Workflow, Agent Run) và khỏi dữ liệu dùng chung (Shared Context, Reference, Evidence, Artifact). Kết quả ở lớp điều phối không tự đổi trạng thái lớp nghiên cứu.</li>
+<li><strong>Provenance bắt buộc</strong>: mọi dữ liệu do agent tạo ra tham chiếu tới Agent Run đã tạo ra nó; mọi claim tham chiếu evidence hoặc được đánh dấu unsupported.</li>
+<li><strong>Xóa mềm</strong>: entity cấp project không bị xóa vật lý khi còn được tham chiếu bởi provenance; xóa project là xóa mềm, khôi phục được trong 30 ngày, sau đó xóa vĩnh viễn toàn bộ dữ liệu cấp project (Confirmed — PO chốt 31/10/2026, PC-01, OQ-030, OQ-078; NFR-RET-002).</li>
+</ol>
+<p class="status">Nguyên tắc 1–2: Confirmed (OQ-004). Nguyên tắc 3–6: Assumption, suy ra từ 1.2, 3.4, 14.4.</p>
+
+<h2 id="s-5-1">5.1. Research Project</h2>
+<p>Đơn vị làm việc của một đề tài. Mọi Plan, Task, evidence, artifact và bản thảo nằm trong một project.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Nhóm thuộc tính</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Identity</td><td>projectId, accountId (owner), tên, mô tả ngắn, ngày tạo, lần hoạt động cuối.</td></tr>
+<tr><td>Research objective</td><td>Câu hỏi nghiên cứu, mục tiêu.</td></tr>
+<tr><td>Research Context</td><td>Lĩnh vực, từ khóa, phạm vi, ràng buộc (thời gian, phương pháp, nguồn), loại sản phẩm đầu ra (bài báo, luận văn, báo cáo), ngôn ngữ bản thảo, citation style ưa thích (7.3).</td></tr>
+<tr><td>Configuration</td><td>Ngôn ngữ phản hồi của agent cho project (nếu khác mặc định), danh sách Trusted Reference được chọn (qua Project Reference Selection).</td></tr>
+<tr><td>Status</td><td><code>Active</code>, <code>Archived</code>.</td></tr>
+</tbody></table></div>
+<p><strong>Vòng đời:</strong> tạo → <code>Active</code> ⇄ <code>Archived</code>. Project Archived chỉ đọc: không tạo workflow mới, không sửa Plan, Task hay bản thảo; workflow đang chạy phải kết thúc hoặc bị hủy trước khi lưu trữ.</p>
+<p><strong>Invariant:</strong> một project có đúng một Research Plan (có thể chưa có version nào), tối đa một Manuscript (chốt — biên soạn, 30/10/2026: outline và 12.1 chỉ mô tả một bản thảo cho mỗi project), đúng một Shared Context. Research Context được lưu có phiên bản; Plan Version ghi lại phiên bản context mà nó dựa vào.</p>
+
+<h2 id="s-5-2">5.2. Research Plan</h2>
+<p>Kế hoạch nghiên cứu của project, quản lý theo phiên bản. <strong>Research Plan</strong> là vùng chứa; nội dung nằm trong các <strong>Plan Version</strong>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Research Plan</td><td>planId, projectId, baselineVersionId (phiên bản đã duyệt hiện hành), danh sách version.</td></tr>
+<tr><td>Plan Version</td><td>versionId, số thứ tự, trạng thái, mục tiêu (goals), các Phase, phương pháp (methods), deliverables, milestone, rủi ro và giả định, ảnh chụp định nghĩa Task và dependency tại phiên bản này, phiên bản Research Context dựa vào, tạo bởi (actor, Agent Run nếu có), lý do thay đổi so với bản trước, thông tin phê duyệt.</td></tr>
+<tr><td>Phase</td><td>Tên, mục tiêu, thứ tự, danh sách Task.</td></tr>
+</tbody></table></div>
+<p><strong>Trạng thái Plan Version:</strong></p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trạng thái</th>
+<th scope="col">Ý nghĩa</th>
+</tr></thead><tbody>
+<tr><td><code>Draft</code></td><td>Đang soạn hoặc sửa (bởi Orchestrator hoặc Researcher). Sửa được.</td></tr>
+<tr><td><code>Proposed</code></td><td>Đã trình duyệt; chờ APR-01. Không sửa được; muốn sửa thì tạo Draft mới.</td></tr>
+<tr><td><code>Approved</code></td><td>Đã duyệt và là baseline hiện hành. Bất biến.</td></tr>
+<tr><td><code>Superseded</code></td><td>Từng là baseline, đã bị thay bởi phiên bản duyệt sau.</td></tr>
+<tr><td><code>Rejected</code></td><td>Bị Researcher từ chối.</td></tr>
+</tbody></table></div>
+<p><strong>Invariant:</strong> tại mọi thời điểm có tối đa một Plan Version <code>Approved</code> và tối đa một <code>Draft</code> hoặc <code>Proposed</code> đang mở. Không Task nào được thực thi chính thức khi chưa có version <code>Approved</code> (Confirmed — 21.1). Dependency graph trong một version không có chu trình (9.4).</p>
+
+<h2 id="s-5-3">5.3. Task</h2>
+<p>Đơn vị công việc nghiên cứu. Task có định danh ổn định qua các Plan Version: cùng một Task có thể được sửa định nghĩa ở version mới mà vẫn giữ lịch sử thực thi.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Nhóm thuộc tính</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Định nghĩa (theo version)</td><td>taskId, tiêu đề, mô tả, mục tiêu, Phase, đầu vào cần có (context, reference, artifact, quyết định), đầu ra mong đợi (loại artifact), điều kiện tiên quyết (Task Dependency), acceptance criteria, checklist, agent chịu trách nhiệm đề xuất.</td></tr>
+<tr><td>Execution label</td><td><code>Available for agent</code> hoặc <code>Manual editor requirement</code> (Confirmed — 21.1).</td></tr>
+<tr><td>Trạng thái</td><td>Xem bảng dưới.</td></tr>
+<tr><td>Lịch sử</td><td>Các lần thực thi (Workflow), kết quả readiness check, lần review và phản hồi, artifact tạo ra, Plan Version mà mỗi lần thực thi dựa vào.</td></tr>
+</tbody></table></div>
+<p id="s-5-3-states"><strong>Trạng thái Task</strong> (danh sách Confirmed — outline 9.8; ý nghĩa: Assumption):</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trạng thái</th>
+<th scope="col">Ý nghĩa</th>
+</tr></thead><tbody>
+<tr><td><code>Draft</code></td><td>Task chỉ tồn tại trong Plan Version chưa được duyệt.</td></tr>
+<tr><td><code>Blocked</code></td><td>Thuộc baseline nhưng chưa đủ điều kiện: dependency chưa Completed, thiếu đầu vào, quyết định hoặc kết nối provider.</td></tr>
+<tr><td><code>Ready</code></td><td>Đủ điều kiện; chờ Researcher chọn thực thi.</td></tr>
+<tr><td><code>Queued</code></td><td>Researcher đã kích hoạt (APR-02); chờ System cấp tài nguyên để bắt đầu workflow.</td></tr>
+<tr><td><code>In Progress</code></td><td>Workflow đang chạy (Task agent), hoặc Researcher đang thực hiện (Task manual).</td></tr>
+<tr><td><code>Waiting for User</code></td><td>Workflow dừng chờ Interactive Agent Prompt hoặc quyết định của Researcher.</td></tr>
+<tr><td><code>In Review</code></td><td>Đã có đầu ra; chờ Researcher nghiệm thu theo acceptance criteria.</td></tr>
+<tr><td><code>Completed</code></td><td>Researcher đã nghiệm thu (APR-03). Mở khóa Task phụ thuộc.</td></tr>
+<tr><td><code>Failed</code></td><td>Thực thi thất bại không phục hồi được trong chính sách thử lại; có thể chạy lại có kiểm soát.</td></tr>
+<tr><td><code>Cancelled</code></td><td>Researcher hủy, hoặc Task bị loại khỏi baseline mới.</td></tr>
+</tbody></table></div>
+<p><strong>Invariant:</strong></p>
+<ul>
+<li>Chỉ Researcher đưa Task vào <code>Queued</code> (APR-02) và <code>Completed</code> (APR-03). Workflow thành công chỉ đưa Task tới <code>In Review</code>.</li>
+<li>Tại mọi thời điểm, một Task có tối đa một Workflow đang hoạt động (14.6).</li>
+<li>Task <code>Manual editor requirement</code> không bao giờ được giao cho Specialist Agent để tạo đầu ra chính; agent chỉ được hỗ trợ kiểm tra theo yêu cầu của Researcher (9.7).</li>
+<li>Task <code>Completed</code> trở lại cần xem lại (cờ <em>needs review</em>) khi đầu vào của nó bị thay đổi hoặc thu hồi (9.11); trạng thái không tự lùi. Chỉ Researcher mở lại được Task <code>Completed</code> (T-19). Bảng chuyển trạng thái chuẩn T-01–T-19 ở <a href="09-research-plan-and-task-management.html#s-9-8">9.8</a>.</li>
+</ul>
+
+<h2 id="s-5-4">5.4. Workflow and Agent Run</h2>
+<p><strong>Workflow</strong> là một lần điều phối có trạng thái để đáp ứng một yêu cầu: một lần thực thi Task, một lần đề xuất Plan, một lần tìm tài liệu… <strong>Workflow Step</strong> là một bước trong đó. <strong>Agent Run</strong> là một lần gọi một agent cụ thể trong một bước. <strong>Checkpoint</strong> là trạng thái nhất quán được lưu để khôi phục.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Workflow</td><td>workflowId, projectId, loại (plan_proposal, task_execution, discovery, indexing, synthesis, manuscript_edit, diagram, recovery…), taskId (nếu có), Plan Version baseline, người kích hoạt, trạng thái, bước hiện tại, thời điểm bắt đầu/kết thúc, lỗi cuối, checkpoint gần nhất.</td></tr>
+<tr><td>Workflow Step</td><td>Thứ tự, mô tả, agent được giao, trạng thái, đầu vào (tham chiếu), đầu ra (tham chiếu), prompt đang chờ.</td></tr>
+<tr><td>Agent Run</td><td>agentRunId, agent (Orchestrator hoặc một trong bảy Specialist Agent), Provider Connection và model thực tế, tóm tắt context đầu vào, đầu ra (tham chiếu artifact, evidence, claim…), hành động/công cụ đã gọi, usage, thời gian, trạng thái, lỗi, số lần thử.</td></tr>
+<tr><td>Checkpoint</td><td>Workflow, bước, thời điểm, trạng thái các bước, tham chiếu đầu ra đã lưu.</td></tr>
+</tbody></table></div>
+<p><strong>Trạng thái Workflow:</strong> <code>Created</code> → <code>Running</code> ⇄ <code>Waiting for User</code>; <code>Running</code> ⇄ <code>Paused</code>; kết thúc ở <code>Succeeded</code>, <code>Failed</code> hoặc <code>Cancelled</code>. <code>Interrupted</code> là trạng thái do System gán khi phát hiện workflow dừng ngoài ý muốn (mất phiên, lỗi hạ tầng); chỉ thoát ra qua khôi phục (WF-06).</p>
+<p><strong>Trạng thái Agent Run:</strong> <code>Pending</code>, <code>Running</code>, <code>Succeeded</code>, <code>Failed</code>, <code>Cancelled</code>.</p>
+<p><strong>Invariant:</strong> Agent Run bất biến sau khi kết thúc; chạy lại tạo Agent Run mới. Đầu ra của Agent Run chỉ được ghi khi Agent Run thuộc Workflow còn hoạt động; kết quả đến sau khi Workflow bị hủy hoặc đã được thay bằng lần chạy mới bị lưu dạng “bị bỏ” và không ghi đè (14.6). Đổi model trong Settings không ảnh hưởng Agent Run đang chạy (SCOPE-13).</p>
+
+<h2 id="s-5-5">5.5. Shared Context</h2>
+<p>Ngữ cảnh có cấu trúc, bền vững của một project, là nguồn để Orchestrator lắp ráp context cho từng Agent Run thay vì dựa vào lịch sử chat (14.1–14.3). Shared Context là một khung nhìn hợp nhất trên các entity sau, cộng với <strong>Context Item</strong>:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thành phần</th>
+<th scope="col">Nguồn</th>
+</tr></thead><tbody>
+<tr><td>Ngữ cảnh project</td><td>Research Context (5.1).</td></tr>
+<tr><td>Quyết định của người dùng</td><td>Context Item loại <em>decision</em>: câu trả lời prompt, lựa chọn phương án, phê duyệt.</td></tr>
+<tr><td>Ràng buộc và sự kiện đã xác lập</td><td>Context Item loại <em>constraint</em>, <em>fact</em>, <em>assumption</em>.</td></tr>
+<tr><td>Tóm tắt</td><td>Context Item loại <em>summary</em>: tóm tắt hội thoại, tóm tắt kết quả Task.</td></tr>
+<tr><td>Trạng thái Plan/Task</td><td>Plan Version baseline, Task và trạng thái.</td></tr>
+<tr><td>Nguồn và kết quả</td><td>Trusted Reference được chọn, evidence, claim accepted, artifact accepted.</td></tr>
+<tr><td>Trạng thái điều phối</td><td>Workflow và checkpoint.</td></tr>
+</tbody></table></div>
+<p><strong>Context Item:</strong> itemId, projectId, phạm vi (<em>project</em> hoặc <em>task</em> kèm taskId), loại, nội dung có cấu trúc, nguồn (actor, Agent Run, prompt, tin nhắn), trạng thái (<code>Active</code>, <code>Superseded</code>, <code>Retracted</code>), thời điểm.</p>
+<p><strong>Invariant:</strong> Context Item không bị sửa tại chỗ; thay đổi tạo item mới và đánh dấu item cũ <code>Superseded</code>. Context Item phạm vi task chỉ được đưa vào Agent Run của Task đó hoặc Task phụ thuộc trực tiếp vào nó. Shared Context không bao giờ chứa API key hay thông tin xác thực.</p>
+
+<h2 id="s-5-6">5.6. Reference, Evidence and Claim</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Cấp</th>
+<th scope="col">Thuộc tính chính</th>
+<th scope="col">Trạng thái</th>
+</tr></thead><tbody>
+<tr><td>Discovered Result</td><td>Tài khoản</td><td>Nguồn (Google Scholar), truy vấn, metadata thô, liên kết nguồn, thời điểm, Agent Run.</td><td><code>New</code>, <code>Selected</code>, <code>Rejected</code>, <code>Imported</code></td></tr>
+<tr><td>Reference</td><td>Tài khoản</td><td>referenceId, metadata chuẩn hóa (tiêu đề, tác giả, năm, venue, DOI/định danh, URL), BibTeX key, nguồn gốc (discovered result hoặc nhập thủ công), phiên bản metadata, thông tin duyệt/thu hồi.</td><td>Duyệt: <code>Pending Approval</code>, <code>Trusted</code>, <code>Rejected</code>, <code>Revoked</code>. Indexing: <code>Not Indexed</code>, <code>Queued</code>, <code>Indexing</code>, <code>Indexed</code>, <code>Failed</code>, <code>Unavailable</code></td></tr>
+<tr><td>Source Document</td><td>Tài khoản</td><td>Nội dung truy cập hợp lệ của Reference (ví dụ PDF do người dùng cung cấp hoặc nguồn mở), trích xuất văn bản, các đoạn (chunk) có định danh và vị trí; vector embedding trong vector database (Confirmed — 21.1, RAG). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): index một lần ở cấp tài khoản và dùng lại cho mọi project chọn Reference đó; truy xuất luôn lọc theo Project Reference Selection.</td><td>Theo trạng thái indexing của Reference</td></tr>
+<tr><td>Project Reference Selection</td><td>Project</td><td>projectId, referenceId, người chọn, thời điểm, lý do.</td><td><code>Active</code>, <code>Removed</code></td></tr>
+<tr><td>Evidence</td><td>Project</td><td>evidenceId, referenceId, định danh đoạn và vị trí (trang, đoạn), văn bản trích, truy vấn hoặc Task đã truy xuất, Agent Run, điểm liên quan.</td><td><code>Active</code>, <code>Excluded</code> (Researcher loại), <code>Stale</code> (nguồn bị thu hồi hoặc index lại)</td></tr>
+<tr><td>Claim</td><td>Project</td><td>claimId, phát biểu, Task/artifact tạo ra, liên kết evidence (supporting / contradicting), mức hỗ trợ, kết quả kiểm chứng gần nhất.</td><td>Duyệt: <code>Draft</code>, <code>Accepted</code>, <code>Rejected</code>. Hỗ trợ: <code>Supported</code>, <code>Partially Supported</code>, <code>Unsupported</code>, <code>Conflicting</code>, <code>Not Assessed</code></td></tr>
+<tr><td>Claim–Evidence Link</td><td>Project</td><td>claimId, evidenceId, quan hệ (supports / contradicts / context), người tạo.</td><td>—</td></tr>
+</tbody></table></div>
+<p><strong>Invariant:</strong></p>
+<ul>
+<li>Chỉ Reference <code>Trusted</code> mới được chọn vào project, được index để truy xuất và được dùng làm citation (Confirmed — 10.5, GOAL-03). Discovered Result không bao giờ là nguồn của evidence.</li>
+<li>Evidence luôn tham chiếu một Reference và một vị trí cụ thể; không có evidence “không nguồn”.</li>
+<li>Claim <code>Accepted</code> có mức hỗ trợ khác <code>Not Assessed</code>. Claim <code>Unsupported</code> được phép tồn tại nhưng phải hiển thị rõ nhãn đó ở mọi nơi dùng nó (KPI-01, 1.3).</li>
+<li>Khi Reference bị <code>Revoked</code>: evidence của nó chuyển <code>Stale</code>; claim, citation và Task phụ thuộc mang cờ needs review; citation tới reference đã thu hồi không qua kiểm tra citation cho đến khi được thay (LIB-LIFECYCLE-001; OQ-018 đã giải quyết).</li>
+</ul>
+
+<h2 id="s-5-7">5.7. Artifact</h2>
+<p>Sản phẩm đầu ra có phiên bản của agent hoặc Researcher: ghi chú nghiên cứu, bảng, ma trận so sánh, bản tổng hợp literature review, sơ đồ, bản nháp section, file được tạo, kết quả manual work.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Artifact</td><td>artifactId, projectId, loại (note, table, synthesis, diagram, draft_section, file, manual_submission, verification_report), tiêu đề, Task liên quan, phiên bản hiện hành accepted.</td></tr>
+<tr><td>Artifact Version</td><td>Số phiên bản, nội dung hoặc file, định dạng, provenance (actor, Agent Run, Task, Workflow, đầu vào: evidence, reference, artifact khác), trạng thái, người và thời điểm chấp nhận/từ chối, ghi chú review.</td></tr>
+</tbody></table></div>
+<p id="s-5-7-states"><strong>Trạng thái Artifact Version</strong> (giải quyết BL-03-07): <code>Draft</code> (mới tạo), <code>Accepted</code> (Researcher chấp nhận), <code>Rejected</code>, <code>Superseded</code> (từng accepted, đã có bản accepted mới hơn).</p>
+<p><strong>Invariant:</strong> mỗi Artifact có tối đa một version <code>Accepted</code> hiện hành. Version không sửa tại chỗ. Chỉ version <code>Accepted</code> được làm đầu vào chính thức cho Task khác, bản thảo hoặc synthesis (3.4). Diagram artifact lưu cả mã nguồn có thể chỉnh sửa và bản preview (13.3).</p>
+
+<h2 id="s-5-8">5.8. Manuscript</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Thuộc tính chính</th>
+<th scope="col">Trạng thái</th>
+</tr></thead><tbody>
+<tr><td>Manuscript</td><td>manuscriptId, projectId, chế độ khởi tạo (<code>Default</code> / <code>Blank</code> — Confirmed 21.1), file chính (main.tex), cấu hình build (compiler, file chính), revision hiện hành.</td><td>—</td></tr>
+<tr><td>Manuscript File</td><td>Đường dẫn, loại (tex, bib, figure, khác), nội dung hiện hành.</td><td><code>Active</code>, <code>Deleted</code></td></tr>
+<tr><td>Manuscript Revision</td><td>Số revision, tập thay đổi file, actor, nguồn (Researcher sửa trực tiếp hoặc Change Proposal được chấp nhận), Task/artifact liên quan, thời điểm.</td><td>Bất biến</td></tr>
+<tr><td>Change Proposal</td><td>Diff đề xuất bởi Writing Agent (hoặc nhập sơ đồ), revision gốc, Task, evidence/claim dùng, Agent Run.</td><td><code>Proposed</code>, <code>Accepted</code>, <code>Rejected</code>, <code>Outdated</code> (file đã đổi so với revision gốc)</td></tr>
+<tr><td>Bibliography Entry</td><td>BibTeX key, referenceId (Trusted Reference), nội dung BibTeX sinh từ metadata.</td><td>Theo trạng thái Reference</td></tr>
+<tr><td>Build</td><td>Revision được build, thời điểm, log, PDF (nếu thành công), danh sách lỗi/cảnh báo.</td><td><code>Queued</code>, <code>Running</code>, <code>Succeeded</code>, <code>Failed</code></td></tr>
+</tbody></table></div>
+<p><strong>Invariant:</strong> mọi thay đổi file tạo một Manuscript Revision (12.10). Change Proposal chỉ được áp dụng khi Researcher chấp nhận (APR-05) và khi revision gốc khớp revision hiện hành; nếu không, proposal chuyển <code>Outdated</code>. Mỗi citation key trong bản thảo phải phân giải về một Bibliography Entry gắn với Trusted Reference (KPI-02 = 100%).</p>
+
+<h2 id="s-5-9">5.9. Interactive Agent Prompt</h2>
+<p>Yêu cầu có cấu trúc agent gửi đến Researcher để xin quyết định hoặc thông tin (8.4).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thuộc tính</th>
+<th scope="col">Nội dung</th>
+</tr></thead><tbody>
+<tr><td>Prompt type</td><td><code>approval</code> (duyệt/từ chối), <code>choice</code> (chọn một hoặc nhiều phương án), <code>edit_and_approve</code> (sửa nội dung rồi duyệt), <code>information_request</code> (bổ sung thông tin).</td></tr>
+<tr><td>Pending decision</td><td>Câu hỏi; hành động đang chờ; đối tượng liên quan (Plan Version, Reference, Change Proposal…); hệ quả của từng lựa chọn.</td></tr>
+<tr><td>Available choices</td><td>Danh sách lựa chọn có cấu trúc; lựa chọn đề xuất của agent (nếu có) và lý do.</td></tr>
+<tr><td>Response</td><td>Lựa chọn, nội dung đã sửa hoặc thông tin bổ sung; người trả lời; thời điểm.</td></tr>
+<tr><td>Liên kết</td><td>projectId, taskId (nếu có), workflowId, workflow step, agent và Agent Run tạo prompt; APR tương ứng nếu là phê duyệt.</td></tr>
+<tr><td>Trạng thái</td><td><code>Open</code>, <code>Answered</code>, <code>Expired</code>, <code>Cancelled</code>. Prompt không có thời hạn theo thời gian.</td></tr>
+</tbody></table></div>
+<p><strong>Invariant:</strong> một prompt chỉ được trả lời một lần. <code>Expired</code> hoặc <code>Cancelled</code> không bao giờ được hiểu là đồng ý (3.4). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): prompt không hết hạn theo thời gian, vì nghiên cứu kéo dài qua nhiều phiên (GOAL-02). Prompt chỉ chuyển <code>Expired</code> khi project được lưu trữ trong lúc prompt còn <code>Open</code> (chỉ xảy ra với prompt không chặn workflow), và chuyển <code>Cancelled</code> khi workflow bị hủy hoặc đối tượng cần duyệt đã đổi phiên bản (PROMPT-APPROVAL-001). Không bao giờ tự chọn phương án mặc định. Câu trả lời được ghi thành Context Item loại <em>decision</em>.</p>
+
+<h2 id="s-5-10">5.10. Entity Relationships</h2>
+<pre><code>Account 1──* Research Project
+Account 1──* Reference ──1 Source Document (0..1)
+Account 1──* Discovered Result ──0..1 Reference
+Account 1──* Provider Connection 1──* Agent Model Assignment (8 agent)
+Research Project 1──1 Research Plan 1──* Plan Version 1──* Phase
+Research Project 1──* Task          (định nghĩa theo Plan Version)
+Task *──* Task (Task Dependency, trong một Plan Version)
+Task 1──* Workflow 1──* Workflow Step 1──* Agent Run
+Workflow 1──* Checkpoint
+Workflow Step 0..1──* Interactive Agent Prompt
+Research Project 1──1 Shared Context 1──* Context Item
+Research Project *──* Reference     (Project Reference Selection)
+Research Project 1──* Evidence *──1 Reference
+Research Project 1──* Claim *──* Evidence (Claim–Evidence Link)
+Research Project 1──* Artifact 1──* Artifact Version
+Research Project 1──0..1 Manuscript 1──* Manuscript File
+Manuscript 1──* Manuscript Revision, Change Proposal, Build, Bibliography Entry
+Agent Run 1──* (Artifact Version | Evidence | Claim | Change Proposal | Discovered Result)
+mọi entity ──* Audit Event</code></pre>
+<p class="status">FIG-002 — Entity relationship. Nguồn Mermaid: <a href="../figures/FIG-002-entity-relationships.mmd">figures/FIG-002-entity-relationships.mmd</a>; phụ lục D.</p>
+<h3>Quy tắc ownership và tham chiếu</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Quy tắc</th>
+<th scope="col">Nội dung</th>
+</tr></thead><tbody>
+<tr><td>OWN-01</td><td>Entity cấp project chỉ tham chiếu entity cùng project, hoặc entity cấp tài khoản của cùng account.</td></tr>
+<tr><td>OWN-02</td><td>Entity cấp tài khoản không tham chiếu entity của một project cụ thể, trừ quan hệ ngược được tính toán (ví dụ “Reference đang được dùng ở project nào”).</td></tr>
+<tr><td>OWN-03</td><td>Không entity nào tham chiếu sang account khác.</td></tr>
+<tr><td>OWN-04</td><td>Xóa hoặc lưu trữ project không ảnh hưởng Trusted Reference; Project Reference Selection của project đó chuyển <code>Removed</code>.</td></tr>
+<tr><td>OWN-05</td><td>Entity được provenance tham chiếu (Agent Run, Artifact Version, Evidence, Revision) không bị xóa vật lý khi project còn tồn tại.</td></tr>
+<tr><td>OWN-06</td><td>Không có entity thành viên project hay chia sẻ trong MVP (Confirmed — OQ-004).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5-11">5.11. Entity hỗ trợ</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Cấp</th>
+<th scope="col">Thuộc tính chính</th>
+</tr></thead><tbody>
+<tr><td>Account / Profile</td><td>Tài khoản</td><td>accountId, định danh eTroy OIDC (<code>sub</code>; DEC-26, ASM-13), Profile (họ tên, đơn vị, lĩnh vực nghiên cứu, ảnh đại diện, URL hồ sơ Google Scholar), Preferences (ngôn ngữ giao diện, ngôn ngữ phản hồi, công tắc đưa lĩnh vực nghiên cứu vào context, Ngưỡng kiểm chứng) — DEC-24, DEC-38.</td></tr>
+<tr><td>Provider Connection</td><td>Tài khoản</td><td>Tên, provider (<code>anthropic</code>, <code>openai</code>, <code>google</code>), base URL, API key (mã hóa, chỉ hiển thị dạng che), trạng thái kiểm tra (<code>Untested</code>, <code>Valid</code>, <code>Invalid</code>), danh sách model khả dụng.</td></tr>
+<tr><td>Agent Model Assignment</td><td>Tài khoản</td><td>Agent (Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, hoặc <em>default</em>), Provider Connection, model.</td></tr>
+<tr><td>Conversation / Message</td><td>Tài khoản (global) hoặc Project</td><td>Ngữ cảnh (global hoặc projectId), active task tại thời điểm gửi, người gửi (Researcher hoặc agent), nội dung, prompt nhúng.</td></tr>
+<tr><td>Pending Action / Notification</td><td>Tài khoản hoặc Project</td><td>Loại (4.4), đối tượng liên quan, trạng thái (<code>Open</code>, <code>Resolved</code>, <code>Expired</code>; notification: <code>Unread</code>, <code>Read</code>).</td></tr>
+<tr><td>Audit Event</td><td>Tài khoản hoặc Project</td><td>Actor (Researcher / agent + Agent Run / System), hành động, đối tượng và phiên bản, giá trị trước/sau (tóm tắt), APR liên quan, thời điểm. Chỉ ghi thêm (14.8).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5-12">5.12. Open Questions của mục 5</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-022</td><td>Một project có thể có nhiều Manuscript (ví dụ bài báo và slide/poster) không, hay đúng một trong MVP? <strong>Đã giải quyết (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> tối đa một Manuscript mỗi project trong MVP, theo outline và 12.1.</td><td>5.8, 12</td></tr>
+<tr><td>OQ-023</td><td>Interactive Agent Prompt có thời hạn mặc định không? Nếu có, bao lâu và có khác nhau theo loại prompt không? <strong>Đã giải quyết (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> không có thời hạn theo thời gian; chỉ <code>Expired</code> khi project được lưu trữ, <code>Cancelled</code> khi workflow bị hủy hoặc đối tượng đổi phiên bản.</td><td>5.9, 8.4, 16</td></tr>
+<tr><td>OQ-024</td><td>Source Document (nội dung đã index) thuộc cấp tài khoản và dùng lại giữa các project như Reference, hay index riêng theo project? <strong>Đã giải quyết (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> cấp tài khoản, index một lần và dùng lại; truy xuất lọc theo Project Reference Selection.</td><td>5.6, 11.1, 16.4</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="04-information-architecture-and-navigation.html">← Mục 4</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="06-end-to-end-product-workflow.html">Mục 6 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

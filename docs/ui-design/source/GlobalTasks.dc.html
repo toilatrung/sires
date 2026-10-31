@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Tasks &amp; Plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="tasks" hint-size="100%,57px"></dc-import>
+  <main style="max-width: 1280px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Tasks &amp; Plan</h1>
+      <p style="margin: 0; font-size: 14px; color: #4D4A44">Tổng hợp chỉ đọc từ mọi project. Mở một Task để chuyển sang ngữ cảnh project của nó; thực thi chỉ làm trong Project Workspace.</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Project
+        <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả · 3</option></select>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Execution label
+        <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option><option>Available for agent</option><option>Manual editor requirement</option></select>
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Agent
+        <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option></select>
+      </label>
+    </div>
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{g.b}}; color: {{g.fg}}; background: {{g.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{g.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{g.state}}</span><span style="color: #4D4A44; font-weight: 500">{{g.count}}</span></h2>
+        <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+          <sc-for list="{{g.items}}" as="t" hint-placeholder-count="2">
+            <a href="Plan.dc.html" style="display: grid; grid-template-columns: 70px minmax(0, 2.4fr) minmax(0, 1.6fr) 230px; gap: 14px; align-items: center; min-height: 52px; padding: 6px 16px; border-top: {{t.div}}; text-decoration: none; color: #1C1B18; font-size: 14px">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">{{t.id}}</span>
+              <span style="font-weight: 600; min-width: 0">{{t.title}}<sc-if value="{{t.hasNote}}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 12px; font-weight: 400; color: #9A3412">{{t.note}}</span></sc-if></span>
+              <span style="color: #4D4A44; min-width: 0">{{t.project}}</span>
+              <span style="display: flex; justify-content: flex-end">
+                <sc-if value="{{t.manual}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 12px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Manual editor requirement</span></sc-if>
+                <sc-if value="{{t.agent}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: 4px; border: 1px solid #DBD3C7; background: #F6F2EE; font-size: 12px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>Available for agent</span></sc-if>
+              </span>
+            </a>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], ok: ['solid #0277DD', '#025FAC', '#FFFFFF'], warn: ['solid #9A3412', '#9A3412', '#FFFFFF'] };
+    const P1 = 'RAG trong tổng quan tài liệu', P3 = 'Học máy trong chẩn đoán ảnh';
+    const t = (id, title, project, manual, note) => ({ id, title, project, manual, agent: !manual, hasNote: !!note, note: note || '' });
+    const g = (state, k, items) => ({ state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', count: items.length + ' Task', items: items.map((x, i) => ({ ...x, div: i === 0 ? '0' : '1px solid #DBD3C7' })) });
+    return {
+      groups: [
+        g('Waiting for User', 'need', [t('T-2.3', 'So sánh phương pháp đo', P1, false, 'Discovery Agent hỏi phạm vi năm')]),
+        g('In Review', 'need', [t('T-2.1', 'Tổng hợp định nghĩa khái niệm', P1, false), t('T-3.4', 'Viết mục Discussion', P3, true)]),
+        g('In Progress', 'run', [t('T-2.2', 'Tìm nghiên cứu 2019–2026', P1, false)]),
+        g('Ready', 'ok', [t('T-2.4', 'Phỏng vấn chuyên gia về tiêu chí đánh giá', P1, true), t('T-3.5', 'Tạo sơ đồ pipeline', P3, false)]),
+        g('Blocked', 'warn', [t('T-2.5', 'Ma trận so sánh phương pháp', P1, false, 'Chờ T-2.3 Completed'), t('T-2.6', 'Sơ đồ kiến trúc RAG', P1, false, 'Diagram Agent chưa có kết nối hợp lệ')])
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

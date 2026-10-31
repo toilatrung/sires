@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Thanh điều hướng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="box-sizing: border-box; width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding: 8px 20px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; color: #1C1B18">
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; min-width: 0">
+    <a href="Dashboard.dc.html" style="display: flex; align-items: center; min-height: 40px"><img src="/_blob/4be6b6592c8839a5dc8538b3772a6df0" alt="SIRes — về Dashboard" style="height: 28px; width: auto; display: block"></a>
+    <button aria-haspopup="listbox" aria-label="Chuyển ngữ cảnh: {{ctxLabel}}" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 600 14px Montserrat, sans-serif; cursor: pointer">
+      <span style="font: 500 11px 'JetBrains Mono', monospace; color: #4D4A44">{{ctxKind}}</span>
+      <span style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ctxLabel}}</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <sc-if value="{{isGlobal}}" hint-placeholder-val="{{ true }}">
+      <nav aria-label="Khu vực Global" style="display: flex; flex-wrap: wrap; gap: 2px">
+        <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+          <a href="{{n.href}}" aria-current="{{n.current}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 11px; text-decoration: none; font-size: 14px; font-weight: {{n.weight}}; color: {{n.color}}; border-bottom: 2px solid {{n.line}}">{{n.label}}</a>
+        </sc-for>
+      </nav>
+    </sc-if>
+    <sc-if value="{{isProject}}" hint-placeholder-val="{{ false }}">
+      <nav aria-label="Vị trí" style="display: flex; align-items: center; gap: 8px; font-size: 14px">
+        <a href="Dashboard.dc.html" style="display: flex; align-items: center; gap: 6px; min-height: 40px; color: #4D4A44; text-decoration: none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Global</a>
+        <span aria-hidden="true" style="color: #4D4A44">/</span>
+        <span style="font-weight: 600">{{area}}</span>
+      </nav>
+    </sc-if>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+    <sc-if value="{{isGlobal}}" hint-placeholder-val="{{ true }}">
+      <a href="Assistant.dc.html" style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; text-decoration: none; color: #1C1B18; font-size: 14px; font-weight: 500"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Trợ lý</a>
+    </sc-if>
+    <a href="PendingActions.dc.html" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border: 1px solid #0277DD; border-radius: 6px; text-decoration: none; color: #025FAC; font-size: 14px; font-weight: 600">Pending Actions<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 11px; background: #0277DD; color: #FFFFFF; font-size: 12px">{{pending}}</span></a>
+    <button aria-label="Thông báo, 3 chưa đọc" style="position: relative; width: 40px; height: 40px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20h4"/></svg><span style="position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; border-radius: 24px; background: #1C1B18; color: #FFFFFF; font: 600 10px/16px Montserrat, sans-serif">3</span></button>
+    <div role="group" aria-label="Ngôn ngữ giao diện" style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
+      <button aria-pressed="true" style="height: 38px; min-width: 40px; border: 0; background: #1C1B18; color: #FFFFFF; font: 600 13px Montserrat, sans-serif">VI</button>
+      <button aria-pressed="false" style="height: 38px; min-width: 40px; border: 0; background: #FCF9F5; color: #4D4A44; font: 500 13px Montserrat, sans-serif">EN</button>
+    </div>
+    <a href="SettingsProfile.dc.html" aria-label="Settings" style="width: 40px; height: 40px; box-sizing: border-box; border: 1px solid #DBD3C7; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #1C1B18"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></a>
+    <a href="SettingsProfile.dc.html" aria-label="Hồ sơ: Nguyễn Thanh" style="width: 40px; height: 40px; border-radius: 20px; background: #EAF4FE; color: #025FAC; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 13px; font-weight: 600">NT</a>
+  </div>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["global","project"],"default":"global"},"active":{"editor":"text","default":"dashboard"},"project":{"editor":"text","default":"RAG trong tổng quan tài liệu"},"area":{"editor":"text","default":"Overview"},"pending":{"editor":"int","default":4},"$preview":{"width":1440,"height":57}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mode = this.props.mode ?? 'global';
+    const active = this.props.active ?? 'dashboard';
+    const items = [
+      ['dashboard', 'Dashboard', 'Dashboard.dc.html'],
+      ['projects', 'Research Projects', 'Projects.dc.html'],
+      ['discover', 'Discover', 'Discover.dc.html'],
+      ['library', 'Trusted Library', 'Library.dc.html'],
+      ['tasks', 'Tasks & Plan', 'GlobalTasks.dc.html'],
+      ['activity', 'Agent Activity', 'GlobalActivity.dc.html']
+    ];
+    const isGlobal = mode === 'global';
+    return {
+      isGlobal, isProject: !isGlobal,
+      ctxKind: isGlobal ? 'Ngữ cảnh' : 'Project',
+      ctxLabel: isGlobal ? 'Global' : (this.props.project ?? 'RAG trong tổng quan tài liệu'),
+      area: this.props.area ?? 'Overview',
+      pending: String(this.props.pending ?? 4),
+      nav: items.map(([k, label, href]) => {
+        const on = k === active;
+        return { label, href, current: on ? 'page' : 'false', weight: on ? 600 : 500, color: on ? '#1C1B18' : '#4D4A44', line: on ? '#1C1B18' : 'transparent' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

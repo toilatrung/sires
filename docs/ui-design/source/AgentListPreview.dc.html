@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Agent List light và dark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes sires-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media (prefers-reduced-motion: reduce){[style*="sires-pulse"]{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 920px; min-height: 560px; box-sizing: border-box; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); font-family: Montserrat, system-ui, sans-serif">
+  <div style="padding: 32px; background: #F6F2EE; display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 13px; font-weight: 600; color: #4D4A44">Light</span>
+    <dc-import name="AgentList" wf-state="{{wf}}" theme="light" hint-size="100%,420px"></dc-import>
+  </div>
+  <div style="padding: 32px; background: #12110F; display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 13px; font-weight: 600; color: #C9C2B6">Dark</span>
+    <dc-import name="AgentList" wf-state="{{wf}}" theme="dark" hint-size="100%,420px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted"],"default":"running"},"$preview":{"width":920,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { wf: this.props.wfState ?? 'running' };
+  }
+}
+</script>
+</body>
+</html>

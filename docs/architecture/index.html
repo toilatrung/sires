@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc hệ thống SIRes mức MVP: technology stack, service, luồng hoạt động, phương án cho các bài toán kỹ thuật.">
+<title>Kiến trúc hệ thống | SIRes</title>
+<link rel="icon" href="../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design Document</p>
+<h1>SIRes — Thiết kế kiến trúc hệ thống (MVP)</h1>
+<p class="meta">Suy ra từ <a href="../overview/index.html">PRD SIRes v1.0</a> (PO duyệt qua phiếu chốt PC-01, 31/10/2026) và <a href="../api-design/index.html">API 0.1.0-mvp</a> · Khởi tạo: 31/10/2026 · Phiên bản 0.2: tách backend thành nhiều service theo chỉ đạo ngày 31/10/2026</p>
+<p>Tài liệu mô tả <em>cách hiện thực</em> SIRes: technology stack, các service và ranh giới dữ liệu, luồng hoạt động giữa service, và phương án cho các bài toán kỹ thuật mà PRD đặt ra — workflow dài bền vững, điều phối đa agent độc lập provider, RAG có cách ly, sandbox build LaTeX, bảo vệ API key, khôi phục sau gián đoạn, nhất quán xuyên service. Đối tượng: SWE, GEN AI, AIE, coding agents và QA. Quy ước biên soạn: <a href="README.md"><code>README.md</code></a>.</p>
+<div class="note"><p><strong>Trạng thái quyết định (31/10/2026).</strong> Đã chốt: backend chia nhiều service; service hệ thống dùng TypeScript/NestJS, agent core dùng Python; monorepo chung FE + BE; các đề xuất còn lại của technology stack bản 0.1 (ADR-03–ADR-16) được chấp thuận. Còn ở trạng thái <code>Proposed</code>: danh sách service cụ thể, vị trí service knowledge, RabbitMQ, hợp đồng nội bộ, công cụ monorepo, database theo service, audit tập trung (ADR-17–ADR-23, <a href="sections/12-decisions-risks-and-open-issues.html#s-12-1">sổ ADR</a>). Khi tài liệu này khác PRD hoặc đặc tả API, PRD và API là chuẩn.</p></div>
+
+<h2 id="summary">Tóm tắt kiến trúc</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Bài toán</th><th>Phương án</th><th>ADR</th></tr></thead>
+<tbody>
+<tr><td>Kiểu kiến trúc</td><td>Microservices theo domain: gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, sandbox-runner (NestJS) và agent-core, knowledge (Python). Mỗi service sở hữu entity, database và hợp đồng Swagger riêng.</td><td>ADR-17</td></tr>
+<tr><td>Ngôn ngữ, framework</td><td>TypeScript + NestJS (SWC, Drizzle) cho service hệ thống; Python 3.12 + FastAPI (uv) cho agent-core và knowledge; React + Vite cho frontend.</td><td>ADR-18</td></tr>
+<tr><td>Hợp đồng giữa service</td><td>OpenAPI công khai (đã có) + OpenAPI nội bộ theo service + AsyncAPI cho sự kiện; token nội bộ ký bằng KMS cho gọi service-to-service.</td><td>ADR-14, ADR-20</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ managed: sự kiện qua topic exchange, lệnh qua queue <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; outbox ở mỗi service, inbox idempotent ở consumer.</td><td>ADR-19</td></tr>
+<tr><td>Workflow dài, checkpoint, khôi phục</td><td>Engine tự xây trong orchestration; trạng thái ở database của nó; agent-core thực thi từng Agent Run; heartbeat 30 s, sweeper 10 s chuyển Interrupted trong ≤ 2 phút; đầu ra ghi vào service sở hữu theo saga idempotent.</td><td>ADR-03</td></tr>
+<tr><td>Lưu trữ</td><td>Một cụm PostgreSQL 16+ managed, một database mỗi service, RLS theo tài khoản; object storage S3 theo prefix service.</td><td>ADR-04, ADR-06, ADR-22</td></tr>
+<tr><td>Vector database (RAG)</td><td>pgvector trong database knowledge; truy xuất lai vector + full-text; phạm vi do System tính.</td><td>ADR-05</td></tr>
+<tr><td>Audit</td><td>Audit Event ghi vào outbox cùng giao dịch ở service nguồn; service audit lưu chỉ ghi thêm, truy vấn, export, tính KPI.</td><td>ADR-23</td></tr>
+<tr><td>Realtime</td><td>Outbox → RabbitMQ → gateway → SSE <code>GET /events</code>, phát lại 24 giờ.</td><td>ADR-07</td></tr>
+<tr><td>Gọi model</td><td>Model Gateway trong agent-core trên SDK chính thức ba provider; framework agent chỉ dùng trong ranh giới một Agent Run.</td><td>ADR-08</td></tr>
+<tr><td>Xác thực, bí mật</td><td>gateway là BFF và OIDC RP của eTroy; API key mã hóa envelope bằng KMS, chỉ agent-core và knowledge giải mã.</td><td>ADR-09, ADR-10</td></tr>
+<tr><td>Build LaTeX, render sơ đồ</td><td>Sandbox gVisor không mạng, pool sẵn sàng; controller NestJS.</td><td>ADR-11</td></tr>
+<tr><td>Monorepo, CI</td><td>pnpm + Nx (affected, remote cache) cho TS; uv cho Python; thư viện platform dùng chung.</td><td>ADR-16, ADR-21</td></tr>
+<tr><td>Triển khai, quan sát</td><td>Kubernetes managed, Terraform, Helm chart chung; OpenTelemetry qua HTTP và RabbitMQ.</td><td>ADR-12, ADR-13</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="contents">Mục lục</h2>
+<nav aria-label="Mục lục kiến trúc"><ol class="contents">
+<li><a href="sections/01-architecture-overview.html">Architecture Overview</a><span class="status">Mục tiêu, phạm vi, động lực kiến trúc, nguyên tắc · PRD 1, 2, 14, 16, 21</span></li>
+<li><a href="sections/02-technology-stack.html">Technology Stack</a><span class="status">Stack theo lớp: NestJS, Python, React, RabbitMQ, PostgreSQL · ASM-11, DEC-27</span></li>
+<li><a href="sections/03-system-context-and-containers.html">System Context and Services</a><span class="status">Danh sách service, sở hữu dữ liệu, giao tiếp, monorepo, quy tắc cho người viết service · PRD 3, 5, 14</span></li>
+<li><a href="sections/04-runtime-flows.html">Runtime Flows</a><span class="status">Luồng F-01–F-12 giữa các service · WF-01–WF-07</span></li>
+<li><a href="sections/05-workflow-engine-and-orchestration.html">Workflow Engine and Orchestration</a><span class="status">Thực thi bền vững, giao việc qua queue, saga, Orchestrator · PRD 8, 14.6–14.7</span></li>
+<li><a href="sections/06-data-architecture.html">Data Architecture</a><span class="status">Database theo service, outbox, audit, cách ly, retention · PRD 5, 18, 16.8</span></li>
+<li><a href="sections/07-rag-and-document-pipeline.html">RAG and Document Pipeline</a><span class="status">Indexing, truy xuất, kiểm chứng · PRD 10, 11, 17.3</span></li>
+<li><a href="sections/08-model-gateway-and-integrations.html">Model Gateway and Integrations</a><span class="status">Ba provider, Scholar, DOI, eTroy OIDC · PRD 8.6, 17</span></li>
+<li><a href="sections/09-sandbox-latex-and-diagrams.html">Sandbox: LaTeX and Diagrams</a><span class="status">Build và render cô lập · PRD 12, 13, 17.4–17.5</span></li>
+<li><a href="sections/10-security-architecture.html">Security Architecture</a><span class="status">Xác thực, token nội bộ, bí mật, cách ly · PRD 3, 16.1</span></li>
+<li><a href="sections/11-deployment-and-operations.html">Deployment and Operations</a><span class="status">Topology, CI affected, observability, eval · PRD 16, 20</span></li>
+<li><a href="sections/12-decisions-risks-and-open-issues.html">Decisions, Risks and Open Issues</a><span class="status">Sổ ADR-01–23, spike, rủi ro, câu hỏi mở · PRD 21</span></li>
+</ol></nav>
+
+<h2 id="next">Bước tiếp theo</h2>
+<ul>
+<li>Chốt ADR-17–ADR-23, đặc biệt danh sách service và vị trí knowledge (AQ-07), phân công nhóm sở hữu service (AQ-08); cập nhật ASM-11 và DEC-27 trong PRD 21.</li>
+<li>Tạo hợp đồng nội bộ <code>docs/api-design/internal/</code> và sự kiện <code>docs/api-design/events/asyncapi.yaml</code>; ánh xạ <code>paths/</code> công khai sang service (3.3).</li>
+<li>Chạy SPK-01, SPK-02, SPK-10 trước M1 (<a href="sections/12-decisions-risks-and-open-issues.html#s-12-2">bảng spike</a>); khởi tạo monorepo theo <a href="sections/03-system-context-and-containers.html#s-3-4">3.4</a>.</li>
+</ul>
+<p>Ngữ cảnh và nhật ký biên soạn: <a href="../docs_context.md">docs_context.md</a>. Nguồn sơ đồ: <code>figures/</code> (<a href="figures/README.md">hướng dẫn</a>).</p>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2.</footer>
+</div>
+</body>
+</html>

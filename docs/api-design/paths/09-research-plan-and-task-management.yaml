@@ -1,0 +1,700 @@
+# PRD 9 Research Plan and Task Management — WF-01, WF-02, WF-03 — milestone M3.
+# Chuyển trạng thái Task theo bảng chuẩn TASK-STATE-001 (T-01–T-19, PRD 9.8); x-transition ghi mã tương ứng.
+
+/projects/{projectId}/plan:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Plan]
+    operationId: getPlan
+    summary: Research Plan, baseline và danh sách version
+    x-requirements: [PLAN-VIEWS-001, PLAN-APPROVAL-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Research Plan.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/ResearchPlan }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/plan/proposals:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Plan]
+    operationId: requestPlanProposal
+    summary: Yêu cầu Orchestrator lập Plan đề xuất (WF-01)
+    description: |
+      Khởi tạo workflow `plan_proposal`. Kết quả là Plan Version Draft do Orchestrator tạo; Researcher xem, sửa,
+      trình duyệt. Bị chặn nếu đã có Draft/Proposed đang mở (`409 open_plan_version_exists`).
+    x-requirements: [ORCH-PLAN-001, PLAN-GENERATE-001, DATA-IDEMP-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              instructions:
+                type: string
+                description: Yêu cầu bổ sung của Researcher (ví dụ “thêm phase khảo sát”).
+              basedOnVersionId:
+                $ref: ../components/schemas/common.yaml#/Id
+                description: Đề xuất sửa từ version này (mặc định baseline).
+    responses:
+      '202': { $ref: ../components/responses.yaml#/WorkflowAccepted }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Plan]
+    operationId: listPlanVersions
+    summary: Danh sách Plan Version
+    x-requirements: [PLAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - name: status
+        in: query
+        schema: { $ref: ../components/schemas/plan.yaml#/PlanVersionStatus }
+    responses:
+      '200':
+        description: Version, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/plan.yaml#/PlanVersionSummary }
+  post:
+    tags: [Plan]
+    operationId: createPlanVersionDraft
+    summary: Researcher tạo Draft mới (từ baseline hoặc version khác)
+    x-requirements: [PLAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/plan.yaml#/PlanVersionCreate }
+    responses:
+      '201':
+        description: Draft mới.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions/{planVersionId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  get:
+    tags: [Plan]
+    operationId: getPlanVersion
+    summary: Nội dung Plan Version (phase, task, dependency)
+    x-requirements: [PLAN-GENERATE-001, TASK-DEFINE-001, TASK-DEPENDENCY-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Plan Version.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  put:
+    tags: [Plan]
+    operationId: updatePlanVersionDraft
+    summary: Sửa Draft
+    description: Chỉ Draft sửa được; version khác trả `409 action_not_allowed_in_state` (DATA-STATE-002-AC01).
+    x-requirements: [PLAN-REVIEW-001, DATA-CONC-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/plan.yaml#/PlanVersionUpdate }
+    responses:
+      '200':
+        description: Đã lưu.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+  delete:
+    tags: [Plan]
+    operationId: discardPlanVersionDraft
+    summary: Hủy bản nháp (xóa mềm Draft)
+    x-requirements: [PLAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions/{planVersionId}/submit:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  post:
+    tags: [Plan]
+    operationId: submitPlanVersion
+    summary: Trình duyệt (Draft → Proposed)
+    description: |
+      Kiểm tra cấu trúc (18.5): dependency không chu trình, mỗi Task có objective, ≥ 1 đầu ra bắt buộc, ≥ 1 acceptance
+      criterion, execution label hợp lệ. Lỗi trả `422 dependency_cycle` nêu các Task liên quan (DATA-VALID-001-AC01).
+      Tạo pending action `plan_approval`.
+    x-requirements: [PLAN-APPROVAL-001, TASK-DEPENDENCY-001, DATA-VALID-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Version Proposed, kèm `changeClass` (material/minor).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/plan/versions/{planVersionId}/approve:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  post:
+    tags: [Plan]
+    operationId: approvePlanVersion
+    summary: Duyệt Plan Version thành baseline (APR-01)
+    description: |
+      Proposed → Approved; baseline cũ → Superseded trong cùng giao dịch (DATA-STATE-001-AC02). System tính readiness
+      cho Task (T-01/T-02) và áp dụng ảnh hưởng (PLAN-IMPACT-001). Thay đổi minor được duyệt nhanh một thao tác (OQ-026).
+    x-requirements: [PLAN-APPROVAL-001, PLAN-IMPACT-001, CTX-CONSISTENCY-003]
+    x-apr: APR-01
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              versionNumber:
+                type: integer
+                description: Version Researcher đã xem — phê duyệt gắn với phiên bản.
+              note: { type: string }
+    responses:
+      '200':
+        description: Version Approved.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions/{planVersionId}/reject:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  post:
+    tags: [Plan]
+    operationId: rejectPlanVersion
+    summary: Từ chối Plan Version (lý do bắt buộc)
+    x-requirements: [PLAN-APPROVAL-001]
+    x-apr: APR-01
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string, minLength: 1 }
+    responses:
+      '200':
+        description: Version Rejected; Task chỉ có trong version này bị loại (T-17).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions/{planVersionId}/withdraw:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  post:
+    tags: [Plan]
+    operationId: withdrawPlanVersion
+    summary: Rút lại để sửa (Proposed → Rejected “withdrawn” + Draft mới sao chép nội dung)
+    x-requirements: [PLAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '201':
+        description: Draft mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanVersion }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/plan/versions/{planVersionId}/diff:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  get:
+    tags: [Plan]
+    operationId: diffPlanVersion
+    summary: So sánh hai Plan Version
+    x-requirements: [PLAN-REVIEW-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - name: against
+        in: query
+        description: Version so sánh; mặc định baseline hiện hành.
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '200':
+        description: Danh sách khác biệt, có đánh dấu thay đổi lớn (MC-NN).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/PlanDiff }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/plan/versions/{planVersionId}/impact:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/PlanVersionId
+  get:
+    tags: [Plan]
+    operationId: getPlanVersionImpact
+    summary: Phân tích ảnh hưởng nếu duyệt version này
+    x-requirements: [PLAN-IMPACT-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Task, artifact, claim bị ảnh hưởng.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/ImpactReport }
+
+/projects/{projectId}/tasks:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Tasks]
+    operationId: listTasks
+    summary: Task board / danh sách Task
+    x-requirements: [PLAN-VIEWS-001, TASK-PROGRESS-001, UX-TASK-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - name: status
+        in: query
+        style: form
+        explode: false
+        schema:
+          type: array
+          items: { $ref: ../components/schemas/plan.yaml#/TaskStatus }
+      - name: phaseId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: executionLabel
+        in: query
+        schema: { $ref: ../components/schemas/plan.yaml#/ExecutionLabel }
+      - name: needsReview
+        in: query
+        schema: { type: boolean }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang Task (định nghĩa theo baseline hiện hành).
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/plan.yaml#/Task }
+
+/projects/{projectId}/tasks/{taskId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  get:
+    tags: [Tasks]
+    operationId: getTask
+    summary: Chi tiết Task, readiness gần nhất và hành động hợp lệ
+    x-requirements: [TASK-DEFINE-001, TASK-PROGRESS-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Task.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/tasks/{taskId}/readiness:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  get:
+    tags: [Tasks]
+    operationId: getTaskReadiness
+    summary: Kết quả readiness check gần nhất (RC-01–RC-09)
+    x-requirements: [TASK-READINESS-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Readiness.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/ReadinessResult }
+  post:
+    tags: [Tasks]
+    operationId: recheckTaskReadiness
+    summary: Tính lại readiness (T-03, T-04, T-16)
+    description: |
+      RC-01–RC-08 tính đồng bộ. `includeSemantic = true` thêm RC-09 do Orchestrator đánh giá — trả `202` kèm workflow
+      `readiness_semantic` (ORCH-READINESS-001).
+    x-requirements: [TASK-READINESS-001, ORCH-READINESS-001]
+    x-transition: [T-03, T-04, T-16]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+      - name: includeSemantic
+        in: query
+        schema: { type: boolean, default: false }
+    responses:
+      '200':
+        description: Readiness mới (RC-01–RC-08).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/ReadinessResult }
+      '202': { $ref: ../components/responses.yaml#/WorkflowAccepted }
+
+/projects/{projectId}/tasks/{taskId}/activate:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: activateTask
+    summary: Kích hoạt thực thi Task (APR-02)
+    description: |
+      Ready/Failed → Queued (T-05) khi RC-01–RC-09 đạt và không có Workflow hoạt động. Task agent: tạo workflow
+      `task_execution`; Task manual: chuyển In Progress và tạo pending action `manual_work`.
+      Hai yêu cầu đồng thời khóa khác nhau: một thành công, một trả `409 active_workflow_exists` (DATA-IDEMP-002-AC01).
+      Task Failed chỉ chạy lại qua lệnh này. Hoàn thành một Task không tự kích hoạt Task tiếp theo (DEC, 21.1).
+    x-requirements: [TASK-TRIGGER-001, TASK-LABEL-001, CTX-CONSISTENCY-001, DATA-IDEMP-001, DATA-IDEMP-002]
+    x-apr: APR-02
+    x-transition: [T-05, T-06]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '202':
+        description: Đã kích hoạt.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/TaskActivation }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409':
+        description: '`readiness_failed` (kèm checks), `active_workflow_exists`, `invalid_transition`, `project_archived`.'
+        content:
+          application/problem+json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Problem
+                - properties:
+                    readiness: { $ref: ../components/schemas/plan.yaml#/ReadinessResult }
+
+/projects/{projectId}/tasks/{taskId}/dequeue:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: dequeueTask
+    summary: Hủy kích hoạt trước khi bắt đầu (Queued → Ready)
+    x-requirements: [TASK-STATE-001]
+    x-transition: [T-07]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Task Ready.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/tasks/{taskId}/manual-submissions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: submitManualWork
+    summary: Gửi kết quả Task Manual editor requirement (In Progress → In Review)
+    description: Tạo Artifact Version `manual_submission` ở Draft; cần đủ đầu ra bắt buộc (T-11).
+    x-requirements: [TASK-LABEL-001, TASK-CHECKLIST-001, DATA-IDEMP-001]
+    x-transition: [T-11]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/plan.yaml#/ManualSubmission }
+    responses:
+      '201':
+        description: Task In Review.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/tasks/{taskId}/checklist:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  patch:
+    tags: [Tasks]
+    operationId: updateTaskChecklist
+    summary: Đánh dấu mục checklist
+    x-requirements: [TASK-CHECKLIST-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [items]
+            properties:
+              items:
+                type: array
+                items: { $ref: ../components/schemas/plan.yaml#/ChecklistItemState }
+    responses:
+      '200':
+        description: Task cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/projects/{projectId}/tasks/{taskId}/reviews:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  get:
+    tags: [Tasks]
+    operationId: listTaskReviews
+    summary: Lịch sử review của Task
+    x-requirements: [TASK-CHECKLIST-001]
+    x-priority: P0
+    x-milestone: M3
+    responses:
+      '200':
+        description: Review, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/plan.yaml#/TaskReview }
+  post:
+    tags: [Tasks]
+    operationId: reviewTask
+    summary: Nghiệm thu (APR-03), trả lại hoặc chặn Task In Review
+    description: |
+      `accepted` → Completed (T-14), mở khóa Task phụ thuộc; cần mọi criterion đạt và đầu ra bắt buộc có version Accepted.
+      `returned` → Ready (T-13); `blocked` → Blocked (T-15); cả hai bắt buộc `reasonCode` và `feedback` (KPI-04).
+    x-requirements: [TASK-CHECKLIST-001, TASK-STATE-001, CTX-CONSISTENCY-003]
+    x-apr: APR-03
+    x-transition: [T-13, T-14, T-15]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/plan.yaml#/TaskReviewCreate }
+    responses:
+      '201':
+        description: Review đã ghi; Task ở trạng thái mới.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review: { $ref: ../components/schemas/plan.yaml#/TaskReview }
+                task: { $ref: ../components/schemas/plan.yaml#/Task }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/tasks/{taskId}/reopen:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: reopenTask
+    summary: Mở lại Task Completed để làm lại
+    description: Completed → Ready/Blocked theo readiness; Task phụ thuộc Completed nhận cờ needsReview.
+    x-requirements: [TASK-STATE-001]
+    x-transition: [T-19]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string, minLength: 1 }
+    responses:
+      '200':
+        description: Task mở lại.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/tasks/{taskId}/confirm-valid:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: confirmTaskStillValid
+    summary: Xác nhận “vẫn hợp lệ” để gỡ cờ needsReview
+    x-requirements: [PLAN-IMPACT-001]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              note: { type: string }
+    responses:
+      '200':
+        description: needsReview = false.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/tasks/{taskId}/cancel:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/TaskId
+  post:
+    tags: [Tasks]
+    operationId: cancelTask
+    summary: Hủy Task (trạng thái cuối)
+    description: Chỉ khi không có Workflow hoạt động — phải hủy workflow trước (`POST /workflows/{id}/cancel`, T-10).
+    x-requirements: [TASK-STATE-001]
+    x-transition: [T-18]
+    x-priority: P0
+    x-milestone: M3
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string, minLength: 1 }
+    responses:
+      '200':
+        description: Task Cancelled.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/plan.yaml#/Task }
+      '409': { $ref: ../components/responses.yaml#/Conflict }

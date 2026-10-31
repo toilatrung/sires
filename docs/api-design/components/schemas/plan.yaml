@@ -1,0 +1,371 @@
+# Research Plan, Plan Version, Task — PRD 5.2, 5.3, 9, 18.1, 18.2 (TASK-STATE-001, T-01–T-19).
+
+PlanVersionStatus:
+  type: string
+  enum: [Draft, Proposed, Approved, Superseded, Rejected]
+
+TaskStatus:
+  type: string
+  description: Bảng chuyển trạng thái chuẩn T-01–T-19 ở PRD 9.8.
+  enum: [Draft, Blocked, Ready, Queued, In Progress, Waiting for User, In Review, Completed, Failed, Cancelled]
+
+ExecutionLabel:
+  type: string
+  enum: [Available for agent, Manual editor requirement]
+
+ResearchPlan:
+  type: object
+  required: [id, projectId]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    projectId: { $ref: common.yaml#/Id }
+    baselineVersionId:
+      type: [string, 'null']
+      format: uuid
+      description: Plan Version Approved hiện hành; null khi chưa có baseline.
+    openVersionId:
+      type: [string, 'null']
+      format: uuid
+      description: Bản Draft hoặc Proposed đang mở (tối đa một).
+    versions:
+      type: array
+      items: { $ref: '#/PlanVersionSummary' }
+
+PlanVersionSummary:
+  type: object
+  required: [id, versionNumber, status]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    versionNumber: { type: integer }
+    status: { $ref: '#/PlanVersionStatus' }
+    changeSummary: { type: string }
+    changeClass:
+      type: string
+      enum: [material, minor]
+    createdAt: { $ref: common.yaml#/Timestamp }
+    createdBy: { $ref: common.yaml#/ActorRef }
+
+Phase:
+  type: object
+  required: [id, order, name]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    order: { type: integer }
+    name: { type: string }
+    objective: { type: string }
+
+TaskDefinition:
+  type: object
+  description: Định nghĩa Task theo Plan Version; bất biến (TASK-DEFINE-001).
+  required: [taskId, phaseId, title, objective, executionLabel, expectedOutputs, acceptanceCriteria]
+  properties:
+    taskId:
+      $ref: common.yaml#/Id
+      description: Định danh Task ổn định qua các Plan Version. Bỏ trống khi thêm Task mới vào Draft.
+    stableKey:
+      type: string
+      readOnly: true
+      examples: [T-012]
+    phaseId: { $ref: common.yaml#/Id }
+    title: { type: string, minLength: 1 }
+    description: { type: string }
+    objective: { type: string, minLength: 1 }
+    executionLabel: { $ref: '#/ExecutionLabel' }
+    requiredInputs:
+      type: array
+      items:
+        type: object
+        required: [type, description]
+        properties:
+          type:
+            type: string
+            enum: [context, reference, artifact, decision]
+          refId: { $ref: common.yaml#/Id }
+          description: { type: string }
+    expectedOutputs:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [artifactType, required]
+        properties:
+          artifactType: { $ref: artifact.yaml#/ArtifactType }
+          description: { type: string }
+          required: { type: boolean }
+    acceptanceCriteria:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [id, text]
+        properties:
+          id: { type: string }
+          text: { type: string }
+    checklist:
+      type: array
+      items:
+        type: object
+        required: [id, text]
+        properties:
+          id: { type: string }
+          text: { type: string }
+    proposedAgent: { $ref: common.yaml#/AgentName }
+    dependsOn:
+      type: array
+      description: taskId các Task tiên quyết trong cùng Plan Version; đồ thị không có chu trình (TASK-DEPENDENCY-001).
+      items: { $ref: common.yaml#/Id }
+
+PlanContent:
+  type: object
+  properties:
+    goals:
+      type: array
+      items: { type: string }
+    methods:
+      type: array
+      items: { type: string }
+    deliverables:
+      type: array
+      items: { type: string }
+    milestones:
+      type: array
+      items: { type: string }
+    risks:
+      type: array
+      items: { type: string }
+    assumptions:
+      type: array
+      items: { type: string }
+    phases:
+      type: array
+      items: { $ref: '#/Phase' }
+    tasks:
+      type: array
+      items: { $ref: '#/TaskDefinition' }
+
+PlanVersion:
+  description: Bất biến khi status ≠ Draft (PLAN-GENERATE-001, PLAN-APPROVAL-001).
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - $ref: '#/PlanContent'
+    - type: object
+      required: [planId, versionNumber, status, contextVersionId]
+      properties:
+        planId: { $ref: common.yaml#/Id }
+        versionNumber: { type: integer, readOnly: true }
+        status: { $ref: '#/PlanVersionStatus' }
+        contextVersionId: { $ref: common.yaml#/Id }
+        basedOnVersionId: { $ref: common.yaml#/Id }
+        changeSummary: { type: string }
+        changeClass:
+          type: string
+          readOnly: true
+          description: material = thuộc danh sách thay đổi lớn MC-01… (9.11); minor được duyệt nhanh một thao tác.
+          enum: [material, minor]
+        createdByWorkflowId: { $ref: common.yaml#/Id }
+        approval: { $ref: common.yaml#/ApprovalRecord }
+        rejectionReason: { type: string }
+
+PlanVersionCreate:
+  type: object
+  description: Researcher tạo Draft mới từ baseline hoặc từ một version bất kỳ.
+  properties:
+    basedOnVersionId:
+      $ref: common.yaml#/Id
+      description: Bỏ trống để sao chép baseline hiện hành.
+    changeSummary: { type: string }
+
+PlanVersionUpdate:
+  allOf:
+    - $ref: '#/PlanContent'
+    - type: object
+      properties:
+        changeSummary: { type: string }
+
+PlanDiff:
+  type: object
+  readOnly: true
+  properties:
+    fromVersionId: { $ref: common.yaml#/Id }
+    toVersionId: { $ref: common.yaml#/Id }
+    changes:
+      type: array
+      items:
+        type: object
+        properties:
+          path: { type: string, examples: [tasks/T-012/executionLabel] }
+          operation:
+            type: string
+            enum: [added, removed, modified]
+          before: {}
+          after: {}
+          materialChangeCode:
+            type: string
+            description: Mã thay đổi lớn (MC-NN, 9.11) nếu có.
+
+ImpactReport:
+  type: object
+  readOnly: true
+  description: Ảnh hưởng của Plan Version tới Task, artifact, claim hiện có (PLAN-IMPACT-001).
+  properties:
+    planVersionId: { $ref: common.yaml#/Id }
+    changeClass:
+      type: string
+      enum: [material, minor]
+    affected:
+      type: array
+      items:
+        type: object
+        properties:
+          objectType:
+            type: string
+            enum: [task, artifact, claim, change_proposal]
+          objectId: { $ref: common.yaml#/Id }
+          effect:
+            type: string
+            enum: [cancelled, needs_review, redefined, blocked, unchanged]
+          reason: { type: string }
+
+ReadinessCheck:
+  type: object
+  required: [code, passed]
+  properties:
+    code:
+      type: string
+      description: RC-01–RC-09 (TASK-READINESS-001).
+      enum: [RC-01, RC-02, RC-03, RC-04, RC-05, RC-06, RC-07, RC-08, RC-09]
+    passed: { type: boolean }
+    detail: { type: string }
+    suggestedAction: { type: string }
+
+ReadinessResult:
+  type: object
+  readOnly: true
+  required: [taskId, planVersionId, passed, checks, at]
+  properties:
+    taskId: { $ref: common.yaml#/Id }
+    planVersionId: { $ref: common.yaml#/Id }
+    passed: { type: boolean }
+    checks:
+      type: array
+      items: { $ref: '#/ReadinessCheck' }
+    semanticCheckAgentRunId:
+      $ref: common.yaml#/Id
+      description: Agent Run của Orchestrator cho RC-09 (ORCH-READINESS-001).
+    at: { $ref: common.yaml#/Timestamp }
+
+Task:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [stableKey, status, currentDefinition, needsReview]
+      properties:
+        stableKey: { type: string, examples: [T-012] }
+        status: { $ref: '#/TaskStatus' }
+        currentDefinition: { $ref: '#/TaskDefinition' }
+        needsReview: { type: boolean }
+        needsReviewReasons:
+          type: array
+          items:
+            type: object
+            properties:
+              cause: { type: string }
+              sourceType: { type: string }
+              sourceId: { $ref: common.yaml#/Id }
+              at: { $ref: common.yaml#/Timestamp }
+        activeWorkflowId:
+          type: [string, 'null']
+          format: uuid
+        lastReadiness: { $ref: '#/ReadinessResult' }
+        checklistState:
+          type: array
+          items: { $ref: '#/ChecklistItemState' }
+        allowedActions:
+          type: array
+          readOnly: true
+          description: Hành động hợp lệ ở trạng thái hiện tại (18.2 “Quyền theo trạng thái”) để giao diện bật/tắt nút.
+          items:
+            type: string
+            enum: [activate, dequeue, cancel, submit_manual, review, reopen, confirm_valid, recheck_readiness]
+
+ChecklistItemState:
+  type: object
+  required: [id, checked]
+  properties:
+    id: { type: string }
+    checked: { type: boolean }
+    checkedAt: { $ref: common.yaml#/Timestamp }
+
+ManualSubmission:
+  type: object
+  description: Kết quả manual cho Task Manual editor requirement (WF-03); tạo Artifact Version loại manual_submission.
+  required: [outputs]
+  properties:
+    note: { type: string }
+    outputs:
+      type: array
+      minItems: 1
+      items:
+        type: object
+        required: [artifactType]
+        properties:
+          artifactType: { $ref: artifact.yaml#/ArtifactType }
+          artifactId:
+            $ref: common.yaml#/Id
+            description: Bỏ trống để tạo Artifact mới.
+          title: { type: string }
+          content: { type: string }
+          fileUploadId:
+            $ref: common.yaml#/Id
+            description: File đã tải lên trước (nếu đầu ra là file).
+
+TaskReviewCreate:
+  type: object
+  description: |
+    Nghiệm thu (APR-03, T-14), trả lại (T-13) hoặc chặn (T-15). `reasonCode` bắt buộc khi returned/blocked (KPI-04).
+    Nghiệm thu yêu cầu mọi acceptance criterion đạt và đầu ra bắt buộc có version Accepted.
+  required: [outcome]
+  properties:
+    outcome:
+      type: string
+      enum: [accepted, returned, blocked]
+    criteriaResults:
+      type: array
+      items:
+        type: object
+        required: [criterionId, met]
+        properties:
+          criterionId: { type: string }
+          met: { type: boolean }
+    feedback: { type: string }
+    reasonCode: { $ref: common.yaml#/ReasonCode }
+  allOf:
+    - if:
+        properties:
+          outcome: { enum: [returned, blocked] }
+      then:
+        required: [reasonCode, feedback]
+        properties:
+          reasonCode: { $ref: common.yaml#/ReasonCode }
+          feedback: { type: string, minLength: 1 }
+
+TaskReview:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - $ref: '#/TaskReviewCreate'
+    - type: object
+      properties:
+        taskId: { $ref: common.yaml#/Id }
+        workflowId: { $ref: common.yaml#/Id }
+        approval: { $ref: common.yaml#/ApprovalRecord }
+
+TaskActivation:
+  type: object
+  required: [task, workflow]
+  properties:
+    task: { $ref: '#/Task' }
+    workflow:
+      description: Workflow task_execution (Task agent). Null với Task manual — Task chuyển In Progress, tạo pending action manual_work.
+      oneOf:
+        - $ref: orchestration.yaml#/Workflow
+        - type: 'null'

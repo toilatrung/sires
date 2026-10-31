@@ -1,0 +1,565 @@
+# PRD 12 LaTeX Manuscript Workspace · 17.4 LaTeX build — WF-05 S5–S7 — milestone M6.
+# Một Manuscript mỗi project (OQ-022). Mọi thay đổi file tạo Manuscript Revision (MS-REVISION-001).
+
+/projects/{projectId}/manuscript:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: getManuscript
+    summary: Manuscript của project
+    x-requirements: [MS-INIT-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Manuscript.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Manuscript }
+      '404':
+        description: Project chưa khởi tạo Manuscript (hoặc không thuộc tài khoản).
+        content:
+          application/problem+json:
+            schema: { $ref: ../components/schemas/common.yaml#/Problem }
+  post:
+    tags: [Manuscript]
+    operationId: initManuscript
+    summary: Khởi tạo Manuscript (Default hoặc Blank)
+    description: Tạo revision `init`. Đã có Manuscript trả `409`.
+    x-requirements: [MS-INIT-001, MS-TEMPLATE-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptCreate }
+    responses:
+      '201':
+        description: Đã khởi tạo.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Manuscript }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+  patch:
+    tags: [Manuscript]
+    operationId: updateManuscriptBuildConfig
+    summary: Sửa cấu hình build (file chính, compiler)
+    x-requirements: [MS-BUILD-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptUpdate }
+    responses:
+      '200':
+        description: Đã cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Manuscript }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+
+/projects/{projectId}/manuscript/files:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: listManuscriptFiles
+    summary: File explorer
+    x-requirements: [MS-EDITOR-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - name: revisionId
+        in: query
+        description: Xem cây file tại một revision (mặc định revision hiện hành).
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '200':
+        description: Danh sách file Active.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revisionId: { $ref: ../components/schemas/common.yaml#/Id }
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptFile }
+
+/projects/{projectId}/manuscript/files/{fileId}/content:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - name: fileId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Manuscript]
+    operationId: getManuscriptFileContent
+    summary: Nội dung file
+    x-requirements: [MS-EDITOR-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - name: revisionId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '200':
+        description: Nội dung (văn bản hoặc nhị phân với hình).
+        headers:
+          ETag:
+            description: contentHash.
+            schema: { type: string }
+        content:
+          text/plain:
+            schema: { type: string }
+          application/octet-stream:
+            schema: { type: string, contentMediaType: application/octet-stream }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/revisions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: listManuscriptRevisions
+    summary: Lịch sử revision
+    x-requirements: [MS-REVISION-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Revision, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptRevision }
+  post:
+    tags: [Manuscript]
+    operationId: commitManuscriptChanges
+    summary: Lưu thay đổi trực tiếp của Researcher (tạo revision)
+    description: |
+      Thêm, sửa, đổi tên, xóa file trong một revision. `baseRevisionId` khác revision hiện hành trả
+      `409 base_revision_mismatch`. Change Proposal đang Proposed trên file bị đổi chuyển Outdated.
+    x-requirements: [MS-EDITOR-001, MS-REVISION-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/RevisionCreate }
+    responses:
+      '201':
+        description: Revision mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptRevision }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/manuscript/revisions/{revisionId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - name: revisionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Manuscript]
+    operationId: getManuscriptRevision
+    summary: Chi tiết revision và diff so với revision cha
+    x-requirements: [MS-REVISION-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Revision.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptRevision }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/change-proposals:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: listChangeProposals
+    summary: Change Proposal của Writing Agent
+    description: Writing Agent tạo proposal trong workflow `task_execution` hoặc `manuscript_edit` (MS-AIWRITE-001), không qua endpoint ghi trực tiếp.
+    x-requirements: [MS-AIWRITE-001, MS-DIFF-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - name: status
+        in: query
+        schema: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposalStatus }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang proposal.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposal }
+
+/projects/{projectId}/manuscript/change-proposals/{proposalId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ProposalId
+  get:
+    tags: [Manuscript]
+    operationId: getChangeProposal
+    summary: Diff, claim/evidence dùng và kết quả kiểm tra citation
+    x-requirements: [MS-DIFF-001, CLAIM-CITATION-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Change Proposal.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposal }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/change-proposals/{proposalId}/accept:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ProposalId
+  post:
+    tags: [Manuscript]
+    operationId: acceptChangeProposal
+    summary: Chấp nhận Change Proposal nguyên khối (APR-05)
+    description: |
+      Chỉ khi baseRevisionId = revision hiện hành (nếu không → Outdated, `409 base_revision_mismatch`) và citation check
+      đạt (`409 citation_check_failed`). Tạo Manuscript Revision nguồn `change_proposal`.
+    x-requirements: [MS-DIFF-001, CLAIM-CITATION-001, CTX-CONSISTENCY-002, DATA-IDEMP-001]
+    x-apr: APR-05
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Proposal Accepted, kèm revision mới.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proposal: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposal }
+                revision: { $ref: ../components/schemas/manuscript.yaml#/ManuscriptRevision }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/manuscript/change-proposals/{proposalId}/reject:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/ProposalId
+  post:
+    tags: [Manuscript]
+    operationId: rejectChangeProposal
+    summary: Từ chối Change Proposal
+    x-requirements: [MS-DIFF-001]
+    x-apr: APR-05
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              reason: { type: string }
+    responses:
+      '200':
+        description: Proposal Rejected.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposal }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/manuscript/diagram-insertions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Manuscript]
+    operationId: insertDiagramIntoManuscript
+    summary: Chèn sơ đồ đã duyệt vào bản thảo
+    description: Artifact Version diagram phải Accepted (APR-07). Kết quả là Change Proposal chờ APR-05 (WF-07).
+    x-requirements: [MS-DIAGRAM-001, INT-DIAGRAM-003]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/manuscript.yaml#/DiagramInsertionRequest }
+    responses:
+      '201':
+        description: Change Proposal Proposed.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/ChangeProposal }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/manuscript/bibliography:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: listBibliography
+    summary: Bibliography sinh từ Trusted Reference
+    x-requirements: [MS-BIB-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Entry BibTeX; entry của reference Revoked bị đánh dấu.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/manuscript.yaml#/BibliographyEntry }
+  post:
+    tags: [Manuscript]
+    operationId: addBibliographyEntry
+    summary: Thêm reference vào bibliography
+    description: Chỉ Trusted Reference đang chọn cho project; idempotent theo (manuscriptId, referenceId) (DATA-IDEMP-005).
+    x-requirements: [MS-BIB-001, CLAIM-CITATION-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [referenceId]
+            properties:
+              referenceId: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '200':
+        description: Entry đã có (idempotent).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/BibliographyEntry }
+      '201':
+        description: Entry mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/BibliographyEntry }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+/projects/{projectId}/manuscript/bibliography/{entryId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - name: entryId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  delete:
+    tags: [Manuscript]
+    operationId: removeBibliographyEntry
+    summary: Bỏ entry khỏi bibliography
+    description: Bị chặn nếu key vẫn được cite trong bản thảo (KPI-02 = 100%).
+    x-requirements: [MS-BIB-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/manuscript/builds:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: listBuilds
+    summary: Lịch sử build
+    x-requirements: [MS-BUILD-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang build.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/manuscript.yaml#/Build }
+  post:
+    tags: [Manuscript]
+    operationId: startBuild
+    summary: Compile bản thảo
+    description: |
+      Build cô lập, không shell-escape, 120 s / 2 GB (MS-BUILDENV-001). Idempotent theo (revisionId, cấu hình build):
+      yêu cầu lặp nhận lại Build đã có (DATA-IDEMP-005-AC01).
+    x-requirements: [MS-BUILD-001, MS-BUILDENV-001, INT-LATEX-001]
+    x-priority: P0
+    x-milestone: M6
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              revisionId:
+                $ref: ../components/schemas/common.yaml#/Id
+                description: Mặc định revision hiện hành.
+    responses:
+      '200':
+        description: Build cùng khóa đã tồn tại.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Build }
+      '202':
+        description: Build Queued.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Build }
+
+/projects/{projectId}/manuscript/builds/{buildId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/BuildId
+  get:
+    tags: [Manuscript]
+    operationId: getBuild
+    summary: Trạng thái và lỗi build (thông báo thân thiện)
+    x-requirements: [MS-BUILD-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Build.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/manuscript.yaml#/Build }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/builds/{buildId}/log:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/BuildId
+  get:
+    tags: [Manuscript]
+    operationId: getBuildLog
+    summary: Log build đầy đủ
+    x-requirements: [MS-BUILD-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: Log.
+        content:
+          text/plain:
+            schema: { type: string }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/builds/{buildId}/pdf:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/BuildId
+  get:
+    tags: [Manuscript]
+    operationId: getBuildPdf
+    summary: PDF preview của build thành công
+    x-requirements: [MS-BUILD-001]
+    x-priority: P0
+    x-milestone: M6
+    responses:
+      '200':
+        description: PDF.
+        content:
+          application/pdf:
+            schema: { type: string, contentMediaType: application/pdf }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/manuscript/export:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Manuscript]
+    operationId: exportManuscript
+    summary: Export bản thảo — PDF hoặc zip mã nguồn kèm .bib
+    description: |
+      `pdf` trả PDF của build thành công gần nhất; nếu thuộc revision cũ, header `X-Build-Revision` cho biết revision
+      để giao diện đề nghị compile lại (MS-EXPORT-001-AC02).
+    x-requirements: [MS-EXPORT-001, NFR-RET-005]
+    x-priority: P1
+    x-milestone: M6
+    parameters:
+      - name: format
+        in: query
+        required: true
+        schema: { type: string, enum: [pdf, zip] }
+      - name: revisionId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '200':
+        description: File export.
+        headers:
+          Content-Disposition: { schema: { type: string } }
+          X-Build-Revision: { schema: { type: integer } }
+        content:
+          application/pdf:
+            schema: { type: string, contentMediaType: application/pdf }
+          application/zip:
+            schema: { type: string, contentMediaType: application/zip }
+      '404': { $ref: ../components/responses.yaml#/NotFound }

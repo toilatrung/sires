@@ -1,0 +1,89 @@
+# Artifact và Artifact Version — PRD 5.7, 13.3, 14.4, 18.1, 18.2.
+
+ArtifactType:
+  type: string
+  enum: [note, table, synthesis, diagram, draft_section, file, manual_submission, verification_report]
+
+ArtifactVersionStatus:
+  type: string
+  enum: [Draft, Accepted, Rejected, Superseded]
+
+Artifact:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [type, title]
+      properties:
+        type: { $ref: '#/ArtifactType' }
+        title: { type: string }
+        taskId: { $ref: common.yaml#/Id }
+        currentAcceptedVersionId:
+          type: [string, 'null']
+          format: uuid
+          description: Tối đa một version Accepted hiện hành.
+        latestVersion: { $ref: '#/ArtifactVersionSummary' }
+
+ArtifactVersionSummary:
+  type: object
+  properties:
+    id: { $ref: common.yaml#/Id }
+    versionNumber: { type: integer }
+    status: { $ref: '#/ArtifactVersionStatus' }
+    createdAt: { $ref: common.yaml#/Timestamp }
+
+ArtifactVersion:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Bất biến; chỉ version Accepted là đầu vào chính thức cho Task khác, bản thảo, synthesis (3.4).
+      required: [artifactId, versionNumber, format, contentHash, status, provenance]
+      properties:
+        artifactId: { $ref: common.yaml#/Id }
+        versionNumber: { type: integer }
+        format:
+          type: string
+          examples: [markdown, json, csv, mermaid, latex, pdf]
+        content:
+          type: string
+          description: Nội dung văn bản; với diagram là mã nguồn Mermaid.
+        fileUrl:
+          type: string
+          format: uri
+          description: Liên kết tải file có thời hạn (khi nội dung là file).
+        contentHash: { type: string }
+        previewUrl:
+          type: string
+          format: uri
+          description: Bản preview render (diagram — DIAG-SOURCE-001).
+        status: { $ref: '#/ArtifactVersionStatus' }
+        provenance: { $ref: common.yaml#/Provenance }
+        claimIds:
+          type: array
+          description: Claim gắn với bản tổng hợp (synthesis).
+          items: { $ref: common.yaml#/Id }
+        review:
+          type: object
+          properties:
+            decision: { type: string }
+            by: { $ref: common.yaml#/ActorRef }
+            at: { $ref: common.yaml#/Timestamp }
+            note: { type: string }
+        approval: { $ref: common.yaml#/ApprovalRecord }
+
+ArtifactVersionCreate:
+  type: object
+  description: Researcher sửa nội dung — tạo version Draft mới, không sửa tại chỗ.
+  required: [basedOnVersionId]
+  properties:
+    basedOnVersionId: { $ref: common.yaml#/Id }
+    content: { type: string }
+    fileUploadId: { $ref: common.yaml#/Id }
+    note: { type: string }
+
+ArtifactDecision:
+  type: object
+  description: |
+    Chấp nhận/từ chối version. APR theo loại: APR-03 (đầu ra Task), APR-06 (synthesis), APR-07 (diagram).
+    Chấp nhận synthesis yêu cầu mọi claim liên kết đã được quyết định (SYN-HUMAN-REVIEW-001).
+  properties:
+    note: { type: string }

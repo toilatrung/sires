@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu để Product Owner chốt các Open Question và việc duyệt còn mở trong backlog PRD, rồi xuất phiếu.">
+<title>Phiếu chốt backlog | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .q{margin:.3rem 0 .6rem}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="back-log.html">Backlog</a> · Phiếu chốt</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt backlog</p>
+<h1>Phiếu chốt backlog</h1>
+<p class="meta">Nguồn: <a href="back-log.html">back-log.html</a> cập nhật 30/10/2026 · 27 Open Question và 21 việc duyệt có người xử lý là PO, trạng thái Mở</p>
+<div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của biên soạn, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này. Khi xong, bấm <strong>Xuất Markdown</strong> (hoặc JSON) và gửi file cho biên soạn để cập nhật section, backlog và 21.1. Mục để trống được xuất với trạng thái <em>Chưa chốt</em>.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="Ví dụ PC-01"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Điền đề xuất cho mục còn trống</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<button type="button" id="b-reset">Xóa phiếu</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="back-log.html">← Backlog</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt backlog.</footer>
+</div>
+
+<script>
+const SEC = n => `sections/${({2:'02-product-scope',3:'03-user-roles-and-permissions',4:'04-information-architecture-and-navigation',5:'05-core-domain-model',6:'06-end-to-end-product-workflow',7:'07-workspace-and-project',8:'08-ai-assistant-and-multi-agent-orchestration',9:'09-research-plan-and-task-management',10:'10-academic-discovery-and-trusted-library',11:'11-evidence-rag-and-research-synthesis',12:'12-latex-manuscript-workspace',13:'13-diagram-agent',14:'14-shared-context-and-orchestration-architecture',15:'15-ui-ux-requirements',16:'16-non-functional-requirements',17:'17-integrations-and-external-dependencies',18:'18-data-and-state-specifications',19:'19-acceptance-criteria-and-test-scenarios',20:'20-mvp-delivery-plan',21:'21-assumptions-constraints-and-open-questions',22:'22-appendices'})[n]}.html`;
+
+// rec: index của phương án đề xuất
+const GROUPS = [
+ {title:'A. Discovery và Trusted Library', items:[
+  {id:'OQ-006', bl:'BL-02-01', sec:2, impact:'SCOPE-06, 10, 17, WF-04',
+   q:'Nếu truy cập Google Scholar không khả thi hoặc không được phép, MVP dùng phương án nào?',
+   opts:['Một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface nguồn 10.9, kèm nhập DOI/BibTeX; WF-04 giữ nguyên.','Chỉ nhập thủ công (DOI/BibTeX/PDF); tạm không có discovery tự động.','Hoãn phát hành MVP đến khi có Google Scholar.'], rec:0},
+  {id:'OQ-081', bl:'BL-17-04', sec:17, impact:'17.2, 10.1, SCOPE-06, 21.2',
+   q:'Phương thức tích hợp Google Scholar được chọn sau spike?',
+   opts:['Kết hợp: dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả.','Chỉ dịch vụ trung gian theo hợp đồng.','Chỉ luồng nhập do người dùng hỗ trợ.','Chờ kết quả spike rồi chốt (giữ OQ mở).'], rec:0},
+  {id:'OQ-008', bl:'BL-02-03', sec:2, impact:'SCOPE-07, 10, 11',
+   q:'MVP có cho thêm reference thủ công (DOI, BibTeX, tải lên PDF) ngoài Google Scholar không? Thủ tục duyệt có giống WF-04 không?',
+   opts:['Có. DOI, BibTeX và PDF đều vào trạng thái chờ duyệt, qua chuẩn hóa metadata và kiểm tra trùng như WF-04.','Có. Reference do chính Researcher nhập được coi là Trusted ngay, vẫn chuẩn hóa và kiểm tra trùng.','Không. Chỉ nhập qua discovery.'], rec:0},
+  {id:'OQ-039', bl:'BL-10-03', sec:10, impact:'LIB-APPROVAL-001, PROMPT-APPROVAL-001',
+   q:'Có cho phép duyệt nhiều reference trong một thao tác (theo lô) không?',
+   opts:['Có. Duyệt theo lô trong một prompt; audit trail vẫn ghi phê duyệt riêng cho từng reference; reference có cảnh báo trùng phải xử lý riêng.','Không. Duyệt từng reference.'], rec:0},
+  {id:'OQ-090', bl:'BL-21-02', sec:21, impact:'10.5, WF-04, 8.4',
+   q:'Chính sách duyệt reference cụ thể: theo lô hay từng cái; có mức tin cậy tự động theo nguồn không; ai được sửa metadata sau khi duyệt?',
+   opts:['Theo câu trả lời OQ-039; không có mức tin cậy tự động theo nguồn; chỉ Researcher sửa metadata sau duyệt và mỗi lần sửa tạo phiên bản mới.','Như trên, thêm mức tin cậy theo nguồn chỉ để gợi ý (vẫn bắt buộc Researcher duyệt).'], rec:0},
+ ]},
+ {title:'B. Phạm vi, Settings và quyền', items:[
+  {id:'OQ-011', bl:'BL-02-06', sec:2, impact:'2.4, 7–18, 20',
+   q:'Duyệt tiêu chí gán P0/P1/P2 ở 2.4; ai gán mức ưu tiên cho requirement ở mục 7–18?',
+   opts:['Duyệt tiêu chí. Biên soạn đề xuất mức cho từng requirement theo tiêu chí; PO duyệt khi duyệt từng mục.','Duyệt tiêu chí. PO tự gán toàn bộ khi duyệt từng mục.'], rec:0},
+  {id:'OQ-014', bl:'BL-02-09', sec:2, impact:'SCOPE-13, 16, 17',
+   q:'Người dùng bắt buộc tự cung cấp API key hay hệ thống có key/hạn mức mặc định? Base URL có được trỏ tới endpoint tương thích bên thứ ba không?',
+   opts:['Người dùng tự cung cấp API key. Base URL được trỏ tới proxy, gateway hoặc model tự host, miễn tương thích API chính thức của provider tương ứng.','Người dùng tự cung cấp API key. Chỉ dùng endpoint chính thức.','Hệ thống kèm key hoặc hạn mức mặc định; người dùng có thể thay bằng key riêng.'], rec:0},
+  {id:'OQ-015', bl:'BL-02-10', sec:2, impact:'SCOPE-13, 14.2, 15',
+   q:'Trường thông tin cá nhân; tùy chọn ngôn ngữ và tham số nâng cao của model; thông tin cá nhân có vào context của agent không?',
+   opts:['Họ tên, đơn vị, lĩnh vực nghiên cứu, ảnh đại diện. Có ngôn ngữ giao diện và ngôn ngữ phản hồi của agent. Không có tham số nâng cao. Chỉ lĩnh vực nghiên cứu được đưa vào context, và chỉ khi người dùng bật.','Như trên, thêm temperature và giới hạn token cho từng agent.','Như phương án đầu, nhưng không đưa thông tin cá nhân nào vào context.'], rec:0},
+  {id:'OQ-019', bl:'BL-03-05', sec:3, impact:'3.1, 8.4, 19',
+   q:'Duyệt danh sách hành động bắt buộc Researcher phê duyệt APR-01–APR-10 (3.1).',
+   opts:['Duyệt nguyên văn APR-01–APR-10.','Duyệt, có sửa (ghi ở ghi chú).'], rec:0},
+  {id:'OQ-073', bl:'BL-16-02', sec:16, impact:'16.1, 7, 18.1',
+   q:'Phương thức authentication của MVP?',
+   opts:['Email/mật khẩu và OAuth Google.','Chỉ email/mật khẩu.','SSO của tổ chức.'], rec:0},
+  {id:'OQ-091', bl:'BL-21-03', sec:21, impact:'16.1, 16.2, 16.8, 20.2',
+   q:'Mô hình triển khai: cloud do đội phát triển vận hành, tự host, hay cả hai; yêu cầu vùng lưu trữ dữ liệu?',
+   opts:['Cloud do đội phát triển vận hành; vùng lưu trữ chốt khi chọn hạ tầng.','Tự host tại tổ chức.','Cả hai.'], rec:0},
+ ]},
+ {title:'C. Plan, project và RAG', items:[
+  {id:'OQ-026', bl:'BL-06-03', sec:6, impact:'6.5, 9.2, 9.11',
+   q:'Thay đổi nhỏ của baseline (6.5) có được duyệt nhanh trong một thao tác, hay mọi thay đổi đều qua đầy đủ APR-01?',
+   opts:['Thay đổi không thuộc danh sách thay đổi lớn (9.11) được duyệt nhanh trong một thao tác; vẫn tạo Plan Version mới và ghi phê duyệt APR-01.','Mọi thay đổi đều qua đầy đủ APR-01.'], rec:0},
+  {id:'OQ-030', bl:'BL-07-02', sec:7, impact:'PROJ-CRUD-003, 5.0, 16.8, 21.3',
+   q:'MVP có cho xóa vĩnh viễn project không, hay chỉ lưu trữ? Có thời gian chờ khôi phục không?',
+   opts:['Có lưu trữ và xóa. Xóa là xóa mềm, khôi phục được trong 30 ngày, sau đó xóa vĩnh viễn (NFR-RET-002).','Chỉ lưu trữ, không xóa.','Xóa vĩnh viễn ngay sau khi xác nhận.'], rec:0},
+  {id:'OQ-050', bl:'BL-11-02', sec:11, impact:'11.1, 10.4, 16, 17.3',
+   q:'Định dạng tài liệu được index trong MVP và giới hạn dung lượng mỗi file?',
+   opts:['Chỉ PDF có lớp văn bản, tối đa 50 MB/file; không OCR.','PDF có lớp văn bản, DOCX và HTML, tối đa 50 MB/file.','Như phương án 2, thêm OCR cho PDF scan.'], rec:0},
+  {id:'OQ-051', bl:'BL-11-03', sec:11, impact:'11.1, SCOPE-13, 17.1, 21.2',
+   q:'Embedding model lấy từ đâu? Đổi embedding model có bắt buộc index lại toàn bộ thư viện không?',
+   opts:['Dùng Provider Connection của người dùng (OpenAI hoặc Gemini), một embedding model cho mỗi tài khoản. Đổi model bắt buộc index lại, có cảnh báo trước.','Hệ thống cung cấp một embedding model cố định, không phụ thuộc key của người dùng.'], rec:0},
+  {id:'OQ-052', bl:'BL-11-04', sec:11, impact:'11.5, 19',
+   q:'Ngoài KPI-01, có ngưỡng chấp nhận theo từng claim (ví dụ số evidence tối thiểu cho Supported) không?',
+   opts:['Không đặt ngưỡng số. Supported cần ít nhất một evidence hỗ trợ trực tiếp và đã qua Verification Agent.','Supported cần ít nhất 2 evidence từ ít nhất 2 reference khác nhau.'], rec:0},
+  {id:'OQ-058', bl:'BL-12-05', sec:12, impact:'12.7, 16.8, 21.3',
+   q:'Định dạng export bản thảo?',
+   opts:['PDF và zip mã nguồn (kèm .bib); đủ cho MVP.','Thêm DOCX qua chuyển đổi.'], rec:0},
+ ]},
+ {title:'D. Dữ liệu, vận hành và phi chức năng', items:[
+  {id:'OQ-061', bl:'BL-14-02', sec:14, impact:'14.8, 16.8',
+   q:'Audit trail được lưu bao lâu và Researcher có export được không?',
+   opts:['Giữ cùng vòng đời project và tài khoản; Researcher export được theo project (JSON/CSV).','Giữ cùng vòng đời project và tài khoản; không export trong MVP.'], rec:0},
+  {id:'OQ-062', bl:'BL-14-03', sec:14, impact:'14.2, 16.1, 16.5, 18.3',
+   q:'Agent Run chỉ lưu context manifest hay lưu cả toàn văn prompt và phản hồi của model?',
+   opts:['Lưu context manifest và đầu ra có cấu trúc. Toàn văn prompt/phản hồi chỉ lưu khi người dùng bật chế độ debug, giữ 30 ngày.','Chỉ lưu context manifest và đầu ra có cấu trúc.','Luôn lưu toàn văn.'], rec:0},
+  {id:'OQ-078', bl:'BL-16-07', sec:16, impact:'16.8, 18, 21.3',
+   q:'Duyệt chính sách retention, xóa và export mặc định ở 16.8 (xóa mềm 30 ngày, xóa tài khoản 30 ngày, log 30 ngày).',
+   opts:['Duyệt nguyên văn 16.8.','Duyệt, có sửa (ghi ở ghi chú).'], rec:0},
+  {id:'OQ-075', bl:'BL-16-04', sec:16, impact:'16.2, 16.3, 19',
+   q:'Xác nhận chỉ tiêu hiệu năng 16.3, availability 99,5%, RPO 24 giờ / RTO 8 giờ.',
+   opts:['Duyệt nguyên văn.','Duyệt, có sửa (ghi ở ghi chú).'], rec:0},
+  {id:'OQ-076', bl:'BL-16-05', sec:16, impact:'16.4',
+   q:'Xác nhận mức dung lượng MVP ở 16.4 (5.000 reference/tài khoản, 200 Task/Plan Version, 3 workflow đồng thời/tài khoản, 100 tài khoản đồng thời…).',
+   opts:['Duyệt nguyên văn.','Duyệt, có sửa (ghi ở ghi chú).'], rec:0},
+  {id:'OQ-077', bl:'BL-16-06', sec:16, impact:'16.6, 8',
+   q:'MVP có cần giới hạn ngân sách hoặc cảnh báo usage theo project/provider không?',
+   opts:['Không. Chỉ ghi và hiển thị usage (NFR-USAGE-001–003).','Có cảnh báo khi usage vượt ngưỡng do người dùng đặt theo project; không chặn.','Có giới hạn cứng: chặn chạy khi vượt ngân sách.'], rec:0},
+ ]},
+ {title:'E. Nghiệm thu và kế hoạch', items:[
+  {id:'OQ-092', bl:'BL-21-04', sec:21, impact:'11.5, 11.6, 19, 20.4',
+   q:'Ngưỡng nghiệm thu evidence và citation ngoài KPI-01, KPI-02?',
+   opts:['Độ chính xác đánh giá mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia; phát hiện citation không khớp nguồn ≥ 95%.','Chưa đặt ngưỡng; đo baseline ở M7 rồi chốt.'], rec:0},
+  {id:'OQ-027', bl:'BL-20-02', sec:20, impact:'20.4, 16, 19',
+   q:'Bộ dữ liệu nghiệm thu để đo KPI-01–KPI-04 gồm những gì và ai chuẩn bị?',
+   opts:['5 đề tài thuộc 3 lĩnh vực, mỗi đề tài khoảng 30 reference và 100 claim; PO chuẩn bị và gán nhãn, QA hỗ trợ.','Ghi quy mô và người chuẩn bị ở ghi chú.'], rec:0},
+  {id:'OQ-095', bl:'BL-19-02', sec:19, impact:'19, 20.4',
+   q:'Kiểm thử chấp nhận dùng provider thật cho mọi kịch bản hay chỉ một phần? Ai chịu chi phí?',
+   opts:['Provider thật cho 19.10 và đo KPI; các kịch bản khác dùng provider giả lập. Đội phát triển chịu chi phí.','Provider thật cho mọi kịch bản. Đội phát triển chịu chi phí.'], rec:0},
+  {id:'OQ-028', bl:'BL-20-03', sec:20, impact:'20.1, 20.2',
+   q:'Có mốc thời gian hoặc nguồn lực mục tiêu cho MVP cần đưa vào kế hoạch không?',
+   opts:['Chưa có. Kế hoạch theo milestone M1–M7, không gắn ngày.','Có (ghi mốc và nguồn lực ở ghi chú).'], rec:0},
+ ]},
+];
+
+const APPROVE_OPTS = ['Duyệt.','Duyệt, kèm sửa (ghi ở ghi chú).','Chưa duyệt (ghi lý do ở ghi chú).'];
+const approvals = [{id:'BL-02-11', sec:2, q:'Duyệt lại các điểm đã thay đổi ở mục 2 khi biên soạn chốt OQ-007, 009, 010, 012, 013 (đánh dấu “Chốt (biên soạn, 30/10/2026)”).'},
+ {id:'BL-03-01', sec:3, q:'Duyệt nội dung mục 3: nguyên tắc actor, APR-01–APR-10, permission matrix, và các điểm biên soạn chốt OQ-016–018.'}];
+const NAMES = {4:'Information Architecture and Navigation',5:'Core Domain Model',6:'End-to-End Product Workflow',7:'Workspace and Project',8:'AI Assistant and Multi-Agent Orchestration',9:'Research Plan and Task Management',10:'Academic Discovery and Trusted Library',11:'Evidence, RAG and Research Synthesis',12:'LaTeX Manuscript Workspace',13:'Diagram Agent',14:'Shared Context and Orchestration Architecture',15:'UI/UX Requirements',16:'Non-Functional Requirements',17:'Integrations and External Dependencies',18:'Data and State Specifications',19:'Acceptance Criteria and Test Scenarios',20:'MVP Delivery Plan',21:'Assumptions, Constraints and Open Questions',22:'Appendices'};
+for (let n = 4; n <= 22; n++) approvals.push({id:`BL-${String(n).padStart(2,'0')}-01`, sec:n, q:`Duyệt nội dung mục ${n}. ${NAMES[n]}, kể cả các OQ biên soạn đã chốt ngày 30/10/2026.`});
+GROUPS.push({title:'F. Duyệt nội dung section', note:'Nếu một section còn OQ mở ở phiếu này, bản duyệt áp dụng cho nội dung hiện tại; biên soạn sẽ trình lại các điểm thay đổi sau khi cập nhật theo câu trả lời.',
+ items: approvals.map(a => ({...a, kind:'Duyệt', opts:APPROVE_OPTS, rec:0}))});
+
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-backlog-v1';
+let state = {head:{}, items:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ref = it.kind === 'Duyệt' ? `Duyệt · <a href="${SEC(it.sec)}">Mục ${it.sec}</a>`
+      : `Open Question · ${it.bl} · <a href="${SEC(it.sec)}">Mục ${it.sec}</a> · Ảnh hưởng: ${esc(it.impact)}`;
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${it.id}</h3><p class="ref">${ref}</p><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${it.id}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${it.id}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  const n = ALL.filter(it => isDone(it.id)).length;
+  document.getElementById('progress').textContent = `Đã chốt ${n}/${ALL.length}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status:'Đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = new Date().toISOString().slice(0, 10);
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-backlog-${state.head.date || new Date().toISOString().slice(0, 10)}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, done = ALL.filter(it => isDone(it.id)).length;
+  const L = [`# Phiếu chốt backlog — AI Research Assistant PRD`, '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    `- Nguồn: back-log.html (cập nhật 30/10/2026)`, `- Đã chốt: ${done}/${ALL.length}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id}${it.bl ? ' (' + it.bl + ')' : ''} — ${a.status}`, '', `- Mục: ${it.sec}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-backlog', source:'back-log.html@2026-10-30', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, bl:it.bl || it.id, section:it.sec, type:it.kind || 'Open Question', question:it.q,
+        status:a.status, decision:a.text || null, followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+function confirmGaps() {
+  const left = ALL.length - ALL.filter(it => isDone(it.id)).length;
+  return left === 0 || confirm(`Còn ${left} mục chưa chốt. Các mục này sẽ được xuất với trạng thái “Chưa chốt”. Tiếp tục?`);
+}
+
+document.getElementById('b-md').onclick = () => { if (confirmGaps()) download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8'); };
+document.getElementById('b-json').onclick = () => { if (confirmGaps()) download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8'); };
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  for (const it of ALL) if (!isDone(it.id)) state.items[it.id] = {...(state.items[it.id] || {other:'', note:''}), choice: String(it.rec)};
+  save(); render();
+};
+document.getElementById('b-reset').onclick = () => {
+  if (!confirm('Xóa toàn bộ lựa chọn và ghi chú trên phiếu này?')) return;
+  state = {head:{}, items:{}}; save(); bindHead(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>

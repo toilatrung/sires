@@ -1,0 +1,14 @@
+%% FIG-022 — Diagram generation (section 13, WF-07)
+flowchart TD
+  A[Task / chat request with active task] --> B[Orchestrator assembles approved context]
+  B --> C[Diagram Agent generates Mermaid source]
+  C --> D{Syntax valid?}
+  D -- no, retries left --> C
+  D -- no, retries exhausted --> E[Save Draft with error]
+  D -- yes --> F[Render preview]
+  F --> G[Artifact Version: Draft]
+  G --> H{Researcher review}
+  H -- edit / request change --> G
+  H -- reject --> I[Rejected]
+  H -- accept APR-07 --> J[Accepted]
+  J --> K[Insert into manuscript via Change Proposal - MS-DIAGRAM-001]

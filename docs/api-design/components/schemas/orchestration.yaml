@@ -1,0 +1,367 @@
+# Workflow, Agent Run, Prompt, Context Item, Audit Event, sự kiện — PRD 5.4, 5.5, 5.9, 8.4, 14, 18.1, 18.2.
+
+WorkflowType:
+  type: string
+  enum: [plan_proposal, task_execution, discovery, reference_processing, indexing, synthesis, verification,
+    manuscript_edit, diagram, readiness_semantic, recovery]
+
+WorkflowStatus:
+  type: string
+  enum: [Created, Running, Waiting for User, Paused, Interrupted, Succeeded, Failed, Cancelled]
+
+StepStatus:
+  type: string
+  enum: [Pending, Running, Waiting for User, Succeeded, Failed, Cancelled]
+
+AgentRunStatus:
+  type: string
+  enum: [Pending, Running, Succeeded, Failed, Cancelled]
+
+WorkflowStep:
+  type: object
+  required: [id, order, description, status, attemptCount]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    order: { type: integer }
+    description: { type: string }
+    assignedAgent: { $ref: common.yaml#/AgentName }
+    status: { $ref: '#/StepStatus' }
+    inputRefs:
+      type: array
+      items: { $ref: common.yaml#/TypedRef }
+    outputRefs:
+      type: array
+      items: { $ref: common.yaml#/TypedRef }
+    openPromptId: { $ref: common.yaml#/Id }
+    attemptCount: { type: integer }
+    agentRunIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+
+Workflow:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [type, triggeredBy, status]
+      properties:
+        type: { $ref: '#/WorkflowType' }
+        taskId: { $ref: common.yaml#/Id }
+        planVersionId: { $ref: common.yaml#/Id }
+        triggeredBy: { $ref: common.yaml#/ActorRef }
+        status: { $ref: '#/WorkflowStatus' }
+        currentStepId: { $ref: common.yaml#/Id }
+        steps:
+          type: array
+          items: { $ref: '#/WorkflowStep' }
+        startedAt: { $ref: common.yaml#/Timestamp }
+        endedAt: { $ref: common.yaml#/Timestamp }
+        lastError:
+          type: object
+          properties:
+            code: { $ref: common.yaml#/ProviderErrorCode }
+            message: { type: string }
+            agentRunId: { $ref: common.yaml#/Id }
+        lastCheckpoint: { $ref: '#/Checkpoint' }
+
+Checkpoint:
+  type: object
+  readOnly: true
+  required: [id, stepId, sequence, consistent, at]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    stepId: { $ref: common.yaml#/Id }
+    sequence: { type: integer }
+    stepStatuses:
+      type: object
+      additionalProperties: { $ref: '#/StepStatus' }
+    savedOutputRefs:
+      type: array
+      items: { $ref: common.yaml#/TypedRef }
+    consistent: { type: boolean }
+    at: { $ref: common.yaml#/Timestamp }
+
+RecoveryDecision:
+  type: object
+  description: Quyết định khôi phục workflow Interrupted (WF-06, CTX-RECOVERY-001). Không có Agent Run mới trước quyết định này (NFR-REC-002).
+  required: [decision]
+  properties:
+    decision:
+      type: string
+      enum: [continue, rerun_step, cancel]
+    stepId:
+      $ref: common.yaml#/Id
+      description: Bắt buộc khi decision = rerun_step.
+
+AgentRun:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Bất biến sau trạng thái cuối (5.4). Toàn văn prompt/phản hồi chỉ có khi bật debug.
+      required: [workflowId, stepId, agent, provider, model, status, attempts, discarded]
+      properties:
+        workflowId: { $ref: common.yaml#/Id }
+        stepId: { $ref: common.yaml#/Id }
+        agent: { $ref: common.yaml#/AgentName }
+        providerConnectionId: { $ref: common.yaml#/Id }
+        provider: { $ref: common.yaml#/ProviderName }
+        model: { type: string }
+        adapterVersion: { type: string }
+        capabilitiesUsed:
+          type: array
+          items: { type: string }
+        inputSummary: { type: string }
+        contextManifest:
+          type: object
+          description: Entity và phiên bản đã đưa vào context (CTX-ASSEMBLY-001).
+          properties:
+            entities:
+              type: array
+              items: { $ref: common.yaml#/TypedRef }
+            evidenceIds:
+              type: array
+              items: { $ref: common.yaml#/Id }
+            truncated:
+              type: array
+              items:
+                type: object
+                properties:
+                  layer: { type: string }
+                  reason: { type: string }
+        toolCalls:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              argumentsSummary: { type: string }
+              resultSummary: { type: string }
+        outputRefs:
+          type: array
+          items: { $ref: common.yaml#/TypedRef }
+        structuredOutput:
+          type: object
+          additionalProperties: true
+        usage:
+          type: object
+          properties:
+            inputTokens: { type: integer }
+            outputTokens: { type: integer }
+            calls: { type: integer }
+            durationMs: { type: integer }
+            estimatedCost: { type: number }
+        status: { $ref: '#/AgentRunStatus' }
+        attempts:
+          type: integer
+          description: Số lần gọi provider trong Agent Run (thử lại tạm thời tối đa 3 — 17.1).
+        error:
+          type: object
+          properties:
+            code: { $ref: common.yaml#/ProviderErrorCode }
+            message: { type: string }
+        startedAt: { $ref: common.yaml#/Timestamp }
+        endedAt: { $ref: common.yaml#/Timestamp }
+        discarded:
+          type: boolean
+          description: Kết quả đến muộn bị bỏ, không ghi đè (DATA-IDEMP-003).
+        hasDebugTranscript: { type: boolean }
+
+DebugTranscript:
+  type: object
+  readOnly: true
+  description: Dữ liệu nhạy cảm, mã hóa khi lưu, chỉ chủ tài khoản xem; hết hạn 30 ngày (NFR-RET-009).
+  required: [agentRunId, capturedAt, expiresAt]
+  properties:
+    agentRunId: { $ref: common.yaml#/Id }
+    request: {}
+    response: {}
+    capturedAt: { $ref: common.yaml#/Timestamp }
+    expiresAt: { $ref: common.yaml#/Timestamp }
+
+PromptType:
+  type: string
+  enum: [approval, choice, edit_and_approve, information_request]
+
+PromptStatus:
+  type: string
+  description: Không có hết hạn theo thời gian (OQ-023). Expired/Cancelled không bao giờ là đồng ý.
+  enum: [Open, Answered, Expired, Cancelled]
+
+InteractiveAgentPrompt:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      required: [workflowId, stepId, createdByAgentRunId, type, question, pendingAction, status]
+      properties:
+        taskId: { $ref: common.yaml#/Id }
+        workflowId: { $ref: common.yaml#/Id }
+        stepId: { $ref: common.yaml#/Id }
+        createdByAgentRunId: { $ref: common.yaml#/Id }
+        agent: { $ref: common.yaml#/AgentName }
+        type: { $ref: '#/PromptType' }
+        question: { type: string }
+        blocking:
+          type: boolean
+          description: true nếu workflow đang Waiting for User vì prompt này.
+        pendingAction:
+          type: object
+          required: [objectType, objectId]
+          properties:
+            apr: { $ref: common.yaml#/AprCode }
+            objectType: { type: string }
+            objectId: { $ref: common.yaml#/Id }
+            objectVersion: { type: integer }
+        choices:
+          type: array
+          items:
+            type: object
+            required: [id, label]
+            properties:
+              id: { type: string }
+              label: { type: string }
+              consequence: { type: string }
+              recommended: { type: boolean }
+              rationale: { type: string }
+        multiSelect: { type: boolean, default: false }
+        editablePayload:
+          description: Nội dung cho phép sửa trước khi duyệt (edit_and_approve).
+        status: { $ref: '#/PromptStatus' }
+        statusReason: { type: string }
+        response: { $ref: '#/PromptResponseRecord' }
+
+PromptResponse:
+  type: object
+  description: Trả lời một lần (PROMPT-LIFECYCLE-001). Câu trả lời được ghi thành Context Item loại decision.
+  properties:
+    choiceIds:
+      type: array
+      items: { type: string }
+    decision:
+      type: string
+      description: Bắt buộc với approval / edit_and_approve.
+      enum: [approved, rejected]
+    editedPayload: {}
+    text:
+      type: string
+      description: Bắt buộc với information_request; lý do khi từ chối.
+    objectVersion:
+      type: integer
+      description: Phiên bản đối tượng mà Researcher đã xem; lệch phiên bản → 409, prompt bị Cancelled.
+
+PromptResponseRecord:
+  allOf:
+    - $ref: '#/PromptResponse'
+    - type: object
+      readOnly: true
+      properties:
+        respondedBy: { $ref: common.yaml#/ActorRef }
+        respondedAt: { $ref: common.yaml#/Timestamp }
+        contextItemId: { $ref: common.yaml#/Id }
+
+ContextItemKind:
+  type: string
+  enum: [decision, constraint, fact, assumption, summary]
+
+ContextItem:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Không sửa tại chỗ; thay đổi tạo item mới và item cũ Superseded (5.5).
+      required: [scope, kind, content, sourceType, sourceId, status]
+      properties:
+        scope:
+          type: string
+          enum: [project, task]
+        taskId: { $ref: common.yaml#/Id }
+        kind: { $ref: '#/ContextItemKind' }
+        content:
+          type: object
+          additionalProperties: true
+        sourceType:
+          type: string
+          enum: [prompt, message, agent_run, approval, researcher]
+        sourceId: { $ref: common.yaml#/Id }
+        status:
+          type: string
+          enum: [Active, Superseded, Retracted]
+        supersedesId: { $ref: common.yaml#/Id }
+
+ContextItemCreate:
+  type: object
+  required: [scope, kind, content]
+  properties:
+    scope:
+      type: string
+      enum: [project, task]
+    taskId: { $ref: common.yaml#/Id }
+    kind:
+      type: string
+      enum: [decision, constraint, fact, assumption]
+    content:
+      type: object
+      additionalProperties: true
+    supersedesId:
+      $ref: common.yaml#/Id
+      description: Item được thay thế (chuyển Superseded).
+
+SharedContextView:
+  type: object
+  readOnly: true
+  description: Khung nhìn hợp nhất Shared Context của project (5.5, CTX-STORE-001).
+  properties:
+    researchContext: { $ref: project.yaml#/ResearchContextVersion }
+    baselinePlanVersionId: { $ref: common.yaml#/Id }
+    activeContextItems:
+      type: array
+      items: { $ref: '#/ContextItem' }
+    selectedReferenceIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+    acceptedArtifactVersionIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+    acceptedClaimIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+    activeWorkflowIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+
+AuditEvent:
+  type: object
+  readOnly: true
+  description: Chỉ ghi thêm (CTX-AUDIT-001). Không bao giờ chứa API key.
+  required: [id, accountId, actor, action, objectType, objectId, at]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    accountId: { $ref: common.yaml#/Id }
+    projectId: { $ref: common.yaml#/Id }
+    actor: { $ref: common.yaml#/ActorRef }
+    action: { type: string, examples: [reference.revoked, task.activated, plan_version.approved] }
+    objectType: { type: string }
+    objectId: { $ref: common.yaml#/Id }
+    objectVersion: { type: integer }
+    fromState: { type: string }
+    toState: { type: string }
+    apr: { $ref: common.yaml#/AprCode }
+    summary: { type: string }
+    correlationId: { type: string }
+    at: { $ref: common.yaml#/Timestamp }
+
+Event:
+  type: object
+  description: |
+    Sự kiện phát qua SSE sau khi giao dịch commit (outbox — DATA-PERSIST-001). `id` dùng cho `Last-Event-ID` khi kết nối lại.
+  required: [id, type, at]
+  properties:
+    id: { type: string }
+    type:
+      type: string
+      examples: [workflow.status_changed, agent_run.status_changed, prompt.created, prompt.status_changed,
+        task.status_changed, message.created, pending_action.created, notification.created,
+        reference.indexing_status_changed, build.status_changed, change_proposal.status_changed]
+    projectId: { $ref: common.yaml#/Id }
+    objectType: { type: string }
+    objectId: { $ref: common.yaml#/Id }
+    fromState: { type: string }
+    toState: { type: string }
+    at: { $ref: common.yaml#/Timestamp }

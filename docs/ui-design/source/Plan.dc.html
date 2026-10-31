@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Plan and Tasks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="Plan and Tasks" hint-size="100%,57px"></dc-import>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="plan" hint-size="240px,943px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 20px clamp(16px, 2vw, 24px) 40px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+          <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Plan and Tasks</h1>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4D4A44">Plan Version
+            <select style="height: 36px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 500 13px 'JetBrains Mono', monospace"><option>v3 · Approved (baseline)</option><option>v4 · Proposed</option><option>v2 · Superseded</option></select>
+          </label>
+          <a href="PlanCompare.dc.html" style="font-size: 13px">So sánh version</a>
+        </div>
+        <div role="tablist" aria-label="Chế độ xem" style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden; background: #FCF9F5">
+          <button role="tab" aria-selected="true" style="height: 36px; padding: 0 12px; border: 0; background: #1C1B18; color: #FFFFFF; font: 600 13px Montserrat, sans-serif">Board</button>
+          <button role="tab" aria-selected="false" style="height: 36px; padding: 0 12px; border: 0; background: #FCF9F5; color: #4D4A44; font: 500 13px Montserrat, sans-serif">Dependency graph</button>
+          <button role="tab" aria-selected="false" style="height: 36px; padding: 0 12px; border: 0; background: #FCF9F5; color: #4D4A44; font: 500 13px Montserrat, sans-serif">Checklist</button>
+          <button role="tab" aria-selected="false" style="height: 36px; padding: 0 12px; border: 0; background: #FCF9F5; color: #4D4A44; font: 500 13px Montserrat, sans-serif">Timeline</button>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px">
+        <select aria-label="Phase" style="height: 34px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>Phase 2 · Tổng quan tài liệu</option></select>
+        <select aria-label="Execution label" style="height: 34px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>Mọi label</option></select>
+        <select aria-label="Agent" style="height: 34px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>Mọi agent</option></select>
+      </div>
+      <div style="overflow-x: auto">
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 12px; min-width: 1040px">
+          <sc-for list="{{cols}}" as="c" hint-placeholder-count="5">
+            <section style="display: flex; flex-direction: column; gap: 8px">
+              <h2 style="margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 2px"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{c.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{c.state}}</span><span style="font-size: 12px; font-weight: 500; color: #4D4A44">{{c.n}}</span></h2>
+              <sc-for list="{{c.cards}}" as="t" hint-placeholder-count="2">
+                <a href="Plan.dc.html" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #FCF9F5; border: {{t.border}}; border-radius: 6px; text-decoration: none; color: #1C1B18">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">{{t.id}}</span>
+                  <span style="font-size: 14px; font-weight: 600; line-height: 1.35">{{t.title}}</span>
+                  <sc-if value="{{t.manual}}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 11px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Manual editor requirement</span></sc-if>
+                  <sc-if value="{{t.agentL}}" hint-placeholder-val="{{ true }}"><span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 4px; border: 1px solid #DBD3C7; background: #F6F2EE; font-size: 11px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>Available for agent</span></sc-if>
+                  <span style="font-size: 12px; color: {{t.noteColor}}">{{t.note}}</span>
+                </a>
+              </sc-for>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </main>
+
+    <aside aria-labelledby="td" style="flex: 1 1 380px; max-width: 440px; box-sizing: border-box; background: #FCF9F5; border-left: 1px solid #DBD3C7; display: flex; flex-direction: column">
+      <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 8px">
+        <h2 id="td" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2">Ma trận so sánh phương pháp</h2>
+        <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">T-2.5 · định nghĩa theo v3</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #9A3412; color: #9A3412; font-size: 12px; font-weight: 600">Blocked</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 4px; border: 1px solid #DBD3C7; background: #F6F2EE; font-size: 12px; font-weight: 600">Available for agent · Synthesis Agent</span>
+        </div>
+      </div>
+      <section aria-labelledby="rd" style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 10px">
+        <h3 id="rd" style="margin: 0; font-size: 14px; font-weight: 600">Readiness check · Không đạt · 09:50</h3>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.45">
+          <li style="display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #9A3412; border-radius: 6px"><span>Dependency <strong>T-2.3</strong> chưa Completed</span><a href="Chat.dc.html" style="flex-shrink: 0; font-weight: 600">Mở T-2.3</a></li>
+          <li style="display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #9A3412; border-radius: 6px"><span>Thiếu đầu vào: tiêu chí so sánh chưa được xác nhận</span><a href="Chat.dc.html" style="flex-shrink: 0; font-weight: 600">Trả lời câu hỏi</a></li>
+          <li style="display: flex; gap: 10px; padding: 10px 12px; border: 1px solid #DBD3C7; border-radius: 6px; color: #4D4A44"><span>Đạt: agent có kết nối hợp lệ · Đạt: 12 Trusted Reference Indexed</span></li>
+        </ul>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Thực thi</button>
+          <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Chạy lại readiness</button>
+          <button style="height: 40px; padding: 0 14px; border: 1px solid transparent; background: transparent; color: #025FAC; font: 500 14px Montserrat, sans-serif">Đặt làm active task</button>
+        </div>
+        <span style="font-size: 12px; color: #4D4A44">Thực thi chỉ khi Ready và readiness Đạt; luôn hỏi xác nhận. Mỗi lần một Task.</span>
+      </section>
+      <section aria-labelledby="ac" style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 8px">
+        <h3 id="ac" style="margin: 0; font-size: 14px; font-weight: 600">Checklist và acceptance criteria</h3>
+        <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6">
+          <li>Ma trận có ít nhất 3 phương pháp, mỗi ô có evidence</li>
+          <li>Mọi claim có mức hỗ trợ khác Not Assessed</li>
+          <li>Đầu ra bắt buộc: artifact <em>table</em> có version Accepted</li>
+        </ul>
+      </section>
+      <section aria-labelledby="hi" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+        <h3 id="hi" style="margin: 0; font-size: 14px; font-weight: 600">Lịch sử workflow</h3>
+        <span style="color: #4D4A44">Chưa chạy lần nào. Phụ thuộc: T-2.3 → T-2.5 → T-3.1.</span>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], ok: ['solid #0277DD', '#025FAC', '#FFFFFF'], warn: ['solid #9A3412', '#9A3412', '#FFFFFF'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'] };
+    const card = (id, title, manual, note, warn, sel) => ({ id, title, manual, agentL: !manual, note: note || '', noteColor: warn ? '#9A3412' : '#4D4A44', border: sel ? '2px solid #025FAC' : '1px solid #DBD3C7' });
+    const col = (state, k, cards) => ({ state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', n: String(cards.length), cards });
+    return {
+      cols: [
+        col('Blocked', 'warn', [card('T-2.5', 'Ma trận so sánh phương pháp', false, 'Chờ T-2.3', true, true), card('T-2.6', 'Sơ đồ kiến trúc RAG', false, 'Diagram Agent chưa có kết nối hợp lệ', true)]),
+        col('Ready', 'ok', [card('T-2.4', 'Phỏng vấn chuyên gia về tiêu chí đánh giá', true, 'Bạn cần thực hiện')]),
+        col('In Progress', 'run', [card('T-2.2', 'Tìm nghiên cứu 2019–2026', false, 'Evidence Retrieval Agent · bước 2/4')]),
+        col('Waiting for User', 'need', [card('T-2.3', 'So sánh phương pháp đo', false, '1 prompt đang chờ')]),
+        col('In Review', 'need', [card('T-2.1', 'Tổng hợp định nghĩa khái niệm', false, '3/3 đầu ra có bản Draft'), card('T-2.7', 'Ghi chú đọc 5 bài nền tảng', true, 'Bạn đã nộp kết quả · chờ nghiệm thu')])
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

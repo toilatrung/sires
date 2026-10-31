@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>18. Data and State Specifications | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 18</p><h1>18. Data and State Specifications</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 3, 5, 6, mục 21.1</p><div class="note"><p>Mục này chi tiết hóa domain model ở <a href="05-core-domain-model.html">mục 5</a> thành schema logic, enumeration, bảng chuyển trạng thái, quy tắc phiên bản, idempotency và kiểm tra dữ liệu. Schema là <em>logic</em>: kiểu dữ liệu, bảng lưu trữ và công nghệ database là quyết định kỹ thuật. Tên entity và trạng thái giữ nguyên mục 5. Giải quyết SYNC-05, SYNC-11, BL-03-06, BL-03-07. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Toàn bộ chi tiết là <strong>Assumption</strong> trừ khi dẫn từ quyết định đã xác nhận; các trường và trạng thái theo PC-01 (OQ-015, OQ-030, OQ-061, OQ-062, OQ-073, OQ-078, OQ-092) ghi nguồn tại chỗ. Bảng Open Questions ở <a href="#s-18-oq">18.7</a>.</p></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Priority</th>
+<th scope="col">Requirement</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>DATA-PERSIST-001, DATA-PERSIST-002, DATA-IDEMP-001, DATA-IDEMP-002, DATA-IDEMP-003, DATA-IDEMP-004, DATA-IDEMP-005, DATA-CONC-001, DATA-STATE-001, DATA-STATE-002, DATA-PROV-001, DATA-AUDIT-001, DATA-VALID-001</td></tr>
+<tr><td>P1</td><td>DATA-STORE-001</td></tr>
+<tr><td>P2</td><td>Không có.</td></tr>
+</tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-18-1">18.1. Core Entity Schemas</a></li>
+<li><a href="#s-18-2">18.2. Enumerations and State Machines</a></li>
+<li><a href="#s-18-2-perm">Quyền theo trạng thái</a></li>
+<li><a href="#s-18-3">18.3. Versioning and Provenance</a></li>
+<li><a href="#s-18-4">18.4. Persistence and Idempotency</a></li>
+<li><a href="#s-18-5">18.5. Data Validation</a></li>
+<li><a href="#s-18-6">18.6. Requirement và acceptance criteria</a></li>
+<li><a href="#s-18-oq">18.7. Open Questions của mục 18</a></li>
+</ul></details>
+
+<h2 id="s-18-1">18.1. Core Entity Schemas</h2>
+<h3 id="s-18-1-common">Trường chung</h3>
+<p>Mọi entity có các trường dưới đây (không lặp lại ở từng bảng). Ký hiệu: <strong>*</strong> bắt buộc; <code>ref</code> là định danh tham chiếu entity khác.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trường</th>
+<th scope="col">Kiểu</th>
+<th scope="col">Ghi chú</th>
+</tr></thead><tbody>
+<tr><td>id*</td><td>UUID</td><td>Không đoán được; không mang ý nghĩa.</td></tr>
+<tr><td>accountId*</td><td>ref Account</td><td>Mọi entity (OWN-03).</td></tr>
+<tr><td>projectId</td><td>ref Research Project</td><td>Bắt buộc với entity cấp project (5.0).</td></tr>
+<tr><td>createdAt*, createdBy*</td><td>timestamp, ActorRef</td><td>Actor bắt buộc (Confirmed — OQ-004).</td></tr>
+<tr><td>updatedAt, updatedBy</td><td>timestamp, ActorRef</td><td>Chỉ với entity sửa được.</td></tr>
+<tr><td>rowVersion*</td><td>integer</td><td>Optimistic concurrency (18.4).</td></tr>
+<tr><td>deletedAt</td><td>timestamp</td><td>Xóa mềm (5.0, NFR-RET-002). Với ResearchProject: khôi phục được trong 30 ngày kể từ deletedAt, sau đó xóa vĩnh viễn (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-030, OQ-078)).</td></tr>
+</tbody></table></div>
+<p><strong>ActorRef</strong> = { type*: <code>researcher</code> | <code>agent</code> | <code>system</code>; accountId (khi researcher); agent (khi agent: <code>orchestrator</code>, <code>discovery</code>, <code>reference_processing</code>, <code>evidence_retrieval</code>, <code>synthesis</code>, <code>writing</code>, <code>verification</code>, <code>diagram</code>); agentRunId (bắt buộc khi agent); component (khi system) }.</p>
+<p><strong>ApprovalRecord</strong> = { approvedBy* (ActorRef, luôn type researcher), decidedAt*, decision*: <code>approved</code> | <code>rejected</code> | <code>edited_and_approved</code>, objectType*, objectId*, objectVersion*, apr* (APR-01–APR-10), reason, promptId }.</p>
+
+<h3>Project và Plan</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>ResearchProject</td><td>name*, shortDescription, status* (ProjectStatus), currentContextVersionId* (ref), agentResponseLanguage, lastActivityAt*, archivedAt, deletedAt, purgeAfter (= deletedAt + 30 ngày; OQ-030, PC-01), statusBeforeDeletion (<code>Active</code> | <code>Archived</code>, để khôi phục đúng trạng thái).</td></tr>
+<tr><td>ResearchContextVersion</td><td>projectId*, versionNumber*, researchQuestion*, objectives[], domain, keywords[], scope, constraints[], outputType (enum: article, thesis, report, other), manuscriptLanguage, citationStyle, sourceMessageId, confirmedBy* (ActorRef researcher). Bất biến.</td></tr>
+<tr><td>ResearchPlan</td><td>projectId* (duy nhất), baselineVersionId (ref PlanVersion).</td></tr>
+<tr><td>PlanVersion</td><td>planId*, versionNumber*, status* (PlanVersionStatus), goals[], methods[], deliverables[], milestones[], risks[], assumptions[] (ref ContextItem), contextVersionId*, basedOnVersionId, changeSummary, changeClass (<code>material</code> | <code>minor</code>), createdByWorkflowId, approval (ApprovalRecord), rejectionReason. Bất biến khi status ≠ Draft.</td></tr>
+<tr><td>Phase</td><td>planVersionId*, order*, name*, objective.</td></tr>
+</tbody></table></div>
+
+<h3>Task</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>Task</td><td>projectId*, stableKey* (hiển thị, ví dụ T-012), status* (TaskStatus), currentDefinitionId* (ref), needsReview* (bool), needsReviewReasons[] {cause, sourceType, sourceId, at}, activeWorkflowId (ref, tối đa một).</td></tr>
+<tr><td>TaskDefinition</td><td>taskId*, planVersionId*, phaseId*, title*, description, objective*, executionLabel* (ExecutionLabel), requiredInputs[] {type: context | reference | artifact | decision, refId?, description}, expectedOutputs[]* {artifactType, description, required: bool}, acceptanceCriteria[]* {id, text}, checklist[] {id, text}, proposedAgent. Bất biến; mỗi Plan Version có bản riêng.</td></tr>
+<tr><td>TaskDependency</td><td>planVersionId*, taskId*, dependsOnTaskId*.</td></tr>
+<tr><td>ReadinessResult</td><td>taskId*, planVersionId*, passed* (bool), checks[]* {code, passed, detail, suggestedAction}, semanticCheckAgentRunId, at*.</td></tr>
+<tr><td>TaskReview</td><td>taskId*, workflowId, outcome* (<code>accepted</code> | <code>returned</code> | <code>blocked</code> | <code>cancelled</code>), criteriaResults[] {criterionId, met}, feedback, reasonCode (ReasonCode, bắt buộc khi returned/blocked), approval (ApprovalRecord khi accepted).</td></tr>
+</tbody></table></div>
+
+<h3>Điều phối</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>Workflow</td><td>projectId*, type* (WorkflowType), taskId, planVersionId, triggeredBy* (ActorRef), status* (WorkflowStatus), currentStepId, startedAt, endedAt, lastError {code, message, agentRunId}, lastCheckpointId, idempotencyKey*.</td></tr>
+<tr><td>WorkflowStep</td><td>workflowId*, order*, description*, assignedAgent, status* (StepStatus), inputRefs[] {type, id, version}, outputRefs[] {type, id, version}, openPromptId, attemptCount*.</td></tr>
+<tr><td>AgentRun</td><td>workflowId*, stepId*, agent*, providerConnectionId*, provider*, model*, adapterVersion*, capabilitiesUsed[], inputSummary*, contextManifest* {entities[] {type, id, version}, evidenceIds[], truncated[] {layer, reason}} (14.2), toolCalls[] {name, argumentsSummary, resultSummary}, outputRefs[], usage {inputTokens, outputTokens, calls, extra}, status* (AgentRunStatus), attempts* (số lần gọi provider trong Agent Run, 17.1), error {code (bộ mã chuẩn 8.6, hoặc mã hệ thống <code>interrupted</code>), message}, startedAt, endedAt, discarded* (bool, kết quả đến muộn bị bỏ), structuredOutput* (đầu ra có cấu trúc), debugTranscript {promptRef, responseRef, capturedAt, expiresAt} (chỉ có khi người dùng bật chế độ debug; expiresAt = capturedAt + 30 ngày; dữ liệu nhạy cảm, mã hóa khi lưu, NFR-RET-009). Bất biến sau khi kết thúc, trừ việc xóa debugTranscript khi hết hạn. Context manifest và đầu ra có cấu trúc luôn được lưu; toàn văn prompt/phản hồi không lưu khi debug tắt (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062)).</td></tr>
+<tr><td>Checkpoint</td><td>workflowId*, stepId*, sequence*, stepStatuses* {stepId: StepStatus}, savedOutputRefs[]*, consistent* (bool), at*.</td></tr>
+<tr><td>InteractiveAgentPrompt</td><td>projectId, taskId, workflowId*, stepId*, createdByAgentRunId*, type* (PromptType), question*, pendingAction* {apr?, objectType, objectId, objectVersion}, choices[] {id, label, consequence, recommended: bool, rationale}, editablePayload, status* (PromptStatus), statusReason, response {choiceIds[], editedPayload, text, respondedBy, respondedAt}, idempotencyKey.</td></tr>
+<tr><td>ContextItem</td><td>projectId*, scope* (<code>project</code> | <code>task</code>), taskId (khi scope task), kind* (<code>decision</code> | <code>constraint</code> | <code>fact</code> | <code>assumption</code> | <code>summary</code>), content* (có cấu trúc), sourceType* (<code>prompt</code> | <code>message</code> | <code>agent_run</code> | <code>approval</code> | <code>researcher</code>), sourceId*, status* (ContextItemStatus), supersedesId.</td></tr>
+</tbody></table></div>
+
+<h3>Reference, evidence, claim</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>DiscoveredResult</td><td>source*, query*, metadata* (schema chuẩn hóa 17.6), sourceUrl*, status* (DiscoveredResultStatus), importedReferenceId, createdByAgentRunId.</td></tr>
+<tr><td>Reference</td><td>metadata* (schema chuẩn hóa 17.6, đã chỉnh), metadataVersion*, bibtexKey* (duy nhất trong tài khoản), origin* (<code>discovered</code> | <code>manual</code>), discoveredResultId, approvalStatus* (ReferenceApprovalStatus), indexingStatus* (IndexingStatus), indexingError, approval (ApprovalRecord), revocation (ApprovalRecord + reason), mergedIntoId.</td></tr>
+<tr><td>SourceDocument</td><td>referenceId* (duy nhất), contentHash*, fileRef, pageCount, extractedTextRef, embeddingModel*, indexedAt.</td></tr>
+<tr><td>Chunk</td><td>sourceDocumentId*, chunkKey* (ổn định), page, paragraph, charStart, charEnd, textRef*, vectorId.</td></tr>
+<tr><td>ProjectReferenceSelection</td><td>projectId*, referenceId*, status* (<code>Active</code> | <code>Removed</code>), reason, selectedBy*.</td></tr>
+<tr><td>Evidence</td><td>projectId*, referenceId*, chunkId*, quote*, location* {page, paragraph}, retrievalQuery, taskId, createdByAgentRunId, relevanceScore, status* (EvidenceStatus), statusReason.</td></tr>
+<tr><td>Claim</td><td>projectId*, statement*, taskId, artifactVersionId, approvalStatus* (ClaimApprovalStatus), supportStatus* (SupportStatus), lastVerificationId, needsReview*, approval (ApprovalRecord).</td></tr>
+<tr><td>ClaimEvidenceLink</td><td>claimId*, evidenceId*, relation* (<code>supports</code> | <code>contradicts</code> | <code>context</code>).</td></tr>
+<tr><td>VerificationResult</td><td>targetType* (<code>claim</code> | <code>citation</code> | <code>change_proposal</code>), targetId*, agentRunId*, outcome* (SupportStatus hoặc <code>resolved</code>/<code>unresolved</code>/<code>mismatch</code> cho citation), details[], thresholdsUsed* (bản chụp VerificationThresholds tại thời điểm kiểm chứng, OQ-092), at*.</td></tr>
+</tbody></table></div>
+
+<h3>Artifact và Manuscript</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>Artifact</td><td>projectId*, type* (ArtifactType), title*, taskId, currentAcceptedVersionId.</td></tr>
+<tr><td>ArtifactVersion</td><td>artifactId*, versionNumber*, content hoặc fileRef*, format*, contentHash*, status* (ArtifactVersionStatus), provenance* (18.3), review {decision, by, at, note}, approval (ApprovalRecord).</td></tr>
+<tr><td>Manuscript</td><td>projectId* (duy nhất: một Manuscript mỗi project), initMode* (<code>Default</code> | <code>Blank</code>), mainFile*, compiler* (<code>pdflatex</code> | <code>xelatex</code> | <code>lualatex</code>), bibliographyTool* (<code>bibtex</code>, natbib, style mặc định <code>plainnat</code>), currentRevisionId*.</td></tr>
+<tr><td>ManuscriptFile</td><td>manuscriptId*, path* (duy nhất trong manuscript, khi Active), fileType* (<code>tex</code> | <code>bib</code> | <code>figure</code> | <code>other</code>), contentRef*, contentHash*, status* (<code>Active</code> | <code>Deleted</code>).</td></tr>
+<tr><td>ManuscriptRevision</td><td>manuscriptId*, revisionNumber*, parentRevisionId, changes[]* {path, operation: add | modify | delete | rename, beforeHash, afterHash}, source* (<code>direct_edit</code> | <code>change_proposal</code> | <code>init</code>), changeProposalId, taskId, artifactVersionIds[]. Bất biến.</td></tr>
+<tr><td>ChangeProposal</td><td>manuscriptId*, baseRevisionId*, diff* {path, hunks[]}[], taskId, claimIds[], evidenceIds[], artifactVersionIds[], createdByAgentRunId*, citationCheckId, status* (ChangeProposalStatus), approval (ApprovalRecord).</td></tr>
+<tr><td>BibliographyEntry</td><td>manuscriptId*, bibtexKey* (duy nhất trong manuscript), referenceId*, bibtex*, generatedFromMetadataVersion*.</td></tr>
+<tr><td>Build</td><td>manuscriptId*, revisionId*, status* (BuildStatus), queuedAt*, startedAt, endedAt, logRef, pdfRef, issues[] {severity, file, line, code, message, friendlyMessage}, citationKeysFound[], unresolvedKeys[].</td></tr>
+</tbody></table></div>
+
+<h3>Cấp tài khoản và hỗ trợ</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Trường</th>
+</tr></thead><tbody>
+<tr><td>Account / Profile</td><td>authIdentity* {issuer*, subject* (claim <code>sub</code> của eTroy OIDC)} — duy nhất, liên kết tài khoản SIRes với định danh eTroy; không có trường mật khẩu (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073); INT-OIDC-002). email (ban đầu lấy từ claim OIDC, ASM-13), displayName* (ban đầu lấy từ claim OIDC, người dùng sửa được), affiliation, researchField, avatarRef, googleScholarProfileUrl (URL hồ sơ Google Scholar; chỉ là liên kết, không phải đăng nhập Google, ASM-14), uiLanguage* (<code>vi</code> | <code>en</code>), defaultAgentLanguage, includeResearchFieldInContext* (bool, mặc định tắt; chỉ researchField được đưa vào context agent khi bật), timezone, debugMode* (bool, mặc định tắt; OQ-062), verificationThresholds* (nhóm “Ngưỡng kiểm chứng”). Không có tham số nâng cao của model (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015)).</td></tr>
+<tr><td>VerificationThresholds</td><td>Thuộc Account (một bộ mỗi tài khoản): các ngưỡng Verification Agent dùng để gán mức hỗ trợ claim và báo citation không khớp nguồn; giá trị mặc định do hệ thống hiệu chỉnh để đạt độ chính xác ≥ 85% (mức hỗ trợ claim) và ≥ 95% (phát hiện citation không khớp) so với nhãn chuyên gia; isDefault* (bool), updatedAt, updatedBy. Mỗi lần thay đổi ghi AuditEvent và áp dụng từ lần kiểm chứng sau; VerificationResult ghi bộ ngưỡng đã dùng (Confirmed ngưỡng mặc định — PO chốt 31/10/2026 (PC-01, OQ-092); cấu trúc nhóm Settings: Assumption ASM-15).</td></tr>
+<tr><td>ProviderConnection</td><td>name* (duy nhất trong tài khoản), provider* (<code>anthropic</code> | <code>openai</code> | <code>google</code>), baseUrl*, secretRef* (tham chiếu kho bí mật, không chứa key), keyHint* (≤ 4 ký tự cuối), testStatus* (ConnectionTestStatus), lastTestedAt, lastError, availableModels[] {id, capabilities}.</td></tr>
+<tr><td>AgentModelAssignment</td><td>agent* (8 agent hoặc <code>default</code>; duy nhất trong tài khoản), providerConnectionId*, model*, capabilityWarnings[].</td></tr>
+<tr><td>Conversation</td><td>scope* (<code>global</code> | <code>project</code>), projectId (khi project), title.</td></tr>
+<tr><td>Message</td><td>conversationId*, sender* (ActorRef), activeTaskId, content*, embeddedPromptId, agentRunId.</td></tr>
+<tr><td>PendingAction</td><td>projectId, kind* (enum theo 4.4), objectType*, objectId*, status* (PendingActionStatus), resolvedBy, resolvedAt, expiryReason.</td></tr>
+<tr><td>Notification</td><td>projectId, kind* (enum theo 4.4), objectType, objectId, message*, status* (<code>Unread</code> | <code>Read</code>).</td></tr>
+<tr><td>AuditEvent</td><td>projectId, actor* (ActorRef), action*, objectType*, objectId*, objectVersion, fromState, toState, apr, summary, correlationId, at*. Chỉ ghi thêm; không sửa, không xóa riêng lẻ. Giữ cùng vòng đời project (khi có projectId) hoặc tài khoản; Researcher export theo project dạng JSON và CSV (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-061); NFR-RET-008).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-18-2">18.2. Enumerations and State Machines</h2>
+<h3>Enumeration không có chuyển trạng thái</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Enumeration</th>
+<th scope="col">Giá trị</th>
+</tr></thead><tbody>
+<tr><td>ExecutionLabel</td><td><code>Available for agent</code>, <code>Manual editor requirement</code> (Confirmed — 21.1)</td></tr>
+<tr><td>WorkflowType</td><td><code>plan_proposal</code>, <code>task_execution</code>, <code>discovery</code>, <code>reference_processing</code>, <code>indexing</code>, <code>synthesis</code>, <code>verification</code>, <code>manuscript_edit</code>, <code>diagram</code>, <code>readiness_semantic</code>, <code>recovery</code></td></tr>
+<tr><td>PromptType</td><td><code>approval</code>, <code>choice</code>, <code>edit_and_approve</code>, <code>information_request</code></td></tr>
+<tr><td>ArtifactType</td><td><code>note</code>, <code>table</code>, <code>synthesis</code>, <code>diagram</code>, <code>draft_section</code>, <code>file</code>, <code>manual_submission</code>, <code>verification_report</code></td></tr>
+<tr><td>SupportStatus</td><td><code>Supported</code>, <code>Partially Supported</code>, <code>Unsupported</code>, <code>Conflicting</code>, <code>Not Assessed</code></td></tr>
+<tr><td>ReasonCode</td><td><code>missing_input</code>, <code>quality_insufficient</code>, <code>scope_changed</code>, <code>wrong_approach</code>, <code>provider_error</code>, <code>dependency_changed</code>, <code>other</code> (dùng cho KPI-04, 16.9)</td></tr>
+</tbody></table></div>
+
+<h3 id="s-18-2-task">Task</h3>
+<p>Bảng chuẩn là <a href="09-research-plan-and-task-management.html#s-9-8">TASK-STATE-001 ở 9.8</a> (T-01–T-19); bảng dưới đây lặp lại để tra cứu dữ liệu, kèm trường dữ liệu bắt buộc. Sơ đồ: <a href="../figures/FIG-004-task-state-machine.mmd">FIG-004</a>. Khi có khác biệt, 9.8 là chuẩn.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Từ</th>
+<th scope="col">Đến</th>
+<th scope="col">Trigger</th>
+<th scope="col">Actor</th>
+<th scope="col">Điều kiện · dữ liệu bắt buộc</th>
+</tr></thead><tbody>
+<tr><td>T-01</td><td>Draft</td><td>Blocked</td><td>Plan Version chứa Task được duyệt</td><td>System</td><td>Một trong RC-01–RC-08 không đạt; lưu kết quả readiness</td></tr>
+<tr><td>T-02</td><td>Draft</td><td>Ready</td><td>Plan Version chứa Task được duyệt</td><td>System</td><td>RC-01–RC-08 đạt</td></tr>
+<tr><td>T-03</td><td>Blocked</td><td>Ready</td><td>Tính lại readiness</td><td>System</td><td>RC-01–RC-08 đạt</td></tr>
+<tr><td>T-04</td><td>Ready</td><td>Blocked</td><td>Tính lại readiness</td><td>System</td><td>Một trong RC-01–RC-08 không đạt</td></tr>
+<tr><td>T-05</td><td>Ready, Failed</td><td>Queued</td><td>Kích hoạt (APR-02)</td><td>Researcher</td><td>RC-01–RC-09 đạt; không có Workflow hoạt động</td></tr>
+<tr><td>T-06</td><td>Queued</td><td>In Progress</td><td>Workflow <code>Running</code> hoặc WF-03.S1</td><td>System</td><td>—</td></tr>
+<tr><td>T-07</td><td>Queued</td><td>Ready</td><td>Hủy kích hoạt trước khi bắt đầu</td><td>Researcher</td><td>Workflow chưa <code>Running</code></td></tr>
+<tr><td>T-08</td><td>In Progress</td><td>Waiting for User</td><td>Workflow → <code>Waiting for User</code>, <code>Paused</code> hoặc <code>Interrupted</code></td><td>System</td><td>—</td></tr>
+<tr><td>T-09</td><td>Waiting for User</td><td>In Progress</td><td>Workflow → <code>Running</code></td><td>System</td><td>—</td></tr>
+<tr><td>T-10</td><td>In Progress, Waiting for User</td><td>Ready hoặc Blocked</td><td>Workflow → <code>Cancelled</code></td><td>Researcher</td><td>Đích theo readiness; đầu ra đã lưu giữ ở <code>Draft</code></td></tr>
+<tr><td>T-11</td><td>In Progress</td><td>In Review</td><td>Workflow <code>Succeeded</code> hoặc manual submission</td><td>System</td><td>Có đủ đầu ra bắt buộc</td></tr>
+<tr><td>T-12</td><td>In Progress, Waiting for User</td><td>Failed</td><td>Workflow → <code>Failed</code></td><td>System</td><td>Lưu mã lỗi</td></tr>
+<tr><td>T-13</td><td>In Review</td><td>Ready</td><td>Trả lại để sửa</td><td>Researcher</td><td>Phản hồi và <code>reasonCode</code> bắt buộc (dùng cho KPI-04)</td></tr>
+<tr><td>T-14</td><td>In Review</td><td>Completed</td><td>Nghiệm thu (APR-03)</td><td>Researcher</td><td>Mọi acceptance criterion đạt; đầu ra bắt buộc có version <code>Accepted</code></td></tr>
+<tr><td>T-15</td><td>In Review</td><td>Blocked</td><td>Chặn khi review</td><td>Researcher</td><td>Lý do và <code>reasonCode</code> bắt buộc</td></tr>
+<tr><td>T-16</td><td>Failed</td><td>Blocked</td><td>Tính lại readiness</td><td>System</td><td>Một trong RC-01–RC-08 không đạt</td></tr>
+<tr><td>T-17</td><td>Draft</td><td>(không còn)</td><td>Plan Version bị <code>Rejected</code> hoặc Task bị xóa khỏi Draft</td><td>System</td><td>Task chưa từng thuộc baseline</td></tr>
+<tr><td>T-18</td><td>Blocked, Ready, Queued, In Review, Failed</td><td>Cancelled</td><td>Hủy Task, hoặc baseline mới loại Task</td><td>Researcher / System</td><td>Không có Workflow hoạt động</td></tr>
+<tr><td>T-19</td><td>Completed</td><td>Ready hoặc Blocked</td><td>Mở lại để làm lại</td><td>Researcher</td><td>Ghi lý do; Task phụ thuộc Completed nhận cờ needsReview</td></tr>
+</tbody></table></div>
+<p class="status">Cancelled là trạng thái cuối. Completed chỉ thoát qua T-19. Cờ needsReview là thuộc tính, không phải trạng thái (5.3, 9.11). Prompt không có thời hạn theo thời gian: prompt chỉ <code>Expired</code> khi project được lưu trữ, và <code>Cancelled</code> khi workflow bị hủy hoặc đối tượng chờ duyệt đổi phiên bản; không trường hợp nào được coi là đồng ý (5.9).</p>
+
+<h3>Plan Version</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Từ</th>
+<th scope="col">Đến</th>
+<th scope="col">Trigger / Actor</th>
+<th scope="col">Điều kiện</th>
+</tr></thead><tbody>
+<tr><td>(mới)</td><td>Draft</td><td>Orchestrator (WF-01.S4) hoặc Researcher sửa baseline</td><td>Không có Draft/Proposed khác đang mở</td></tr>
+<tr><td>Draft</td><td>Proposed</td><td>Researcher trình duyệt</td><td>Kiểm tra cấu trúc đạt (18.5)</td></tr>
+<tr><td>Proposed</td><td>Approved</td><td>Researcher, APR-01</td><td>—; baseline cũ → Superseded trong cùng giao dịch</td></tr>
+<tr><td>Proposed</td><td>Rejected</td><td>Researcher</td><td>Lý do bắt buộc</td></tr>
+<tr><td>Proposed</td><td>Draft</td><td>Researcher rút lại để sửa</td><td>Tạo Draft mới sao chép nội dung; bản Proposed → Rejected (lý do: withdrawn)</td></tr>
+<tr><td>Draft</td><td>(xóa)</td><td>Researcher hủy bản nháp</td><td>Xóa mềm</td></tr>
+<tr><td>Approved</td><td>Superseded</td><td>System, khi version mới Approved</td><td>—</td></tr>
+</tbody></table></div>
+
+<h3>Workflow, Workflow Step, Agent Run</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Chuyển trạng thái (Từ → Đến: trigger, actor)</th>
+</tr></thead><tbody>
+<tr><td>Workflow</td><td>Created → Running: System bắt đầu. Running → Waiting for User: prompt chặn mở. Waiting for User → Running: trả lời. Running → Paused: Researcher tạm dừng. Paused → Running: Researcher tiếp tục. Running → Interrupted: System phát hiện dừng ngoài ý muốn. Interrupted → Running: Recovery decision “tiếp tục”/“chạy lại bước” (Researcher). Running → Succeeded: mọi bước xong. Running → Failed: bước Failed hết chính sách thử lại. Running, Waiting for User, Paused, Interrupted → Cancelled: Researcher hủy. Succeeded, Failed, Cancelled là trạng thái cuối.</td></tr>
+<tr><td>Workflow Step (StepStatus)</td><td><code>Pending</code> → <code>Running</code> → <code>Succeeded</code> | <code>Failed</code>; Running ⇄ <code>Waiting for User</code>; Pending/Running/Waiting for User → <code>Cancelled</code>; Failed → Running khi chạy lại bước (Agent Run mới, attemptCount + 1).</td></tr>
+<tr><td>Agent Run</td><td>Pending → Running → Succeeded | Failed; Pending/Running → Cancelled (workflow hủy). Bất biến sau trạng thái cuối. Agent Run Failed do gián đoạn có error.code = <code>interrupted</code> (14.7).</td></tr>
+</tbody></table></div>
+<p class="status">FIG-004 thể hiện Task và Workflow; các state machine còn lại: FIG-032 (<a href="../figures/FIG-032-data-state-machines.mmd">figures/FIG-032-data-state-machines.mmd</a>).</p>
+
+<h3>Các entity khác</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity (enumeration)</th>
+<th scope="col">Chuyển trạng thái</th>
+</tr></thead><tbody>
+<tr><td>ResearchProject (ProjectStatus)</td><td>Active → Archived: Researcher, khi không có Workflow hoạt động. Archived → Active: Researcher. Xóa mềm (APR-08): Researcher, từ Active hoặc Archived khi không có Workflow hoạt động; ghi deletedAt, purgeAfter, statusBeforeDeletion. Khôi phục: Researcher, khi now &lt; purgeAfter; project trở về statusBeforeDeletion. Xóa vĩnh viễn: System khi now ≥ purgeAfter, xóa toàn bộ dữ liệu cấp project kể cả AuditEvent của project; không khôi phục được (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-030, OQ-078); NFR-RET-002).</td></tr>
+<tr><td>InteractiveAgentPrompt (PromptStatus)</td><td>Open → Answered: Researcher trả lời (một lần). Open → Expired: System khi project chứa prompt được lưu trữ (không có hết hạn theo thời gian). Open → Cancelled: System khi workflow bị hủy, hoặc khi đối tượng chờ duyệt đổi phiên bản (Orchestrator tạo prompt mới cho phiên bản hiện hành); agent tạo prompt cũng có thể hủy prompt của mình. Ba trạng thái sau là cuối.</td></tr>
+<tr><td>ContextItem (ContextItemStatus)</td><td>Active → Superseded: có item mới thay thế. Active → Retracted: Researcher rút lại.</td></tr>
+<tr><td>DiscoveredResult</td><td>New → Selected | Rejected: Researcher. Selected → New: bỏ chọn. Selected → Imported: Reference được tạo từ kết quả.</td></tr>
+<tr><td>Reference — duyệt (ReferenceApprovalStatus)</td><td>Pending Approval → Trusted: Researcher, APR-04. Pending Approval → Rejected: Researcher. Trusted → Revoked: Researcher, APR-04 (lý do bắt buộc). Revoked → Trusted: Researcher duyệt lại (APR-04).</td></tr>
+<tr><td>Reference — indexing (IndexingStatus)</td><td>Not Indexed → Queued: System khi Trusted và có nội dung. Not Indexed → Unavailable: không có nội dung hợp lệ. Queued → Indexing → Indexed | Failed. Failed → Queued: Researcher thử lại. Unavailable → Queued: Researcher cung cấp file. Indexed → Queued: đổi embedding model hoặc thay file.</td></tr>
+<tr><td>ProjectReferenceSelection</td><td>Active → Removed: Researcher bỏ chọn, hoặc System khi Reference Revoked/xóa project. Removed → Active: Researcher chọn lại (Reference phải Trusted).</td></tr>
+<tr><td>Evidence (EvidenceStatus)</td><td>Active → Excluded: Researcher loại. Excluded → Active: Researcher khôi phục. Active → Stale: System khi Reference Revoked hoặc Source Document index lại làm chunk không còn.</td></tr>
+<tr><td>Claim — duyệt (ClaimApprovalStatus)</td><td>Draft → Accepted: Researcher, APR-06, khi supportStatus ≠ Not Assessed. Draft → Rejected: Researcher. Accepted → Draft: Researcher sửa phát biểu (tạo bản ghi lịch sử).</td></tr>
+<tr><td>Claim — hỗ trợ (SupportStatus)</td><td>Not Assessed → bất kỳ giá trị khác: Verification Agent. Giữa các giá trị: mỗi lần kiểm chứng mới hoặc Researcher điều chỉnh có ghi lý do.</td></tr>
+<tr><td>ArtifactVersion (ArtifactVersionStatus)</td><td>Draft → Accepted: Researcher (APR-03/APR-06/APR-07 tùy loại); version Accepted cũ → Superseded trong cùng giao dịch. Draft → Rejected: Researcher.</td></tr>
+<tr><td>ChangeProposal (ChangeProposalStatus)</td><td>Proposed → Accepted: Researcher, APR-05, khi baseRevisionId = currentRevisionId và citation check đạt. Proposed → Rejected: Researcher. Proposed → Outdated: System khi revision hiện hành đổi.</td></tr>
+<tr><td>Build (BuildStatus)</td><td>Queued → Running → Succeeded | Failed. Queued → Failed: hết thời gian chờ hoặc revision bị thay.</td></tr>
+<tr><td>ProviderConnection (ConnectionTestStatus)</td><td>Untested → Valid | Invalid: kiểm tra kết nối. Valid → Invalid: lỗi auth/quota khi gọi. Mọi trạng thái → Untested: sửa base URL hoặc key.</td></tr>
+<tr><td>PendingAction (PendingActionStatus)</td><td>Open → Resolved: đối tượng được xử lý. Open → Expired: đối tượng hết hiệu lực. Expired → Resolved: Researcher đánh dấu đã xem.</td></tr>
+</tbody></table></div>
+
+<h3 id="s-18-2-perm">Quyền theo trạng thái</h3>
+<p>Mở rộng permission matrix <a href="03-user-roles-and-permissions.html#s-3-5">3.5</a> (giải quyết BL-03-06). Bảng chỉ liệt kê hành động của Researcher; agent luôn bị giới hạn theo 3.2–3.3 và không thực hiện được hành động nào dưới đây ngoài việc tạo bản đề xuất.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Tài nguyên</th>
+<th scope="col">Trạng thái</th>
+<th scope="col">Hành động được phép</th>
+<th scope="col">Bị chặn</th>
+</tr></thead><tbody>
+<tr><td>Mọi tài nguyên cấp project</td><td>Project Archived</td><td>Đọc, export, mở lại project, xóa project</td><td>Mọi thao tác ghi, tạo workflow</td></tr>
+<tr><td></td><td>Project đã xóa mềm (chưa quá 30 ngày)</td><td>Xem trong danh sách project đã xóa, khôi phục</td><td>Mọi thao tác khác, kể cả đọc nội dung chi tiết và tạo workflow</td></tr>
+<tr><td>Plan Version</td><td>Draft</td><td>Sửa, trình duyệt, hủy bản nháp</td><td>Duyệt</td></tr>
+<tr><td></td><td>Proposed</td><td>Duyệt, từ chối, rút lại</td><td>Sửa trực tiếp</td></tr>
+<tr><td></td><td>Approved / Superseded / Rejected</td><td>Đọc, so sánh, tạo Draft mới từ bản này</td><td>Sửa, xóa</td></tr>
+<tr><td>Task</td><td>Ready</td><td>Readiness, kích hoạt, hủy, đặt active task</td><td>Nghiệm thu; sửa định nghĩa (chỉ qua Plan Version mới)</td></tr>
+<tr><td></td><td>Blocked</td><td>Xem lý do, hủy</td><td>Kích hoạt</td></tr>
+<tr><td></td><td>Queued</td><td>Theo dõi, hủy kích hoạt (T-07), hủy Task (T-18)</td><td>Kích hoạt lần hai, nghiệm thu</td></tr>
+<tr><td></td><td>In Progress / Waiting for User</td><td>Theo dõi, trả lời prompt, tạm dừng hoặc hủy workflow (T-10), gửi kết quả manual</td><td>Kích hoạt lần hai, nghiệm thu, hủy Task trực tiếp (phải hủy workflow trước)</td></tr>
+<tr><td></td><td>In Review</td><td>Chấp nhận/từ chối đầu ra, nghiệm thu, trả lại, chặn, hủy</td><td>Kích hoạt</td></tr>
+<tr><td></td><td>Failed</td><td>Xem lỗi, chạy lại có kiểm soát, hủy</td><td>Nghiệm thu</td></tr>
+<tr><td></td><td>Completed</td><td>Đọc; mở lại để làm lại (T-19, ghi lý do); xác nhận “vẫn hợp lệ” để gỡ cờ needsReview</td><td>Chuyển trạng thái khác; xóa</td></tr>
+<tr><td></td><td>Cancelled</td><td>Đọc</td><td>Mọi chuyển trạng thái; xóa</td></tr>
+<tr><td>Workflow</td><td>Running / Waiting for User</td><td>Tạm dừng, hủy</td><td>Tiếp tục</td></tr>
+<tr><td></td><td>Paused / Interrupted</td><td>Tiếp tục (Recovery decision), hủy</td><td>—</td></tr>
+<tr><td></td><td>Succeeded / Failed / Cancelled</td><td>Đọc; với Failed: chạy lại bước qua Task</td><td>Tạm dừng, hủy</td></tr>
+<tr><td>Prompt</td><td>Open</td><td>Trả lời</td><td>—</td></tr>
+<tr><td></td><td>Answered / Expired / Cancelled</td><td>Đọc</td><td>Trả lời lại</td></tr>
+<tr><td>Reference</td><td>Pending Approval</td><td>Sửa metadata, duyệt, từ chối, gộp</td><td>Chọn vào project, citation</td></tr>
+<tr><td></td><td>Trusted</td><td>Sửa metadata (tạo metadataVersion mới), chọn vào project, thu hồi, xóa khi không project nào dùng</td><td>—</td></tr>
+<tr><td></td><td>Revoked / Rejected</td><td>Đọc, duyệt lại</td><td>Chọn vào project, dùng cho evidence hay citation mới</td></tr>
+<tr><td>Artifact Version</td><td>Draft</td><td>Chấp nhận, từ chối, sửa (tạo version mới)</td><td>Dùng làm đầu vào chính thức</td></tr>
+<tr><td></td><td>Accepted</td><td>Đọc, dùng làm đầu vào, tạo version mới</td><td>Sửa tại chỗ, xóa</td></tr>
+<tr><td>Claim</td><td>Draft</td><td>Sửa, chấp nhận (nếu đã đánh giá), từ chối, liên kết evidence</td><td>Dùng trong Change Proposal</td></tr>
+<tr><td></td><td>Accepted</td><td>Dùng trong bản thảo, sửa (về Draft)</td><td>—</td></tr>
+<tr><td>Change Proposal</td><td>Proposed</td><td>Chấp nhận (khi citation check đạt), từ chối</td><td>Sửa nội dung diff</td></tr>
+<tr><td></td><td>Outdated / Accepted / Rejected</td><td>Đọc; Outdated: yêu cầu tạo lại</td><td>Chấp nhận</td></tr>
+<tr><td>Provider Connection</td><td>Mọi trạng thái</td><td>Sửa, kiểm tra, xóa (nếu không agent nào đang dùng trong Agent Run đang chạy)</td><td>Xem key đầy đủ</td></tr>
+</tbody></table></div>
+
+<h2 id="s-18-3">18.3. Versioning and Provenance</h2>
+<h3>Entity có phiên bản</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Entity</th>
+<th scope="col">Cơ chế</th>
+</tr></thead><tbody>
+<tr><td>Research Context</td><td>ResearchContextVersion bất biến; project trỏ tới bản hiện hành.</td></tr>
+<tr><td>Plan</td><td>PlanVersion bất biến khi ≠ Draft; TaskDefinition theo version.</td></tr>
+<tr><td>Artifact</td><td>ArtifactVersion bất biến; contentHash.</td></tr>
+<tr><td>Manuscript</td><td>ManuscriptRevision bất biến cho mọi thay đổi file.</td></tr>
+<tr><td>Reference metadata</td><td>metadataVersion tăng mỗi lần sửa; BibliographyEntry ghi version đã dùng.</td></tr>
+<tr><td>Context Item</td><td>Không sửa; supersedesId nối chuỗi.</td></tr>
+</tbody></table></div>
+<h3>Bản ghi provenance</h3>
+<p>Mọi dữ liệu do agent tạo (ArtifactVersion, Evidence, Claim, ChangeProposal, DiscoveredResult, PlanVersion do Orchestrator tạo) mang <strong>Provenance</strong>:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trường</th>
+<th scope="col">Nội dung</th>
+</tr></thead><tbody>
+<tr><td>createdBy*</td><td>ActorRef (agent kèm agentRunId, hoặc researcher, hoặc system).</td></tr>
+<tr><td>workflowId, stepId, taskId, planVersionId</td><td>Ngữ cảnh điều phối và nghiên cứu khi tạo.</td></tr>
+<tr><td>inputs[]*</td><td>Danh sách {type, id, version} của đầu vào đã dùng: artifact version, evidence, reference + metadataVersion, context item, research context version.</td></tr>
+<tr><td>provider, model</td><td>Lấy từ Agent Run (INT-PROVIDER-006).</td></tr>
+<tr><td>sources[]</td><td>Reference và chunk mà nội dung dựa vào (cho synthesis, draft_section).</td></tr>
+<tr><td>approval</td><td>ApprovalRecord khi được chấp nhận.</td></tr>
+</tbody></table></div>
+<h3>Quy tắc</h3>
+<ul>
+<li>Phê duyệt gắn với objectVersion; nếu đối tượng đổi sau khi duyệt thì phê duyệt không áp dụng cho bản mới (3.4).</li>
+<li>Mọi chuyển trạng thái ghi một AuditEvent có actor, fromState, toState (Confirmed — OQ-004, giải quyết SYNC-11).</li>
+<li>Khi đầu vào trong provenance bị thay đổi, thu hồi hoặc chuyển Stale, System lan truyền cờ needsReview tới Task, Claim và Change Proposal phụ thuộc (9.11, 10.8).</li>
+<li>Không có entity thành viên project; ActorRef researcher luôn là chủ tài khoản trong MVP (OWN-06).</li>
+</ul>
+
+<h2 id="s-18-4">18.4. Persistence and Idempotency</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Quy tắc</th>
+</tr></thead><tbody>
+<tr><td id="req-data-persist-001">DATA-PERSIST-001</td><td>Mọi chuyển trạng thái, thay đổi dữ liệu liên quan và AuditEvent ghi trong cùng một giao dịch; sự kiện phát cho giao diện và worker (cập nhật trạng thái, hàng đợi) được ghi kèm trong giao dịch rồi phát sau (outbox), để không có sự kiện cho thay đổi chưa lưu.</td></tr>
+<tr><td id="req-data-persist-002">DATA-PERSIST-002</td><td>Checkpoint được ghi trong cùng giao dịch với việc đánh dấu bước Succeeded và lưu outputRefs.</td></tr>
+<tr><td id="req-data-idemp-001">DATA-IDEMP-001</td><td>Lệnh của người dùng có tác động (kích hoạt Task, duyệt, trả lời prompt, chấp nhận proposal, gửi kết quả manual, tạo project) mang idempotencyKey do client tạo; gửi lại cùng khóa trả về kết quả lần đầu, không thực hiện lần hai.</td></tr>
+<tr><td id="req-data-idemp-002">DATA-IDEMP-002</td><td>Mỗi Task có tối đa một Workflow hoạt động (ràng buộc duy nhất trên activeWorkflowId); yêu cầu kích hoạt đồng thời chỉ một yêu cầu thành công.</td></tr>
+<tr><td id="req-data-idemp-003">DATA-IDEMP-003</td><td>Kết quả Agent Run chỉ được ghi khi Workflow còn hoạt động và step còn đang chờ đúng agentRunId đó; nếu không, Agent Run được đánh dấu discarded và đầu ra không ghi đè dữ liệu (14.6).</td></tr>
+<tr><td id="req-data-idemp-004">DATA-IDEMP-004</td><td>Thử lại tạm thời khi gọi provider diễn ra trong cùng Agent Run (attempts tăng). Chạy lại sau khi Agent Run Failed tạo Agent Run mới (5.4).</td></tr>
+<tr><td id="req-data-idemp-005">DATA-IDEMP-005</td><td>Thao tác nền idempotent theo khóa tự nhiên: indexing theo (referenceId, contentHash, embeddingModel); build theo (revisionId, cấu hình build); tạo BibliographyEntry theo (manuscriptId, referenceId).</td></tr>
+<tr><td id="req-data-conc-001">DATA-CONC-001</td><td>Cập nhật entity sửa được dùng optimistic concurrency theo rowVersion; xung đột trả lỗi để người dùng tải lại, không ghi đè im lặng.</td></tr>
+<tr><td id="req-data-store-001">DATA-STORE-001</td><td>File (PDF tài liệu, file bản thảo, PDF build, preview sơ đồ) lưu ở kho đối tượng theo địa chỉ nội dung (contentHash); entity giữ tham chiếu. Vector lưu ở vector database (17.3).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-18-5">18.5. Data Validation</h2>
+<h3>Ràng buộc duy nhất</h3>
+<ul>
+<li>Một ResearchPlan mỗi project; tối đa một Manuscript mỗi project.</li>
+<li>Mỗi ResearchPlan: tối đa một PlanVersion <code>Approved</code>; tối đa một PlanVersion ở <code>Draft</code> hoặc <code>Proposed</code>.</li>
+<li>Mỗi Task: tối đa một Workflow ở trạng thái chưa kết thúc.</li>
+<li>Mỗi Artifact: tối đa một ArtifactVersion <code>Accepted</code>.</li>
+<li>Mỗi Reference: tối đa một SourceDocument. bibtexKey duy nhất trong tài khoản. DOI trùng trong tài khoản được cảnh báo và đề xuất gộp (không chặn cứng, vì metadata nguồn có thể sai).</li>
+<li>ProjectReferenceSelection <code>Active</code> duy nhất theo (projectId, referenceId).</li>
+<li>ManuscriptFile <code>Active</code> duy nhất theo (manuscriptId, path); BibliographyEntry duy nhất theo (manuscriptId, bibtexKey).</li>
+<li>ProviderConnection.name duy nhất trong tài khoản; AgentModelAssignment duy nhất theo (accountId, agent).</li>
+<li>Prompt có tối đa một response.</li>
+<li>Account.authIdentity (issuer, subject) duy nhất toàn hệ thống: một định danh eTroy ứng với đúng một tài khoản SIRes (OQ-073).</li>
+</ul>
+<h3>Toàn vẹn tham chiếu</h3>
+<ul>
+<li>OWN-01–OWN-03 (5.10) được kiểm tra khi ghi: mọi ref cùng accountId; ref cấp project cùng projectId.</li>
+<li>Evidence chỉ tham chiếu Reference đang <code>Trusted</code> và được chọn <code>Active</code> cho project tại thời điểm tạo.</li>
+<li>BibliographyEntry chỉ tham chiếu Reference <code>Trusted</code>.</li>
+<li>Không xóa vật lý entity còn được tham chiếu bởi provenance, ApprovalRecord hoặc AuditEvent (OWN-05).</li>
+<li>AgentModelAssignment chỉ tham chiếu ProviderConnection cùng tài khoản; model phải thuộc availableModels hoặc được người dùng nhập và kiểm tra.</li>
+</ul>
+<h3>Kiểm tra cấu trúc Plan Version (trước khi trình duyệt)</h3>
+<ul>
+<li>Đồ thị TaskDependency không có chu trình; mọi dependsOnTaskId thuộc cùng Plan Version.</li>
+<li>Mỗi TaskDefinition có objective, ít nhất một expectedOutput bắt buộc, ít nhất một acceptance criterion và executionLabel hợp lệ.</li>
+<li>Mỗi Task thuộc một Phase của cùng version.</li>
+</ul>
+<h3>Trường bắt buộc và định dạng</h3>
+<ul>
+<li>Trường đánh dấu * ở 18.1 bắt buộc. Enumeration chỉ nhận giá trị liệt kê ở 18.2.</li>
+<li>baseUrl là URL tuyệt đối hợp lệ, dùng HTTPS (NFR-TRANSIT-001) và tương thích API chính thức của provider đã chọn (INT-PROVIDER-005, OQ-014).</li>
+<li>googleScholarProfileUrl, nếu có, là URL tuyệt đối hợp lệ dùng HTTPS (OQ-015).</li>
+<li>File tài liệu để index: chỉ PDF có lớp văn bản, tối đa 50 MB mỗi file (OQ-050, PC-01; INT-DOC-001). Độ dài văn bản và dung lượng file khác có giới hạn cấu hình; vượt giới hạn trả lỗi rõ ràng, không cắt ngầm.</li>
+<li>Giá trị trong VerificationThresholds nằm trong miền hợp lệ do hệ thống quy định; Researcher khôi phục được giá trị mặc định (OQ-092).</li>
+<li>reasonCode bắt buộc khi trả lại hoặc chặn Task (KPI-04).</li>
+</ul>
+
+<h2 id="s-18-6">18.6. Requirement và acceptance criteria</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-data-state-001">DATA-STATE-001</td><td>Mọi chuyển trạng thái tuân theo bảng 18.2; chuyển không có trong bảng bị từ chối với lỗi rõ ràng.</td></tr>
+<tr><td id="req-data-state-002">DATA-STATE-002</td><td>Mọi hành động của Researcher được kiểm tra theo quyền theo trạng thái (18.2) phía server.</td></tr>
+<tr><td id="req-data-prov-001">DATA-PROV-001</td><td>Mọi dữ liệu do agent tạo có Provenance đầy đủ theo 18.3.</td></tr>
+<tr><td id="req-data-audit-001">DATA-AUDIT-001</td><td>Mọi chuyển trạng thái và phê duyệt sinh AuditEvent có actor.</td></tr>
+<tr><td>DATA-PERSIST-001, DATA-PERSIST-002, DATA-IDEMP-001–005, DATA-CONC-001, DATA-STORE-001</td><td>Theo 18.4.</td></tr>
+<tr><td id="req-data-valid-001">DATA-VALID-001</td><td>Ràng buộc duy nhất, toàn vẹn tham chiếu và kiểm tra cấu trúc theo 18.5.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>DATA-STATE-001-AC01</strong> — Given Task ở Ready, When có yêu cầu chuyển thẳng sang Completed, Then bị từ chối và Task giữ Ready.</li>
+<li><strong>DATA-STATE-001-AC02</strong> — Given Plan Version Proposed được duyệt, When giao dịch hoàn tất, Then bản này Approved, baseline cũ Superseded, và không tồn tại hai bản Approved.</li>
+<li><strong>DATA-STATE-001-AC03</strong> — Given project Archived bị xóa mềm 31 ngày trước, When Researcher gọi API khôi phục, Then bị từ chối vì đã quá hạn khôi phục; Given xóa mềm 5 ngày trước, Then project trở về Archived.</li>
+<li><strong>DATA-IDEMP-001-AC01</strong> — Given Researcher nhấn Thực thi hai lần với cùng idempotencyKey, When hệ thống xử lý, Then chỉ có một Workflow được tạo.</li>
+<li><strong>DATA-IDEMP-002-AC01</strong> — Given hai yêu cầu kích hoạt cùng Task đồng thời với khóa khác nhau, When xử lý, Then một yêu cầu thành công, yêu cầu còn lại bị từ chối vì Task đã có Workflow hoạt động.</li>
+<li><strong>DATA-IDEMP-003-AC01</strong> — Given workflow bị hủy khi Agent Run đang chạy, When Agent Run trả kết quả sau đó, Then Agent Run được đánh dấu discarded và không Artifact Version mới nào được tạo.</li>
+<li><strong>DATA-PROV-001-AC01</strong> — Given Synthesis Agent tạo bản tổng hợp, When mở provenance, Then thấy agentRunId, provider, model, danh sách evidence và reference đã dùng.</li>
+<li><strong>DATA-AUDIT-001-AC01</strong> — Given Researcher thu hồi một Reference, When xem Activity and History, Then có AuditEvent với actor researcher, Trusted → Revoked và lý do.</li>
+<li><strong>DATA-VALID-001-AC01</strong> — Given Plan Version Draft có chu trình T1 → T2 → T1, When trình duyệt, Then bị từ chối và nêu T1, T2.</li>
+<li><strong>DATA-STATE-002-AC01</strong> — Given Plan Version <code>Approved</code>, When Researcher gọi API sửa trực tiếp nội dung, Then bị từ chối phía server và gợi ý tạo Draft mới.</li>
+<li><strong>DATA-PERSIST-001-AC01</strong> — Given lỗi xảy ra sau khi ghi chuyển trạng thái nhưng trước khi ghi AuditEvent, When giao dịch kết thúc, Then cả hai đều không được ghi và không có sự kiện nào được phát.</li>
+<li><strong>DATA-PERSIST-002-AC01</strong> — Given bước vừa Succeeded, When đọc checkpoint mới nhất, Then checkpoint chứa bước đó và outputRefs của nó.</li>
+<li><strong>DATA-IDEMP-004-AC01</strong> — Given provider trả <code>timeout</code> một lần rồi thành công, When xem lịch sử, Then chỉ có một Agent Run với attempts = 2; Given Agent Run Failed và Researcher chạy lại bước, Then có Agent Run mới.</li>
+<li><strong>DATA-IDEMP-005-AC01</strong> — Given yêu cầu build hai lần cùng revision và cùng cấu hình, When xử lý, Then chỉ có một Build được chạy và yêu cầu thứ hai nhận kết quả của Build đó.</li>
+<li><strong>DATA-STORE-001-AC01</strong> — Given tải lên hai lần cùng một file PDF, When lưu, Then kho đối tượng chỉ giữ một bản theo contentHash và cả hai tham chiếu trỏ tới bản đó.</li>
+<li><strong>DATA-CONC-001-AC01</strong> — Given hai tab cùng sửa một Plan Version Draft, When tab thứ hai lưu sau, Then nhận lỗi xung đột và nội dung tab thứ nhất không bị ghi đè.</li>
+</ul>
+
+<h2 id="s-18-oq">18.7. Open Questions của mục 18</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-084</td><td>Xác nhận các chuyển trạng thái hủy giữa chừng T-07 và T-10, và mở lại Task đã Completed (T-19) ở 9.8. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> bảng TASK-STATE-001 ở 9.8 là chuẩn; 18.2 và FIG-004 đã đồng bộ với T-07, T-10, T-19.</td><td>18.2, 5.3, FIG-004, 9.8</td></tr>
+<tr><td>OQ-085</td><td>Agent Run lưu toàn văn prompt và phản hồi của model (phục vụ kiểm tra, tái lập) hay chỉ tóm tắt và tham chiếu? Nếu lưu toàn văn, giữ bao lâu? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-062; trả lời chung ở OQ-062 (cùng chính sách retention OQ-078). Theo PC-01: lưu context manifest và đầu ra có cấu trúc; toàn văn chỉ lưu khi bật debug, giữ 30 ngày (AgentRun.debugTranscript, 18.1).</td><td>18.1, 16.5, 16.8, SCOPE-12</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="17-integrations-and-external-dependencies.html">← Mục 17</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="19-acceptance-criteria-and-test-scenarios.html">Mục 19 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

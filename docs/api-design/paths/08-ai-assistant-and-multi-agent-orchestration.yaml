@@ -1,0 +1,317 @@
+# PRD 8 AI Assistant and Multi-Agent Orchestration — Provider Connection, Agent Models (8.6, M1),
+# agent registry (8.2) và Interactive Agent Prompt (8.4, M2).
+
+/provider-connections:
+  get:
+    tags: [Provider Connections]
+    operationId: listProviderConnections
+    summary: Danh sách Provider Connection
+    x-requirements: [AGENT-PROVIDER-002]
+    x-priority: P0
+    x-milestone: M1
+    responses:
+      '200':
+        description: Mọi kết nối của tài khoản; API key chỉ ở dạng `keyHint`.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/account.yaml#/ProviderConnection }
+  post:
+    tags: [Provider Connections]
+    operationId: createProviderConnection
+    summary: Tạo Provider Connection (APR-09)
+    description: Key được mã hóa trong kho bí mật; kết nối ở trạng thái Untested. Không có key mặc định của hệ thống.
+    x-requirements: [AGENT-PROVIDER-002, INT-PROVIDER-005, NFR-SECRETS-001]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/account.yaml#/ProviderConnectionCreate }
+    responses:
+      '201':
+        description: Đã tạo.
+        headers:
+          Location: { schema: { type: string } }
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/ProviderConnection }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/provider-connections/{connectionId}:
+  parameters:
+    - name: connectionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Provider Connections]
+    operationId: getProviderConnection
+    summary: Chi tiết Provider Connection
+    x-requirements: [AGENT-PROVIDER-002]
+    x-priority: P0
+    x-milestone: M1
+    responses:
+      '200':
+        description: Kết nối.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/ProviderConnection }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  patch:
+    tags: [Provider Connections]
+    operationId: updateProviderConnection
+    summary: Sửa tên, base URL hoặc API key (APR-09)
+    description: Sửa base URL hoặc key đưa kết nối về Untested. Agent Run đang chạy không bị ảnh hưởng.
+    x-requirements: [AGENT-PROVIDER-002]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/account.yaml#/ProviderConnectionUpdate }
+    responses:
+      '200':
+        description: Đã cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/ProviderConnection }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+  delete:
+    tags: [Provider Connections]
+    operationId: deleteProviderConnection
+    summary: Xóa Provider Connection (APR-09)
+    description: |
+      Bị chặn (`409 connection_in_use`) nếu kết nối đang được gán cho agent, trừ khi chỉ định `replacementConnectionId`
+      (AGENT-PROVIDER-002-AC03).
+    x-requirements: [AGENT-PROVIDER-002]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+      - name: replacementConnectionId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/provider-connections/{connectionId}/test:
+  parameters:
+    - name: connectionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  post:
+    tags: [Provider Connections]
+    operationId: testProviderConnection
+    summary: Kiểm tra kết nối
+    description: Gọi một yêu cầu nhẹ tới provider → Valid kèm danh sách model, hoặc Invalid kèm mã lỗi chuẩn (8.6).
+    x-requirements: [AGENT-PROVIDER-002, INT-PROVIDER-001]
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Kết quả kiểm tra (kể cả Invalid — vẫn 200, xem `testStatus` và `lastError`).
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/ProviderConnection }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/agents:
+  get:
+    tags: [Agent Models]
+    operationId: listAgents
+    summary: Agent registry (Orchestrator + 7 Specialist Agent)
+    x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001]
+    x-priority: P1
+    x-milestone: M2
+    responses:
+      '200':
+        description: Định nghĩa agent, chỉ đọc trong MVP.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/account.yaml#/AgentDefinition }
+
+/agent-model-assignments:
+  get:
+    tags: [Agent Models]
+    operationId: listAgentModelAssignments
+    summary: Cấu hình model của từng agent
+    description: Trả cấu hình `default` và cấu hình hiệu lực cho cả 8 agent, kèm cảnh báo năng lực.
+    x-requirements: [AGENT-PROVIDER-003]
+    x-priority: P0
+    x-milestone: M1
+    responses:
+      '200':
+        description: Danh sách gán model.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/account.yaml#/AgentModelAssignment }
+
+/agent-model-assignments/{agent}:
+  parameters:
+    - name: agent
+      in: path
+      required: true
+      schema:
+        oneOf:
+          - $ref: ../components/schemas/common.yaml#/AgentName
+          - const: default
+  put:
+    tags: [Agent Models]
+    operationId: setAgentModelAssignment
+    summary: Gán Provider Connection và model cho một agent (APR-09)
+    description: Model phải thuộc `availableModels` hoặc được nhập và kiểm tra. Không áp dụng cho Agent Run đang chạy.
+    x-requirements: [AGENT-PROVIDER-003]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [providerConnectionId, model]
+            properties:
+              providerConnectionId: { $ref: ../components/schemas/common.yaml#/Id }
+              model: { type: string }
+    responses:
+      '200':
+        description: Đã gán; có thể kèm `capabilityWarnings`.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/account.yaml#/AgentModelAssignment }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+  delete:
+    tags: [Agent Models]
+    operationId: clearAgentModelAssignment
+    summary: Bỏ gán riêng — agent dùng lại cấu hình default (APR-09)
+    x-requirements: [AGENT-PROVIDER-003]
+    x-apr: APR-09
+    x-priority: P0
+    x-milestone: M1
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/prompts:
+  get:
+    tags: [Prompts]
+    operationId: listPrompts
+    summary: Danh sách Interactive Agent Prompt
+    x-requirements: [PROMPT-LIFECYCLE-001, UX-PROMPT-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: status
+        in: query
+        schema: { $ref: ../components/schemas/orchestration.yaml#/PromptStatus }
+      - name: workflowId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang prompt.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/InteractiveAgentPrompt }
+
+/prompts/{promptId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/PromptId
+  get:
+    tags: [Prompts]
+    operationId: getPrompt
+    summary: Chi tiết prompt
+    x-requirements: [PROMPT-LIFECYCLE-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Prompt.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/InteractiveAgentPrompt }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/prompts/{promptId}/response:
+  parameters:
+    - $ref: ../components/parameters.yaml#/PromptId
+  post:
+    tags: [Prompts]
+    operationId: answerPrompt
+    summary: Trả lời prompt (một lần)
+    description: |
+      Prompt chỉ được trả lời một lần; prompt Expired/Cancelled trả `409`. Với prompt phê duyệt, đây là thao tác APR
+      tương ứng (`pendingAction.apr`) và sinh ApprovalRecord. Nếu đối tượng đã đổi phiên bản, prompt bị Cancelled và
+      Orchestrator tạo prompt mới (PROMPT-APPROVAL-001). Câu trả lời được ghi thành Context Item loại decision.
+    x-requirements: [PROMPT-LIFECYCLE-001, PROMPT-APPROVAL-001, DATA-IDEMP-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/orchestration.yaml#/PromptResponse }
+    responses:
+      '200':
+        description: Prompt ở Answered; workflow tiếp tục nếu đang chờ.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/InteractiveAgentPrompt }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }

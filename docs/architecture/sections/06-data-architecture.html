@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — kiến trúc dữ liệu.">
+<title>6. Data Architecture | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 6</p><h1>6. Data Architecture</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-04/05/06 Accepted; tách database theo service (ADR-22, ADR-23 Proposed) · Cơ sở: PRD <a href="../../overview/sections/05-core-domain-model.html">5</a>, <a href="../../overview/sections/18-data-and-state-specifications.html">18</a>, <a href="../../overview/sections/16-non-functional-requirements.html#s-16-8">16.8</a>, 14.8; ADR-04, ADR-05, ADR-06, ADR-07, ADR-22, ADR-23</p>
+<div class="note"><p>Schema logic (entity, trường, enum, state machine) đã đặc tả ở PRD 18.1–18.2 và schema API ở <code>docs/api-design/components/schemas</code>. Mục này chốt <em>cách lưu</em>: phân bổ kho, quy ước bảng, cách ly tenant, giao dịch + audit + outbox, bất biến, tìm kiếm, retention và sao lưu.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-6-1">6.1. Phân bổ dữ liệu</a></li>
+<li><a href="#s-6-2">6.2. Quy ước schema</a></li>
+<li><a href="#s-6-3">6.3. Cách ly tenant</a></li>
+<li><a href="#s-6-4">6.4. Giao dịch, audit và outbox</a></li>
+<li><a href="#s-6-5">6.5. Phiên bản và bất biến</a></li>
+<li><a href="#s-6-6">6.6. Object storage</a></li>
+<li><a href="#s-6-7">6.7. Tìm kiếm</a></li>
+<li><a href="#s-6-8">6.8. Retention, xóa và export</a></li>
+<li><a href="#s-6-9">6.9. Sao lưu và khôi phục</a></li>
+<li><a href="#s-6-10">6.10. Migration và ước lượng dung lượng</a></li>
+</ul></details>
+
+<h2 id="s-6-1">6.1. Phân bổ dữ liệu</h2>
+<p>Một cụm PostgreSQL managed, <strong>một database và một vai trò đăng nhập cho mỗi service</strong> (ADR-22); không service nào có quyền vào database của service khác.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Kho</th><th>Dữ liệu</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>Database của từng service</td><td>Entity mà service sở hữu (3.3), bảng <code>outbox</code>, <code>inbox</code>, <code>idempotency_key</code>, bản sao chỉ đọc cần thiết</td><td>Giao dịch, ràng buộc, RLS trong phạm vi service</td></tr>
+<tr><td>Database orchestration</td><td>Workflow, Step, AgentRun (manifest, structured output, usage), Checkpoint, Prompt, ContextItem</td><td>Nguồn sự thật của workflow (ADR-03)</td></tr>
+<tr><td>Database knowledge</td><td>SourceDocument, Chunk, <code>chunk_text</code> (+ tsvector), bảng vector theo embedding model, bản sao chỉ đọc Project Reference Selection và trạng thái Reference</td><td>Extension <code>vector</code> chỉ ở đây</td></tr>
+<tr><td>Database audit</td><td><code>audit_event</code> chỉ ghi thêm, <code>kpi_snapshot</code></td><td>Vai trò của service audit chỉ INSERT/SELECT; vai trò purge riêng</td></tr>
+<tr><td>Database gateway</td><td>Phiên đăng nhập, log sự kiện SSE 24 giờ</td><td>—</td></tr>
+<tr><td>Database agent-core</td><td>Chỉ dữ liệu kỹ thuật: semaphore theo Provider Connection, cache danh mục model; không có entity nghiệp vụ</td><td>Mất dữ liệu này không ảnh hưởng nghiệp vụ</td></tr>
+<tr><td>RabbitMQ</td><td>Sự kiện và lệnh đang trên đường đi</td><td>Không phải nơi lưu trạng thái</td></tr>
+<tr><td>Object storage</td><td>PDF gốc, văn bản trích theo trang, file bản thảo, log và PDF build, hình sơ đồ, artifact lớn, export, debug transcript</td><td>Prefix theo service (6.6)</td></tr>
+<tr><td>Secret store / KMS</td><td>KEK, client secret eTroy OIDC, key hợp đồng nguồn Scholar, khóa ký token nội bộ</td><td>NFR-SECRETS-001</td></tr>
+</tbody></table></div>
+<p class="status">API key của người dùng nằm trong database identity dưới dạng ciphertext (bảng <code>provider_secret</code>); khóa giải mã ở KMS — xem <a href="10-security-architecture.html#s-10-3">10.3</a>.</p>
+
+<h2 id="s-6-2">6.2. Quy ước schema</h2>
+<ul>
+<li><strong>Khóa chính</strong> UUIDv7 (sắp theo thời gian, tốt cho index); API dùng nguyên giá trị này. Mã hiển thị (ví dụ Task <code>T-012</code>) là cột riêng <code>stable_key</code>.</li>
+<li>Mọi bảng dữ liệu người dùng có <code>account_id NOT NULL</code>; bảng cấp project có thêm <code>project_id NOT NULL</code>. Index ghép bắt đầu bằng <code>account_id</code>.</li>
+<li>Entity sửa được có <code>row_version integer</code>, tăng mỗi lần ghi; ETag của API = <code>row_version</code> (DATA-CONC-001).</li>
+<li>Trạng thái lưu dạng <code>text</code> + <code>CHECK</code> theo đúng chuỗi PRD (<code>'In Progress'</code>, <code>'Pending Approval'</code>…), khớp API.</li>
+<li>Nội dung có cấu trúc biến đổi theo agent (structured output, context manifest, diff) lưu <code>jsonb</code> kèm <code>schema_version</code>.</li>
+<li>Thời gian <code>timestamptz</code> UTC; hiển thị theo múi giờ người dùng ở client.</li>
+<li>Tham chiếu có phiên bản (<code>inputRefs</code>, provenance) lưu <code>{type, id, version}</code> trong jsonb và bảng liên kết khi cần truy vấn ngược (ví dụ “Task nào dùng Reference X” cho needs review).</li>
+<li>Xóa mềm chỉ ở entity PRD yêu cầu (Project, Plan Version Draft, ManuscriptFile): cột <code>deleted_at</code>; truy vấn mặc định lọc qua view.</li>
+</ul>
+
+<h2 id="s-6-3">6.3. Cách ly tenant</h2>
+<p>Hai lớp độc lập (AD-05, NFR-ISOL-001):</p>
+<ol>
+<li><strong>Lớp ứng dụng của service:</strong> repository (thư viện <code>libs/ts/platform</code> hoặc <code>sires_common</code>) nhận <code>TenantContext(account_id, actor)</code> lấy từ token nội bộ, mọi truy vấn có điều kiện <code>account_id</code>; không có hàm truy vấn “không tenant” trừ cho job hệ thống của chính service.</li>
+<li><strong>Row-Level Security trong PostgreSQL:</strong> mọi bảng có policy <code>USING (account_id = current_setting('app.account_id')::uuid)</code>. Mỗi giao dịch đặt <code>SET LOCAL app.account_id</code>. Vai trò ứng dụng không có <code>BYPASSRLS</code>. Job hệ thống (purge, sweeper) dùng vai trò riêng có quyền tối thiểu.</li>
+</ol>
+<ul>
+<li>Cách ly project trong cùng tài khoản (CTX-ISOLATION-001 điều 2–4) nằm ở lớp ứng dụng và Context Assembler; truy vấn vector luôn có <code>project</code> → danh sách <code>reference_id</code> Active (<a href="07-rag-and-document-pipeline.html#s-7-4">7.4</a>).</li>
+<li>Test cách ly tự động (19.12): bộ test chạy mọi endpoint đọc với id của tài khoản khác, kỳ vọng <code>404</code>; test RLS bằng truy vấn thô thiếu điều kiện tenant, kỳ vọng 0 dòng.</li>
+</ul>
+
+<h2 id="s-6-4">6.4. Giao dịch, audit và outbox</h2>
+<p>Trong mỗi service, một mẫu duy nhất giải NFR-DUR-001, CTX-AUDIT-001 (“ghi Audit Event cùng thao tác nguyên tử”) và AD-09 (realtime):</p>
+<pre><code>BEGIN;                                                         -- database của service planning
+  SET LOCAL app.account_id = :account;
+  UPDATE task SET status='Queued', row_version=row_version+1 WHERE id=:id AND row_version=:v;   -- 0 dòng → 412
+  INSERT INTO outbox (id, kind, routing_key, payload, traceparent, created_at) VALUES
+    (:e1, 'event', 'task.activated',   {...}),                 -- sự kiện domain
+    (:e2, 'audit', 'audit.recorded',   {actor, action, objectType, objectId, fromState, toState, apr, correlationId});
+  INSERT INTO idempotency_key (...);
+COMMIT;</code></pre>
+<ul>
+<li><strong>Outbox relay</strong> (trong mỗi service, chạy nền với khóa leader): đọc <code>outbox</code> theo thứ tự, publish lên RabbitMQ với <em>publisher confirm</em>, đánh dấu <code>published_at</code>. Ít nhất một lần; mỗi message có id ổn định = id dòng outbox.</li>
+<li><strong>Inbox:</strong> consumer ghi <code>inbox(event_id)</code> trong cùng giao dịch với tác dụng của nó; event id đã có → bỏ qua. Sự kiện mang <code>aggregateVersion</code> để bỏ qua bản cũ đến sau bản mới.</li>
+<li><strong>Audit tập trung (ADR-23):</strong> Audit Event được tạo trong giao dịch của service nguồn (nên không thể có thay đổi mà thiếu audit), rồi service audit tiêu thụ <code>audit.recorded</code> và lưu chỉ ghi thêm, idempotent theo event id. Audit hiển thị trễ vài giây; export JSON/CSV và truy vấn theo project ở audit.</li>
+<li>Audit Event không chứa giá trị API key, nội dung tài liệu hay toàn văn prompt (NFR-OBS-002); <code>correlationId</code> = trace id.</li>
+<li>Bảo vệ chỉ ghi thêm: vai trò của service audit không có UPDATE/DELETE trên <code>audit_event</code>; chỉ vai trò purge được DELETE theo project/tài khoản khi xóa vĩnh viễn (NFR-RET-008).</li>
+<li>Dòng outbox đã publish giữ 24 giờ để chẩn đoán rồi xóa; phát lại SSE dùng log sự kiện của gateway (F-03).</li>
+</ul>
+
+<h2 id="s-6-5">6.5. Phiên bản và bất biến</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Entity</th><th>Quy tắc (PRD 18)</th><th>Cách thực thi</th></tr></thead>
+<tbody>
+<tr><td>ResearchContextVersion, TaskDefinition, ManuscriptRevision</td><td>Bất biến</td><td>Trigger chặn UPDATE; thay đổi = bản ghi mới</td></tr>
+<tr><td>PlanVersion</td><td>Bất biến khi status ≠ Draft</td><td>Trigger chặn sửa nội dung khi status khác Draft; chỉ cho đổi cột trạng thái theo state machine</td></tr>
+<tr><td>AgentRun</td><td>Bất biến sau trạng thái cuối, trừ xóa debugTranscript</td><td>Trigger; debug transcript là bảng/đối tượng riêng có <code>expires_at</code></td></tr>
+<tr><td>ArtifactVersion, Reference metadata</td><td>Sửa tạo phiên bản mới</td><td>Bảng version + con trỏ <code>current_*_id</code></td></tr>
+<tr><td>Context Item</td><td>Chỉ ghi thêm; Superseded/Retracted</td><td>Chỉ cho đổi <code>status</code> và <code>superseded_by</code></td></tr>
+<tr><td>AuditEvent</td><td>Chỉ ghi thêm</td><td>Quyền database (6.4)</td></tr>
+</tbody></table></div>
+<p>Provenance (18.3) lưu ở cột <code>provenance jsonb</code> của mọi đầu ra: <code>{actor, agentRunId, workflowId, taskId, inputs:[{type,id,version}]}</code>, bắt buộc ở lớp ứng dụng (thiếu → từ chối ghi, CTX-REGISTRY-001).</p>
+
+<h2 id="s-6-6">6.6. Object storage</h2>
+<pre><code>s3://sires-&lt;env&gt;/
+  library/acct/&lt;accountId&gt;/pdf/&lt;sha256&gt;                    PDF reference do người dùng tải lên
+  knowledge/acct/&lt;accountId&gt;/text/&lt;sourceDocumentId&gt;/p&lt;n&gt;.json   văn bản đã trích theo trang
+  manuscript/acct/&lt;accountId&gt;/blobs/&lt;sha256&gt;              file bản thảo, hình (khử trùng lặp)
+  manuscript/acct/&lt;accountId&gt;/builds/&lt;buildId&gt;/{log.txt,out.pdf}
+  research/acct/&lt;accountId&gt;/artifacts/&lt;sha256&gt;            nội dung artifact lớn, SVG/PDF sơ đồ
+  orchestration/acct/&lt;accountId&gt;/debug/&lt;agentRunId&gt;.bin   debug transcript, mã hóa lớp ứng dụng, 30 ngày
+  &lt;service&gt;/acct/&lt;accountId&gt;/exports/&lt;exportId&gt;.zip        gói export, 7 ngày</code></pre>
+<ul>
+<li>Mỗi service chỉ có quyền IAM trên prefix của mình; service khác lấy file qua API của service sở hữu (presigned URL ngắn hạn). Ngoại lệ có chủ đích: knowledge được đọc <code>library/…/pdf/</code>, sandbox-runner được đọc/ghi thư mục build và artifact theo job.</li>
+<li>Client tải lên/tải xuống qua presigned URL (5 phút) do service sở hữu cấp sau kiểm tra quyền; không có bucket công khai.</li>
+<li>Tải lên PDF: library cấp URL với giới hạn 50 MB và <code>Content-Type</code>; knowledge kiểm tra lại nội dung thực (magic bytes, lớp văn bản).</li>
+<li>Bật versioning và mã hóa phía server; xóa tài khoản = xóa theo prefix <code>*/acct/&lt;accountId&gt;/</code>.</li>
+</ul>
+
+<h2 id="s-6-7">6.7. Tìm kiếm</h2>
+<p>OQ-031: MVP chỉ tìm theo tiêu đề, tên và metadata. NFR-PERF-002: ≤ 2 giây với 5.000 reference.</p>
+<ul>
+<li>Cột <code>search_tsv</code> (tsvector, cấu hình <code>simple</code> + <code>unaccent</code> để xử lý tiếng Việt không dấu và tiếng Anh) trên Reference, Project, Task, Artifact; index GIN.</li>
+<li>Bổ sung <code>pg_trgm</code> cho tìm gần đúng tên tác giả và tiêu đề gõ sai.</li>
+<li>Mỗi service tìm trên entity của mình; tìm toàn cục (WS-SEARCH) do gateway gọi song song workspace, planning, library, research (timeout 1,5 s mỗi service), gộp và xếp hạng; service quá hạn được bỏ và kết quả ghi “chưa đầy đủ”.</li>
+<li>Tìm theo nội dung tài liệu không thuộc tìm kiếm này; đi qua Evidence Retrieval (mục 7).</li>
+</ul>
+
+<h2 id="s-6-8">6.8. Retention, xóa và export</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Chính sách PRD</th><th>Hiện thực</th></tr></thead>
+<tbody>
+<tr><td>NFR-RET-002 xóa project: xóa mềm, khôi phục 30 ngày, rồi xóa vĩnh viễn</td><td>workspace đặt <code>deleted_at</code>, <code>purge_after</code>, phát <code>project.deleted</code>; mọi service ẩn dữ liệu của project đó. Hết hạn: workspace phát <code>project.purge_due</code>; mỗi service (kể cả audit, research, orchestration) tự xóa dữ liệu và blob cấp project của mình, báo <code>project.purged.&lt;service&gt;</code>; workspace theo dõi đủ xác nhận. Khôi phục trong hạn: <code>project.restored</code>. Trusted Reference không bị ảnh hưởng.</td></tr>
+<tr><td>NFR-RET-003 xóa Reference khi không project nào dùng</td><td>library kiểm tra Project Reference Selection Active, xóa Reference, phát <code>reference.deleted</code>; knowledge xóa SourceDocument, Chunk, vector trong một giao dịch và blob của mình.</td></tr>
+<tr><td>NFR-RET-004 xóa tài khoản trong 30 ngày, vô hiệu key ngay</td><td>Ngay khi yêu cầu: identity xóa ciphertext API key và khóa tài khoản, gateway hủy phiên; sự kiện <code>account.deletion_requested</code> → mỗi service xóa dữ liệu theo <code>account_id</code> và prefix object storage của mình trong ≤ 30 ngày, báo xác nhận về identity. (Endpoint chưa có trong API MVP, PRD để P1.)</td></tr>
+<tr><td>NFR-RET-007 log vận hành 30 ngày</td><td>Cấu hình retention của kho log.</td></tr>
+<tr><td>NFR-RET-009 debug transcript 30 ngày</td><td>Job hằng ngày xóa object và con trỏ khi <code>expires_at</code> &lt; now; quy tắc vòng đời object storage là lớp bảo đảm thứ hai.</td></tr>
+<tr><td>NFR-RET-005, CTX-AUDIT-002 export</td><td>Service sở hữu tạo gói: workspace điều phối export project (gọi manuscript, research, library, planning lấy phần của họ) tạo zip (mã nguồn bản thảo, PDF build gần nhất, artifact accepted, BibTeX, Plan baseline) ; audit tạo file JSON/CSV theo luồng (streaming) để không giữ toàn bộ trong bộ nhớ; trả presigned URL.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-6-9">6.9. Sao lưu và khôi phục</h2>
+<ul>
+<li>PostgreSQL managed bật PITR (WAL liên tục) + snapshot hằng ngày giữ 35 ngày: RPO thực tế tính bằng phút, tốt hơn yêu cầu 24 giờ (NFR-BACKUP-001).</li>
+<li>Object storage bật versioning; sao chép sang vùng thứ hai khi vùng dữ liệu được chốt (DEC-27) và PO đồng ý chi phí — chưa bắt buộc để đạt RPO 24 h.</li>
+<li>KMS: khóa không xóa được tức thời (thời gian chờ xóa tối thiểu của nhà cloud); bản sao lưu database vô dụng nếu mất KEK, nên quyền xóa khóa giới hạn cho hai người.</li>
+<li>Diễn tập khôi phục mỗi quý vào môi trường trống, đo RTO ≤ 8 giờ; runbook trong <code>infra/</code>.</li>
+<li>Khôi phục một project xóa nhầm sau khi đã purge: ngoài phạm vi sản phẩm; chỉ qua quy trình vận hành từ PITR.</li>
+</ul>
+
+<h2 id="s-6-10">6.10. Migration và ước lượng dung lượng</h2>
+<ul>
+<li>Migration theo service: drizzle-kit cho service NestJS, Alembic cho knowledge và agent-core (nếu có bảng); chỉ tiến; migration phá vỡ chia theo mẫu mở rộng → di chuyển dữ liệu → thu hẹp qua nhiều bản phát hành để deploy không downtime.</li>
+<li>CI chạy migration của service bị ảnh hưởng trên database trống và trên bản sao dữ liệu mẫu 16.4. Migration của một service không bao giờ chạm database của service khác.</li>
+</ul>
+<div class="table-wrap"><table>
+<thead><tr><th>Hạng mục (mỗi tài khoản ở mức trần 16.4)</th><th>Ước lượng</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>PDF 2.000 Source Document × ~3 MB</td><td>~6 GB object storage</td><td>Trần 50 MB/file</td></tr>
+<tr><td>Chunk 2.000 tài liệu × ~150 chunk</td><td>~300.000 chunk</td><td>Chunk ~600 token</td></tr>
+<tr><td>Vector 300.000 × 1.536 chiều × 4 byte</td><td>~1,8 GB + index HNSW ~1,5–2×</td><td>Có thể dùng <code>halfvec</code> giảm một nửa (SPK-04)</td></tr>
+<tr><td>Agent Run 20.000/project</td><td>~10 KB/run (manifest + output) → ~200 MB/project</td><td>Toàn văn chỉ khi debug</td></tr>
+</tbody></table></div>
+<p class="status">Giai đoạn đầu phần lớn tài khoản dùng một phần nhỏ trần này. Ngưỡng tách vector sang hệ riêng ghi ở ADR-05.</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="05-workflow-engine-and-orchestration.html">← Mục 5</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="07-rag-and-document-pipeline.html">Mục 7 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

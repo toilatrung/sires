@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Agent Activity: chi tiết workflow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+@keyframes sires-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media (prefers-reduced-motion: reduce){[style*="sires-pulse"]{animation:none!important}}
+</style>
+</helmet>
+<div style="min-height: 1100px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="Agent Activity / wf-52d" hint-size="100%,57px"></dc-import>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="activity" hint-size="240px,1043px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 22px clamp(16px, 3vw, 28px) 40px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">T-2.3 So sánh phương pháp đo</h1>
+            <span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{wfB}}; color: {{wfFg}}; background: {{wfBg}}; font-size: 12px; font-weight: 600"><sc-if value="{{wfNeed}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{wfState}}</span>
+            <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">14:05 đã chạy</span>
+          </div>
+          <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">wf-52d · task_execution · baseline v3 · kích hoạt bởi Nguyễn Thanh 09:37</span>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <sc-if value="{{notInterrupted}}" hint-placeholder-val="{{ true }}"><button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tạm dừng</button></sc-if>
+          <button style="height: 38px; padding: 0 14px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Hủy workflow</button>
+        </div>
+      </div>
+
+      <sc-if value="{{isInterrupted}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="rc" style="background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="rc" style="margin: 0; font-size: 16px; font-weight: 600; color: #9A3412">Recovery decision</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 1.55">Workflow dừng ngoài ý muốn ở bước 3 (Evidence Retrieval Agent) lúc 09:58. Checkpoint gần nhất: sau bước 2 — 18 discovered result và câu trả lời prompt đã lưu. Bước 3 chưa ghi đầu ra.</p>
+          <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+            <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Chọn cách khôi phục</legend>
+            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><input type="radio" name="rc" style="margin-top: 3px"><span><strong>Tiếp tục từ checkpoint</strong> — chạy lại bước 3, giữ bước 1–2</span></label>
+            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><input type="radio" name="rc" style="margin-top: 3px"><span><strong>Chạy lại toàn bộ</strong> — tạo workflow mới cho T-2.3</span></label>
+            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45"><input type="radio" name="rc" style="margin-top: 3px"><span><strong>Hủy</strong> — T-2.3 về Ready, đầu ra bước 1–2 giữ ở dạng Draft</span></label>
+          </fieldset>
+          <button disabled style="align-self: flex-start; height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Xác nhận — chọn một cách</button>
+        </section>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+      <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <div role="tablist" aria-label="Chế độ xem" style="display: flex; gap: 2px; border-bottom: 1px solid #DBD3C7">
+        <button role="tab" aria-selected="true" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Dòng thời gian</button>
+        <button role="tab" aria-selected="false" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Danh sách bước</button>
+      </div>
+      <ol aria-live="polite" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border-left: 1px solid #DBD3C7; margin-left: 8px">
+        <sc-for list="{{events}}" as="e" hint-placeholder-count="7">
+          <li style="position: relative; display: flex; gap: 14px; padding: 10px 0 10px 20px">
+            <span aria-hidden="true" style="position: absolute; left: -5px; top: 16px; width: 9px; height: 9px; border-radius: 5px; background: {{e.dot}}; border: 1px solid {{e.dotB}}"></span>
+            <span style="flex: 0 0 64px; font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44; padding-top: 2px">{{e.time}}</span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.5">
+              <span><strong style="font-weight: 600">{{e.actor}}</strong> {{e.text}}</span>
+              <sc-if value="{{e.hasLink}}" hint-placeholder-val="{{ false }}"><a href="{{e.href}}" style="font-size: 13px">{{e.link}}</a></sc-if>
+            </div>
+          </li>
+        </sc-for>
+      </ol>
+      </div>
+      <div style="flex: 1 1 300px; max-width: 380px; min-width: 0">
+        <dc-import name="AgentList" wf-state="{{wfKey}}" theme="light" hint-size="100%,420px"></dc-import>
+      </div>
+      </div>
+    </main>
+
+    <aside aria-labelledby="ar" style="flex: 1 1 360px; max-width: 420px; box-sizing: border-box; background: #FCF9F5; border-left: 1px solid #DBD3C7; display: flex; flex-direction: column">
+      <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
+        <h2 id="ar" style="margin: 0; font-size: 17px; font-weight: 600">Discovery Agent</h2>
+        <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">Agent Run ar-7f3a · bước 2</span>
+        <span style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 12px; font-weight: 600">Succeeded</span>
+      </div>
+      <dl style="margin: 0; padding: 14px 20px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 9px 12px; font-size: 13px; line-height: 1.45; border-bottom: 1px solid #DBD3C7">
+        <dt style="color: #4D4A44">Provider Connection</dt><dd style="margin: 0">OpenAI cá nhân</dd>
+        <dt style="color: #4D4A44">Model thực tế</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">gpt-5-mini</dd>
+        <dt style="color: #4D4A44">Context đầu vào</dt><dd style="margin: 0">Research context v4 · T-2.3 định nghĩa v3 · câu trả lời prompt “2019–2026”</dd>
+        <dt style="color: #4D4A44">Công cụ đã gọi</dt><dd style="margin: 0">scholar.search × 3 · dedupe.check × 1</dd>
+        <dt style="color: #4D4A44">Đầu ra</dt><dd style="margin: 0"><a href="Discover.dc.html">18 discovered result</a></dd>
+        <dt style="color: #4D4A44">Usage</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">12 840 in · 2 115 out</dd>
+        <dt style="color: #4D4A44">Thời gian · thử</dt><dd style="margin: 0">1 phút 52 giây · lần 2/3 (lần 1: rate_limited)</dd>
+      </dl>
+      <div style="padding: 14px 20px; font-size: 13px; line-height: 1.5; color: #4D4A44">{{debugNote}}</div>
+      <sc-if value="{{debug}}" hint-placeholder-val="{{ false }}">
+        <details style="margin: 0 20px 20px; padding: 10px 12px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 13px">
+          <summary style="cursor: pointer; font-weight: 600">Toàn văn prompt/phản hồi (debug)</summary>
+          <pre style="margin: 8px 0 0; font: 400 12px/1.5 'JetBrains Mono', monospace; white-space: pre-wrap; color: #4D4A44">[toàn văn hiển thị ở đây, tự xóa 30/11/2026]</pre>
+        </details>
+      </sc-if>
+      <p style="margin: auto 20px 16px; font-size: 12px; color: #4D4A44">Không hiển thị suy luận nội bộ của model và không hiển thị API key.</p>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","waiting","interrupted"],"default":"waiting"},"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const wfKey = this.props.state ?? 'waiting';
+    const intr = wfKey === 'interrupted';
+    const run = wfKey === 'running';
+    const dbg = !!this.props.debug;
+    const ev = (time, actor, text, kind, link, href) => ({ time, actor, text, hasLink: !!link, link: link || '', href: href || '#', dot: kind === 'need' ? '#025FAC' : kind === 'warn' ? '#9A3412' : '#FFFFFF', dotB: kind === 'need' ? '#025FAC' : kind === 'warn' ? '#9A3412' : '#4D4A44' });
+    const events = [
+      ev('09:37:02', 'Nguyễn Thanh', 'xác nhận thực thi T-2.3 (APR-02) → Queued'),
+      ev('09:37:05', 'Orchestrator', 'tạo workflow, lập 5 bước; giao bước 1 cho Discovery Agent'),
+      ev('09:38:40', 'Discovery Agent', 'lần thử 1 lỗi rate_limited; thử lại sau 20 giây', 'warn'),
+      ev('09:40:32', 'Discovery Agent', 'hoàn tất bước 1 — 18 discovered result', null, 'Agent Run ar-7f3a', 'Workflow.dc.html'),
+      ev('09:42:10', 'Discovery Agent', 'tạo Interactive Agent Prompt: giới hạn năm xuất bản', 'need', 'Trả lời trong chat', 'Chat.dc.html'),
+      ev('09:42:10', 'System', 'workflow → Waiting for User')
+    ];
+    if (wfKey === 'waiting') events.push(ev('—', 'Orchestrator', 'bước tiếp theo: handoff cho Evidence Retrieval Agent sau khi có câu trả lời'));
+    if (run || intr) {
+      events.push(ev('09:44:05', 'Nguyễn Thanh', 'trả lời prompt: 2019–2026 → workflow Running'));
+      events.push(ev('09:44:07', 'Orchestrator', 'handoff bước 3 cho Evidence Retrieval Agent'));
+    }
+    if (intr) events.push(ev('09:58:31', 'System', 'mất kết nối hạ tầng ở bước 3 → Interrupted', 'warn'));
+    const chip = intr ? ['solid #9A3412', '#9A3412', '#FCF9F5', 'Interrupted', false]
+      : run ? ['solid #0277DD', '#1C1B18', '#EAF4FE', 'Running', false]
+      : ['solid #80B9EE', '#025FAC', '#EAF4FE', 'Waiting for User', true];
+    return {
+      wfKey, isInterrupted: intr, notInterrupted: !intr,
+      wfState: chip[3], wfB: chip[0], wfFg: chip[1], wfBg: chip[2], wfNeed: chip[4],
+      debug: dbg, debugNote: dbg ? 'Chế độ debug bật khi chạy: toàn văn được lưu đến 30/11/2026.' : 'Không lưu toàn văn (chế độ debug tắt). Xem context manifest và đầu ra có cấu trúc ở trên.',
+      events
+    };
+  }
+}
+</script>
+</body>
+</html>

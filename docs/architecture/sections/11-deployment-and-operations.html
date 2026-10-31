@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — triển khai và vận hành.">
+<title>11. Deployment and Operations | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 11</p><h1>11. Deployment and Operations</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-12, ADR-13 Accepted; topology cập nhật cho nhiều service · Cơ sở: PRD <a href="../../overview/sections/16-non-functional-requirements.html">16</a>, <a href="../../overview/sections/20-mvp-delivery-plan.html">20</a>; DEC-27, DEC-36, DEC-40; ADR-12, ADR-13</p>
+<div class="note"><p>Cloud do đội phát triển vận hành (DEC-27); nhà cung cấp và vùng dữ liệu chưa chọn. Thiết kế dưới đây chỉ dùng khái niệm có ở mọi nhà cloud lớn (Kubernetes managed, PostgreSQL managed, object storage, KMS, secret manager, load balancer) để quyết định nhà cung cấp không làm đổi kiến trúc.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-11-1">11.1. Môi trường</a></li>
+<li><a href="#s-11-2">11.2. Topology production</a></li>
+<li><a href="#s-11-3">11.3. CI/CD và phát hành</a></li>
+<li><a href="#s-11-4">11.4. Observability</a></li>
+<li><a href="#s-11-5">11.5. Khả năng mở rộng</a></li>
+<li><a href="#s-11-6">11.6. Sẵn sàng và sự cố</a></li>
+<li><a href="#s-11-7">11.7. Eval harness</a></li>
+<li><a href="#s-11-8">11.8. Kế hoạch dựng theo milestone</a></li>
+</ul></details>
+
+<h2 id="s-11-1">11.1. Môi trường</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Môi trường</th><th>Mục đích</th><th>Provider model</th><th>Đăng nhập</th><th>Dữ liệu</th></tr></thead>
+<tbody>
+<tr><td>local</td><td>Phát triển: <code>docker compose</code> (PostgreSQL+pgvector, RabbitMQ, MinIO, sandbox); service đang sửa chạy bằng <code>nx serve</code>/<code>uv run</code>, service khác chạy bằng image đã build</td><td>Fake/recorded gateway; tùy chọn key cá nhân</td><td>FakeOidcProvider</td><td>Seed mẫu</td></tr>
+<tr><td>ci</td><td>Test tự động</td><td>Fake gateway</td><td>FakeOidcProvider</td><td>Testcontainers</td></tr>
+<tr><td>staging</td><td>Tích hợp, demo milestone, kiểm thử chấp nhận</td><td>Thật, key của đội phát triển (DEC-40)</td><td>eTroy OIDC môi trường thử (SPK-02)</td><td>Bộ dữ liệu nghiệm thu DEC-39, dữ liệu mẫu 16.4</td></tr>
+<tr><td>eval</td><td>Eval harness (NFR-EVAL-001), tách biệt production</td><td>Thật, key của đội phát triển</td><td>Không cần</td><td>Chỉ bộ dữ liệu nghiệm thu</td></tr>
+<tr><td>production</td><td>Người dùng thật</td><td>Key của người dùng</td><td>eTroy OIDC</td><td>Dữ liệu người dùng</td></tr>
+</tbody></table></div>
+
+<h2 id="s-11-2">11.2. Topology production</h2>
+<pre><code>Internet ─► CDN (web tĩnh) ─► Load balancer + WAF (TLS) ─► Ingress ─► gateway ×≥2
+   Kubernetes cluster (1 vùng, ≥ 3 zone)
+   ├─ node pool "app":    gateway ×≥2 · identity · workspace · planning · orchestration · library
+   │                      research · manuscript · audit   (NestJS, mỗi service ×≥2)
+   │                      agent-core ×≥2 · knowledge ×≥1  (Python)
+   │                      otel-collector
+   └─ node pool "sandbox": sandbox-runner controller + sandbox pods (gVisor RuntimeClass, NetworkPolicy deny-all)
+   Dịch vụ managed: PostgreSQL HA (một database mỗi service, PITR) · RabbitMQ (3 node, quorum queue)
+                    Object storage · KMS · Secret manager
+   Egress: NAT cố định IP — chỉ gateway (eTroy OIDC), library (Scholar/DOI), agent-core và knowledge (LLM, embedding)</code></pre>
+<p class="status">FIG-108 — Topology triển khai. Nguồn: <a href="../figures/FIG-108-deployment.mmd">figures/FIG-108-deployment.mmd</a>.</p>
+<ul>
+<li>web và gateway cùng tên miền (ví dụ <code>sires.&lt;domain eTroy&gt;</code>, gateway dưới <code>/api</code>) để cookie phiên hoạt động không cần CORS. Chỉ gateway có Ingress; mọi service khác chỉ có Service nội bộ.</li>
+<li>Workload identity theo service: chỉ quyền trên database, prefix object storage và thao tác KMS mà service cần (10.3, 6.6).</li>
+<li>Kết nối DB qua pooler (PgBouncer chế độ transaction hoặc pooler managed); mỗi service có giới hạn kết nối riêng để một service không làm cạn kết nối của service khác.</li>
+<li>Helm: một chart chung (deployment, service, HPA, NetworkPolicy, ServiceMonitor) tham số hóa theo service, để thêm service mới không viết lại manifest.</li>
+</ul>
+
+<h2 id="s-11-3">11.3. CI/CD và phát hành</h2>
+<ol>
+<li><strong>Mỗi pull request:</strong> <code>nx affected</code> chỉ chạy cho project có thay đổi hoặc phụ thuộc vào thay đổi: lint (ESLint/ruff), type check (<code>tsc --noEmit</code>/mypy), unit test (Vitest/pytest), integration test với Testcontainers, contract test (Schemathesis cho OpenAPI nội bộ của service bị ảnh hưởng, kiểm tra payload theo AsyncAPI); <code>redocly lint</code> nếu sửa spec; quét phụ thuộc và secret; build image của service bị ảnh hưởng. Nx remote cache bỏ qua bước đã có kết quả. Mục tiêu: pull request chạm một service NestJS xong CI dưới 10 phút (đo ở SPK-10).</li>
+<li><strong>Thay đổi thuộc danh sách NFR-EVAL-004</strong> (prompt template, định nghĩa agent, RetrievalConfig, logic Verification, adapter): job eval harness chạy trên môi trường eval, đính báo cáo so với baseline vào pull request; vượt dung sai (OQ-097) thì chặn merge vào nhánh phát hành.</li>
+<li><strong>Merge vào main:</strong> deploy staging tự động các service thay đổi (mỗi service phát hành độc lập), chạy migration của service đó, smoke test E2E (Playwright) trên WF chính.</li>
+<li><strong>Production:</strong> phê duyệt thủ công; rolling update từng service; migration tương thích ngược chạy trước khi đổi code (6.10); hợp đồng nội bộ/sự kiện tương thích ngược để service phát hành lệch thời điểm (quy tắc 3.6.6); rollback bằng image trước.</li>
+<li>Bảo trì có downtime được báo trước trong ứng dụng (NFR-AVAIL-001) qua banner cấu hình.</li>
+</ol>
+
+<h2 id="s-11-4">11.4. Observability</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Tín hiệu</th><th>Hiện thực</th><th>Requirement</th></tr></thead>
+<tbody>
+<tr><td>Log</td><td>JSON qua <code>pino</code> (NestJS) và <code>structlog</code> (Python), cùng tên trường; trường tương quan <code>request_id, trace_id, account_hash, project_id, task_id, workflow_id, agent_run_id, build_id</code>; processor che dữ liệu nhạy cảm; giữ 30 ngày</td><td>NFR-OBS-001/002, NFR-RET-007</td></tr>
+<tr><td>Trace</td><td>OpenTelemetry: span cho request, giao dịch, job, Agent Run, lời gọi provider (chỉ metadata: provider, model, token, độ trễ, mã lỗi). <code>traceparent</code> lan qua HTTP nội bộ và header của message RabbitMQ (lưu cả trong dòng outbox) để trace nối liền từ request người dùng qua nhiều service tới ghi dữ liệu</td><td>NFR-OBS-004</td></tr>
+<tr><td>Metric</td><td>Workflow theo trạng thái; tỷ lệ lỗi Agent Run theo provider và mã; độ trễ provider p50/p95; thời gian indexing; thời gian chờ và tỷ lệ lỗi build; số lần thử lại; độ sâu và tuổi queue RabbitMQ, dead-letter; độ trễ outbox → RabbitMQ → SSE; tỷ lệ lỗi và độ trễ gọi nội bộ theo cặp service; bốn KPI (16.9)</td><td>NFR-OBS-003, NFR-KPI-001</td></tr>
+<tr><td>Metadata phiên bản</td><td>Agent Run và span mang <code>agent_version, prompt_template_version, retrieval_config_version, adapter_version, model</code></td><td>NFR-OBS-006</td></tr>
+<tr><td>Cảnh báo</td><td>Uptime (synthetic check đăng nhập + đọc project); tỷ lệ 5xx; message cũ nhất trong <code>agent.run</code> &gt; 1 phút; outbox chưa publish &gt; 30 s ở bất kỳ service nào; dead-letter có message; sweeper không chạy; Interrupted tăng đột biến; lỗi build sandbox; dung lượng DB</td><td>NFR-AVAIL-001</td></tr>
+</tbody></table></div>
+<p>KPI do service audit tính định kỳ (hằng giờ) từ Audit Event và dữ liệu lấy qua API của research, manuscript, orchestration, planning, ghi vào <code>kpi_snapshot</code>, hiển thị ở dashboard vận hành và dùng cho báo cáo nghiệm thu.</p>
+
+<h2 id="s-11-5">11.5. Khả năng mở rộng</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Thành phần</th><th>Cách mở rộng</th><th>Mốc theo dõi để thay đổi kiến trúc</th></tr></thead>
+<tbody>
+<tr><td>gateway</td><td>Ngang, HPA theo CPU và số kết nối SSE</td><td>&gt; ~5.000 kết nối SSE đồng thời mỗi pod</td></tr>
+<tr><td>Service NestJS</td><td>Ngang, HPA theo CPU; không trạng thái cục bộ</td><td>—</td></tr>
+<tr><td>agent-core</td><td>Ngang theo độ sâu queue <code>agent.run</code> (KEDA); phần lớn thời gian chờ I/O provider nên mỗi pod chạy nhiều Agent Run async (mặc định 8)</td><td>—</td></tr>
+<tr><td>PostgreSQL</td><td>Dọc; read replica cho truy vấn đọc nặng (tìm kiếm, usage, export)</td><td>CPU &gt; 70% kéo dài → tách database của service tải cao (knowledge, orchestration) sang cụm riêng (ADR-22) hoặc tách vector (ADR-05)</td></tr>
+<tr><td>RabbitMQ</td><td>Cụm managed 3 node; quorum queue</td><td>Cần lưu và phát lại sự kiện dài hạn → cân nhắc Kafka (ADR-19)</td></tr>
+<tr><td>Sandbox</td><td>Pool theo độ sâu hàng đợi build</td><td>Chi phí node gVisor; cân nhắc microVM nếu cần cô lập mạnh hơn</td></tr>
+</tbody></table></div>
+<p>Mục tiêu MVP: 100 tài khoản hoạt động đồng thời, mỗi tài khoản ≥ 3 workflow đồng thời (NFR-SCALE-003) — dưới một PostgreSQL cỡ trung bình. Load test k6 trên dữ liệu mẫu 16.4 ở M7.</p>
+
+<h2 id="s-11-6">11.6. Sẵn sàng và sự cố</h2>
+<ul>
+<li>99,5%/tháng ≈ 3,6 giờ gián đoạn: đạt được với PostgreSQL HA nhiều zone, ≥ 2 bản sao mỗi tiến trình, rolling deploy.</li>
+<li>Workflow không phụ thuộc phiên người dùng; agent-core chết → sweeper xử lý (mục 5.4). Một service NestJS lỗi chỉ làm hỏng chức năng của nó; sự kiện chờ trong queue và được xử lý khi service sống lại.</li>
+<li>RabbitMQ gián đoạn: lệnh ghi vẫn thành công (outbox giữ sự kiện), realtime và việc bất đồng bộ trễ lại cho tới khi broker trở lại.</li>
+<li>Provider lỗi kéo dài không làm hệ thống lỗi: chỉ workflow liên quan dừng theo chính sách (INT-PROVIDER-004).</li>
+<li>eTroy OIDC lỗi: chỉ ảnh hưởng đăng nhập mới (INT-OIDC-004).</li>
+<li>Runbook: khôi phục từ PITR (theo từng database), xoay KEK, sự cố lộ key, sandbox bị lạm dụng, queue tắc hoặc dead-letter tăng, phát lại sự kiện từ outbox.</li>
+</ul>
+
+<h2 id="s-11-7">11.7. Eval harness</h2>
+<p>NFR-EVAL-001–004 (bổ sung 31/10/2026, chờ PO duyệt). Thiết kế để harness dùng <em>chính mã production</em>, chỉ khác nguồn dữ liệu:</p>
+<ul>
+<li>Thư mục <code>eval/</code> chứa: định nghĩa bộ dữ liệu (5 đề tài, ~30 reference, ~100 claim mỗi đề tài, DEC-39), nhãn chuyên gia, script chạy.</li>
+<li>Harness (Python, <code>eval/</code>) gọi trực tiếp module của agent-core và knowledge: nạp reference và PDF của bộ dữ liệu bằng pipeline indexing thật vào database eval riêng, chạy Agent Run của Retrieval, Synthesis, Verification, Writing với context lắp ráp từ dữ liệu bộ nghiệm thu (không cần dựng các service NestJS) với Provider Connection của đội phát triển, chế độ debug luôn bật để có toàn văn (Eval Trace).</li>
+<li>Báo cáo (HTML + JSON) tách theo agent và tổ hợp provider/model/phiên bản prompt/RetrievalConfig: KPI-01, KPI-02, tỷ lệ khớp nhãn và precision Supported, phát hiện citation không khớp, recall retrieval (khi có nhãn, OQ-096), usage và độ trễ; mỗi kết quả lệch nhãn liên kết tới Eval Trace.</li>
+<li>Baseline đã duyệt lưu trong repo (<code>eval/baselines/*.json</code>); cổng hồi quy so sánh trong CI (11.3).</li>
+<li>Môi trường eval không có kết nối tới database production (NFR-EVAL-001: 0 truy cập dữ liệu người dùng).</li>
+</ul>
+
+<h2 id="s-11-8">11.8. Kế hoạch dựng theo milestone</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Milestone</th><th>Thành phần kiến trúc cần có</th><th>Spike trước</th></tr></thead>
+<tbody>
+<tr><td>M1</td><td>Monorepo (Nx, pnpm, uv), CI affected, thư viện platform TS/Python (RLS, outbox, inbox, audit, idempotency, token nội bộ), hạ tầng staging (Terraform, RabbitMQ), gateway (OIDC BFF), identity (KMS + provider_secret), audit, agent-core với Model Gateway ba adapter, log/trace cơ bản</td><td>SPK-01, SPK-02, SPK-10</td></tr>
+<tr><td>M2</td><td>workspace, orchestration (workflow engine: bước tuần tự, prompt, checkpoint, heartbeat, sweeper), Context Assembler và agent registry trong agent-core, SSE ở gateway, chat stream</td><td>SPK-08</td></tr>
+<tr><td>M3</td><td>planning (Plan/Task, readiness), Orchestrator StepPlan, saga áp dụng đầu ra, bước song song</td><td>—</td></tr>
+<tr><td>M4</td><td>library (source adapter + rate limiter, DOI/BibTeX/RIS), knowledge (trích xuất PDF, chunk, embedding, pgvector)</td><td>SPK-03, SPK-04, SPK-05</td></tr>
+<tr><td>M5</td><td>research, truy xuất lai ở knowledge, kiểm tra tất định 7.5, Verification + thresholds, KPI-01, eval harness bản đầu</td><td>—</td></tr>
+<tr><td>M6</td><td>manuscript, sandbox node pool, sandbox-runner, image TeX/Mermaid, cổng citation, cache build</td><td>SPK-06, SPK-07</td></tr>
+<tr><td>M7</td><td>Fault injection, cảnh báo đầy đủ, load test, purge/retention, export, diễn tập khôi phục, kiểm thử bảo mật</td><td>SPK-09</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="10-security-architecture.html">← Mục 10</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="12-decisions-risks-and-open-issues.html">Mục 12 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

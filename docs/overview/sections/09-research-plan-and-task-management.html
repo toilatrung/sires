@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>9. Functional Requirements — Research Plan and Task Management | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 09</p><h1>9. Functional Requirements — Research Plan and Task Management</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–8, mục 21.1</p><div class="note"><p>Mục này đặc tả vòng đời Plan, định nghĩa và dependency của Task, readiness, thực thi do người dùng kích hoạt, execution label, state machine của Task, nghiệm thu, tiến độ dài hạn, phân tích ảnh hưởng thay đổi và các màn hình tiến độ. Bảng chuyển trạng thái ở <a href="#s-9-8">9.8</a> là chuẩn cho toàn PRD; mục 18 dùng lại. Entity theo <a href="05-core-domain-model.html#s-5-2">5.2</a>–<a href="05-core-domain-model.html#s-5-3">5.3</a>; luồng theo WF-01–WF-03. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline và 21.1 (<strong>Confirmed</strong>); chi tiết là <strong>Assumption</strong> trừ khi ghi khác. Các câu hỏi đã đóng được ghi ở <a href="#s-9-oq">9.13</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-9-1">9.1. Plan Generation</a></li>
+<li><a href="#s-9-2">9.2. Plan Review and Approval</a></li>
+<li><a href="#s-9-3">9.3. Task Definition</a></li>
+<li><a href="#s-9-4">9.4. Task Dependency Graph</a></li>
+<li><a href="#s-9-5">9.5. Task Readiness Validation</a></li>
+<li><a href="#s-9-6">9.6. User-Triggered Execution</a></li>
+<li><a href="#s-9-7">9.7. Execution Labels</a></li>
+<li><a href="#s-9-8">9.8. Task State Machine</a></li>
+<li><a href="#s-9-9">9.9. Checklist and Acceptance</a></li>
+<li><a href="#s-9-10">9.10. Long-Running Progress</a></li>
+<li><a href="#s-9-11">9.11. Plan and Task Change Impact</a></li>
+<li><a href="#s-9-12">9.12. Progress Views</a></li>
+<li><a href="#s-9-oq">9.13. Open Questions của mục 9</a></li>
+</ul></details>
+
+<h2 id="s-9-1">9.1. Plan Generation</h2>
+<p class="status">Confirmed (outline): tạo phase, task, milestone, dependency, deliverable, rủi ro và giả định.</p>
+
+<h3 id="plan-generate-001">PLAN-GENERATE-001 — Nội dung bắt buộc của Plan Version</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (thành phần), Assumption (kiểm tra)</td></tr>
+<tr><th scope="row">Purpose</th><td>Plan đề xuất đủ cấu trúc để duyệt và thực thi mà không phải đoán.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>WF-01.S1–S3 đã xong.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-01.S4.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator tạo Plan Version <code>Draft</code> gồm: goals, Phase (có thứ tự), Task theo TASK-DEFINE-001, milestone (gắn với Phase hoặc Task), dependency, deliverable (gắn với Task tạo ra), methods, rủi ro, giả định (liên kết Context Item <em>assumption</em>).</li>
+<li>System kiểm tra cấu trúc: mỗi Task có trường bắt buộc; dependency không có chu trình (TASK-DEPENDENCY-001); mỗi deliverable có ít nhất một Task tạo ra; mỗi Task có execution label.</li>
+<li>Kết quả kiểm tra hiển thị cạnh Plan; lỗi chặn trình duyệt, cảnh báo thì không.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Kiểm tra lỗi: Orchestrator tự sửa một lần; nếu vẫn lỗi, Draft được lưu kèm danh sách lỗi để Researcher sửa.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Plan Version ghi phiên bản Research Context và Agent Run tạo ra nó. Plan không chứa Task không thuộc Phase nào.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Plan Version <code>Draft</code>; Phase; định nghĩa Task <code>Draft</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PLAN-GENERATE-001-AC01</strong> Given Plan Version <code>Draft</code> có Task thiếu acceptance criteria, When Researcher trình duyệt, Then thao tác bị chặn và Task lỗi được chỉ rõ.</li>
+<li><strong>PLAN-GENERATE-001-AC02</strong> Given Plan Version vừa tạo, When xem, Then có goals, Phase, Task, milestone, dependency, deliverable, methods, rủi ro, giả định và phiên bản Research Context.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-01, ORCH-PLAN-001, TASK-DEFINE-001, TASK-DEPENDENCY-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-2">9.2. Plan Review and Approval</h2>
+<p class="status">Confirmed (outline, 21.1): sửa, so sánh, duyệt, từ chối và quản lý phiên bản Plan; Plan được duyệt trước khi thực thi chính thức.</p>
+
+<h3 id="plan-review-001">PLAN-REVIEW-001 — Sửa và so sánh Plan Version</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher kiểm soát nội dung Plan trước khi duyệt.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Plan Version <code>Draft</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher mở Plan and Tasks hoặc yêu cầu Orchestrator sửa Plan.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Researcher sửa trực tiếp: thêm/xóa/sửa Task, Phase, dependency, label; kéo thả thứ tự.</li>
+<li>Hoặc yêu cầu Orchestrator sửa: Orchestrator tạo đề xuất thay đổi hiển thị dạng so sánh; Researcher áp dụng từng phần hoặc toàn bộ.</li>
+<li>So sánh: hiển thị khác biệt giữa Draft và baseline (hoặc hai version bất kỳ): Task thêm/xóa/sửa, dependency, label, goals, methods; đánh dấu thay đổi lớn theo MC-01–MC-08 (9.11).</li>
+<li>Researcher trình duyệt → <code>Proposed</code>.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Muốn sửa version <code>Proposed</code>: Researcher rút lại → System tạo Draft mới sao chép nội dung và chuyển bản <code>Proposed</code> sang <code>Rejected</code> với lý do “rút lại để sửa” (5.2, 18.2).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Tối đa một Draft hoặc Proposed mở (5.2). Version <code>Approved</code>, <code>Superseded</code>, <code>Rejected</code> chỉ đọc.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Plan Version (nội dung, trạng thái); Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PLAN-REVIEW-001-AC01</strong> Given baseline v1 và Draft v2 thêm một Task và đổi một dependency, When so sánh, Then hiển thị đúng hai thay đổi và cả hai được đánh dấu thay đổi lớn.</li>
+<li><strong>PLAN-REVIEW-001-AC02</strong> Given Orchestrator đề xuất sửa Draft, When Researcher chưa áp dụng, Then nội dung Draft không đổi.</li>
+<li><strong>PLAN-REVIEW-001-AC03</strong> Given đã có Draft mở, When Orchestrator cố tạo Draft thứ hai, Then System từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.2, PLAN-IMPACT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="plan-approval-001">PLAN-APPROVAL-001 — Duyệt hoặc từ chối Plan Version</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (21.1, APR-01)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tạo baseline chính thức cho thực thi.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Plan Version <code>Proposed</code> qua kiểm tra cấu trúc.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn duyệt hoặc từ chối (trực tiếp hoặc qua prompt APR-01).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Duyệt: version → <code>Approved</code>; baseline cũ → <code>Superseded</code>; Research Plan.baselineVersionId cập nhật; Audit Event (APR-01).</li>
+<li>System áp dụng baseline mới cho Task: Task mới → tính theo T-01/T-02; Task bị loại → <code>Cancelled</code> (T-18) nếu không có workflow hoạt động; Task đổi định nghĩa → áp dụng PLAN-IMPACT-001.</li>
+<li>Từ chối: version → <code>Rejected</code> kèm lý do bắt buộc; baseline không đổi.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Task bị loại khỏi baseline đang có workflow hoạt động: Task giữ trạng thái, gắn cờ “không còn trong baseline”; Researcher quyết định hủy workflow hoặc để chạy xong rồi hủy Task.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ Researcher duyệt. Không Task nào được <code>Queued</code> khi chưa có baseline. Thay đổi không thuộc danh sách thay đổi lớn (MC-01–MC-08, 9.11) được duyệt nhanh trong một thao tác; System vẫn tạo Plan Version mới và ghi phê duyệt APR-01 (Confirmed — PO chốt 31/10/2026, PC-01, OQ-026). Plan Version có ít nhất một thay đổi lớn không được duyệt nhanh.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Plan Version; Research Plan; Task; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PLAN-APPROVAL-001-AC01</strong> Given baseline v1 và v2 <code>Proposed</code>, When Researcher duyệt v2, Then v2 <code>Approved</code>, v1 <code>Superseded</code>, và chỉ có một version <code>Approved</code>.</li>
+<li><strong>PLAN-APPROVAL-001-AC02</strong> Given v2 loại Task T3 đang <code>In Progress</code>, When duyệt v2, Then T3 không bị hủy tự động và hiển thị cờ “không còn trong baseline”.</li>
+<li><strong>PLAN-APPROVAL-001-AC03</strong> Given Researcher từ chối mà không nhập lý do, When xác nhận, Then thao tác bị chặn.</li>
+<li><strong>PLAN-APPROVAL-001-AC04</strong> Given project chưa có baseline, When Researcher cố kích hoạt Task, Then hệ thống từ chối với lý do “Plan chưa được duyệt”.</li>
+<li><strong>PLAN-APPROVAL-001-AC05</strong> Given Draft v3 chỉ sửa chính tả mô tả một Task so với baseline v2, When Researcher chọn duyệt nhanh, Then một thao tác đưa v3 thành <code>Approved</code>, v2 thành <code>Superseded</code>, và Audit Event ghi APR-01 cho v3.</li>
+<li><strong>PLAN-APPROVAL-001-AC06</strong> Given Draft v3 có một thay đổi lớn (ví dụ MC-05), When Researcher mở màn hình duyệt, Then không có thao tác duyệt nhanh; v3 phải qua trình duyệt <code>Proposed</code> và APR-01 đầy đủ.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-01.S7, PROMPT-APPROVAL-001, TASK-STATE-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-026 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+<p class="status">FIG-012 — Trạng thái Plan Version. Nguồn: <a href="../figures/FIG-012-plan-version-states.mmd">figures/FIG-012-plan-version-states.mmd</a>.</p>
+
+<h2 id="s-9-3">9.3. Task Definition</h2>
+<p class="status">Confirmed (outline): mô tả, mục tiêu, đầu vào, đầu ra mong đợi, acceptance criteria và agent chịu trách nhiệm.</p>
+
+<h3 id="task-define-001">TASK-DEFINE-001 — Trường của Task</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (trường outline), Assumption (bắt buộc/tùy chọn)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi Task đủ rõ để kiểm tra readiness và nghiệm thu.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task trong Plan Version <code>Draft</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Tạo hoặc sửa Task.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Task chỉ được tạo trong Plan Version; không có Task ad-hoc ngoài Plan. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01), xem OQ-036. Bắt buộc: tiêu đề, mục tiêu, Phase, execution label, ít nhất một đầu ra mong đợi (loại artifact hoặc kết quả), ít nhất một acceptance criterion. Tùy chọn: mô tả, đầu vào khai báo (reference, artifact đầu vào, quyết định cần có, thông tin cần có), dependency, checklist, agent chịu trách nhiệm đề xuất (chỉ với <code>Available for agent</code>), ước lượng công sức.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Thiếu trường bắt buộc: lỗi kiểm tra cấu trúc (PLAN-GENERATE-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>taskId ổn định qua các Plan Version (5.3). Đầu vào khai báo là cơ sở cho RC-05–RC-07. Acceptance criteria viết sao cho Researcher đánh giá được đạt/không đạt.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Định nghĩa Task theo version.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-DEFINE-001-AC01</strong> Given Task T1 ở v1, When v2 sửa mô tả T1, Then T1 giữ taskId và lịch sử thực thi ở v1 vẫn gắn với T1.</li>
+<li><strong>TASK-DEFINE-001-AC02</strong> Given Task <code>Manual editor requirement</code>, When đặt agent chịu trách nhiệm, Then System từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.3, TASK-READINESS-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-036 đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-4">9.4. Task Dependency Graph</h2>
+<p class="status">Confirmed (outline): biểu diễn quan hệ tiên quyết và phát hiện chu trình.</p>
+
+<h3 id="task-dependency-001">TASK-DEPENDENCY-001 — Dependency graph không chu trình</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Xác định Task nào phải xong trước Task nào.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Plan Version <code>Draft</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Thêm, sửa, xóa dependency.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Dependency là quan hệ “Task B cần Task A <code>Completed</code>”, có thể kèm “dùng đầu ra X của A làm đầu vào”. System kiểm tra ngay khi thêm: nếu tạo chu trình, từ chối và chỉ ra chuỗi Task tạo chu trình.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Xóa Task có Task khác phụ thuộc: System liệt kê Task phụ thuộc và yêu cầu Researcher chọn bỏ dependency hoặc thay Task tiên quyết.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Dependency chỉ giữa Task trong cùng Plan Version. Chỉ có một loại dependency trong MVP (finish-to-start).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Task Dependency.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-DEPENDENCY-001-AC01</strong> Given A → B → C, When thêm C → A, Then bị từ chối và hiển thị chuỗi A → B → C → A.</li>
+<li><strong>TASK-DEPENDENCY-001-AC02</strong> Given B phụ thuộc A, When xóa A, Then System yêu cầu xử lý dependency của B trước khi xóa.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.2 invariant, PLAN-GENERATE-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-5">9.5. Task Readiness Validation</h2>
+<p class="status">Confirmed (outline): kiểm tra context, reference, quyết định, quyền và việc hoàn thành Task tiên quyết.</p>
+
+<h3 id="task-readiness-001">TASK-READINESS-001 — Readiness check</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline, WF-02)</td></tr>
+<tr><th scope="row">Purpose</th><td>Chỉ chạy Task khi đủ điều kiện; khi không đủ, chỉ rõ lý do và cách gỡ.</td></tr>
+<tr><th scope="row">Actor</th><td>System (RC-01–RC-08), Orchestrator (RC-09)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task thuộc baseline.</td></tr>
+<tr><th scope="row">Trigger</th><td>(a) Researcher chọn thực thi (WF-02) — chạy RC-01–RC-09; (b) System tính lại sau sự kiện liên quan (baseline mới, Task <code>Completed</code>, reference đổi trạng thái, artifact accepted, kết nối đổi trạng thái) — chạy RC-01–RC-08.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Chạy các kiểm tra trong bảng dưới; kết quả: <em>Đạt</em> hoặc danh sách lý do, mỗi lý do kèm hành động gợi ý và liên kết.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>RC-09 lỗi do provider: theo WF-02.E1.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Trạng thái <code>Ready</code>/<code>Blocked</code> được tính từ RC-01–RC-08 (xác định, không gọi model). RC-09 chỉ chạy khi Researcher chọn thực thi. Không ai bỏ qua được một kiểm tra không đạt (WF-02.A3).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Kết quả readiness lưu trong lịch sử Task; Task <code>Ready</code>/<code>Blocked</code>; Notification khi Task chuyển <code>Ready</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-READINESS-001-AC01</strong> Given Task B phụ thuộc A <code>In Review</code>, When chọn thực thi B, Then kết quả không đạt với lý do RC-04 và liên kết tới A.</li>
+<li><strong>TASK-READINESS-001-AC02</strong> Given A vừa <code>Completed</code> và B chỉ chờ A, When System tính lại, Then B → <code>Ready</code> và có Notification.</li>
+<li><strong>TASK-READINESS-001-AC03</strong> Given Evidence Retrieval Agent chưa có kết nối <code>Valid</code>, When chọn thực thi Task cần evidence, Then không đạt với lý do RC-08 và liên kết tới Settings › Agent Models.</li>
+<li><strong>TASK-READINESS-001-AC04</strong> Given RC-01–RC-08 đạt và RC-09 báo thiếu thông tin, When kết thúc kiểm tra, Then kết quả không đạt và một prompt <code>information_request</code> được tạo.</li>
+<li><strong>TASK-READINESS-001-AC05</strong> Given reference bắt buộc của Task chưa <code>Indexed</code>, When tính lại, Then Task ở <code>Blocked</code> với lý do RC-05.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-02, ORCH-READINESS-001, AGENT-PROVIDER-003</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-037 đã giải quyết)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Kiểm tra</th>
+<th scope="col">Hành động gợi ý khi không đạt</th>
+</tr></thead><tbody>
+<tr><td>RC-01</td><td>Có baseline <code>Approved</code> và Task thuộc baseline.</td><td>Mở Plan để duyệt.</td></tr>
+<tr><td>RC-02</td><td>Project <code>Active</code>.</td><td>Mở lại project.</td></tr>
+<tr><td>RC-03</td><td>Task không có Workflow đang hoạt động.</td><td>Mở workflow đang chạy.</td></tr>
+<tr><td>RC-04</td><td>Mọi Task tiên quyết <code>Completed</code> và không mang cờ needs review (chốt: cờ needs review chặn; biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</td><td>Mở Task tiên quyết.</td></tr>
+<tr><td>RC-05</td><td>Reference khai báo đã được chọn cho project; nếu Task cần evidence thì reference ở <code>Indexed</code>.</td><td>Chọn reference từ Trusted Library; thử lại indexing.</td></tr>
+<tr><td>RC-06</td><td>Artifact đầu vào khai báo có version <code>Accepted</code>.</td><td>Mở artifact để review.</td></tr>
+<tr><td>RC-07</td><td>Quyết định và thông tin khai báo đã có trong Shared Context.</td><td>Trả lời câu hỏi hoặc bổ sung Research Context.</td></tr>
+<tr><td>RC-08</td><td>Task <code>Available for agent</code>: mọi agent cần dùng có Agent Model Assignment với Provider Connection <code>Valid</code>.</td><td>Mở Settings › Agent Models.</td></tr>
+<tr><td>RC-09</td><td>Orchestrator đánh giá đầu vào đủ để tạo đầu ra mong đợi.</td><td>Trả lời prompt <code>information_request</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-6">9.6. User-Triggered Execution</h2>
+<p class="status">Confirmed (outline, 21.1): người dùng chọn từng Task để thực thi trong MVP; không tự chạy Task tiếp theo chỉ vì Task trước đã xong.</p>
+
+<h3 id="task-trigger-001">TASK-TRIGGER-001 — Kích hoạt Task chỉ bởi Researcher</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (21.1)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher kiểm soát nhịp nghiên cứu.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Readiness Đạt (RC-01–RC-09).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher xác nhận kích hoạt (APR-02) ở chi tiết Task, task board hoặc chat.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System ghi APR-02 → Task → <code>Queued</code> (T-05) → tạo Workflow <code>task_execution</code> (agent) hoặc chuyển sang WF-03 (manual) → <code>In Progress</code> (T-06).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Không có giới hạn đồng thời ở mức sản phẩm ngoài một Workflow hoạt động mỗi Task (OQ-021 đã chốt). Khi hệ thống chạm giới hạn tải (NFR-SCALE-003): Task giữ <code>Queued</code> và hiển thị vị trí chờ; Researcher có thể hủy kích hoạt (T-07).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không actor nào ngoài Researcher tạo được chuyển T-05. Hoàn thành Task không tạo Workflow cho Task khác. Orchestrator chỉ được gợi ý Task tiếp theo (6.9).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Task; Workflow; Audit Event APR-02.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-TRIGGER-001-AC01</strong> Given A <code>Completed</code> làm B thành <code>Ready</code>, When không có thao tác của Researcher, Then B vẫn <code>Ready</code> và không có Workflow nào cho B.</li>
+<li><strong>TASK-TRIGGER-001-AC02</strong> Given Orchestrator gợi ý B, When Researcher chưa xác nhận, Then B vẫn <code>Ready</code>.</li>
+<li><strong>TASK-TRIGGER-001-AC03</strong> Given Researcher xác nhận kích hoạt B, When kiểm tra Audit Event, Then có sự kiện APR-02 với actor Researcher.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>TASK-READINESS-001, TASK-STATE-001, OOS-05</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-7">9.7. Execution Labels</h2>
+<p class="status">Confirmed (outline, 21.1): nhãn <code>Available for agent</code> và <code>Manual editor requirement</code>; cần định nghĩa cách gán, quyền ghi đè và cách thực thi.</p>
+
+<h3 id="task-label-001">TASK-LABEL-001 — Gán, ghi đè và thực thi execution label</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (nhãn), Assumption (quy tắc)</td></tr>
+<tr><th scope="row">Purpose</th><td>Phân định rõ việc agent được làm và việc Researcher bắt buộc tự làm.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator (đề xuất), Researcher (quyết định), System (thực thi)</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Tạo Task; sửa label; kích hoạt Task.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li><strong>Gán:</strong> Orchestrator đề xuất label kèm lý do khi tạo Plan (6.4). Đề xuất <code>Manual editor requirement</code> khi Task cần phán đoán chuyên môn của tác giả, thao tác ngoài hệ thống, dữ liệu thực nghiệm, hoặc đóng góp mà tính liêm chính học thuật đòi hỏi tác giả tự làm.</li>
+<li><strong>Ghi đè:</strong> trước khi duyệt, Researcher sửa label tự do trong Draft. Sau khi duyệt, đổi label là thay đổi lớn (MC-06) qua Plan Version mới (APR-10).</li>
+<li><strong>Thực thi:</strong> System chặn mọi Workflow tạo đầu ra chính cho Task manual; Task manual chỉ <code>In Review</code> qua manual submission (WF-03).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher yêu cầu agent làm Task manual: từ chối kèm giải thích (WF-03.A2).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mọi đổi label sau khi duyệt, kể cả từ manual sang agent, là thay đổi lớn MC-06: tạo Plan Version mới, bắt buộc ghi lý do và chỉ có hiệu lực sau APR-01 (OQ-016 đã chốt). Label hiển thị khác biệt rõ ở mọi màn hình (15.5).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Định nghĩa Task; Plan Version; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-LABEL-001-AC01</strong> Given Task manual <code>In Progress</code>, When có yêu cầu tạo Workflow <code>task_execution</code> cho Task đó, Then System từ chối.</li>
+<li><strong>TASK-LABEL-001-AC02</strong> Given baseline có Task manual, When Researcher đổi label sang agent, Then một Plan Version <code>Draft</code> mới được tạo và đổi chỉ có hiệu lực sau APR-01.</li>
+<li><strong>TASK-LABEL-001-AC03</strong> Given Plan đề xuất, When xem Task, Then mỗi Task có label và lý do đề xuất.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-03, PLAN-IMPACT-001, 15.5</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-8">9.8. Task State Machine</h2>
+<p class="status">Confirmed (outline): Draft, Blocked, Ready, Queued, In Progress, Waiting for User, In Review, Completed, Failed, Cancelled; cần chuyển trạng thái hợp lệ và trigger. Bảng chuyển trạng thái: Assumption, chuẩn cho toàn PRD.</p>
+
+<h3 id="task-state-001">TASK-STATE-001 — Chuyển trạng thái Task</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (trạng thái), Assumption (chuyển trạng thái)</td></tr>
+<tr><th scope="row">Purpose</th><td>Trạng thái Task luôn hợp lệ, có nguyên nhân và actor rõ ràng.</td></tr>
+<tr><th scope="row">Actor</th><td>System (thực hiện mọi chuyển), Researcher (khởi phát các chuyển có ghi “Researcher”)</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Theo bảng.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System chỉ thực hiện chuyển có trong bảng; kiểm tra guard; ghi Audit Event (từ, tới, trigger, actor).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Yêu cầu chuyển không có trong bảng hoặc guard sai: từ chối, trạng thái không đổi.</td></tr>
+<tr><th scope="row">Business Rules</th><td><code>Cancelled</code> là trạng thái cuối. <code>Completed</code> chỉ thoát qua T-19. Workflow và Task là hai state machine riêng; ánh xạ ở cột Trigger.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Task.status; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-STATE-001-AC01</strong> Given Task <code>Ready</code>, When có yêu cầu chuyển thẳng sang <code>Completed</code>, Then bị từ chối.</li>
+<li><strong>TASK-STATE-001-AC02</strong> Given Workflow của Task <code>Succeeded</code>, When System xử lý, Then Task → <code>In Review</code> (T-11), không phải <code>Completed</code>.</li>
+<li><strong>TASK-STATE-001-AC03</strong> Given mọi chuyển trạng thái của một Task, When xem Activity and History, Then mỗi chuyển có trigger và actor.</li>
+<li><strong>TASK-STATE-001-AC04</strong> Given Task <code>In Review</code> có một acceptance criterion chưa đánh dấu đạt, When Researcher chọn nghiệm thu, Then bị từ chối (guard T-14).</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.3, FIG-004, 18.2</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Từ</th>
+<th scope="col">Tới</th>
+<th scope="col">Trigger</th>
+<th scope="col">Actor</th>
+<th scope="col">Guard</th>
+</tr></thead><tbody>
+<tr><td>T-01</td><td><code>Draft</code></td><td><code>Blocked</code></td><td>Plan Version chứa Task được duyệt</td><td>System</td><td>Một trong RC-01–RC-08 không đạt</td></tr>
+<tr><td>T-02</td><td><code>Draft</code></td><td><code>Ready</code></td><td>Plan Version chứa Task được duyệt</td><td>System</td><td>RC-01–RC-08 đạt</td></tr>
+<tr><td>T-03</td><td><code>Blocked</code></td><td><code>Ready</code></td><td>Tính lại readiness sau sự kiện liên quan</td><td>System</td><td>RC-01–RC-08 đạt</td></tr>
+<tr><td>T-04</td><td><code>Ready</code></td><td><code>Blocked</code></td><td>Tính lại readiness (đầu vào bị thu hồi, Task tiên quyết mở lại, kết nối <code>Invalid</code>…)</td><td>System</td><td>Một trong RC-01–RC-08 không đạt</td></tr>
+<tr><td>T-05</td><td><code>Ready</code>, <code>Failed</code></td><td><code>Queued</code></td><td>Kích hoạt (APR-02)</td><td>Researcher</td><td>RC-01–RC-09 đạt</td></tr>
+<tr><td>T-06</td><td><code>Queued</code></td><td><code>In Progress</code></td><td>Workflow chuyển <code>Running</code> (agent), hoặc bắt đầu WF-03 (manual)</td><td>System</td><td>—</td></tr>
+<tr><td>T-07</td><td><code>Queued</code></td><td><code>Ready</code></td><td>Hủy kích hoạt trước khi bắt đầu</td><td>Researcher</td><td>Workflow chưa <code>Running</code></td></tr>
+<tr><td>T-08</td><td><code>In Progress</code></td><td><code>Waiting for User</code></td><td>Workflow → <code>Waiting for User</code>, <code>Paused</code> hoặc <code>Interrupted</code></td><td>System</td><td>—</td></tr>
+<tr><td>T-09</td><td><code>Waiting for User</code></td><td><code>In Progress</code></td><td>Workflow → <code>Running</code> (prompt được trả lời, tiếp tục, khôi phục)</td><td>System</td><td>—</td></tr>
+<tr><td>T-10</td><td><code>In Progress</code>, <code>Waiting for User</code></td><td><code>Ready</code> hoặc <code>Blocked</code></td><td>Workflow → <code>Cancelled</code></td><td>Researcher (hủy)</td><td>Đích theo readiness RC-01–RC-08</td></tr>
+<tr><td>T-11</td><td><code>In Progress</code></td><td><code>In Review</code></td><td>Workflow <code>Succeeded</code> (agent) hoặc gửi manual submission (WF-03.S4)</td><td>System</td><td>Có đủ đầu ra bắt buộc</td></tr>
+<tr><td>T-12</td><td><code>In Progress</code>, <code>Waiting for User</code></td><td><code>Failed</code></td><td>Workflow → <code>Failed</code></td><td>System</td><td>—</td></tr>
+<tr><td>T-13</td><td><code>In Review</code></td><td><code>Ready</code></td><td>Trả lại để sửa, kèm phản hồi</td><td>Researcher</td><td>Phản hồi và <code>reasonCode</code> không rỗng (18.2; dùng cho KPI-04)</td></tr>
+<tr><td>T-14</td><td><code>In Review</code></td><td><code>Completed</code></td><td>Nghiệm thu (APR-03)</td><td>Researcher</td><td>Mọi acceptance criterion đánh dấu đạt; mọi đầu ra bắt buộc có version <code>Accepted</code></td></tr>
+<tr><td>T-15</td><td><code>In Review</code></td><td><code>Blocked</code></td><td>Chặn khi review, kèm lý do</td><td>Researcher</td><td>Lý do và <code>reasonCode</code> không rỗng</td></tr>
+<tr><td>T-16</td><td><code>Failed</code></td><td><code>Blocked</code></td><td>Tính lại readiness</td><td>System</td><td>Một trong RC-01–RC-08 không đạt</td></tr>
+<tr><td>T-17</td><td><code>Draft</code></td><td>(không còn)</td><td>Plan Version chứa Task bị <code>Rejected</code> hoặc Task bị xóa khỏi Draft</td><td>System</td><td>Task chưa từng thuộc baseline</td></tr>
+<tr><td>T-18</td><td><code>Blocked</code>, <code>Ready</code>, <code>Queued</code>, <code>In Review</code>, <code>Failed</code></td><td><code>Cancelled</code></td><td>Researcher hủy, hoặc baseline mới loại Task</td><td>Researcher / System</td><td>Không có Workflow hoạt động</td></tr>
+<tr><td>T-19</td><td><code>Completed</code></td><td><code>Ready</code> hoặc <code>Blocked</code></td><td>Mở lại để làm lại (ví dụ sau cờ needs review)</td><td>Researcher</td><td>Ghi lý do; Task phụ thuộc <code>Completed</code> nhận cờ needs review (IMP-06)</td></tr>
+</tbody></table></div>
+<p>Cờ <strong>needs review</strong> là thuộc tính, không phải trạng thái: gắn cho Task <code>Completed</code> khi đầu vào hoặc định nghĩa của nó thay đổi (9.11). Researcher gỡ cờ bằng xác nhận “vẫn hợp lệ” hoặc mở lại Task (T-19). Sơ đồ: <a href="../figures/FIG-004-task-state-machine.mmd">FIG-004</a>.</p>
+
+<h2 id="s-9-9">9.9. Checklist and Acceptance</h2>
+<p class="status">Confirmed (outline): theo dõi subtask, tiêu chí hoàn thành, phản hồi của reviewer và rework.</p>
+
+<h3 id="task-checklist-001">TASK-CHECKLIST-001 — Checklist, nghiệm thu và rework</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Nghiệm thu dựa trên tiêu chí rõ ràng; phản hồi được lưu và dùng cho lần làm lại.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task <code>In Progress</code> hoặc <code>In Review</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Cập nhật checklist; review Task.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Checklist là danh sách subtask của Task (không phải Task riêng). Agent có thể đánh dấu mục checklist đã làm kèm tham chiếu đầu ra; Researcher có thể bỏ đánh dấu.</li>
+<li>Khi <code>In Review</code>: màn hình review hiển thị từng acceptance criterion, đầu ra liên quan, kết quả kiểm chứng (nếu có); Researcher đánh dấu đạt/không đạt từng criterion.</li>
+<li>Trả lại (T-13): Researcher chọn <code>reasonCode</code> và nhập phản hồi; phản hồi lưu thành Context Item phạm vi task và được đưa vào lần thực thi sau; số vòng rework được đếm.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Acceptance criterion cần sửa vì không còn phù hợp: phải sửa qua Plan Version mới, không sửa trong lúc review.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Đánh giá acceptance criteria chỉ do Researcher. Mục checklist chưa xong không chặn nghiệm thu nếu mọi acceptance criterion đạt, nhưng được hiển thị cảnh báo.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Checklist; kết quả đánh giá criterion; Context Item feedback; bộ đếm rework.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-CHECKLIST-001-AC01</strong> Given Task bị trả lại với phản hồi F, When chạy lại, Then context của Agent Run có F.</li>
+<li><strong>TASK-CHECKLIST-001-AC02</strong> Given Task đã trả lại 2 lần, When xem chi tiết, Then thấy 2 vòng rework với phản hồi từng vòng.</li>
+<li><strong>TASK-CHECKLIST-001-AC03</strong> Given agent đánh dấu mục checklist, When xem, Then mục có tham chiếu tới đầu ra chứng minh.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>TASK-STATE-001 (T-13, T-14), 6.8</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-10">9.10. Long-Running Progress</h2>
+<p class="status">Confirmed (outline): giữ trạng thái, checkpoint, hoạt động cuối, quyết định đang chờ và bước tiếp theo.</p>
+
+<h3 id="task-progress-001">TASK-PROGRESS-001 — Tiến độ bền vững qua nhiều phiên</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline, GOAL-02)</td></tr>
+<tr><th scope="row">Purpose</th><td>Quay lại bất cứ lúc nào cũng biết Task đang ở đâu và cần gì.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task thuộc baseline.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi sự kiện của Task hoặc Workflow liên quan.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System duy trì cho mỗi Task: trạng thái, workflow hiện tại và bước hiện tại, checkpoint gần nhất, thời điểm hoạt động cuối, prompt và pending action đang chờ, bước tiếp theo (do System suy ra từ trạng thái, ví dụ “Chờ bạn trả lời 1 câu hỏi”, “Sẵn sàng nghiệm thu”), số lần thực thi. Overview tổng hợp theo Phase: số Task theo trạng thái, phần trăm Task <code>Completed</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Workflow <code>Running</code> nhưng không có hoạt động quá ngưỡng (16.2): hiển thị cảnh báo “có thể bị treo” và cho phép tạm dừng/hủy.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Thông tin tiến độ được tính từ dữ liệu bền vững, không từ bộ nhớ phiên. Bước tiếp theo do System suy ra là xác định; gợi ý của Orchestrator hiển thị riêng.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Thuộc tính dẫn xuất của Task.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>TASK-PROGRESS-001-AC01</strong> Given Task <code>Waiting for User</code> với một prompt, When Researcher đăng nhập lại sau 3 ngày, Then chi tiết Task hiển thị prompt đang chờ, thời điểm hoạt động cuối và bước tiếp theo.</li>
+<li><strong>TASK-PROGRESS-001-AC02</strong> Given Phase có 4 Task, 1 <code>Completed</code>, When xem Overview, Then Phase hiển thị 25%.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.4, WF-06, 14.7</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-11">9.11. Plan and Task Change Impact</h2>
+<p class="status">Confirmed (outline): xác định Task phụ thuộc bị ảnh hưởng khi mục tiêu, phương pháp, reference hoặc đầu ra thay đổi. Định nghĩa thay đổi lớn và quy tắc ảnh hưởng: Assumption (dùng ở 6.5).</p>
+
+<h3 id="s-9-11-material">Định nghĩa thay đổi lớn</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Thay đổi lớn (bắt buộc APR-01 đầy đủ)</th>
+</tr></thead><tbody>
+<tr><td>MC-01</td><td>Đổi goals của Plan, hoặc Plan dựa trên phiên bản Research Context có câu hỏi, mục tiêu, phạm vi khác.</td></tr>
+<tr><td>MC-02</td><td>Đổi methods.</td></tr>
+<tr><td>MC-03</td><td>Thêm Task.</td></tr>
+<tr><td>MC-04</td><td>Xóa hoặc loại Task khỏi baseline.</td></tr>
+<tr><td>MC-05</td><td>Thêm, xóa hoặc đổi dependency.</td></tr>
+<tr><td>MC-06</td><td>Đổi execution label.</td></tr>
+<tr><td>MC-07</td><td>Đổi mục tiêu, đầu ra mong đợi, đầu vào khai báo hoặc acceptance criteria của Task.</td></tr>
+<tr><td>MC-08</td><td>Thêm, xóa, gộp Phase hoặc chuyển Task sang Phase khác.</td></tr>
+</tbody></table></div>
+<p><strong>Thay đổi nhỏ:</strong> sửa chính tả, diễn đạt lại mô tả không đổi nghĩa, đổi thứ tự hiển thị trong Phase mà không đổi dependency, đổi ước lượng công sức. Mọi thay đổi không thuộc MC-01–MC-08 là thay đổi không lớn và được duyệt nhanh trong một thao tác; vẫn tạo Plan Version mới và vẫn ghi phê duyệt APR-01. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-026).</p>
+
+<h3 id="plan-impact-001">PLAN-IMPACT-001 — Phân tích và hiển thị ảnh hưởng</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline), Assumption (quy tắc IMP)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không để kết quả cũ mất hiệu lực mà không ai biết (PRB-05).</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher quyết định</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>Sự kiện trong bảng IMP.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System xác định đối tượng bị ảnh hưởng bằng cách đi theo dependency và provenance (Task, artifact, claim, citation trong bản thảo).</li>
+<li>Trước khi duyệt Plan Version: hiển thị danh sách ảnh hưởng trong màn hình so sánh.</li>
+<li>Sau sự kiện: áp dụng quy tắc IMP; tạo Notification loại Impact warning có danh sách đối tượng.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher xác nhận đối tượng “vẫn hợp lệ”: gỡ cờ needs review, ghi Audit Event.</td></tr>
+<tr><th scope="row">Business Rules</th><td>System không tự lùi trạng thái Task <code>Completed</code> và không tự sửa artifact; chỉ gắn cờ và thông báo.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Cờ needs review; trạng thái Task chưa xong theo readiness; Notification.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PLAN-IMPACT-001-AC01</strong> Given A <code>Completed</code> và B <code>Completed</code> dùng đầu ra của A, When Researcher mở lại A (T-19), Then B nhận cờ needs review và có Impact warning.</li>
+<li><strong>PLAN-IMPACT-001-AC02</strong> Given reference R bị thu hồi và Task C <code>Ready</code> khai báo R, When thu hồi, Then C → <code>Blocked</code> với lý do RC-05.</li>
+<li><strong>PLAN-IMPACT-001-AC03</strong> Given Draft v3 đổi acceptance criteria của Task D <code>Completed</code>, When so sánh với baseline, Then danh sách ảnh hưởng có D.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>TASK-STATE-001, LIB-LIFECYCLE-001, 11, 12</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Sự kiện</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>IMP-01</td><td>Baseline mới đổi định nghĩa Task (MC-07)</td><td>Task <code>Completed</code> → cờ needs review; Task chưa xong → tính lại readiness.</td></tr>
+<tr><td>IMP-02</td><td>Baseline mới thêm dependency (MC-05)</td><td>Task chưa bắt đầu có Task tiên quyết chưa xong → <code>Blocked</code>.</td></tr>
+<tr><td>IMP-03</td><td>Reference bị <code>Revoked</code></td><td>Evidence → <code>Stale</code>; claim dùng evidence đó và citation trong bản thảo → cần xem lại; Task <code>Completed</code> có đầu ra dùng evidence đó → cờ needs review; Task chưa xong khai báo reference → <code>Blocked</code>.</td></tr>
+<tr><td>IMP-04</td><td>Artifact có version <code>Accepted</code> mới (bản cũ <code>Superseded</code>)</td><td>Task <code>Completed</code> đã dùng bản cũ làm đầu vào → cờ needs review.</td></tr>
+<tr><td>IMP-05</td><td>Research Context đổi câu hỏi, mục tiêu, phạm vi hoặc phương pháp</td><td>Impact warning ở Plan; gợi ý tạo Plan Version mới (MC-01).</td></tr>
+<tr><td>IMP-06</td><td>Task <code>Completed</code> được mở lại (T-19)</td><td>Task phụ thuộc trực tiếp <code>Completed</code> → cờ needs review; Task phụ thuộc chưa xong → <code>Blocked</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-12">9.12. Progress Views</h2>
+<p class="status">Confirmed (outline): Plan overview, task board, checklist, dependency graph và activity timeline.</p>
+
+<h3 id="plan-views-001">PLAN-VIEWS-001 — Các màn hình tiến độ</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (danh sách view), Assumption (nội dung)</td></tr>
+<tr><th scope="row">Purpose</th><td>Nhìn tiến độ theo nhiều góc mà dữ liệu nhất quán.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project có Research Plan.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mở Plan and Tasks (project) hoặc Tasks &amp; Plan (global, chỉ đọc).</td></tr>
+<tr><th scope="row">Main Flow</th><td><ul>
+<li><strong>Plan overview:</strong> goals, Phase với tiến độ, milestone, deliverable, version hiện hành và lịch sử version.</li>
+<li><strong>Task board:</strong> cột theo trạng thái Task; thẻ hiển thị label, cờ needs review, prompt đang chờ.</li>
+<li><strong>Checklist:</strong> danh sách Task và subtask dạng cây theo Phase.</li>
+<li><strong>Dependency graph:</strong> nút là Task (màu theo trạng thái), cạnh là dependency; chọn nút mở chi tiết Task.</li>
+<li><strong>Activity timeline:</strong> sự kiện của Plan và Task theo thời gian (duyệt, kích hoạt, chuyển trạng thái, nghiệm thu).</li>
+</ul></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chưa có baseline: các view hiển thị Draft với nhãn “Chưa duyệt”.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mọi view đọc cùng nguồn dữ liệu. Kéo thả trên task board không đổi trạng thái Task (trạng thái chỉ đổi theo TASK-STATE-001); kéo thả chỉ dùng để sắp xếp trong Draft. Bố cục ở 15.4.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Không (trừ sắp xếp trong Draft).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PLAN-VIEWS-001-AC01</strong> Given Task chuyển <code>Completed</code>, When mở task board, dependency graph và Overview, Then cả ba hiển thị cùng trạng thái mới.</li>
+<li><strong>PLAN-VIEWS-001-AC02</strong> Given Task <code>Ready</code> trên task board, When kéo sang cột <code>Completed</code>, Then trạng thái không đổi.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>4.2, 15.4</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-oq">9.13. Open Questions của mục 9</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-036</td><td>Researcher có được tạo Task ngoài Plan (ad-hoc, ví dụ “tìm thêm 5 bài”) mà không cần Plan Version mới không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Không; theo DEC-06, thực thi chính thức chỉ dựa trên baseline nên Task mới luôn qua Plan Version mới (MC-03, APR-01), còn việc tra cứu nhanh vẫn làm được qua chat hoặc Discover mà không tạo đầu ra chính thức; PO duyệt 31/10/2026 (PC-01).</td><td>TASK-DEFINE-001, 6.5, MC-03</td></tr>
+<tr><td>OQ-037</td><td>Task tiên quyết <code>Completed</code> mang cờ needs review có chặn Task phụ thuộc (đề xuất hiện tại, RC-04) hay chỉ cảnh báo? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Chặn (RC-04); Researcher gỡ chặn bằng xác nhận “vẫn hợp lệ” hoặc mở lại Task tiên quyết, vì chạy trên đầu vào có thể đã lỗi thời làm tăng rework (KPI-04); PO duyệt 31/10/2026 (PC-01).</td><td>TASK-READINESS-001, TASK-STATE-001, PLAN-IMPACT-001</td></tr>
+<tr><td>OQ-026</td><td>Thay đổi nhỏ của baseline (6.5) có được duyệt nhanh trong một thao tác, hay mọi thay đổi đều qua đầy đủ APR-01? <strong>Đã đóng 31/10/2026 (PC-01):</strong> thay đổi không thuộc danh sách thay đổi lớn (9.11) được duyệt nhanh trong một thao tác; vẫn tạo Plan Version mới và ghi phê duyệt APR-01 (PLAN-APPROVAL-001).</td><td>PLAN-APPROVAL-001, 9.11, 6.5</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="08-ai-assistant-and-multi-agent-orchestration.html">← Mục 8</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="10-academic-discovery-and-trusted-library.html">Mục 10 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

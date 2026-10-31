@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>8. Functional Requirements — AI Assistant and Multi-Agent Orchestration | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 08</p><h1>8. Functional Requirements — AI Assistant and Multi-Agent Orchestration</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–7, mục 21.1</p><div class="note"><p>Mục này đặc tả Orchestrator, bảy Specialist Agent, cách chuyển giao kết quả giữa agent, Interactive Agent Prompt, xử lý xung đột và lỗi, và giao diện model không phụ thuộc provider. Vai trò và quyền theo <a href="03-user-roles-and-permissions.html">mục 3</a>; danh sách agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>; entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-9">5.9</a>. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Phạm vi lấy từ outline và 21.1 (<strong>Confirmed</strong>); luồng, quy tắc và acceptance criteria là <strong>Assumption</strong> trừ khi ghi khác. Các câu hỏi đã đóng được ghi ở <a href="#s-8-oq">8.7</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-8-1">8.1. Orchestrator Responsibilities</a></li>
+<li><a href="#s-8-2">8.2. Specialist Agent Responsibilities</a></li>
+<li><a href="#s-8-3">8.3. Agent-to-Agent Handoffs</a></li>
+<li><a href="#s-8-4">8.4. Interactive Agent Prompts</a></li>
+<li><a href="#s-8-5">8.5. Conflict and Failure Handling</a></li>
+<li><a href="#s-8-6">8.6. Provider-Agnostic Model Interface</a></li>
+<li><a href="#s-8-oq">8.7. Open Questions của mục 8</a></li>
+</ul></details>
+
+<h2 id="s-8-0">Mô hình điều phối</h2>
+<p>Orchestrator là điểm vào duy nhất từ chat tới các Specialist Agent. Specialist Agent không giao tiếp trực tiếp với nhau; mọi chuyển giao đi qua Orchestrator dưới dạng kết quả có cấu trúc và tham chiếu entity (8.3). System — không phải agent — thực hiện chuyển trạng thái, kiểm tra quyền, lưu checkpoint và ghi audit (3.4). Mỗi sự kiện điều phối (bắt đầu/kết thúc Agent Run, tool call, handoff, prompt, lỗi) được đẩy lên Agent Activity gần thời gian thực; MVP không streaming từng token đầu ra (chốt — biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</p>
+<pre><code>Researcher ─chat/prompt─► Orchestrator ─giao bước─► Specialist Agent
+     ▲                         │  ▲                       │
+     │                         │  └──── handoff envelope ─┘
+     └── Interactive Agent ────┘
+         Prompt (qua System)        System: trạng thái, quyền, checkpoint, audit</code></pre>
+<p class="status">FIG-010 — Trình tự điều phối một Task. Nguồn: <a href="../figures/FIG-010-orchestration-sequence.mmd">figures/FIG-010-orchestration-sequence.mmd</a>.</p>
+
+<h2 id="s-8-1">8.1. Orchestrator Responsibilities</h2>
+<p class="status">Confirmed (outline): hiểu ý định người dùng, tạo plan, giao việc, đánh giá readiness và điều phối kết quả.</p>
+
+<h3 id="orch-intent-001">ORCH-INTENT-001 — Hiểu ý định và chọn hành động</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Chuyển tin nhắn tự nhiên thành một hành động được phép, rõ ràng và có thể kiểm tra.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Orchestrator có Agent Model Assignment hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Message mới trong Global AI Assistant hoặc Project AI Chat.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator phân loại ý định thành một trong các nhóm: <em>trả lời/giải thích</em>, <em>làm rõ ngữ cảnh</em> (6.2), <em>đề xuất hoặc sửa Plan</em> (WF-01), <em>yêu cầu thực thi Task</em> (WF-02), <em>tìm tài liệu</em> (WF-04), <em>tổng hợp/viết</em> (WF-05), <em>tạo sơ đồ</em> (WF-07), <em>điều hướng</em>.</li>
+<li>Với hành động có tác động (tạo workflow, đổi dữ liệu), Orchestrator nêu rõ hành động sẽ làm và đối tượng trước khi System thực hiện.</li>
+<li>System kiểm tra hành động có thuộc danh sách được phép của Orchestrator (3.2) trong ngữ cảnh hiện tại.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Ý định mơ hồ: hỏi lại bằng chat hoặc prompt <code>choice</code>.</li><li>Ý định là một hành động APR: Orchestrator không thực hiện; dẫn Researcher tới thao tác phê duyệt hoặc tạo prompt <code>approval</code> (PROMPT-APPROVAL-001).</li><li>Yêu cầu “chạy Task” khi Task chưa qua WF-02: khởi động readiness check, không kích hoạt.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Lời cho phép trong chat (“cứ làm đi”) không thay phê duyệt có cấu trúc (3.2). Ở Global AI Assistant chỉ có nhóm trả lời, điều hướng, tạo project, tra cứu Trusted Library (WS-CHAT-001).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run; có thể tạo Workflow, prompt.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-INTENT-001-AC01</strong> Given Plan Version <code>Proposed</code>, When Researcher viết “duyệt plan đi” trong chat, Then Plan Version vẫn <code>Proposed</code> và Researcher được dẫn tới thao tác duyệt hoặc nhận prompt <code>approval</code>.</li>
+<li><strong>ORCH-INTENT-001-AC02</strong> Given Task <code>Ready</code>, When Researcher yêu cầu chạy Task qua chat, Then readiness check (WF-02) được thực hiện và Task chỉ thành <code>Queued</code> sau xác nhận APR-02.</li>
+<li><strong>ORCH-INTENT-001-AC03</strong> Given Global AI Assistant, When Researcher yêu cầu thực thi Task, Then không có Workflow nào được tạo.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>3.2, WS-CHAT-001, PROJ-CHAT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-007 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-plan-001">ORCH-PLAN-001 — Lập Plan đề xuất</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline, 6.3–6.4)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tạo Plan Version <code>Draft</code> từ ngữ cảnh và phân tích multi-agent.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Specialist Agent, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Như WF-01.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-01.S2.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Theo WF-01.S1–S4. Orchestrator chọn agent phân tích, tổng hợp và đưa kết quả vào PLAN-GENERATE-001.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Theo WF-01 A1, E2.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Plan đề xuất phải ghi các bất đồng giữa agent và giả định chưa được xác nhận; không được che bằng một phương án duy nhất.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Workflow <code>plan_proposal</code>; Plan Version <code>Draft</code>; Artifact note.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-PLAN-001-AC01</strong> Given hai Specialist Agent đề xuất phương pháp khác nhau, When Plan Version <code>Draft</code> được tạo, Then Plan ghi cả hai phương án và lý do chọn phương án đề xuất.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>WF-01, PLAN-GENERATE-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-025 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-delegate-001">ORCH-DELEGATE-001 — Giao việc và lắp ráp context</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline: delegate, route context)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi Specialist Agent nhận đúng và đủ context cho bước được giao, không hơn.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow <code>Running</code>; agent được giao có Agent Model Assignment hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator bắt đầu một Workflow Step.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator tạo Workflow Step: mục tiêu bước, agent, đầu vào yêu cầu, đầu ra mong đợi.</li>
+<li>System lắp ráp context từ Shared Context theo phạm vi truy cập của agent (3.3) và giới hạn context của model (14.2).</li>
+<li>System tạo Agent Run, gọi model qua giao diện chuẩn hóa (AGENT-PROVIDER-001).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Context vượt giới hạn model: System cắt theo thứ tự ưu tiên các lớp ở <a href="14-shared-context-and-orchestration-architecture.html#s-14-2-layers">14.2</a> (CTX-ASSEMBLY-001), dùng tóm tắt đã có thay cho toàn văn khi cần, và ghi phần bị lược bỏ vào context manifest của Agent Run. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): không gọi thêm model để tóm tắt tại thời điểm lắp ráp.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Context không bao giờ chứa API key, dữ liệu project khác, hay Discovered Result làm nguồn evidence. Agent Run ghi tóm tắt context đã gửi để giám sát (SCOPE-12). Từ thông tin cá nhân của Researcher, chỉ lĩnh vực nghiên cứu được đưa vào context, và chỉ khi Researcher bật tùy chọn này trong Settings; họ tên, đơn vị, ảnh đại diện và liên kết hồ sơ Google Scholar không vào context (Confirmed — PO chốt 31/10/2026, PC-01, OQ-015). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): các bước không phụ thuộc nhau và không ghi cùng entity (ví dụ phân tích ở 6.3) được chạy song song; các bước còn lại chạy tuần tự.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Workflow Step; Agent Run <code>Pending</code> → <code>Running</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-DELEGATE-001-AC01</strong> Given bước giao cho Writing Agent, When Agent Run được tạo, Then context chỉ chứa file bản thảo liên quan, claim và artifact <code>Accepted</code>, BibTeX của Trusted Reference; không chứa Discovered Result.</li>
+<li><strong>ORCH-DELEGATE-001-AC02</strong> Given context vượt giới hạn model, When Agent Run được tạo, Then Agent Run ghi danh sách phần bị lược bỏ và hiển thị được ở Agent Activity.</li>
+<li><strong>ORCH-DELEGATE-001-AC03</strong> Given Researcher đã khai báo lĩnh vực nghiên cứu nhưng chưa bật tùy chọn đưa vào context, When Agent Run được tạo, Then context manifest không chứa lĩnh vực nghiên cứu; sau khi bật, Agent Run tiếp theo chứa lĩnh vực nghiên cứu và không chứa trường cá nhân nào khác.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>3.3, 14.2, 14.3, AGENT-PROVIDER-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-032, OQ-035 (đã giải quyết); OQ-015 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-readiness-001">ORCH-READINESS-001 — Đánh giá readiness ngữ nghĩa</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed (outline: evaluate readiness)</td></tr>
+<tr><th scope="row">Purpose</th><td>Bổ sung phần kiểm tra cần hiểu nội dung mà System không làm được (WF-02.S5).</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator</td></tr>
+<tr><th scope="row">Preconditions</th><td>Kiểm tra xác định WF-02.S1–S4 đã chạy.</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-02.S5.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator so đầu vào hiện có với mục tiêu, đầu ra mong đợi và acceptance criteria của Task → trả kết quả có cấu trúc: <em>đủ</em>, hoặc danh sách thông tin thiếu kèm câu hỏi đề xuất.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Agent Run lỗi: theo WF-02.E1.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Orchestrator không được chuyển kết quả kiểm tra xác định từ “không đạt” thành “đạt”. Kết quả ngữ nghĩa chỉ có thể thêm lý do chặn.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Kết quả readiness trong lịch sử Task.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-READINESS-001-AC01</strong> Given dependency chưa <code>Completed</code>, When Orchestrator đánh giá ngữ nghĩa là đủ, Then kết quả readiness tổng vẫn là không đạt.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>TASK-READINESS-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-consolidate-001">ORCH-CONSOLIDATE-001 — Tổng hợp kết quả và hoàn tất workflow</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline: coordinate outputs)</td></tr>
+<tr><th scope="row">Purpose</th><td>Gom đầu ra của các bước thành kết quả của workflow để Researcher review.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Mọi Workflow Step bắt buộc đã <code>Succeeded</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Bước cuối hoàn tất.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator tạo tóm tắt: đầu ra theo acceptance criteria, điểm chưa chắc chắn, bất đồng, đề xuất bước tiếp → System đặt Workflow <code>Succeeded</code>; với <code>task_execution</code>, Task → <code>In Review</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Thiếu đầu ra bắt buộc: workflow không <code>Succeeded</code>; Orchestrator nêu phần thiếu và đề xuất chạy lại bước.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Workflow thành công không bao giờ đưa Task thẳng tới <code>Completed</code> (5.3).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Workflow → <code>Succeeded</code>; Task → <code>In Review</code>; Context Item <em>summary</em>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-CONSOLIDATE-001-AC01</strong> Given workflow <code>task_execution</code> hoàn tất mọi bước, When System kết thúc workflow, Then Task ở <code>In Review</code>, không phải <code>Completed</code>.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>TASK-STATE-001, TASK-CHECKLIST-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-2">8.2. Specialist Agent Responsibilities</h2>
+<p class="status">Confirmed (outline, SCOPE-14): bảy vai trò và yêu cầu định nghĩa năng lực, đầu vào, đầu ra, hành động được phép. Nội dung bảng: Assumption (giải quyết SYNC-02).</p>
+<h3 id="s-8-2-catalog">Danh mục agent</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Agent</th>
+<th scope="col">Năng lực</th>
+<th scope="col">Đầu vào</th>
+<th scope="col">Đầu ra (entity)</th>
+<th scope="col">Hành động được phép</th>
+<th scope="col">Năng lực model cần</th>
+<th scope="col">Workflow</th>
+</tr></thead><tbody>
+<tr><td>Orchestrator</td><td>Hiểu ý định, làm rõ ngữ cảnh, lập Plan, giao việc, readiness ngữ nghĩa, tổng hợp.</td><td>Shared Context của project (hoặc context global)</td><td>Plan Version <code>Draft</code>, Workflow Step, prompt, Context Item đề xuất</td><td>3.2</td><td>Tool calling, structured output</td><td>Mọi WF</td></tr>
+<tr><td>Discovery Agent</td><td>Lập truy vấn và tìm tài liệu trên Google Scholar (qua dịch vụ trung gian theo hợp đồng) hoặc nguồn API thay thế khi Google Scholar không khả thi (OQ-006, OQ-081); tìm theo tác giả.</td><td>Chỉ dẫn tìm kiếm, Research Context, danh sách Trusted Reference (tránh trùng)</td><td>Discovered Result</td><td>Gọi adapter nguồn qua interface 10.9 (DISC-ADAPTER-001)</td><td>Tool calling</td><td>WF-04</td></tr>
+<tr><td>Reference Processing Agent</td><td>Chuẩn hóa metadata, phát hiện trùng, chuẩn bị yêu cầu duyệt, yêu cầu indexing.</td><td>Discovered Result <code>Selected</code>, reference nhập thủ công (DOI, BibTeX, PDF — OQ-008), metadata Trusted Library</td><td>Reference <code>Pending Approval</code>, đề xuất gộp</td><td>Lấy metadata từ nguồn được phép</td><td>Structured output</td><td>WF-04</td></tr>
+<tr><td>Evidence Retrieval Agent</td><td>Lập truy vấn truy xuất, chọn và xếp hạng đoạn liên quan từ vector database.</td><td>Câu hỏi/claim cần evidence; index của reference được chọn</td><td>Evidence</td><td>Gọi công cụ truy xuất nội bộ (11.2)</td><td>Tool calling</td><td>WF-05</td></tr>
+<tr><td>Synthesis Agent</td><td>Tổng hợp literature review, ma trận so sánh, research gap; tạo claim và liên kết evidence.</td><td>Evidence, claim và artifact <code>Accepted</code></td><td>Claim <code>Draft</code>, Claim–Evidence Link, Artifact Version <code>Draft</code> (synthesis, table)</td><td>Không gọi bên ngoài</td><td>Structured output; context dài</td><td>WF-05</td></tr>
+<tr><td>Writing Agent</td><td>Soạn và sửa section LaTeX theo chỉ dẫn và nguồn đã duyệt.</td><td>File bản thảo liên quan, claim/artifact <code>Accepted</code>, Bibliography Entry</td><td>Change Proposal</td><td>Không gọi bên ngoài</td><td>Structured output; context dài</td><td>WF-05, WF-07.S7</td></tr>
+<tr><td>Verification Agent</td><td>Đánh giá mức hỗ trợ claim, kiểm tra citation, phát hiện mâu thuẫn, theo Ngưỡng kiểm chứng trong Settings cá nhân.</td><td>Claim, evidence, citation, nội dung cần kiểm, Ngưỡng kiểm chứng hiện hành</td><td>Kết quả kiểm chứng (cập nhật mức hỗ trợ), Artifact verification_report</td><td>Gọi công cụ truy xuất nội bộ</td><td>Structured output</td><td>WF-05, WF-03.A1</td></tr>
+<tr><td>Diagram Agent</td><td>Tạo và sửa sơ đồ Mermaid (MVP chỉ hỗ trợ Mermaid, 13.2).</td><td>Yêu cầu Task, artifact <code>Accepted</code> liên quan, loại sơ đồ</td><td>Artifact Version <code>Draft</code> loại diagram</td><td>Gọi công cụ kiểm tra cú pháp và render (17.5)</td><td>Structured output</td><td>WF-07</td></tr>
+</tbody></table></div>
+<p>“Hành động không được phép” của từng agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>; phạm vi đọc theo <a href="03-user-roles-and-permissions.html#s-3-3">3.3</a>.</p>
+<p><strong>Ngưỡng kiểm chứng của Verification Agent.</strong> Verification Agent dùng nhóm “Ngưỡng kiểm chứng” trong Settings cá nhân của Researcher để gán mức hỗ trợ claim và báo citation không khớp nguồn. Giá trị mặc định được hiệu chỉnh để đạt độ chính xác đánh giá mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia và phát hiện citation không khớp nguồn ≥ 95%; nghiệm thu MVP đo với giá trị mặc định. Researcher chỉnh được ngưỡng; mỗi thay đổi được ghi Audit Event và áp dụng từ lần kiểm chứng sau, không đổi kết quả kiểm chứng đã có. Agent Run của Verification Agent ghi giá trị ngưỡng đã dùng. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092); cách diễn giải “Ngưỡng kiểm chứng” là Assumption (ASM-15).</p>
+
+<h3 id="agent-registry-001">AGENT-REGISTRY-001 — Agent registry dựa trên định nghĩa</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Assumption (SCOPE-14)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi agent được mô tả bằng một định nghĩa tường minh, để System kiểm soát hành vi và đội phát triển thêm agent mà không sửa lõi Orchestrator.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>—</td></tr>
+<tr><th scope="row">Trigger</th><td>System khởi động; Orchestrator chọn agent cho một bước.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Định nghĩa agent gồm: agentKey, tên hiển thị, mô tả năng lực, loại bước nhận, schema đầu vào, schema đầu ra (entity được tạo), công cụ được gọi, phạm vi đọc context, năng lực model tối thiểu, phiên bản định nghĩa. Orchestrator chỉ giao bước cho agent có năng lực phù hợp trong registry.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Đầu ra Agent Run không khớp schema sau khi adapter đã yêu cầu sửa định dạng (INT-PROVIDER-003): Agent Run <code>Failed</code> với mã <code>invalid_response</code>, áp dụng ORCH-FAILURE-001.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Registry trong MVP gồm đúng 8 định nghĩa (Orchestrator + 7). Researcher không sửa được registry; danh sách bảy Specialist Agent cố định, custom agent thuộc FUT-04 (OQ-013 đã giải quyết). Agent Run ghi phiên bản định nghĩa đã dùng.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run.agentDefinitionVersion.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-REGISTRY-001-AC01</strong> Given Synthesis Agent trả về đầu ra thiếu trường evidence link bắt buộc, When System nhận kết quả, Then Agent Run <code>Failed</code> với mã <code>invalid_response</code> và không có Claim nào được ghi.</li>
+<li><strong>AGENT-REGISTRY-001-AC02</strong> Given một Agent Run bất kỳ, When xem chi tiết ở Agent Activity, Then thấy agentKey và phiên bản định nghĩa.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>SCOPE-14, 3.3, FUT-04</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-013 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h3 id="agent-scope-001">AGENT-SCOPE-001 — Thực thi giới hạn hành động của agent</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline: permitted actions; 3.4)</td></tr>
+<tr><th scope="row">Purpose</th><td>Bảo đảm agent không làm được điều nằm ngoài vai trò, kể cả khi model tạo ra yêu cầu như vậy.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Agent Run <code>Running</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent yêu cầu gọi công cụ hoặc ghi dữ liệu.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System so yêu cầu với định nghĩa agent và permission matrix (3.5) → cho phép, hoặc từ chối và trả lỗi có cấu trúc cho agent.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Yêu cầu bị từ chối lặp lại: Agent Run <code>Failed</code> với lý do nội bộ <code>action_denied</code> (khác mã lỗi provider <code>permission_denied</code>); ghi Audit Event.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Kiểm tra quyền thực hiện ở System, không dựa vào chỉ dẫn trong prompt của model. Mọi hành động APR bị từ chối với mọi agent.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Audit Event cho mọi lần từ chối.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-SCOPE-001-AC01</strong> Given Writing Agent đang chạy, When nó yêu cầu ghi trực tiếp vào Manuscript File, Then yêu cầu bị từ chối và chỉ Change Proposal được tạo.</li>
+<li><strong>AGENT-SCOPE-001-AC02</strong> Given Reference Processing Agent, When nó yêu cầu đổi Reference sang <code>Trusted</code>, Then yêu cầu bị từ chối và Audit Event được ghi.</li>
+<li><strong>AGENT-SCOPE-001-AC03</strong> Given bất kỳ agent nào, When nó yêu cầu đọc Provider Connection, Then yêu cầu bị từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>3.3–3.5, AGENT-REGISTRY-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-3">8.3. Agent-to-Agent Handoffs</h2>
+<p class="status">Confirmed (outline): chuyển giao kết quả có cấu trúc và tham chiếu artifact thay vì chỉ dựa vào lịch sử chat.</p>
+
+<h3 id="agent-handoff-001">AGENT-HANDOFF-001 — Handoff envelope</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (nguyên tắc), Assumption (cấu trúc)</td></tr>
+<tr><th scope="row">Purpose</th><td>Kết quả giữa các bước truyền được, khôi phục được và truy vết được.</td></tr>
+<tr><th scope="row">Actor</th><td>Specialist Agent, Orchestrator, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Agent Run kết thúc <code>Succeeded</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent trả kết quả.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Agent trả <em>handoff envelope</em>: agentRunId, workflowStep, trạng thái kết quả (<code>complete</code>, <code>partial</code>, <code>needs_input</code>), tóm tắt ngắn, danh sách tham chiếu entity đã tạo (Artifact Version, Evidence, Claim, Change Proposal, Discovered Result), điểm chưa chắc chắn, đề xuất bước tiếp.</li>
+<li>System lưu entity trước, rồi lưu envelope và checkpoint.</li>
+<li>Bước tiếp theo nhận envelope và nạp entity theo tham chiếu, không nạp toàn bộ hội thoại của agent trước.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><code>needs_input</code>: Orchestrator tạo prompt <code>information_request</code>; Task → <code>Waiting for User</code>.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Envelope không chứa nội dung dài được nhúng thay cho tham chiếu entity. Envelope bất biến.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Entity đầu ra; handoff envelope; Checkpoint.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-HANDOFF-001-AC01</strong> Given Evidence Retrieval Agent tạo 12 Evidence, When chuyển sang Synthesis Agent, Then context của Synthesis Agent chứa 12 tham chiếu evidence với văn bản trích, và Evidence tồn tại trước khi Synthesis Agent chạy.</li>
+<li><strong>AGENT-HANDOFF-001-AC02</strong> Given workflow bị gián đoạn sau bước 2, When khôi phục, Then bước 3 nhận được envelope của bước 2 từ checkpoint.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.4, 14.4, 14.7</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-4">8.4. Interactive Agent Prompts</h2>
+<p class="status">Confirmed (outline): hỗ trợ approval, rejection, option selection, edit-and-approve và information request; gắn mỗi prompt với project, task, agent và hành động đang chờ.</p>
+
+<h3 id="prompt-lifecycle-001">PROMPT-LIFECYCLE-001 — Vòng đời prompt</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (loại, liên kết), Assumption (vòng đời)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi quyết định của Researcher mà agent cần được hỏi, trả lời và ghi nhận có cấu trúc.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator (tạo), Researcher (trả lời), System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow hoạt động (hoặc ngữ cảnh chat với Orchestrator).</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent cần quyết định hoặc thông tin.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Orchestrator tạo prompt (Specialist Agent yêu cầu qua Orchestrator) với loại, câu hỏi, đối tượng, lựa chọn, lựa chọn đề xuất và lý do, hệ quả, liên kết project/task/workflow/step/Agent Run.</li>
+<li>System lưu prompt <code>Open</code>, tạo pending action, hiển thị trong Project AI Chat và Agent Activity; nếu prompt chặn bước, Workflow → <code>Waiting for User</code>, Task → <code>Waiting for User</code>.</li>
+<li>Researcher trả lời → System kiểm tra prompt còn <code>Open</code> → lưu Response, prompt <code>Answered</code>, ghi Context Item <em>decision</em>, Audit Event → workflow tiếp tục.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td><ul><li>Prompt không có thời hạn theo thời gian (chốt ở 5.9). Prompt chỉ chuyển <code>Expired</code> khi project được lưu trữ trong lúc prompt còn <code>Open</code>; điều này chỉ xảy ra với prompt không chặn workflow (ví dụ đề xuất cập nhật Research Context), vì project có workflow hoạt động không lưu trữ được (PROJ-CRUD-003).</li><li>Workflow bị hủy: prompt <code>Cancelled</code>.</li><li>Trả lời hai lần (hai tab): lần sau bị từ chối với thông báo đã được trả lời.</li></ul></td></tr>
+<tr><th scope="row">Business Rules</th><td>Một prompt chỉ trả lời một lần. <code>Expired</code>/<code>Cancelled</code> không phải đồng ý. Không tự chọn lựa chọn đề xuất khi hết hạn.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Interactive Agent Prompt; Pending Action; Context Item; trạng thái Workflow và Task.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROMPT-LIFECYCLE-001-AC01</strong> Given prompt <code>Open</code> chặn bước, When prompt được tạo, Then Workflow và Task ở <code>Waiting for User</code> và pending action xuất hiện ở cả Project Workspace và Global Pending Actions.</li>
+<li><strong>PROMPT-LIFECYCLE-001-AC02</strong> Given prompt <code>Open</code> không chặn workflow, When project được lưu trữ, Then prompt chuyển <code>Expired</code> và không có lựa chọn nào được áp dụng.</li>
+<li><strong>PROMPT-LIFECYCLE-001-AC03</strong> Given prompt đã <code>Answered</code> ở tab A, When Researcher trả lời ở tab B, Then câu trả lời thứ hai bị từ chối.</li>
+<li><strong>PROMPT-LIFECYCLE-001-AC04</strong> Given prompt đã trả lời, When xem chi tiết, Then thấy project, task, workflow, agent tạo prompt, câu trả lời, người trả lời và thời điểm.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.9, 4.4, 15.3</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-012 (đã giải quyết: không chỉnh hướng agent đang chạy; Researcher tạm dừng, hủy hoặc chạy lại)</td></tr>
+</tbody></table></div>
+<p class="status">FIG-011 — Vòng đời prompt. Nguồn: <a href="../figures/FIG-011-prompt-lifecycle.mmd">figures/FIG-011-prompt-lifecycle.mmd</a>.</p>
+
+<h3 id="prompt-approval-001">PROMPT-APPROVAL-001 — Prompt cho từng loại phê duyệt</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Assumption (giải quyết SYNC-06); duyệt reference theo lô: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-039)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi hành động APR có cách xin phê duyệt thống nhất khi phát sinh trong luồng agent.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Hành động thuộc APR-01–APR-10.</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent đến điểm cần phê duyệt.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Theo bảng ánh xạ bên dưới. Khi Researcher chọn duyệt, System thực hiện chuyển trạng thái tương ứng và ghi Audit Event có mã APR.</li>
+<li>Duyệt reference theo lô (APR-04): một prompt <code>approval</code> chứa nhiều Reference <code>Pending Approval</code>; Researcher duyệt cả lô hoặc bỏ chọn từng reference trước khi duyệt. System ghi một phê duyệt APR-04 riêng cho từng reference trong audit trail, gắn với phiên bản metadata của reference đó.</li>
+<li>Reference có cảnh báo trùng không được đưa vào lô; System tạo prompt riêng cho từng reference đó để Researcher chọn gộp, giữ riêng hoặc từ chối (LIB-METADATA-001).</li>
+<li>Plan Version có thay đổi không thuộc danh sách thay đổi lớn (9.11) dùng prompt <code>approval</code> duyệt nhanh một thao tác; vẫn ghi APR-01 (OQ-026).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Đối tượng đã đổi phiên bản sau khi prompt được tạo: prompt tự <code>Cancelled</code>, tạo prompt mới cho phiên bản mới.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Phê duyệt gắn với phiên bản cụ thể của đối tượng (3.4). APR-02, APR-08, APR-09, APR-10 không được tạo dưới dạng prompt từ agent; Researcher thực hiện trực tiếp trên giao diện. Duyệt theo lô chỉ áp dụng cho APR-04; không có mức tin cậy tự động theo nguồn, mọi reference vẫn cần Researcher duyệt (OQ-090).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Theo bảng.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>PROMPT-APPROVAL-001-AC01</strong> Given prompt APR-05 cho Change Proposal ở revision 7, When bản thảo đã sang revision 8 trước khi Researcher trả lời, Then prompt bị <code>Cancelled</code> và Change Proposal <code>Outdated</code>.</li>
+<li><strong>PROMPT-APPROVAL-001-AC02</strong> Given Researcher duyệt prompt APR-04, When kiểm tra Audit Event, Then sự kiện ghi APR-04, referenceId, phiên bản metadata và actor Researcher.</li>
+<li><strong>PROMPT-APPROVAL-001-AC03</strong> Given bất kỳ agent nào, When cố tạo prompt cho APR-02, Then System từ chối tạo prompt.</li>
+<li><strong>PROMPT-APPROVAL-001-AC04</strong> Given prompt APR-04 theo lô gồm 10 reference, When Researcher bỏ chọn 2 reference rồi duyệt, Then 8 reference thành <code>Trusted</code>, có 8 Audit Event APR-04 riêng (mỗi sự kiện một referenceId và phiên bản metadata), và 2 reference còn lại vẫn <code>Pending Approval</code>.</li>
+<li><strong>PROMPT-APPROVAL-001-AC05</strong> Given 12 reference chờ duyệt trong đó 1 reference có cảnh báo trùng, When System tạo prompt duyệt theo lô, Then lô chứa 11 reference và reference có cảnh báo trùng có prompt riêng.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>3.1 (APR), PROMPT-LIFECYCLE-001, LIB-APPROVAL-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-019 (đã đóng 31/10/2026, PC-01: duyệt nguyên văn APR-01–APR-10); OQ-039, OQ-090 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">APR</th>
+<th scope="col">Loại prompt</th>
+<th scope="col">Đối tượng</th>
+<th scope="col">Khi duyệt</th>
+<th scope="col">Khi từ chối</th>
+</tr></thead><tbody>
+<tr><td>APR-01</td><td><code>approval</code> (thay đổi không lớn: duyệt nhanh một thao tác)</td><td>Plan Version <code>Proposed</code></td><td><code>Approved</code>; baseline cũ <code>Superseded</code></td><td><code>Rejected</code> + lý do</td></tr>
+<tr><td>APR-02</td><td>Không qua prompt</td><td>Task</td><td>—</td><td>—</td></tr>
+<tr><td>APR-03</td><td><code>approval</code> (nhắc nghiệm thu; thao tác chính ở chi tiết Task)</td><td>Task <code>In Review</code></td><td><code>Completed</code></td><td>Trả lại → <code>Ready</code></td></tr>
+<tr><td>APR-04</td><td><code>approval</code> hoặc <code>edit_and_approve</code> (sửa metadata)</td><td>Reference <code>Pending Approval</code> (một hoặc lô trong một prompt; ghi phê duyệt riêng từng reference; reference có cảnh báo trùng xử lý riêng)</td><td><code>Trusted</code></td><td><code>Rejected</code></td></tr>
+<tr><td>APR-05</td><td><code>approval</code></td><td>Change Proposal <code>Proposed</code></td><td><code>Accepted</code>; Manuscript Revision mới</td><td><code>Rejected</code></td></tr>
+<tr><td>APR-06</td><td><code>edit_and_approve</code></td><td>Claim <code>Draft</code>; Artifact Version synthesis</td><td><code>Accepted</code></td><td><code>Rejected</code></td></tr>
+<tr><td>APR-07</td><td><code>edit_and_approve</code></td><td>Artifact Version diagram</td><td><code>Accepted</code></td><td><code>Rejected</code></td></tr>
+<tr><td>APR-08, APR-09, APR-10</td><td>Không qua prompt</td><td>Xóa dữ liệu; Settings; execution label</td><td>—</td><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-5">8.5. Conflict and Failure Handling</h2>
+<p class="status">Confirmed (outline): giải quyết xung đột qua review rõ ràng hoặc follow-up task; thử lại, tạm dừng, tiếp tục, hủy theo chính sách.</p>
+
+<h3 id="orch-conflict-001">ORCH-CONFLICT-001 — Xử lý kết quả mâu thuẫn</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không để Orchestrator lặng lẽ chọn một bên khi các agent hoặc nguồn mâu thuẫn.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator, Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Hai Agent Run cho kết quả mâu thuẫn (ví dụ Synthesis kết luận claim được hỗ trợ, Verification đánh giá Unsupported), hoặc evidence mâu thuẫn.</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator phát hiện mâu thuẫn khi tổng hợp.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator trình bày hai phía kèm tham chiếu → tạo prompt <code>choice</code> với các lựa chọn: chấp nhận một phía, giữ cả hai và đánh dấu <code>Conflicting</code>, hoặc đề xuất follow-up Task (thêm vào Plan qua WF-01).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher chưa quyết: kết quả giữ trạng thái <code>Draft</code>; Task có thể vào <code>In Review</code> với mâu thuẫn được nêu rõ.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Kết quả của Verification Agent về claim chỉ bị ghi đè bởi quyết định của Researcher, không bởi agent khác.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Prompt; Claim support status; có thể tạo Plan Version <code>Draft</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-CONFLICT-001-AC01</strong> Given Synthesis và Verification mâu thuẫn về claim C, When Orchestrator tổng hợp, Then một prompt <code>choice</code> được tạo và C không ở <code>Accepted</code>.</li>
+<li><strong>ORCH-CONFLICT-001-AC02</strong> Given Researcher chọn follow-up Task, When thao tác hoàn tất, Then có Plan Version <code>Draft</code> mới chứa Task đó và baseline chưa đổi.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>11.7, PLAN-REVIEW-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="orch-failure-001">ORCH-FAILURE-001 — Thử lại, tạm dừng, tiếp tục, hủy</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline), Assumption (chính sách)</td></tr>
+<tr><th scope="row">Purpose</th><td>Lỗi được xử lý nhất quán, không mất kết quả và không chạy lại hành động có tác động khi chưa được phép.</td></tr>
+<tr><th scope="row">Actor</th><td>System, Orchestrator, Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow hoạt động.</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent Run lỗi; hoặc Researcher chọn tạm dừng, tiếp tục, hủy ở Agent Activity.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>System phân loại lỗi theo mã chuẩn hóa (AGENT-PROVIDER-001).</li>
+<li>Lỗi tạm thời: tự thử lại bằng Agent Run mới, có giãn cách tăng dần, tối đa 2 lần, sau khi lớp adapter đã gọi lại tối đa 3 lần trong cùng Agent Run (INT-PROVIDER-003, 17.1). Chỉ lỗi tạm thời được thử lại (OQ-017 đã giải quyết).</li>
+<li>Lỗi cố định hoặc hết lượt thử: Workflow Step <code>Failed</code>; Orchestrator đánh giá có thể tiếp tục với kết quả từng phần không; nếu không, Workflow → <code>Failed</code>, Task → <code>Failed</code>, thông báo kèm nguyên nhân và hành động gợi ý.</li>
+<li>Tạm dừng: Workflow → <code>Paused</code> sau khi Agent Run đang chạy kết thúc hoặc bị hủy; tiếp tục: <code>Running</code> từ checkpoint.</li>
+<li>Hủy: Workflow → <code>Cancelled</code>; Agent Run đang chạy → <code>Cancelled</code>; kết quả đến muộn bị bỏ (5.4); Task trở về <code>Ready</code> hoặc <code>Blocked</code> theo readiness.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chạy lại có kiểm soát sau <code>Failed</code>: Researcher chọn chạy lại toàn bộ hoặc từ bước lỗi; đi qua WF-02.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không tự thử lại lỗi cố định. Không tự thử lại sau khi Researcher đã tạm dừng hoặc hủy.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run, Workflow Step, Workflow, Task; Notification; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>ORCH-FAILURE-001-AC01</strong> Given provider trả <code>rate_limited</code>, When Agent Run lỗi, Then System tạo tối đa 2 Agent Run thử lại có giãn cách, mỗi lần hiển thị ở Agent Activity.</li>
+<li><strong>ORCH-FAILURE-001-AC02</strong> Given provider trả <code>auth_failed</code>, When Agent Run lỗi, Then không thử lại; Workflow Step <code>Failed</code> và thông báo dẫn tới Settings › Provider Connections.</li>
+<li><strong>ORCH-FAILURE-001-AC03</strong> Given Researcher hủy workflow khi Agent Run đang chạy, When kết quả của Agent Run đó trả về sau, Then không entity đầu ra nào được ghi.</li>
+<li><strong>ORCH-FAILURE-001-AC04</strong> Given workflow <code>Paused</code>, When Researcher tiếp tục, Then workflow chạy từ checkpoint gần nhất, không lặp lại bước đã <code>Succeeded</code>.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>5.4, AGENT-PROVIDER-001, WF-06, 14.6</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-017 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-6">8.6. Provider-Agnostic Model Interface</h2>
+<p class="status">Confirmed (outline, 21.1): chuẩn hóa đầu vào, đầu ra, tool call, lỗi và usage; xử lý năng lực và giới hạn riêng của từng provider; tối thiểu Anthropic Claude, OpenAI, Google Gemini; URL và API key tùy chỉnh cho từng agent. Chi tiết: Assumption (giải quyết SYNC-03 cho 8.6; bảo mật key ở 16.1, tích hợp ở 17.1).</p>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014): MVP chỉ hỗ trợ ba provider OpenAI, Anthropic Claude và Google Gemini. Người dùng tự cung cấp API key; hệ thống không có key hay hạn mức mặc định. Base URL được đổi sang proxy, gateway hoặc model tự host, miễn tương thích API chính thức của provider tương ứng. Dashboard cho nhập base URL và API key của bất kỳ nhà cung cấp nào hoặc model tự host, kèm endpoint kiểm tra hạn mức và tiêu thụ, là dự kiến tương lai (FUT-05, mục 2.3; diễn giải: Assumption ASM-16). MVP vẫn ghi và hiển thị usage (NFR-USAGE-001–003).</p>
+
+<h3 id="agent-provider-001">AGENT-PROVIDER-001 — Giao diện model chuẩn hóa</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (outline)</td></tr>
+<tr><th scope="row">Purpose</th><td>Agent và Orchestrator không phụ thuộc định dạng riêng của provider.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Agent Model Assignment trỏ tới Provider Connection <code>Valid</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi lần gọi model.</td></tr>
+<tr><th scope="row">Main Flow</th><td>System chuyển yêu cầu chuẩn hóa sang định dạng provider qua adapter, gọi, rồi chuyển phản hồi về dạng chuẩn hóa (bảng dưới).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Phản hồi không chuyển được về dạng chuẩn: lỗi <code>invalid_response</code>.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mỗi provider có một adapter; thêm provider là thêm adapter (16.7). MVP có đúng ba adapter (<code>anthropic</code>, <code>openai</code>, <code>google</code>); nhà cung cấp khác thuộc FUT-05. Adapter không ghi API key vào log.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run: provider, model, usage, mã lỗi.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-PROVIDER-001-AC01</strong> Given cùng một Workflow Step chạy lần lượt với model của Claude, OpenAI và Gemini, When so sánh Agent Run, Then cả ba có cùng cấu trúc đầu ra chuẩn hóa, usage và trường provider/model đúng.</li>
+<li><strong>AGENT-PROVIDER-001-AC02</strong> Given provider trả lỗi giới hạn tốc độ, When adapter xử lý, Then Agent Run ghi mã <code>rate_limited</code> bất kể định dạng lỗi gốc.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>17.1, 16.7</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-014 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thành phần chuẩn hóa</th>
+<th scope="col">Nội dung</th>
+</tr></thead><tbody>
+<tr><td>Yêu cầu</td><td>Chỉ dẫn hệ thống (theo định nghĩa agent), danh sách message (vai trò, nội dung văn bản, tệp đính kèm nếu model hỗ trợ), định nghĩa công cụ, schema đầu ra mong muốn, giới hạn token đầu ra.</td></tr>
+<tr><td>Phản hồi</td><td>Nội dung văn bản, đầu ra có cấu trúc (đã kiểm tra theo schema), danh sách tool call (tên, tham số), lý do dừng.</td></tr>
+<tr><td>Usage</td><td>Token đầu vào, token đầu ra, thời gian, chi phí ước tính nếu tính được (16.6).</td></tr>
+<tr><td>Mã lỗi</td><td><code>auth_failed</code>, <code>permission_denied</code>, <code>model_not_found</code>, <code>rate_limited</code>, <code>quota_exceeded</code>, <code>context_too_long</code>, <code>content_refused</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>invalid_response</code>, <code>network_error</code>.</td></tr>
+<tr><td>Phân loại lỗi</td><td>Tạm thời (tự thử lại): <code>rate_limited</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>network_error</code>. Cố định (không thử lại): các mã còn lại.</td></tr>
+<tr><td>Mã lỗi hệ thống</td><td><code>interrupted</code> là mã lỗi do System gán cho Agent Run khi workflow bị gián đoạn (14.7, 18.1), không phải mã lỗi provider; không tự thử lại mà đi qua Recovery decision (WF-06).</td></tr>
+</tbody></table></div>
+
+<h3 id="agent-provider-002">AGENT-PROVIDER-002 — Quản lý Provider Connection</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (SCOPE-13); Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher tự cấu hình kết nối tới ba provider.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đã đăng nhập.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher mở Settings › Provider Connections.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Researcher tạo kết nối: tên, provider (<code>anthropic</code>, <code>openai</code>, <code>google</code>), base URL (điền sẵn endpoint chính thức: <code>https://api.anthropic.com</code>, <code>https://api.openai.com/v1</code>, <code>https://generativelanguage.googleapis.com</code>; cho phép sửa sang proxy, gateway hoặc model tự host tương thích API chính thức của provider đã chọn), API key do Researcher tự cung cấp.</li>
+<li>System lưu key mã hóa, hiển thị dạng che; trạng thái <code>Untested</code>.</li>
+<li>Researcher chọn “Kiểm tra”: System gọi một yêu cầu nhẹ tới provider → <code>Valid</code> kèm danh sách model khả dụng, hoặc <code>Invalid</code> kèm mã lỗi.</li>
+<li>Sửa key hoặc URL đưa kết nối về <code>Untested</code>. Xóa kết nối bị chặn nếu đang được gán cho agent, trừ khi Researcher chọn kết nối thay thế.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Không lấy được danh sách model: cho phép nhập tên model thủ công, đánh dấu “chưa xác minh”.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Quy tắc API key theo SCOPE-13 (mã hóa, không vào context, log hay audit). Hành động thuộc APR-09. Provider chỉ chọn được trong ba giá trị trên. Hệ thống không cung cấp key hay hạn mức mặc định: tài khoản chưa có Provider Connection <code>Valid</code> thì không agent nào chạy được. Base URL không tương thích API chính thức của provider đã chọn cho kết quả kiểm tra <code>Invalid</code>.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Provider Connection; Audit Event (không chứa key).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-PROVIDER-002-AC01</strong> Given kết nối vừa lưu, When mở lại trang, Then API key chỉ hiển thị dạng che và không có thao tác nào hiển thị lại toàn bộ key.</li>
+<li><strong>AGENT-PROVIDER-002-AC02</strong> Given key sai, When kiểm tra, Then kết nối <code>Invalid</code> với mã <code>auth_failed</code>.</li>
+<li><strong>AGENT-PROVIDER-002-AC03</strong> Given kết nối đang gán cho Writing Agent, When Researcher xóa, Then thao tác bị chặn cho đến khi chọn kết nối thay thế.</li>
+<li><strong>AGENT-PROVIDER-002-AC04</strong> Given bất kỳ log, Audit Event hoặc context Agent Run nào, When tìm chuỗi API key, Then không tìm thấy.</li>
+<li><strong>AGENT-PROVIDER-002-AC05</strong> Given tài khoản mới chưa có Provider Connection, When Researcher yêu cầu chạy một Task cần agent, Then readiness check chặn Task và dẫn tới Settings › Provider Connections; không có Agent Run nào dùng key mặc định.</li>
+<li><strong>AGENT-PROVIDER-002-AC06</strong> Given kết nối provider <code>openai</code> với base URL trỏ tới gateway tương thích API OpenAI và key hợp lệ, When kiểm tra, Then kết nối <code>Valid</code> và Agent Run qua kết nối này ghi provider <code>openai</code>.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>SCOPE-13, 4.1 Settings, 16.1, 17.1</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-014 (đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="agent-provider-003">AGENT-PROVIDER-003 — Gán model cho agent và kiểm tra năng lực</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed (gán theo agent — SCOPE-13), Assumption (kiểm tra năng lực)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi agent chạy trên model phù hợp và Researcher biết trước khi model thiếu năng lực.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher, System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có ít nhất một Provider Connection <code>Valid</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher mở Settings › Agent Models.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Researcher đặt cấu hình <em>default</em> (kết nối + model) áp dụng cho mọi agent.</li>
+<li>Researcher có thể ghi đè cho từng agent trong 8 agent.</li>
+<li>System so năng lực model (lấy từ provider khi có, hoặc bảng năng lực đã biết) với “Năng lực model cần” của agent (8.2): tool calling, structured output, độ dài context, đầu vào tệp.</li>
+<li>Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): thiếu năng lực bắt buộc của agent (tool calling với agent có công cụ; structured output với mọi agent) thì chặn lưu và nêu năng lực thiếu; thiếu năng lực khuyến nghị (độ dài context, đầu vào tệp) thì cảnh báo nhưng vẫn cho lưu.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Agent không có cấu hình hợp lệ: readiness check chặn Task cần agent đó (WF-02.S4).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Thay đổi chỉ áp dụng từ Agent Run tiếp theo (SCOPE-13). Agent Run ghi provider và model thực tế.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Model Assignment; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>AGENT-PROVIDER-003-AC01</strong> Given default là OpenAI và Writing Agent ghi đè sang Claude, When chạy WF-05, Then Agent Run của Writing Agent ghi provider <code>anthropic</code>, các agent khác ghi <code>openai</code>.</li>
+<li><strong>AGENT-PROVIDER-003-AC02</strong> Given model không hỗ trợ tool calling được gán cho Discovery Agent, When lưu, Then cấu hình bị chặn với thông báo thiếu tool calling.</li>
+<li><strong>AGENT-PROVIDER-003-AC04</strong> Given model có context window nhỏ hơn mức khuyến nghị được gán cho Synthesis Agent, When lưu, Then cấu hình được lưu kèm cảnh báo.</li>
+<li><strong>AGENT-PROVIDER-003-AC03</strong> Given Agent Run đang chạy, When Researcher đổi model của agent đó, Then Agent Run đang chạy giữ model cũ.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>AGENT-PROVIDER-002, TASK-READINESS-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>OQ-034 (đã giải quyết)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-oq">8.7. Open Questions của mục 8</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-032</td><td>Orchestrator có được chạy song song nhiều Specialist Agent trong một workflow (ví dụ phân tích ở 6.3) không, hay luôn tuần tự? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> chạy song song các bước không phụ thuộc nhau và không ghi cùng entity; các bước còn lại tuần tự; PO duyệt 31/10/2026 (PC-01).</td><td>ORCH-DELEGATE-001, 6.3, 16.3</td></tr>
+<tr><td>OQ-033</td><td>Agent Activity có hiển thị đầu ra của agent theo thời gian thực (streaming), hay chỉ cập nhật khi mỗi bước kết thúc? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> cập nhật gần thời gian thực theo sự kiện (bắt đầu/kết thúc Agent Run, tool call, prompt, lỗi); không streaming từng token trong MVP; PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-12, 15, 16.3</td></tr>
+<tr><td>OQ-034</td><td>Khi model được gán thiếu năng lực agent cần: chỉ cảnh báo (đề xuất hiện tại) hay chặn lưu cấu hình? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> chặn khi thiếu năng lực bắt buộc (tool calling, structured output); chỉ cảnh báo khi thiếu năng lực khuyến nghị; PO duyệt 31/10/2026 (PC-01).</td><td>AGENT-PROVIDER-003, 17.1</td></tr>
+<tr><td>OQ-035</td><td>Khi context vượt giới hạn model: chỉ lược bỏ theo thứ tự ưu tiên (đề xuất hiện tại), hay cho phép tóm tắt tự động bằng model? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> cắt theo thứ tự ưu tiên ở 14.2 và dùng tóm tắt đã có; không gọi thêm model để tóm tắt khi lắp ráp; PO duyệt 31/10/2026 (PC-01).</td><td>ORCH-DELEGATE-001, 14.2</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="07-workspace-and-project.html">← Mục 7</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="09-research-plan-and-task-management.html">Mục 9 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+%% FIG-108 — Production deployment topology (architecture 11.2), v0.2
+flowchart TB
+  U([Người dùng]) --> CDN[CDN: web tĩnh]
+  U --> LB[Load balancer + WAF, TLS] --> ING[Ingress] --> GW[gateway ×≥2]
+  subgraph K8S [Kubernetes managed — 1 vùng, ≥3 zone]
+    subgraph APP [node pool app]
+      GW
+      NS[identity · workspace · planning · orchestration<br/>library · research · manuscript · audit — NestJS ×≥2]
+      PY[agent-core ×≥2 · knowledge ×≥1 — Python]
+      OT[otel-collector]
+    end
+    subgraph SBX [node pool sandbox — gVisor, deny-all network]
+      SR[sandbox-runner controller + sandbox pods]
+    end
+  end
+  GW --> NS
+  NS & PY & SR <--> MQ[(RabbitMQ managed, 3 node)]
+  GW & NS & PY --> PG[(PostgreSQL HA + PITR<br/>một database mỗi service)]
+  NS & PY & SR --> S3[(Object storage)]
+  PY --> KMS[(KMS)]
+  GW & PY & NS --> NAT[NAT egress] --> EXT[LLM providers · Scholar/DOI · eTroy OIDC]

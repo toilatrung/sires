@@ -1,0 +1,573 @@
+# PRD 7 Workspace and Project · 4.4 Notifications and Pending Actions — milestone M2.
+
+/dashboard:
+  get:
+    tags: [Workspace]
+    operationId: getDashboard
+    summary: Tổng quan tài khoản
+    description: Pending action và workflow Interrupted được trả trước để người dùng xử lý khi quay lại (GOAL-02, WF-06).
+    x-requirements: [WS-DASHBOARD-001]
+    x-priority: P1
+    x-milestone: M2
+    responses:
+      '200':
+        description: Dữ liệu Dashboard.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/Dashboard }
+      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+
+/search:
+  get:
+    tags: [Workspace]
+    operationId: search
+    summary: Tìm kiếm toàn cục theo quyền
+    description: Chỉ trả đối tượng của tài khoản hiện tại; không gồm project đã xóa mềm.
+    x-requirements: [WS-SEARCH-001]
+    x-priority: P1
+    x-milestone: M2
+    parameters:
+      - { name: q, in: query, required: true, schema: { type: string, minLength: 2 } }
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: types
+        in: query
+        style: form
+        explode: false
+        schema:
+          type: array
+          items: { type: string, enum: [project, task, reference, artifact, claim, manuscript_file, message] }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Kết quả.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/project.yaml#/SearchResult }
+
+/pending-actions:
+  get:
+    tags: [Workspace]
+    operationId: listPendingActions
+    summary: Pending Actions (Global hoặc theo project)
+    x-requirements: [UX-PENDING-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: status
+        in: query
+        schema: { type: string, enum: [Open, Resolved, Expired], default: Open }
+      - name: kind
+        in: query
+        schema: { $ref: ../components/schemas/project.yaml#/PendingActionKind }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang pending action, kèm tổng số Open để hiển thị trên thanh điều hướng.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    openCount: { type: integer }
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/project.yaml#/PendingAction }
+
+/pending-actions/{pendingActionId}/acknowledge:
+  parameters:
+    - name: pendingActionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  post:
+    tags: [Workspace]
+    operationId: acknowledgePendingAction
+    summary: Đánh dấu đã xem pending action hết hiệu lực (Expired → Resolved)
+    description: Pending action Open chỉ kết thúc khi đối tượng được xử lý tại đúng ngữ cảnh, không qua endpoint này.
+    x-requirements: [UX-PENDING-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Đã xem.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/PendingAction }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/notifications:
+  get:
+    tags: [Workspace]
+    operationId: listNotifications
+    summary: Notification trong ứng dụng
+    x-requirements: [UX-PENDING-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      - name: status
+        in: query
+        schema: { type: string, enum: [Unread, Read] }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang notification.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    unreadCount: { type: integer }
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/project.yaml#/Notification }
+
+/notifications/read:
+  post:
+    tags: [Workspace]
+    operationId: markNotificationsRead
+    summary: Đánh dấu đã đọc
+    x-requirements: [UX-PENDING-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Truyền `ids` hoặc `all = true`.
+            properties:
+              ids:
+                type: array
+                items: { $ref: ../components/schemas/common.yaml#/Id }
+              all: { type: boolean }
+              projectId: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '204': { $ref: ../components/responses.yaml#/NoContent }
+
+/projects:
+  get:
+    tags: [Projects]
+    operationId: listProjects
+    summary: Danh sách Research Project
+    x-requirements: [PROJ-CRUD-003, NFR-ISOL-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - name: status
+        in: query
+        description: '`deleted` liệt kê project đã xóa mềm còn trong hạn khôi phục 30 ngày.'
+        schema: { type: string, enum: [Active, Archived, deleted] }
+      - name: sort
+        in: query
+        schema: { type: string, enum: [lastActivityAt, name, createdAt], default: lastActivityAt }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang project.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+  post:
+    tags: [Projects]
+    operationId: createProject
+    summary: Tạo Research Project
+    description: |
+      Tạo project Active, Research Context v1, Research Plan rỗng và Shared Context (5.1).
+      Global AI Assistant chỉ đề xuất form; project chỉ được tạo khi Researcher xác nhận (PROJ-CRUD-001-AC04).
+    x-requirements: [PROJ-CRUD-001, PROJ-CONTEXT-001, DATA-IDEMP-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/project.yaml#/ProjectCreate }
+    responses:
+      '201':
+        description: Đã tạo.
+        headers:
+          Location: { schema: { type: string } }
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+
+/projects/{projectId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Projects]
+    operationId: getProject
+    summary: Chi tiết project và số liệu Overview
+    x-requirements: [PROJ-CRUD-001, UX-OVERVIEW-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Project.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  patch:
+    tags: [Projects]
+    operationId: updateProject
+    summary: Sửa thông tin project
+    x-requirements: [PROJ-CRUD-002]
+    x-priority: P1
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IfMatch
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/merge-patch+json:
+          schema: { $ref: ../components/schemas/project.yaml#/ProjectUpdate }
+    responses:
+      '200':
+        description: Đã cập nhật.
+        headers:
+          ETag: { schema: { type: string } }
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+      '412': { $ref: ../components/responses.yaml#/PreconditionFailed }
+  delete:
+    tags: [Projects]
+    operationId: deleteProject
+    summary: Xóa mềm project (APR-08)
+    description: |
+      Chỉ khi không có Workflow hoạt động. Ghi deletedAt, purgeAfter (= +30 ngày), statusBeforeDeletion.
+      Sau hạn, System xóa vĩnh viễn mọi dữ liệu cấp project; Trusted Reference không bị ảnh hưởng (OWN-04).
+    x-requirements: [PROJ-CRUD-003, NFR-RET-002]
+    x-apr: APR-08
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Đã xóa mềm.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/archive:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Projects]
+    operationId: archiveProject
+    summary: Lưu trữ project (APR-08)
+    description: Project Archived chỉ đọc; prompt Open không chặn chuyển Expired. Bị chặn khi còn Workflow hoạt động.
+    x-requirements: [PROJ-CRUD-003]
+    x-apr: APR-08
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Project Archived.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/unarchive:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Projects]
+    operationId: unarchiveProject
+    summary: Mở lại project đã lưu trữ
+    x-requirements: [PROJ-CRUD-003]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Project Active.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/restore:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  post:
+    tags: [Projects]
+    operationId: restoreProject
+    summary: Khôi phục project đã xóa mềm
+    description: Chỉ khi now < purgeAfter; quá hạn trả `409 restore_window_expired` (DATA-STATE-001-AC03).
+    x-requirements: [PROJ-CRUD-003, NFR-RET-002]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Project trở về statusBeforeDeletion.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/context-versions:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Projects]
+    operationId: listContextVersions
+    summary: Lịch sử Research Context
+    x-requirements: [PROJ-CONTEXT-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Các version, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/project.yaml#/ResearchContextVersion }
+  post:
+    tags: [Projects]
+    operationId: createContextVersion
+    summary: Lưu Research Context mới
+    description: |
+      Tạo version mới (bất biến) và trỏ project tới nó. Đề xuất của Orchestrator (PROJ-CONTEXT-002) đi qua prompt;
+      endpoint này là thao tác của Researcher. Plan Version Approved giữ tham chiếu version cũ.
+    x-requirements: [PROJ-CONTEXT-001, PROJ-CONTEXT-002]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: ../components/schemas/project.yaml#/ResearchContextInput
+              - type: object
+                properties:
+                  basedOnVersionId: { $ref: ../components/schemas/common.yaml#/Id }
+    responses:
+      '201':
+        description: Version mới.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchContextVersion }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/projects/{projectId}/context-versions/{contextVersionId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - name: contextVersionId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Projects]
+    operationId: getContextVersion
+    summary: Một version Research Context
+    x-requirements: [PROJ-CONTEXT-001]
+    x-priority: P0
+    x-milestone: M2
+    responses:
+      '200':
+        description: Version.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchContextVersion }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/active-task:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  put:
+    tags: [Conversations]
+    operationId: setActiveTask
+    summary: Đặt hoặc bỏ active task của Project AI Chat
+    description: Active task quyết định context phạm vi task được đưa vào Orchestrator (PROJ-CHAT-002, CTX-ISOLATION-001).
+    x-requirements: [PROJ-CHAT-002]
+    x-priority: P1
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [taskId]
+            properties:
+              taskId:
+                type: [string, 'null']
+                format: uuid
+    responses:
+      '200':
+        description: Đã cập nhật.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/ResearchProject }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/conversations:
+  get:
+    tags: [Conversations]
+    operationId: listConversations
+    summary: Hội thoại Global AI Assistant và Project AI Chat
+    x-requirements: [WS-CHAT-001, PROJ-CHAT-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - name: scope
+        in: query
+        schema: { type: string, enum: [global, project] }
+      - $ref: ../components/parameters.yaml#/ProjectIdFilter
+    responses:
+      '200':
+        description: Danh sách hội thoại.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: ../components/schemas/project.yaml#/Conversation }
+  post:
+    tags: [Conversations]
+    operationId: createConversation
+    summary: Tạo hội thoại
+    x-requirements: [WS-CHAT-001, PROJ-CHAT-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [scope]
+            properties:
+              scope: { type: string, enum: [global, project] }
+              projectId:
+                $ref: ../components/schemas/common.yaml#/Id
+                description: Bắt buộc khi scope = project.
+              title: { type: string }
+    responses:
+      '201':
+        description: Đã tạo.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/Conversation }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+
+/conversations/{conversationId}/messages:
+  parameters:
+    - name: conversationId
+      in: path
+      required: true
+      schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Conversations]
+    operationId: listMessages
+    summary: Lịch sử tin nhắn (bền vững qua nhiều phiên)
+    x-requirements: [PROJ-CHAT-001, TASK-PROGRESS-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Trang tin nhắn, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/project.yaml#/Message }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+  post:
+    tags: [Conversations]
+    operationId: sendMessage
+    summary: Gửi tin nhắn tới Orchestrator
+    description: |
+      Lưu tin nhắn rồi trả `202`. Orchestrator hiểu ý định (ORCH-INTENT-001), có thể trả lời, tạo prompt hoặc khởi tạo
+      workflow; phản hồi đến qua `GET /events`. Orchestrator không thực hiện hành động APR thay Researcher.
+    x-requirements: [WS-CHAT-001, PROJ-CHAT-001, ORCH-INTENT-001]
+    x-priority: P0
+    x-milestone: M2
+    parameters:
+      - $ref: ../components/parameters.yaml#/IdempotencyKey
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: ../components/schemas/project.yaml#/MessageCreate }
+    responses:
+      '202':
+        description: Đã nhận.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/project.yaml#/MessageAccepted }
+      '400': { $ref: ../components/responses.yaml#/BadRequest }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '409': { $ref: ../components/responses.yaml#/Conflict }

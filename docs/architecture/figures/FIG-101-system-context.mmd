@@ -1,0 +1,9 @@
+%% FIG-101 — System context (architecture 3.1)
+flowchart LR
+  R([Researcher<br/>trình duyệt]) -->|HTTPS| S[SIRes]
+  OPS([Đội vận hành]) -->|dashboard, cảnh báo| S
+  S -->|OIDC auth code + PKCE| OIDC[eTroy OIDC]
+  S -->|HTTPS, key của người dùng| LLM[Anthropic Claude / OpenAI / Google Gemini]
+  S -->|source adapter| SCH[Dịch vụ trung gian Google Scholar<br/>hoặc OpenAlex / Semantic Scholar]
+  S -->|phân giải DOI| DOI[Crossref / DataCite]
+  S -->|SDK, workload identity| CLOUD[(Object storage · KMS · Secret manager)]

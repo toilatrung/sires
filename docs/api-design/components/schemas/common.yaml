@@ -1,0 +1,171 @@
+# Kiểu dùng chung — PRD 18.1 (trường chung, ActorRef, ApprovalRecord), 18.3 (Provenance), 8.6 (mã lỗi provider).
+
+Id:
+  type: string
+  format: uuid
+  description: Định danh UUID, không đoán được, không mang ý nghĩa (18.1).
+
+Timestamp:
+  type: string
+  format: date-time
+
+AgentName:
+  type: string
+  description: Orchestrator và bảy Specialist Agent cố định trong MVP (SCOPE-14).
+  enum: [orchestrator, discovery, reference_processing, evidence_retrieval, synthesis, writing, verification, diagram]
+
+ActorRef:
+  type: object
+  description: Actor của mọi thay đổi (OQ-004). `agentRunId` bắt buộc khi `type = agent`.
+  required: [type]
+  properties:
+    type:
+      type: string
+      enum: [researcher, agent, system]
+    accountId: { $ref: '#/Id' }
+    agent: { $ref: '#/AgentName' }
+    agentRunId: { $ref: '#/Id' }
+    component:
+      type: string
+      description: Thành phần hệ thống khi `type = system` (ví dụ readiness, indexer, recovery).
+
+AprCode:
+  type: string
+  description: Quyền phê duyệt độc quyền của Researcher (3.3).
+  enum: [APR-01, APR-02, APR-03, APR-04, APR-05, APR-06, APR-07, APR-08, APR-09, APR-10]
+
+ApprovalRecord:
+  type: object
+  readOnly: true
+  required: [approvedBy, decidedAt, decision, objectType, objectId, objectVersion, apr]
+  properties:
+    approvedBy: { $ref: '#/ActorRef' }
+    decidedAt: { $ref: '#/Timestamp' }
+    decision:
+      type: string
+      enum: [approved, rejected, edited_and_approved]
+    objectType: { type: string }
+    objectId: { $ref: '#/Id' }
+    objectVersion:
+      type: integer
+      description: Phê duyệt gắn với phiên bản; đối tượng đổi sau đó thì phê duyệt không áp dụng cho bản mới (18.3).
+    apr: { $ref: '#/AprCode' }
+    reason: { type: string }
+    promptId: { $ref: '#/Id' }
+
+EntityMeta:
+  type: object
+  description: Trường chung của mọi entity (18.1).
+  required: [id, accountId, createdAt, createdBy, rowVersion]
+  properties:
+    id: { $ref: '#/Id' }
+    accountId: { $ref: '#/Id' }
+    projectId:
+      $ref: '#/Id'
+      description: Bắt buộc với entity cấp project.
+    createdAt: { $ref: '#/Timestamp' }
+    createdBy: { $ref: '#/ActorRef' }
+    updatedAt: { $ref: '#/Timestamp' }
+    updatedBy: { $ref: '#/ActorRef' }
+    rowVersion:
+      type: integer
+      description: Optimistic concurrency; trả kèm header `ETag`.
+    deletedAt: { $ref: '#/Timestamp' }
+  readOnly: true
+
+TypedRef:
+  type: object
+  description: Tham chiếu có phiên bản tới entity khác (inputRefs, outputRefs, provenance.inputs).
+  required: [type, id]
+  properties:
+    type:
+      type: string
+      examples: [artifact_version, evidence, reference, context_item, research_context_version, claim]
+    id: { $ref: '#/Id' }
+    version: { type: integer }
+
+Provenance:
+  type: object
+  readOnly: true
+  description: Bắt buộc với mọi dữ liệu do agent tạo (DATA-PROV-001, 18.3).
+  required: [createdBy, inputs]
+  properties:
+    createdBy: { $ref: '#/ActorRef' }
+    workflowId: { $ref: '#/Id' }
+    stepId: { $ref: '#/Id' }
+    taskId: { $ref: '#/Id' }
+    planVersionId: { $ref: '#/Id' }
+    inputs:
+      type: array
+      items: { $ref: '#/TypedRef' }
+    provider: { $ref: '#/ProviderName' }
+    model: { type: string }
+    sources:
+      type: array
+      items:
+        type: object
+        properties:
+          referenceId: { $ref: '#/Id' }
+          chunkId: { $ref: '#/Id' }
+    approval: { $ref: '#/ApprovalRecord' }
+
+ProviderName:
+  type: string
+  description: MVP chỉ ba provider (OQ-014, DEC-20).
+  enum: [anthropic, openai, google]
+
+ProviderErrorCode:
+  type: string
+  description: |
+    Bộ mã lỗi chuẩn hóa (8.6). Tạm thời (tự thử lại trong Agent Run): rate_limited, timeout, provider_unavailable,
+    network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision.
+  enum: [auth_failed, permission_denied, model_not_found, rate_limited, quota_exceeded, context_too_long,
+    content_refused, timeout, provider_unavailable, invalid_response, network_error, interrupted]
+
+ReasonCode:
+  type: string
+  description: Lý do trả lại/chặn Task, dùng đo KPI-04 (18.2).
+  enum: [missing_input, quality_insufficient, scope_changed, wrong_approach, provider_error, dependency_changed, other]
+
+Language:
+  type: string
+  enum: [vi, en]
+
+Page:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items: {}
+    nextCursor:
+      type: [string, 'null']
+
+Problem:
+  type: object
+  description: RFC 9457 Problem Details với `code` ổn định để client dịch thông báo (UX-I18N).
+  required: [type, title, status, code]
+  properties:
+    type: { type: string, format: uri }
+    title: { type: string }
+    status: { type: integer }
+    code:
+      type: string
+      examples: [validation_failed, invalid_transition, action_not_allowed_in_state, readiness_failed]
+    detail: { type: string }
+    instance: { type: string }
+    currentState:
+      type: string
+      description: Trạng thái hiện hành khi lỗi là chuyển trạng thái.
+    errors:
+      type: array
+      items:
+        type: object
+        properties:
+          field: { type: string }
+          code: { type: string }
+          message: { type: string }
+    suggestedAction:
+      type: string
+      description: Gợi ý xử lý (ví dụ “Mở Settings › Agent Models”, RC-08).
+    correlationId: { type: string }

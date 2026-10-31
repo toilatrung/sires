@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — kiến trúc bảo mật.">
+<title>10. Security Architecture | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 10</p><h1>10. Security Architecture</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-09, ADR-10 Accepted; xác thực service-to-service ADR-20 Proposed · Cơ sở: PRD <a href="../../overview/sections/03-user-roles-and-permissions.html">3</a>, <a href="../../overview/sections/16-non-functional-requirements.html#s-16-1">16.1</a>, 14.5, 17.7; RISK-06, RISK-10; ADR-09, ADR-10, ADR-20</p>
+<div class="note"><p>Mục này gom các biện pháp bảo mật rải ở các mục khác thành một bức tranh: tài sản cần bảo vệ, mối đe dọa chính và biện pháp tương ứng. Nguyên tắc chung: mọi kiểm tra ở server, mặc định từ chối, không tin đầu ra của model.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-10-1">10.1. Tài sản và mối đe dọa</a></li>
+<li><a href="#s-10-2">10.2. Xác thực và phiên</a></li>
+<li><a href="#s-10-3">10.3. Bảo vệ API key của người dùng</a></li>
+<li><a href="#s-10-4">10.4. Phân quyền và cách ly</a></li>
+<li><a href="#s-10-5">10.5. Bảo vệ ứng dụng web</a></li>
+<li><a href="#s-10-6">10.6. Prompt injection và đầu ra của model</a></li>
+<li><a href="#s-10-7">10.7. Quyền riêng tư và dữ liệu gửi provider</a></li>
+<li><a href="#s-10-8">10.8. Kiểm chứng bảo mật</a></li>
+</ul></details>
+
+<h2 id="s-10-1">10.1. Tài sản và mối đe dọa</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Tài sản</th><th>Mối đe dọa chính</th><th>Biện pháp</th><th>Mục</th></tr></thead>
+<tbody>
+<tr><td>API key của người dùng</td><td>Lộ qua DB dump, log, context, lỗi, export</td><td>Envelope encryption, giải mã chỉ trong Gateway, bộ lọc log, test chuỗi mẫu</td><td>10.3</td></tr>
+<tr><td>Dữ liệu nghiên cứu, bản thảo</td><td>Truy cập chéo tài khoản/project</td><td>Kiểm tra quyền ở server, RLS, bộ lọc vector bắt buộc</td><td>10.4</td></tr>
+<tr><td>Phiên đăng nhập</td><td>Đánh cắp cookie, CSRF, session fixation</td><td>Cookie HttpOnly/Secure/SameSite, CSRF token, xoay id phiên khi đăng nhập</td><td>10.2, 10.5</td></tr>
+<tr><td>Hạ tầng server</td><td>Mã độc trong .tex / Mermaid; SSRF qua base URL</td><td>Sandbox gVisor không mạng; chặn địa chỉ nội bộ</td><td>9.2, 10.5</td></tr>
+<tr><td>Tính toàn vẹn phê duyệt</td><td>Agent tự phê duyệt, prompt injection khiến agent thực hiện hành động ngoài ý muốn</td><td>APR chỉ từ phiên Researcher; agent không có tool ghi</td><td>10.4, 10.6</td></tr>
+<tr><td>Audit trail</td><td>Sửa/xóa để che giấu</td><td>Quyền DB chỉ INSERT; xóa chỉ theo vòng đời</td><td>6.4</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-2">10.2. Xác thực và phiên</h2>
+<ul>
+<li>Duy nhất eTroy OIDC (DEC-26); luồng và kiểm tra token ở <a href="04-runtime-flows.html#f-01">F-01</a> và <a href="08-model-gateway-and-integrations.html#s-8-8">8.8</a>.</li>
+<li>Mẫu BFF: token OIDC không bao giờ xuống trình duyệt; trình duyệt chỉ giữ cookie phiên <code>sires_session</code> (HttpOnly, Secure, SameSite=Lax, path <code>/</code>), id phiên xoay mới sau đăng nhập.</li>
+<li>Hết hạn phiên: theo token eTroy; thêm hạn không hoạt động (mặc định 12 giờ) — cần PO/eTroy xác nhận (AQ-03).</li>
+<li>Không có tài khoản quản trị trong ứng dụng; thao tác vận hành dữ liệu đi qua công cụ nội bộ có audit, không qua API sản phẩm.</li>
+</ul>
+
+<h2 id="s-10-3">10.3. Bảo vệ API key của người dùng</h2>
+<pre><code>Lưu:   key (rõ) ──► DEK ngẫu nhiên (AES-256-GCM, AAD = accountId|connectionId) ──► ciphertext
+       DEK ──► KMS.Encrypt(KEK "sires-provider-keys") ──► wrapped DEK
+       bảng provider_secret(connection_id, ciphertext, nonce, wrapped_dek, kek_version, key_hint)
+Dùng:  Model Gateway: KMS.Decrypt(wrapped DEK) → giải mã key trong bộ nhớ → gọi SDK → xóa tham chiếu</code></pre>
+<ul>
+<li>KEK nằm trong KMS, không rời KMS; chỉ service account của <strong>agent-core</strong> và <strong>knowledge</strong> (embedding) có quyền <code>Decrypt</code>; <strong>identity</strong> chỉ có quyền <code>Encrypt</code> (lưu key mới) và trả ciphertext qua API nội bộ chỉ cho hai service trên — identity, gateway và client không bao giờ thấy lại key (NFR-SECRETS-002).</li>
+<li>“Kiểm tra kết nối” do identity gọi API nội bộ của agent-core thực hiện.</li>
+<li>Xóa/thay key: xóa ciphertext ngay trong giao dịch; Agent Run bắt đầu sau đó không thể dùng key cũ (NFR-SECRETS-003). Xoay KEK định kỳ theo KMS, mã hóa lại DEK bằng job.</li>
+<li>Chống lộ: bộ redaction của <code>pino</code> (NestJS) và <code>structlog</code> (Python) che chuỗi giống key (mẫu tiền tố của ba provider và chuỗi entropy cao) và mọi trường tên <code>api_key</code>, <code>authorization</code>; HTTP client của adapter tắt log header; ngoại lệ từ SDK được chuẩn hóa trước khi ghi lỗi; key không có trong context, prompt, Audit Event, export.</li>
+<li>Kiểm thử NFR-SECRETS-001-AC01: chạy workflow với key mẫu đã biết, quét log, dump DB dạng rõ, object storage, Audit Event, context đã gửi.</li>
+</ul>
+
+<h2 id="s-10-4">10.4. Phân quyền và cách ly</h2>
+<ul>
+<li><strong>Token nội bộ (ADR-20):</strong> gateway và orchestration ký JWT ngắn hạn (≤ 5 phút) bằng khóa trong KMS, mang <code>sub</code> (service gọi), <code>act</code> (actor), <code>account_id</code>, <code>project_id</code>, <code>agent</code> + <code>agent_run_id</code> và phạm vi agent (khi gọi thay agent). Mỗi service xác thực chữ ký và tự kiểm tra quyền theo token; không có endpoint nội bộ nào tin mạng nội bộ. NetworkPolicy chỉ mở các cặp service có trong hợp đồng.</li>
+<li><strong>Actor:</strong> mọi lệnh mang <code>ActorRef</code> — Researcher (accountId), Agent (tên + agentRunId) hoặc System (thành phần). Endpoint APR (<code>x-apr</code> trong API) chỉ chấp nhận actor Researcher từ phiên đăng nhập; token do agent-core dùng luôn có <code>act</code> = agent, nên không có đường nào để agent tạo actor Researcher; chỉ gateway (từ phiên đăng nhập) phát token actor Researcher, và orchestration chỉ chuyển tiếp token đó trong chính request trả lời prompt (F-08).</li>
+<li><strong>Permission matrix 3.5</strong> và quyền theo trạng thái 18.2 được hiện thực trong module domain của service sở hữu (bảng tra cứu + hàm kiểm tra); test liệt kê toàn bộ ô của matrix (NFR-AUTHZ-001).</li>
+<li><strong>Phạm vi agent</strong> (3.3) hiện thực bằng <code>context_scope</code> của agent registry, đưa vào token nội bộ của Agent Run; API đọc của từng service kiểm tra phạm vi trước khi trả dữ liệu.</li>
+<li><strong>Cách ly</strong>: lớp ứng dụng của service + RLS trong database của service (<a href="06-data-architecture.html#s-6-3">6.3</a>); truy cập bị từ chối trả <code>404</code> và ghi Audit Event (CTX-ISOLATION-001).</li>
+<li><strong>Global AI Assistant</strong> chạy với scope chỉ gồm Trusted Library và danh sách project (tên, trạng thái); không có tool đọc nội dung project (OQ-007).</li>
+</ul>
+
+<h2 id="s-10-5">10.5. Bảo vệ ứng dụng web</h2>
+<ul>
+<li><strong>TLS</strong> 1.2+ ở ingress, HSTS; TLS nội bộ tới database và object storage (NFR-TRANSIT-001).</li>
+<li><strong>CSRF:</strong> token đồng bộ (synchronizer token) trả qua <code>/auth/session</code>, gửi ở header <code>X-CSRF-Token</code> cho mọi lệnh ghi; cookie SameSite=Lax là lớp thứ hai.</li>
+<li><strong>CSP</strong> chặt: <code>default-src 'self'</code>; không inline script; SVG sơ đồ hiển thị qua <code>&lt;img&gt;</code> (không inline) để script trong SVG không chạy; PDF qua pdf.js.</li>
+<li><strong>SSRF:</strong> base URL tùy chỉnh (agent-core, knowledge) và liên kết nguồn tải PDF (library, knowledge) đi qua HTTP client có danh sách chặn (loopback, link-local, dải private, metadata endpoint), kiểm tra sau phân giải DNS và sau mỗi redirect; chỉ agent-core, knowledge, library, gateway có egress ra Internet, qua NAT có ghi log.</li>
+<li><strong>Tải lên file:</strong> qua presigned URL có giới hạn kích thước và loại; worker kiểm tra lại nội dung; PDF chỉ được xử lý bằng thư viện trích xuất, không render bằng trình duyệt phía server.</li>
+<li><strong>Giới hạn tốc độ</strong> theo tài khoản cho endpoint ghi và tìm kiếm (token bucket trong database gateway) để chống lạm dụng.</li>
+<li><strong>Phụ thuộc:</strong> quét lỗ hổng (pip-audit, npm audit, Trivy) trong CI; image tối giản, không root.</li>
+</ul>
+
+<h2 id="s-10-6">10.6. Prompt injection và đầu ra của model</h2>
+<p>Nội dung PDF, kết quả tìm kiếm và văn bản người dùng có thể chứa chỉ dẫn độc hại nhắm vào agent. Kiến trúc giới hạn thiệt hại thay vì cố phát hiện mọi trường hợp:</p>
+<ul>
+<li>Agent <strong>không có tool ghi</strong> và không có tool gọi mạng tùy ý; mọi ghi đi qua System sau khi Agent Run kết thúc, theo schema và quyền.</li>
+<li>Mọi thay đổi có hậu quả cần phê duyệt của Researcher (APR-01–APR-10), hiển thị dạng diff/bản đề xuất.</li>
+<li>Nội dung không tin cậy được đặt trong khối phân định rõ trong prompt (ví dụ thẻ <code>&lt;source_document&gt;</code>) kèm chỉ dẫn hệ thống coi đó là dữ liệu.</li>
+<li>Kiểm tra tất định sau model (tham chiếu trong phạm vi, quote có thật, citation phân giải) không bị prompt vượt qua.</li>
+<li>Phạm vi truy xuất do System tính, không nhận từ model (7.4).</li>
+</ul>
+
+<h2 id="s-10-7">10.7. Quyền riêng tư và dữ liệu gửi provider</h2>
+<ul>
+<li>Thông báo khi tạo Provider Connection đầu tiên, phải xác nhận đã đọc (NFR-PRIV-001); lưu thời điểm xác nhận.</li>
+<li>Chỉ context do Context Assembler lắp ráp được gửi; Profile chỉ đóng góp lĩnh vực nghiên cứu khi người dùng bật (DEC-24) — kiểm tra bằng test trên context manifest.</li>
+<li>Log vận hành chỉ có metadata và độ dài; <code>accountId</code> trong log là giá trị băm có khóa (NFR-OBS-001).</li>
+<li>Debug transcript mã hóa lớp ứng dụng (DEK riêng mỗi tài khoản), chỉ chủ tài khoản xem, xóa sau 30 ngày.</li>
+<li>Vùng lưu trữ dữ liệu chốt khi chọn nhà cloud (DEC-27); mọi kho dữ liệu cùng vùng.</li>
+</ul>
+
+<h2 id="s-10-8">10.8. Kiểm chứng bảo mật</h2>
+<ul>
+<li>Test tự động: endpoint không phiên (NFR-AUTH-001-AC01), vượt quyền (NFR-AUTHZ-001-AC01), chéo tài khoản (NFR-ISOL-001-AC01), chuỗi key mẫu (NFR-SECRETS-001-AC01), base URL http và địa chỉ nội bộ, sandbox đọc file/gọi mạng/vòng lặp vô hạn.</li>
+<li>Review bảo mật trước M1 (auth, secrets) và trước release; kiểm thử xâm nhập độc lập trước phát hành rộng — đề xuất, cần ngân sách (AQ-04).</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="09-sandbox-latex-and-diagrams.html">← Mục 9</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="11-deployment-and-operations.html">Mục 11 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,304 @@
+# LaTeX Manuscript Workspace và Diagram — PRD 5.8, 12, 13, 17.4, 17.5, 18.1, 18.2.
+
+Compiler:
+  type: string
+  enum: [pdflatex, xelatex, lualatex]
+
+Manuscript:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Tối đa một Manuscript mỗi project (OQ-022).
+      required: [initMode, mainFile, compiler, bibliographyTool, currentRevisionId]
+      properties:
+        initMode:
+          type: string
+          enum: [Default, Blank]
+        mainFile: { type: string, default: main.tex }
+        compiler: { $ref: '#/Compiler' }
+        bibliographyTool:
+          type: object
+          properties:
+            engine: { type: string, const: bibtex }
+            package: { type: string, const: natbib }
+            style: { type: string, default: plainnat }
+        currentRevisionId: { $ref: common.yaml#/Id }
+        currentRevisionNumber: { type: integer }
+        latestBuild: { $ref: '#/Build' }
+
+ManuscriptCreate:
+  type: object
+  required: [initMode]
+  properties:
+    initMode:
+      type: string
+      enum: [Default, Blank]
+      description: Default tạo cấu trúc mẫu main.tex + references.bib (MS-TEMPLATE-001).
+    compiler:
+      $ref: '#/Compiler'
+      default: pdflatex
+
+ManuscriptUpdate:
+  type: object
+  minProperties: 1
+  properties:
+    mainFile: { type: string }
+    compiler: { $ref: '#/Compiler' }
+
+ManuscriptFile:
+  type: object
+  required: [id, path, fileType, contentHash, status]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    path:
+      type: string
+      description: Đường dẫn tương đối, duy nhất trong manuscript khi Active.
+      examples: [sections/introduction.tex]
+    fileType:
+      type: string
+      enum: [tex, bib, figure, other]
+    contentHash: { type: string }
+    sizeBytes: { type: integer }
+    status:
+      type: string
+      enum: [Active, Deleted]
+    updatedInRevision: { type: integer }
+
+FileChange:
+  type: object
+  required: [path, operation]
+  properties:
+    path: { type: string }
+    operation:
+      type: string
+      enum: [add, modify, delete, rename]
+    newPath:
+      type: string
+      description: Bắt buộc khi rename.
+    content:
+      type: string
+      description: Nội dung mới (văn bản) khi add/modify.
+    fileUploadId:
+      $ref: common.yaml#/Id
+      description: File nhị phân (hình) đã tải lên.
+    beforeHash: { type: string }
+    afterHash: { type: string, readOnly: true }
+
+RevisionCreate:
+  type: object
+  description: |
+    Researcher sửa trực tiếp (MS-EDITOR-001). Mọi thay đổi file tạo một Manuscript Revision (MS-REVISION-001).
+    `baseRevisionId` phải là revision hiện hành, nếu không trả 409 base_revision_mismatch. Xóa file thuộc APR-08 (xóa mềm).
+  required: [baseRevisionId, changes]
+  properties:
+    baseRevisionId: { $ref: common.yaml#/Id }
+    changes:
+      type: array
+      minItems: 1
+      items: { $ref: '#/FileChange' }
+    message: { type: string }
+
+ManuscriptRevision:
+  type: object
+  readOnly: true
+  required: [id, revisionNumber, changes, source, createdBy, createdAt]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    revisionNumber: { type: integer }
+    parentRevisionId: { $ref: common.yaml#/Id }
+    changes:
+      type: array
+      items: { $ref: '#/FileChange' }
+    source:
+      type: string
+      enum: [direct_edit, change_proposal, init]
+    changeProposalId: { $ref: common.yaml#/Id }
+    taskId: { $ref: common.yaml#/Id }
+    artifactVersionIds:
+      type: array
+      items: { $ref: common.yaml#/Id }
+    message: { type: string }
+    createdBy: { $ref: common.yaml#/ActorRef }
+    createdAt: { $ref: common.yaml#/Timestamp }
+
+DiffHunk:
+  type: object
+  properties:
+    oldStart: { type: integer }
+    oldLines: { type: integer }
+    newStart: { type: integer }
+    newLines: { type: integer }
+    lines:
+      type: array
+      items: { type: string }
+
+ChangeProposalStatus:
+  type: string
+  enum: [Proposed, Accepted, Rejected, Outdated]
+
+ChangeProposal:
+  allOf:
+    - $ref: common.yaml#/EntityMeta
+    - type: object
+      description: Chấp nhận/từ chối nguyên khối (OQ-083, DEC-35).
+      required: [manuscriptId, baseRevisionId, diff, createdByAgentRunId, status]
+      properties:
+        manuscriptId: { $ref: common.yaml#/Id }
+        baseRevisionId: { $ref: common.yaml#/Id }
+        summary: { type: string }
+        diff:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              operation:
+                type: string
+                enum: [add, modify, delete]
+              hunks:
+                type: array
+                items: { $ref: '#/DiffHunk' }
+        taskId: { $ref: common.yaml#/Id }
+        claimIds:
+          type: array
+          items: { $ref: common.yaml#/Id }
+        evidenceIds:
+          type: array
+          items: { $ref: common.yaml#/Id }
+        artifactVersionIds:
+          type: array
+          items: { $ref: common.yaml#/Id }
+        createdByAgentRunId: { $ref: common.yaml#/Id }
+        citationCheck:
+          type: object
+          description: Kết quả kiểm tra citation (CLAIM-CITATION-001) — điều kiện để chấp nhận.
+          properties:
+            verificationResultId: { $ref: common.yaml#/Id }
+            passed: { type: boolean }
+            unresolvedKeys:
+              type: array
+              items: { type: string }
+            mismatches:
+              type: array
+              items:
+                type: object
+                properties:
+                  key: { type: string }
+                  claimId: { $ref: common.yaml#/Id }
+                  message: { type: string }
+        status: { $ref: '#/ChangeProposalStatus' }
+        approval: { $ref: common.yaml#/ApprovalRecord }
+        resultingRevisionId: { $ref: common.yaml#/Id }
+
+DiagramInsertionRequest:
+  type: object
+  description: Chèn sơ đồ đã Accepted vào bản thảo (MS-DIAGRAM-001); tạo Change Proposal chờ APR-05.
+  required: [artifactVersionId, targetPath]
+  properties:
+    artifactVersionId: { $ref: common.yaml#/Id }
+    targetPath: { type: string, examples: [sections/method.tex] }
+    afterLine: { type: integer }
+    caption: { type: string }
+    label: { type: string, examples: ['fig:architecture'] }
+
+BibliographyEntry:
+  type: object
+  readOnly: true
+  required: [id, bibtexKey, referenceId, bibtex]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    bibtexKey: { type: string }
+    referenceId: { $ref: common.yaml#/Id }
+    referenceApprovalStatus: { $ref: library.yaml#/ReferenceApprovalStatus }
+    bibtex: { type: string }
+    generatedFromMetadataVersion: { type: integer }
+    citedInFiles:
+      type: array
+      items: { type: string }
+
+BuildStatus:
+  type: string
+  enum: [Queued, Running, Succeeded, Failed]
+
+BuildIssue:
+  type: object
+  properties:
+    severity:
+      type: string
+      enum: [error, warning]
+    file: { type: string }
+    line: { type: integer }
+    code: { type: string, examples: [undefined_citation, missing_file, timeout, memory_limit] }
+    message: { type: string }
+    friendlyMessage: { type: string }
+
+Build:
+  type: object
+  readOnly: true
+  description: Build cô lập, không shell-escape, giới hạn mặc định 120 s / 2 GB (MS-BUILDENV-001, NFR-SANDBOX).
+  required: [id, revisionId, status, queuedAt]
+  properties:
+    id: { $ref: common.yaml#/Id }
+    revisionId: { $ref: common.yaml#/Id }
+    revisionNumber: { type: integer }
+    compiler: { $ref: '#/Compiler' }
+    status: { $ref: '#/BuildStatus' }
+    queuedAt: { $ref: common.yaml#/Timestamp }
+    startedAt: { $ref: common.yaml#/Timestamp }
+    endedAt: { $ref: common.yaml#/Timestamp }
+    issues:
+      type: array
+      items: { $ref: '#/BuildIssue' }
+    citationKeysFound:
+      type: array
+      items: { type: string }
+    unresolvedKeys:
+      type: array
+      items: { type: string }
+    hasPdf: { type: boolean }
+
+DiagramType:
+  type: object
+  description: Loại sơ đồ hỗ trợ (DIAG-TYPES-001). Chỉ Mermaid trong MVP (OQ-059).
+  required: [id, label, syntax]
+  properties:
+    id: { type: string, examples: [flowchart, sequence, class, state, er, gantt, mindmap] }
+    label: { type: string }
+    syntax: { type: string, const: mermaid }
+
+DiagramRequest:
+  type: object
+  description: Yêu cầu Diagram Agent tạo sơ đồ (DIAG-GEN-001); đầu ra là Artifact Version diagram ở Draft.
+  required: [description]
+  properties:
+    description: { type: string, minLength: 1 }
+    diagramType: { type: string, examples: [flowchart] }
+    taskId: { $ref: common.yaml#/Id }
+    inputRefs:
+      type: array
+      description: Chỉ artifact version Accepted, evidence, context item (CTX-ASSEMBLY-001).
+      items: { $ref: common.yaml#/TypedRef }
+    revisesArtifactId:
+      $ref: common.yaml#/Id
+      description: Sửa sơ đồ đã có — tạo version mới của artifact này.
+
+DiagramValidationRequest:
+  type: object
+  required: [source]
+  properties:
+    source: { type: string, description: Mã nguồn Mermaid. }
+
+DiagramValidationResult:
+  type: object
+  properties:
+    valid: { type: boolean }
+    errors:
+      type: array
+      items:
+        type: object
+        properties:
+          line: { type: integer }
+          message: { type: string }
+    previewSvg:
+      type: string
+      description: SVG render khi hợp lệ (renderer cô lập — INT-DIAGRAM).

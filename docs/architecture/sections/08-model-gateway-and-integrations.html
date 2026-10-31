@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — Model Gateway và tích hợp bên ngoài.">
+<title>8. Model Gateway and Integrations | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 8</p><h1>8. Model Gateway and Integrations</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-08, ADR-09 Accepted; Model Gateway thuộc agent-core (Python), OIDC thuộc gateway (NestJS), source adapter thuộc library (NestJS) · Cơ sở: PRD <a href="../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html">8.6</a>, <a href="../../overview/sections/17-integrations-and-external-dependencies.html">17</a>; DEC-19, DEC-23, DEC-26; ASM-01–03, ASM-10, ASM-13; ADR-08, ADR-09</p>
+<div class="note"><p><strong>Bài toán:</strong> ba provider khác nhau về tool calling, structured output, giới hạn context, mã lỗi và báo cáo usage (RISK-04); người dùng tự cấp key và có thể trỏ base URL tới proxy hoặc model tự host tương thích (DEC-23); nguồn học thuật không có API chính thức (RISK-01). <strong>Phương án:</strong> mọi phụ thuộc ngoài đứng sau một port có hợp đồng chuẩn hóa; adapter chịu trách nhiệm dịch qua lại; phần còn lại của hệ thống không biết provider nào đang chạy.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-8-1">8.1. Interface Model Gateway</a></li>
+<li><a href="#s-8-2">8.2. Adapter ba provider</a></li>
+<li><a href="#s-8-3">8.3. Danh mục capability</a></li>
+<li><a href="#s-8-4">8.4. Ánh xạ lỗi</a></li>
+<li><a href="#s-8-5">8.5. Structured output và sửa định dạng</a></li>
+<li><a href="#s-8-6">8.6. Streaming, usage, giới hạn tốc độ</a></li>
+<li><a href="#s-8-7">8.7. Source adapter học thuật</a></li>
+<li><a href="#s-8-8">8.8. eTroy OIDC</a></li>
+<li><a href="#s-8-9">8.9. Adapter giả lập cho kiểm thử</a></li>
+</ul></details>
+
+<h2 id="s-8-1">8.1. Interface Model Gateway</h2>
+<pre><code>class ModelGateway(Protocol):
+    async def generate(self, req: ModelRequest, conn: ProviderConnectionRef) -&gt; ModelResponse: ...
+    async def stream(self, req: ModelRequest, conn: ProviderConnectionRef) -&gt; AsyncIterator[StreamEvent]: ...
+    async def embed(self, texts: list[str], model: str, conn: ProviderConnectionRef) -&gt; EmbeddingResult: ...
+    async def list_models(self, conn: ProviderConnectionRef) -&gt; list[ModelInfo]: ...      # kiểm tra kết nối
+
+ModelRequest:  model, messages[system|user|assistant|tool_result], tools[], output_schema (JSON Schema),
+               stream: bool, max_output_tokens, metadata{agentRunId, traceparent}
+ModelResponse: text, tool_calls[{id, name, arguments}], structured (đã validate), stop_reason,
+               usage{input_tokens, output_tokens, calls, extra} | "no_data", attempts, adapter_version
+Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, retry_after?)</code></pre>
+<ul>
+<li><code>ProviderConnectionRef</code> chỉ mang id; adapter lấy ciphertext từ identity (<code>GET /internal/provider-connections/{id}/secret</code>, chỉ agent-core và knowledge được gọi), giải mã bằng KMS ngay trước lời gọi, giữ key trong biến cục bộ và không truyền ra ngoài (NFR-SECRETS-001).</li>
+<li>Không có tham số nâng cao (temperature…) do người dùng chỉnh (OQ-015); giá trị mặc định do định nghĩa agent đặt, ghi trong phiên bản agent.</li>
+<li>Vòng tool calling (model gọi tool → agent-core gọi API đọc của service sở hữu → trả kết quả) nằm trong một Agent Run; có thể hiện thực bằng framework agent (ADR-08), tối đa 8 vòng mỗi Agent Run (cấu hình theo agent).</li>
+</ul>
+
+<h2 id="s-8-2">8.2. Adapter ba provider</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Provider</th><th>SDK</th><th>Base URL</th><th>Structured output</th><th>Embedding</th></tr></thead>
+<tbody>
+<tr><td><code>anthropic</code></td><td><code>anthropic</code> (Python)</td><td>Tham số <code>base_url</code> của client</td><td>Tính năng structured output/JSON schema của API nếu model hỗ trợ; nếu không, ép dùng một tool có <code>input_schema</code> = schema đầu ra</td><td>Không có (ASM-12)</td></tr>
+<tr><td><code>openai</code></td><td><code>openai</code> (Python)</td><td>Tham số <code>base_url</code></td><td>Response format JSON Schema chế độ strict</td><td>Có</td></tr>
+<tr><td><code>google</code></td><td><code>google-genai</code></td><td>Tùy chọn endpoint của client (HTTP options)</td><td>Response schema (JSON) của Gemini API</td><td>Có</td></tr>
+</tbody></table></div>
+<ul>
+<li>Cách gọi cụ thể từng provider (API nào, cờ nào) được chốt và kiểm thử ở SPK-01 (ASM-02, ASM-03), vì các API này thay đổi theo thời gian; hợp đồng 8.1 không đổi.</li>
+<li>Mỗi adapter có <code>adapter_version</code> ghi vào Agent Run (INT-PROVIDER-006).</li>
+<li>Thêm provider (FUT-05) = thêm một class adapter và đăng ký; không sửa Orchestrator, agent, domain (NFR-MAINT-001).</li>
+<li>Base URL: chỉ chấp nhận <code>https://</code> (NFR-TRANSIT-001); chặn địa chỉ nội bộ (loopback, link-local, dải private, metadata endpoint của cloud) để tránh SSRF — kiểm tra lại sau khi phân giải DNS ở mỗi lời gọi (<a href="10-security-architecture.html#s-10-5">10.5</a>).</li>
+</ul>
+
+<h2 id="s-8-3">8.3. Danh mục capability</h2>
+<ul>
+<li>Bảng <code>model_catalog</code> do identity duy trì (agent-core đọc qua API): <code>provider, model_pattern, tool_calling, structured_output, streaming, context_window, max_output, pdf_input, image_input, embedding_dim, pricing?</code>. Nạp từ file cấu hình trong repo, cập nhật qua deploy.</li>
+<li>Khi “kiểm tra kết nối”, adapter liệt kê model của endpoint; model khớp danh mục được gắn capability; model không có trong danh mục (thường gặp với proxy/tự host) được đánh dấu <em>chưa xác định</em> và người dùng phải xác nhận; agent cần capability bắt buộc không gán được vào model chưa xác định.</li>
+<li>Giá (để hiển thị chi phí ước tính, NFR-USAGE-003) là tùy chọn; thiếu giá thì chỉ hiển thị token.</li>
+</ul>
+
+<h2 id="s-8-4">8.4. Ánh xạ lỗi</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Tín hiệu từ provider</th><th>Mã chuẩn (8.6)</th><th>Thử lại ở adapter</th></tr></thead>
+<tbody>
+<tr><td>HTTP 401</td><td><code>auth_failed</code></td><td>Không</td></tr>
+<tr><td>HTTP 403</td><td><code>permission_denied</code></td><td>Không</td></tr>
+<tr><td>HTTP 404 model</td><td><code>model_not_found</code></td><td>Không</td></tr>
+<tr><td>HTTP 429 hạn mức tốc độ</td><td><code>rate_limited</code></td><td>Có, theo <code>Retry-After</code></td></tr>
+<tr><td>HTTP 429/402 hết hạn mức thanh toán (phân biệt bằng mã lỗi trong thân phản hồi)</td><td><code>quota_exceeded</code></td><td>Không</td></tr>
+<tr><td>HTTP 400 vượt context</td><td><code>context_too_long</code></td><td>Không</td></tr>
+<tr><td>Bị chặn bởi chính sách an toàn</td><td><code>content_refused</code></td><td>Không</td></tr>
+<tr><td>Hết thời gian chờ</td><td><code>timeout</code></td><td>Có</td></tr>
+<tr><td>HTTP 5xx, 529 quá tải</td><td><code>provider_unavailable</code></td><td>Có</td></tr>
+<tr><td>Lỗi DNS/TLS/kết nối</td><td><code>network_error</code></td><td>Có</td></tr>
+<tr><td>Đầu ra không qua schema</td><td><code>invalid_response</code></td><td>Sửa định dạng ≤ 2 lần</td></tr>
+</tbody></table></div>
+<p>Timeout mặc định: 120 giây cho mỗi lời gọi sinh nội dung, 30 giây cho embedding và liệt kê model; cấu hình theo agent.</p>
+
+<h2 id="s-8-5">8.5. Structured output và sửa định dạng</h2>
+<ol>
+<li>Schema đầu ra là model Pydantic của agent; JSON Schema sinh tự động, đã đơn giản hóa về tập con chung mà cả ba provider chấp nhận (không <code>oneOf</code> phức tạp, có <code>additionalProperties: false</code>). Bộ test schema chạy trên cả ba adapter (SPK-01).</li>
+<li>Phản hồi được parse và validate bằng Pydantic ở Gateway, không tin cờ “đã đúng schema” của provider.</li>
+<li>Không hợp lệ: gửi lại một lượt kèm lỗi validate ngắn gọn, yêu cầu sửa; tối đa 2 lượt (INT-PROVIDER-003); vẫn lỗi → <code>invalid_response</code>.</li>
+<li>Sau validate cú pháp, System còn kiểm tra ngữ nghĩa (tham chiếu tồn tại, trong phạm vi, quote có thật — <a href="07-rag-and-document-pipeline.html#s-7-5">7.5</a>). Lỗi ngữ nghĩa không làm lại lời gọi tự động; mục đó bị loại hoặc bước Failed tùy agent.</li>
+</ol>
+
+<h2 id="s-8-6">8.6. Streaming, usage, giới hạn tốc độ</h2>
+<ul>
+<li><strong>Streaming</strong> chỉ dùng cho câu trả lời chat của Orchestrator (NFR-PERF-005); Agent Activity cập nhật theo sự kiện, không stream token (OQ-033).</li>
+<li><strong>Usage:</strong> adapter chuẩn hóa token vào/ra và số lời gọi (cộng dồn qua thử lại và vòng tool); provider không trả usage → <code>"no_data"</code>, không ước tính (NFR-USAGE-001, ASM-10).</li>
+<li><strong>Giới hạn đồng thời theo Provider Connection:</strong> semaphore phân tán trong agent-core (bảng đếm trong database nhỏ của agent-core, mặc định 4 lời gọi đồng thời mỗi kết nối) để workflow song song của một người dùng không tự gây 429 cho chính họ.</li>
+</ul>
+
+<h2 id="s-8-7">8.7. Source adapter học thuật</h2>
+<pre><code>interface SourceAdapter {                         // service library (NestJS) — hợp đồng PRD 17.6
+  key: "scholar_intermediary" | "openalex" | "semantic_scholar";
+  capabilities(): SourceCapabilities;              // trường, bộ lọc, full text?, rate limit, điều khoản
+  search(query, filters, page): Promise&lt;Page&lt;NormalizedRecord&gt;&gt;;
+  getRecord(identifier): Promise&lt;NormalizedRecord&gt;;
+  listAuthorPublications(author): Promise&lt;Page&lt;NormalizedRecord&gt;&gt;;   // completeness = partial
+}</code></pre>
+<div class="table-wrap"><table>
+<thead><tr><th>Adapter</th><th>Vai trò</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td><code>scholar_intermediary</code></td><td>Google Scholar qua dịch vụ trung gian theo hợp đồng (DEC-19)</td><td>Nhà cung cấp chọn sau SPK-03 (ASM-01); key hợp đồng của đội phát triển trong secret manager; giữ <code>raw</code> để đối chiếu.</td></tr>
+<tr><td><code>openalex</code> / <code>semantic_scholar</code></td><td>Dự phòng khi Scholar không khả thi (INT-SCHOLAR-007)</td><td>Bật bằng cấu hình triển khai; Discovery Agent và WF-04 không đổi; trường <code>source</code> ghi nguồn thực tế.</td></tr>
+<tr><td><code>doi_resolver</code></td><td>Phân giải DOI khi nhập thủ công</td><td>Crossref trước, DataCite nếu Crossref không có; header User-Agent có email liên hệ.</td></tr>
+<tr><td><code>bibtex_import</code>, <code>ris_import</code></td><td>Nhập BibTeX/RIS</td><td>Parser BibTeX/RIS phía TypeScript (2.3); chuẩn hóa theo schema 17.6; lỗi từng entry báo riêng.</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Rate limit theo adapter</strong> (INT-SCHOLAR-005): token bucket lưu trong database library theo <code>adapter_key</code> (toàn hệ thống) và theo tài khoản; vượt thì truy vấn chờ trong hàng đợi, tôn trọng thời gian chờ adapter khai báo (INT-SCHOLAR-002).</li>
+<li>Kết quả tìm kiếm lưu cache 24 giờ theo (adapter, query chuẩn hóa, trang) để giảm truy vấn lặp và chi phí hợp đồng.</li>
+<li>Không có lời gọi trực tiếp từ agent: Discovery Agent chỉ có tool <code>search_sources</code> = API nội bộ của library (INT-SCHOLAR-001).</li>
+</ul>
+
+<h2 id="s-8-8">8.8. eTroy OIDC</h2>
+<ul>
+<li>gateway (thư viện <code>openid-client</code>) là Relying Party kiểu confidential client, luồng authorization code + PKCE (S256), scope <code>openid profile email</code> (+ <code>offline_access</code> nếu eTroy hỗ trợ refresh token). Discovery document và JWKS cache theo <code>Cache-Control</code>, làm mới khi gặp <code>kid</code> lạ.</li>
+<li>Liên kết tài khoản theo (<code>iss</code>, <code>sub</code>), không theo email (INT-OIDC-002, RISK-10).</li>
+<li>Phiên SIRes lưu server-side: id phiên ngẫu nhiên 256 bit trong cookie; bảng phiên chứa access/refresh token mã hóa, hạn, thời điểm hoạt động cuối. Hạn phiên không vượt hạn token mà eTroy cho phép làm mới (INT-OIDC-003).</li>
+<li>Đăng xuất: xóa phiên SIRes; nếu eTroy hỗ trợ RP-initiated logout (<code>end_session_endpoint</code>) thì chuyển hướng để kết thúc phiên ở eTroy.</li>
+<li>SPK-02 kiểm tra với repo eTroy_OIDC trước M1: claim có sẵn, hạn token, refresh token, logout, chữ ký (thuật toán), môi trường thử nghiệm cho staging (ASM-13).</li>
+</ul>
+
+<h2 id="s-8-9">8.9. Adapter giả lập cho kiểm thử</h2>
+<ul>
+<li><code>FakeModelGateway</code> (Python) và chế độ “fake” của agent-core cho service TypeScript dùng trong test tích hợp: trả kịch bản ghi sẵn theo (agent, bước), tiêm lỗi theo mã chuẩn, đếm attempts — dùng cho test domain chạy không mạng (NFR-MAINT-004) và kiểm thử chấp nhận ngoài 19.10 (DEC-40).</li>
+<li><code>RecordedModelGateway</code>: phát lại phản hồi thật đã ghi (cassette) để test hồi quy rẻ; cassette không chứa key.</li>
+<li><code>FakeSourceAdapter</code>, <code>FakeOidcProvider</code> (phát ID token ký bằng khóa test), object storage MinIO, <code>LocalKms</code>, RabbitMQ trong Testcontainers — trong <code>libs/ts/testing</code> và <code>sires_common</code>.</li>
+<li>Môi trường dev chạy đủ luồng với adapter giả lập; staging dùng provider thật bằng key của đội phát triển.</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="07-rag-and-document-pipeline.html">← Mục 7</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="09-sandbox-latex-and-diagrams.html">Mục 9 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

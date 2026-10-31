@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — luồng hoạt động giữa các service.">
+<title>4. Runtime Flows | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 4</p><h1>4. Runtime Flows</h1>
+<p class="meta">Trạng thái: Đề xuất (Assumption) — bản 0.2 theo kiến trúc nhiều service · Cơ sở: PRD <a href="../../overview/sections/06-end-to-end-product-workflow.html">6 (WF-01–WF-07)</a>, 8, 9, 10, 11, 12, 13, 14; API <a href="../../api-design/index.html">0.1.0-mvp</a></p>
+<div class="note"><p>Mỗi luồng F-NN mô tả service nào làm gì theo thứ tự. Hành vi và trạng thái theo PRD; mục này thêm phần service, giao dịch, message và sự kiện. Ký hiệu: <strong>[TX:svc]</strong> = một giao dịch trong database của service <code>svc</code> gồm thay đổi trạng thái + Audit Event + bản ghi outbox (<a href="06-data-architecture.html#s-6-4">6.4</a>); <strong>evt:x</strong> = sự kiện <code>x</code> trên exchange <code>sires.events</code>; <strong>cmd:q</strong> = message lệnh vào queue <code>q</code>; <strong>REST</strong> = gọi HTTP nội bộ theo OpenAPI nội bộ.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-4-0">Bảng luồng</a></li>
+<li><a href="#f-01">F-01. Đăng nhập qua eTroy OIDC</a></li>
+<li><a href="#f-02">F-02. Lệnh ghi chuẩn</a></li>
+<li><a href="#f-03">F-03. Realtime qua SSE</a></li>
+<li><a href="#f-04">F-04. Chat với Orchestrator</a></li>
+<li><a href="#f-05">F-05. Lập và duyệt Plan</a></li>
+<li><a href="#f-06">F-06. Kích hoạt Task và thực thi workflow</a></li>
+<li><a href="#f-07">F-07. Vòng đời một Agent Run</a></li>
+<li><a href="#f-08">F-08. Prompt và phê duyệt</a></li>
+<li><a href="#f-09">F-09. Discovery, nhập và index reference</a></li>
+<li><a href="#f-10">F-10. Evidence, synthesis và kiểm chứng</a></li>
+<li><a href="#f-11">F-11. Change Proposal, build và sơ đồ</a></li>
+<li><a href="#f-12">F-12. Gián đoạn và khôi phục</a></li>
+</ul></details>
+
+<h2 id="s-4-0">Bảng luồng</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Luồng</th><th>Workflow PRD</th><th>Service tham gia</th><th>Queue</th></tr></thead>
+<tbody>
+<tr><td>F-01</td><td>15.12 Sign-in</td><td>web, gateway, identity, eTroy OIDC</td><td>—</td></tr>
+<tr><td>F-02</td><td>Mọi lệnh ghi</td><td>gateway, service sở hữu</td><td>—</td></tr>
+<tr><td>F-03</td><td>Agent Activity, Pending Actions</td><td>mọi service (outbox), gateway (SSE), web</td><td>—</td></tr>
+<tr><td>F-04</td><td>Project AI Chat (7.4, 8.1)</td><td>workspace, orchestration, agent-core</td><td>agent.run</td></tr>
+<tr><td>F-05</td><td>WF-01</td><td>workspace, planning, orchestration, agent-core</td><td>agent.run</td></tr>
+<tr><td>F-06</td><td>WF-02, WF-03</td><td>planning, identity, library, orchestration, agent-core</td><td>agent.run</td></tr>
+<tr><td>F-07</td><td>Mọi bước agent</td><td>orchestration, agent-core, service sở hữu đầu ra</td><td>agent.run</td></tr>
+<tr><td>F-08</td><td>8.4, APR-01–10</td><td>orchestration, service sở hữu đối tượng, gateway</td><td>—</td></tr>
+<tr><td>F-09</td><td>WF-04</td><td>library, knowledge, agent-core, orchestration</td><td>agent.run, knowledge.index</td></tr>
+<tr><td>F-10</td><td>WF-05 S1–S4</td><td>agent-core, knowledge, research, orchestration</td><td>agent.run</td></tr>
+<tr><td>F-11</td><td>WF-05 S5+, WF-07</td><td>manuscript, research, sandbox-runner, agent-core</td><td>agent.run, sandbox.build</td></tr>
+<tr><td>F-12</td><td>WF-06</td><td>orchestration, gateway</td><td>agent.run</td></tr>
+</tbody></table></div>
+
+<h2 id="f-01">F-01. Đăng nhập qua eTroy OIDC</h2>
+<p class="status">INT-OIDC-001–004, NFR-AUTH-001 · ADR-09</p>
+<ol>
+<li>web gọi <code>GET /api/v1/auth/login</code>; gateway tạo <code>state</code>, <code>nonce</code>, <code>code_verifier</code> (PKCE), lưu ở cookie tiền-phiên (HttpOnly, 10 phút), redirect tới authorization endpoint của eTroy (discovery document được cache).</li>
+<li>Người dùng xác thực ở eTroy; eTroy redirect về <code>/api/v1/auth/callback</code>.</li>
+<li>gateway kiểm tra <code>state</code>, đổi code lấy token, kiểm tra chữ ký ID token qua JWKS, <code>iss</code>, <code>aud</code>, <code>exp</code>, <code>nonce</code>.</li>
+<li>gateway gọi REST identity <code>POST /internal/accounts/resolve</code> với (<code>iss</code>, <code>sub</code>, họ tên, email): <strong>[TX:identity]</strong> tìm hoặc tạo Account + Profile, Audit Event đăng nhập.</li>
+<li><strong>[TX:gateway]</strong> tạo phiên server-side (token mã hóa, hạn theo token); trả cookie <code>sires_session</code> và CSRF token.</li>
+<li>Mỗi request: gateway nạp phiên, làm mới token khi cần (SPK-02), rồi ký token nội bộ ngắn hạn (ADR-20) mang <code>account_id</code>, actor Researcher để gọi service phía sau. Không làm mới được → <code>401 session_expired</code>.</li>
+<li>eTroy không phản hồi: <code>503 idp_unavailable</code>; phiên đang có không bị ảnh hưởng vì kiểm tra phiên không gọi eTroy (INT-OIDC-004).</li>
+</ol>
+
+<h2 id="f-02">F-02. Lệnh ghi chuẩn</h2>
+<p class="status">NFR-AUTHZ-001, NFR-DUR-001, DATA-IDEMP-001, DATA-CONC-001, CTX-CONSISTENCY-003</p>
+<ol>
+<li><strong>gateway:</strong> phiên hợp lệ, CSRF token khớp, rate limit; định tuyến theo đường dẫn tới service sở hữu, kèm token nội bộ và <code>traceparent</code>.</li>
+<li><strong>Service sở hữu</strong> (pipeline chung trong <code>libs/ts/platform</code>): kiểm tra token nội bộ → idempotency (<code>Idempotency-Key</code> + hash nội dung) → mở giao dịch, <code>SET LOCAL app.account_id</code> → nạp entity trong phạm vi tài khoản (không thấy → <code>404</code>) → <code>If-Match</code> so <code>rowVersion</code> (<code>412</code>) → state machine kiểm tra trạng thái, actor, APR, điều kiện.</li>
+<li><strong>[TX:svc]</strong> entity (tăng <code>rowVersion</code>), Audit Event và sự kiện domain vào outbox, bản ghi idempotency.</li>
+<li>Trả lời sau commit. Tác vụ dài: <code>202</code> + tham chiếu Workflow. Việc tiếp theo ở service khác phát sinh từ sự kiện trong outbox, không gọi đồng bộ trong request.</li>
+<li>Outbox relay của service đẩy sự kiện lên RabbitMQ; audit, gateway (SSE) và các consumer liên quan nhận.</li>
+</ol>
+<p class="status">FIG-103 — Đường ống lệnh ghi. Nguồn: <a href="../figures/FIG-103-write-path.mmd">figures/FIG-103-write-path.mmd</a>.</p>
+
+<h2 id="f-03">F-03. Realtime qua SSE</h2>
+<p class="status">NFR-PERF-003 (≤ 5 s), OQ-033, SCOPE-12 · ADR-07</p>
+<ol>
+<li>web mở <code>GET /api/v1/events</code> (một kết nối mỗi tab).</li>
+<li>gateway có một consumer trên <code>sires.events</code> (binding theo các loại sự kiện hiển thị được); mỗi sự kiện được ghi vào log sự kiện của gateway (giữ 24 giờ, khóa theo tài khoản và thứ tự nhận) rồi đẩy tới kết nối SSE của đúng tài khoản trên mọi pod gateway (mỗi pod có queue riêng, tự xóa khi pod dừng).</li>
+<li>Nối lại với <code>Last-Event-ID</code>: gateway phát lại từ log sự kiện; quá 24 giờ → sự kiện <code>resync</code>, web tải lại dữ liệu.</li>
+<li>Chat stream dùng exchange <code>sires.stream</code> (không bền, không ghi log): agent-core phát delta, gateway chuyển thành SSE <code>chat.delta</code>.</li>
+<li>Heartbeat SSE mỗi 15 giây.</li>
+</ol>
+
+<h2 id="f-04">F-04. Chat với Orchestrator</h2>
+<p class="status">PROJ-CHAT, ORCH-INTENT, NFR-PERF-005, OQ-064</p>
+<ol>
+<li>web <code>POST /conversations/{conversationId}/messages</code> → workspace <strong>[TX:workspace]</strong> lưu Message + evt:<code>message.posted</code>; trả <code>202</code>. Trạng thái “đang xử lý” hiển thị ngay.</li>
+<li>orchestration nhận sự kiện, <strong>[TX:orchestration]</strong> tạo Workflow loại chat-turn một bước, cmd:<code>agent.run</code>.</li>
+<li>agent-core chạy Agent Run của Orchestrator (F-07), lớp context 7 = tóm tắt cuốn chiếu + 20 tin gần nhất (đọc từ workspace qua REST); stream delta qua <code>sires.stream</code>.</li>
+<li>Kết thúc: orchestration nhận kết quả, gọi REST workspace ghi Message của Orchestrator (idempotency key = <code>agentRunId</code>), cập nhật Context Item summary trong DB của mình. Ý định có tác động (tạo Plan, mở prompt…) chuyển thành workflow hoặc prompt, không thực hiện trực tiếp.</li>
+</ol>
+
+<h2 id="f-05">F-05. Lập và duyệt Plan</h2>
+<p class="status">WF-01, PLAN-GENERATE, PLAN-APPROVAL, APR-01, DEC-28</p>
+<ol>
+<li>Researcher yêu cầu lập Plan → planning kiểm tra sáu trường thiết yếu của Research Context (REST workspace); thiếu thì yêu cầu orchestration mở prompt <code>information_request</code>.</li>
+<li>planning <strong>[TX:planning]</strong> evt:<code>plan.generation_requested</code> → orchestration tạo Workflow <code>plan_proposal</code>, cmd:<code>agent.run</code>.</li>
+<li>agent-core trả PlanVersion đề xuất (structured output) → orchestration gọi REST planning <code>POST /internal/plan-versions</code> (idempotency key = <code>agentRunId</code>); planning kiểm tra cấu trúc (18.5: DAG không chu trình, mọi Task có acceptance criteria) rồi ghi Draft.</li>
+<li>orchestration mở prompt <code>approval</code>; Workflow → Waiting for User.</li>
+<li>Researcher duyệt (<code>POST …/plan/versions/{id}/approve</code>, APR-01) → <strong>[TX:planning]</strong> PlanVersion Approved, baseline cũ Superseded, Task cập nhật, phân tích ảnh hưởng (9.11), ApprovalRecord, Audit Event, evt:<code>plan.approved</code> → orchestration đóng prompt và kết thúc workflow.</li>
+</ol>
+
+<h2 id="f-06">F-06. Kích hoạt Task và thực thi workflow</h2>
+<p class="status">WF-02, WF-03, TASK-READINESS, TASK-TRIGGER, CTX-CONSISTENCY-001, T-05/T-06</p>
+<ol>
+<li>Researcher bấm kích hoạt (<code>POST …/tasks/{taskId}/activate</code>, APR-02, có <code>Idempotency-Key</code>) → planning.</li>
+<li>planning chạy phần xác định của readiness (RC-01–RC-09, ≤ 2 s): dữ liệu của mình + REST song song tới identity (Agent Model Assignment, Provider Connection Valid), library (reference bắt buộc đã Trusted), research (artifact đầu vào Accepted). Không đạt → trả kết quả kiểm tra.</li>
+<li><strong>[TX:planning]</strong> khóa hàng Task; Task → Queued (T-05); evt:<code>task.activated</code> (kèm <code>activationId</code>).</li>
+<li>orchestration nhận sự kiện: <strong>[TX:orchestration]</strong> tạo Workflow <code>task_execution</code> (ràng buộc duy nhất “một workflow hoạt động mỗi Task” chặn trùng) và bước <code>plan_next</code>; evt:<code>workflow.created</code> → planning ghi <code>Task.activeWorkflowId</code>.</li>
+<li>Bước đầu bắt đầu chạy → evt:<code>workflow.started</code> → planning chuyển Task → In Progress (T-06). Hệ thống chạm giới hạn tải → Task giữ Queued và hiển thị vị trí chờ.</li>
+<li>Task <code>Manual editor requirement</code>: planning chuyển In Progress, không tạo workflow agent (WF-03).</li>
+<li>Engine lặp: Orchestrator lập bước → Agent Run (F-07) → checkpoint → bước tiếp, cho đến khi đủ đầu ra; evt:<code>workflow.succeeded</code> → planning chuyển Task → In Review, workspace tạo PendingAction nghiệm thu (APR-03).</li>
+</ol>
+<p class="status">FIG-104 — Trình tự thực thi Task. Nguồn: <a href="../figures/FIG-104-task-execution-sequence.mmd">figures/FIG-104-task-execution-sequence.mmd</a>. Chi tiết engine ở <a href="05-workflow-engine-and-orchestration.html">mục 5</a>.</p>
+
+<h2 id="f-07">F-07. Vòng đời một Agent Run</h2>
+<p class="status">CTX-ROUTING-001, CTX-ASSEMBLY-001, CTX-REGISTRY-001/002, INT-PROVIDER-003/006, NFR-USAGE-001</p>
+<ol>
+<li><strong>Giao việc:</strong> orchestration <strong>[TX:orchestration]</strong> tạo AgentRun Pending, gán <code>step.currentAgentRunId</code>, cmd:<code>agent.run</code> (gồm agentRunId, agent, bước, <code>inputRefs</code>, token nội bộ có phạm vi agent).</li>
+<li><strong>Nhận việc:</strong> agent-core lấy message, báo <code>agent_run.started</code> (REST orchestration) và gửi heartbeat 30 s trong suốt Agent Run.</li>
+<li><strong>Kiểm tra phạm vi:</strong> orchestration đã kiểm tra agent được phép với <code>inputRefs</code> trước khi giao (PRD 3.3); service sở hữu dữ liệu kiểm tra lại phạm vi trong token khi agent-core đọc.</li>
+<li><strong>Lắp ráp context:</strong> Context Assembler (agent-core) gọi song song API “context bundle” của service liên quan (planning, orchestration/Context Item, research, workspace, manuscript), truy xuất evidence qua knowledge; ước lượng token, cắt từ lớp thấp, tạo context manifest.</li>
+<li><strong>Gọi model:</strong> Model Gateway lấy ciphertext API key từ identity (REST nội bộ), giải mã bằng KMS trong bộ nhớ, gọi provider; vòng tool calling (tool là API đọc của service, kiểm tra quyền theo token); thử lại tạm thời ≤ 3, sửa định dạng ≤ 2.</li>
+<li><strong>Kiểm tra đầu ra:</strong> validate schema; kiểm tra tất định (tham chiếu nằm trong manifest, quote có thật — 7.5).</li>
+<li><strong>Trả kết quả:</strong> agent-core gửi REST <code>POST /internal/agent-runs/{id}/result</code> tới orchestration (manifest, structured output, usage, attempts, phiên bản), rồi ack message. Toàn văn debug (nếu bật) mã hóa và ghi object storage.</li>
+<li><strong>Áp dụng đầu ra (saga):</strong> orchestration khóa hàng workflow, kiểm tra Workflow còn Running và run là run hiện hành (không → <code>discarded</code>); gọi REST service sở hữu để ghi đầu ra Draft kèm provenance (idempotency key = <code>agentRunId</code>:chỉ số đầu ra); khi mọi ghi được xác nhận: <strong>[TX:orchestration]</strong> AgentRun Succeeded, Step Succeeded, Checkpoint, evt:<code>agent_run.completed</code>.</li>
+</ol>
+<p class="status">FIG-105 — Pipeline Agent Run. Nguồn: <a href="../figures/FIG-105-agent-run-pipeline.mmd">figures/FIG-105-agent-run-pipeline.mmd</a>.</p>
+
+<h2 id="f-08">F-08. Prompt và phê duyệt</h2>
+<p class="status">PROMPT-LIFECYCLE, PROMPT-APPROVAL, CTX-CONSISTENCY-003, OQ-023</p>
+<ol>
+<li>Đầu ra yêu cầu người dùng → <strong>[TX:orchestration]</strong> tạo InteractiveAgentPrompt (gắn <code>objectType</code>, <code>objectId</code>, <code>objectVersion</code>), Workflow → Waiting for User; evt:<code>prompt.opened</code> → workspace tạo PendingAction, gateway đẩy SSE.</li>
+<li>Researcher trả lời <code>POST /prompts/{promptId}/response</code> (idempotent) → orchestration.</li>
+<li>Prompt có APR: orchestration gọi REST endpoint phê duyệt của service sở hữu đối tượng với token actor Researcher (lấy từ phiên của request này) và <code>If-Match</code> = <code>objectVersion</code>. Lệch phiên bản → prompt Cancelled, Orchestrator tạo prompt mới.</li>
+<li>Phê duyệt thành công → <strong>[TX:orchestration]</strong> Prompt Answered, Context Item decision, Workflow → Running, cmd:<code>agent.run</code> cho bước tiếp; evt:<code>prompt.answered</code> → workspace đóng PendingAction.</li>
+<li>Prompt Expired khi project lưu trữ (evt:<code>project.archived</code>), Cancelled khi workflow hủy.</li>
+</ol>
+
+<h2 id="f-09">F-09. Discovery, nhập và index reference</h2>
+<p class="status">WF-04, DISC-*, LIB-IMPORT, LIB-APPROVAL (APR-04), INT-SCHOLAR, INT-DOC, DEC-19–21, DEC-30–31</p>
+<ol>
+<li>Discovery Agent (agent-core) gọi tool <code>search_sources</code> = REST library; library gọi source adapter qua rate limiter, chuẩn hóa theo schema 17.6, ghi DiscoveredResult New.</li>
+<li>Dịch vụ không trả kết quả: library trả lý do; web đề nghị nhập thủ công DOI / BibTeX/RIS / PDF (library xử lý).</li>
+<li>Reference Processing Agent chuẩn hóa metadata, phát hiện trùng; library ghi Reference Pending Approval; orchestration mở prompt duyệt theo lô (tối đa 50), mục trùng tách riêng.</li>
+<li>Duyệt (APR-04) → <strong>[TX:library]</strong> mỗi Reference một ApprovalRecord → Trusted, sinh <code>bibtexKey</code>; evt:<code>reference.trusted</code>.</li>
+<li>knowledge nhận sự kiện (có file hoặc nội dung truy cập mở) → cmd:<code>knowledge.index</code> nội bộ → trích xuất, chunk, embedding (key OpenAI/Gemini của người dùng) → <strong>[TX:knowledge]</strong> SourceDocument, Chunk, vector; evt:<code>reference.indexed</code> → library cập nhật <code>indexingStatus</code>. Chi tiết ở <a href="07-rag-and-document-pipeline.html">mục 7</a>.</li>
+</ol>
+
+<h2 id="f-10">F-10. Evidence, synthesis và kiểm chứng</h2>
+<p class="status">WF-05 S1–S4, EVID-RETRIEVAL, CLAIM-*, SYN-*, DEC-32, DEC-38</p>
+<ol>
+<li>Orchestrator lập bước: Evidence Retrieval → Synthesis → Verification (truy xuất độc lập có thể song song, OQ-032).</li>
+<li>Evidence Retrieval Agent gọi tool <code>retrieve_evidence</code> = REST knowledge. Phạm vi (tài khoản + reference Active ∩ Trusted ∩ Indexed của project) do knowledge tự tính từ bản sao chỉ đọc nhận qua sự kiện của library, không nhận từ model. Kết quả được orchestration ghi vào research thành Evidence Active kèm vị trí.</li>
+<li>Synthesis Agent tạo Claim Draft + ClaimEvidenceLink + ArtifactVersion synthesis Draft → ghi vào research (research kiểm tra mọi evidenceId tồn tại).</li>
+<li>Verification Agent (có thể khác provider/model) đánh giá từng claim với bản chụp VerificationThresholds (REST identity) → research ghi VerificationResult.</li>
+<li>Task → In Review; Researcher chấp nhận claim/artifact (APR-06) ở research; KPI-01 cập nhật.</li>
+</ol>
+
+<h2 id="f-11">F-11. Change Proposal, build và sơ đồ</h2>
+<p class="status">WF-05 S5+, WF-07, MS-DIFF, MS-BIB, MS-BUILD, DIAG-*, APR-05, APR-07, KPI-02</p>
+<ol>
+<li>Writing Agent tạo ChangeProposal → manuscript ghi (theo <code>baseRevisionId</code>).</li>
+<li><strong>Cổng citation</strong> (manuscript, tất định): trích mọi key <code>\cite*</code>; mỗi key phải có BibliographyEntry gắn Reference Trusted (bản sao chỉ đọc trạng thái reference từ sự kiện library). Thiếu → chặn chấp nhận.</li>
+<li>Researcher chấp nhận nguyên khối (APR-05) → <strong>[TX:manuscript]</strong> base lệch → Outdated; khớp → ManuscriptRevision mới, sinh lại <code>references.bib</code>.</li>
+<li>Build: <strong>[TX:manuscript]</strong> Build Queued, cmd:<code>sandbox.build</code> → sandbox-runner chạy <code>latexmk</code> trong sandbox (120 s / 2 GB, không mạng), tải log/PDF lên object storage, trả kết quả qua REST manuscript → Build kết thúc, issues song ngữ.</li>
+<li>Sơ đồ (WF-07): Diagram Agent gọi tool <code>validate_mermaid</code>/<code>render_mermaid</code> = REST research → research gửi cmd:<code>sandbox.build</code> ưu tiên cao và chờ kết quả → SVG preview. Chấp nhận (APR-07) ở research → Writing Agent tạo ChangeProposal đưa PDF vector (hoặc PNG 300 dpi) vào <code>figures/</code>.</li>
+</ol>
+
+<h2 id="f-12">F-12. Gián đoạn và khôi phục</h2>
+<p class="status">WF-06, CTX-RECOVERY-001, NFR-REC-001/002, KPI-03</p>
+<ol>
+<li>agent-core gửi heartbeat 30 s cho Agent Run đang chạy (REST orchestration, cập nhật <code>workflow.heartbeatAt</code>).</li>
+<li>Sweeper của orchestration (mỗi 10 s, 5.4) tìm Workflow Running có <code>heartbeatAt</code> &lt; now − 110 s (phát hiện ≤ 2 phút) → <strong>[TX:orchestration]</strong> Workflow Interrupted, AgentRun Failed (<code>interrupted</code>), evt:<code>workflow.interrupted</code> → workspace tạo PendingAction Recovery decision và Notification.</li>
+<li>Không có message <code>agent.run</code> nào được gửi cho workflow Interrupted (NFR-REC-002). Message cũ còn trong queue (pod agent-core chết trước khi ack, RabbitMQ giao lại) bị agent-core bỏ qua vì orchestration trả <code>409</code> khi báo <code>started</code> cho run không còn hiện hành.</li>
+<li>Researcher mở workflow: orchestration nạp checkpoint nhất quán gần nhất, liệt kê bước xong/dở, đầu ra đã lưu.</li>
+<li>Researcher chọn tiếp tục / chạy lại bước / hủy (<code>POST /workflows/{workflowId}/recovery-decision</code>) → <strong>[TX:orchestration]</strong> Running + AgentRun mới + cmd:<code>agent.run</code>, hoặc Cancelled.</li>
+<li>Kết quả muộn của run cũ bị từ chối ở bước 8 của F-07 → <code>discarded</code>.</li>
+</ol>
+<p class="status">FIG-106 — Phát hiện gián đoạn và khôi phục. Nguồn: <a href="../figures/FIG-106-recovery.mmd">figures/FIG-106-recovery.mmd</a>.</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="03-system-context-and-containers.html">← Mục 3</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="05-workflow-engine-and-orchestration.html">Mục 5 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

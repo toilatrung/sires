@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — RAG, pipeline tài liệu và kiểm chứng.">
+<title>7. RAG and Document Pipeline | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 7</p><h1>7. RAG and Document Pipeline</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-05, ADR-15 Accepted; pipeline thuộc service knowledge (Python) · Cơ sở: PRD <a href="../../overview/sections/10-academic-discovery-and-trusted-library.html">10</a>, <a href="../../overview/sections/11-evidence-rag-and-research-synthesis.html">11</a>, <a href="../../overview/sections/17-integrations-and-external-dependencies.html#s-17-3">17.3</a>; DEC-13, DEC-30, DEC-31, DEC-32, DEC-38; ADR-05, ADR-15</p>
+<div class="note"><p><strong>Bài toán:</strong> giảm hallucination (PRB-03, RISK-02) để đạt KPI-01 ≥ 95% claim có evidence và KPI-02 = 100% citation phân giải, trong khi (1) chỉ dùng Trusted Reference đã chọn cho project, (2) mỗi tài khoản có embedding model riêng của họ, (3) evidence trỏ được về đúng trang/đoạn, (4) thu hồi reference có hiệu lực ngay. <strong>Phương án:</strong> pipeline indexing giữ vị trí ổn định; truy xuất lai trong PostgreSQL có bộ lọc bắt buộc; kiểm tra tất định (trích dẫn có thật trong chunk, citation key phân giải) bọc quanh phần đánh giá bằng model.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-7-1">7.1. Pipeline indexing</a></li>
+<li><a href="#s-7-2">7.2. Trích xuất và chia chunk</a></li>
+<li><a href="#s-7-3">7.3. Embedding theo tài khoản</a></li>
+<li><a href="#s-7-4">7.4. Truy xuất</a></li>
+<li><a href="#s-7-5">7.5. Chống bịa evidence</a></li>
+<li><a href="#s-7-6">7.6. Kiểm chứng claim và citation</a></li>
+<li><a href="#s-7-7">7.7. Thu hồi, xóa, index lại</a></li>
+<li><a href="#s-7-8">7.8. Cấu hình retrieval có phiên bản</a></li>
+</ul></details>
+
+<h2 id="s-7-1">7.1. Pipeline indexing</h2>
+<pre><code>library: Reference Trusted (APR-04) ──evt:reference.trusted──► knowledge ──► queue knowledge.index
+  1 Thu nhận   : PDF người dùng tải lên, hoặc tải nội dung truy cập mở hợp lệ từ liên kết nguồn
+                  (không có → indexingStatus Unavailable)
+  2 Kiểm tra   : magic bytes PDF, ≤ 50 MB, ≤ 500 trang, có lớp văn bản (≥ N ký tự/trang trên ≥ 80% trang)
+                  (không đạt → Failed với mã: no_text_layer | too_large | too_many_pages | corrupt)
+  3 Idempotency: khóa (referenceId, sha256, embeddingModel) đã Indexed → kết thúc, không tạo vector trùng
+  4 Trích xuất : văn bản theo trang, khối đoạn, bố cục cột → object storage text/
+  5 Metadata   : DOI/tiêu đề/tác giả/năm từ PDF → so với metadata Reference, lệch thì cảnh báo
+  6 Chunk      : theo đoạn, có vị trí (trang, đoạn, charStart, charEnd), chunkKey ổn định
+  7 Embedding  : theo lô, model của tài khoản, qua Model Gateway
+  8 Ghi [TX]   : SourceDocument, Chunk (+ văn bản, tsvector), vector trong DB knowledge; evt:reference.indexed
+                  → library cập nhật Reference.indexingStatus = Indexed</code></pre>
+<p class="status">FIG-107 — Pipeline indexing và truy xuất. Nguồn: <a href="../figures/FIG-107-rag-pipeline.mmd">figures/FIG-107-rag-pipeline.mmd</a>. Bổ sung cho FIG-031 của PRD.</p>
+<p>Source Document thuộc cấp tài khoản, index một lần và dùng lại ở mọi project (OQ-024). Job indexing được tự chạy lại tối đa 3 lần vì idempotent; lỗi cuối cùng hiển thị ở Trusted Library với lý do cụ thể (INT-DOC-002).</p>
+
+<h2 id="s-7-2">7.2. Trích xuất và chia chunk</h2>
+<ul>
+<li><strong>Công cụ:</strong> <code>pypdfium2</code> cho văn bản theo trang và phát hiện lớp văn bản; <code>pdfplumber</code> cho tọa độ từ để tách cột và khối đoạn (ADR-15). Spike SPK-05 đo trên mẫu đa ngành (ASM-06).</li>
+<li><strong>Làm sạch:</strong> loại header/footer lặp (dòng xuất hiện ở cùng vị trí trên ≥ 50% trang), nối từ bị ngắt dòng có gạch nối, chuẩn hóa Unicode NFC.</li>
+<li><strong>Nhận diện vùng:</strong> đánh dấu chunk thuộc mục References/Bibliography và phụ lục; vùng References bị loại khỏi truy xuất evidence mặc định (tránh “evidence” là một dòng tài liệu tham khảo).</li>
+<li><strong>Chia chunk:</strong> gom đoạn liên tiếp tới khoảng 500–800 token, không cắt giữa đoạn; chồng lấn một đoạn với chunk trước. Đoạn quá dài cắt theo câu.</li>
+<li><strong>Vị trí:</strong> mỗi chunk lưu <code>page</code>, <code>paragraph</code>, <code>char_start</code>, <code>char_end</code> trên văn bản trang đã chuẩn hóa; <code>chunk_key = sha256(sourceDocumentId | page | paragraph | char_start)</code> — ổn định khi index lại cùng file và cùng phiên bản trích xuất.</li>
+<li>Văn bản chunk lưu trong PostgreSQL (bảng <code>chunk_text</code>, có <code>tsvector</code>) để truy xuất lai và kiểm tra trích dẫn không cần đọc object storage.</li>
+</ul>
+
+<h2 id="s-7-3">7.3. Embedding theo tài khoản</h2>
+<ul>
+<li>DEC-31: một embedding model mỗi tài khoản, qua Provider Connection OpenAI hoặc Gemini của người dùng. Các model có số chiều khác nhau, nên vector được lưu ở <strong>bảng riêng cho mỗi embedding model</strong>: <code>vec.emb_&lt;model_slug&gt;(chunk_id, account_id, reference_id, embedding vector(D))</code>, mỗi bảng một index HNSW (cosine). Danh mục model hỗ trợ do hệ thống duy trì; thêm model = thêm bảng bằng migration.</li>
+<li>Chi phí embedding thuộc tài khoản provider của người dùng; usage của lời gọi embedding ghi vào sổ <code>usage_ledger</code> gắn Provider Connection để tổng hợp theo NFR-USAGE-002 (indexing không phải Agent Run).</li>
+<li>Gọi embedding theo lô (ví dụ 64–128 chunk/lời gọi), tôn trọng rate limit của provider; lỗi theo chính sách adapter (5.6).</li>
+<li>Thiếu Provider Connection có embedding (chỉ cấu hình Claude): Reference vẫn Trusted nhưng indexing ở trạng thái chờ cấu hình, kèm hướng dẫn tới Settings (ASM-12).</li>
+</ul>
+
+<h2 id="s-7-4">7.4. Truy xuất</h2>
+<p>Tool <code>retrieve_evidence(query, k, filters)</code> của Evidence Retrieval Agent và Verification Agent; NFR-PERF-006: ≤ 3 giây cho project 500 reference (không tính embedding truy vấn).</p>
+<ol>
+<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001, OQ-053): <code>account_id</code> và <code>project_id</code> lấy từ token nội bộ của Agent Run + <code>reference_id IN</code> (Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng model hiện hành). knowledge tính phạm vi từ bản sao chỉ đọc nhận qua sự kiện của library (<code>reference.*</code>, <code>project_reference.*</code>), không nhận từ model; tool không có tham số để mở rộng.</li>
+<li><strong>Nhánh vector:</strong> embedding truy vấn bằng model của tài khoản; top 50 theo cosine.
+  <ul>
+  <li>Phạm vi nhỏ (≤ ~50.000 chunk, gồm cả trần 500 reference × ~100 chunk): quét chính xác trên tập đã lọc bằng index <code>(account_id, reference_id)</code> — chính xác 100%, đủ nhanh.</li>
+  <li>Phạm vi lớn: HNSW với <code>hnsw.iterative_scan</code> của pgvector ≥ 0.8 để không mất kết quả khi lọc chặt. Ngưỡng chuyển do SPK-04 đo.</li>
+  </ul></li>
+<li><strong>Nhánh từ khóa:</strong> full-text trên <code>chunk_text.tsv</code>, top 50 — bắt thuật ngữ chuyên ngành, ký hiệu, tên riêng mà embedding hay bỏ sót.</li>
+<li><strong>Gộp:</strong> Reciprocal Rank Fusion (k = 60), khử trùng chunk chồng lấn, đa dạng hóa theo reference (tối đa 3 chunk/reference trong top-k), trả top-k (mặc định 8) kèm điểm.</li>
+<li><strong>Rerank bằng model:</strong> không bật ở MVP; chỉ bật khi eval harness cho thấy cải thiện recall/precision đáng kể (NFR-EVAL-003 d) — thêm chi phí và độ trễ cho người dùng.</li>
+</ol>
+
+<h2 id="s-7-5">7.5. Chống bịa evidence</h2>
+<p>Model có thể “trích” câu không có trong tài liệu. Các kiểm tra tất định sau chạy ở System trước khi ghi Evidence/Claim (F-07.S5):</p>
+<ul>
+<li><strong>Trích dẫn có thật:</strong> <code>quote</code> của Evidence phải là chuỗi con của văn bản chunk được tham chiếu sau khi chuẩn hóa khoảng trắng và dấu (cho phép sai khác nhỏ bằng so khớp mờ ≥ 0,95). Không khớp → loại evidence đó, ghi lý do vào Agent Run.</li>
+<li><strong>Tham chiếu tồn tại và trong phạm vi:</strong> mọi <code>chunkId</code>, <code>evidenceId</code>, <code>referenceId</code> trong đầu ra phải thuộc tập đã đưa vào context manifest của Agent Run đó.</li>
+<li><strong>Claim phải có liên kết:</strong> Claim thiếu ClaimEvidenceLink loại <code>supports</code> được ghi với supportStatus Unsupported, không bao giờ Supported (DEC-32).</li>
+<li><strong>Vị trí lấy từ System:</strong> trang/đoạn của Evidence lấy từ Chunk, không lấy từ chữ model viết.</li>
+</ul>
+
+<h2 id="s-7-6">7.6. Kiểm chứng claim và citation</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Kiểm tra</th><th>Loại</th><th>Cách làm</th><th>Phục vụ</th></tr></thead>
+<tbody>
+<tr><td>Mức hỗ trợ claim</td><td>Model (Verification Agent)</td><td>Đầu vào: claim, toàn văn chunk của evidence liên kết, evidence mâu thuẫn truy xuất thêm. Đầu ra có cấu trúc mỗi liên kết: quan hệ (supports/contradicts/context), điểm tin cậy 0–1, lý do ngắn. System ánh xạ điểm → SupportStatus bằng bản chụp VerificationThresholds của tài khoản; ghi VerificationResult kèm <code>thresholdsUsed</code>.</td><td>CLAIM-SUPPORT, DEC-32, DEC-38, ASM-15</td></tr>
+<tr><td>Tách vai trò</td><td>Cấu hình</td><td>Verification Agent là agent riêng, prompt riêng, có thể gán provider/model khác Synthesis Agent; không thấy lập luận của Synthesis Agent, chỉ thấy claim và nguồn.</td><td>RISK-02</td></tr>
+<tr><td>Citation phân giải</td><td>Tất định</td><td>Trích mọi key từ <code>\cite</code>, <code>\citet</code>, <code>\citep</code>… trong revision; mỗi key → BibliographyEntry → Reference Trusted. Là cổng chặn chấp nhận Change Proposal và chạy mỗi Build.</td><td>KPI-02, CLAIM-CITATION</td></tr>
+<tr><td>Citation không khớp nguồn</td><td>Model + tất định</td><td>Câu chứa citation được đối chiếu với evidence truy xuất từ đúng Reference được trích; Verification Agent đánh giá khớp/không khớp với ngưỡng phát hiện của tài khoản.</td><td>DEC-38 (≥ 95% phát hiện)</td></tr>
+<tr><td>Hiệu chỉnh ngưỡng mặc định</td><td>Offline</td><td>Eval harness trên bộ dữ liệu DEC-39 tìm ngưỡng mặc định đạt ≥ 85% và ≥ 95% cho từng tổ hợp provider/model được khuyến nghị.</td><td>ASM-15, NFR-EVAL-003</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-7">7.7. Thu hồi, xóa, index lại</h2>
+<ul>
+<li><strong>Thu hồi</strong> (LIB-LIFECYCLE-001, OQ-018): <strong>[TX]</strong> Reference Revoked; Evidence từ Reference đó → Stale; claim, citation, Task phụ thuộc gắn needs review. knowledge nhận <code>reference.revoked</code> và loại khỏi phạm vi 7.4 ngay (trễ tối đa vài giây theo sự kiện) — không cần xóa vector (INT-VECTOR-002). research nhận cùng sự kiện để chuyển Evidence → Stale và gắn needs review.</li>
+<li><strong>Xóa</strong> (NFR-RET-003): xóa vector và chunk trong cùng giao dịch; blob bằng job.</li>
+<li><strong>Đổi embedding model</strong> (INT-VECTOR-003): cảnh báo, xác nhận → đánh dấu mọi SourceDocument <code>needs_reindex</code>; job nhúng lại từ văn bản chunk đã lưu (không trích xuất lại PDF); trong lúc chờ, truy xuất chỉ dùng chunk đã có vector của model mới và báo số tài liệu chưa sẵn sàng. Vector model cũ xóa khi hoàn tất.</li>
+<li><strong>Đổi phiên bản bộ trích xuất/chunker:</strong> chỉ áp dụng cho tài liệu index mới; index lại toàn bộ là thao tác vận hành có kế hoạch vì làm đổi <code>chunk_key</code> (Evidence cũ vẫn giữ quote và vị trí đã lưu).</li>
+</ul>
+
+<h2 id="s-7-8">7.8. Cấu hình retrieval có phiên bản</h2>
+<p>NFR-OBS-006 và NFR-EVAL-004 yêu cầu ghi “phiên bản cấu hình retrieval”. Định nghĩa một <code>RetrievalConfig</code> trong mã, có mã phiên bản:</p>
+<pre><code>RetrievalConfig(version="rc-1",
+  extractor="pdfium+plumber@1", chunk_tokens=(500, 800), overlap="1 paragraph",
+  vector_top=50, keyword_top=50, fusion="rrf:60", per_reference_cap=3, top_k=8,
+  exclude_regions=["references", "appendix"], rerank=None)</code></pre>
+<p>Agent Run ghi <code>retrievalConfigVersion</code> và <code>embeddingModel</code>. Mọi thay đổi tham số tạo phiên bản mới và phải qua cổng hồi quy của eval harness trước khi phát hành.</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="06-data-architecture.html">← Mục 6</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="08-model-gateway-and-integrations.html">Mục 8 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>19. Acceptance Criteria and Test Scenarios | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 19</p><h1>19. Acceptance Criteria and Test Scenarios</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, acceptance criteria ở mục 7–18, WF-01–WF-07, KPI-01–KPI-04</p><div class="note"><p>Acceptance criteria (AC) cấp requirement nằm ngay trong từng requirement ở mục 7–18. Mục này gom chúng thành <strong>kịch bản kiểm thử chấp nhận</strong> theo luồng người dùng: mỗi kịch bản có mã <code>TS-NN-MM</code>, điều kiện trước, các bước, kết quả mong đợi và danh sách requirement/AC được bao phủ. Ma trận đầy đủ requirement → kịch bản ở <a href="22-appendices.html#appendix-g">phụ lục G</a>. Mười hai nhóm kịch bản lấy từ outline (<strong>Confirmed</strong>); nội dung kịch bản là <strong>Assumption</strong>. Chính sách provider trong kiểm thử (OQ-095), bộ dữ liệu nghiệm thu (OQ-027) và ngưỡng nghiệm thu evidence/citation (OQ-092) là <strong>Confirmed — PO chốt 31/10/2026 (PC-01)</strong>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-19-0">Quy ước và môi trường kiểm thử</a></li>
+<li><a href="#s-19-1">19.1. Project Creation and Context Gathering</a></li>
+<li><a href="#s-19-2">19.2. Plan Proposal, Editing and Approval</a></li>
+<li><a href="#s-19-3">19.3. Task Readiness and Dependency Blocking</a></li>
+<li><a href="#s-19-4">19.4. Agent-Eligible versus Manual Tasks</a></li>
+<li><a href="#s-19-5">19.5. Interactive Agent Prompt Lifecycle</a></li>
+<li><a href="#s-19-6">19.6. Reference Discovery, Import and Approval</a></li>
+<li><a href="#s-19-7">19.7. Evidence Retrieval and Claim Verification</a></li>
+<li><a href="#s-19-8">19.8. LaTeX Default and Blank Modes</a></li>
+<li><a href="#s-19-9">19.9. Diagram Generation and Validation</a></li>
+<li><a href="#s-19-10">19.10. Multi-Provider Context Routing</a></li>
+<li><a href="#s-19-11">19.11. Interruption, Recovery and Resume</a></li>
+<li><a href="#s-19-12">19.12. Authorization and Cross-Project Isolation</a></li>
+<li><a href="#s-19-13">19.13. Kịch bản xuyên suốt và đo KPI</a></li>
+<li><a href="#s-19-oq">19.14. Open Questions của mục 19</a></li>
+</ul></details>
+
+<h2 id="s-19-0">Quy ước và môi trường kiểm thử</h2>
+<ul>
+<li><strong>Mã kịch bản:</strong> <code>TS-NN-MM</code>, NN là số tiểu mục 19.NN, MM là thứ tự. Mã không tái sử dụng.</li>
+<li><strong>Mức:</strong> <em>E2E</em> (qua giao diện, end-to-end), <em>API</em> (qua giao diện lập trình nội bộ), <em>Sec</em> (kiểm thử quyền và bảo mật). Mỗi kịch bản ghi mức tối thiểu.</li>
+<li><strong>Đạt:</strong> mọi kết quả mong đợi đúng, và mọi AC liệt kê ở cột “Bao phủ” đạt. Một AC chỉ được tính đạt khi có ít nhất một kịch bản hoặc test tự động đạt cho nó (20.3).</li>
+<li><strong>Dữ liệu chuẩn:</strong> hai tài khoản <em>A</em> và <em>B</em>; tài khoản A có hai project <em>P1</em> (đề tài mẫu, tiếng Anh) và <em>P2</em>; bộ tài liệu mẫu đa ngành gồm PDF có lớp văn bản, PDF ảnh quét và reference không có toàn văn; ba Provider Connection Claude, OpenAI, Gemini hợp lệ và một kết nối có key sai; tài khoản kiểm thử đăng nhập qua môi trường kiểm thử của eTroy OIDC. Bộ dữ liệu nghiệm thu KPI: 5 đề tài thuộc 3 lĩnh vực, mỗi đề tài khoảng 30 reference và 100 claim, PO chuẩn bị và gán nhãn, QA hỗ trợ (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-027); 20.4).</li>
+<li><strong>Provider trong kiểm thử:</strong> kịch bản 19.10 (kể cả REL-06) và các phép đo KPI cùng ngưỡng nghiệm thu evidence/citation (19.13) dùng provider thật; các kịch bản khác dùng provider giả lập có hành vi xác định. Đội phát triển chịu chi phí gọi provider khi kiểm thử (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-095)).</li>
+<li><strong>Ngôn ngữ:</strong> mọi kịch bản E2E chạy ít nhất một lần ở giao diện tiếng Việt và một lần ở tiếng Anh (UX-I18N-001–004).</li>
+</ul>
+
+<h2 id="s-19-1">19.1. Project Creation and Context Gathering</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-01-01">TS-01-01 · E2E</td><td>Tài khoản A, chưa có project.</td><td>Tạo project từ Dashboard với tên và câu hỏi nghiên cứu; đóng trình duyệt; đăng nhập lại.</td><td>Project <code>Active</code> có Research Context phiên bản 1, Research Plan rỗng, Shared Context; mở thẳng Project AI Chat; sau khi đăng nhập lại project vẫn còn đủ; Audit Event ghi actor Researcher.</td><td>PROJ-CRUD-001, PROJ-CONTEXT-001, WS-DASHBOARD-001, DATA-AUDIT-001; 6.1</td></tr>
+<tr><td id="ts-01-02">TS-01-02 · E2E</td><td>P1 chỉ có câu hỏi nghiên cứu.</td><td>Yêu cầu Orchestrator lập Plan.</td><td>Orchestrator hỏi bổ sung thông tin thiết yếu bằng chat hoặc prompt <code>information_request</code>; câu trả lời tạo Research Context phiên bản mới chỉ sau khi Researcher xác nhận.</td><td>ORCH-INTENT-001, PROJ-CONTEXT-002, PROJ-CHAT-001, UX-CHAT-001; WF-01.S1</td></tr>
+<tr><td id="ts-01-03">TS-01-03 · E2E</td><td>Researcher không trả lời câu hỏi bổ sung.</td><td>Yêu cầu lập Plan với giả định hiện có.</td><td>Plan đề xuất hiển thị nổi bật các Context Item loại assumption.</td><td>ORCH-PLAN-001; WF-01.A1</td></tr>
+<tr><td id="ts-01-04">TS-01-04 · E2E</td><td>P1 <code>Active</code>, không có workflow chạy.</td><td>Lưu trữ P1; thử sửa Plan; mở lại P1.</td><td>Khi Archived, mọi thao tác ghi bị từ chối; mở lại về <code>Active</code>.</td><td>PROJ-CRUD-003</td></tr>
+<tr><td id="ts-01-05">TS-01-05 · E2E</td><td>Global AI Assistant mở.</td><td>Hỏi về nội dung chi tiết của P1.</td><td>Global AI Assistant không trả lời từ nội dung project; gợi ý mở P1 (SCOPE-02; OQ-007 đã giải quyết).</td><td>WS-CHAT-001, WS-SEARCH-001, CTX-ISOLATION-001</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-2">19.2. Plan Proposal, Editing and Approval</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-02-01">TS-02-01 · E2E</td><td>P1 có đủ thông tin thiết yếu.</td><td>Yêu cầu lập Plan; theo dõi Agent Activity.</td><td>Workflow <code>plan_proposal</code> hiển thị các Agent Run phân tích; Plan Version <code>Draft</code> có phase, Task, dependency, deliverable, label đề xuất kèm lý do, rủi ro, giả định.</td><td>PLAN-GENERATE-001, ORCH-DELEGATE-001, ORCH-CONSOLIDATE-001, UX-MONITOR-001; WF-01.S2–S4</td></tr>
+<tr><td id="ts-02-02">TS-02-02 · E2E</td><td>Plan Version <code>Draft</code>.</td><td>Sửa một Task, sắp xếp lại, thêm dependency tạo chu trình; trình duyệt.</td><td>Hệ thống chỉ ra chu trình và chặn trình duyệt; sau khi gỡ chu trình, trình duyệt được → <code>Proposed</code>.</td><td>PLAN-REVIEW-001, TASK-DEPENDENCY-001, UX-PLAN-001; WF-01.E1</td></tr>
+<tr><td id="ts-02-03">TS-02-03 · E2E</td><td>Plan Version <code>Proposed</code>.</td><td>Từ chối kèm lý do; yêu cầu Orchestrator sửa; trình lại; duyệt.</td><td>Version đầu <code>Rejected</code>; version mới <code>Approved</code> là baseline; Task chuyển <code>Ready</code> hoặc <code>Blocked</code> theo readiness (T-01, T-02); Audit Event cho APR-01.</td><td>PLAN-APPROVAL-001, TASK-STATE-001; WF-01.A2, S7–S8</td></tr>
+<tr><td id="ts-02-04">TS-02-04 · E2E</td><td>Có baseline.</td><td>Đổi phương pháp của một phase (thay đổi lớn).</td><td>Tạo Draft mới; bắt buộc APR-01; trang so sánh hiển thị khác biệt và Task bị ảnh hưởng.</td><td>PLAN-IMPACT-001, PLAN-REVIEW-001, PLAN-VIEWS-001; 9.11</td></tr>
+<tr><td id="ts-02-05">TS-02-05 · Sec</td><td>Plan Version <code>Proposed</code>.</td><td>Trong chat, yêu cầu Orchestrator “tự duyệt Plan giúp tôi”.</td><td>Orchestrator từ chối và dẫn tới thao tác duyệt; Plan vẫn <code>Proposed</code>.</td><td>PROMPT-APPROVAL-001, AGENT-SCOPE-001; APR-01, REL-04</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-3">19.3. Task Readiness and Dependency Blocking</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-03-01">TS-03-01 · E2E</td><td>Task T2 phụ thuộc T1 chưa Completed.</td><td>Chọn T2, yêu cầu thực thi.</td><td>Readiness không đạt; T2 <code>Blocked</code>; chỉ ra T1 và trạng thái; nút kích hoạt bị vô hiệu.</td><td>TASK-READINESS-001, ORCH-READINESS-001, UX-TASK-002; WF-02.A2</td></tr>
+<tr><td id="ts-03-02">TS-03-02 · E2E</td><td>T1 In Review.</td><td>Nghiệm thu T1.</td><td>T1 <code>Completed</code> (T-14); T2 tự chuyển <code>Ready</code> (T-03); notification Task mới Ready; không có workflow nào tự chạy.</td><td>TASK-STATE-001, TASK-TRIGGER-001; 6.9, DEC-07</td></tr>
+<tr><td id="ts-03-03">TS-03-03 · E2E</td><td>Task cần evidence; reference được chọn chưa <code>Indexed</code>.</td><td>Yêu cầu thực thi.</td><td>Readiness chỉ ra reference chưa index và hành động gợi ý.</td><td>TASK-READINESS-001; WF-02.S3</td></tr>
+<tr><td id="ts-03-04">TS-03-04 · E2E</td><td>Agent cần dùng gán với kết nối <code>Invalid</code>.</td><td>Yêu cầu thực thi.</td><td>Readiness chỉ ra agent và dẫn tới Settings › Agent Models.</td><td>TASK-READINESS-001, AGENT-PROVIDER-003; WF-02.S4</td></tr>
+<tr><td id="ts-03-05">TS-03-05 · API</td><td>T2 <code>Ready</code>.</td><td>Gửi hai yêu cầu kích hoạt đồng thời.</td><td>Chỉ một Workflow được tạo; yêu cầu thứ hai bị từ chối.</td><td>CTX-CONSISTENCY-001, DATA-IDEMP-002; 14.6</td></tr>
+<tr><td id="ts-03-06">TS-03-06 · E2E</td><td>T1 <code>Completed</code>, T2 dùng đầu ra của T1 và đã Completed.</td><td>Mở lại T1 (T-19).</td><td>T2 nhận cờ needs review; trạng thái T2 không đổi.</td><td>PLAN-IMPACT-001, TASK-STATE-001; 9.11</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-4">19.4. Agent-Eligible versus Manual Tasks</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-04-01">TS-04-01 · E2E</td><td>Task <code>Available for agent</code> <code>Ready</code>.</td><td>Kích hoạt; chờ workflow xong.</td><td>Task <code>Queued</code> → <code>In Progress</code> → <code>In Review</code>; artifact <code>Draft</code> có provenance (Agent Run, provider, model); Task không tự Completed.</td><td>TASK-TRIGGER-001, TASK-STATE-001, CTX-REGISTRY-001, DATA-PROV-001; 6.7</td></tr>
+<tr><td id="ts-04-02">TS-04-02 · E2E</td><td>Task <code>Manual editor requirement</code> <code>Ready</code>.</td><td>Kích hoạt; yêu cầu agent “làm giúp”; gửi kết quả thiếu một đầu ra bắt buộc; bổ sung; nghiệm thu.</td><td>Hiển thị yêu cầu, đầu ra bắt buộc, AC; yêu cầu làm giúp bị từ chối; nghiệm thu bị chặn khi thiếu đầu ra; sau khi bổ sung được Completed; artifact manual_submission có actor Researcher.</td><td>TASK-LABEL-001, TASK-CHECKLIST-001, UX-LABEL-001, UX-LABEL-002; WF-03</td></tr>
+<tr><td id="ts-04-03">TS-04-03 · E2E</td><td>Task In Review có một AC chưa đánh dấu đạt.</td><td>Chọn nghiệm thu.</td><td>Bị từ chối (guard T-14).</td><td>TASK-STATE-001-AC04, TASK-CHECKLIST-001</td></tr>
+<tr><td id="ts-04-04">TS-04-04 · E2E</td><td>Task In Review.</td><td>Trả lại kèm phản hồi và reasonCode; chạy lại.</td><td>Task <code>Ready</code> (T-13); phản hồi là Context Item phạm vi task và có trong context của lần chạy mới; reasonCode được ghi để tính KPI-04.</td><td>TASK-STATE-001, CTX-ASSEMBLY-001, NFR-KPI-001; 6.8</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-5">19.5. Interactive Agent Prompt Lifecycle</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-05-01">TS-05-01 · E2E</td><td>Workflow cần một lựa chọn.</td><td>Agent tạo prompt <code>choice</code>; Researcher chuyển sang P2, rồi mở prompt từ Pending Actions; chọn phương án.</td><td>Prompt hiện trong chat và Pending Actions ở cả hai cấp; mở từ Global chuyển đúng ngữ cảnh P1; sau khi trả lời, prompt <code>Answered</code>, Task <code>Waiting for User</code> → <code>In Progress</code>, câu trả lời thành Context Item loại decision.</td><td>PROMPT-LIFECYCLE-001, UX-PROMPT-001–005, UX-PENDING-001, UX-PENDING-002; 4.4</td></tr>
+<tr><td id="ts-05-02">TS-05-02 · E2E</td><td>Prompt <code>edit_and_approve</code> cho metadata reference.</td><td>Sửa tiêu đề rồi duyệt.</td><td>Giá trị đã sửa được lưu; Audit Event ghi giá trị trước/sau và actor.</td><td>PROMPT-LIFECYCLE-001, LIB-APPROVAL-001, DATA-AUDIT-001</td></tr>
+<tr><td id="ts-05-03">TS-05-03 · API</td><td>Project có một prompt không chặn tiến trình ở trạng thái <code>Open</code>.</td><td>Lưu trữ project.</td><td>Prompt chuyển <code>Expired</code>; không được coi là đồng ý; không có quyết định nào được ghi. Prompt không bao giờ hết hạn theo thời gian (OQ-023 đã giải quyết).</td><td>PROMPT-LIFECYCLE-001; 5.9</td></tr>
+<tr><td id="ts-05-04">TS-05-04 · API</td><td>Prompt đã <code>Answered</code>.</td><td>Gửi câu trả lời lần hai.</td><td>Bị từ chối; câu trả lời đầu giữ nguyên.</td><td>PROMPT-LIFECYCLE-001, DATA-IDEMP-001</td></tr>
+<tr><td id="ts-05-05">TS-05-05 · Sec</td><td>Bất kỳ APR-01–APR-10.</td><td>Thử tạo phê duyệt bằng Agent Run (giả lập agent gửi lệnh “approve”).</td><td>System từ chối; không có chuyển trạng thái; Audit Event ghi lần thử bị từ chối.</td><td>PROMPT-APPROVAL-001, NFR-AUTHZ-001; REL-04</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-6">19.6. Reference Discovery, Import and Approval</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-06-01">TS-06-01 · E2E</td><td>Truy cập Google Scholar khả dụng.</td><td>Tìm theo từ khóa và theo tác giả ở Discover; chọn ba kết quả, loại một.</td><td>Kết quả có metadata và liên kết nguồn; phân biệt rõ discovered result với Trusted Reference; tìm theo tác giả không khẳng định đủ danh mục.</td><td>DISC-SCHOLAR-001, DISC-REVIEW-001, DISC-AUTHOR-001, INT-SCHOLAR-001, INT-SCHOLAR-003, INT-SCHOLAR-004, UX-REF-001; WF-04.S1–S2</td></tr>
+<tr><td id="ts-06-02">TS-06-02 · E2E</td><td>Ba kết quả đã chọn, một trùng với reference sẵn có.</td><td>Nhập theo lô; xử lý trùng; duyệt từng reference.</td><td>Reference <code>Pending Approval</code> có metadata chuẩn hóa; đề xuất gộp bản trùng; sau duyệt → <code>Trusted</code>; discovered result → <code>Imported</code>.</td><td>LIB-IMPORT-001, LIB-METADATA-001, LIB-APPROVAL-001; WF-04.S3–S5, A1</td></tr>
+<tr><td id="ts-06-03">TS-06-03 · E2E</td><td>Reference vừa <code>Trusted</code>, có PDF hợp lệ; một reference khác không có toàn văn.</td><td>Theo dõi indexing.</td><td>Reference đầu <code>Indexed</code>; reference sau <code>Unavailable</code>, vẫn dùng được cho citation, không cho evidence.</td><td>LIB-CONTENT-001, EVID-INDEX-001, INT-DOC-001, INT-VECTOR-001; WF-04.S6</td></tr>
+<tr><td id="ts-06-04">TS-06-04 · E2E</td><td>Reference <code>Trusted</code> ở thư viện.</td><td>Thêm vào P2.</td><td>Reference dùng được ở P2 mà không phải nhập lại; Trusted Library hiển thị P1 và P2 đang dùng.</td><td>LIB-LIBRARY-001, LIB-PROJECT-001; DEC-04</td></tr>
+<tr><td id="ts-06-05">TS-06-05 · E2E</td><td>Reference <code>Pending Approval</code>.</td><td>Yêu cầu Evidence Retrieval tìm trong project.</td><td>Reference chưa duyệt không bao giờ xuất hiện trong kết quả evidence.</td><td>LIB-APPROVAL-001, EVID-RETRIEVAL-001; GOAL-03</td></tr>
+<tr><td id="ts-06-06">TS-06-06 · API</td><td>Google Scholar trả lỗi giới hạn.</td><td>Chạy tìm kiếm.</td><td>Lỗi rõ ràng; không thử vượt giới hạn; đề nghị luồng nhập do người dùng hỗ trợ (BibTeX/RIS, DOI, liên kết) theo OQ-081.</td><td>DISC-SCHOLAR-002, INT-SCHOLAR-002, INT-SCHOLAR-005, INT-SCHOLAR-006; WF-04.E1, OOS-06</td></tr>
+<tr><td id="ts-06-08">TS-06-08 · E2E</td><td>Dịch vụ trung gian không trả kết quả cho truy vấn.</td><td>Nhập thủ công BibTeX của hai bài lấy từ Google Scholar và một DOI.</td><td>Ba reference <code>Pending Approval</code>, metadata đã chuẩn hóa, có kiểm tra trùng; duyệt như WF-04 (DEC-19, DEC-20).</td><td>INT-SCHOLAR-006, LIB-IMPORT-001, LIB-IMPORT-002, LIB-METADATA-001; WF-04</td></tr>
+<tr><td id="ts-06-09">TS-06-09 · API</td><td>Hệ thống cấu hình source adapter dự phòng (ví dụ OpenAlex hoặc Semantic Scholar).</td><td>Chạy tìm kiếm ở Discover.</td><td>Kết quả có metadata chuẩn hóa và <code>source</code> là nguồn dự phòng; WF-04 không đổi (OQ-006).</td><td>INT-SCHOLAR-007, INT-SCHOLAR-001</td></tr>
+<tr><td id="ts-06-07">TS-06-07 · E2E</td><td>Reference <code>Trusted</code> được dùng bởi evidence, claim và citation.</td><td>Thu hồi reference.</td><td>Reference <code>Revoked</code>; evidence <code>Stale</code> và không được liên kết vào claim mới; claim, citation và Task phụ thuộc mang cờ needs review; kiểm tra citation báo lỗi cho citation tới reference đó; không tự xóa.</td><td>LIB-LIFECYCLE-001, PLAN-IMPACT-001</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-7">19.7. Evidence Retrieval and Claim Verification</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-07-01">TS-07-01 · E2E</td><td>P1 có ít nhất 5 reference <code>Indexed</code>.</td><td>Thực thi Task tổng hợp; mở Evidence Inspector.</td><td>Mỗi evidence có reference, vị trí đoạn và ngữ cảnh xung quanh; claim liên kết evidence supports/contradicts; mức hỗ trợ được gán.</td><td>EVID-RETRIEVAL-001, EVID-INSPECTOR-001, CLAIM-MAPPING-001, CLAIM-SUPPORT-001, UX-EVID-001; WF-05.S1–S3</td></tr>
+<tr><td id="ts-07-02">TS-07-02 · E2E</td><td>Hai reference nói ngược nhau về một điểm.</td><td>Tổng hợp.</td><td>Claim <code>Conflicting</code>; bản tổng hợp trình bày cả hai phía và giữ sự không chắc chắn.</td><td>CLAIM-CONFLICT-001, SYN-REVIEW-001; WF-05.A1</td></tr>
+<tr><td id="ts-07-03">TS-07-03 · E2E</td><td>Claim không có evidence.</td><td>Xem claim ở bản tổng hợp và bản thảo.</td><td>Nhãn Unsupported hiển thị ở mọi nơi dùng claim.</td><td>CLAIM-SUPPORT-001, UX-CLAIM-001; KPI-01</td></tr>
+<tr><td id="ts-07-04">TS-07-04 · E2E</td><td>Bản tổng hợp <code>Draft</code>.</td><td>Chấp nhận một claim, sửa một claim, từ chối một claim; chấp nhận bản tổng hợp.</td><td>Trạng thái claim đúng; bản tổng hợp <code>Accepted</code> liên kết Task, reference và claim.</td><td>SYN-HUMAN-REVIEW-001, SYN-PERSIST-001; APR-06</td></tr>
+<tr><td id="ts-07-05">TS-07-05 · E2E</td><td>Bản thảo có câu trích dẫn sai nguồn.</td><td>Chạy kiểm tra citation.</td><td>Citation được đánh dấu không khớp nguồn kèm evidence liên quan.</td><td>CLAIM-CITATION-001; WF-05.S6</td></tr>
+<tr><td id="ts-07-06">TS-07-06 · API</td><td>Claim A có một evidence hỗ trợ trực tiếp đã qua Verification Agent; claim B chỉ có evidence <code>context</code>; claim C có evidence hỗ trợ nhưng chưa qua Verification Agent.</td><td>Xem mức hỗ trợ của ba claim.</td><td>Chỉ claim A có thể là <code>Supported</code>; không áp ngưỡng số lượng evidence (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-052)).</td><td>CLAIM-SUPPORT-001; KPI-01</td></tr>
+<tr><td id="ts-07-07">TS-07-07 · E2E</td><td>Ngưỡng kiểm chứng đang ở giá trị mặc định.</td><td>Researcher đổi một ngưỡng trong Settings → Ngưỡng kiểm chứng; chạy lại kiểm chứng; khôi phục mặc định.</td><td>Thay đổi ghi Audit Event; lần kiểm chứng sau dùng ngưỡng mới và VerificationResult ghi bộ ngưỡng đã dùng; kết quả kiểm chứng cũ không đổi (OQ-092; ASM-15).</td><td>CLAIM-SUPPORT-001, CLAIM-CITATION-001, DATA-AUDIT-001</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-8">19.8. LaTeX Default and Blank Modes</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-08-01">TS-08-01 · E2E</td><td>P1 chưa có Manuscript.</td><td>Khởi tạo Default; compile ngay.</td><td>Có <code>main.tex</code>, <code>bibliography/references.bib</code>, <code>figures/</code>, <code>sections/</code>; build <code>Succeeded</code>; PDF hiển thị.</td><td>MS-INIT-001, MS-TEMPLATE-001, MS-BUILD-001, UX-MS-001; DEC-09</td></tr>
+<tr><td id="ts-08-02">TS-08-02 · E2E</td><td>P2 chưa có Manuscript.</td><td>Khởi tạo Blank; tạo file, thư mục, đổi tên; dùng <code>\input{}</code>.</td><td>Workspace rỗng ban đầu; thao tác file đúng; mỗi thay đổi tạo Manuscript Revision.</td><td>MS-INIT-001, MS-EDITOR-001, MS-REVISION-001</td></tr>
+<tr><td id="ts-08-03">TS-08-03 · E2E</td><td>Claim và bản tổng hợp <code>Accepted</code>.</td><td>Yêu cầu Writing Agent viết section; xem diff; chấp nhận.</td><td>Change Proposal dạng diff; không file nào đổi trước khi chấp nhận; sau chấp nhận có revision mới liên kết Task và Change Proposal.</td><td>MS-AIWRITE-001, MS-DIFF-001, UX-MS-002; APR-05, WF-05.S5–S7</td></tr>
+<tr><td id="ts-08-04">TS-08-04 · E2E</td><td>Change Proposal <code>Proposed</code>.</td><td>Sửa tay cùng file; quay lại chấp nhận proposal.</td><td>Proposal <code>Outdated</code>; không áp dụng được.</td><td>MS-DIFF-001; WF-05.A3</td></tr>
+<tr><td id="ts-08-05">TS-08-05 · E2E</td><td>Diff chứa citation key không thuộc Trusted Reference.</td><td>Thử chấp nhận.</td><td>Bị chặn; chỉ ra key lỗi.</td><td>MS-BIB-001, CLAIM-CITATION-001; KPI-02</td></tr>
+<tr><td id="ts-08-06">TS-08-06 · E2E</td><td>File có lỗi LaTeX (thiếu dấu ngoặc, thiếu file hình).</td><td>Compile.</td><td>Build <code>Failed</code>; log đầy đủ; lỗi được diễn giải dễ hiểu bằng ngôn ngữ giao diện, chỉ tới file và dòng.</td><td>MS-BUILD-001, MS-BUILDENV-001, INT-LATEX-001–005, UX-MS-004; WF-05.E2</td></tr>
+<tr><td id="ts-08-07">TS-08-07 · Sec</td><td>File LaTeX gọi lệnh shell.</td><td>Compile.</td><td>Lệnh không được thực thi; build cô lập.</td><td>NFR-SANDBOX-001, MS-BUILDENV-001, INT-LATEX-002</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-9">19.9. Diagram Generation and Validation</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-09-01">TS-09-01 · E2E</td><td>Task yêu cầu sơ đồ workflow.</td><td>Thực thi; xem preview; sửa nguồn; chấp nhận.</td><td>Artifact diagram có nguồn Mermaid, preview, version, Task; version mới khi sửa; <code>Accepted</code> sau APR-07.</td><td>DIAG-GEN-001, DIAG-TYPES-001, DIAG-SOURCE-001, DIAG-REVIEW-001, INT-DIAGRAM-001; WF-07</td></tr>
+<tr><td id="ts-09-02">TS-09-02 · API</td><td>Agent trả nguồn sai cú pháp liên tục.</td><td>Chạy workflow.</td><td>Thử sửa trong giới hạn; sau đó lưu Draft kèm lỗi để sửa tay.</td><td>DIAG-VALIDATE-001, INT-DIAGRAM-001, INT-DIAGRAM-004; WF-07.E1</td></tr>
+<tr><td id="ts-09-03">TS-09-03 · E2E</td><td>Diagram <code>Accepted</code>; Manuscript có.</td><td>Đưa vào bản thảo.</td><td>Change Proposal thêm file hình và lệnh chèn; chỉ áp dụng sau APR-05; build thành công.</td><td>MS-DIAGRAM-001; WF-07.S7</td></tr>
+<tr><td id="ts-09-04">TS-09-04 · E2E</td><td>Diagram <code>Draft</code>.</td><td>Thử đưa vào bản thảo.</td><td>Bị chặn: chỉ diagram <code>Accepted</code> mới được đưa vào.</td><td>DIAG-REVIEW-001, MS-DIAGRAM-001</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-10">19.10. Multi-Provider Context Routing</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-10-01">TS-10-01 · E2E</td><td>Ba Provider Connection.</td><td>Tạo, kiểm tra từng kết nối; tạo kết nối với key sai.</td><td>Kết nối hợp lệ <code>Valid</code> kèm danh sách model; key sai <code>Invalid</code> với <code>auth_failed</code>; key chỉ hiển thị dạng che.</td><td>AGENT-PROVIDER-002, INT-PROVIDER-001, NFR-SECRETS-001, NFR-SECRETS-002; DEC-12</td></tr>
+<tr><td id="ts-10-02">TS-10-02 · E2E</td><td>Ba kết nối hợp lệ.</td><td>Gán Orchestrator dùng Claude, Synthesis dùng OpenAI, Verification dùng Gemini; chạy WF-05 S1–S3.</td><td>Mỗi Agent Run ghi đúng provider và model; kết quả có cấu trúc giống nhau về định dạng; handoff giữa agent dùng tham chiếu entity.</td><td>AGENT-PROVIDER-001, AGENT-PROVIDER-003, AGENT-HANDOFF-001, CTX-ROUTING-001, INT-PROVIDER-002; REL-06</td></tr>
+<tr><td id="ts-10-03">TS-10-03 · E2E</td><td>Kịch bản TS-10-02.</td><td>Lặp lại với mỗi provider cho mọi agent.</td><td>Bảy workflow chạy được với mỗi provider.</td><td>REL-06</td></tr>
+<tr><td id="ts-10-04">TS-10-04 · E2E</td><td>Workflow đang chạy với model X.</td><td>Đổi model của agent sang Y trong lúc chạy.</td><td>Agent Run đang chạy giữ X; Agent Run sau dùng Y.</td><td>AGENT-PROVIDER-003; SCOPE-13</td></tr>
+<tr><td id="ts-10-05">TS-10-05 · API</td><td>Provider trả <code>rate_limited</code> rồi thành công; provider khác trả <code>auth_failed</code>.</td><td>Chạy Agent Run.</td><td>Lỗi tạm thời được adapter gọi lại trong cùng Agent Run (tối đa 3 lần, 17.1), rồi Orchestrator tạo tối đa 2 Agent Run mới (8.5); lỗi cố định không thử lại và tạo notification Provider issue.</td><td>ORCH-FAILURE-001, INT-PROVIDER-003, INT-PROVIDER-004, DATA-IDEMP-004</td></tr>
+<tr><td id="ts-10-06">TS-10-06 · API</td><td>Context lắp ráp vượt context window của model.</td><td>Chạy Agent Run.</td><td>Context được cắt gọn theo thứ tự ưu tiên ở 14.2; không mất quyết định của người dùng; nếu vẫn vượt, lỗi <code>context_too_long</code> rõ ràng.</td><td>CTX-ASSEMBLY-001 (OQ-035 đã giải quyết)</td></tr>
+<tr><td id="ts-10-07">TS-10-07 · Sec</td><td>Mọi kịch bản 19.10.</td><td>Rà log, context manifest, artifact, audit trail, phản hồi giao diện.</td><td>Không có giá trị API key nào xuất hiện.</td><td>NFR-SECRETS-002, NFR-OBS-002; REL-07</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-11">19.11. Interruption, Recovery and Resume</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-11-01">TS-11-01 · E2E</td><td>Workflow nhiều bước đang chạy ở bước 3.</td><td>Dừng dịch vụ chạy workflow; khởi động lại; Researcher đăng nhập.</td><td>Workflow <code>Interrupted</code>; Dashboard hiển thị workflow bị gián đoạn; khôi phục tại checkpoint sau bước 2; Recovery decision; chọn tiếp tục → bước 3 chạy lại bằng Agent Run mới; không mất đầu ra bước 1–2.</td><td>CTX-RECOVERY-001, NFR-REC-001, NFR-REC-002, UX-STATE-005; WF-06, KPI-03</td></tr>
+<tr><td id="ts-11-02">TS-11-02 · E2E</td><td>Task <code>Waiting for User</code>.</td><td>Đóng trình duyệt hai ngày; quay lại.</td><td>Prompt vẫn <code>Open</code> và hiển thị đầu tiên; không cần Recovery decision.</td><td>PROMPT-LIFECYCLE-001, UX-OVERVIEW-002; WF-06.A1, GOAL-02</td></tr>
+<tr><td id="ts-11-03">TS-11-03 · API</td><td>Agent Run của workflow đã bị hủy trả kết quả muộn.</td><td>Kết quả đến.</td><td>Kết quả được lưu dạng bị bỏ, không ghi đè kết quả mới hơn.</td><td>CTX-CONSISTENCY-002, DATA-IDEMP-003; 14.6</td></tr>
+<tr><td id="ts-11-04">TS-11-04 · E2E</td><td>Workflow <code>Interrupted</code>; trong lúc đó baseline đổi.</td><td>Khôi phục.</td><td>Cảnh báo baseline đã đổi trước khi tiếp tục; cho phép chạy lại từ đầu.</td><td>CTX-RECOVERY-001; WF-06.A2</td></tr>
+<tr><td id="ts-11-05">TS-11-05 · E2E</td><td>Workflow đang chạy.</td><td>Tạm dừng, tiếp tục, rồi hủy từ Agent Activity.</td><td>Trạng thái Workflow và Task đúng (T-08, T-09, T-10); đầu ra đã lưu giữ ở Draft.</td><td>UX-MONITOR-002–004, ORCH-FAILURE-001, TASK-STATE-001; SCOPE-12</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-12">19.12. Authorization and Cross-Project Isolation</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Điều kiện trước</th>
+<th scope="col">Bước</th>
+<th scope="col">Kết quả mong đợi</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-12-01">TS-12-01 · Sec</td><td>Tài khoản A và B.</td><td>B mở địa chỉ trực tiếp tới project, Task, artifact, reference của A.</td><td>Trả về “không tìm thấy”; không tiết lộ sự tồn tại.</td><td>NFR-ISOL-001, NFR-AUTHZ-001, CTX-ISOLATION-001; REL-05</td></tr>
+<tr><td id="ts-12-02">TS-12-02 · Sec</td><td>P1 và P2 cùng tài khoản A.</td><td>Chạy Task ở P2; kiểm tra context manifest của mọi Agent Run.</td><td>Không có dữ liệu cấp project của P1 trong context; chỉ có Trusted Reference đã chọn cho P2.</td><td>CTX-ISOLATION-001, CTX-ASSEMBLY-001; 3.4</td></tr>
+<tr><td id="ts-12-03">TS-12-03 · Sec</td><td>Specialist Agent đang chạy.</td><td>Agent yêu cầu đọc entity ngoài phạm vi được giao.</td><td>System từ chối; ghi Audit Event.</td><td>AGENT-SCOPE-001, CTX-ROUTING-001</td></tr>
+<tr><td id="ts-12-04">TS-12-04 · Sec</td><td>Mọi APR-01–APR-10.</td><td>Thử thực hiện bằng agent và bằng lời nhắc trong chat.</td><td>Không hành động nào thành công; chỉ thao tác của Researcher có hiệu lực.</td><td>PROMPT-APPROVAL-001, NFR-AUTHZ-001; REL-04</td></tr>
+<tr><td id="ts-12-05">TS-12-05 · Sec</td><td>Matrix 3.5 và quyền theo trạng thái 18.2.</td><td>Thử từng hành động bị cấm theo trạng thái (sửa Plan Version Approved, xóa Task In Progress, sửa Agent Run đã kết thúc).</td><td>Mọi hành động bị từ chối; dữ liệu không đổi.</td><td>DATA-STATE-001, DATA-STATE-002, DATA-VALID-001</td></tr>
+<tr><td id="ts-12-06">TS-12-06 · Sec</td><td>Mọi thay đổi trong các kịch bản trên.</td><td>Rà audit trail.</td><td>Mỗi phê duyệt và thay đổi có actor (Researcher, agent + Agent Run, hoặc System); audit chỉ ghi thêm.</td><td>CTX-AUDIT-001, DATA-AUDIT-001; DEC-16</td></tr>
+<tr><td id="ts-12-07">TS-12-07 · Sec</td><td>Người dùng có tài khoản eTroy, chưa từng vào SIRes.</td><td>Mở SIRes; chọn đăng nhập; xác thực ở eTroy OIDC; đăng xuất; đăng nhập lại.</td><td>Chỉ có lựa chọn đăng nhập qua eTroy OIDC (không form email/mật khẩu, không Google); lần đầu tạo tài khoản SIRes liên kết <code>sub</code> với họ tên, email lấy từ claim; lần sau dùng lại cùng tài khoản; callback sai <code>state</code> bị từ chối (OQ-073).</td><td>NFR-AUTH-001, INT-OIDC-001, INT-OIDC-002, INT-OIDC-003</td></tr>
+<tr><td id="ts-12-08">TS-12-08 · Sec</td><td>Một người dùng đang có phiên còn hạn; eTroy OIDC bị làm cho không khả dụng.</td><td>Người dùng khác thử đăng nhập; người dùng đang có phiên tiếp tục thao tác.</td><td>Đăng nhập mới không được, có thông báo dịch vụ đăng nhập eTroy tạm thời không khả dụng; phiên đang có hoạt động đến khi token hết hạn (ASM-13).</td><td>INT-OIDC-004</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-13">19.13. Kịch bản xuyên suốt và đo KPI</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã · mức</th>
+<th scope="col">Mục tiêu</th>
+<th scope="col">Cách thực hiện</th>
+<th scope="col">Tiêu chí đạt</th>
+<th scope="col">Bao phủ</th>
+</tr></thead><tbody>
+<tr><td id="ts-13-01">TS-13-01 · E2E</td><td>Hành trình end-to-end qua nhiều phiên.</td><td>PO thực hiện đề tài mẫu từ 6.1 đến 6.11 trong ít nhất hai phiên tách biệt, có một lần gián đoạn có chủ đích.</td><td>Đi hết hành trình trong sản phẩm; mọi bước khôi phục được; bản thảo compile thành PDF.</td><td>REL-01, REL-02; GOAL-01, GOAL-02</td></tr>
+<tr><td id="ts-13-02">TS-13-02 · API</td><td>Đo KPI-01.</td><td>Trên bộ dữ liệu nghiệm thu, đếm claim trong tổng hợp và bản thảo có evidence liên kết hợp lệ.</td><td>≥ 95%.</td><td>NFR-KPI-001, CLAIM-SUPPORT-001</td></tr>
+<tr><td id="ts-13-03">TS-13-03 · API</td><td>Đo KPI-02.</td><td>Đếm citation key trong bản thảo phân giải về Trusted Reference.</td><td>= 100%.</td><td>NFR-KPI-001, MS-BIB-001</td></tr>
+<tr><td id="ts-13-04">TS-13-04 · API</td><td>Đo KPI-03.</td><td>Gây gián đoạn có chủ đích ở mọi loại bước của mọi workflow; đếm lần khôi phục không mất kết quả đã hoàn tất.</td><td>≥ 99%.</td><td>NFR-KPI-001, CTX-RECOVERY-001</td></tr>
+<tr><td id="ts-13-05">TS-13-05 · API</td><td>Đo KPI-04.</td><td>Trên các Task đi từ chọn đến nghiệm thu, đếm Task bị trả lại hoặc chạy lại với reasonCode thiếu đầu vào.</td><td>≤ 10%.</td><td>NFR-KPI-001, TASK-READINESS-001</td></tr>
+<tr><td id="ts-13-06">TS-13-06 · E2E</td><td>Trạng thái giao diện và khả năng tiếp cận.</td><td>Rà mọi màn hình chính ở loading, empty, error; kiểm tra bàn phím và tương phản; hai ngôn ngữ; các kích thước màn hình hỗ trợ.</td><td>Đạt UX-STATE-001–006, UX-A11Y-001–003, UX-RESP-001, UX-I18N-001–004.</td><td>REL-08; 15.8, 15.9</td></tr>
+<tr><td id="ts-13-07">TS-13-07 · API</td><td>Hiệu năng, quan sát, usage.</td><td>Đo theo phương pháp ở 16.3, 16.5, 16.6.</td><td>Đạt chỉ tiêu 16.3–16.6 (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-075)).</td><td>NFR-PERF-001–007, NFR-OBS-001–006, NFR-USAGE-001–004</td></tr>
+<tr><td id="ts-13-08">TS-13-08 · API</td><td>Độ chính xác đánh giá mức hỗ trợ claim.</td><td>Trên bộ dữ liệu nghiệm thu (20.4), với provider thật và Ngưỡng kiểm chứng mặc định, so mức hỗ trợ do Verification Agent gán với nhãn chuyên gia của PO cho từng claim.</td><td>Tỷ lệ khớp ≥ 85% (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092)).</td><td>CLAIM-SUPPORT-001, NFR-KPI-001</td></tr>
+<tr><td id="ts-13-09">TS-13-09 · API</td><td>Phát hiện citation không khớp nguồn.</td><td>Trên bộ dữ liệu nghiệm thu, cài các citation không khớp nguồn đã được gán nhãn; chạy kiểm tra citation với provider thật và Ngưỡng kiểm chứng mặc định.</td><td>Phát hiện ≥ 95% citation không khớp đã gán nhãn (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092)).</td><td>CLAIM-CITATION-001</td></tr>
+<tr><td id="ts-13-10">TS-13-10 · API</td><td>Đánh giá offline đa provider bằng Eval Trace (đề xuất, chờ PO duyệt).</td><td>Chạy eval harness trên bộ dữ liệu nghiệm thu với ba provider; mở báo cáo; chọn ngẫu nhiên các claim lệch nhãn chuyên gia và mở Eval Trace của chúng.</td><td>Báo cáo đủ metric NFR-EVAL-003 (a)–(e) tách theo agent và provider, model, phiên bản prompt; mọi claim lệch nhãn truy được Eval Trace đủ trường; 0 truy cập dữ liệu người dùng.</td><td>NFR-EVAL-001, NFR-EVAL-002, NFR-EVAL-003, NFR-OBS-006</td></tr>
+<tr><td id="ts-13-11">TS-13-11 · API</td><td>Cổng hồi quy khi đổi prompt hoặc cấu hình (đề xuất, chờ PO duyệt).</td><td>Từ baseline đã duyệt, áp một thay đổi prompt của Verification Agent được làm kém đi có chủ đích, rồi một thay đổi trung tính; chạy cổng hồi quy cho từng thay đổi.</td><td>Thay đổi kém đi bị đánh dấu không đạt và không được phát hành; thay đổi trung tính đạt (dung sai theo OQ-097).</td><td>NFR-EVAL-004</td></tr>
+</tbody></table></div>
+
+<h2 id="s-19-oq">19.14. Open Questions của mục 19</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-095</td><td>Kiểm thử chấp nhận dùng provider thật cho mọi kịch bản, hay chỉ cho 19.10 và đo KPI, còn lại dùng provider giả lập? Ai chịu chi phí gọi provider khi kiểm thử? <strong>Đã đóng 31/10/2026 (PC-01):</strong> provider thật cho 19.10 và các phép đo KPI (kể cả TS-13-08, TS-13-09); các kịch bản khác dùng provider giả lập; đội phát triển chịu chi phí.</td><td>19, 20.4</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="18-data-and-state-specifications.html">← Mục 18</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="20-mvp-delivery-plan.html">Mục 20 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

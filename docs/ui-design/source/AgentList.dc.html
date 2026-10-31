@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Agent List</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<section aria-labelledby="agents-h" style="box-sizing: border-box; width: 100%; background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 8px; color: {{t.text}}; font-family: Montserrat, system-ui, sans-serif">
+  <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; padding: 14px 16px; border-bottom: 1px solid {{t.border}}">
+    <h2 id="agents-h" style="margin: 0; font-size: 16px; font-weight: 600">Agents</h2>
+    <span role="status" style="font-size: 13px; color: {{t.muted}}; font-variant-numeric: tabular-nums">{{summary}}</span>
+  </div>
+  <ul style="margin: 0; padding: 0; list-style: none">
+    <sc-for list="{{agents}}" as="a" hint-placeholder-count="5">
+      <li style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-top: {{a.div}}">
+        <span aria-hidden="true" style="flex: none; width: 32px; height: 32px; border-radius: 16px; background: {{t.raised}}; color: {{t.text}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">{{a.mono}}</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+          <span style="font-size: 14px; font-weight: 600; line-height: 1.35">{{a.name}}</span>
+          <span style="font-size: 12px; color: {{t.muted}}; line-height: 1.4">{{a.role}}</span>
+          <sc-if value="{{a.hasTask}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 12px; line-height: 1.45; color: {{t.muted}}"><a href="Plan.dc.html" style="font-family: 'JetBrains Mono', monospace; color: {{t.link}}">{{a.task}}</a> {{a.detail}}</span>
+          </sc-if>
+        </div>
+        <span style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; border-radius: 4px; border: 1px solid {{a.b}}; background: {{a.bg}}; color: {{a.fg}}; font-size: 12px; font-weight: 600; white-space: nowrap">
+          <sc-if value="{{a.running}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: {{t.brand}}; animation: sires-pulse 1.6s ease-in-out infinite"></span></sc-if>
+          <sc-if value="{{a.error}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>
+          {{a.state}}
+        </span>
+      </li>
+    </sc-for>
+  </ul>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted"],"default":"running"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":380,"height":420}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const wf = this.props.wfState ?? 'running';
+    const dark = (this.props.theme ?? 'light') === 'dark';
+    const t = dark
+      ? { surface: '#1C1B18', raised: '#2E2B26', border: '#3A372F', text: '#F6F2EE', muted: '#C9C2B6', link: '#7CC0FF', brand: '#3DA5FF',
+          run: ['#3DA5FF', '#0E2A45', '#F6F2EE'], idle: ['#3A372F', '#26241F', '#C9C2B6'], err: ['#F87171', '#3A1518', '#FCA5A5'] }
+      : { surface: '#FCF9F5', raised: '#E5DED5', border: '#DBD3C7', text: '#1C1B18', muted: '#4D4A44', link: '#025FAC', brand: '#0277DD',
+          run: ['#0277DD', '#EAF4FE', '#1C1B18'], idle: ['#DBD3C7', '#F6F2EE', '#4D4A44'], err: ['#BE123C', '#FFF1F2', '#9F1239'] };
+    // Who is doing what in workflow wf-52d (T-2.3), per workflow state.
+    const plan = {
+      running: { orc: ['run', 'điều phối bước 3/5'], dis: ['idle'], evi: ['run', 'bước 3/5 · 02:14'], syn: ['idle'], ver: ['idle'] },
+      waiting: { orc: ['idle'], dis: ['run', 'bước 2/5 · chờ bạn trả lời prompt'], evi: ['idle'], syn: ['idle'], ver: ['idle'] },
+      interrupted: { orc: ['idle'], dis: ['idle'], evi: ['err', 'gián đoạn ở bước 3/5 · 09:58'], syn: ['idle'], ver: ['idle'] }
+    }[wf] || {};
+    const label = { run: 'Đang chạy', idle: 'Đang rảnh', err: 'Lỗi' };
+    const roster = [
+      ['orc', 'OR', 'Orchestrator', 'Điều phối, giao việc cho agent'],
+      ['dis', 'DI', 'Discovery Agent', 'Tìm tài liệu học thuật'],
+      ['evi', 'ER', 'Evidence Retrieval Agent', 'Truy xuất evidence từ nguồn đã duyệt'],
+      ['syn', 'SY', 'Synthesis Agent', 'Tổng hợp, lập ma trận so sánh'],
+      ['ver', 'VE', 'Verification Agent', 'Kiểm chứng claim và citation']
+    ];
+    const agents = roster.map(([k, mono, name, role], i) => {
+      const [s, detail] = plan[k] || ['idle'];
+      const c = s === 'run' ? t.run : s === 'err' ? t.err : t.idle;
+      return { mono, name, role, state: label[s], running: s === 'run', error: s === 'err', hasTask: s !== 'idle', task: 'T-2.3', detail: detail || '', b: c[0], bg: c[1], fg: c[2], div: i === 0 ? '0' : '1px solid ' + t.border };
+    });
+    const n = (s) => agents.filter((a) => a.state === label[s]).length;
+    const parts = [[n('run'), 'đang chạy'], [n('err'), 'lỗi'], [n('idle'), 'đang rảnh']].filter(([c]) => c > 0).map(([c, w]) => c + ' ' + w);
+    return { t, agents, summary: parts.join(', ') };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Manuscript Workspace</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="Manuscript" hint-size="100%,57px"></dc-import>
+  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 16px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
+      <a href="Overview.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 8px; text-decoration: none; color: #4D4A44"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Project</a>
+      <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid {{buildBorder}}; color: {{buildColor}}; font-size: 12px; font-weight: 600">{{buildLabel}}</span>
+      <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">revision 18 · đã lưu 09:41</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <div role="tablist" aria-label="Vùng phải" style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+          <button role="tab" aria-selected="{{t.sel}}" style="height: 34px; padding: 0 12px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 13px Montserrat, sans-serif">{{t.label}}</button>
+        </sc-for>
+      </div>
+      <button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Build PDF</button>
+    </div>
+  </div>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <aside aria-label="Tệp và dàn ý" style="flex: 1 1 200px; max-width: 230px; background: #FCF9F5; border-right: 1px solid #DBD3C7; padding: 12px 8px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="padding: 0 8px 6px; font-size: 12px; font-weight: 600; color: #4D4A44">Tệp</span>
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="6">
+          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px 0 {{f.pad}}; border-radius: 6px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1C1B18; background: {{f.bg}}"><span>{{f.name}}</span><sc-if value="{{f.mark}}" hint-placeholder-val="{{ false }}"><span style="font: 600 10px Montserrat, sans-serif; color: #025FAC">đề xuất</span></sc-if></a>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="padding: 0 8px 6px; font-size: 12px; font-weight: 600; color: #4D4A44">Dàn ý</span>
+        <sc-for list="{{outline}}" as="o" hint-placeholder-count="5">
+          <a href="#" style="display: flex; align-items: center; min-height: 32px; padding: 0 8px; border-radius: 6px; text-decoration: none; font-size: 13px; color: #4D4A44">{{o}}</a>
+        </sc-for>
+      </div>
+    </aside>
+
+    <section aria-label="Trình soạn LaTeX" style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; background: #FCF9F5; border-right: 1px solid #DBD3C7">
+      <div style="display: flex; align-items: center; gap: 2px; padding: 0 8px; border-bottom: 1px solid #DBD3C7">
+        <span style="height: 38px; display: flex; align-items: center; padding: 0 12px; border-bottom: 2px solid #1C1B18; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500">sections/intro.tex</span>
+        <span style="height: 38px; display: flex; align-items: center; padding: 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4D4A44">main.tex</span>
+      </div>
+      <div style="overflow-x: auto; padding: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.75">
+        <sc-for list="{{codeA}}" as="l" hint-placeholder-count="6">
+          <div style="display: flex; gap: 14px; padding: 0 14px; white-space: pre"><span style="width: 22px; text-align: right; color: #7A756C; flex-shrink: 0">{{l.n}}</span><span style="color: {{l.color}}">{{l.t}}</span></div>
+        </sc-for>
+        <div style="display: flex; gap: 14px; padding: 0 14px; white-space: pre; position: relative"><span style="width: 22px; text-align: right; color: #7A756C; flex-shrink: 0">7</span><span>survey of RAG systems <span style="color: #025FAC">\citep{</span><span style="border-bottom: 2px dashed #BE123C; color: #BE123C">gao2023survy</span><span style="color: #025FAC">}</span>.</span></div>
+        <div role="tooltip" style="margin: 4px 14px 8px 50px; max-width: 380px; padding: 10px 12px; background: #FCF9F5; border: 1px solid #BE123C; border-radius: 6px; font-family: Montserrat, sans-serif; font-size: 12px; line-height: 1.5; display: flex; flex-direction: column; gap: 4px">
+          <strong style="color: #BE123C">Citation không phân giải: gao2023survy</strong>
+          <span>Không có Trusted Reference với key này trong project. Gợi ý: <span style="font-family: 'JetBrains Mono', monospace">gao2023survey</span></span>
+        </div>
+
+        <div style="margin: 6px 14px 8px 50px; border: 1.5px dashed {{propBorder}}; border-radius: 6px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; font-family: Montserrat, sans-serif; background: {{propBg}}">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; color: #4D4A44">
+            <span style="font-weight: 600; color: {{propBorder}}">Change Proposal · Writing Agent · {{propState}}</span>
+            <span>T-2.1 · 2 claim · 3 evidence · 2 file</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #FFE4E6; color: #9F1239">− Prior work shows retrieval always helps.</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ Retrieval restricted to vetted sources improves factuality \citep{lewis2020rag, asai2024selfrag}.</span></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px">
+            <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #0277DD; color: #025FAC; font-weight: 600">Claim Supported</span>
+            <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid {{citeBorder}}; color: {{citeColor}}; font-weight: 600">{{citeLabel}}</span>
+          </div>
+          <sc-if value="{{isOutdated}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; line-height: 1.5">Hết hiệu lực: <span style="font-family: 'JetBrains Mono', monospace">sections/intro.tex</span> đã đổi từ revision 16 (gốc của proposal) sang 18.</span></sc-if>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-if value="{{canAccept}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Chấp nhận cả proposal</button></sc-if>
+            <sc-if value="{{citeBlocked}}" hint-placeholder-val="{{ false }}"><button disabled style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 13px Montserrat, sans-serif">Chấp nhận — citation lỗi</button></sc-if>
+            <sc-if value="{{isOutdated}}" hint-placeholder-val="{{ false }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Yêu cầu tạo lại</button></sc-if>
+            <sc-if value="{{notOutdated}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Từ chối</button></sc-if>
+            <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 36px; padding: 0 6px; font-size: 13px">Xem evidence</a>
+          </div>
+        </div>
+        <sc-for list="{{codeB}}" as="l" hint-placeholder-count="4">
+          <div style="display: flex; gap: 14px; padding: 0 14px; white-space: pre"><span style="width: 22px; text-align: right; color: #7A756C; flex-shrink: 0">{{l.n}}</span><span style="color: {{l.color}}">{{l.t}}</span></div>
+        </sc-for>
+      </div>
+    </section>
+
+    <sc-if value="{{showPdf}}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Xem trước PDF" style="flex: 1 1 360px; min-width: 0; background: #EFEAE3; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #4D4A44"><span>Xem trước PDF</span><span style="font-family: 'JetBrains Mono', monospace">Trang 1 / 6</span></div>
+        <article style="background: #FCF9F5; border: 1px solid #DBD3C7; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px; font-family: 'Times New Roman', Times, serif; color: #1C1B18">
+          <h2 style="margin: 0; text-align: center; font-weight: 600; font-size: 20px; line-height: 1.25">Retrieval over Vetted Sources for LLM-assisted Literature Review</h2>
+          <p style="margin: 0; text-align: center; font-size: 13px">[Tác giả] · [Đơn vị]</p>
+          <h3 style="margin: 6px 0 0; font-weight: 600; font-size: 15px">1 Introduction</h3>
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.55">Large language models are increasingly used to support literature review <span style="border-bottom: 1px solid #0277DD">[1, 2]</span>. However, unverified generation can introduce unsupported claims <span style="border-bottom: 2px dashed #BE123C; color: #BE123C">[?]</span>.</p>
+        </article>
+      </section>
+    </sc-if>
+    <sc-if value="{{showLog}}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Build log" style="flex: 1 1 360px; min-width: 0; background: #FCF9F5; display: flex; flex-direction: column">
+        <div style="padding: 14px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 4px">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600; color: #BE123C">Build thất bại · 08:52 · revision 17</h2>
+          <span style="font-size: 13px; color: #4D4A44">Bản PDF trước (revision 16) vẫn được giữ.</span>
+        </div>
+        <ul style="margin: 0; padding: 0; list-style: none">
+          <li style="padding: 14px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.5">
+            <strong>Thiếu package booktabs</strong>
+            <span style="color: #4D4A44">main.tex dòng 4 dùng <code style="font-family: 'JetBrains Mono', monospace">\toprule</code> nhưng chưa nạp package. Cách sửa: thêm <code style="font-family: 'JetBrains Mono', monospace">\usepackage{booktabs}</code> vào phần mở đầu.</span>
+            <a href="#" style="font-size: 13px; font-weight: 600">Đi tới main.tex:4</a>
+          </li>
+          <li style="padding: 14px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.5">
+            <strong>Citation không phân giải: gao2023survy</strong>
+            <span style="color: #4D4A44">sections/intro.tex dòng 7. Key không có trong references.bib.</span>
+            <a href="#" style="font-size: 13px; font-weight: 600">Đi tới intro.tex:7</a>
+          </li>
+        </ul>
+        <details style="padding: 14px 18px; font-size: 13px">
+          <summary style="cursor: pointer; font-weight: 600">Log gốc (pdfLaTeX)</summary>
+          <pre style="margin: 10px 0 0; padding: 10px 12px; background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; font: 400 12px/1.55 'JetBrains Mono', monospace; overflow-x: auto">! Undefined control sequence.
+l.4 \toprule
+LaTeX Warning: Citation `gao2023survy' undefined.</pre>
+        </details>
+      </section>
+    </sc-if>
+    <sc-if value="{{showHistory}}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Lịch sử revision" style="flex: 1 1 360px; min-width: 0; background: #FCF9F5; display: flex; flex-direction: column">
+        <h2 style="margin: 0; padding: 14px 18px; border-bottom: 1px solid #DBD3C7; font-size: 15px; font-weight: 600">Lịch sử revision</h2>
+        <sc-for list="{{revs}}" as="r" hint-placeholder-count="4">
+          <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 18px; border-bottom: 1px solid #DBD3C7; font-size: 13px; line-height: 1.5"><input type="checkbox" checked="{{r.sel}}" style="margin-top: 3px"><span><strong style="font-family: 'JetBrains Mono', monospace; font-size: 12px">r{{r.n}}</strong> · {{r.actor}} · {{r.time}}<br><span style="color: #4D4A44">{{r.src}}</span></span></label>
+        </sc-for>
+        <div style="padding: 12px 18px"><button style="height: 38px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">So sánh r16 ↔ r18</button></div>
+      </section>
+    </sc-if>
+  </div>
+
+  <footer style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 6px 16px; background: #FCF9F5; border-top: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">
+    <span>Active task: T-2.3 · So sánh phương pháp đo</span>
+    <span>pdfLaTeX · natbib · thay đổi chưa lưu được giữ cục bộ</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"rightPane":{"editor":"enum","options":["pdf","build-log","history"],"default":"pdf"},"proposal":{"editor":"enum","options":["ok","citation-error","outdated"],"default":"ok"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pane = this.props.rightPane ?? 'pdf';
+    const p = this.props.proposal ?? 'ok';
+    const cmd = '#025FAC', txt = '#1C1B18', dim = '#4D4A44';
+    const line = (n, t, color) => ({ n: String(n), t, color: color || txt });
+    const failed = pane === 'build-log';
+    return {
+      showPdf: pane === 'pdf', showLog: failed, showHistory: pane === 'history',
+      tabs: [['pdf', 'PDF'], ['build-log', 'Build log'], ['history', 'Lịch sử']].map(([k, label]) => ({ label, sel: k === pane ? 'true' : 'false', bg: k === pane ? '#1C1B18' : '#FFFFFF', fg: k === pane ? '#FFFFFF' : '#4D4A44' })),
+      buildLabel: failed ? 'Build lỗi · 08:52' : 'Build OK · 09:41', buildBorder: failed ? '#BE123C' : '#1C1B18', buildColor: failed ? '#BE123C' : '#1C1B18',
+      propState: p === 'outdated' ? 'Outdated' : 'Proposed', propBorder: p === 'outdated' ? '#4D4A44' : '#025FAC', propBg: p === 'outdated' ? '#F6F2EE' : '#FFFFFF',
+      isOutdated: p === 'outdated', notOutdated: p !== 'outdated', canAccept: p === 'ok', citeBlocked: p === 'citation-error',
+      citeLabel: p === 'citation-error' ? 'Citation lỗi: asai2024selfrg' : 'Citation: 2/2 phân giải', citeBorder: p === 'citation-error' ? '#BE123C' : '#1C1B18', citeColor: p === 'citation-error' ? '#BE123C' : '#1C1B18',
+      files: [
+        { name: 'main.tex', pad: '8px', bg: 'transparent', mark: false },
+        { name: 'references.bib', pad: '8px', bg: 'transparent', mark: false },
+        { name: 'sections/', pad: '8px', bg: 'transparent', mark: false },
+        { name: 'intro.tex', pad: '22px', bg: '#EAF4FE', mark: true },
+        { name: 'method.tex', pad: '22px', bg: 'transparent', mark: false },
+        { name: 'figures/', pad: '8px', bg: 'transparent', mark: false }
+      ],
+      outline: ['1 Introduction', '2 Related Work', '3 Method', '4 Results', '5 Discussion'],
+      codeA: [
+        line(1, '\\section{Introduction}', cmd),
+        line(2, '\\label{sec:intro}', cmd),
+        line(3, ''),
+        line(4, 'Large language models are increasingly used to'),
+        line(5, 'support literature review \\citep{lewis2020rag, gao2023survey}.'),
+        line(6, 'A recent')
+      ],
+      codeB: [
+        line(9, ''),
+        line(10, '% Active task T-2.3 — so sánh phương pháp đo', dim),
+        line(11, 'Prior work shows retrieval always helps.'),
+        line(12, '\\input{sections/method}', cmd)
+      ],
+      revs: [
+        { n: '18', actor: 'Nguyễn Thanh', time: '09:41', src: 'Sửa trực tiếp · intro.tex', sel: true },
+        { n: '17', actor: 'Writing Agent', time: '08:50', src: 'Proposal đã chấp nhận · T-2.1', sel: false },
+        { n: '16', actor: 'Nguyễn Thanh', time: '30/10 17:02', src: 'Sửa trực tiếp · main.tex', sel: true },
+        { n: '15', actor: 'System', time: '20/10 10:00', src: 'Khởi tạo Default', sel: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

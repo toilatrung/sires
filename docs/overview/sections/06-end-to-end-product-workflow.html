@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>6. End-to-End Product Workflow | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 06</p><h1>6. End-to-End Product Workflow</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–5, mục 21.1</p><div class="note"><p>Mục này mô tả hành trình nghiên cứu end-to-end (6.1–6.11) và đặc tả bảy workflow bắt buộc WF-01–WF-07. Các bước và điểm duyệt lấy từ outline (<strong>Confirmed</strong>). Luồng chi tiết, nhánh lỗi và thay đổi trạng thái là <strong>Assumption</strong>, dùng tên entity và trạng thái chuẩn của <a href="05-core-domain-model.html">mục 5</a>. Các câu hỏi đã đóng được ghi ở <a href="#s-6-12">6.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-6-0">Hành trình tổng thể</a></li>
+<li><a href="#s-6-1">6.1. Create Research Project</a></li>
+<li><a href="#s-6-2">6.2. Research Context Gathering</a></li>
+<li><a href="#s-6-3">6.3. Multi-Agent Analysis</a></li>
+<li><a href="#s-6-4">6.4. Plan Proposal</a></li>
+<li><a href="#s-6-5">6.5. Plan Approval</a></li>
+<li><a href="#s-6-6">6.6. Task Selection and Readiness Check</a></li>
+<li><a href="#s-6-7">6.7. Task Execution</a></li>
+<li><a href="#s-6-8">6.8. Task Review and Acceptance</a></li>
+<li><a href="#s-6-9">6.9. Continue Research</a></li>
+<li><a href="#s-6-10">6.10. Research Synthesis and Manuscript</a></li>
+<li><a href="#s-6-11">6.11. Recovery and Resumption</a></li>
+<li><a href="#mandatory-workflows">WF-01–WF-07: workflow bắt buộc</a></li>
+<li><a href="#s-6-12">6.12. Open Questions của mục 6</a></li>
+</ul></details>
+
+<h2 id="s-6-0">Hành trình tổng thể</h2>
+<pre><code>6.1 Tạo project ─► 6.2 Làm rõ ngữ cảnh ─► 6.3 Phân tích multi-agent ─► 6.4 Đề xuất Plan
+                                                                          │
+        ┌─────────────────────────────────────────────────────────────────┘
+        ▼
+6.5 Phê duyệt Plan [APR-01] ─► 6.6 Chọn Task + readiness [APR-02] ─► 6.7 Thực thi
+        ▲                                   ▲                               │
+        │ thay đổi lớn                       │ chọn Task tiếp               ▼
+        └──────────── 6.9 Tiếp tục ◄──────── 6.8 Review + nghiệm thu [APR-03]
+                           │
+                           ▼
+              6.10 Tổng hợp + bản thảo [APR-05, APR-06]
+6.11 Khôi phục: có thể xảy ra ở bất kỳ bước nào có workflow đang chạy hoặc đang chờ.</code></pre>
+<p class="status">FIG-003 — Hành trình end-to-end. Nguồn: <a href="../figures/FIG-003-end-to-end-journey.mmd">figures/FIG-003-end-to-end-journey.mmd</a>; phụ lục B.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Bước</th>
+<th scope="col">Workflow</th>
+<th scope="col">Điểm duyệt</th>
+<th scope="col">Trạng thái chính thay đổi</th>
+</tr></thead><tbody>
+<tr><td>6.1–6.5</td><td>WF-01</td><td>APR-01</td><td>Project <code>Active</code>; Plan Version <code>Draft</code> → <code>Proposed</code> → <code>Approved</code>; Task <code>Draft</code> → <code>Blocked</code>/<code>Ready</code></td></tr>
+<tr><td>6.6</td><td>WF-02</td><td>APR-02</td><td>Task <code>Ready</code> → <code>Queued</code>, hoặc giữ <code>Blocked</code></td></tr>
+<tr><td>6.7</td><td>WF-03 (manual), WF-04, WF-05, WF-07 (tùy loại Task)</td><td>APR-04–APR-07 trong khi chạy</td><td>Task <code>Queued</code> → <code>In Progress</code> ⇄ <code>Waiting for User</code> → <code>In Review</code></td></tr>
+<tr><td>6.8–6.9</td><td>—</td><td>APR-03</td><td>Task → <code>Completed</code>; Task phụ thuộc <code>Blocked</code> → <code>Ready</code></td></tr>
+<tr><td>6.10</td><td>WF-05, WF-07</td><td>APR-05, APR-06, APR-07</td><td>Claim, Artifact Version → <code>Accepted</code>; Change Proposal → <code>Accepted</code>; Manuscript Revision mới</td></tr>
+<tr><td>6.11</td><td>WF-06</td><td>Recovery decision</td><td>Workflow <code>Interrupted</code>/<code>Paused</code> → <code>Running</code> hoặc <code>Cancelled</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-6-1">6.1. Create Research Project</h2>
+<p class="status">Confirmed (outline): người dùng tạo project và nhập ngữ cảnh ban đầu; hệ thống tạo workspace và khởi tạo trạng thái bền vững.</p>
+<ul>
+<li><strong>Actor:</strong> Researcher; System.</li>
+<li><strong>Luồng:</strong> Researcher tạo project từ Research Projects, Dashboard hoặc Global AI Assistant → nhập tên và tối thiểu câu hỏi hoặc chủ đề nghiên cứu → System tạo Research Project (<code>Active</code>), Research Plan rỗng, Shared Context, Research Context phiên bản 1, Audit Event → mở Project Workspace tại Project AI Chat.</li>
+<li><strong>Kết quả:</strong> project tồn tại và khôi phục được ở mọi phiên sau. Manuscript chưa được tạo (12.1).</li>
+</ul>
+
+<h2 id="s-6-2">6.2. Research Context Gathering</h2>
+<p class="status">Confirmed (outline): trao đổi với Orchestrator qua chat; Orchestrator xác định mục tiêu, ràng buộc, thông tin thiếu và điểm mơ hồ; hệ thống hỏi lại khi thiếu thông tin thiết yếu.</p>
+<ul>
+<li><strong>Luồng:</strong> Orchestrator đọc Research Context → đối chiếu với danh sách thông tin thiết yếu cố định để lập Plan (chốt — biên soạn, 30/10/2026): câu hỏi nghiên cứu, mục tiêu, loại sản phẩm đầu ra, phạm vi, ràng buộc thời gian/phương pháp, ngôn ngữ bản thảo. Orchestrator được hỏi thêm thông tin ngoài danh sách khi đề tài cần, nhưng không được coi thông tin ngoài danh sách là điều kiện bắt buộc → hỏi bổ sung bằng chat hoặc Interactive Agent Prompt <code>information_request</code> → ghi câu trả lời vào Research Context (phiên bản mới) và Context Item.</li>
+<li><strong>Quy tắc:</strong> Orchestrator đề xuất cập nhật Research Context (c*); thay đổi chỉ được ghi khi Researcher xác nhận, trực tiếp hoặc qua prompt. Mỗi điểm mơ hồ chưa được giải quyết được ghi thành Context Item loại <em>assumption</em>, hiển thị trong Plan đề xuất.</li>
+<li><strong>Kết thúc:</strong> khi đủ thông tin thiết yếu, hoặc khi Researcher yêu cầu lập Plan với giả định hiện có.</li>
+</ul>
+
+<h2 id="s-6-3">6.3. Multi-Agent Analysis</h2>
+<p class="status">Confirmed (outline): Orchestrator giao phân tích cho Specialist Agent liên quan; agent tạo đề xuất và phát hiện có cấu trúc; Orchestrator tổng hợp phương án, bất đồng, giả định, rủi ro.</p>
+<ul>
+<li><strong>Luồng:</strong> Orchestrator tạo Workflow loại <code>plan_proposal</code> → giao bước phân tích cho agent phù hợp (ví dụ Discovery khảo sát nhanh hướng tài liệu, Synthesis đề xuất cấu trúc literature review, Writing đề xuất cấu trúc sản phẩm đầu ra) → mỗi Agent Run trả kết quả có cấu trúc → Orchestrator tổng hợp.</li>
+<li><strong>Quy tắc:</strong> phân tích ở bước này không tạo Trusted Reference, evidence hay claim chính thức; kết quả là Artifact Version <code>Draft</code> loại note đính kèm Plan đề xuất. Toàn bộ hiển thị ở Agent Activity (SCOPE-12).</li>
+</ul>
+
+<h2 id="s-6-4">6.4. Plan Proposal</h2>
+<p class="status">Confirmed (outline): hệ thống tạo Plan nháp có phase, task, dependency, deliverable và execution label; người dùng xem, sửa, sắp xếp lại hoặc từ chối.</p>
+<ul>
+<li><strong>Luồng:</strong> Orchestrator tạo Plan Version <code>Draft</code> → System kiểm tra cấu trúc (mỗi Task có đầu ra mong đợi và acceptance criteria; dependency không có chu trình; label hợp lệ) → Researcher sửa trực tiếp hoặc yêu cầu Orchestrator sửa → Researcher trình duyệt → Plan Version <code>Proposed</code>.</li>
+<li><strong>Quy tắc:</strong> Orchestrator đề xuất execution label cho từng Task kèm lý do; Task cần đóng góp trí tuệ, phán đoán chuyên môn hoặc thao tác ngoài hệ thống (ví dụ thu thập dữ liệu thực nghiệm, phỏng vấn) được đề xuất <code>Manual editor requirement</code> (9.7).</li>
+</ul>
+
+<h2 id="s-6-5">6.5. Plan Approval</h2>
+<p class="status">Confirmed (outline, 21.1): người dùng phê duyệt rõ ràng trước khi thực thi chính thức; phiên bản đã duyệt là baseline; thay đổi lớn cần review lại.</p>
+<ul>
+<li><strong>Luồng:</strong> Researcher xem Plan Version <code>Proposed</code> (so sánh với baseline nếu có) → duyệt (APR-01) hoặc từ chối kèm lý do → khi duyệt: version thành <code>Approved</code>, baseline cũ thành <code>Superseded</code>; System tính trạng thái Task: không còn dependency mở và đủ đầu vào → <code>Ready</code>, ngược lại → <code>Blocked</code>.</li>
+<li><strong>Thay đổi sau khi duyệt:</strong> mọi sửa đổi baseline tạo Plan Version <code>Draft</code> mới. Thay đổi lớn (MC-01–MC-08 ở <a href="09-research-plan-and-task-management.html#s-9-11-material">9.11</a>) bắt buộc qua APR-01 đầy đủ. Thay đổi không thuộc danh sách thay đổi lớn (ví dụ chính tả, mô tả không đổi nghĩa) được duyệt nhanh trong một thao tác: Researcher xem diff và duyệt một lần; System vẫn tạo Plan Version mới và ghi phê duyệt APR-01 vào audit trail. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-026).</li>
+<li><strong>Task đang chạy khi baseline đổi:</strong> tiếp tục theo version nó đã bắt đầu; khi vào <code>In Review</code>, System đánh dấu nếu định nghĩa Task ở baseline mới khác.</li>
+</ul>
+
+<h2 id="s-6-6">6.6. Task Selection and Readiness Check</h2>
+<p class="status">Confirmed (outline): người dùng chọn từng Task; Orchestrator kiểm tra điều kiện; hệ thống cho phép chạy, yêu cầu bổ sung, chờ duyệt hoặc chỉ ra Task tiên quyết.</p>
+<p>Chi tiết ở <a href="#wf-02">WF-02</a>.</p>
+
+<h2 id="s-6-7">6.7. Task Execution</h2>
+<p class="status">Confirmed (outline): agent thực thi Task đủ điều kiện; Task manual do người dùng kiểm soát; đầu ra lưu thành artifact có phiên bản và provenance.</p>
+<ul>
+<li><strong>Task <code>Available for agent</code>:</strong> System tạo Workflow <code>task_execution</code> → Orchestrator lập các bước theo loại Task → giao Specialist Agent → mỗi đầu ra lưu thành Artifact Version <code>Draft</code> (hoặc Evidence, Claim <code>Draft</code>, Change Proposal) có provenance → khi các bước xong, Task → <code>In Review</code>.</li>
+<li><strong>Task <code>Manual editor requirement</code>:</strong> theo <a href="#wf-03">WF-03</a>.</li>
+<li>Trong khi chạy, Researcher theo dõi và điều khiển ở Agent Activity; mọi quyết định cần thiết đi qua Interactive Agent Prompt; Task → <code>Waiting for User</code> khi có prompt <code>Open</code> chặn tiến trình.</li>
+</ul>
+
+<h2 id="s-6-8">6.8. Task Review and Acceptance</h2>
+<p class="status">Confirmed (outline): người dùng review đầu ra theo acceptance criteria; Task được nghiệm thu, trả lại, chặn hoặc thất bại.</p>
+<ul>
+<li><strong>Luồng:</strong> Researcher mở Task <code>In Review</code> → xem đầu ra cạnh acceptance criteria và checklist → với từng artifact: chấp nhận hoặc từ chối → nghiệm thu Task (APR-03) chỉ khi mọi acceptance criteria được đánh dấu đạt và đầu ra bắt buộc có version <code>Accepted</code>.</li>
+<li><strong>Kết quả khác:</strong> <em>Trả lại</em> → Researcher ghi phản hồi và reasonCode, Task → <code>Ready</code> (T-13) để chạy lại với phản hồi là Context Item phạm vi task. <em>Chặn</em> → Task → <code>Blocked</code> kèm lý do và reasonCode, ví dụ phát hiện thiếu dữ liệu (T-15). <em>Hủy</em> → <code>Cancelled</code> (T-18).</li>
+</ul>
+
+<h2 id="s-6-9">6.9. Continue Research</h2>
+<p class="status">Confirmed (outline, 21.1): Task hoàn thành mở khóa Task phụ thuộc; người dùng chọn Task tiếp theo; tiến độ, quyết định, artifact tồn tại qua các phiên.</p>
+<ul>
+<li>Khi Task → <code>Completed</code>, System tính lại trạng thái Task phụ thuộc trực tiếp và thông báo Task mới <code>Ready</code>. Orchestrator có thể <em>gợi ý</em> Task nên làm tiếp nhưng không kích hoạt (Confirmed — 9.6).</li>
+<li>Overview hiển thị tiến độ theo Phase và bước tiếp theo gợi ý ở mọi lần mở project.</li>
+</ul>
+
+<h2 id="s-6-10">6.10. Research Synthesis and Manuscript</h2>
+<p class="status">Confirmed (outline): evidence và artifact được chấp nhận đi vào literature synthesis và LaTeX drafting; claim và citation truy vết được về nguồn.</p>
+<p>Chi tiết ở <a href="#wf-05">WF-05</a> và <a href="#wf-07">WF-07</a>.</p>
+
+<h2 id="s-6-11">6.11. Recovery and Resumption</h2>
+<p class="status">Confirmed (outline): người dùng quay lại sau gián đoạn; hệ thống khôi phục trạng thái nhất quán gần nhất và chỉ ra quyết định đang chờ và bước tiếp theo.</p>
+<p>Chi tiết ở <a href="#wf-06">WF-06</a>.</p>
+
+<h2 id="mandatory-workflows">WF-01–WF-07: workflow bắt buộc</h2>
+<p>Bảy workflow dưới đây là phạm vi bắt buộc của MVP (2.1). Mỗi workflow dùng cùng cấu trúc: actor, trigger, điều kiện trước, luồng chính, nhánh thay thế và lỗi, thay đổi trạng thái, điểm duyệt, đầu ra. Requirement chi tiết ở các mục 7–13 tham chiếu mã bước, ví dụ <code>WF-02.S3</code>; acceptance criteria ở mục 19.</p>
+
+<h3 id="wf-01">WF-01 — Research Planning and Approval</h3>
+<p class="status">Chuỗi bước Confirmed (outline): tạo project → cung cấp context → Orchestrator phân tích → agent con đề xuất → tổng hợp Plan → người dùng chỉnh sửa → phê duyệt → lưu phiên bản Plan chính thức.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, Orchestrator, Specialist Agent (phân tích), System</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher yêu cầu lập Plan trong Project AI Chat, hoặc yêu cầu thay đổi baseline.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Project <code>Active</code>; Research Context có tối thiểu câu hỏi hoặc chủ đề; Orchestrator có Agent Model Assignment hợp lệ; không có Plan Version <code>Draft</code>/<code>Proposed</code> khác đang mở.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> Orchestrator kiểm tra thông tin thiết yếu; hỏi bổ sung nếu thiếu (6.2).</li>
+<li><strong>S2</strong> System tạo Workflow <code>plan_proposal</code>; Orchestrator giao phân tích cho Specialist Agent (6.3).</li>
+<li><strong>S3</strong> Orchestrator tổng hợp: phase, Task, dependency, deliverable, label đề xuất, rủi ro, giả định, các bất đồng giữa agent.</li>
+<li><strong>S4</strong> System tạo Plan Version <code>Draft</code> và kiểm tra cấu trúc (không chu trình, Task đủ trường bắt buộc).</li>
+<li><strong>S5</strong> Researcher xem, sửa, sắp xếp lại, thêm/xóa Task hoặc yêu cầu Orchestrator sửa; mỗi lượt sửa của agent là đề xuất cần Researcher áp dụng.</li>
+<li><strong>S6</strong> Researcher trình duyệt → <code>Proposed</code>; tạo pending action Plan approval request.</li>
+<li><strong>S7</strong> Researcher duyệt (APR-01) → <code>Approved</code>; baseline cũ → <code>Superseded</code>; Audit Event.</li>
+<li><strong>S8</strong> System tính trạng thái Task (<code>Ready</code>/<code>Blocked</code>); Overview cập nhật tiến độ và bước gợi ý.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Thiếu thông tin thiết yếu và Researcher không bổ sung: Orchestrator lập Plan với giả định ghi rõ (Context Item <em>assumption</em>), hiển thị nổi bật khi duyệt.</li>
+<li><strong>A2</strong> Researcher từ chối ở S7: version → <code>Rejected</code> kèm lý do; Orchestrator có thể đề xuất Draft mới dựa trên lý do.</li>
+<li><strong>E1</strong> Dependency có chu trình hoặc Task thiếu trường bắt buộc ở S4: không cho trình duyệt; chỉ rõ Task lỗi.</li>
+<li><strong>E2</strong> Agent Run lỗi ở S2: thử lại chỉ với lỗi tạm thời: adapter gọi lại tối đa 3 lần trong cùng Agent Run (17.1), rồi Orchestrator tạo tối đa 2 Agent Run mới (ORCH-FAILURE-001); nếu vẫn lỗi, Orchestrator tổng hợp từ kết quả có được và ghi rõ phần thiếu, hoặc workflow → <code>Failed</code> và Researcher chọn chạy lại.</li>
+<li><strong>E3</strong> Gián đoạn: theo WF-06; Plan Version <code>Draft</code> đã lưu không mất.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-01 tại S7. Xác nhận cập nhật Research Context tại S1.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Plan Version <code>Approved</code> (baseline), Task với trạng thái tính toán, Artifact (note) phân tích, Context Item quyết định và giả định, Audit Event.</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-02">WF-02 — Task Selection and Readiness</h3>
+<p class="status">Chuỗi bước Confirmed (outline): chọn Task → kiểm tra Plan đã duyệt → kiểm tra dependencies → kiểm tra đầu vào và quyết định → cho phép chạy, yêu cầu bổ sung thông tin hoặc chặn Task và hướng người dùng đến công việc tiên quyết.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, System (kiểm tra xác định), Orchestrator (kiểm tra ngữ nghĩa và giải thích)</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn một Task và yêu cầu thực thi (từ Plan and Tasks hoặc Project AI Chat).</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Task thuộc baseline; trạng thái <code>Ready</code>, <code>Blocked</code>, <code>Failed</code> hoặc vừa được trả lại.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> System kiểm tra: có baseline <code>Approved</code>; Task thuộc baseline; Task không có Workflow đang hoạt động.</li>
+<li><strong>S2</strong> System kiểm tra dependency: mọi Task tiên quyết <code>Completed</code> và không mang cờ needs review.</li>
+<li><strong>S3</strong> System kiểm tra đầu vào khai báo: reference đã chọn và <code>Indexed</code> (nếu cần evidence), artifact đầu vào có version <code>Accepted</code>, quyết định cần thiết đã có.</li>
+<li><strong>S4</strong> System kiểm tra quyền và cấu hình: agent cần dùng có Agent Model Assignment với Provider Connection <code>Valid</code>.</li>
+<li><strong>S5</strong> Orchestrator kiểm tra ngữ nghĩa: đầu vào có đủ để tạo đầu ra mong đợi không; liệt kê thông tin còn thiếu.</li>
+<li><strong>S6</strong> System trình kết quả readiness: <em>Đạt</em> hoặc danh sách lý do chặn, mỗi lý do kèm hành động gợi ý (mở Task tiên quyết, bổ sung thông tin, chọn reference, cấu hình provider).</li>
+<li><strong>S7</strong> Nếu Đạt: Researcher xác nhận kích hoạt (APR-02) → Task → <code>Queued</code> → System tạo Workflow <code>task_execution</code> (hoặc WF-03 nếu manual).</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Thiếu thông tin: Orchestrator tạo prompt <code>information_request</code>; trả lời xong thì chạy lại từ S3.</li>
+<li><strong>A2</strong> Dependency chưa xong: Task → <code>Blocked</code>; chỉ ra Task tiên quyết và trạng thái của chúng; không cho kích hoạt.</li>
+<li><strong>A3</strong> Researcher muốn chạy dù thiếu: không được phép bỏ qua kiểm tra; Researcher phải sửa Plan (bỏ dependency, đổi đầu vào) qua WF-01 (3.1).</li>
+<li><strong>E1</strong> Kiểm tra ngữ nghĩa S5 lỗi do provider: hiển thị kết quả S1–S4, cho phép thử lại S5; không coi là Đạt.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-02 tại S7.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Kết quả readiness lưu trong lịch sử Task; Task <code>Queued</code> hoặc <code>Blocked</code>; pending action khi cần.</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-03">WF-03 — Manual Work Enforcement</h3>
+<p class="status">Chuỗi bước Confirmed (outline): Task có nhãn thủ công → hệ thống trình bày yêu cầu và bằng chứng cần cung cấp → người dùng thực hiện → gửi kết quả/xác nhận → kiểm tra tiêu chí nghiệm thu → mới được đánh dấu hoàn thành.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, System; Orchestrator và Verification Agent chỉ hỗ trợ khi Researcher yêu cầu</td></tr>
+<tr><th scope="row">Trigger</th><td>Task <code>Manual editor requirement</code> qua WF-02 và được Researcher kích hoạt.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Readiness Đạt.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> Task → <code>In Progress</code> (chủ thể: Researcher). System tạo pending action Manual work required.</li>
+<li><strong>S2</strong> System trình bày: mục tiêu, việc cần làm, đầu ra bắt buộc (file, văn bản, xác nhận), bằng chứng cần nộp, acceptance criteria, checklist.</li>
+<li><strong>S3</strong> Researcher thực hiện ngoài hoặc trong hệ thống (ví dụ sửa trực tiếp file bản thảo, tải lên dữ liệu).</li>
+<li><strong>S4</strong> Researcher gửi kết quả → System lưu Artifact Version loại manual_submission (actor: Researcher) → Task → <code>In Review</code>.</li>
+<li><strong>S5</strong> System kiểm tra đầu ra bắt buộc đã đủ; Researcher tự đánh giá từng acceptance criterion.</li>
+<li><strong>S6</strong> Researcher nghiệm thu (APR-03) → <code>Completed</code>.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Researcher yêu cầu agent kiểm tra kết quả (ví dụ Verification Agent kiểm tra citation): chạy như workflow phụ, đầu ra là verification_report, không thay đầu ra chính.</li>
+<li><strong>A2</strong> Researcher yêu cầu agent làm thay: bị từ chối với giải thích; muốn đổi thì phải đổi label như một thay đổi lớn MC-06: tạo Plan Version mới, ghi lý do và duyệt APR-01 (APR-10).</li>
+<li><strong>E1</strong> Thiếu đầu ra bắt buộc ở S5: không cho nghiệm thu; chỉ rõ phần thiếu.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-03 tại S6.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Artifact manual_submission; Task <code>Completed</code>; Audit Event ghi actor Researcher.</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-04">WF-04 — Reference Discovery and Trust</h3>
+<p class="status">Chuỗi bước Confirmed (outline): tìm trên Google Scholar → xem kết quả → chọn tài liệu → kiểm tra metadata → yêu cầu duyệt qua Interactive Agent Prompt → nhập thư viện → indexing → cho phép sử dụng làm nguồn tin cậy theo chính sách.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, Discovery Agent, Reference Processing Agent, System</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher tìm ở Discover, hoặc một Task tìm tài liệu được thực thi.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Discovery Agent và Reference Processing Agent có kết nối provider hợp lệ; có ít nhất một nguồn tìm kiếm khả dụng: Google Scholar qua dịch vụ trung gian theo hợp đồng (SCOPE-06, OQ-081), hoặc, nếu Google Scholar không khả thi, một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface nguồn <a href="10-academic-discovery-and-trusted-library.html#s-10-9">10.9</a> (OQ-006). Confirmed — PO chốt 31/10/2026 (PC-01, OQ-006, OQ-081).</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> Discovery Agent chạy truy vấn (query, tiêu đề, tác giả, từ khóa) → Discovered Result <code>New</code>.</li>
+<li><strong>S2</strong> Researcher xem kết quả; chọn (<code>Selected</code>) hoặc loại (<code>Rejected</code>) từng kết quả hoặc theo nhóm.</li>
+<li><strong>S3</strong> Reference Processing Agent chuẩn hóa metadata, phát hiện trùng với Trusted Library, tạo Reference <code>Pending Approval</code>.</li>
+<li><strong>S4</strong> System tạo Interactive Agent Prompt <code>approval</code> (hoặc <code>edit_and_approve</code> khi metadata cần sửa) cho từng reference hoặc theo lô trong một prompt; reference có cảnh báo trùng không nằm trong lô mà được xử lý riêng (A1). Confirmed — PO chốt 31/10/2026 (PC-01, OQ-039).</li>
+<li><strong>S5</strong> Researcher duyệt (APR-04) → Reference <code>Trusted</code>; Discovered Result → <code>Imported</code>. Khi duyệt theo lô, audit trail vẫn ghi phê duyệt riêng cho từng reference.</li>
+<li><strong>S6</strong> Nếu có nội dung truy cập hợp lệ: System index (indexing <code>Queued</code> → <code>Indexing</code> → <code>Indexed</code>) vào vector database. Nếu không: <code>Unavailable</code>, reference vẫn dùng được cho citation nhưng không cho evidence.</li>
+<li><strong>S7</strong> Nếu workflow chạy trong một Task: reference được đề xuất thêm vào Project Reference Selection; Researcher xác nhận.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Trùng lặp: Reference Processing Agent đề xuất gộp vào reference sẵn có; Researcher chọn gộp hoặc giữ riêng cho từng reference (không duyệt theo lô).</li>
+<li><strong>A2</strong> Researcher từ chối ở S5: Reference → <code>Rejected</code>; không dùng được ở đâu.</li>
+<li><strong>A3</strong> Nhập thủ công: Researcher nhập DOI, BibTeX hoặc tải lên PDF (chỉ PDF có lớp văn bản, tối đa 50 MB/file, OQ-050) thay cho S1–S2; reference đi tiếp từ S3 (chuẩn hóa metadata, kiểm tra trùng, <code>Pending Approval</code>) và qua APR-04 như luồng chính (<a href="10-academic-discovery-and-trusted-library.html#s-10-4">10.4</a>). Confirmed — PO chốt 31/10/2026 (PC-01, OQ-008).</li>
+<li><strong>E1</strong> Google Scholar (qua dịch vụ trung gian) không phản hồi, bị giới hạn hoặc chặn: báo lỗi rõ ràng, không thử vượt giới hạn (OOS-06); Researcher dùng luồng nhập do người dùng hỗ trợ (A3, OQ-081) hoặc nguồn API thay thế qua interface 10.9 nếu được dùng (OQ-006).</li>
+<li><strong>E2</strong> Indexing thất bại: indexing <code>Failed</code>, thông báo; Researcher có thể thử lại hoặc cung cấp file khác.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-04 tại S5; xác nhận thêm vào project tại S7.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Trusted Reference trong Trusted Library; Source Document đã index (nếu có); Project Reference Selection (nếu trong Task).</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-05">WF-05 — Evidence-to-Manuscript</h3>
+<p class="status">Chuỗi bước Confirmed (outline): truy xuất bằng chứng → liên kết claim với nguồn → đánh giá mức độ hỗ trợ → tổng hợp → người dùng duyệt → tạo hoặc sửa LaTeX → kiểm tra citation → compile → review PDF.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, Evidence Retrieval, Synthesis, Verification, Writing Agent, System</td></tr>
+<tr><th scope="row">Trigger</th><td>Task tổng hợp hoặc viết được thực thi.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Project có Trusted Reference được chọn và <code>Indexed</code>; với bước viết: Manuscript đã khởi tạo.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> Evidence Retrieval Agent truy xuất đoạn liên quan từ vector database (RAG) → Evidence <code>Active</code>.</li>
+<li><strong>S2</strong> Synthesis Agent tạo claim và liên kết evidence (supports/contradicts) → Claim <code>Draft</code>; bản tổng hợp → Artifact Version <code>Draft</code>.</li>
+<li><strong>S3</strong> Verification Agent đánh giá mức hỗ trợ từng claim và kiểm tra trích dẫn khớp nguồn → Supported / Partially Supported / Unsupported / Conflicting.</li>
+<li><strong>S4</strong> Researcher review trong Evidence Inspector: chấp nhận, sửa, từ chối claim (APR-06); chấp nhận bản tổng hợp.</li>
+<li><strong>S5</strong> Writing Agent tạo Change Proposal (diff LaTeX) chỉ từ claim và artifact <code>Accepted</code>; citation dùng BibTeX key của Trusted Reference.</li>
+<li><strong>S6</strong> Verification Agent kiểm tra citation trong diff: mọi key phân giải được; câu có citation khớp claim/evidence.</li>
+<li><strong>S7</strong> Researcher xem diff kèm kết quả kiểm tra; chấp nhận (APR-05) → Manuscript Revision mới.</li>
+<li><strong>S8</strong> System compile → Build <code>Succeeded</code> → Researcher xem PDF.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Evidence mâu thuẫn: claim → <code>Conflicting</code>; bản tổng hợp phải trình bày cả hai phía (11.7).</li>
+<li><strong>A2</strong> Không đủ evidence: claim giữ <code>Unsupported</code> và nhãn hiển thị; Orchestrator có thể gợi ý Task tìm thêm tài liệu (không tự chạy).</li>
+<li><strong>A3</strong> File đã đổi trước khi chấp nhận diff: Change Proposal → <code>Outdated</code>; Writing Agent có thể tạo lại trên revision mới.</li>
+<li><strong>E1</strong> Citation không phân giải ở S6: diff được đánh dấu lỗi; không cho chấp nhận đến khi sửa (KPI-02).</li>
+<li><strong>E2</strong> Build lỗi ở S8: Build <code>Failed</code>; log và lỗi được diễn giải dễ hiểu cho người dùng LaTeX cơ bản (OQ-002, 12.7).</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-06 tại S4; APR-05 tại S7.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Evidence; Claim <code>Accepted</code> có mức hỗ trợ; bản tổng hợp <code>Accepted</code>; Manuscript Revision; Build và PDF.</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-06">WF-06 — Long-Running Workflow Recovery</h3>
+<p class="status">Chuỗi bước Confirmed (outline): Task đang chạy hoặc chờ → phiên làm việc kết thúc/agent lỗi → lưu checkpoint → người dùng quay lại → khôi phục trạng thái → kiểm tra kết quả chưa hoàn tất → tiếp tục hoặc yêu cầu chạy lại có kiểm soát.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>System, Researcher, Orchestrator</td></tr>
+<tr><th scope="row">Trigger</th><td>Workflow dừng ngoài ý muốn (mất phiên, lỗi hạ tầng, lỗi provider kéo dài), hoặc Researcher quay lại khi có workflow <code>Waiting for User</code>/<code>Paused</code>.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Workflow có ít nhất một checkpoint.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> System lưu checkpoint sau mỗi bước hoàn tất và trước mỗi điểm chờ người dùng.</li>
+<li><strong>S2</strong> Khi phát hiện dừng ngoài ý muốn: Workflow → <code>Interrupted</code>; Task → <code>Waiting for User</code> (T-08); Agent Run đang chạy → <code>Failed</code> (lý do: interrupted); kết quả chưa hoàn tất không được ghi.</li>
+<li><strong>S3</strong> Researcher quay lại: Dashboard và Overview hiển thị workflow bị gián đoạn, prompt đang chờ và bước tiếp theo.</li>
+<li><strong>S4</strong> System khôi phục trạng thái tại checkpoint gần nhất; liệt kê bước đã xong, bước dở dang, đầu ra đã lưu.</li>
+<li><strong>S5</strong> System tạo Recovery decision: <em>tiếp tục từ bước dở dang</em>, <em>chạy lại bước</em> (Agent Run mới), hoặc <em>hủy workflow</em>.</li>
+<li><strong>S6</strong> Researcher chọn → Workflow → <code>Running</code> hoặc <code>Cancelled</code>; Task cập nhật tương ứng.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>A1</strong> Workflow chỉ đang <code>Waiting for User</code> (không lỗi): không cần Recovery decision; chỉ hiển thị lại prompt.</li>
+<li><strong>A2</strong> Baseline hoặc đầu vào đã thay đổi trong lúc gián đoạn: System cảnh báo trước khi tiếp tục; Researcher có thể chọn chạy lại từ đầu.</li>
+<li><strong>E1</strong> Checkpoint không nhất quán: dùng checkpoint trước đó; ghi Audit Event; báo Researcher phần bị mất.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>Recovery decision tại S5. System không tự chạy lại bước có tác động (gọi provider, ghi dữ liệu) khi chưa có xác nhận.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Workflow tiếp tục hoặc kết thúc có kiểm soát; không mất kết quả đã hoàn tất (KPI-03 ≥ 99%).</td></tr>
+</tbody></table></div>
+
+<h3 id="wf-07">WF-07 — Diagram Generation</h3>
+<p class="status">Chuỗi bước Confirmed (outline): Task yêu cầu sơ đồ → cung cấp context và loại sơ đồ → Diagram Agent tạo Mermaid/UML → validate cú pháp → preview → người dùng review → lưu artifact có thể chỉnh sửa → tích hợp vào báo cáo khi được chấp nhận.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Actor</th><td>Researcher, Diagram Agent, System</td></tr>
+<tr><th scope="row">Trigger</th><td>Task cần sơ đồ được thực thi, hoặc Researcher yêu cầu trong Project AI Chat với active task.</td></tr>
+<tr><th scope="row">Điều kiện trước</th><td>Diagram Agent có kết nối provider hợp lệ.</td></tr>
+<tr><th scope="row">Luồng chính</th><td><ol>
+<li><strong>S1</strong> Orchestrator lắp ráp context (yêu cầu Task, artifact accepted liên quan) và loại sơ đồ (13.2).</li>
+<li><strong>S2</strong> Diagram Agent tạo mã nguồn Mermaid (MVP chỉ hỗ trợ Mermaid).</li>
+<li><strong>S3</strong> System kiểm tra cú pháp và render preview.</li>
+<li><strong>S4</strong> Lưu Artifact Version <code>Draft</code> loại diagram (nguồn + preview).</li>
+<li><strong>S5</strong> Researcher review; sửa nguồn trực tiếp hoặc yêu cầu agent sửa (version mới).</li>
+<li><strong>S6</strong> Researcher chấp nhận (APR-07) → <code>Accepted</code>.</li>
+<li><strong>S7</strong> Nếu cần đưa vào bản thảo: tạo Change Proposal thêm file hình và lệnh chèn; theo APR-05.</li>
+</ol></td></tr>
+<tr><th scope="row">Nhánh thay thế / lỗi</th><td><ul>
+<li><strong>E1</strong> Lỗi cú pháp ở S3: Diagram Agent tự sửa trong giới hạn thử lại; nếu vẫn lỗi, lưu Draft kèm lỗi để Researcher sửa tay.</li>
+<li><strong>E2</strong> Render lỗi dù cú pháp đúng: báo lỗi render, vẫn lưu nguồn.</li>
+</ul></td></tr>
+<tr><th scope="row">Điểm duyệt</th><td>APR-07 tại S6; APR-05 tại S7.</td></tr>
+<tr><th scope="row">Đầu ra</th><td>Diagram artifact có nguồn chỉnh sửa được, preview, version, Task liên quan.</td></tr>
+</tbody></table></div>
+<p class="status">Sơ đồ trạng thái workflow và Task: FIG-004 (<a href="../figures/FIG-004-task-state-machine.mmd">figures/FIG-004-task-state-machine.mmd</a>), phụ lục C.</p>
+
+<h2 id="s-6-12">6.12. Open Questions của mục 6</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-025</td><td>Danh sách “thông tin thiết yếu” để lập Plan ở 6.2 có cần PO chốt cố định, hay để Orchestrator đánh giá theo từng đề tài? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> danh sách cố định sáu trường ở 6.2 là điều kiện tối thiểu; Orchestrator được hỏi thêm khi đề tài cần nhưng không bắt buộc; PO duyệt 31/10/2026 (PC-01).</td><td>6.2, WF-01.S1, 8.1</td></tr>
+<tr><td>OQ-026</td><td>Thay đổi nhỏ của baseline (6.5) có được duyệt nhanh trong một thao tác, hay mọi thay đổi đều qua đầy đủ APR-01? <strong>Đã đóng 31/10/2026 (PC-01):</strong> thay đổi không thuộc danh sách thay đổi lớn (9.11) được duyệt nhanh trong một thao tác; vẫn tạo Plan Version mới và ghi phê duyệt APR-01.</td><td>6.5, 9.2, 9.11</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="05-core-domain-model.html">← Mục 5</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="07-workspace-and-project.html">Mục 7 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

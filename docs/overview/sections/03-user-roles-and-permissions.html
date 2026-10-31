@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>3. User Roles and Permissions | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 03</p><h1>3. User Roles and Permissions</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 2 đã duyệt, mục 21.1</p><div class="note"><p>Mục này xác định ai, hoặc thành phần nào, được làm gì với tài nguyên nào. Các vai trò lấy từ outline (<strong>Confirmed</strong>). Quyền chi tiết và permission matrix do biên soạn suy ra từ các nguyên tắc ở <a href="01-document-overview.html#s-1-2">1.2</a> và phạm vi ở <a href="02-product-scope.html">mục 2</a>, đã được Product Owner duyệt trong phiếu chốt PC-01 ngày 31/10/2026 (<strong>Confirmed</strong>). Các câu hỏi của mục đã đóng, xem <a href="#s-3-6">3.6</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-3-0">Tổng quan các actor</a></li>
+<li><a href="#s-3-1">3.1. Researcher</a></li>
+<li><a href="#s-3-2">3.2. Orchestrator Agent</a></li>
+<li><a href="#s-3-3">3.3. Specialist Agents</a></li>
+<li><a href="#s-3-4">3.4. System-Level Permissions</a></li>
+<li><a href="#s-3-5">3.5. Permission Matrix</a></li>
+<li><a href="#s-3-6">3.6. Open Questions của mục 3</a></li>
+</ul></details>
+
+<h2 id="s-3-0">Tổng quan các actor</h2>
+<p>PRD dùng bốn loại actor, khớp với trường Actor trong <a href="01-document-overview.html#requirement-template">mẫu requirement</a>:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Actor</th>
+<th scope="col">Bản chất</th>
+<th scope="col">Nguồn quyền</th>
+</tr></thead><tbody>
+<tr><td>Researcher</td><td>Con người, là chủ tài khoản. Vai trò con người duy nhất trong MVP.</td><td>Sở hữu toàn bộ tài nguyên của tài khoản; là bên duy nhất có quyền phê duyệt.</td></tr>
+<tr><td>Orchestrator</td><td>AI agent điều phối, một cho mỗi phiên làm việc của project hoặc của Global AI Assistant.</td><td>Được ủy quyền trong phạm vi yêu cầu của Researcher và Plan baseline; không có quyền phê duyệt.</td></tr>
+<tr><td>Specialist Agent</td><td>AI agent chuyên trách, bảy agent theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>.</td><td>Chỉ hành động khi được Orchestrator giao, trong phạm vi một Task hoặc một workflow cụ thể.</td></tr>
+<tr><td>System</td><td>Logic xác định của ứng dụng, không dùng AI model: kiểm soát truy cập, chuyển trạng thái, readiness check, lưu trữ, audit, khôi phục.</td><td>Thực thi các quy tắc trong PRD. Không tự đưa ra quyết định thay Researcher.</td></tr>
+</tbody></table></div>
+<p class="status">Bốn actor: Confirmed (mẫu requirement, mục 1). Định nghĩa System là logic xác định không dùng AI: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<p><strong>Nguyên tắc nền (Confirmed — PO duyệt 31/10/2026, PC-01):</strong> agent đề xuất, System kiểm soát, Researcher quyết định. Một quyết định quan trọng chỉ có hiệu lực khi có hành động phê duyệt rõ ràng của Researcher được ghi vào audit trail. Kết quả agent tự báo “thành công” không thay thế được phê duyệt đó.</p>
+
+<h2 id="s-3-1">3.1. Researcher</h2>
+<p class="status">Confirmed (outline): tạo project, cung cấp ngữ cảnh, phê duyệt Plan, kích hoạt Task, review đầu ra và thực hiện công việc thủ công bắt buộc.</p>
+<h3>Trách nhiệm</h3>
+<ul>
+<li>Tạo và quản lý Research Project; cung cấp mục tiêu, ngữ cảnh và ràng buộc nghiên cứu; trả lời yêu cầu làm rõ.</li>
+<li>Review, chỉnh sửa và phê duyệt Plan; quyết định khi Plan cần thay đổi.</li>
+<li>Chọn từng Task để thực thi; review đầu ra theo acceptance criteria; nghiệm thu, trả lại hoặc hủy Task.</li>
+<li>Thực hiện Task có nhãn <code>Manual editor requirement</code> và gửi kết quả hoặc xác nhận (WF-03).</li>
+<li>Duyệt reference vào Trusted Library; chấp nhận hoặc từ chối claim, bản tổng hợp, sửa đổi bản thảo và sơ đồ.</li>
+<li>Giám sát agent, trả lời Interactive Agent Prompt, tạm dừng hoặc hủy thực thi (SCOPE-12).</li>
+<li>Quản lý Settings: thông tin cá nhân, Provider Connection và gán model cho agent, ngưỡng kiểm chứng (SCOPE-13).</li>
+<li>Đăng nhập qua eTroy OIDC; tài khoản và phương thức xác thực do nền tảng eTroy quản lý (PC-01, OQ-073).</li>
+</ul>
+<h3 id="s-3-1-exclusive">Quyền chỉ Researcher có</h3>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-019): duyệt nguyên văn APR-01–APR-10, trả lời câu hỏi “Which actions require explicit approval” ở 21.3.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Hành động</th>
+<th scope="col">Lý do</th>
+</tr></thead><tbody>
+<tr><td>APR-01</td><td>Phê duyệt Plan thành baseline; phê duyệt thay đổi lớn của Plan đã duyệt.</td><td>Confirmed — 21.1, 6.5</td></tr>
+<tr><td>APR-02</td><td>Kích hoạt thực thi một Task.</td><td>Confirmed — user-triggered execution, 21.1</td></tr>
+<tr><td>APR-03</td><td>Nghiệm thu Task (chuyển sang Completed) hoặc trả lại để sửa.</td><td>Task Completed là trạng thái do người dùng quyết định (1.2, ba lớp)</td></tr>
+<tr><td>APR-04</td><td>Duyệt reference thành Trusted Reference; thu hồi Trusted Reference.</td><td>Confirmed — 10.5</td></tr>
+<tr><td>APR-05</td><td>Chấp nhận sửa đổi vào file bản thảo.</td><td>Confirmed — 12.5</td></tr>
+<tr><td>APR-06</td><td>Chấp nhận claim và bản tổng hợp thành kết quả đã duyệt.</td><td>11.9</td></tr>
+<tr><td>APR-07</td><td>Duyệt sơ đồ trước khi đưa vào sản phẩm cuối.</td><td>13.5</td></tr>
+<tr><td>APR-08</td><td>Xóa hoặc lưu trữ project, artifact, reference và file bản thảo.</td><td>Ngăn mất dữ liệu ngoài ý muốn; xóa là xóa mềm, khôi phục trong 30 ngày (PC-01, OQ-030, OQ-078; 16.8)</td></tr>
+<tr><td>APR-09</td><td>Tạo, sửa, xóa Provider Connection; gán model cho agent; sửa thông tin cá nhân (kể cả bật/tắt đưa lĩnh vực nghiên cứu vào context agent); sửa ngưỡng kiểm chứng.</td><td>SCOPE-13; bảo vệ API key</td></tr>
+<tr><td>APR-10</td><td>Thay đổi execution label của Task sau khi Plan đã duyệt.</td><td>9.7. Đổi label là thay đổi lớn MC-06 (<a href="09-research-plan-and-task-management.html#s-9-11-material">9.11</a>), nên đi qua Plan Version mới và APR-01, kèm lý do. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-016.</td></tr>
+</tbody></table></div>
+<h3>Giới hạn</h3>
+<ul>
+<li>Researcher không chuyển được Task sang trạng thái vi phạm state machine, ví dụ chạy Task khi readiness check chưa đạt. Muốn bỏ qua phải sửa dependency hoặc Plan (9.5, 9.8).</li>
+<li>Researcher chỉ truy cập tài nguyên của tài khoản mình.</li>
+</ul>
+
+<h2 id="s-3-2">3.2. Orchestrator Agent</h2>
+<p class="status">Confirmed (outline): phân tích yêu cầu, lập workflow, định tuyến context và lệnh, kiểm tra task readiness, điều phối Specialist Agent.</p>
+<h3>Được phép</h3>
+<ul>
+<li>Đọc Shared Context của project đang làm việc: ngữ cảnh, quyết định, Plan, Task, danh sách reference được chọn, artifact và kết quả đã duyệt.</li>
+<li>Tạo bản nháp Plan, đề xuất thay đổi Plan, đề xuất execution label và dependency.</li>
+<li>Tạo workflow và giao việc cho Specialist Agent; lắp ráp context riêng cho từng agent (14.2–14.3).</li>
+<li>Yêu cầu System chạy readiness check và trình kết quả cho Researcher.</li>
+<li>Tạo Interactive Agent Prompt để xin quyết định hoặc thông tin.</li>
+<li>Tổng hợp kết quả của Specialist Agent; ghi nhận bất đồng, giả định và rủi ro.</li>
+<li>Thử lại, tạm dừng một bước trong giới hạn chính sách ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-5">8.5</a>: với lỗi tạm thời, tối đa 2 Agent Run mới, sau khi lớp adapter đã gọi lại tối đa 3 lần trong cùng Agent Run (<a href="17-integrations-and-external-dependencies.html#s-17-1">17.1</a>); lỗi cố định không thử lại. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-017.</li>
+</ul>
+<h3>Không được phép</h3>
+<ul>
+<li>Thực hiện bất kỳ hành động APR-01–APR-10 nào, kể cả khi Researcher nói trong chat “cứ làm đi”. Phê duyệt phải qua thao tác phê duyệt hoặc Interactive Agent Prompt để được ghi nhận có cấu trúc.</li>
+<li>Tự chọn và chạy Task tiếp theo sau khi một Task hoàn thành.</li>
+<li>Đọc hoặc ghi dữ liệu của project khác. Ngoại lệ là Trusted Library cấp tài khoản, chỉ đọc. Orchestrator của Global AI Assistant chỉ đọc Trusted Library và danh sách project (tên, trạng thái), không đọc nội dung project (SCOPE-02, OQ-007 đã giải quyết).</li>
+<li>Đọc giá trị API key hoặc thông tin xác thực.</li>
+<li>Gọi dịch vụ ngoài không qua adapter được định nghĩa (17).</li>
+</ul>
+
+<h2 id="s-3-3">3.3. Specialist Agents</h2>
+<p class="status">Confirmed (outline): discovery, reference processing, evidence retrieval, synthesis, writing, verification và diagram generation. Tên và phạm vi từng agent: theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a> đã duyệt. Quyền đọc và ghi bên dưới: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<h3>Quy tắc chung</h3>
+<ul>
+<li>Specialist Agent chỉ chạy khi Orchestrator giao việc, trong phạm vi một workflow, thường gắn với một Task.</li>
+<li>Agent chỉ nhận context do Orchestrator lắp ráp cho lượt việc đó, không truy cập tự do vào Shared Context (cách ly context, 14.5).</li>
+<li>Kết quả agent tạo ra luôn là <em>bản mới hoặc bản đề xuất</em>, có provenance. Agent không sửa hay ghi đè phiên bản đã được Researcher chấp nhận.</li>
+<li>Agent không tạo hay sửa định nghĩa agent và không đổi model của chính nó.</li>
+<li>Verification Agent không kiểm chứng nội dung do chính lượt chạy của nó tạo ra.</li>
+</ul>
+<h3>Phạm vi truy cập theo agent</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Agent</th>
+<th scope="col">Đọc</th>
+<th scope="col">Tạo (bản mới/đề xuất)</th>
+<th scope="col">Hành động ngoài hệ thống</th>
+</tr></thead><tbody>
+<tr><td>Discovery</td><td>Research Context, chỉ dẫn tìm kiếm của Task; danh sách Trusted Reference để tránh trùng</td><td>Discovered results</td><td>Truy vấn Google Scholar qua adapter được phép</td></tr>
+<tr><td>Reference Processing</td><td>Discovered results đã được chọn; metadata trong Trusted Library</td><td>Reference chờ duyệt, metadata chuẩn hóa, cảnh báo trùng lặp, yêu cầu indexing</td><td>Lấy metadata hoặc nội dung từ nguồn được phép</td></tr>
+<tr><td>Evidence Retrieval</td><td>Câu hỏi hoặc claim cần evidence; index của Trusted Reference được chọn cho project</td><td>Evidence</td><td>Không (chỉ công cụ truy xuất nội bộ)</td></tr>
+<tr><td>Synthesis</td><td>Evidence, claim và artifact đã duyệt liên quan đến Task</td><td>Claim, bản tổng hợp, ma trận so sánh</td><td>Không</td></tr>
+<tr><td>Writing</td><td>File bản thảo liên quan, evidence và claim đã duyệt, Trusted Reference (BibTeX)</td><td>Đề xuất sửa đổi dạng diff</td><td>Không</td></tr>
+<tr><td>Verification</td><td>Claim, citation, evidence, Trusted Reference và nội dung cần kiểm</td><td>Kết quả kiểm chứng (mức hỗ trợ của claim), artifact verification_report</td><td>Không (chỉ công cụ truy xuất nội bộ)</td></tr>
+<tr><td>Diagram</td><td>Yêu cầu Task, artifact đã duyệt liên quan, loại sơ đồ</td><td>Diagram artifact (mã nguồn và preview)</td><td>Không (chỉ công cụ kiểm tra và render nội bộ)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-4">3.4. System-Level Permissions</h2>
+<h3 id="s-3-4-isolation">Cách ly project và task</h3>
+<p class="status">Confirmed (outline): project and task isolation. Quy tắc cụ thể: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<ul>
+<li>Mọi tài nguyên thuộc đúng một tài khoản. Tài nguyên cấp project thuộc đúng một project. System từ chối mọi truy cập chéo tài khoản.</li>
+<li>Trusted Reference thuộc cấp tài khoản. Project chỉ dùng những reference đã được chọn cho project đó (10.6). Evidence và claim thuộc cấp project.</li>
+<li>Context gửi cho một Agent Run chỉ gồm dữ liệu của project và Task đang thực thi, cộng với các Trusted Reference được chọn.</li>
+<li>Kết quả của một Task chỉ thành đầu vào cho Task khác khi đã được nghiệm thu, hoặc khi dependency cho phép rõ ràng.</li>
+</ul>
+<h3>Quyền đọc/ghi artifact và reference</h3>
+<p class="status">Confirmed (outline): read/write permissions for artifacts and references. Quy tắc cụ thể: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<ul>
+<li>Mọi thay đổi artifact hoặc file bản thảo tạo phiên bản mới; không ghi đè mất lịch sử (12.10, 14.4).</li>
+<li>Artifact Version có trạng thái <code>Draft</code>, <code>Accepted</code>, <code>Rejected</code>, <code>Superseded</code> (<a href="05-core-domain-model.html#s-5-7-states">5.7</a>). Chỉ version <code>Accepted</code> mới được dùng làm đầu vào chính thức cho Task khác và cho bản thảo.</li>
+<li>Discovered result không bao giờ được dùng làm nguồn cho evidence hay citation.</li>
+<li>Khi một Trusted Reference bị thu hồi: evidence của nó chuyển <code>Stale</code> và không được dùng cho claim mới; claim, citation và Task phụ thuộc nhận cờ needs review; citation tới reference đó bị kiểm tra citation báo lỗi cho đến khi Researcher thay citation hoặc duyệt lại reference. System không tự xóa dữ liệu (<a href="10-academic-discovery-and-trusted-library.html#lib-lifecycle-001">LIB-LIFECYCLE-001</a>). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-018.</li>
+</ul>
+<h3>Thẩm quyền phê duyệt</h3>
+<ul>
+<li>Chỉ Researcher có thẩm quyền phê duyệt (APR-01–APR-10). Không có cơ chế ủy quyền phê duyệt cho agent trong MVP.</li>
+<li>Mỗi phê duyệt ghi lại: người phê duyệt, thời điểm, đối tượng và phiên bản được duyệt, và quyết định (duyệt, từ chối, sửa rồi duyệt).</li>
+<li>Phê duyệt gắn với một phiên bản cụ thể. Đối tượng thay đổi sau khi duyệt thì cần duyệt lại theo quy tắc của từng loại (ví dụ thay đổi lớn của Plan, 9.11).</li>
+<li>Interactive Agent Prompt hết hạn hoặc bị hủy không được coi là đồng ý (5.9).</li>
+</ul>
+<h3>Giới hạn hành động của agent</h3>
+<ul>
+<li>System, không phải agent, thực hiện mọi chuyển trạng thái của Plan, Task, reference và artifact, và kiểm tra quyền trước mỗi chuyển trạng thái.</li>
+<li>Agent không xóa vĩnh viễn dữ liệu, không thay đổi Settings và không truy cập API key.</li>
+<li>System chặn chạy trùng cùng một Task và không để kết quả cũ ghi đè kết quả mới hơn mà không thông báo (14.6).</li>
+<li>Mọi hành động của agent có tác động lâu dài được ghi vào audit trail, kèm agent, provider và model, Task và workflow (14.8).</li>
+</ul>
+
+<h2 id="s-3-5">3.5. Permission Matrix</h2>
+<p class="status">Confirmed — PO duyệt 31/10/2026 (PC-01, BL-03-01). Quyền theo trạng thái mở rộng matrix này ở <a href="18-data-and-state-specifications.html#s-18-2-perm">18.2</a>.</p>
+<p>Ký hiệu: <strong>R</strong> read, <strong>C</strong> create, <strong>E</strong> edit, <strong>A</strong> approve, <strong>X</strong> execute, <strong>V</strong> revoke, <strong>D</strong> delete. <strong>c*</strong> = chỉ tạo bản nháp hoặc đề xuất, cần Researcher chấp nhận. <strong>—</strong> = không có quyền. Quyền của Specialist Agent chỉ áp dụng cho agent liên quan và trong phạm vi Task được giao (xem <a href="#s-3-3">3.3</a>).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Tài nguyên</th>
+<th scope="col">Researcher</th>
+<th scope="col">Orchestrator</th>
+<th scope="col">Specialist Agent</th>
+<th scope="col">System</th>
+</tr></thead><tbody>
+<tr><td>Research Project và ngữ cảnh</td><td>R C E D</td><td>R, c* (đề xuất cập nhật ngữ cảnh)</td><td>R (phần được giao)</td><td>R, khởi tạo workspace</td></tr>
+<tr><td>Plan (bản nháp)</td><td>R C E D</td><td>R c*</td><td>R (khi phân tích)</td><td>R, kiểm tra vòng phụ thuộc</td></tr>
+<tr><td>Plan baseline</td><td>R A</td><td>R</td><td>R (phần liên quan)</td><td>R, khóa phiên bản đã duyệt</td></tr>
+<tr><td>Task (định nghĩa, label)</td><td>R C E D A</td><td>R c*</td><td>R (Task được giao)</td><td>R, readiness check</td></tr>
+<tr><td>Thực thi Task</td><td>X (kích hoạt), hủy</td><td>Điều phối sau khi được kích hoạt</td><td>Thực hiện bước được giao</td><td>Chuyển trạng thái, chặn chạy trùng</td></tr>
+<tr><td>Nghiệm thu Task</td><td>A</td><td>—</td><td>—</td><td>Kiểm tra điều kiện, ghi trạng thái</td></tr>
+<tr><td>Workflow và Agent Run</td><td>R, tạm dừng, tiếp tục, hủy</td><td>R C, thử lại trong chính sách</td><td>R (lượt của chính mình)</td><td>R E, checkpoint, khôi phục</td></tr>
+<tr><td>Interactive Agent Prompt</td><td>R, trả lời</td><td>R C, hủy prompt của mình</td><td>c* (qua Orchestrator)</td><td>Hết hạn, liên kết workflow</td></tr>
+<tr><td>Discovered result</td><td>R, chọn, loại</td><td>R</td><td>C (Discovery)</td><td>R</td></tr>
+<tr><td>Trusted Reference (cấp tài khoản)</td><td>R A V D, sửa metadata (chỉ Researcher; mỗi lần sửa tạo phiên bản mới — PC-01, OQ-090)</td><td>R</td><td>R; c* (Reference Processing)</td><td>R, indexing, phát hiện trùng</td></tr>
+<tr><td>Reference được chọn cho project</td><td>R C D</td><td>R, c* (đề xuất chọn)</td><td>R</td><td>R</td></tr>
+<tr><td>Evidence</td><td>R, loại bỏ</td><td>R</td><td>C (Evidence Retrieval), R</td><td>R</td></tr>
+<tr><td>Claim và bản tổng hợp</td><td>R E A D</td><td>R</td><td>c* (Synthesis); R và ghi kết quả kiểm chứng (Verification)</td><td>R, gắn kết quả kiểm chứng</td></tr>
+<tr><td>Artifact</td><td>R C E A D</td><td>R c*</td><td>c* (theo vai trò)</td><td>R, lưu phiên bản, provenance</td></tr>
+<tr><td>File bản thảo LaTeX</td><td>R C E D, chấp nhận diff (A)</td><td>R</td><td>R; c* dạng diff (Writing)</td><td>R, revision, compile</td></tr>
+<tr><td>Diagram</td><td>R E A D</td><td>R</td><td>c* (Diagram)</td><td>R, kiểm tra cú pháp</td></tr>
+<tr><td>Shared Context</td><td>R (qua giao diện)</td><td>R, định tuyến</td><td>Chỉ phần được lắp ráp</td><td>R E</td></tr>
+<tr><td>Audit trail</td><td>R</td><td>—</td><td>—</td><td>C (chỉ ghi thêm)</td></tr>
+<tr><td>Provider Connection và gán model</td><td>R C E D (key hiển thị dạng che)</td><td>—</td><td>—</td><td>Dùng key khi gọi provider; không lộ ra ngoài</td></tr>
+<tr><td>Thông tin cá nhân</td><td>R E</td><td>Chỉ R trường lĩnh vực nghiên cứu, và chỉ khi Researcher bật tùy chọn đưa vào context; không đọc các trường khác (PC-01, OQ-015)</td><td>—</td><td>R</td></tr>
+</tbody></table></div>
+<p>Quy tắc đọc matrix: quyền ở bảng là quyền tối đa. Quyền thực tế còn phụ thuộc trạng thái của tài nguyên. Ví dụ, Plan baseline không sửa trực tiếp được mà phải tạo phiên bản mới; Task đang In Progress không bị xóa. Quyền theo trạng thái được đặc tả ở <a href="18-data-and-state-specifications.html#s-18-2-perm">18.2</a>.</p>
+
+<h3>Mở rộng trong tương lai</h3>
+<p>Khi có nhóm nghiên cứu (FUT-02), Researcher được tách thành các vai trò như Owner, Editor, Reviewer, Viewer. Matrix giữ nguyên các cột agent và System, thêm cột cho từng vai trò con người. Vì vậy MVP phải ghi actor cho mọi phê duyệt và thay đổi ngay từ đầu (OQ-004 đã đóng: mức chuẩn bị tối thiểu, xem <a href="01-document-overview.html#s-1-4">1.4</a>).</p>
+
+<h2 id="s-3-6">3.6. Open Questions của mục 3</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-016</td><td>Researcher có được đổi Task từ <code>Manual editor requirement</code> sang <code>Available for agent</code> không? Nếu được, có cần xác nhận thêm hoặc ghi lý do không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> được, nhưng đổi label là thay đổi lớn MC-06 nên phải qua Plan Version mới, APR-01 và ghi lý do (9.7, 9.11); PO duyệt 31/10/2026 (PC-01).</td><td>APR-10, 9.7, WF-03</td></tr>
+<tr><td>OQ-017</td><td>Orchestrator được tự thử lại bao nhiêu lần, với loại lỗi nào, trước khi phải hỏi Researcher? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> chỉ lỗi tạm thời (<code>rate_limited</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>network_error</code>) được thử lại: adapter gọi lại tối đa 3 lần trong một Agent Run, Orchestrator tạo tối đa 2 Agent Run mới (8.5, 17.1); PO duyệt 31/10/2026 (PC-01).</td><td>3.2, 8.5, 16</td></tr>
+<tr><td>OQ-018</td><td>Khi thu hồi Trusted Reference: chỉ đánh dấu evidence, claim, citation phụ thuộc để xem lại, hay chặn dùng ngay? Bản thảo đã có citation tới reference đó xử lý thế nào? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> evidence chuyển Stale và bị chặn cho claim mới; claim, citation, Task phụ thuộc nhận cờ needs review; citation trong bản thảo bị kiểm tra citation báo lỗi cho đến khi thay hoặc duyệt lại reference (LIB-LIFECYCLE-001); PO duyệt 31/10/2026 (PC-01).</td><td>3.4, 10.8, 11, 12.6</td></tr>
+<tr><td>OQ-019</td><td>Duyệt danh sách hành động bắt buộc phê duyệt APR-01–APR-10 (trả lời một phần câu hỏi ở 21.3). <strong>Đã đóng 31/10/2026 (PC-01):</strong> duyệt nguyên văn APR-01–APR-10.</td><td>3.1, 8.4, 19</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-product-scope.html">← Mục 2</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="04-information-architecture-and-navigation.html">Mục 4 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

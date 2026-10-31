@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Research Projects</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="projects" hint-size="100%,57px"></dc-import>
+  <div style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: 943px">
+    <main style="flex: 999 1 560px; min-width: 0; max-width: 1240px; margin: 0 auto; padding: 32px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+        <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Research Projects</h1>
+        <button style="height: 44px; padding: 0 18px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 600 14px Montserrat, sans-serif">Tạo project</button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+        <div role="tablist" aria-label="Lọc theo trạng thái" style="display: flex; gap: 2px; border-bottom: 1px solid #DBD3C7">
+          <button role="tab" aria-selected="true" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Active · 3</button>
+          <button role="tab" aria-selected="false" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Archived · 1</button>
+          <button role="tab" aria-selected="false" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Đã xóa (30 ngày) · 0</button>
+        </div>
+        <label style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Tìm project
+          <input type="search" placeholder="Tên, câu hỏi nghiên cứu…" style="height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif; color: #1C1B18; background: #E5DED5">
+        </label>
+      </div>
+      <div style="position: relative; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <table style="width: 100%; min-width: 820px; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="text-align: left; font-size: 12px; color: #4D4A44">
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Project</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Plan</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Tiến độ</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Chờ bạn</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Hoạt động cuối</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Thao tác</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+              <tr>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top">
+                  <a href="Overview.dc.html" style="display: block; font-weight: 600; color: #1C1B18; text-decoration: none">{{r.name}}</a>
+                  <span style="display: block; margin-top: 3px; font-size: 13px; color: #4D4A44; line-height: 1.45">{{r.q}}</span>
+                </td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.pb}}; color: {{r.pc}}; font-size: 12px; font-weight: 600; white-space: nowrap">{{r.plan}}</span></td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.prog}}</td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top">{{r.wait}}</td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top; color: #4D4A44">{{r.last}}</td>
+                <td style="padding: 14px 16px; border-bottom: 1px solid #DBD3C7; vertical-align: top; text-align: right"><button aria-label="Thao tác cho {{r.name}}" style="width: 36px; height: 36px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #4D4A44">Menu thao tác: Mở · Sửa thông tin · Lưu trữ (chỉ đọc, prompt còn mở chuyển Expired) · Xóa (khôi phục được trong 30 ngày).</p>
+    </main>
+
+    <aside aria-labelledby="np" style="flex: 1 1 380px; max-width: 440px; box-sizing: border-box; background: #FCF9F5; border-left: 1px solid #DBD3C7; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+      <h2 id="np" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px">Tạo project</h2>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Tên project
+        <input value="Độ tin cậy của LLM trong giáo dục" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif; color: #1C1B18">
+      </label>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Câu hỏi nghiên cứu ban đầu
+        <textarea rows="4" style="background: #E5DED5; padding: 10px 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px/1.5 Montserrat, sans-serif; color: #1C1B18; resize: vertical">Mức độ chính xác của câu trả lời LLM khi hỗ trợ sinh viên tự học?</textarea>
+      </label>
+      <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-size: 13px; font-weight: 600; margin-bottom: 6px">Khởi tạo bản thảo LaTeX</legend>
+        <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1.5px solid #0277DD; border-radius: 6px; font-size: 14px; line-height: 1.4"><input type="radio" name="ms" checked style="margin-top: 3px"><span><strong>Default</strong><br><span style="color: #4D4A44; font-size: 13px">main.tex, references.bib, sections/, figures/ — pdfLaTeX + natbib</span></span></label>
+        <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px; line-height: 1.4"><input type="radio" name="ms" style="margin-top: 3px"><span><strong>Blank</strong><br><span style="color: #4D4A44; font-size: 13px">Một main.tex trống</span></span></label>
+      </fieldset>
+      <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Sau khi tạo, Project AI Chat mở để làm rõ ngữ cảnh và đề xuất Plan.</p>
+      <div style="display: flex; gap: 8px">
+        <a href="Chat.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Tạo và mở chat</a>
+        <button style="height: 44px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: [
+        { name: 'RAG trong tổng quan tài liệu', q: 'RAG trên nguồn đã duyệt có giảm claim không có căn cứ trong literature review?', plan: 'v3 Approved', pb: 'solid #0277DD', pc: '#025FAC', prog: '9/14 Task', wait: '3 việc', last: '09:42 hôm nay' },
+        { name: 'Học máy trong chẩn đoán ảnh', q: 'So sánh CNN và ViT trên dữ liệu X-quang ngực công khai.', plan: 'v2 Approved', pb: 'solid #0277DD', pc: '#025FAC', prog: '11/12 Task', wait: '—', last: '30/10/2026' },
+        { name: 'Độ tin cậy của LLM trong giáo dục', q: 'Mức độ chính xác của câu trả lời LLM khi hỗ trợ sinh viên tự học?', plan: 'v1 Proposed', pb: 'dashed #0277DD', pc: '#025FAC', prog: 'Chưa có baseline', wait: '1 việc', last: '29/10/2026' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

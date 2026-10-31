@@ -1,0 +1,59 @@
+%% FIG-032 — State machines for Plan Version, Reference, Evidence, Claim, Artifact Version, Change Proposal, Prompt (section 18.2)
+stateDiagram-v2
+  state "Plan Version" as PV {
+    [*] --> Draft
+    Draft --> Proposed: submit (structure check ok)
+    Proposed --> Approved: APR-01
+    Proposed --> Rejected: reject (reason)
+    Approved --> Superseded: newer version approved
+    Draft --> [*]: draft discarded (soft delete)
+    note right of Proposed: withdraw = Proposed -> Rejected (withdrawn) + new Draft copy
+  }
+  state "Reference approval" as RA {
+    [*] --> PendingApproval
+    PendingApproval --> Trusted: APR-04
+    PendingApproval --> Rejected2: reject
+    Trusted --> Revoked: APR-04 revoke (reason)
+    Revoked --> Trusted: re-approve
+  }
+  state "Reference indexing" as RI {
+    [*] --> NotIndexed
+    NotIndexed --> Queued: trusted + content
+    NotIndexed --> Unavailable: no valid content
+    Queued --> Indexing
+    Indexing --> Indexed
+    Indexing --> Failed
+    Failed --> Queued: retry
+    Unavailable --> Queued: file provided
+    Indexed --> Queued: model/file changed
+  }
+  state "Evidence" as EV {
+    [*] --> Active
+    Active --> Excluded: researcher
+    Excluded --> Active: restore
+    Active --> Stale: reference revoked / reindexed
+  }
+  state "Claim approval" as CL {
+    [*] --> ClaimDraft
+    ClaimDraft --> Accepted: APR-06 (assessed)
+    ClaimDraft --> ClaimRejected
+    Accepted --> ClaimDraft: edited
+  }
+  state "Artifact Version" as AV {
+    [*] --> AVDraft
+    AVDraft --> AVAccepted: accept
+    AVDraft --> AVRejected: reject
+    AVAccepted --> AVSuperseded: newer accepted
+  }
+  state "Change Proposal" as CP {
+    [*] --> CPProposed
+    CPProposed --> CPAccepted: APR-05 (base matches, citations ok)
+    CPProposed --> CPRejected
+    CPProposed --> Outdated: revision changed
+  }
+  state "Interactive Agent Prompt" as PR {
+    [*] --> Open
+    Open --> Answered
+    Open --> Expired: project archived (no time-based expiry)
+    Open --> Cancelled: workflow cancelled or awaited object changed version
+  }

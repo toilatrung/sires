@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Settings: Preferences</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1100px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="settings" hint-size="100%,57px"></dc-import>
+  <div style="max-width: 1180px; margin: 0 auto; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+    <nav aria-label="Settings" style="flex: 1 1 200px; max-width: 240px; display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0 0 12px; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 28px">Settings</h1>
+      <sc-for list="{{nav}}" as="n" hint-placeholder-count="4">
+        <a href="{{n.href}}" aria-current="{{n.current}}" style="display: flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: {{n.w}}; color: #1C1B18; background: {{n.bg}}">{{n.label}}</a>
+      </sc-for>
+    </nav>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <h2 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 24px">Preferences</h2>
+
+      <section style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px">
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+          <legend style="font-size: 14px; font-weight: 600; margin-bottom: 8px">Ngôn ngữ giao diện</legend>
+          <label style="display: flex; gap: 8px; align-items: center; font-size: 14px"><input type="radio" name="ui" checked>Tiếng Việt</label>
+          <label style="display: flex; gap: 8px; align-items: center; font-size: 14px"><input type="radio" name="ui">English</label>
+          <span style="font-size: 12px; color: #4D4A44">Không đổi nội dung nghiên cứu, bản thảo hay thuật ngữ cố định.</span>
+        </fieldset>
+        <label style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 600">Ngôn ngữ phản hồi mặc định của agent
+          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>English</option><option>Tiếng Việt</option></select>
+          <span style="font-weight: 400; font-size: 12px; color: #4D4A44">Bản thảo vẫn viết theo ngôn ngữ của manuscript.</span>
+        </label>
+      </section>
+
+      <section style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 20px 24px; display: flex; gap: 16px; align-items: flex-start">
+        <button role="switch" aria-checked="{{debugAria}}" aria-labelledby="dbg" style="flex-shrink: 0; width: 44px; height: 26px; padding: 3px; border: 1px solid {{swBorder}}; border-radius: 6px; background: {{swBg}}; display: flex; justify-content: {{swJustify}}"><span style="width: 18px; height: 18px; border-radius: 9px; background: {{swKnob}}"></span></button>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span id="dbg" style="font-size: 14px; font-weight: 600">Chế độ debug · {{debugLabel}}</span>
+          <span style="font-size: 13px; line-height: 1.55; color: #4D4A44">Khi bật, toàn văn prompt và phản hồi của các Agent Run sau đó được lưu <strong>30 ngày</strong> rồi tự xóa; chỉ chủ tài khoản xem được. Tắt không xóa toàn văn đã lưu trước hạn. Việc bật/tắt được ghi Audit Event.</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="vt" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid #DBD3C7">
+          <div style="display: flex; flex-direction: column; gap: 4px; max-width: 640px">
+            <h3 id="vt" style="margin: 0; font-size: 16px; font-weight: 600">Ngưỡng kiểm chứng</h3>
+            <span style="font-size: 13px; line-height: 1.5; color: #4D4A44">Verification Agent dùng các ngưỡng này để gán mức hỗ trợ claim và báo citation không khớp. Giá trị mặc định được hiệu chỉnh để đạt độ chính xác mức hỗ trợ ≥ 85% và phát hiện citation không khớp ≥ 95%.</span>
+          </div>
+          <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Khôi phục mặc định</button>
+        </div>
+        <sc-for list="{{thresholds}}" as="t" hint-placeholder-count="4">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px 24px; border-top: {{t.div}}">
+            <label for="{{t.id}}" style="flex: 1 1 300px; font-size: 14px; font-weight: 600">{{t.name}}<span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">{{t.desc}}</span></label>
+            <input id="{{t.id}}" value="{{t.value}}" inputmode="decimal" style="background: #E5DED5; width: 84px; height: 38px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace">
+            <span style="width: 120px; font-size: 12px; color: #4D4A44">Mặc định {{t.def}}</span>
+            <sc-if value="{{t.changed}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 12px; font-weight: 600">đã chỉnh</span></sc-if>
+          </div>
+        </sc-for>
+        <p style="margin: 0; padding: 12px 24px; border-top: 1px solid #DBD3C7; font-size: 13px; color: #4D4A44">Áp dụng từ lần kiểm chứng sau; kết quả đã có không đổi.</p>
+      </section>
+      <div style="display: flex; gap: 8px">
+        <button style="height: 44px; padding: 0 18px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Lưu thay đổi</button>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const nav = [['profile', 'Profile', 'SettingsProfile.dc.html'], ['providers', 'Provider Connections', 'SettingsProviders.dc.html'], ['agents', 'Agent Models', 'SettingsAgents.dc.html'], ['prefs', 'Preferences', 'SettingsPreferences.dc.html']];
+    const on = !!this.props.debug;
+    return {
+      debugAria: on ? 'true' : 'false', debugLabel: on ? 'Bật · lưu tới 30/11/2026' : 'Tắt',
+      swBorder: on ? '#1C1B18' : '#4D4A44', swBg: on ? '#1C1B18' : '#FFFFFF', swKnob: on ? '#FFFFFF' : '#4D4A44', swJustify: on ? 'flex-end' : 'flex-start',
+      nav: nav.map(([k, label, href]) => ({ label, href, current: k === 'prefs' ? 'page' : 'false', w: k === 'prefs' ? 600 : 500, bg: k === 'prefs' ? '#E5DED5' : 'transparent' })),
+      thresholds: [
+        { id: 'th1', name: 'Supported', desc: 'Điểm hỗ trợ tối thiểu để gán Supported', value: '[0.80]', def: '[0.80]', changed: false },
+        { id: 'th2', name: 'Partially Supported', desc: 'Dưới ngưỡng này là Unsupported', value: '[0.60]', def: '[0.55]', changed: true },
+        { id: 'th3', name: 'Conflicting', desc: 'Điểm phản bác tối thiểu để gán Conflicting', value: '[0.70]', def: '[0.70]', changed: false },
+        { id: 'th4', name: 'Citation không khớp', desc: 'Độ khớp nội dung tối thiểu giữa câu và nguồn được trích', value: '[0.75]', def: '[0.75]', changed: false }
+      ].map((t, i) => ({ ...t, div: i === 0 ? '0' : '1px solid #DBD3C7' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

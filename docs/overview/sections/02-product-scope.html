@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>2. Product Scope | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 02</p><h1>2. Product Scope</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 21.1, phản hồi người dùng 29/10/2026</p><div class="note"><p>Mục này xác định ranh giới của MVP: những gì được xây, những gì cố ý không xây, và những gì chỉ cần chuẩn bị cho tương lai. Danh mục năng lực lấy từ outline (<strong>Confirmed</strong>). Ranh giới chi tiết do người biên soạn đề xuất đã được Product Owner duyệt trong phiếu chốt PC-01 (31/10/2026); điểm nào còn là diễn giải được ghi <strong>Assumption</strong> kèm mã ASM. Các câu hỏi của mục đã đóng, xem <a href="#s-2-5">2.5</a>. Mức ưu tiên do biên soạn đề xuất cho từng requirement ở mục 7–18 (xem <a href="#s-2-4">2.4</a>).</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-2-1">2.1. MVP Scope</a></li>
+<li><a href="#s-2-1-monitoring">Giám sát agent và Human-in-the-loop</a></li>
+<li><a href="#s-2-1-settings">Settings trong MVP</a></li>
+<li><a href="#s-2-1-agents">Specialist Agent trong MVP</a></li>
+<li><a href="#s-2-2">2.2. Out of Scope for MVP</a></li>
+<li><a href="#s-2-3">2.3. Future Scope</a></li>
+<li><a href="#s-2-4">2.4. Scope Prioritization</a></li>
+<li><a href="#s-2-5">2.5. Open Questions của mục 2</a></li>
+</ul></details>
+
+<h2 id="s-2-1">2.1. MVP Scope</h2>
+<h3>Định nghĩa MVP</h3>
+<p>MVP là bản phát hành đầu tiên giúp <strong>một nhà nghiên cứu cá nhân</strong>, trên <strong>web application</strong>, đi hết một vòng nghiên cứu trong cùng sản phẩm:</p>
+<p>tạo Research Project → làm rõ ngữ cảnh với Orchestrator → nhận và phê duyệt Plan → chọn và thực thi từng Task → tìm và duyệt tài liệu → tổng hợp evidence → viết bản thảo LaTeX có citation truy vết được → quay lại sau gián đoạn mà không mất trạng thái.</p>
+<p>Vòng này tương ứng với bảy workflow bắt buộc <a href="06-end-to-end-product-workflow.html">WF-01–WF-07</a>. MVP chỉ được coi là đạt khi cả bảy workflow chạy được theo acceptance criteria ở <a href="19-acceptance-criteria-and-test-scenarios.html">mục 19</a>.</p>
+<p class="status">Confirmed — web application, individual researchers first (21.1); bảy workflow bắt buộc (outline mục 6). Câu “MVP chỉ đạt khi cả bảy workflow chạy được”: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+
+<h3>Danh mục năng lực trong MVP</h3>
+<p>Mỗi năng lực có mã <code>SCOPE-NN</code> để mục 20 và phụ lục truy vết tham chiếu. Cột “Ranh giới trong MVP” là điểm cần duyệt kỹ nhất.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Năng lực</th>
+<th scope="col">Bao gồm</th>
+<th scope="col">Ranh giới trong MVP</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td id="scope-01">SCOPE-01</td><td>Research Project and research context</td><td>Tạo, xem, sửa và lưu trữ project; nhập mục tiêu và ngữ cảnh nghiên cứu; trạng thái project bền vững qua nhiều phiên.</td><td>Mỗi project thuộc một người dùng. Không chia sẻ project. Có cả lưu trữ và xóa; xóa là xóa mềm, khôi phục được trong 30 ngày, sau đó xóa vĩnh viễn (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-030); 7, NFR-RET-002).</td><td><a href="05-core-domain-model.html#s-5-1">5.1</a>, <a href="07-workspace-and-project.html">7</a></td></tr>
+<tr><td id="scope-02">SCOPE-02</td><td>Global and project-level AI Assistant</td><td>Global AI Assistant ở Global Workspace; Project AI Chat với Orchestrator trong từng project.</td><td>Project AI Chat là nơi duy nhất khởi tạo Plan và thực thi Task. Global AI Assistant hỗ trợ điều hướng, tạo project và tra cứu Trusted Library, nhưng không thực thi Task và không đọc nội dung project khi người dùng chưa chọn project đó. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-007.</td><td><a href="04-information-architecture-and-navigation.html">4</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a></td></tr>
+<tr><td id="scope-03">SCOPE-03</td><td>Multi-agent orchestration</td><td>Orchestrator và các Specialist Agent; chuyển giao kết quả có cấu trúc; Interactive Agent Prompt; xử lý lỗi, thử lại, tạm dừng, hủy; giao diện model không phụ thuộc provider.</td><td>Kiến trúc phải hỗ trợ nhiều provider. MVP chỉ tích hợp ba provider Anthropic Claude, OpenAI và Google Gemini (SCOPE-13; PC-01, OQ-014); provider khác thuộc FUT-05. Agent chỉ dùng các hành động được phép đã định nghĩa; danh sách agent cố định trong MVP (SCOPE-14).</td><td><a href="03-user-roles-and-permissions.html">3</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a></td></tr>
+<tr><td id="scope-04">SCOPE-04</td><td>Research Plan proposal, review and approval</td><td>Hệ thống đề xuất Plan từ phân tích multi-agent; người dùng sửa, sắp xếp lại, từ chối hoặc phê duyệt; Plan có phiên bản; phiên bản đã duyệt là baseline.</td><td>Thực thi chính thức chỉ bắt đầu sau khi Plan được duyệt. Thay đổi lớn sau khi duyệt phải qua review lại. Tiêu chí “thay đổi lớn” được định nghĩa ở 9.11.</td><td><a href="06-end-to-end-product-workflow.html#s-6-4">6.4–6.5</a>, <a href="09-research-plan-and-task-management.html">9</a>, WF-01</td></tr>
+<tr><td id="scope-05">SCOPE-05</td><td>Task &amp; Plan management with dependencies and manual-work labels</td><td>Định nghĩa Task, dependency graph, readiness check, thực thi do người dùng kích hoạt, execution label, state machine, checklist và nghiệm thu, phân tích ảnh hưởng thay đổi, các màn hình tiến độ.</td><td>Người dùng chọn từng Task; hệ thống không tự chạy Task tiếp theo. Task <code>Manual editor requirement</code> chỉ hoàn thành khi người dùng gửi kết quả và đạt acceptance criteria.</td><td><a href="09-research-plan-and-task-management.html">9</a>, WF-02, WF-03</td></tr>
+<tr><td id="scope-06">SCOPE-06</td><td>Google Scholar discovery</td><td>Tìm theo query, tiêu đề, tác giả, từ khóa; xem và chọn kết quả; tìm danh sách công bố của tác giả khi có dữ liệu; nhập từng tài liệu hoặc theo lô.</td><td><strong>Có điều kiện:</strong> phụ thuộc phương thức truy cập được phép và tính khả thi kỹ thuật, cần kiểm chứng trước khi cam kết. Không khẳng định bao phủ đầy đủ. Phương thức tích hợp: dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả (OQ-081, 17). Nếu Google Scholar không khả thi hoặc không được phép: dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface nguồn 10.9, kèm nhập DOI/BibTeX; WF-04 giữ nguyên. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-006).</td><td><a href="10-academic-discovery-and-trusted-library.html#s-10-1">10.1–10.4</a>, <a href="17-integrations-and-external-dependencies.html">17</a>, WF-04</td></tr>
+<tr><td id="scope-07">SCOPE-07</td><td>Account-level Trusted Reference Library</td><td>Duyệt reference qua Interactive Agent Prompt; thư viện cấp tài khoản dùng lại qua các project; chuẩn hóa metadata, phát hiện trùng lặp; vòng đời reference (duyệt, thu hồi, phiên bản, indexing).</td><td>Không reference nào trở thành Trusted Reference khi chưa được duyệt. Có nhập reference thủ công bằng DOI, BibTeX hoặc tải lên PDF; reference nhập thủ công vào trạng thái chờ duyệt, qua chuẩn hóa metadata và kiểm tra trùng như WF-04 (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-008)). Chính sách duyệt: cho phép duyệt theo lô trong một prompt, audit trail ghi phê duyệt riêng từng reference, reference có cảnh báo trùng xử lý riêng; không có mức tin cậy tự động theo nguồn; chỉ Researcher sửa metadata sau duyệt, mỗi lần sửa tạo phiên bản mới (PC-01, OQ-039, OQ-090; 10).</td><td><a href="10-academic-discovery-and-trusted-library.html#s-10-5">10.5–10.8</a>, WF-04</td></tr>
+<tr><td id="scope-08">SCOPE-08</td><td>Evidence retrieval, claim verification and literature synthesis</td><td>Indexing nguồn tin cậy; truy xuất evidence; Evidence Inspector; liên kết claim với evidence; đánh giá mức hỗ trợ; kiểm tra citation; ghi nhận evidence mâu thuẫn; tổng hợp literature review; người dùng duyệt.</td><td>Chỉ truy xuất từ Trusted Reference có nội dung truy cập được hợp lệ. Chỉ index PDF có lớp văn bản, tối đa 50 MB/file, không OCR (PC-01, OQ-050; 11). Ngưỡng nghiệm thu mặc định: độ chính xác đánh giá mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia, phát hiện citation không khớp nguồn ≥ 95%; người dùng chỉnh được ngưỡng trong Settings (PC-01, OQ-092; ASM-15).</td><td><a href="11-evidence-rag-and-research-synthesis.html">11</a>, WF-05</td></tr>
+<tr><td id="scope-09">SCOPE-09</td><td>LaTeX manuscript workspace</td><td>Khởi tạo Default hoặc Blank; file explorer và editor; AI hỗ trợ viết có diff để chấp nhận hoặc từ chối; quản lý BibTeX gắn với Trusted Reference; compile và xem PDF; lịch sử revision; tích hợp sơ đồ.</td><td>Một người chỉnh sửa tại một thời điểm, không cộng tác thời gian thực. Mọi sửa đổi do AI đề xuất phải qua diff và người dùng chấp nhận. Build toolchain chưa chốt.</td><td><a href="12-latex-manuscript-workspace.html">12</a>, WF-05</td></tr>
+<tr><td id="scope-10">SCOPE-10</td><td>Diagram generation</td><td>Diagram Agent tạo Mermaid/UML từ yêu cầu của Task; kiểm tra cú pháp; preview; người dùng sửa và duyệt; lưu thành artifact có thể chỉnh sửa.</td><td>Giới hạn ở các loại sơ đồ trong 13.2. Sơ đồ chỉ vào bản thảo sau khi được duyệt.</td><td><a href="13-diagram-agent.html">13</a>, WF-07</td></tr>
+<tr><td id="scope-11">SCOPE-11</td><td>Shared context, artifact registry, workflow persistence and recovery</td><td>Shared context store; lắp ráp và định tuyến context; registry artifact và event có phiên bản và provenance; cách ly context; nhất quán trạng thái; khôi phục từ checkpoint; audit trail.</td><td>Khôi phục về trạng thái nhất quán gần nhất. Không tự chạy lại bước chưa hoàn tất khi người dùng chưa xác nhận (WF-06). Thời gian lưu trữ và chính sách xóa theo 16.8 (PC-01, OQ-078); audit trail giữ cùng vòng đời project và tài khoản, export được theo project (PC-01, OQ-061).</td><td><a href="14-shared-context-and-orchestration-architecture.html">14</a>, <a href="18-data-and-state-specifications.html">18</a>, WF-06</td></tr>
+<tr><td id="scope-12">SCOPE-12</td><td>Human-in-the-loop and agent monitoring</td><td>Giao diện để người dùng giám sát và theo dõi Orchestrator và các Specialist Agent phối hợp: tiến trình workflow, ai đang làm gì, handoff giữa các agent, đầu ra trung gian, lỗi; trả lời Interactive Agent Prompt; tạm dừng, tiếp tục, hủy.</td><td>Hiển thị event và kết quả có cấu trúc, không hiển thị suy luận nội bộ thô của model. Chi tiết ở <a href="#s-2-1-monitoring">Giám sát agent</a>.</td><td><a href="04-information-architecture-and-navigation.html#s-4-4">4.4</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a>, <a href="14-shared-context-and-orchestration-architecture.html#s-14-8">14.8</a>, <a href="15-ui-ux-requirements.html">15</a></td></tr>
+<tr><td id="scope-13">SCOPE-13</td><td>Settings</td><td>Thông tin cá nhân; cấu hình kết nối model provider (URL và API key); gán provider và model cho Orchestrator và từng Specialist Agent; ngưỡng kiểm chứng; MVP hỗ trợ đúng ba provider Claude, OpenAI và Gemini.</td><td>Chỉ gồm các nhóm cài đặt ở <a href="#s-2-1-settings">Settings trong MVP</a>. Chính sách duyệt, quản lý nhóm và thanh toán không thuộc Settings của MVP.</td><td><a href="04-information-architecture-and-navigation.html#s-4-1">4.1</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-6">8.6</a>, <a href="17-integrations-and-external-dependencies.html">17</a></td></tr>
+<tr><td id="scope-14">SCOPE-14</td><td>Specialist Agent roster</td><td>Bảy Specialist Agent dựng sẵn với vai trò, đầu vào, đầu ra và hành động được phép xác định.</td><td>Danh sách cố định trong MVP; người dùng không tạo được role hoặc agent mới, nhưng chọn được provider và model cho từng agent. Chi tiết ở <a href="#s-2-1-agents">Specialist Agent trong MVP</a>.</td><td><a href="03-user-roles-and-permissions.html#s-3-3">3.3</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-2">8.2</a></td></tr>
+</tbody></table></div>
+<p class="status">Năng lực SCOPE-01–09 và SCOPE-11: Confirmed (outline 2.1). SCOPE-12 và SCOPE-13: Confirmed — người dùng bổ sung 29/10/2026. SCOPE-10 (Diagram generation) không nằm trong danh sách 2.1 gốc nhưng có trong outline qua mục 13 và workflow bắt buộc WF-07, nên thuộc MVP: Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-009. SCOPE-14: bảy vai trò lấy từ 3.3 (Confirmed); danh sách cố định trong MVP: Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-013. Cột “Ranh giới trong MVP”: Confirmed — PO duyệt 31/10/2026 (PC-01, BL-02-11); các điểm dẫn từ OQ đã chốt ghi mã OQ tại chỗ.</p>
+
+<h3 id="s-2-1-monitoring">Giám sát agent và Human-in-the-loop (SCOPE-12)</h3>
+<p>Mục tiêu: người dùng luôn biết các agent đang làm gì, vì sao đang chờ, và can thiệp được đúng lúc. Thực thi multi-agent không được là một “hộp đen” chỉ trả về kết quả cuối.</p>
+<p class="status">Confirmed — người dùng yêu cầu 29/10/2026: có giao diện giám sát và theo dõi các agent làm việc cùng nhau. Danh sách chức năng bên dưới: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Người dùng có thể</th>
+<th scope="col">Nội dung cụ thể</th>
+</tr></thead><tbody>
+<tr><td>Theo dõi tiến trình workflow</td><td>Các bước của workflow đang chạy; agent được giao cho từng bước; trạng thái từng bước (chờ, đang chạy, chờ người dùng, hoàn thành, lỗi, đã hủy); bước hiện tại.</td></tr>
+<tr><td>Xem sự phối hợp giữa các agent</td><td>Dòng thời gian Orchestrator giao việc cho agent nào, với chỉ dẫn và context nào; handoff kết quả giữa các agent (tham chiếu artifact); các bất đồng hoặc phương án Orchestrator đang cân nhắc.</td></tr>
+<tr><td>Xem chi tiết một Agent Run</td><td>Tóm tắt đầu vào; đầu ra và artifact tạo ra; hành động hoặc công cụ đã gọi (ví dụ truy vấn tìm kiếm); provider và model; thời gian; usage; lỗi và số lần thử lại.</td></tr>
+<tr><td>Phản hồi ngay tại chỗ</td><td>Trả lời Interactive Agent Prompt (duyệt, từ chối, chọn phương án, sửa rồi duyệt, bổ sung thông tin) ngay trên màn hình giám sát.</td></tr>
+<tr><td>Điều khiển thực thi</td><td>Tạm dừng, tiếp tục, hủy workflow hoặc một Agent Run; yêu cầu chạy lại có kiểm soát; theo chính sách ở 8.5.</td></tr>
+<tr><td>Nhận biết việc cần làm</td><td>Chỉ báo việc đang chờ người dùng ở cả Project Workspace và Global Workspace (4.4), kể cả khi người dùng đang ở màn hình khác.</td></tr>
+<tr><td>Xem lại sau khi kết thúc</td><td>Lịch sử đầy đủ của workflow đã hoàn tất, lỗi hoặc bị hủy, liên kết với Task, artifact và audit trail.</td></tr>
+</tbody></table></div>
+<p><strong>Ranh giới (Confirmed — PO duyệt 31/10/2026, PC-01):</strong> màn hình giám sát hiển thị event và kết quả có cấu trúc do hệ thống ghi lại, không hiển thị suy luận nội bộ thô của model. Giám sát là quan sát và điều khiển. Trong MVP không có kênh gửi chỉ dẫn mới cho agent đang chạy; trong khi chạy, người dùng chỉ đưa thông tin vào qua Interactive Agent Prompt. Muốn đổi hướng, người dùng tạm dừng hoặc hủy workflow rồi chạy lại; phản hồi được lưu thành Context Item phạm vi task và đưa vào lần chạy sau. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-012. Độ trễ cập nhật chấp nhận được thuộc mục 16.</p>
+
+<h3 id="s-2-1-settings">Settings trong MVP (SCOPE-13)</h3>
+<p class="status">Confirmed — người dùng yêu cầu 29/10/2026: thông tin cá nhân; tùy chỉnh URL và API key cho Orchestrator và các Specialist Agent. Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014, OQ-015): người dùng tự cung cấp API key, MVP chỉ hỗ trợ ba provider Claude, OpenAI, Gemini; danh sách trường thông tin cá nhân và tùy chọn ngôn ngữ. Cách tổ chức (Provider Connection rồi gán cho agent) và các quy tắc: Confirmed — PO duyệt 31/10/2026 (PC-01). Nhóm “Ngưỡng kiểm chứng”: Assumption (ASM-15, diễn giải ghi chú PO ở OQ-092).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Nhóm cài đặt</th>
+<th scope="col">Người dùng có thể tùy chỉnh</th>
+<th scope="col">Trạng thái</th>
+</tr></thead><tbody>
+<tr><td>Thông tin cá nhân</td><td>Họ tên hiển thị, đơn vị công tác, lĩnh vực nghiên cứu, ảnh đại diện, liên kết tới hồ sơ Google Scholar của người dùng (trường URL). Họ tên và email ban đầu lấy từ claim của eTroy OIDC; SIRes không quản lý mật khẩu (16, ASM-13). Liên kết Google Scholar chỉ là URL hồ sơ, không phải đăng nhập Google (ASM-14). Tùy chọn “Dùng lĩnh vực nghiên cứu làm context cho agent” (mặc định tắt): chỉ lĩnh vực nghiên cứu được đưa vào context của agent, và chỉ khi người dùng bật; các trường khác không vào context.</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015)</td></tr>
+<tr><td>Provider Connection</td><td>Tạo, sửa, xóa kết nối tới model provider. Mỗi kết nối gồm: tên, provider (<strong>Anthropic Claude</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>), base URL (mặc định là endpoint chính thức, cho phép đổi sang proxy, gateway hoặc model tự host nếu tương thích API chính thức của provider tương ứng), API key do người dùng tự cung cấp. Kiểm tra kết nối và lấy danh sách model khả dụng. Một provider có thể có nhiều kết nối, ví dụ hai API key khác nhau.</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014)</td></tr>
+<tr><td>Gán model cho agent</td><td>Với Orchestrator và từng Specialist Agent: chọn Provider Connection và model. Có một cấu hình mặc định áp dụng cho mọi agent, và cho phép ghi đè riêng từng agent. Như vậy mỗi agent có thể dùng URL và API key riêng.</td><td>Confirmed (tùy chỉnh theo từng agent); cấu hình mặc định: Confirmed — PO duyệt 31/10/2026 (PC-01)</td></tr>
+<tr><td>Tùy chọn hiển thị và ngôn ngữ</td><td>Ngôn ngữ giao diện; ngôn ngữ phản hồi mặc định của agent.</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015)</td></tr>
+<tr><td>Ngưỡng kiểm chứng</td><td>Các ngưỡng mà Verification Agent dùng để gán mức hỗ trợ claim và báo citation không khớp nguồn. Giá trị mặc định được hiệu chỉnh để đạt độ chính xác đánh giá mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia và phát hiện citation không khớp ≥ 95%; nghiệm thu MVP đo với giá trị mặc định. Người dùng chỉnh lại được và khôi phục về mặc định được. Thay đổi ngưỡng được ghi audit trail và áp dụng từ lần kiểm chứng sau, không đổi kết quả kiểm chứng đã có.</td><td>Confirmed (giá trị mặc định chỉnh được — PC-01, OQ-092); cách tổ chức nhóm: Assumption (ASM-15)</td></tr>
+</tbody></table></div>
+<p><strong>Quy tắc cho API key và kết nối (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014); chi tiết ở mục 16–17):</strong></p>
+<ul>
+<li>Người dùng tự cung cấp API key cho mọi Provider Connection. Hệ thống không cấp key hay hạn mức mặc định. Chưa có Provider Connection hợp lệ thì không chạy được Agent Run.</li>
+<li>MVP chỉ hỗ trợ ba provider: OpenAI, Anthropic Claude, Google Gemini. Base URL được đổi (proxy, gateway, model tự host) nhưng phải tương thích API chính thức của provider được chọn; kiểm tra kết nối thất bại thì không lưu kết nối ở trạng thái hợp lệ.</li>
+<li>Nhập base URL và API key của nhà cung cấp bất kỳ, kèm endpoint kiểm tra hạn mức và tiêu thụ, thuộc FUT-05. MVP chỉ ghi và hiển thị usage theo NFR-USAGE-001–003, không giới hạn ngân sách (PC-01, OQ-077).</li>
+<li>API key phải được lưu mã hóa. Sau khi lưu chỉ hiển thị dạng che, ví dụ vài ký tự cuối; không hiển thị lại toàn bộ.</li>
+<li>API key không được đưa vào Shared Context, prompt, artifact, log hay nội dung gửi cho agent. Audit trail chỉ ghi sự kiện tạo, sửa, xóa kết nối, không ghi giá trị key.</li>
+<li>API key thuộc tài khoản người dùng và không dùng chung giữa các tài khoản.</li>
+<li>Nếu agent cần cho một Task chưa được gán kết nối hợp lệ, readiness check chặn Task và nêu rõ lý do (9.5). Lỗi provider khi đang chạy xử lý theo 8.5.</li>
+<li>Khi đổi model hoặc kết nối, Agent Run đang chạy giữ cấu hình cũ; thay đổi áp dụng từ Agent Run tiếp theo. Provider và model thực tế được ghi vào provenance của từng Agent Run.</li>
+<li>Hệ thống chuẩn hóa khác biệt giữa các provider (tool calls, lỗi, usage) theo 8.6. Khi model được chọn thiếu năng lực agent cần, ví dụ tool calling, hệ thống cảnh báo lúc gán.</li>
+</ul>
+<p><strong>Không thuộc Settings của MVP:</strong> bật/tắt các điểm duyệt bắt buộc, quản lý nhóm và thành viên, thanh toán, đổi mật khẩu hoặc phương thức đăng nhập (do eTroy quản lý). Không có tham số nâng cao của model (temperature, giới hạn token…) và hệ thống không cung cấp key hay hạn mức mặc định (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014, OQ-015)).</p>
+
+<h3 id="s-2-1-agents">Specialist Agent trong MVP (SCOPE-14)</h3>
+<p>MVP có <strong>một Orchestrator</strong> và <strong>bảy Specialist Agent</strong>. Bảy vai trò lấy từ <a href="03-user-roles-and-permissions.html#s-3-3">3.3</a>. Tên agent, phạm vi và giới hạn được đặc tả đầy đủ ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-2">8.2</a>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Agent</th>
+<th scope="col">Công việc</th>
+<th scope="col">Đầu ra chính</th>
+<th scope="col">Không được phép</th>
+<th scope="col">Liên quan</th>
+</tr></thead><tbody>
+<tr><td>Orchestrator</td><td>Hiểu ý định người dùng, thu thập ngữ cảnh, phân việc cho Specialist Agent, tổng hợp đề xuất Plan, kiểm tra readiness, định tuyến context và lệnh.</td><td>Plan đề xuất, phân công, tổng hợp kết quả</td><td>Tự phê duyệt Plan; tự chọn và chạy Task tiếp theo</td><td>8.1, WF-01, WF-02</td></tr>
+<tr><td>Discovery Agent</td><td>Tìm tài liệu trên Google Scholar theo query, tiêu đề, tác giả, từ khóa; tìm danh sách công bố của tác giả.</td><td>Discovered results</td><td>Đưa tài liệu vào Trusted Library</td><td>10.1–10.3, WF-04</td></tr>
+<tr><td>Reference Processing Agent</td><td>Chuẩn hóa metadata, phát hiện trùng lặp, chuẩn bị yêu cầu duyệt, khởi động indexing cho reference đã duyệt.</td><td>Reference chờ duyệt, metadata chuẩn hóa</td><td>Tự duyệt reference</td><td>10.4–10.8, 11.1, WF-04</td></tr>
+<tr><td>Evidence Retrieval Agent</td><td>Truy xuất đoạn bằng chứng liên quan từ trusted corpus, giữ định danh nguồn và vị trí đoạn.</td><td>Evidence</td><td>Dùng nguồn chưa được duyệt</td><td>11.2–11.3, WF-05</td></tr>
+<tr><td>Synthesis Agent</td><td>Tổng hợp literature review, ma trận so sánh, gợi ý research gap; mỗi claim liên kết evidence.</td><td>Claim, bản tổng hợp</td><td>Đưa ra claim không có evidence mà không đánh dấu unsupported</td><td>11.4, 11.8, WF-05</td></tr>
+<tr><td>Writing Agent</td><td>Soạn và sửa section LaTeX từ evidence đã duyệt và chỉ dẫn của người dùng.</td><td>Đề xuất sửa đổi dạng diff</td><td>Ghi thẳng vào file bản thảo khi người dùng chưa chấp nhận</td><td>12.4–12.6, WF-05</td></tr>
+<tr><td>Verification Agent</td><td>Đánh giá mức hỗ trợ của claim, kiểm tra citation phân giải được và khớp với nguồn, phát hiện evidence mâu thuẫn.</td><td>Kết quả kiểm chứng</td><td>Sửa nội dung mà nó đang kiểm chứng</td><td>11.5–11.7, WF-05</td></tr>
+<tr><td>Diagram Agent</td><td>Tạo sơ đồ Mermaid/UML từ yêu cầu Task và context đã duyệt; kiểm tra cú pháp.</td><td>Diagram artifact</td><td>Đưa sơ đồ vào bản thảo khi chưa được duyệt</td><td>13, WF-07</td></tr>
+</tbody></table></div>
+<p><strong>Khả năng thêm role hoặc agent mới (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-013):</strong></p>
+<ul>
+<li><strong>Người dùng:</strong> trong MVP không tạo, xóa hay sửa định nghĩa role và Specialist Agent. Người dùng chỉ chọn provider và model cho từng agent (SCOPE-13).</li>
+<li><strong>Đội phát triển:</strong> mỗi agent được mô tả bằng một định nghĩa trong agent registry (vai trò, năng lực, đầu vào, đầu ra, hành động được phép, quyền truy cập context). Thêm Specialist Agent mới là thêm định nghĩa và adapter, không phải sửa lõi Orchestrator.</li>
+<li><strong>Tương lai:</strong> người dùng tự định nghĩa agent hoặc role (custom agent) thuộc FUT-04.</li>
+</ul>
+
+<h3>Ràng buộc chung của MVP</h3>
+<ul>
+<li><strong>Nền tảng:</strong> web application (Confirmed — 21.1). Ứng dụng di động gốc và chế độ offline nằm ngoài MVP (OOS-08, 2.2).</li>
+<li><strong>Người dùng:</strong> mỗi tài khoản là một nhà nghiên cứu; mọi project, Trusted Library và bản thảo thuộc về tài khoản đó (Confirmed — individual researchers first).</li>
+<li><strong>Kiến trúc workspace:</strong> hybrid, gồm Global Workspace và Project Workspace (Confirmed — 21.1); phân chia chi tiết ở mục 4 và 7.</li>
+<li><strong>Kiểm soát của con người:</strong> phê duyệt Plan, chọn từng Task, duyệt reference và chấp nhận sửa đổi bản thảo là các điểm bắt buộc (Confirmed — 21.1, 12.5). Danh sách đầy đủ hành động bắt buộc xin duyệt: APR-01–APR-10 ở 3.1 (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-019)).</li>
+<li><strong>Sản phẩm và authentication:</strong> sản phẩm tên <strong>SIRes</strong>, thuộc nền tảng <strong>eTroy</strong>; quản lý người dùng do eTroy đảm nhận. Authentication là SSO của tổ chức, duy nhất qua <strong>eTroy OIDC</strong>; không có email/mật khẩu riêng của SIRes, không đăng nhập bằng Google (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073)). Diễn giải (Assumption, ASM-13): họ tên và email ban đầu lấy từ claim OIDC; SIRes không lưu mật khẩu; xóa tài khoản SIRes chỉ xóa dữ liệu SIRes, tài khoản eTroy do eTroy quản lý; mất kết nối eTroy OIDC thì không đăng nhập được (dependency ở mục 17).</li>
+<li><strong>Deployment:</strong> cloud do đội phát triển vận hành; vùng lưu trữ dữ liệu chốt khi chọn hạ tầng (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-091)).</li>
+</ul>
+
+<h2 id="s-2-2">2.2. Out of Scope for MVP</h2>
+<p>Các hạng mục dưới đây không được xây trong MVP. Coding agent không được triển khai chúng, kể cả một phần, nếu chưa có quyết định mới của Product Owner. Cột “MVP vẫn phải” nêu những gì cần giữ để mở rộng sau không phải làm lại.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Hạng mục ngoài phạm vi</th>
+<th scope="col">Lý do</th>
+<th scope="col">MVP vẫn phải</th>
+</tr></thead><tbody>
+<tr><td id="oos-01">OOS-01</td><td>Cộng tác chỉnh sửa thời gian thực nhiều người</td><td>MVP ưu tiên nhà nghiên cứu cá nhân.</td><td>Ghi actor cho mỗi thay đổi và quyết định; không giả định cứng chỉ có một người dùng (mức tối thiểu, OQ-004 đã đóng — <a href="01-document-overview.html#s-1-4">1.4</a>).</td></tr>
+<tr><td id="oos-02">OOS-02</td><td>Hỗ trợ rộng nhiều nguồn tìm kiếm học thuật</td><td>Google Scholar là trọng tâm discovery của MVP.</td><td>Có interface nguồn mở rộng được (10.9) nhưng chỉ triển khai một adapter; nếu Google Scholar không khả thi, adapter đó là một nguồn có API hợp lệ thay thế (OQ-006).</td></tr>
+<tr><td id="oos-03">OOS-03</td><td>Tự động viết báo cáo end-to-end không có checkpoint người dùng</td><td>Trái với nguyên tắc human-in-the-loop.</td><td>Mọi chuỗi từ evidence đến bản thảo đều có điểm người dùng duyệt (WF-05).</td></tr>
+<tr><td id="oos-04">OOS-04</td><td>Quản lý nhóm nâng cao và quản trị doanh nghiệp</td><td>Ngoài nhóm người dùng mục tiêu của MVP; có thể xem xét lại nếu được xác nhận sau.</td><td>Mô hình quyền ở mục 3 đủ rõ để mở rộng thêm vai trò.</td></tr>
+</tbody></table></div>
+<p class="status">OOS-01–OOS-04: Confirmed (outline 2.2). Cột “MVP vẫn phải”: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+
+<h3>Đề xuất bổ sung ngoài phạm vi</h3>
+<p class="status">Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-010: OOS-05, OOS-08, OOS-09 suy ra trực tiếp từ DEC-07, DEC-01, DEC-09; OOS-06, OOS-07, OOS-10 là hạng mục không thuộc năng lực nào đã chốt, nên loại khỏi MVP không làm giảm phạm vi. PO có thể đưa lại hạng mục nào bằng quyết định mới.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Hạng mục</th>
+<th scope="col">Lý do đề xuất</th>
+</tr></thead><tbody>
+<tr><td id="oos-05">OOS-05</td><td>Tự động thực thi chuỗi Task liên tiếp</td><td>Mâu thuẫn với quyết định user-triggered execution (21.1, 9.6).</td></tr>
+<tr><td id="oos-06">OOS-06</td><td>Truy cập nội dung vượt qua giới hạn truy cập của nguồn (paywall, điều khoản sử dụng)</td><td>Bảo đảm tính hợp pháp và liêm chính; MVP chỉ dùng nội dung người dùng có quyền truy cập.</td></tr>
+<tr><td id="oos-07">OOS-07</td><td>Nộp bài trực tiếp lên tạp chí hoặc hội nghị</td><td>Ngoài vòng nghiên cứu cốt lõi; người dùng tự nộp từ PDF và mã nguồn LaTeX.</td></tr>
+<tr><td id="oos-08">OOS-08</td><td>Ứng dụng di động gốc và chế độ offline</td><td>MVP là web application.</td></tr>
+<tr><td id="oos-09">OOS-09</td><td>Trình soạn thảo ngoài LaTeX (ví dụ: soạn thảo kiểu Word)</td><td>Quyết định đã chốt là LaTeX manuscript workspace.</td></tr>
+<tr><td id="oos-10">OOS-10</td><td>Kiểm tra đạo văn và phát hiện văn bản do AI tạo</td><td>Cần dịch vụ chuyên dụng; không thuộc các năng lực đã chốt.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-3">2.3. Future Scope</h2>
+<p>Hướng mở rộng sau MVP. Các hạng mục này không có requirement trong MVP; chỉ ghi lại để quyết định thiết kế hiện tại không chặn chúng.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Hạng mục</th>
+<th scope="col">Mô tả</th>
+<th scope="col">Chuẩn bị trong MVP</th>
+</tr></thead><tbody>
+<tr><td id="fut-01">FUT-01</td><td>Additional academic source adapters</td><td>Thêm nguồn tìm kiếm học thuật ngoài Google Scholar.</td><td>Interface nguồn mở rộng được; metadata chuẩn hóa không phụ thuộc nguồn (10.7, 10.9).</td></tr>
+<tr><td id="fut-02">FUT-02</td><td>Collaborative research projects</td><td>Nhiều người cùng làm một project, có phân quyền và duyệt theo vai trò.</td><td>Actor được ghi trong audit trail; ownership và quyền được tách rõ trong domain model (3, 5.10). Mức chuẩn bị: tối thiểu (OQ-004 đã đóng — <a href="01-document-overview.html#s-1-4">1.4</a>).</td></tr>
+<tr><td id="fut-03">FUT-03</td><td>Advanced research analytics and workflow automation</td><td>Phân tích tiến độ và chất lượng nghiên cứu; tự động hóa có cấu hình, ví dụ chạy chuỗi Task đã được người dùng cho phép trước.</td><td>Event và trạng thái được lưu có cấu trúc (14.4, 14.8), đủ để phân tích về sau.</td></tr>
+<tr><td id="fut-04">FUT-04</td><td>Custom Specialist Agents</td><td>Người dùng tự định nghĩa role hoặc Specialist Agent mới: năng lực, chỉ dẫn, hành động được phép.</td><td>Agent registry dựa trên định nghĩa; quyền và hành động được phép của agent được khai báo tường minh (SCOPE-14).</td></tr>
+<tr><td id="fut-05">FUT-05</td><td>Provider dashboard</td><td>Dashboard cho người dùng nhập base URL và API key của bất kỳ nhà cung cấp model nào hoặc model tự host; có endpoint kiểm tra hạn mức và mức tiêu thụ cho người dùng.</td><td>Giao diện model không phụ thuộc provider (8.6); Provider Connection lưu provider, base URL, API key tách biệt khỏi agent; usage được ghi và hiển thị theo NFR-USAGE-001–003.</td></tr>
+<tr><td id="fut-06">FUT-06</td><td>Production evaluation from user data</td><td>Thu Eval Trace và đánh giá chất lượng agent trên dữ liệu người dùng thật, chỉ khi người dùng chủ động đồng ý (ví dụ gửi một debug transcript để đội phát triển phân tích).</td><td>Eval harness offline và Eval Trace trên bộ dữ liệu nghiệm thu (16.10); Agent Run ghi metadata phiên bản (NFR-OBS-006); debug transcript 30 ngày (NFR-RET-009) dùng chung định danh workflowId, agentRunId.</td></tr>
+</tbody></table></div>
+<p class="status">FUT-01–FUT-03: Confirmed (outline 2.3). FUT-04: Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-013. FUT-05: Confirmed — PO chốt 31/10/2026 (PC-01, ghi chú OQ-014); việc tách thành hạng mục tương lai riêng và giữ hiển thị usage trong MVP: Assumption (ASM-16). Mô tả và cột “Chuẩn bị trong MVP” của FUT-01–FUT-04: Confirmed — PO duyệt 31/10/2026 (PC-01). FUT-06: Đề xuất (biên soạn, 31/10/2026) — chờ PO duyệt; bổ sung cùng 16.10.</p>
+
+<h2 id="s-2-4">2.4. Scope Prioritization</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mức</th>
+<th scope="col">Ý nghĩa</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>Required for the core end-to-end workflow.</td></tr>
+<tr><td>P1</td><td>Valuable but not required for the first usable release.</td></tr>
+<tr><td>P2</td><td>Future expansion.</td></tr>
+</tbody></table></div>
+<p class="status">Confirmed (outline 2.4); quy tắc áp dụng ở <a href="01-document-overview.html#s-1-6-priority">1.6</a>.</p>
+
+<h3>Tiêu chí gán mức ưu tiên</h3>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-011): duyệt tiêu chí; biên soạn đề xuất mức cho từng requirement theo tiêu chí, PO duyệt.</p>
+<p>Một requirement là <strong>P0</strong> khi thỏa ít nhất một điều kiện:</p>
+<ol>
+<li>Thiếu nó thì luồng chính của một trong WF-01–WF-07 không hoàn thành được.</li>
+<li>Nó thực thi một nguyên tắc sản phẩm ở <a href="01-document-overview.html#s-1-2">1.2</a>: điểm duyệt của người dùng, provenance, cách ly context, khôi phục trạng thái.</li>
+<li>Nó ngăn mất dữ liệu hoặc ngăn trạng thái sai lệch không phát hiện được, ví dụ chạy trùng hoặc kết quả cũ ghi đè kết quả mới (14.6).</li>
+</ol>
+<p><strong>P1</strong>: cải thiện đáng kể trải nghiệm hoặc hiệu quả nhưng có cách làm thay tạm thời, ví dụ màn hình tiến độ bổ sung hoặc nhập theo lô. <strong>P2</strong>: thuộc FUT-01–FUT-06 hoặc chỉ phục vụ mở rộng.</p>
+<p>Ở cấp năng lực, SCOPE-01–SCOPE-14 đều nằm trong MVP. Mức ưu tiên được gán cho <em>từng requirement</em> ở mục 7–18, không gán cho cả năng lực. Một năng lực P0 vẫn có thể chứa requirement P1.</p>
+
+<h3>Trạng thái gán</h3>
+<p>Mọi requirement ở mục 7–18 đã có mức ưu tiên: biên soạn đề xuất theo tiêu chí trên (OQ-011), Product Owner duyệt nguyên bảng ngày 31/10/2026 (<a href="21-assumptions-constraints-and-open-questions.html#dec-44">DEC-44</a>). Tổng hợp ở <a href="20-mvp-delivery-plan.html#s-20-priority">mục 20</a>: 251 requirement, 167 P0, 83 P1, 1 P2.</p>
+
+<h2 id="s-2-5">2.5. Open Questions của mục 2</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-006</td><td>Nếu truy cập Google Scholar không khả thi hoặc không được phép, MVP dùng phương án nào: nhập thủ công bằng DOI/BibTeX, một nguồn thay thế, hay hoãn discovery? <strong>Đã đóng 31/10/2026 (PC-01):</strong> dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua interface nguồn 10.9, kèm nhập DOI/BibTeX; WF-04 giữ nguyên.</td><td>SCOPE-06, 10, 17, WF-04</td></tr>
+<tr><td>OQ-007</td><td>Global AI Assistant được làm gì trong MVP: chỉ điều hướng và tra cứu, hay được đọc và tổng hợp dữ liệu từ nhiều project? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Global AI Assistant chỉ điều hướng, tạo project, tra cứu Trusted Library và danh sách project (tên, trạng thái); không đọc nội dung project, đúng nguyên tắc cách ly context (3.4, 4.1, 14.5); PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-02, 4, 8, 14.5</td></tr>
+<tr><td>OQ-008</td><td>MVP có cho phép thêm reference thủ công (DOI, BibTeX, tải lên PDF) ngoài Google Scholar không? Nếu có, thủ tục duyệt có giống WF-04 không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> có; DOI, BibTeX và PDF đều vào trạng thái chờ duyệt, qua chuẩn hóa metadata và kiểm tra trùng như WF-04.</td><td>SCOPE-07, 10, 11</td></tr>
+<tr><td>OQ-009</td><td>Xác nhận SCOPE-10 (Diagram generation) là năng lực của MVP. <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> thuộc MVP, vì outline có mục 13 và WF-07 là workflow bắt buộc; PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-10, 13, WF-07</td></tr>
+<tr><td>OQ-010</td><td>Duyệt danh sách đề xuất bổ sung ngoài phạm vi OOS-05–OOS-10. <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> giữ cả sáu hạng mục ngoài MVP; ba hạng mục suy ra từ DEC-01, DEC-07, DEC-09, ba hạng mục còn lại không thuộc năng lực đã chốt; PO duyệt 31/10/2026 (PC-01).</td><td>2.2</td></tr>
+<tr><td>OQ-011</td><td>Duyệt tiêu chí gán P0/P1/P2; Product Owner gán mức ưu tiên khi requirement ở mục 7–18 được viết. <strong>Đã đóng 31/10/2026 (PC-01):</strong> duyệt tiêu chí 2.4; biên soạn đề xuất mức cho từng requirement theo tiêu chí, PO duyệt cùng bảng tổng hợp ở mục 20.</td><td>2.4, 7–18, 20</td></tr>
+<tr><td>OQ-012</td><td>Người dùng có được gửi chỉ dẫn mới cho một agent đang chạy (chỉnh hướng giữa chừng) không, hay chỉ tạm dừng, hủy và chạy lại? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> không có chỉnh hướng giữa chừng; người dùng trả lời prompt, hoặc tạm dừng/hủy rồi chạy lại với phản hồi lưu thành Context Item phạm vi task; PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-12, 8.5, 9.10</td></tr>
+<tr><td>OQ-013</td><td>Xác nhận danh sách bảy Specialist Agent, và việc người dùng không thêm được role hoặc agent mới trong MVP (custom agent để ở FUT-04). <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> bảy agent theo vai trò ở outline 3.3, danh sách cố định trong MVP; đội phát triển thêm agent qua agent registry (8.2); custom agent thuộc FUT-04; PO duyệt 31/10/2026 (PC-01).</td><td>SCOPE-14, 3.3, 8.2</td></tr>
+<tr><td>OQ-014</td><td>Người dùng bắt buộc tự cung cấp API key, hay hệ thống có kèm key hoặc hạn mức mặc định? Có cho phép base URL trỏ tới endpoint tương thích bên thứ ba (proxy, gateway, model tự host) không, và yêu cầu giao thức ra sao? <strong>Đã đóng 31/10/2026 (PC-01):</strong> người dùng tự cung cấp API key, không có key/hạn mức mặc định; MVP chỉ hỗ trợ OpenAI, Anthropic Claude, Google Gemini; base URL được trỏ tới proxy, gateway hoặc model tự host nếu tương thích API chính thức của provider tương ứng. Dashboard nhập base URL và API key của nhà cung cấp bất kỳ, kèm kiểm tra hạn mức và tiêu thụ: FUT-05 (ASM-16).</td><td>SCOPE-13, 16, 17</td></tr>
+<tr><td>OQ-015</td><td>Danh sách trường thông tin cá nhân; có tùy chọn ngôn ngữ và tham số nâng cao của model (temperature, giới hạn token) không; thông tin cá nhân có được đưa vào context của agent không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> họ tên, đơn vị, lĩnh vực nghiên cứu, ảnh đại diện và URL hồ sơ Google Scholar (không phải đăng nhập Google — ASM-14); có ngôn ngữ giao diện và ngôn ngữ phản hồi của agent; không có tham số nâng cao; chỉ lĩnh vực nghiên cứu vào context agent, và chỉ khi người dùng bật.</td><td>SCOPE-13, 14.2, 15</td></tr>
+</tbody></table></div>
+<p>Các câu hỏi phạm vi ở <a href="21-assumptions-constraints-and-open-questions.html#s-21-3">21.3</a> (chính sách duyệt reference, định dạng tài liệu, export, authentication và deployment, ngưỡng nghiệm thu) đã được đóng trong PC-01 (31/10/2026) và không lặp lại ở đây; quyết định liên quan đến phạm vi được phản ánh trong 2.1.</p>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="01-document-overview.html">← Mục 1</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="03-user-roles-and-permissions.html">Mục 3 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

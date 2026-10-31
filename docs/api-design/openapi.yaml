@@ -1,0 +1,394 @@
+openapi: 3.1.0
+info:
+  title: SIRes API (MVP)
+  version: 0.1.0-mvp
+  summary: REST API cho SIRes (Super Intelligence Researcher) — phạm vi MVP M1–M7.
+  description: |
+    Đặc tả API mức MVP, suy ra từ PRD SIRes v1.0 (PO duyệt qua phiếu chốt PC-01, 31/10/2026).
+    Mỗi file trong `paths/` tương ứng một mục của PRD (`docs/overview/sections/NN-slug.html`);
+    schema trong `components/schemas/` lấy từ mục 5 (Core Domain Model) và mục 18 (Data and State Specifications).
+
+    **Trạng thái:** Assumption — bản đề xuất của biên soạn, chưa phải quyết định kiến trúc.
+    Technology stack chưa chọn (DEC-27, OQ-091); API không giả định framework cụ thể.
+
+    ## Quy ước chung
+    - **Xác thực:** duy nhất qua eTroy OIDC (INT-OIDC-001–004). Backend SIRes là OIDC Relying Party,
+      giữ token phía server và cấp cookie phiên `sires_session` (HttpOnly, Secure, SameSite=Lax).
+      Lệnh ghi (POST/PUT/PATCH/DELETE) gửi kèm header `X-CSRF-Token`.
+    - **Ownership:** mọi tài nguyên thuộc tài khoản của phiên; tài nguyên của tài khoản khác trả `404`
+      (không tiết lộ sự tồn tại — OWN-03, NFR-ISOL). Tài nguyên cấp project nằm dưới `/projects/{projectId}`.
+    - **Idempotency:** lệnh có tác động (kích hoạt Task, duyệt, trả lời prompt, chấp nhận proposal,
+      gửi kết quả manual, tạo project…) bắt buộc header `Idempotency-Key` (DATA-IDEMP-001).
+      Gửi lại cùng khóa trả về kết quả lần đầu.
+    - **Concurrency:** entity sửa được trả `ETag` = `rowVersion`; PATCH/PUT bắt buộc `If-Match`.
+      Lệch phiên bản trả `412` (DATA-CONC-001).
+    - **Chuyển trạng thái:** mỗi chuyển trạng thái là một endpoint hành động (`POST …/approve`, `…/activate`).
+      Chuyển không có trong bảng 18.2 trả `409` với `code = invalid_transition` (DATA-STATE-001);
+      hành động bị chặn theo quyền theo trạng thái trả `409` `code = action_not_allowed_in_state` (DATA-STATE-002).
+    - **Phê duyệt (APR-01–APR-10):** chỉ Researcher thực hiện qua phiên người dùng. Agent không bao giờ gọi các
+      endpoint này (REL-04); mọi phê duyệt sinh `ApprovalRecord` và `AuditEvent`.
+    - **Tác vụ dài:** endpoint khởi chạy agent trả `202 Accepted` cùng `Workflow`; tiến trình theo dõi qua
+      `GET /workflows/{workflowId}` hoặc luồng sự kiện `GET /events` (Server-Sent Events).
+    - **Lỗi:** `application/problem+json` (RFC 9457) với trường `code` ổn định.
+    - **Phân trang:** cursor — `?limit=&cursor=`; phản hồi có `nextCursor`.
+    - **Bí mật:** API key chỉ được gửi vào (write-only), không bao giờ trả ra; chỉ có `keyHint` (REL-07).
+
+    Mục lục và bảng truy vết: `docs/api/index.html`. Quy ước biên soạn: `docs/api/README.md`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: Proprietary — eTroy
+    identifier: LicenseRef-eTroy-Proprietary
+
+servers:
+  - url: https://{host}/api/v1
+    description: Môi trường cloud do đội phát triển vận hành (DEC-27); host chốt khi chọn hạ tầng.
+    variables:
+      host:
+        default: sires.etroy.local
+  - url: http://localhost:8080/api/v1
+    description: Phát triển cục bộ
+
+security:
+  - sessionCookie: []
+
+tags:
+  - name: Auth
+    description: "Đăng nhập qua eTroy OIDC — PRD 17.7, 15.12 (M1)."
+  - name: Account & Settings
+    description: "Profile, Preferences, Ngưỡng kiểm chứng — PRD 15.12, 18.1 (M1)."
+  - name: Provider Connections
+    description: "Kết nối Claude, OpenAI, Gemini do người dùng cấp key — PRD 8.6, SCOPE-13 (M1)."
+  - name: Agent Models
+    description: "Gán model cho Orchestrator và 7 Specialist Agent — PRD 8.6, 8.2 (M1)."
+  - name: Workspace
+    description: "Dashboard, tìm kiếm, Pending Actions, Notifications — PRD 4.4, 7 (M2)."
+  - name: Projects
+    description: "Research Project và Research Context có phiên bản — PRD 7 (M2)."
+  - name: Conversations
+    description: "Global AI Assistant và Project AI Chat — PRD 7, 8.1 (M2)."
+  - name: Prompts
+    description: "Interactive Agent Prompt — PRD 8.4, 5.9 (M2)."
+  - name: Plan
+    description: "Research Plan và Plan Version — PRD 9.1–9.3, 9.11 (M3)."
+  - name: Tasks
+    description: "Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10 (M3)."
+  - name: Discovery
+    description: "Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2 (M4)."
+  - name: Trusted Library
+    description: "Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9 (M4)."
+  - name: Evidence & Claims
+    description: "Indexing, RAG evidence, claim, kiểm chứng — PRD 11 (M4–M5)."
+  - name: Artifacts
+    description: "Artifact và Artifact Version có provenance — PRD 5.7, 14.4 (M2–M5)."
+  - name: Manuscript
+    description: "LaTeX workspace, Change Proposal, bibliography, build — PRD 12 (M6)."
+  - name: Diagrams
+    description: "Diagram Agent, Mermaid — PRD 13 (M6)."
+  - name: Orchestration
+    description: "Workflow, Agent Run, khôi phục — PRD 8.5, 14.6–14.7 (M2, M7)."
+  - name: Shared Context
+    description: "Context Item và khung nhìn Shared Context — PRD 14.1–14.3 (M2)."
+  - name: Audit
+    description: "Audit trail chỉ ghi thêm và export — PRD 14.8 (M1, M7)."
+  - name: Events
+    description: "Luồng sự kiện realtime cho giao diện — PRD 15.8, DATA-PERSIST-001 (M2)."
+
+paths:
+  # ---- 15. Settings and Sign-in · 17.7 eTroy OIDC ----
+  /auth/login:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1auth~1login
+  /auth/callback:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1auth~1callback
+  /auth/logout:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1auth~1logout
+  /auth/session:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1auth~1session
+  /me:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1me
+  /me/profile:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1me~1profile
+  /me/preferences:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1me~1preferences
+  /me/verification-thresholds:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1me~1verification-thresholds
+  /me/verification-thresholds/reset:
+    $ref: paths/15-settings-and-sign-in.yaml#/~1me~1verification-thresholds~1reset
+
+  # ---- 08. AI Assistant and Multi-Agent Orchestration ----
+  /provider-connections:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1provider-connections
+  /provider-connections/{connectionId}:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1provider-connections~1{connectionId}
+  /provider-connections/{connectionId}/test:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1provider-connections~1{connectionId}~1test
+  /agents:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1agents
+  /agent-model-assignments:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1agent-model-assignments
+  /agent-model-assignments/{agent}:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1agent-model-assignments~1{agent}
+  /prompts:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1prompts
+  /prompts/{promptId}:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1prompts~1{promptId}
+  /prompts/{promptId}/response:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1prompts~1{promptId}~1response
+
+  # ---- 07. Workspace and Project ----
+  /dashboard:
+    $ref: paths/07-workspace-and-project.yaml#/~1dashboard
+  /search:
+    $ref: paths/07-workspace-and-project.yaml#/~1search
+  /pending-actions:
+    $ref: paths/07-workspace-and-project.yaml#/~1pending-actions
+  /pending-actions/{pendingActionId}/acknowledge:
+    $ref: paths/07-workspace-and-project.yaml#/~1pending-actions~1{pendingActionId}~1acknowledge
+  /notifications:
+    $ref: paths/07-workspace-and-project.yaml#/~1notifications
+  /notifications/read:
+    $ref: paths/07-workspace-and-project.yaml#/~1notifications~1read
+  /projects:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects
+  /projects/{projectId}:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}
+  /projects/{projectId}/archive:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1archive
+  /projects/{projectId}/unarchive:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1unarchive
+  /projects/{projectId}/restore:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1restore
+  /projects/{projectId}/context-versions:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1context-versions
+  /projects/{projectId}/context-versions/{contextVersionId}:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1context-versions~1{contextVersionId}
+  /projects/{projectId}/active-task:
+    $ref: paths/07-workspace-and-project.yaml#/~1projects~1{projectId}~1active-task
+  /conversations:
+    $ref: paths/07-workspace-and-project.yaml#/~1conversations
+  /conversations/{conversationId}/messages:
+    $ref: paths/07-workspace-and-project.yaml#/~1conversations~1{conversationId}~1messages
+
+  # ---- 09. Research Plan and Task Management ----
+  /projects/{projectId}/plan:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan
+  /projects/{projectId}/plan/proposals:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1proposals
+  /projects/{projectId}/plan/versions:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions
+  /projects/{projectId}/plan/versions/{planVersionId}:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}
+  /projects/{projectId}/plan/versions/{planVersionId}/submit:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1submit
+  /projects/{projectId}/plan/versions/{planVersionId}/approve:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1approve
+  /projects/{projectId}/plan/versions/{planVersionId}/reject:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1reject
+  /projects/{projectId}/plan/versions/{planVersionId}/withdraw:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1withdraw
+  /projects/{projectId}/plan/versions/{planVersionId}/diff:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1diff
+  /projects/{projectId}/plan/versions/{planVersionId}/impact:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1plan~1versions~1{planVersionId}~1impact
+  /projects/{projectId}/tasks:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks
+  /projects/{projectId}/tasks/{taskId}:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}
+  /projects/{projectId}/tasks/{taskId}/readiness:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1readiness
+  /projects/{projectId}/tasks/{taskId}/activate:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1activate
+  /projects/{projectId}/tasks/{taskId}/dequeue:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1dequeue
+  /projects/{projectId}/tasks/{taskId}/manual-submissions:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1manual-submissions
+  /projects/{projectId}/tasks/{taskId}/checklist:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1checklist
+  /projects/{projectId}/tasks/{taskId}/reviews:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1reviews
+  /projects/{projectId}/tasks/{taskId}/reopen:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1reopen
+  /projects/{projectId}/tasks/{taskId}/confirm-valid:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1confirm-valid
+  /projects/{projectId}/tasks/{taskId}/cancel:
+    $ref: paths/09-research-plan-and-task-management.yaml#/~1projects~1{projectId}~1tasks~1{taskId}~1cancel
+
+  # ---- 10. Academic Discovery and Trusted Library ----
+  /discovery/sources:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovery~1sources
+  /discovery/searches:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovery~1searches
+  /discovery/author-searches:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovery~1author-searches
+  /discovered-results:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovered-results
+  /discovered-results/{discoveredResultId}:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovered-results~1{discoveredResultId}
+  /discovered-results/import:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1discovered-results~1import
+  /references:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references
+  /references/pdf-imports:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1pdf-imports
+  /references/approvals:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1approvals
+  /references/{referenceId}:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}
+  /references/{referenceId}/revoke:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1revoke
+  /references/{referenceId}/reinstate:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1reinstate
+  /references/{referenceId}/merge:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1merge
+  /references/{referenceId}/usage:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1usage
+  /references/{referenceId}/document:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1document
+  /references/{referenceId}/indexing/retry:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1indexing~1retry
+  /projects/{projectId}/references:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1projects~1{projectId}~1references
+  /projects/{projectId}/references/{referenceId}:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1projects~1{projectId}~1references~1{referenceId}
+
+  # ---- 11. Evidence, RAG and Research Synthesis ----
+  /me/embedding-settings:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1me~1embedding-settings
+  /projects/{projectId}/evidence:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1evidence
+  /projects/{projectId}/evidence/retrievals:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1evidence~1retrievals
+  /projects/{projectId}/evidence/{evidenceId}:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1evidence~1{evidenceId}
+  /projects/{projectId}/evidence/{evidenceId}/exclude:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1evidence~1{evidenceId}~1exclude
+  /projects/{projectId}/evidence/{evidenceId}/restore:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1evidence~1{evidenceId}~1restore
+  /projects/{projectId}/claims:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims
+  /projects/{projectId}/claims/{claimId}:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}
+  /projects/{projectId}/claims/{claimId}/evidence-links:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1evidence-links
+  /projects/{projectId}/claims/{claimId}/evidence-links/{evidenceId}:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1evidence-links~1{evidenceId}
+  /projects/{projectId}/claims/{claimId}/verify:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1verify
+  /projects/{projectId}/claims/{claimId}/support-status:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1support-status
+  /projects/{projectId}/claims/{claimId}/accept:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1accept
+  /projects/{projectId}/claims/{claimId}/reject:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1claims~1{claimId}~1reject
+  /projects/{projectId}/verification-results:
+    $ref: paths/11-evidence-rag-and-research-synthesis.yaml#/~1projects~1{projectId}~1verification-results
+
+  # ---- 12. LaTeX Manuscript Workspace ----
+  /projects/{projectId}/manuscript:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript
+  /projects/{projectId}/manuscript/files:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1files
+  /projects/{projectId}/manuscript/files/{fileId}/content:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1files~1{fileId}~1content
+  /projects/{projectId}/manuscript/revisions:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1revisions
+  /projects/{projectId}/manuscript/revisions/{revisionId}:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1revisions~1{revisionId}
+  /projects/{projectId}/manuscript/change-proposals:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1change-proposals
+  /projects/{projectId}/manuscript/change-proposals/{proposalId}:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1change-proposals~1{proposalId}
+  /projects/{projectId}/manuscript/change-proposals/{proposalId}/accept:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1change-proposals~1{proposalId}~1accept
+  /projects/{projectId}/manuscript/change-proposals/{proposalId}/reject:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1change-proposals~1{proposalId}~1reject
+  /projects/{projectId}/manuscript/diagram-insertions:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1diagram-insertions
+  /projects/{projectId}/manuscript/bibliography:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1bibliography
+  /projects/{projectId}/manuscript/bibliography/{entryId}:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1bibliography~1{entryId}
+  /projects/{projectId}/manuscript/builds:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1builds
+  /projects/{projectId}/manuscript/builds/{buildId}:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1builds~1{buildId}
+  /projects/{projectId}/manuscript/builds/{buildId}/log:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1builds~1{buildId}~1log
+  /projects/{projectId}/manuscript/builds/{buildId}/pdf:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1builds~1{buildId}~1pdf
+  /projects/{projectId}/manuscript/export:
+    $ref: paths/12-latex-manuscript-workspace.yaml#/~1projects~1{projectId}~1manuscript~1export
+
+  # ---- 13. Diagram Agent ----
+  /diagram-types:
+    $ref: paths/13-diagram-agent.yaml#/~1diagram-types
+  /projects/{projectId}/diagrams:
+    $ref: paths/13-diagram-agent.yaml#/~1projects~1{projectId}~1diagrams
+  /projects/{projectId}/diagrams/validate:
+    $ref: paths/13-diagram-agent.yaml#/~1projects~1{projectId}~1diagrams~1validate
+  /projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview:
+    $ref: paths/13-diagram-agent.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}~1versions~1{versionId}~1preview
+
+  # ---- 14. Shared Context and Orchestration Architecture ----
+  /workflows:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows
+  /workflows/{workflowId}:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}
+  /workflows/{workflowId}/pause:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}~1pause
+  /workflows/{workflowId}/resume:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}~1resume
+  /workflows/{workflowId}/cancel:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}~1cancel
+  /workflows/{workflowId}/recovery-decision:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}~1recovery-decision
+  /workflows/{workflowId}/agent-runs:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1workflows~1{workflowId}~1agent-runs
+  /agent-runs/{agentRunId}:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1agent-runs~1{agentRunId}
+  /agent-runs/{agentRunId}/debug-transcript:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1agent-runs~1{agentRunId}~1debug-transcript
+  /projects/{projectId}/shared-context:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1shared-context
+  /projects/{projectId}/context-items:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1context-items
+  /projects/{projectId}/context-items/{contextItemId}/retract:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1context-items~1{contextItemId}~1retract
+  /projects/{projectId}/artifacts:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts
+  /projects/{projectId}/artifacts/{artifactId}:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}
+  /projects/{projectId}/artifacts/{artifactId}/versions:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}~1versions
+  /projects/{projectId}/artifacts/{artifactId}/versions/{versionId}:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}~1versions~1{versionId}
+  /projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/accept:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}~1versions~1{versionId}~1accept
+  /projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/reject:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1artifacts~1{artifactId}~1versions~1{versionId}~1reject
+  /uploads:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1uploads
+  /projects/{projectId}/audit-events:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1audit-events
+  /projects/{projectId}/audit-events/export:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1projects~1{projectId}~1audit-events~1export
+  /me/audit-events:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1me~1audit-events
+  /events:
+    $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1events
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sires_session
+      description: |
+        Cookie phiên do SIRes cấp sau khi hoàn tất luồng authorization code với eTroy OIDC (INT-OIDC-001, INT-OIDC-003).
+        Phiên hết hạn cùng token eTroy nếu không làm mới được. SIRes không có đăng nhập bằng mật khẩu.
+    etroyOidc:
+      type: openIdConnect
+      openIdConnectUrl: https://oidc.etroy.local/.well-known/openid-configuration
+      description: |
+        eTroy OIDC (github.com/toilatrung/eTroy_OIDC) — chỉ dùng giữa backend SIRes (Relying Party) và eTroy;
+        client giao diện không giữ token. URL discovery là placeholder, chốt khi tích hợp (ASM-13).

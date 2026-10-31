@@ -1,0 +1,39 @@
+%% FIG-002 — Entity relationships (section 5.10, appendix D)
+erDiagram
+  ACCOUNT ||--o{ RESEARCH_PROJECT : owns
+  ACCOUNT ||--o{ REFERENCE : "Trusted Library"
+  ACCOUNT ||--o{ DISCOVERED_RESULT : discovers
+  ACCOUNT ||--o{ PROVIDER_CONNECTION : configures
+  PROVIDER_CONNECTION ||--o{ AGENT_MODEL_ASSIGNMENT : "used by"
+  REFERENCE ||--o| SOURCE_DOCUMENT : "indexed as"
+  DISCOVERED_RESULT |o--o| REFERENCE : "imported to"
+  RESEARCH_PROJECT ||--|| RESEARCH_PLAN : has
+  RESEARCH_PLAN ||--o{ PLAN_VERSION : versions
+  PLAN_VERSION ||--o{ PHASE : contains
+  RESEARCH_PROJECT ||--o{ TASK : has
+  TASK }o--o{ TASK : "depends on"
+  TASK ||--o{ WORKFLOW : "executed by"
+  WORKFLOW ||--o{ WORKFLOW_STEP : has
+  WORKFLOW_STEP ||--o{ AGENT_RUN : runs
+  WORKFLOW ||--o{ CHECKPOINT : saves
+  WORKFLOW_STEP ||--o{ INTERACTIVE_AGENT_PROMPT : raises
+  RESEARCH_PROJECT ||--|| SHARED_CONTEXT : has
+  SHARED_CONTEXT ||--o{ CONTEXT_ITEM : contains
+  RESEARCH_PROJECT }o--o{ REFERENCE : "selects (Project Reference Selection)"
+  RESEARCH_PROJECT ||--o{ EVIDENCE : has
+  EVIDENCE }o--|| REFERENCE : "quoted from"
+  RESEARCH_PROJECT ||--o{ CLAIM : has
+  CLAIM }o--o{ EVIDENCE : "Claim-Evidence Link"
+  RESEARCH_PROJECT ||--o{ ARTIFACT : has
+  ARTIFACT ||--o{ ARTIFACT_VERSION : versions
+  RESEARCH_PROJECT ||--o| MANUSCRIPT : has
+  MANUSCRIPT ||--o{ MANUSCRIPT_FILE : contains
+  MANUSCRIPT ||--o{ MANUSCRIPT_REVISION : records
+  MANUSCRIPT ||--o{ CHANGE_PROPOSAL : receives
+  MANUSCRIPT ||--o{ BUILD : compiles
+  MANUSCRIPT ||--o{ BIBLIOGRAPHY_ENTRY : cites
+  BIBLIOGRAPHY_ENTRY }o--|| REFERENCE : "resolves to"
+  AGENT_RUN ||--o{ ARTIFACT_VERSION : produces
+  AGENT_RUN ||--o{ EVIDENCE : retrieves
+  AGENT_RUN ||--o{ CLAIM : drafts
+  AGENT_RUN ||--o{ CHANGE_PROPOSAL : proposes

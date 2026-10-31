@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>20. MVP Delivery Plan | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 20</p><h1>20. MVP Delivery Plan</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 2, 5, 6</p><div class="note"><p>Mục này chia việc xây MVP thành các milestone có thứ tự, điều kiện vào/ra và tiêu chí hoàn thành. Danh sách milestone lấy từ outline (<strong>Confirmed</strong>). Nội dung, phụ thuộc và tiêu chí là <strong>Assumption</strong>. Kế hoạch theo milestone M1–M7, không gắn ngày hay nhân lực (<strong>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-028)</strong>). Bộ dữ liệu nghiệm thu ở 20.4 là <strong>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-027)</strong>. Bảng Open Questions ở <a href="#s-20-oq">20.5</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-20-1">20.1. Implementation Milestones</a></li>
+<li><a href="#s-20-2">20.2. Dependency Between Milestones</a></li>
+<li><a href="#s-20-3">20.3. Definition of Done</a></li>
+<li><a href="#s-20-4">20.4. Release Acceptance</a></li>
+<li><a href="#s-20-oq">20.5. Open Questions của mục 20</a></li>
+</ul></details>
+
+<h2 id="s-20-1">20.1. Implementation Milestones</h2>
+<p>Mỗi milestone kết thúc bằng một <strong>lát cắt chạy được end-to-end</strong> có thể demo, không chỉ là các thành phần rời. Milestone sau không bắt đầu tích hợp khi milestone trước chưa đạt điều kiện ra.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Milestone</th>
+<th scope="col">Phạm vi</th>
+<th scope="col">SCOPE / mục</th>
+<th scope="col">Điều kiện ra (demo được)</th>
+</tr></thead><tbody>
+<tr><td id="m1">M1</td><td>Foundation and domain model</td><td>Account và authentication qua tích hợp eTroy OIDC (SSO tổ chức, 17.7; OQ-073), làm sớm vì mọi luồng khác cần đăng nhập; lưu trữ bền vững; entity và trạng thái mục 5/18; audit trail chỉ ghi thêm; kiểm soát truy cập theo ownership; Settings: Profile, Provider Connection, Agent Models; adapter model provider cho Claude, OpenAI, Gemini.</td><td>SCOPE-11 (phần lưu trữ, audit), SCOPE-13; 5, 16.1, 17.1, 17.7, 18</td><td>Đăng nhập qua eTroy OIDC tạo tài khoản SIRes liên kết <code>sub</code>, cấu hình ba provider, kiểm tra kết nối; dữ liệu của hai tài khoản cách ly; mọi thay đổi có Audit Event kèm actor.</td></tr>
+<tr><td id="m2">M2</td><td>Project, chat and shared context</td><td>Global/Project Workspace, điều hướng mục 4; Project CRUD và Research Context; Global AI Assistant và Project AI Chat với Orchestrator; Shared Context và Context Item; lắp ráp và định tuyến context; Interactive Agent Prompt; Agent Activity cơ bản; Pending Actions.</td><td>SCOPE-01, 02, 03 (Orchestrator), 11, 12 (cơ bản); 4, 7, 8, 14</td><td>Tạo project, trao đổi với Orchestrator, trả lời prompt; đóng trình duyệt và mở lại thấy đủ hội thoại, quyết định và prompt đang chờ.</td></tr>
+<tr><td id="m3">M3</td><td>Plan/Task lifecycle and approval</td><td>WF-01, WF-02, WF-03; Plan Version và phê duyệt; Task, dependency graph, readiness check, execution label, state machine; task board, dependency graph, checklist; change impact.</td><td>SCOPE-04, 05; 6, 9</td><td>Đi hết WF-01 → WF-02 → WF-03 với một Task manual; Task agent đơn giản chạy tới In Review và được nghiệm thu; Task phụ thuộc được mở khóa.</td></tr>
+<tr><td id="m4">M4</td><td>Reference discovery and trusted library</td><td>Tích hợp Google Scholar qua dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ (OQ-081); source adapter dự phòng cho nguồn có API hợp lệ nếu cần (OQ-006); nhập thủ công DOI, BibTeX, PDF; Discovery và Reference Processing Agent; duyệt reference; Trusted Library; chuẩn hóa metadata, trùng lặp; xử lý tài liệu và indexing vào vector database.</td><td>SCOPE-06, 07; 10, 17.2, 17.3</td><td>Chạy WF-04: tìm, chọn, duyệt, index; reference dùng lại được ở project thứ hai; reference chưa duyệt không xuất hiện ở bất kỳ luồng evidence nào.</td></tr>
+<tr><td id="m5">M5</td><td>Evidence and synthesis</td><td>Evidence Retrieval (RAG), Evidence Inspector, claim và liên kết evidence, Verification Agent, đánh giá mức hỗ trợ, evidence mâu thuẫn, literature synthesis.</td><td>SCOPE-08; 11</td><td>Chạy WF-05 S1–S4: tổng hợp có claim liên kết evidence; Ngưỡng kiểm chứng mặc định trong Settings; đo được KPI-01 và độ chính xác mức hỗ trợ claim trên bộ dữ liệu nghiệm thu (20.4).</td></tr>
+<tr><td id="m6">M6</td><td>LaTeX workspace and diagrams</td><td>Manuscript Default/Blank, file explorer, editor, Change Proposal và diff, bibliography từ Trusted Reference, build cô lập, PDF preview, revision; Diagram Agent, kiểm tra và render sơ đồ, đưa sơ đồ vào bản thảo.</td><td>SCOPE-09, 10; 12, 13, 17.4, 17.5</td><td>Chạy WF-05 đầy đủ tới PDF và WF-07; KPI-02 = 100% trên bộ kiểm thử.</td></tr>
+<tr><td id="m7">M7</td><td>Hardening, recovery and acceptance testing</td><td>WF-06 và khôi phục ở mọi workflow; idempotency, chống chạy trùng và kết quả lỗi thời; giám sát agent đầy đủ; trạng thái loading/empty/error; observability, usage; kiểm thử chấp nhận mục 19.</td><td>SCOPE-11, 12; 14.6–14.8, 15.8, 16</td><td>Toàn bộ kịch bản mục 19 đạt; KPI-03 và KPI-04 đo được; không còn lỗi chặn ở release acceptance (20.4).</td></tr>
+</tbody></table></div>
+<p class="status">Bảy milestone: Confirmed (outline 20.1). Phân bổ phạm vi và điều kiện ra: Assumption.</p>
+
+<h3 id="s-20-1-alloc">Phân bổ requirement theo milestone</h3>
+<p>Mỗi requirement ở mục 7–18 thuộc milestone đầu tiên cần nó. Requirement xuyên suốt (UX-I18N, NFR-AUTHZ, DATA-AUDIT…) bắt đầu ở milestone ghi dưới đây và phải tiếp tục đạt ở mọi milestone sau. Danh mục đầy đủ ở <a href="22-appendices.html#appendix-e">phụ lục E</a>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Milestone</th>
+<th scope="col">Nhóm requirement chính</th>
+</tr></thead><tbody>
+<tr><td>M1</td><td>INT-OIDC-001–004; NFR-AUTH, NFR-AUTHZ, NFR-ISOL, NFR-SECRETS, NFR-TRANSIT, NFR-PRIV, NFR-DUR, NFR-BACKUP; DATA-STATE, DATA-PROV, DATA-AUDIT, DATA-PERSIST, DATA-IDEMP, DATA-CONC, DATA-STORE, DATA-VALID; CTX-AUDIT-001; AGENT-PROVIDER-001–003; INT-PROVIDER-001–006; UX-I18N-001–004</td></tr>
+<tr><td>M2</td><td>WS-DASHBOARD, WS-CHAT, WS-SEARCH; PROJ-CRUD, PROJ-CONTEXT, PROJ-CHAT; ORCH-INTENT, ORCH-DELEGATE, ORCH-CONSOLIDATE, ORCH-FAILURE; AGENT-REGISTRY, AGENT-SCOPE, AGENT-HANDOFF; PROMPT-LIFECYCLE, PROMPT-APPROVAL; CTX-STORE, CTX-ASSEMBLY, CTX-ROUTING, CTX-REGISTRY, CTX-ISOLATION; UX-LAYOUT, UX-OVERVIEW, UX-CHAT, UX-PROMPT, UX-PENDING, UX-MONITOR</td></tr>
+<tr><td>M3</td><td>PLAN-GENERATE, PLAN-REVIEW, PLAN-APPROVAL, PLAN-IMPACT, PLAN-VIEWS; TASK-DEFINE, TASK-DEPENDENCY, TASK-READINESS, TASK-TRIGGER, TASK-LABEL, TASK-STATE, TASK-CHECKLIST, TASK-PROGRESS; ORCH-PLAN, ORCH-READINESS, ORCH-CONFLICT; UX-PLAN, UX-TASK, UX-LABEL, UX-STATUS</td></tr>
+<tr><td>M4</td><td>DISC-SCHOLAR, DISC-REVIEW, DISC-AUTHOR, DISC-ADAPTER; LIB-IMPORT, LIB-APPROVAL, LIB-LIBRARY, LIB-PROJECT, LIB-CONTENT, LIB-METADATA, LIB-LIFECYCLE; EVID-INDEX-001–002; INT-SCHOLAR, INT-DOC, INT-VECTOR; UX-REF</td></tr>
+<tr><td>M5</td><td>EVID-RETRIEVAL, EVID-INSPECTOR; CLAIM-MAPPING, CLAIM-SUPPORT, CLAIM-CITATION, CLAIM-CONFLICT; SYN-REVIEW, SYN-HUMAN-REVIEW, SYN-PERSIST; UX-EVID, UX-CLAIM</td></tr>
+<tr><td>M6</td><td>MS-INIT, MS-TEMPLATE, MS-EDITOR, MS-AIWRITE, MS-DIFF, MS-BIB, MS-BUILD, MS-BUILDENV, MS-DIAGRAM, MS-REVISION; DIAG-GEN, DIAG-TYPES, DIAG-SOURCE, DIAG-VALIDATE, DIAG-REVIEW; INT-LATEX, INT-DIAGRAM; NFR-SANDBOX; UX-MS</td></tr>
+<tr><td>M7</td><td>CTX-CONSISTENCY-001–003, CTX-RECOVERY-001; NFR-REC, NFR-AVAIL, NFR-PERF, NFR-SCALE, NFR-OBS, NFR-USAGE, NFR-MAINT, NFR-RET; NFR-KPI-001; UX-STATE, UX-A11Y, UX-RESP</td></tr>
+</tbody></table></div>
+<p class="status">Assumption — phân bổ đề xuất theo phụ thuộc kỹ thuật; CTX-CONSISTENCY và CTX-RECOVERY được dựng từ M2 nhưng chỉ được kiểm chứng đầy đủ ở M7.</p>
+
+
+<h2 id="s-20-2">20.2. Dependency Between Milestones</h2>
+<pre><code>M1 ─► M2 ─► M3 ─┬─► M5 ─► M6 ─► M7
+                └─► M4 ─┘
+M4 có thể làm song song với M3 sau khi M2 xong; M5 cần cả M3 (Task) và M4 (Trusted Reference đã index).</code></pre>
+<p class="status">FIG-005 — Phụ thuộc giữa milestone. Nguồn: <a href="../figures/FIG-005-milestone-dependencies.mmd">figures/FIG-005-milestone-dependencies.mmd</a>.</p>
+<h3>Quyết định kiến trúc cần có trước từng milestone</h3>
+<p class="status">Mọi quyết định dưới đây đã chốt — PO chốt 31/10/2026 (PC-01). Riêng technology stack và vùng lưu trữ dữ liệu được chốt khi chọn hạ tầng (OQ-091), trước M1.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trước</th>
+<th scope="col">Quyết định đã chốt</th>
+<th scope="col">Nguồn</th>
+</tr></thead><tbody>
+<tr><td>M1</td><td>Authentication duy nhất qua eTroy OIDC (SSO tổ chức; tích hợp ở M1); deployment cloud do đội phát triển vận hành, vùng lưu trữ chốt khi chọn hạ tầng; API key mã hóa trong kho bí mật (16.1); retention, xóa, export theo 16.8 (xóa mềm 30 ngày, xóa tài khoản 30 ngày, log 30 ngày; audit trail theo vòng đời project/tài khoản, export JSON/CSV).</td><td>OQ-073, OQ-091, OQ-078, OQ-061 (PC-01); 16.1, 16.8, 17.7</td></tr>
+<tr><td>M1</td><td>Người dùng tự cung cấp API key, không có key mặc định; chỉ ba provider; base URL tùy chỉnh phải tương thích API chính thức của provider (dashboard provider bất kỳ: FUT-05).</td><td>OQ-014 (PC-01)</td></tr>
+<tr><td>M2</td><td>Agent Run lưu context manifest và đầu ra có cấu trúc; toàn văn prompt chỉ khi bật debug, giữ 30 ngày. Chỉ lĩnh vực nghiên cứu vào context, khi người dùng bật; Profile có URL hồ sơ Google Scholar.</td><td>OQ-062, OQ-015 (PC-01)</td></tr>
+<tr><td>M3</td><td>APR-01–APR-10 duyệt nguyên văn; thay đổi không thuộc danh sách thay đổi lớn (9.11) được duyệt nhanh trong một thao tác, vẫn tạo Plan Version mới và ghi APR-01.</td><td>OQ-019, OQ-026 (PC-01)</td></tr>
+<tr><td>M4</td><td>Google Scholar qua dịch vụ trung gian theo hợp đồng kèm luồng nhập do người dùng hỗ trợ; dự phòng nguồn có API hợp lệ (OpenAlex, Semantic Scholar); nhập thủ công DOI, BibTeX, PDF qua chờ duyệt; chỉ PDF có lớp văn bản ≤ 50 MB, không OCR; embedding qua Provider Connection OpenAI/Gemini, một model mỗi tài khoản; duyệt theo lô (reference trùng xử lý riêng), không mức tin cậy tự động theo nguồn.</td><td>OQ-081, OQ-006, OQ-008, OQ-050, OQ-051, OQ-039, OQ-090 (PC-01)</td></tr>
+<tr><td>M5</td><td>Supported cần ít nhất một evidence hỗ trợ trực tiếp đã qua Verification Agent, không ngưỡng số; ngưỡng nghiệm thu: mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia, phát hiện citation không khớp ≥ 95%, đo với Ngưỡng kiểm chứng mặc định (người dùng chỉnh được trong Settings).</td><td>OQ-052, OQ-092 (PC-01)</td></tr>
+<tr><td>M6</td><td>Chỉ Mermaid (không PlantUML), một Manuscript mỗi project, không shell-escape, giới hạn build 120 giây / 2 GB có thể cấu hình, chấp nhận Change Proposal theo cả đề xuất.</td><td>OQ-022, OQ-059, OQ-070, OQ-074, OQ-083 đã giải quyết; PO duyệt 31/10/2026 (PC-01)</td></tr>
+<tr><td>M7</td><td>Chỉ tiêu 16.3 và 16.4 duyệt nguyên văn; export bản thảo PDF và zip mã nguồn kèm .bib; không giới hạn ngân sách usage, chỉ ghi và hiển thị.</td><td>OQ-075, OQ-076, OQ-058, OQ-077 (PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-20-3">20.3. Definition of Done</h2>
+<p class="status">Confirmed (outline): requirement được triển khai, kiểm thử, có tài liệu và demo được end-to-end. Chi tiết: Assumption.</p>
+<h3>Cho một requirement</h3>
+<ol>
+<li>Mọi acceptance criteria của requirement có kiểm thử tự động hoặc kịch bản kiểm thử thủ công được ghi lại, và đều đạt.</li>
+<li>Code truy vết được về requirement ID (ví dụ trong mô tả thay đổi hoặc tên test).</li>
+<li>Thay đổi trạng thái tuân thủ bảng chuyển trạng thái ở mục 18; không có chuyển trạng thái ngoài bảng.</li>
+<li>Kiểm tra quyền theo permission matrix 3.5 và quyền theo trạng thái ở mục 18 có test, kể cả trường hợp bị từ chối.</li>
+<li>Hành động có tác động lâu dài sinh Audit Event có actor.</li>
+<li>Hành vi khớp quyết định đã chốt ở PC-01; không có điểm nào bị “tự quyết” trong code ngoài các Assumption đã ghi ở 21.2 (1.6).</li>
+<li>Giao diện có đủ trạng thái loading, empty, error theo 15.8 và hiển thị song ngữ.</li>
+</ol>
+<h3>Cho một milestone</h3>
+<ol>
+<li>Mọi requirement trong phạm vi milestone đạt Definition of Done.</li>
+<li>Điều kiện ra ở 20.1 được demo trên môi trường kiểm thử, với dữ liệu mới tạo từ đầu.</li>
+<li>Kịch bản mục 19 liên quan đến milestone đạt; không có lỗi mức chặn hoặc nghiêm trọng còn mở.</li>
+<li>Tài liệu vận hành tối thiểu (cấu hình, biến môi trường, cách chạy kiểm thử) được cập nhật.</li>
+</ol>
+
+<h2 id="s-20-4">20.4. Release Acceptance</h2>
+<p class="status">Confirmed (outline): kiểm chứng quy trình nghiên cứu cốt lõi bằng các acceptance scenario. Chi tiết: Assumption.</p>
+<p>MVP được chấp nhận phát hành khi đạt tất cả các điều kiện:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Điều kiện</th>
+<th scope="col">Cách kiểm chứng</th>
+</tr></thead><tbody>
+<tr><td>REL-01</td><td>Bảy workflow WF-01–WF-07 chạy được end-to-end.</td><td>Kịch bản mục 19.1–19.11 đạt trên môi trường giống production.</td></tr>
+<tr><td>REL-02</td><td>Một đề tài mẫu đi hết hành trình 6.1–6.11 trong cùng sản phẩm, qua ít nhất hai phiên làm việc tách biệt.</td><td>Kịch bản journey ở 19 (đề tài mẫu do PO chọn); PO trực tiếp thực hiện.</td></tr>
+<tr><td>REL-03</td><td>KPI-01 ≥ 95%, KPI-02 = 100%, KPI-03 ≥ 99%, KPI-04 ≤ 10% trên bộ dữ liệu nghiệm thu.</td><td>Đo theo phương pháp ở mục 16 (TS-13-02–TS-13-05) với provider thật, trên bộ dữ liệu nghiệm thu dưới đây.</td></tr>
+<tr><td>REL-04</td><td>Không agent nào thực hiện được hành động APR-01–APR-10.</td><td>Kịch bản 19.12 và kiểm thử quyền; thử cả lời nhắc yêu cầu agent “tự duyệt”.</td></tr>
+<tr><td>REL-05</td><td>Cách ly dữ liệu giữa tài khoản và giữa project.</td><td>Kịch bản 19.12; kiểm thử truy cập chéo bằng định danh hợp lệ của tài khoản khác.</td></tr>
+<tr><td>REL-06</td><td>Ba provider Claude, OpenAI, Gemini hoạt động cho Orchestrator và mọi Specialist Agent.</td><td>Kịch bản 19.10 với từng provider.</td></tr>
+<tr><td>REL-07</td><td>API key không xuất hiện trong log, context, artifact, audit trail hay phản hồi giao diện.</td><td>Kiểm thử bảo mật theo 16.1.</td></tr>
+<tr><td>REL-08</td><td>Giao diện đầy đủ tiếng Việt và tiếng Anh.</td><td>Rà soát toàn bộ màn hình ở cả hai ngôn ngữ.</td></tr>
+<tr><td>REL-09</td><td>Không còn lỗi mức chặn hoặc nghiêm trọng; mọi Open Question ảnh hưởng hành vi MVP đã được PO trả lời.</td><td>Danh sách lỗi; sổ OQ ở 21.3 và backlog (đã chốt toàn bộ ở PC-01, 31/10/2026).</td></tr>
+<tr><td>REL-10</td><td>Độ chính xác đánh giá mức hỗ trợ claim ≥ 85% so với nhãn chuyên gia; phát hiện citation không khớp nguồn ≥ 95%; đo với Ngưỡng kiểm chứng mặc định (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-092)).</td><td>Kịch bản TS-13-08 và TS-13-09 với provider thật, trên bộ dữ liệu nghiệm thu.</td></tr>
+</tbody></table></div>
+<h3 id="s-20-4-dataset">Bộ dữ liệu nghiệm thu</h3>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-027).</p>
+<ul>
+<li><strong>Quy mô:</strong> 5 đề tài thuộc 3 lĩnh vực; mỗi đề tài khoảng 30 reference và khoảng 100 claim.</li>
+<li><strong>Chuẩn bị và gán nhãn:</strong> PO chuẩn bị đề tài, reference và gán nhãn chuyên gia cho mức hỗ trợ của từng claim và cho citation không khớp nguồn; QA hỗ trợ đưa dữ liệu vào môi trường kiểm thử và kiểm tra tính nhất quán của nhãn.</li>
+<li><strong>Dùng cho:</strong> REL-03 (KPI-01–KPI-04) và REL-10 (TS-13-08, TS-13-09). Các phép đo này dùng provider thật; đội phát triển chịu chi phí gọi provider (OQ-095).</li>
+<li><strong>Đánh giá offline (đề xuất 31/10/2026, chờ PO duyệt):</strong> cùng bộ dữ liệu là đầu vào của eval harness và Eval Trace ở 16.10 (NFR-EVAL-001–004, TS-13-10, TS-13-11), chạy lặp lại trong quá trình phát triển và trước mỗi thay đổi prompt hoặc cấu hình retrieval. Nhãn evidence cho từng claim: OQ-096.</li>
+</ul>
+<p>PO là người ký chấp nhận phát hành, dựa trên báo cáo kết quả REL-01–REL-10.</p>
+
+<h2 id="s-20-priority">Tổng hợp Priority</h2>
+<p class="status">Confirmed — biên soạn đề xuất theo tiêu chí <a href="02-product-scope.html#s-2-4">2.4</a> (DEC-22); PO duyệt nguyên bảng ngày 31/10/2026 (<a href="21-assumptions-constraints-and-open-questions.html#dec-44">DEC-44</a>).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mục</th>
+<th scope="col">P0</th>
+<th scope="col">P1</th>
+<th scope="col">P2</th>
+<th scope="col">Tổng</th>
+<th scope="col">Requirement P1/P2 ở mục 7–14</th>
+</tr></thead><tbody>
+<tr><td><a href="07-workspace-and-project.html">7</a></td><td>4</td><td>6</td><td>0</td><td>10</td><td>WS-DASHBOARD-001, PROJ-CRUD-002, PROJ-CONTEXT-002, WS-CHAT-001, PROJ-CHAT-002, WS-SEARCH-001</td></tr>
+<tr><td><a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a></td><td>13</td><td>2</td><td>0</td><td>15</td><td>ORCH-READINESS-001, AGENT-REGISTRY-001</td></tr>
+<tr><td><a href="09-research-plan-and-task-management.html">9</a></td><td>12</td><td>1</td><td>0</td><td>13</td><td>PLAN-VIEWS-001</td></tr>
+<tr><td><a href="10-academic-discovery-and-trusted-library.html">10</a></td><td>11</td><td>2</td><td>0</td><td>13</td><td>DISC-AUTHOR-001, DISC-ADAPTER-001</td></tr>
+<tr><td><a href="11-evidence-rag-and-research-synthesis.html">11</a></td><td>11</td><td>1</td><td>0</td><td>12</td><td>CLAIM-CONFLICT-001</td></tr>
+<tr><td><a href="12-latex-manuscript-workspace.html">12</a></td><td>10</td><td>1</td><td>0</td><td>11</td><td>MS-EXPORT-001</td></tr>
+<tr><td><a href="13-diagram-agent.html">13</a></td><td>5</td><td>0</td><td>0</td><td>5</td><td>—</td></tr>
+<tr><td><a href="14-shared-context-and-orchestration-architecture.html">14</a></td><td>11</td><td>1</td><td>0</td><td>12</td><td>CTX-AUDIT-002</td></tr>
+<tr><td><a href="15-ui-ux-requirements.html">15</a></td><td>34</td><td>31</td><td>0</td><td>65</td><td>Xem bảng “Priority” đầu mục 15</td></tr>
+<tr><td><a href="16-non-functional-requirements.html">16</a></td><td>20</td><td>28</td><td>1</td><td>49</td><td>Xem đầu mục 16; P2 là NFR-USAGE-004 (FUT-05)</td></tr>
+<tr><td><a href="17-integrations-and-external-dependencies.html">17</a></td><td>23</td><td>9</td><td>0</td><td>32</td><td>Xem đầu mục 17</td></tr>
+<tr><td><a href="18-data-and-state-specifications.html">18</a></td><td>13</td><td>1</td><td>0</td><td>14</td><td>DATA-STORE-001</td></tr>
+<tr><th scope="row">Tổng</th><td>167</td><td>83</td><td>1</td><td>251</td><td></td></tr>
+</tbody></table></div>
+<p><strong>Điểm đã cân nhắc khi duyệt.</strong> Các requirement sau có lý do để nâng lên P0; PO giữ P1 khi duyệt nguyên bảng. Có thể xem lại khi lập kế hoạch milestone:</p>
+<ul>
+<li><code>WS-DASHBOARD-001</code>: là màn hình đầu tiên và hiển thị workflow <code>Interrupted</code> cho WF-06; hiện có lối vào thay thế qua Research Projects.</li>
+<li><code>DISC-ADAPTER-001</code>: interface nguồn nay là kênh cho nguồn dự phòng khi Google Scholar không khả thi (DEC-19).</li>
+<li><code>NFR-KPI-001</code>: đo KPI-01–KPI-04 là điều kiện phát hành REL ở 20.4.</li>
+<li><code>NFR-AVAIL-001</code>, <code>NFR-RET-004</code> (xóa tài khoản): P0 nếu là cam kết vận hành hoặc yêu cầu pháp lý.</li>
+</ul>
+
+<h2 id="s-20-oq">20.5. Open Questions của mục 20</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-027</td><td>Bộ dữ liệu nghiệm thu để đo KPI-01–KPI-04 gồm những gì (số đề tài, lĩnh vực, số reference, số claim) và ai chuẩn bị? <strong>Đã đóng 31/10/2026 (PC-01):</strong> 5 đề tài thuộc 3 lĩnh vực, mỗi đề tài khoảng 30 reference và 100 claim; PO chuẩn bị và gán nhãn, QA hỗ trợ (20.4).</td><td>20.4, 16, 19</td></tr>
+<tr><td>OQ-028</td><td>Có mốc thời gian hoặc nguồn lực mục tiêu cho MVP cần đưa vào kế hoạch không? <strong>Đã đóng 31/10/2026 (PC-01):</strong> chưa có; kế hoạch theo milestone M1–M7, không gắn ngày.</td><td>20.1, 20.2</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="19-acceptance-criteria-and-test-scenarios.html">← Mục 19</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="21-assumptions-constraints-and-open-questions.html">Mục 21 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

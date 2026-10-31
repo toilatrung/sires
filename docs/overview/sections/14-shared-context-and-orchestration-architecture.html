@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>14. Shared Context and Orchestration Architecture | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 14</p><h1>14. Shared Context and Orchestration Architecture</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả các cơ chế xuyên suốt giúp nhiều agent làm việc chung một cách nhất quán qua nhiều phiên: lưu Shared Context, lắp ráp và định tuyến context cho từng Agent Run, registry artifact và event, cách ly, nhất quán trạng thái, khôi phục và audit trail. Mục này mô tả <em>hành vi bắt buộc</em>, không chọn công nghệ. Kiến trúc multi-agent độc lập provider có shared context là <strong>Confirmed</strong> (21.1); actor trên mọi phê duyệt và thay đổi, tách ownership tài khoản/project là <strong>Confirmed</strong> (OQ-004, giải quyết SYNC-11). Quy tắc chi tiết do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Thông tin cá nhân trong context (OQ-015), vòng đời và export audit trail (OQ-061), nội dung lưu của Agent Run (OQ-062): <strong>Confirmed</strong> — PO chốt 31/10/2026 (PC-01). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Entity theo <a href="05-core-domain-model.html#s-5-4">5.4</a> và <a href="05-core-domain-model.html#s-5-5">5.5</a>; khôi phục theo <a href="06-end-to-end-product-workflow.html#wf-06">WF-06</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-14-0">Kiến trúc logic</a></li>
+<li><a href="#s-14-1">14.1. Shared Context Store</a></li>
+<li><a href="#s-14-2">14.2. Context Assembly</a></li>
+<li><a href="#s-14-3">14.3. Context Routing</a></li>
+<li><a href="#s-14-4">14.4. Artifact and Event Registry</a></li>
+<li><a href="#s-14-5">14.5. Context Isolation</a></li>
+<li><a href="#s-14-6">14.6. State Consistency</a></li>
+<li><a href="#s-14-7">14.7. Recovery and Resumption</a></li>
+<li><a href="#s-14-8">14.8. Audit Trail</a></li>
+<li><a href="#s-14-oq">14.9. Open Questions của mục 14</a></li>
+</ul></details>
+
+<h2 id="s-14-0">Kiến trúc logic</h2>
+<pre><code>                 Researcher (UI: chat, Plan/Tasks, Agent Activity, prompt)
+                              │ lệnh, phê duyệt
+                              ▼
+   ┌──────────── System: workflow engine + state machine + access control ────────────┐
+   │   Workflow / Step / Checkpoint        Readiness check        Audit (append-only)  │
+   └─────┬───────────────────────────────────────┬───────────────────────────┬────────┘
+         │ giao bước                              │ đọc/ghi qua quyền          │
+         ▼                                        ▼                            │
+   Orchestrator ── yêu cầu context ──► Context Assembler ◄── Shared Context Store
+         │ chỉ dẫn + context manifest        │  (Research Context, Context Item, Plan/Task,
+         ▼                                   │   artifact/claim accepted, checkpoint)
+   Specialist Agent ◄─────────────────────────┘        ▲
+         │ Model Gateway (giao diện model chuẩn hóa AGENT-PROVIDER-001, 8.6: Claude, OpenAI, Gemini)
+         ▼                                            │ RAG: vector database (11.2)
+   Kết quả có cấu trúc ─► Artifact &amp; Event Registry ──┘</code></pre>
+<p class="status">FIG-023 — Kiến trúc logic shared context và điều phối. Nguồn: <a href="../figures/FIG-023-context-orchestration.mmd">figures/FIG-023-context-orchestration.mmd</a>.</p>
+<p><strong>Nguyên tắc (Assumption):</strong></p>
+<ol>
+<li><strong>System là nguồn sự thật về trạng thái.</strong> Agent đề xuất kết quả; System kiểm tra quyền và trạng thái rồi mới ghi (3.0, 3.4).</li>
+<li><strong>Không dựa vào lịch sử chat.</strong> Agent nhận context có cấu trúc do System lắp ráp; chuyển giao giữa agent bằng tham chiếu entity, không bằng văn bản chat (8.3).</li>
+<li><strong>Mọi lần gọi model đều tái lập được về mặt nguồn gốc</strong>: Agent Run lưu context manifest liệt kê chính xác các entity và phiên bản đã đưa vào, cùng đầu ra có cấu trúc; toàn văn prompt/phản hồi chỉ lưu khi người dùng bật chế độ debug (CTX-REGISTRY-002, OQ-062).</li>
+</ol>
+
+<h2 id="s-14-1">14.1. Shared Context Store</h2>
+<p class="status">Confirmed (outline): lưu bền vững ngữ cảnh project, quyết định của người dùng, trạng thái Plan/Task, evidence, artifact và checkpoint workflow.</p>
+<h3 id="req-ctx-store-001">CTX-STORE-001 — Lưu Shared Context bền vững</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Người dùng và agent tiếp tục công việc qua nhiều phiên mà không phải cung cấp lại ngữ cảnh (GOAL-02, PRB-02).</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project tồn tại và ở trạng thái <code>Active</code>; project <code>Archived</code> chỉ đọc (5.1).</td></tr>
+<tr><th scope="row">Trigger</th><td>Một sự kiện có ý nghĩa: trả lời prompt, phê duyệt, cập nhật Research Context, chuyển trạng thái Plan/Task, chấp nhận claim hoặc artifact, lưu checkpoint.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mỗi sự kiện có ý nghĩa ghi vào Shared Context của project (5.5): cập nhật Research Context (phiên bản mới), câu trả lời prompt và phê duyệt (Context Item <em>decision</em>), ràng buộc/giả định được xác lập, tóm tắt hội thoại và kết quả Task (Context Item <em>summary</em>), thay đổi trạng thái Plan/Task, claim/artifact được chấp nhận, checkpoint.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Ghi thất bại (lỗi lưu trữ, xung đột rowVersion): cả sự kiện và thay đổi trạng thái đi kèm đều không được ghi; người dùng nhận lỗi để thử lại (DATA-PERSIST-001, DATA-CONC-001). Project <code>Archived</code>: từ chối ghi.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Ghi chỉ thêm: Context Item không sửa tại chỗ; thay đổi tạo item mới và item cũ → <code>Superseded</code>; Researcher có thể rút một item (<code>Retracted</code>) kèm lý do. Mỗi item ghi nguồn (actor, Agent Run, prompt hoặc tin nhắn). Không lưu API key hay thông tin xác thực. Ghi một sự kiện và cập nhật trạng thái liên quan là một thao tác nguyên tử: hoặc cả hai thành công, hoặc không gì thay đổi.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Context Item; Research Context version; liên kết tới entity nguồn.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-STORE-001-AC01</strong> Given Researcher trả lời một prompt <code>choice</code>, When lưu, Then có Context Item <em>decision</em> trỏ tới prompt, Researcher và thời điểm.</li>
+<li><strong>CTX-STORE-001-AC02</strong> Given Researcher đóng trình duyệt và quay lại hôm sau, When mở project, Then mọi quyết định, trạng thái Task và artifact accepted còn nguyên.</li>
+<li><strong>CTX-STORE-001-AC03</strong> Given một Context Item bị thay bằng item mới, When lắp ráp context, Then chỉ item mới được dùng; item cũ vẫn xem được trong lịch sử.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA 18.3–18.4</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-2">14.2. Context Assembly</h2>
+<p class="status">Confirmed (outline): lắp ráp context riêng cho từng lần gọi model; tôn trọng giới hạn token và năng lực của provider. Sử dụng RAG: giải quyết SYNC-08 (phần 14). Thông tin cá nhân trong context: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015). Nội dung lưu của Agent Run: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062).</p>
+<h3 id="req-ctx-assembly-001">CTX-ASSEMBLY-001 — Lắp ráp context cho Agent Run</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi agent nhận đủ và chỉ đủ thông tin cần cho bước của nó, trong giới hạn của model được gán.</td></tr>
+<tr><th scope="row">Actor</th><td>System (Context Assembler); Orchestrator (chỉ định nhu cầu)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow đang hoạt động; agent của bước có Agent Model Assignment với Provider Connection <code>Valid</code>; bước đã qua kiểm tra quyền của CTX-ROUTING-001.</td></tr>
+<tr><th scope="row">Trigger</th><td>Trước mỗi Agent Run.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Xác định phạm vi được phép theo agent và bước (CTX-ROUTING-001, 3.3).</li>
+<li>Thu thập các lớp context theo thứ tự ưu tiên (bảng dưới).</li>
+<li>Với nhu cầu evidence: truy xuất qua RAG (EVID-RETRIEVAL-001), chỉ trong các Trusted Reference đã chọn cho project (Project Reference Selection <code>Active</code>); không truy xuất toàn bộ Trusted Library.</li>
+<li>Ước lượng kích thước theo giới hạn context window của model được gán; khi vượt, cắt từ lớp ưu tiên thấp nhất trước: thay toàn văn bằng tóm tắt, giảm số đoạn evidence, bỏ lịch sử hội thoại cũ.</li>
+<li>Điều chỉnh theo năng lực provider (ví dụ không có tool calling thì không đưa định nghĩa công cụ — 8.6).</li>
+<li>Ghi context manifest vào Agent Run: danh sách entity, phiên bản, evidenceId, phần bị cắt và lý do, và việc có đưa lĩnh vực nghiên cứu của Researcher vào hay không. Toàn văn prompt chỉ được lưu khi chế độ debug đang bật (CTX-REGISTRY-002).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Lớp 1–3 vượt giới hạn: Agent Run không chạy, lỗi <code>context_too_long</code> kèm gợi ý (chọn model có context window lớn hơn, chia nhỏ Task). Truy xuất RAG lỗi: bước <code>Failed</code> và xử lý theo ORCH-FAILURE-001 (8.5); không gửi context thiếu evidence mà không ghi vào manifest. Model không hỗ trợ tool calling: bỏ định nghĩa công cụ và ghi vào manifest.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Lớp 1–3 không bao giờ bị cắt; nếu lớp 1–3 đã vượt giới hạn, Agent Run không chạy và báo lỗi “context quá lớn” với gợi ý (chọn model lớn hơn, chia nhỏ Task). Chỉ dùng artifact/claim <code>Accepted</code> làm đầu vào chính thức; <code>Draft</code> chỉ đưa vào khi bước đó đang xử lý chính bản nháp đó. Không đưa API key, thông tin xác thực, dữ liệu project khác vào context. <strong>Thông tin cá nhân (OQ-015):</strong> trong các trường của Profile, chỉ <em>lĩnh vực nghiên cứu</em> được đưa vào context (lớp 6), và chỉ khi Researcher bật tùy chọn “Dùng lĩnh vực nghiên cứu làm context cho agent” trong Settings › Profile (mặc định tắt); họ tên, đơn vị, email, ảnh đại diện và URL hồ sơ Google Scholar không bao giờ được đưa vào context. Ngôn ngữ phản hồi của agent lấy từ Settings là chỉ dẫn định dạng, không phải thông tin cá nhân.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Context manifest trong Agent Run.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-ASSEMBLY-001-AC01</strong> Given một Agent Run hoàn tất, When mở chi tiết ở Agent Activity, Then thấy context manifest liệt kê entity, phiên bản và evidence đã dùng.</li>
+<li><strong>CTX-ASSEMBLY-001-AC02</strong> Given context vượt giới hạn model, When lắp ráp, Then lớp ưu tiên thấp bị cắt trước và manifest ghi phần bị cắt.</li>
+<li><strong>CTX-ASSEMBLY-001-AC03</strong> Given artifact chỉ có version <code>Draft</code>, When lắp ráp context cho một Task khác, Then artifact đó không có trong context.</li>
+<li><strong>CTX-ASSEMBLY-001-AC04</strong> Given bất kỳ Agent Run nào, When kiểm tra context đã gửi, Then không chứa giá trị API key.</li>
+<li><strong>CTX-ASSEMBLY-001-AC05</strong> Given Researcher đã nhập lĩnh vực nghiên cứu và URL hồ sơ Google Scholar nhưng tắt tùy chọn “Dùng lĩnh vực nghiên cứu làm context cho agent”, When lắp ráp context cho bất kỳ Agent Run nào, Then context và manifest không chứa thông tin cá nhân nào; When bật tùy chọn, Then chỉ lĩnh vực nghiên cứu xuất hiện ở lớp 6 và manifest ghi điều đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-STORE-001; EVID-RETRIEVAL-001; AGENT-PROVIDER-001 (8.6); Settings (<a href="15-ui-ux-requirements.html#s-15-12">15.12</a>)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-015 đã đóng 31/10/2026, PC-01; OQ-062 xem CTX-REGISTRY-002)</td></tr>
+</tbody></table></div>
+<h3 id="s-14-2-layers">Thứ tự ưu tiên các lớp context</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Lớp</th>
+<th scope="col">Nội dung</th>
+<th scope="col">Khi vượt giới hạn</th>
+</tr></thead><tbody>
+<tr><td>1</td><td>Vai trò, hành động được phép và định dạng đầu ra của agent (định nghĩa trong agent registry, SCOPE-14)</td><td>Không cắt</td></tr>
+<tr><td>2</td><td>Chỉ dẫn của bước hiện tại; định nghĩa Task (mục tiêu, đầu ra mong đợi, acceptance criteria) theo Plan Version baseline</td><td>Không cắt</td></tr>
+<tr><td>3</td><td>Quyết định và ràng buộc <code>Active</code> liên quan (Context Item phạm vi project và Task); phản hồi review gần nhất</td><td>Không cắt</td></tr>
+<tr><td>4</td><td>Đầu vào khai báo của Task: artifact và claim <code>Accepted</code>, đầu ra của Task tiên quyết</td><td>Thay toàn văn bằng tóm tắt</td></tr>
+<tr><td>5</td><td>Evidence truy xuất bằng RAG</td><td>Giảm số đoạn, giữ đoạn liên quan nhất</td></tr>
+<tr><td>6</td><td>Research Context và tóm tắt project; lĩnh vực nghiên cứu của Researcher (chỉ khi Researcher bật trong Settings, OQ-015)</td><td>Dùng bản tóm tắt</td></tr>
+<tr><td>7</td><td>Hội thoại gần đây (chỉ với Orchestrator trong chat): tóm tắt cuốn chiếu của toàn bộ hội thoại cộng tối đa 20 tin gần nhất</td><td>Bỏ tin cũ trước, giữ tóm tắt</td></tr>
+</tbody></table></div>
+<p class="status">Lượng lịch sử chat ở lớp 7 — Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): tóm tắt cuốn chiếu (cập nhật sau mỗi lượt trao đổi, lưu thành Context Item <em>summary</em>) cộng tối đa 20 tin gần nhất, trong giới hạn của lớp 7. Quyết định của người dùng nằm ở lớp 3 nên không phụ thuộc lịch sử chat.</p>
+
+<h2 id="s-14-3">14.3. Context Routing</h2>
+<p class="status">Confirmed (outline): Orchestrator định tuyến context và lệnh liên quan tới agent được phép.</p>
+<h3 id="req-ctx-routing-001">CTX-ROUTING-001 — Định tuyến lệnh và context tới agent</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi bước đến đúng agent có năng lực và quyền phù hợp; chuyển giao giữa agent bằng tham chiếu entity thay vì văn bản chat.</td></tr>
+<tr><th scope="row">Actor</th><td>Orchestrator; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow <code>Running</code>; agent registry có agent phù hợp với bước; agent đó có Agent Model Assignment hợp lệ.</td></tr>
+<tr><th scope="row">Trigger</th><td>Orchestrator lập bước tiếp theo của workflow.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator chọn agent cho bước dựa trên năng lực trong agent registry → gửi lệnh có cấu trúc (mục tiêu bước, đầu vào dạng tham chiếu entity, định dạng đầu ra) → System kiểm tra agent có quyền với các entity tham chiếu (bảng phạm vi 3.3) → Context Assembler lắp ráp → Model Gateway gọi provider theo Agent Model Assignment → kết quả có cấu trúc trở về System để ghi, rồi Orchestrator nhận tham chiếu kết quả.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Orchestrator yêu cầu agent truy cập entity ngoài phạm vi: System từ chối bước, ghi Audit Event, Orchestrator phải lập lại bước. Agent chưa có Agent Model Assignment hợp lệ: bước không chạy; Task bị chặn (WF-02.S4).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Specialist Agent không gọi trực tiếp agent khác; mọi chuyển giao đi qua Orchestrator và System. Mỗi lệnh gắn workflowId, stepId và idempotency key (CTX-CONSISTENCY-001). Provider và model thực tế ghi vào Agent Run.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Workflow Step (assignedAgent, inputRefs, status); Agent Run mới; event handoff trong registry (CTX-REGISTRY-001); Audit Event khi bước bị từ chối.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-ROUTING-001-AC01</strong> Given Evidence Retrieval Agent được giao bước, When lệnh tham chiếu file bản thảo, Then System từ chối vì ngoài phạm vi (3.3).</li>
+<li><strong>CTX-ROUTING-001-AC02</strong> Given Synthesis Agent gán OpenAI và Writing Agent gán Claude, When một workflow dùng cả hai, Then mỗi Agent Run ghi đúng provider và model của nó, và kết quả Synthesis đến Writing dưới dạng tham chiếu artifact.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-ASSEMBLY-001; ORCH/AGENT (8.1–8.3, 8.6)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-4">14.4. Artifact and Event Registry</h2>
+<p class="status">Confirmed (outline): lưu đầu ra có cấu trúc và event với định danh, phiên bản, provenance và trạng thái. Nội dung lưu của Agent Run (manifest + đầu ra có cấu trúc; toàn văn chỉ ở chế độ debug, giữ 30 ngày): Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062).</p>
+<h3 id="req-ctx-registry-001">CTX-REGISTRY-001 — Registry artifact và event</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi đầu ra và sự kiện điều phối truy vết được về nguồn gốc và hiển thị được ở Agent Activity (SCOPE-12).</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đầu ra do Researcher tạo, hoặc thuộc một Agent Run của Workflow còn hoạt động (DATA-IDEMP-003).</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent Run trả kết quả; Researcher tạo hoặc sửa nội dung; một sự kiện điều phối xảy ra (bước bắt đầu/kết thúc, handoff, prompt, lỗi, thử lại, tạm dừng).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mọi đầu ra (Artifact Version, Evidence, Claim, Change Proposal, Discovered Result) được đăng ký với: định danh duy nhất, loại, phiên bản, trạng thái, provenance (actor, Agent Run, Workflow, Task, đầu vào), thời điểm. Mọi sự kiện điều phối (bước bắt đầu/kết thúc, handoff, prompt mở/đóng, lỗi, thử lại, tạm dừng) được ghi thành event có thứ tự theo workflow. Agent Activity (SCOPE-12) đọc từ các event này.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Đầu ra thiếu provenance: từ chối ghi và bước <code>Failed</code>. Workflow không còn hoạt động: Agent Run được đánh dấu <code>discarded</code>, đầu ra không được ghi (CTX-CONSISTENCY-002).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Định danh không tái sử dụng. Provenance bắt buộc: đầu ra thiếu provenance bị từ chối ghi. Event chỉ ghi thêm, có thứ tự trong cùng workflow.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Artifact Version, Evidence, Claim, Change Proposal, Discovered Result kèm provenance (18.3); event điều phối có thứ tự theo workflow.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-REGISTRY-001-AC01</strong> Given một Artifact Version do agent tạo, When xem provenance, Then có Agent Run, Workflow, Task và danh sách đầu vào với phiên bản.</li>
+<li><strong>CTX-REGISTRY-001-AC02</strong> Given một workflow kết thúc, When mở Agent Activity, Then thấy chuỗi event theo đúng thứ tự xảy ra, gồm handoff giữa các agent.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA 18.3</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ctx-registry-002">CTX-REGISTRY-002 — Nội dung lưu của Agent Run và chế độ debug</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 · Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062), Assumption (vị trí công tắc debug và chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mỗi Agent Run truy vết được nguồn gốc mà không lưu mặc định nội dung nhạy cảm, tốn dung lượng; khi cần chẩn đoán lỗi, Researcher chủ động bật lưu toàn văn trong thời hạn giới hạn.</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher (bật/tắt chế độ debug)</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Agent Run được tạo (CTX-ROUTING-001).</td></tr>
+<tr><th scope="row">Trigger</th><td>Agent Run bắt đầu và kết thúc; Researcher bật hoặc tắt chế độ debug trong Settings › Preferences (<a href="15-ui-ux-requirements.html#s-15-12">15.12</a>); bản ghi toàn văn đến hạn 30 ngày.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li>Luôn lưu cho mỗi Agent Run: agent, provider, model, usage, trạng thái, context manifest (CTX-ASSEMBLY-001) và đầu ra có cấu trúc đã đăng ký (CTX-REGISTRY-001).</li>
+<li>Nếu chế độ debug của tài khoản đang bật tại thời điểm Agent Run bắt đầu: lưu thêm toàn văn prompt gửi provider và toàn văn phản hồi, gắn nhãn “debug”.</li>
+<li>Researcher xem toàn văn ở chi tiết Agent Run trong Agent Activity; Agent Run không có toàn văn hiển thị “Không lưu toàn văn (chế độ debug tắt)”.</li>
+<li>System tự xóa toàn văn sau 30 ngày kể từ khi lưu; context manifest và đầu ra có cấu trúc vẫn giữ theo vòng đời Agent Run.</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Researcher tắt chế độ debug: chỉ ảnh hưởng Agent Run bắt đầu sau đó; toàn văn đã lưu vẫn giữ đến hết hạn 30 ngày. Lưu toàn văn thất bại: Agent Run vẫn hoàn tất bình thường, ghi cảnh báo trên Agent Run; không chặn workflow.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mặc định chế độ debug tắt. Toàn văn là dữ liệu nhạy cảm: mã hóa khi lưu, chỉ chủ tài khoản xem được, không đưa vào log vận hành, không đưa vào Shared Context hay context của Agent Run khác, không export mặc định (NFR-RET-009). API key không bao giờ xuất hiện trong toàn văn đã lưu. Bật/tắt chế độ debug ghi Audit Event.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Agent Run (manifest, đầu ra có cấu trúc, usage); bản ghi toàn văn debug có hạn xóa; cờ chế độ debug của tài khoản; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-REGISTRY-002-AC01</strong> Given chế độ debug tắt, When một Agent Run hoàn tất, Then Agent Run có context manifest và đầu ra có cấu trúc, và không có toàn văn prompt/phản hồi nào được lưu.</li>
+<li><strong>CTX-REGISTRY-002-AC02</strong> Given chế độ debug bật, When một Agent Run hoàn tất, Then Researcher xem được toàn văn prompt và phản hồi ở chi tiết Agent Run; When đã qua 30 ngày, Then toàn văn bị xóa còn manifest và đầu ra có cấu trúc vẫn còn.</li>
+<li><strong>CTX-REGISTRY-002-AC03</strong> Given toàn văn debug đã lưu, When kiểm tra log vận hành và nội dung export mặc định của project, Then không chứa toàn văn đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-ASSEMBLY-001; CTX-REGISTRY-001; NFR-RET-009 (16.8); Settings (<a href="15-ui-ux-requirements.html#s-15-12">15.12</a>)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-062 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-5">14.5. Context Isolation</h2>
+<p class="status">Confirmed (outline): kiểm soát truy cập ở cấp project, task và tài nguyên. Quy tắc cụ thể theo 3.4 và OWN-01–OWN-06 (5.10).</p>
+<h3 id="req-ctx-isolation-001">CTX-ISOLATION-001 — Cách ly ở tầng System</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Dữ liệu của một project hoặc tài khoản không lọt sang nơi khác, kể cả khi model hoặc agent hoạt động sai.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Phiên đã xác thực (NFR-AUTH-001); với agent: Agent Run thuộc một Workflow của project hiện hành.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi yêu cầu đọc hoặc ghi của Researcher, agent hoặc System; mọi truy vấn vector database.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mọi đọc/ghi đi qua kiểm tra: (1) account của entity = account của phiên; (2) entity cấp project thuộc project của workflow; (3) agent có quyền với loại entity (3.3); (4) Context Item phạm vi task chỉ cho Task đó và Task phụ thuộc trực tiếp (5.5); (5) truy vấn vector database luôn có bộ lọc account và reference đã chọn (11.2).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Vi phạm một kiểm tra: từ chối, trả “không tìm thấy”, ghi Audit Event. Với Agent Run: bước <code>Failed</code> với mã <code>permission_denied</code> và Orchestrator phải lập lại bước.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Kiểm tra thực hiện ở tầng System, không dựa vào chỉ dẫn cho model. Truy cập bị từ chối trả “không tìm thấy”, không tiết lộ sự tồn tại (4.3). Global AI Assistant không bao giờ đọc nội dung project; chỉ đọc Trusted Library và danh sách project (tên, trạng thái) (4.1).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Audit Event cho truy cập bị từ chối; không thay đổi dữ liệu nghiệp vụ.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-ISOLATION-001-AC01</strong> Given hai tài khoản A và B, When một Agent Run của A tham chiếu entity của B, Then System từ chối và ghi Audit Event.</li>
+<li><strong>CTX-ISOLATION-001-AC02</strong> Given project P1 và P2 cùng tài khoản, When workflow của P1 lắp ráp context, Then không có evidence, claim, artifact hay Context Item của P2.</li>
+<li><strong>CTX-ISOLATION-001-AC03</strong> Given Context Item phạm vi Task T1, When lắp ráp context cho Task T3 không phụ thuộc T1, Then item đó không có trong context.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>NFR 16.1; 3.4</td></tr>
+
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-6">14.6. State Consistency</h2>
+<p class="status">Confirmed (outline): ngăn thực thi trùng, chuyển trạng thái phê duyệt không hợp lệ và kết quả cũ âm thầm ghi đè kết quả mới.</p>
+<h3 id="req-ctx-consistency-001">CTX-CONSISTENCY-001 — Ngăn thực thi trùng</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không tạo hai workflow hoặc hai lần gọi provider cho cùng một yêu cầu, tránh kết quả trùng và chi phí thừa.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Task <code>Ready</code> và readiness đạt (T-05, 9.8).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher kích hoạt Task (APR-02); client gửi lại cùng lệnh; System lập lịch một bước.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Kích hoạt Task kiểm tra Task không có Workflow ở trạng thái <code>Created</code>, <code>Running</code>, <code>Waiting for User</code>, <code>Paused</code> hoặc <code>Interrupted</code> (5.3, 5.4) → mỗi lệnh kích hoạt và mỗi bước mang idempotency key → nhận lại cùng key (bấm hai lần, gửi lại do mạng) trả về kết quả của lần đầu, không tạo workflow hay Agent Run mới.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Task đã có Workflow chưa kết thúc: từ chối và chỉ tới workflow hiện có. Cùng idempotency key: trả kết quả của lần đầu, không tạo gì mới.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Gọi provider được coi là hành động có tác động (chi phí); chỉ thử lại theo chính sách 8.5. Thao tác ghi dữ liệu phải an toàn khi lặp lại (18.4).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Workflow (idempotencyKey); Task.activeWorkflowId (18.1).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-CONSISTENCY-001-AC01</strong> Given Researcher bấm kích hoạt Task hai lần liên tiếp, When xử lý, Then chỉ có một Workflow được tạo.</li>
+<li><strong>CTX-CONSISTENCY-001-AC02</strong> Given Task đang có Workflow <code>Paused</code>, When kích hoạt lại, Then System từ chối và chỉ tới workflow hiện có.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA-IDEMP-001, DATA-IDEMP-002 (18.4); TASK-TRIGGER-001 (9.6)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<h3 id="req-ctx-consistency-002">CTX-CONSISTENCY-002 — Không để kết quả cũ ghi đè kết quả mới</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không mất kết quả mới do kết quả cũ đến muộn hoặc do ghi đồng thời.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Entity sửa được có rowVersion (18.1); Agent Run gắn với Workflow Step đang chờ đúng agentRunId.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi thao tác ghi vào entity sửa được; kết quả Agent Run trở về.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mọi ghi kèm phiên bản đối tượng mà người ghi đã đọc (kiểm tra phiên bản lạc quan) → phiên bản hiện hành khác: ghi bị từ chối hoặc chuyển thành bản mới cạnh tranh tùy loại → kết quả Agent Run đến khi Workflow đã <code>Cancelled</code> hoặc đã có lần chạy mới hơn cho cùng bước: lưu với nhãn “bị bỏ”, không gắn vào Task, không ghi đè (5.4).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Xung đột phiên bản: trả lỗi xung đột cho bên ghi sau và hiển thị bản hiện hành để tải lại; không gộp âm thầm.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Change Proposal trên revision cũ → <code>Outdated</code> (MS-DIFF-001). Plan Version chỉ có một <code>Draft</code>/<code>Proposed</code> mở (5.2). Mọi xung đột hiển thị cho Researcher; không gộp âm thầm.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>rowVersion; AgentRun.discarded; Change Proposal <code>Outdated</code>.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-CONSISTENCY-002-AC01</strong> Given Agent Run lần 1 bị hủy và lần 2 đã hoàn tất, When kết quả lần 1 đến muộn, Then kết quả lần 1 có nhãn “bị bỏ” và đầu ra của Task là kết quả lần 2.</li>
+<li><strong>CTX-CONSISTENCY-002-AC02</strong> Given Researcher và Orchestrator cùng sửa một Plan Version <code>Draft</code>, When bên thứ hai lưu trên phiên bản cũ, Then lưu bị từ chối và bên đó thấy thông báo xung đột.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA-CONC-001, DATA-IDEMP-003 (18.4); MS-DIFF-001 (12.5)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+<h3 id="req-ctx-consistency-003">CTX-CONSISTENCY-003 — Chuyển trạng thái phê duyệt hợp lệ</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi phê duyệt và chuyển trạng thái đều hợp lệ, do đúng actor thực hiện, cho đúng phiên bản đối tượng.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Đối tượng có state machine ở 18.2.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi yêu cầu chuyển trạng thái, kể cả phê duyệt APR-01–APR-10.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mọi chuyển trạng thái đi qua state machine (18.2): kiểm tra trạng thái nguồn, actor được phép (APR-01–APR-10 chỉ Researcher), điều kiện (ví dụ readiness Đạt trước <code>Queued</code>; mọi acceptance criteria đạt trước <code>Completed</code>), phiên bản đối tượng được duyệt khớp phiên bản hiện hành.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chuyển không có trong bảng, actor không được phép hoặc phiên bản lệch: từ chối, trạng thái không đổi, ghi Audit Event và hiển thị lý do.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Phê duyệt gắn với phiên bản: nếu đối tượng đổi giữa lúc hiển thị và lúc bấm duyệt, phê duyệt bị từ chối và hiển thị lại (3.4). Prompt <code>Expired</code>/<code>Cancelled</code> không tạo phê duyệt (5.9). Khi đối tượng đang chờ duyệt đổi phiên bản, prompt chuyển <code>Cancelled</code> và Orchestrator tạo prompt mới cho phiên bản hiện hành.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Trạng thái entity; ApprovalRecord (18.1); Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-CONSISTENCY-003-AC01</strong> Given Orchestrator, When yêu cầu chuyển Plan Version sang <code>Approved</code>, Then System từ chối và ghi Audit Event.</li>
+<li><strong>CTX-CONSISTENCY-003-AC02</strong> Given Researcher mở Plan Version để duyệt và version đó bị thay thế trước khi bấm duyệt, When bấm duyệt, Then System từ chối và hiển thị version mới.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA 18.2; 3.1</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-7">14.7. Recovery and Resumption</h2>
+<p class="status">Confirmed (outline): tiếp tục workflow từ checkpoint đã lưu sau gián đoạn. Thống nhất với 5.4 và WF-06.</p>
+<h3 id="req-ctx-recovery-001">CTX-RECOVERY-001 — Checkpoint và khôi phục</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không mất kết quả đã hoàn tất khi phiên hoặc hệ thống bị gián đoạn (KPI-03 ≥ 99%).</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Workflow có ít nhất một checkpoint (WF-06).</td></tr>
+<tr><th scope="row">Trigger</th><td>Không có heartbeat trong 2 phút hoặc mất tiến trình thực thi; Researcher quay lại khi có workflow <code>Interrupted</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td><ol>
+<li><strong>Checkpoint:</strong> System lưu checkpoint sau mỗi bước hoàn tất (đầu ra đã đăng ký) và trước mỗi điểm chờ người dùng (WF-06.S1). Checkpoint gồm trạng thái các bước, tham chiếu đầu ra, prompt đang mở.</li>
+<li><strong>Phát hiện gián đoạn:</strong> tiến trình thực thi gửi heartbeat mỗi 30 giây cho workflow đang <code>Running</code>; không có heartbeat trong 2 phút, hoặc tiến trình thực thi mất → Workflow <code>Interrupted</code>; Agent Run đang chạy → <code>Failed</code> với mã <code>interrupted</code> (WF-06.S2). Agent Run là đơn vị nguyên tử: không có checkpoint giữa một Agent Run; Agent Run dở được chạy lại bằng Agent Run mới. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</li>
+<li><strong>Khôi phục:</strong> khi Researcher quay lại, System nạp checkpoint gần nhất nhất quán, liệt kê bước xong/dở, đầu ra đã lưu, thay đổi đầu vào kể từ checkpoint, rồi tạo Recovery decision (WF-06.S4–S5).</li>
+<li><strong>Tiếp tục:</strong> theo lựa chọn: tiếp tục từ bước dở (Agent Run mới), chạy lại bước, hoặc hủy (WF-06.S6).</li>
+</ol></td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Checkpoint gần nhất hỏng: dùng checkpoint trước đó, báo phần mất (WF-06.E1). Workflow chỉ đang chờ người dùng: không cần Recovery decision (WF-06.A1).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Không tự chạy lại bước gọi provider hoặc ghi dữ liệu khi chưa có xác nhận. Đầu ra chưa đăng ký tại thời điểm gián đoạn coi như chưa có. Phiên đăng nhập kết thúc không làm workflow dừng; workflow đang chạy tiếp tục ở phía System (4.3).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Checkpoint; trạng thái Workflow, Agent Run, Task; Pending Action Recovery decision.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-RECOVERY-001-AC01</strong> Given workflow 4 bước bị gián đoạn khi đang chạy bước 3, When khôi phục, Then đầu ra bước 1–2 còn nguyên, bước 3 được đánh dấu dở, và Researcher nhận Recovery decision.</li>
+<li><strong>CTX-RECOVERY-001-AC02</strong> Given Workflow <code>Interrupted</code>, When chưa có lựa chọn của Researcher, Then không có Agent Run mới nào được tạo.</li>
+<li><strong>CTX-RECOVERY-001-AC03</strong> Given Researcher đăng xuất khi workflow đang chạy, When workflow hoàn tất, Then kết quả được lưu và Task chuyển <code>In Review</code>.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-REGISTRY-001; NFR-REC-001, NFR-REC-002 (16.2)</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-8">14.8. Audit Trail</h2>
+<p class="status">Confirmed (outline): ghi các hành động quan trọng, phê duyệt, thay đổi và metadata thực thi agent. Actor trên mọi phê duyệt và thay đổi: Confirmed (OQ-004, giải quyết SYNC-11). Vòng đời lưu giữ và export theo project (JSON/CSV): Confirmed — PO chốt 31/10/2026 (PC-01, OQ-061).</p>
+<h3 id="req-ctx-audit-001">CTX-AUDIT-001 — Audit trail chỉ ghi thêm</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực và actor), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Kiểm tra được ai đã quyết định, thay đổi gì, khi nào; nền cho cộng tác trong tương lai (FUT-02).</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Hành động thuộc một tài khoản: do Researcher đã xác thực, hoặc do agent và System thực hiện trong phạm vi tài khoản đó.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi phê duyệt, thay đổi entity, Agent Run, truy cập bị từ chối, thay đổi Settings.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Ghi Audit Event (5.11) cho: mọi phê duyệt APR-01–APR-10; mọi tạo/sửa/xóa/chuyển trạng thái entity; mọi Agent Run (agent, provider, model, usage, kết quả); mọi truy cập bị từ chối; thay đổi Settings (không ghi giá trị key). Audit Event của tài nguyên cấp tài khoản (Trusted Library, Provider Connection, Profile) thuộc account; của tài nguyên project thuộc project. Researcher xem ở Activity and History (4.2), lọc theo actor, loại, Task, thời gian.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Ghi Audit Event thất bại: thao tác mà nó mô tả cũng bị hủy, vì cả hai ghi trong cùng giao dịch (DATA-PERSIST-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Actor bắt buộc: <em>Researcher</em> (accountId), <em>agent</em> (tên agent + agentRunId) hoặc <em>System</em> (thành phần). Không sửa, không xóa Audit Event qua giao diện hay API sản phẩm. Ghi Audit Event cùng thao tác nguyên tử với thay đổi nó mô tả. <strong>Lưu giữ (OQ-061):</strong> Audit Event cấp project giữ cùng vòng đời project, cấp tài khoản giữ cùng vòng đời tài khoản; không có hạn xóa riêng; chỉ bị xóa khi project bị xóa vĩnh viễn (NFR-RET-002) hoặc tài khoản bị xóa (NFR-RET-004) (NFR-RET-008).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Audit Event (18.1) thuộc account hoặc project.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-AUDIT-001-AC01</strong> Given Researcher duyệt một reference, When xem audit trail cấp tài khoản, Then có event với actor Researcher, APR-04, referenceId và thời điểm.</li>
+<li><strong>CTX-AUDIT-001-AC02</strong> Given Synthesis Agent tạo claim, When xem audit trail project, Then event ghi actor Synthesis Agent kèm agentRunId, provider và model.</li>
+<li><strong>CTX-AUDIT-001-AC03</strong> Given Researcher đổi API key, When xem audit trail, Then có event thay đổi Provider Connection nhưng không chứa giá trị key.</li>
+<li><strong>CTX-AUDIT-001-AC04</strong> Given bất kỳ actor nào, When cố sửa hoặc xóa Audit Event, Then thao tác bị từ chối.</li>
+<li><strong>CTX-AUDIT-001-AC05</strong> Given project tồn tại 2 năm, When xem audit trail của project, Then Audit Event cũ nhất vẫn còn.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DATA 18.3; NFR 16.1, 16.8 (NFR-RET-008)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-061 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ctx-audit-002">CTX-AUDIT-002 — Export audit trail theo project</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed — PO chốt 31/10/2026 (PC-01, OQ-061), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher lưu giữ hoặc trình bày bằng chứng về quá trình nghiên cứu (ai quyết định gì, agent nào tạo gì) bên ngoài sản phẩm.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Researcher là chủ project (project <code>Active</code> hoặc <code>Archived</code>).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Export audit trail” trong Activity and History của project (4.2).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher chọn định dạng JSON hoặc CSV và tùy chọn khoảng thời gian (mặc định toàn bộ) → System tạo file chứa mọi Audit Event cấp project trong khoảng đó, mỗi event gồm: thời điểm, actor (loại, định danh), loại hành động, mã APR (nếu có), entity và phiên bản liên quan, agentRunId, provider, model → file tải về; thao tác export ghi Audit Event.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Project không có event trong khoảng đã chọn: file chỉ có tiêu đề cột (CSV) hoặc mảng rỗng (JSON), kèm thông báo. Tạo file thất bại: báo lỗi, Researcher thử lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ export Audit Event của một project mỗi lần; Audit Event cấp tài khoản không nằm trong file export project. File export không chứa giá trị API key, thông tin xác thực hay toàn văn prompt/phản hồi debug (CTX-REGISTRY-002). JSON và CSV chứa cùng tập trường.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>File export tạm thời; Audit Event cho thao tác export.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>CTX-AUDIT-002-AC01</strong> Given project có Audit Event từ 6 tháng trước, When Researcher export audit trail dạng JSON và dạng CSV, Then cả hai file chứa đủ Audit Event của project, kể cả bản ghi cũ nhất, với cùng tập trường.</li>
+<li><strong>CTX-AUDIT-002-AC02</strong> Given project P1 và P2 cùng tài khoản, When export audit trail của P1, Then file không chứa event nào của P2 hay event cấp tài khoản.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-AUDIT-001; NFR-RET-005, NFR-RET-008 (16.8)</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-061 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-14-oq">14.9. Open Questions của mục 14</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-061</td><td>Audit trail được lưu bao lâu và Researcher có export được không (liên quan chính sách retention OQ-078)? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Audit trail giữ cùng vòng đời project và tài khoản; Researcher export được theo project dạng JSON/CSV (CTX-AUDIT-001, CTX-AUDIT-002, NFR-RET-008).</td><td>14.8, 16.8</td></tr>
+<tr><td>OQ-062</td><td>Agent Run chỉ lưu context manifest (tham chiếu) hay lưu cả toàn văn prompt và phản hồi của model (để debug, đổi lại tốn dung lượng và nhạy cảm hơn)? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Agent Run lưu context manifest và đầu ra có cấu trúc; toàn văn prompt/phản hồi chỉ lưu khi người dùng bật chế độ debug, giữ 30 ngày (CTX-REGISTRY-002, NFR-RET-009).</td><td>14.2, 16.1, 16.5, 18.3</td></tr>
+<tr><td>OQ-063</td><td>Ngưỡng thời gian không tiến triển để System coi workflow là <code>Interrupted</code>, và có cần checkpoint giữa chừng cho Agent Run chạy rất lâu không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> heartbeat mỗi 30 giây, không có heartbeat trong 2 phút thì workflow chuyển <code>Interrupted</code>; không checkpoint giữa một Agent Run, Agent Run dở được chạy lại bằng Agent Run mới (CTX-RECOVERY-001); PO duyệt 31/10/2026 (PC-01).</td><td>14.7, 16.2, WF-06</td></tr>
+<tr><td>OQ-064</td><td>Orchestrator trong Project AI Chat được nhận bao nhiêu lịch sử hội thoại (chỉ tóm tắt hay N tin gần nhất)? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> tóm tắt cuốn chiếu của toàn bộ hội thoại cộng tối đa 20 tin gần nhất, trong giới hạn lớp 7 của bảng ưu tiên context (14.2); PO duyệt 31/10/2026 (PC-01).</td><td>14.2, 7.4</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="13-diagram-agent.html">← Mục 13</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="15-ui-ux-requirements.html">Mục 15 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+%% FIG-107 — Indexing and retrieval (architecture 7.1, 7.4)
+flowchart TB
+  subgraph Indexing [job:ingest index_reference]
+    T[Reference Trusted] --> C[Thu nhận PDF] --> K{PDF, ≤50 MB, ≤500 trang,<br/>có lớp văn bản?}
+    K -- không --> FX[indexingStatus Failed / Unavailable]
+    K -- có --> X[Trích xuất theo trang, bố cục cột] --> CH[Chunk theo đoạn + vị trí, chunk_key]
+    CH --> EM[Embedding model của tài khoản] --> ST[(chunk_text + tsvector,<br/>vec.emb_model)]
+  end
+  subgraph Retrieval [tool retrieve_evidence]
+    Q[Truy vấn] --> SCOPE[Phạm vi do System tính:<br/>account + reference Active, Trusted, Indexed]
+    SCOPE --> VV[Vector top 50] & FT[Full-text top 50]
+    VV --> RRF[RRF + giới hạn theo reference] 
+    FT --> RRF
+    RRF --> TOPK[top-k evidence có trang/đoạn]
+  end
+  ST --> VV
+  ST --> FT

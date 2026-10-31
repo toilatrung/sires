@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Activity and History</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="Activity and History" hint-size="100%,57px"></dc-import>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="history" hint-size="240px,943px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 24px clamp(16px, 3vw, 32px) 40px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 28px">Activity and History</h1>
+        <p style="margin: 0; font-size: 14px; color: #4D4A44">Audit trail bất biến của mọi actor. Chỉ đọc.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Actor
+          <select style="height: 38px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option><option>Researcher</option><option>Orchestrator</option><option>Specialist Agent</option><option>System</option></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Loại sự kiện
+          <select style="height: 38px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option><option>Phê duyệt</option><option>Thay đổi</option><option>Quyết định</option><option>Sự kiện agent</option></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Task
+          <select style="height: 38px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Mọi Task</option></select>
+        </label>
+      </div>
+      <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 14px">
+          <thead><tr style="text-align: left; font-size: 12px; color: #4D4A44">
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Thời điểm</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Actor</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Loại</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Sự kiện</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Đối tượng</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+              <tr>
+                <td style="padding: 11px 16px; border-bottom: 1px solid #DBD3C7; font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44; white-space: nowrap">{{r.time}}</td>
+                <td style="padding: 11px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">{{r.actor}}</td>
+                <td style="padding: 11px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid {{r.tb}}; font-size: 12px; font-weight: 600">{{r.type}}</span></td>
+                <td style="padding: 11px 16px; border-bottom: 1px solid #DBD3C7">{{r.text}}</td>
+                <td style="padding: 11px 16px; border-bottom: 1px solid #DBD3C7"><a href="{{r.href}}">{{r.obj}}</a></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TB = { 'Phê duyệt': '#025FAC', 'Thay đổi': '#4D4A44', 'Quyết định': '#1C1B18', 'Sự kiện agent': '#DBD3C7' };
+    const r = (time, actor, type, text, obj, href) => ({ time, actor, type, tb: TB[type], text, obj, href });
+    return {
+      rows: [
+        r('31/10 09:44', 'Nguyễn Thanh', 'Quyết định', 'Trả lời prompt choice: 2019–2026', 'Prompt pr-118', 'Chat.dc.html'),
+        r('31/10 09:42', 'Discovery Agent', 'Sự kiện agent', 'Tạo Interactive Agent Prompt', 'wf-52d', 'Workflow.dc.html'),
+        r('31/10 09:41', 'Nguyễn Thanh', 'Thay đổi', 'Sửa trực tiếp sections/intro.tex → r18', 'Manuscript r18', 'Manuscript.dc.html'),
+        r('31/10 09:37', 'Nguyễn Thanh', 'Phê duyệt', 'Kích hoạt thực thi T-2.3 (APR-02)', 'T-2.3', 'Plan.dc.html'),
+        r('31/10 08:50', 'Nguyễn Thanh', 'Phê duyệt', 'Chấp nhận Change Proposal cp-07 (APR-05)', 'Manuscript r17', 'Manuscript.dc.html'),
+        r('31/10 08:10', 'Orchestrator', 'Sự kiện agent', 'Đề xuất Plan Version v4', 'Plan v4', 'PlanCompare.dc.html'),
+        r('30/10 16:22', 'Nguyễn Thanh', 'Phê duyệt', 'Thu hồi reference doe2023hd → 1 claim needs review', 'doe2023hd', 'Reference.dc.html'),
+        r('30/10 14:05', 'System', 'Thay đổi', 'Index xong 3 Source Document', 'Trusted Library', 'Library.dc.html'),
+        r('29/10 10:15', 'Nguyễn Thanh', 'Thay đổi', 'Sửa research context → phiên bản 4', 'Research context', 'Overview.dc.html')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

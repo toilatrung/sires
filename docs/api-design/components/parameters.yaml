@@ -1,0 +1,112 @@
+# Tham số dùng chung. Quy ước: docs/api/README.md.
+
+ProjectId:
+  name: projectId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+TaskId:
+  name: taskId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+PlanVersionId:
+  name: planVersionId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+ReferenceId:
+  name: referenceId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+EvidenceId:
+  name: evidenceId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+ClaimId:
+  name: claimId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+ArtifactId:
+  name: artifactId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+VersionId:
+  name: versionId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+WorkflowId:
+  name: workflowId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+PromptId:
+  name: promptId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+ProposalId:
+  name: proposalId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+BuildId:
+  name: buildId
+  in: path
+  required: true
+  schema: { $ref: schemas/common.yaml#/Id }
+
+IdempotencyKey:
+  name: Idempotency-Key
+  in: header
+  required: true
+  description: |
+    Khóa do client tạo (UUID khuyến nghị) cho lệnh có tác động (DATA-IDEMP-001).
+    Gửi lại cùng khóa trả về kết quả lần đầu; cùng khóa với nội dung khác trả `422 idempotency_key_reused`.
+  schema:
+    type: string
+    minLength: 8
+    maxLength: 128
+IfMatch:
+  name: If-Match
+  in: header
+  required: true
+  description: Giá trị `ETag` (= rowVersion) đã đọc trước đó. Lệch phiên bản trả `412` (DATA-CONC-001).
+  schema:
+    type: string
+    examples: ['"7"']
+CsrfToken:
+  name: X-CSRF-Token
+  in: header
+  required: true
+  description: Token chống CSRF lấy từ `GET /auth/session`, bắt buộc cho mọi lệnh ghi dùng cookie phiên.
+  schema:
+    type: string
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 200
+    default: 50
+Cursor:
+  name: cursor
+  in: query
+  required: false
+  description: Giá trị `nextCursor` của trang trước.
+  schema:
+    type: string
+ProjectIdFilter:
+  name: projectId
+  in: query
+  required: false
+  description: Lọc theo project; bỏ trống để lấy mọi project của tài khoản (Global Workspace).
+  schema: { $ref: schemas/common.yaml#/Id }

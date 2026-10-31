@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>12. LaTeX Manuscript Workspace | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 12</p><h1>12. Functional Requirements — LaTeX Manuscript Workspace</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả không gian viết bản thảo LaTeX của project: khởi tạo, chỉnh sửa, AI hỗ trợ viết qua diff, bibliography gắn với Trusted Reference, compile và lịch sử revision. Chế độ khởi tạo Default/Blank là <strong>Confirmed</strong> (21.1). Người dùng điển hình viết chủ yếu bằng tiếng Anh và biết LaTeX ở mức cơ bản (Confirmed — OQ-002); mục này giải quyết phần SYNC-10 thuộc mục 12. Luồng, quy tắc và acceptance criteria do biên soạn đề xuất (<strong>Assumption</strong>), đã được PO duyệt nội dung trong phiếu chốt PC-01 (31/10/2026). Định dạng export bản thảo: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-058). Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Entity theo <a href="05-core-domain-model.html#s-5-8">5.8</a>, workflow theo <a href="06-end-to-end-product-workflow.html#wf-05">WF-05</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-12-1">12.1. Manuscript Creation</a></li>
+<li><a href="#s-12-2">12.2. Default Directory Structure</a></li>
+<li><a href="#s-12-3">12.3. File Explorer and Editor</a></li>
+<li><a href="#s-12-4">12.4. AI-Assisted Writing</a></li>
+<li><a href="#s-12-5">12.5. Diff and Revision Control</a></li>
+<li><a href="#s-12-6">12.6. Bibliography and Citation Management</a></li>
+<li><a href="#s-12-7">12.7. Compilation and PDF Preview</a></li><li><a href="#s-12-8">12.8. Build Environment</a></li>
+<li><a href="#s-12-9">12.9. Diagram Integration</a></li>
+<li><a href="#s-12-10">12.10. Revision History</a></li>
+<li><a href="#s-12-oq">12.11. Open Questions của mục 12</a></li>
+</ul></details>
+
+<p><strong>Nguyên tắc chung (Assumption):</strong></p>
+<ul>
+<li>Researcher là người duy nhất ghi trực tiếp vào file bản thảo. Agent chỉ tạo Change Proposal; áp dụng cần APR-05 (3.1, 3.3). Ngoại lệ duy nhất: System sinh lại <code>bibliography/references.bib</code> từ Bibliography Entry (MS-BIB-001), mỗi lần tạo một revision với actor System.</li>
+<li>Mọi thay đổi file, từ bất kỳ nguồn nào, tạo một Manuscript Revision (5.8).</li>
+<li>Một người chỉnh sửa tại một thời điểm; không cộng tác thời gian thực (OOS-01).</li>
+</ul>
+<pre><code>Writing Agent ─► Change Proposal (Proposed, base revision r)
+                     │ CLAIM-CITATION-001 kiểm tra citation
+                     ▼
+          Researcher xem diff ─► chấp nhận (APR-05) ─► revision hiện hành == r ? ─► Manuscript Revision r+1
+                     │                                         │ không
+                     └─► từ chối (Rejected)                    └─► Outdated</code></pre>
+<p class="status">FIG-021 — Luồng Change Proposal. Nguồn: <a href="../figures/FIG-021-manuscript-change-proposal.mmd">figures/FIG-021-manuscript-change-proposal.mmd</a>.</p>
+
+<h2 id="s-12-1">12.1. Manuscript Creation</h2>
+<p class="status">Confirmed (outline, 21.1): Default tạo cấu trúc khởi đầu tối thiểu; Blank tạo workspace rỗng.</p>
+<h3 id="req-ms-init-001">MS-INIT-001 — Khởi tạo Manuscript</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (hai chế độ), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Bắt đầu bản thảo nhanh cho người dùng LaTeX cơ bản, hoặc tự do cho người dùng có cấu trúc riêng.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>; project chưa có Manuscript; mỗi project có tối đa một Manuscript (5.1, OQ-022 đã chốt).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher mở khu vực Manuscript lần đầu, hoặc một Task viết cần Manuscript (WF-05 điều kiện trước).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher chọn <code>Default</code> hoặc <code>Blank</code> → System tạo Manuscript, file theo chế độ (12.2), cấu hình build mặc định, Manuscript Revision 1 (actor Researcher), Audit Event.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Task viết được chọn khi chưa có Manuscript: readiness check không Đạt, hành động gợi ý “Khởi tạo Manuscript”.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chế độ khởi tạo được lưu và không đổi sau khi tạo. Blank chỉ tạo <code>main.tex</code> rỗng và cấu hình build trỏ tới nó (để compile được ngay khi người dùng viết).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Manuscript, Manuscript File, Manuscript Revision 1.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-INIT-001-AC01</strong> Given project chưa có Manuscript, When chọn <code>Default</code>, Then cấu trúc ở 12.2 được tạo và Build đầu tiên thành công không cần sửa gì.</li>
+<li><strong>MS-INIT-001-AC02</strong> Given chọn <code>Blank</code>, When tạo xong, Then chỉ có <code>main.tex</code> rỗng và cấu hình build trỏ tới nó.</li>
+<li><strong>MS-INIT-001-AC03</strong> Given project đã có Manuscript, When thử khởi tạo lại, Then System từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-BUILDENV-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-2">12.2. Default Directory Structure</h2>
+<p class="status">Confirmed (outline): main.tex, bibliography/references.bib, figures/, sections/. Nội dung template: Assumption (SYNC-10).</p>
+<h3 id="req-ms-template-001">MS-TEMPLATE-001 — Template Default</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (cấu trúc), Assumption (nội dung)</td></tr>
+<tr><th scope="row">Purpose</th><td>Template dùng được ngay cho bản thảo tiếng Anh, người dùng chỉ cần sửa nội dung và citation.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Researcher chọn chế độ <code>Default</code> ở MS-INIT-001.</td></tr>
+<tr><th scope="row">Trigger</th><td>MS-INIT-001 với chế độ <code>Default</code>.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Tạo cấu trúc:
+<pre><code>main.tex
+bibliography/references.bib
+figures/
+sections/introduction.tex
+sections/related-work.tex
+sections/method.tex
+sections/results.tex
+sections/conclusion.tex</code></pre>
+<code>main.tex</code> dùng class <code>article</code>, ngôn ngữ tiếng Anh, các package phổ biến và ổn định (mã hóa UTF-8, hình ảnh, toán, hyperref), <code>\input{}</code> các file trong <code>sections/</code>, bibliography trỏ tới <code>bibliography/references.bib</code>. Mỗi file section có chú thích ngắn hướng dẫn nên viết gì và cách chèn citation.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Research Context chưa có loại sản phẩm đầu ra: dùng bộ section của bài báo (như trên).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Template không phụ thuộc package hiếm, font cần cài thêm hoặc package cần shell-escape (ví dụ <code>minted</code>), vì build luôn tắt shell-escape (MS-BUILDENV-001). <code>references.bib</code> do System sinh từ Bibliography Entry (MS-BIB-001); chú thích đầu file nói rõ không nên sửa tay. Danh sách section mặc định có thể chỉnh theo loại sản phẩm đầu ra trong Research Context (bài báo, luận văn, báo cáo).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Manuscript File của template; cấu hình build (pdfLaTeX, <code>main.tex</code>); Manuscript Revision 1.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-TEMPLATE-001-AC01</strong> Given Manuscript Default mới, When compile, Then PDF có các heading section và không có lỗi hay cảnh báo về package thiếu.</li>
+<li><strong>MS-TEMPLATE-001-AC02</strong> Given người dùng thêm <code>\cite{key}</code> của một Trusted Reference đã thêm vào bibliography, When compile, Then danh mục tài liệu tham khảo xuất hiện trong PDF.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-INIT-001; MS-BIB-001; MS-BUILDENV-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-3">12.3. File Explorer and Editor</h2>
+<p class="status">Confirmed (outline): tạo, sửa, đổi tên, tổ chức file và thư mục; hỗ trợ <code>\input{}</code> và <code>\include{}</code>.</p>
+<h3 id="req-ms-editor-001">MS-EDITOR-001 — Quản lý file và soạn thảo</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher sửa bản thảo trực tiếp như trong một trình soạn LaTeX thông thường.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Project <code>Active</code>; Manuscript tồn tại.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher mở Manuscript, thao tác trên file tree hoặc lưu trong editor.</td></tr>
+<tr><th scope="row">Main Flow</th><td>File tree: tạo, đổi tên, di chuyển, xóa file/thư mục; tải lên hình ảnh vào <code>figures/</code> và file <code>.tex</code> có sẵn (ví dụ khi bắt đầu từ Blank với nội dung đã viết ở nơi khác). Editor: tô màu cú pháp LaTeX, gợi ý BibTeX key của Trusted Reference khi gõ lệnh citation, nhảy tới file khi chọn <code>\input{}</code>/<code>\include{}</code>. Lưu tạo Manuscript Revision (gom các lần lưu liên tiếp trong một khoảng ngắn thành một revision — Assumption).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Đổi tên hoặc xóa file đang được <code>\input{}</code>: cảnh báo danh sách nơi tham chiếu trước khi thực hiện. Có Change Proposal <code>Proposed</code> trên file vừa sửa: proposal chuyển <code>Outdated</code>.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Xóa file là xóa mềm (<code>Deleted</code>), khôi phục được từ lịch sử. Không cho sửa tay <code>bibliography/references.bib</code> ở cả Default và Blank; mọi entry sinh từ Trusted Reference để giữ KPI-02 = 100% (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)). Đường dẫn file không được thoát ra ngoài thư mục Manuscript.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Manuscript File; Manuscript Revision (actor Researcher); Change Proposal → <code>Outdated</code> khi file gốc đổi.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-EDITOR-001-AC01</strong> Given Researcher đổi tên <code>sections/method.tex</code> đang được <code>\input</code>, When xác nhận, Then System cảnh báo trước và sau khi đổi, compile báo đúng file thiếu nếu chưa sửa tham chiếu.</li>
+<li><strong>MS-EDITOR-001-AC02</strong> Given Researcher lưu thay đổi, When mở lịch sử, Then có revision mới với actor Researcher.</li>
+<li><strong>MS-EDITOR-001-AC03</strong> Given tên file chứa <code>../</code>, When tạo, Then System từ chối.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-REVISION-001; MS-DIFF-001; MS-BIB-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-4">12.4. AI-Assisted Writing</h2>
+<p class="status">Confirmed (outline): tạo hoặc sửa section được chọn dựa trên evidence đã duyệt và chỉ dẫn rõ ràng.</p>
+<h3 id="req-ms-aiwrite-001">MS-AIWRITE-001 — Writing Agent soạn và sửa section</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Tăng tốc viết mà vẫn giữ căn cứ và quyền quyết định của Researcher.</td></tr>
+<tr><th scope="row">Actor</th><td>Writing Agent; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Manuscript tồn tại; có Task viết đã kích hoạt, hoặc Researcher yêu cầu trên một vùng chọn với active task (4.3).</td></tr>
+<tr><th scope="row">Trigger</th><td>WF-05.S5; Researcher chọn đoạn và nhập chỉ dẫn (ví dụ “viết lại ngắn gọn hơn”, “viết đoạn related work về X”).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Orchestrator lắp ráp context (14.2): chỉ dẫn, nội dung file/vùng chọn, claim và artifact <code>Accepted</code> liên quan, Bibliography Entry → Writing Agent tạo Change Proposal (diff) kèm danh sách claim và citation đã dùng → CLAIM-CITATION-001 kiểm tra → Researcher xem (12.5).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chỉ dẫn cần khẳng định không có claim accepted hỗ trợ: Writing Agent không tự viết khẳng định đó; nêu thiếu căn cứ trong proposal và gợi ý Task tìm evidence (WF-05.A2).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Khẳng định mang tính học thuật mới trong văn bản sinh ra phải dựa trên claim <code>Accepted</code>; câu chỉ mang tính chuyển ý, cấu trúc không cần claim. Chỉ dùng BibTeX key có trong Bibliography Entry. Ngôn ngữ theo ngôn ngữ bản thảo của project. Writing Agent không sửa ngoài phạm vi file/vùng được yêu cầu.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Change Proposal <code>Proposed</code>; Agent Run.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-AIWRITE-001-AC01</strong> Given Writing Agent hoàn tất, When kiểm tra file bản thảo, Then nội dung file không đổi cho đến khi Researcher chấp nhận proposal.</li>
+<li><strong>MS-AIWRITE-001-AC02</strong> Given proposal chứa citation, When kiểm tra, Then mọi key thuộc Bibliography Entry gắn Trusted Reference.</li>
+<li><strong>MS-AIWRITE-001-AC03</strong> Given yêu cầu sửa một đoạn được chọn, When proposal tạo ra, Then diff chỉ thay đổi trong đoạn đó.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>SYN-HUMAN-REVIEW-001; CLAIM-CITATION-001; CTX-ASSEMBLY-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-5">12.5. Diff and Revision Control</h2>
+<p class="status">Confirmed (outline): hiển thị thay đổi trước khi áp dụng; cho phép chấp nhận hoặc từ chối. APR-05 (3.1).</p>
+<h3 id="req-ms-diff-001">MS-DIFF-001 — Xem và quyết định Change Proposal</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực, APR-05), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Không thay đổi nào của agent vào bản thảo khi Researcher chưa xem và chấp nhận (APR-05).</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Change Proposal <code>Proposed</code> đã qua bước phân giải citation.</td></tr>
+<tr><th scope="row">Trigger</th><td>Change Proposal <code>Proposed</code> (pending action Manuscript change proposal, 4.4).</td></tr>
+<tr><th scope="row">Main Flow</th><td>Hiển thị diff theo file (thêm/xóa theo dòng), kết quả kiểm tra citation, danh sách claim dùng (liên kết Evidence Inspector) → Researcher chấp nhận hoặc từ chối toàn bộ proposal → khi chấp nhận: System kiểm tra revision gốc == revision hiện hành, áp dụng, tạo Manuscript Revision (nguồn: Change Proposal), proposal → <code>Accepted</code>.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Revision đã đổi: proposal → <code>Outdated</code>; Researcher có thể yêu cầu Writing Agent tạo lại. Lỗi citation chặn (CLAIM-CITATION-001): nút chấp nhận vô hiệu.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Trong MVP, Change Proposal chỉ được chấp nhận hoặc từ chối nguyên khối, không chấp nhận theo từng khối thay đổi; Change Proposal có một trạng thái duy nhất (5.8; OQ-070 đã chốt). Muốn giữ một phần, Researcher từ chối rồi yêu cầu Writing Agent tạo proposal mới hẹp hơn, hoặc sửa tay sau khi chấp nhận. Researcher có thể sửa nội dung diff trước khi chấp nhận (edit-and-approve); phần sửa ghi actor Researcher.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Change Proposal → <code>Accepted</code>/<code>Rejected</code>/<code>Outdated</code>; Manuscript Revision; Audit Event APR-05.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-DIFF-001-AC01</strong> Given proposal tạo trên revision 5 và Researcher đã lưu revision 6, When chấp nhận proposal, Then proposal chuyển <code>Outdated</code> và file không đổi.</li>
+<li><strong>MS-DIFF-001-AC02</strong> Given proposal có 3 khối thay đổi, When Researcher xem diff, Then chỉ có thao tác chấp nhận hoặc từ chối cho toàn bộ proposal, và sau khi chấp nhận revision mới chứa cả 3 khối.</li>
+<li><strong>MS-DIFF-001-AC03</strong> Given proposal được chấp nhận, When xem Audit Event, Then có actor Researcher, APR-05 và revision tạo ra.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-AIWRITE-001; MS-REVISION-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-6">12.6. Bibliography and Citation Management</h2>
+<p class="status">Confirmed (outline): quản lý BibTeX và phân giải citation về Trusted Reference.</p>
+<h3 id="req-ms-bib-001">MS-BIB-001 — Bibliography gắn với Trusted Reference</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Citation luôn đúng nguồn tin cậy (KPI-02 = 100%).</td></tr>
+<tr><th scope="row">Actor</th><td>System; Researcher</td></tr>
+<tr><th scope="row">Preconditions</th><td>Manuscript tồn tại; Reference <code>Trusted</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher thêm reference vào bibliography; Change Proposal dùng reference mới được chấp nhận; metadata hoặc trạng thái Reference thay đổi.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher thêm Trusted Reference vào bibliography (từ References and Evidence, từ gợi ý khi gõ citation, hoặc khi chấp nhận Change Proposal dùng reference mới) → System tạo Bibliography Entry với BibTeX key ổn định sinh từ metadata → sinh lại <code>references.bib</code> → khi metadata Reference được sửa, entry được cập nhật.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Reference bị <code>Revoked</code>: entry được đánh dấu; mọi citation tới nó bị kiểm tra citation báo lỗi cho đến khi Researcher thay citation hoặc duyệt lại reference (LIB-LIFECYCLE-001). Trùng key: System thêm hậu tố để key duy nhất.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Chỉ Reference <code>Trusted</code> có Bibliography Entry. Key không đổi sau khi tạo (để không làm vỡ citation). Không có entry “tay” không gắn Trusted Reference.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Bibliography Entry; <code>references.bib</code> sinh lại kèm Manuscript Revision (actor System); cảnh báo trên citation.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-BIB-001-AC01</strong> Given Reference <code>Pending Approval</code>, When thử thêm vào bibliography, Then System từ chối.</li>
+<li><strong>MS-BIB-001-AC02</strong> Given Researcher sửa năm xuất bản trong metadata Reference, When compile lại, Then danh mục tài liệu hiển thị năm mới và key không đổi.</li>
+<li><strong>MS-BIB-001-AC03</strong> Given Reference bị thu hồi, When mở bản thảo, Then mọi citation tới nó được đánh dấu cảnh báo.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>LIB (10.6–10.8); CLAIM-CITATION-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-7">12.7. Compilation and PDF Preview</h2>
+<p class="status">Confirmed (outline): compile LaTeX, hiển thị log và PDF preview. Diễn giải lỗi dễ hiểu: Assumption (SYNC-10). Export bản thảo dạng PDF và zip mã nguồn kèm <code>.bib</code>: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-058).</p>
+<h3 id="req-ms-build-001">MS-BUILD-001 — Compile và xem PDF</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher thấy PDF của bản thảo và hiểu lỗi build mà không cần thành thạo LaTeX.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Manuscript tồn tại và có file chính trong cấu hình build.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher bấm compile; sau khi chấp nhận Change Proposal (WF-05.S8, tự động — Assumption).</td></tr>
+<tr><th scope="row">Main Flow</th><td>System tạo Build <code>Queued</code> cho revision hiện hành → <code>Running</code> trong môi trường cách ly (12.8) → <code>Succeeded</code>: hiển thị PDF, giữ vị trí cuộn gần nhất → <code>Failed</code>: hiển thị danh sách lỗi đã diễn giải và log gốc.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Compile mới khi build cũ đang chạy: build cũ bị hủy, chỉ build revision mới nhất. Build vượt thời gian giới hạn: <code>Failed</code> với lý do quá thời gian.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Mỗi lỗi hiển thị: file và dòng (nhảy tới editor), câu giải thích bằng ngôn ngữ giao diện (Tiếng Việt / English) dành cho người dùng LaTeX cơ bản, gợi ý sửa; log gốc luôn xem được. Diễn giải lỗi phổ biến (thiếu dấu ngoặc, lệnh không xác định, file hình không tìm thấy, citation không xác định) dùng quy tắc xác định; lỗi khác có thể nhờ agent giải thích, ghi rõ là gợi ý. PDF gắn với revision đã build.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Build (log, PDF, lỗi); Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-BUILD-001-AC01</strong> Given <code>main.tex</code> có <code>\includegraphics{figures/x.png}</code> nhưng file không tồn tại, When compile, Then Build <code>Failed</code> và lỗi hiển thị “không tìm thấy file hình figures/x.png” kèm file, dòng và gợi ý.</li>
+<li><strong>MS-BUILD-001-AC02</strong> Given giao diện đang ở Tiếng Việt, When có lỗi phổ biến, Then câu giải thích hiển thị bằng tiếng Việt, log gốc giữ nguyên.</li>
+<li><strong>MS-BUILD-001-AC03</strong> Given build thành công, When xem PDF, Then PDF ghi rõ revision được build.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-BUILDENV-001; INT 17.4</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h3 id="req-ms-export-001">MS-EXPORT-001 — Export bản thảo</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P1 · Confirmed — PO chốt 31/10/2026 (PC-01, OQ-058), Assumption (chi tiết luồng)</td></tr>
+<tr><th scope="row">Purpose</th><td>Researcher mang bản thảo ra ngoài sản phẩm để nộp, chia sẻ hoặc build lại ở nơi khác.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Manuscript tồn tại.</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Export” trong Manuscript.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher chọn định dạng: <strong>PDF</strong> (PDF của Build <code>Succeeded</code> gần nhất, ghi revision đã build) hoặc <strong>zip mã nguồn</strong> (toàn bộ Manuscript File của revision hiện hành, giữ cấu trúc thư mục, kèm <code>bibliography/references.bib</code> sinh từ Bibliography Entry) → System tạo file tải về và ghi Audit Event.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chưa có Build <code>Succeeded</code>, hoặc Build gần nhất cũ hơn revision hiện hành: System báo rõ và đề nghị compile trước; zip mã nguồn vẫn export được.</td></tr>
+<tr><th scope="row">Business Rules</th><td>MVP chỉ có hai định dạng PDF và zip mã nguồn kèm <code>.bib</code> (OQ-058, DEC-33); định dạng khác (DOCX, HTML…) không thuộc MVP. Zip không chứa file đã xóa mềm, Change Proposal chưa chấp nhận hay dữ liệu nội bộ (Agent Run, evidence). Export toàn project theo NFR-RET-005 (16.8).</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>File export tạm thời; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-EXPORT-001-AC01</strong> Given Manuscript Default có citation tới Trusted Reference, When export zip mã nguồn rồi build trên máy khác bằng TeX Live, Then build thành công và danh mục tài liệu tham khảo đầy đủ.</li>
+<li><strong>MS-EXPORT-001-AC02</strong> Given Build gần nhất ở revision 7 và revision hiện hành là 8, When chọn export PDF, Then System báo PDF thuộc revision 7 và đề nghị compile revision 8.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>MS-BUILD-001; MS-BIB-001; NFR-RET-005</td></tr>
+<tr><th scope="row">Open Questions</th><td>— (OQ-058 đã đóng 31/10/2026, PC-01)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-8">12.8. Build Environment</h2>
+<p class="status">Confirmed (outline): cách ly build, xử lý file thiếu và báo lỗi.</p>
+<h3 id="req-ms-buildenv-001">MS-BUILDENV-001 — Môi trường build cách ly</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Build an toàn, tái lập được và không ảnh hưởng dữ liệu khác.</td></tr>
+<tr><th scope="row">Actor</th><td>System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Có Build <code>Queued</code>.</td></tr>
+<tr><th scope="row">Trigger</th><td>MS-BUILD-001 bắt đầu một Build.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Mỗi Build chạy trong môi trường riêng chỉ chứa bản sao file của revision được build → bộ công cụ TeX Live cố định phiên bản với tập package phổ biến, engine pdfLaTeX (mặc định) và XeLaTeX (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)) → giới hạn mặc định 120 giây và 2 GB bộ nhớ mỗi build, cấu hình được, cùng giới hạn dung lượng đầu ra (NFR-SANDBOX-001) → kết quả (PDF, log) lưu gắn với Build → môi trường bị hủy sau build.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Không cấp được môi trường build (quá tải hạ tầng): Build giữ <code>Queued</code> có hiển thị chờ; quá ngưỡng thì <code>Failed</code> với lý do hạ tầng, Researcher thử lại.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Build không truy cập mạng, không đọc file ngoài Manuscript và không thực thi lệnh shell từ tài liệu (tắt shell-escape). Hai project không chia sẻ môi trường build. Phiên bản bộ công cụ được ghi vào Build để tái lập.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Build (phiên bản bộ công cụ, log, PDF, trạng thái).</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-BUILDENV-001-AC01</strong> Given tài liệu dùng <code>\write18</code>, When compile, Then lệnh không được thực thi và log ghi rõ shell-escape bị tắt.</li>
+<li><strong>MS-BUILDENV-001-AC02</strong> Given tài liệu <code>\input</code> một đường dẫn tuyệt đối ngoài Manuscript, When compile, Then file không được đọc và lỗi được báo.</li>
+<li><strong>MS-BUILDENV-001-AC03</strong> Given build chạy quá giới hạn thời gian, When hết giờ, Then Build <code>Failed</code> và môi trường bị hủy.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>INT 17.4; NFR 16.1; NFR-SANDBOX-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-9">12.9. Diagram Integration</h2>
+<p class="status">Confirmed (outline): đưa nguồn Mermaid/UML có thể chỉnh sửa vào luồng bản thảo khi phù hợp.</p>
+<h3 id="req-ms-diagram-001">MS-DIAGRAM-001 — Chèn sơ đồ đã duyệt vào bản thảo</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Đưa sơ đồ đã duyệt vào bản thảo mà vẫn giữ nguồn chỉnh sửa được và provenance.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Diagram artifact có version <code>Accepted</code> (APR-07, WF-07.S6).</td></tr>
+<tr><th scope="row">Trigger</th><td>Researcher chọn “Chèn vào bản thảo” trên diagram artifact, hoặc WF-07.S7.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Researcher chọn “Chèn vào bản thảo” → System tạo Change Proposal: thêm file hình xuất từ preview vào <code>figures/</code> dạng PDF vector (PNG 300 dpi nếu chuyển đổi lỗi), tên theo artifact và version, thêm khối <code>figure</code> với <code>\includegraphics</code>, caption và label ở vị trí Researcher chọn; lưu tham chiếu artifact và version trong comment của khối → theo MS-DIFF-001.</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Chuyển SVG sang PDF lỗi: dùng PNG 300 dpi và ghi cảnh báo trong Change Proposal; nếu cả hai cách đều lỗi thì không tạo Change Proposal và báo lỗi render (DIAG-VALIDATE-001).</td></tr>
+<tr><th scope="row">Business Rules</th><td>Nguồn Mermaid vẫn là bản chỉnh sửa chính nằm trong artifact; file trong <code>figures/</code> là bản xuất. Khi diagram có version accepted mới hơn, bản thảo hiển thị gợi ý cập nhật (tạo Change Proposal mới), không tự thay.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Change Proposal <code>Proposed</code> (file hình, khối figure); sau APR-05: Manuscript File và Revision mới.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-DIAGRAM-001-AC01</strong> Given diagram <code>Draft</code>, When chọn chèn, Then System từ chối và yêu cầu duyệt trước.</li>
+<li><strong>MS-DIAGRAM-001-AC02</strong> Given diagram v2 được chấp nhận sau khi v1 đã chèn, When mở bản thảo, Then hiển thị gợi ý cập nhật và file v1 không bị thay tự động.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>DIAG-REVIEW-001; MS-DIFF-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-10">12.10. Revision History</h2>
+<p class="status">Confirmed (outline): lưu revision file và nối thay đổi quan trọng với lịch sử Task/artifact.</p>
+<h3 id="req-ms-revision-001">MS-REVISION-001 — Lịch sử revision</h3>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Priority · Confirmation</th><td>P0 ·Confirmed (năng lực), Assumption (chi tiết)</td></tr>
+<tr><th scope="row">Purpose</th><td>Mọi thay đổi bản thảo truy vết và khôi phục được.</td></tr>
+<tr><th scope="row">Actor</th><td>Researcher; System</td></tr>
+<tr><th scope="row">Preconditions</th><td>Manuscript tồn tại.</td></tr>
+<tr><th scope="row">Trigger</th><td>Mọi thay đổi file; Researcher mở lịch sử, so sánh hoặc khôi phục.</td></tr>
+<tr><th scope="row">Main Flow</th><td>Danh sách revision theo thời gian: số, actor, nguồn (sửa trực tiếp / Change Proposal / chèn sơ đồ / manual_submission), Task và artifact liên quan → xem diff giữa hai revision bất kỳ → khôi phục một file hoặc toàn bộ về revision cũ (tạo revision mới, không xóa lịch sử).</td></tr>
+<tr><th scope="row">Alternative / Error Flows</th><td>Khôi phục khi có Change Proposal <code>Proposed</code> trên cùng file: proposal → <code>Outdated</code>.</td></tr>
+<tr><th scope="row">Business Rules</th><td>Revision bất biến. Revision tạo từ Change Proposal liên kết tới Agent Run, claim và evidence đã dùng. Khôi phục là một thay đổi mới, actor Researcher.</td></tr>
+<tr><th scope="row">Data &amp; State Changes</th><td>Manuscript Revision mới khi khôi phục; Audit Event.</td></tr>
+<tr><th scope="row">Acceptance Criteria</th><td><ul>
+<li><strong>MS-REVISION-001-AC01</strong> Given Researcher khôi phục <code>main.tex</code> về revision 3, When xong, Then có revision mới với nội dung bằng revision 3 và các revision 4..n vẫn còn.</li>
+<li><strong>MS-REVISION-001-AC02</strong> Given revision tạo từ Change Proposal của một Task, When mở revision, Then điều hướng được tới Task, Agent Run và các claim đã dùng.</li>
+</ul></td></tr>
+<tr><th scope="row">Dependencies</th><td>CTX-REGISTRY-001; CTX-AUDIT-001</td></tr>
+<tr><th scope="row">Open Questions</th><td>—</td></tr>
+</tbody></table></div>
+
+<h2 id="s-12-oq">12.11. Open Questions của mục 12</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-055</td><td>Engine LaTeX hỗ trợ trong MVP (pdfLaTeX, XeLaTeX, LuaLaTeX) và tập package được cài sẵn (TeX Live đầy đủ hay tối giản)? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> pdfLaTeX (mặc định, dùng cho template Default) và XeLaTeX (cho tài liệu cần Unicode hoặc font riêng), trên TeX Live cố định phiên bản với tập package phổ biến; LuaLaTeX để sau MVP; PO duyệt 31/10/2026 (PC-01).</td><td>12.2, 12.7, 12.8, 17.4</td></tr>
+<tr><td>OQ-056</td><td>Template Default dùng BibTeX (natbib) hay biblatex/biber, citation style mặc định nào; có cho Researcher sửa tay <code>references.bib</code> không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> BibTeX với natbib, style mặc định <code>plainnat</code>, đổi theo citation style trong Research Context; không cho sửa tay <code>references.bib</code> vì mọi entry phải gắn Trusted Reference để đạt KPI-02 = 100% (DEC-15); PO duyệt 31/10/2026 (PC-01).</td><td>12.2, 12.3, 12.6</td></tr>
+<tr><td>OQ-057</td><td>MVP có cho nhập một dự án LaTeX có sẵn (tải lên zip) thay cho Default/Blank không? <strong>Đã giải quyết (biên soạn, 30/10/2026):</strong> Không có chế độ nhập zip vì DEC-09 chỉ chốt Default và Blank; Researcher có thể tạo Blank rồi tải lên file <code>.tex</code> và hình (MS-EDITOR-001), còn tài liệu tham khảo vẫn phải đi qua Trusted Reference; PO duyệt 31/10/2026 (PC-01).</td><td>12.1, 2 (SCOPE-09)</td></tr>
+<tr><td>OQ-058</td><td>Định dạng export bản thảo: PDF và zip mã nguồn là đủ, hay cần thêm định dạng khác (trả lời một phần câu hỏi export ở 21.3)? <strong>Đã đóng 31/10/2026 (PC-01):</strong> Export bản thảo = PDF + zip mã nguồn (kèm <code>.bib</code>); đủ cho MVP (MS-EXPORT-001, DEC-33).</td><td>12.7, 16.8, 21.3</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="11-evidence-rag-and-research-synthesis.html">← Mục 11</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="13-diagram-agent.html">Mục 13 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

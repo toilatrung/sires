@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>1. Document Overview | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 01</p><h1>1. Document Overview</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 29/10/2026 (đã đóng OQ-001–OQ-005); bổ sung thuật ngữ SIRes, eTroy OIDC, Ngưỡng kiểm chứng theo PC-01 ngày 31/10/2026 · Cơ sở: outline đã chốt, mục 21.1 và ngữ cảnh biên soạn</p><div class="note"><p>Mục này đã được viết chi tiết từ outline. Nội dung đã có cơ sở xác nhận được ghi <strong>Confirmed</strong>. Nội dung do người biên soạn suy ra hoặc đề xuất được ghi <strong>Assumption</strong>. Điểm chưa quyết định được ghi <strong>Open Question</strong> và tổng hợp ở <a href="#s-1-7">1.7</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-1-1">1.1. Purpose</a></li>
+<li><a href="#s-1-2">1.2. Product Vision</a></li>
+<li><a href="#s-1-3">1.3. Product Goals</a></li>
+<li><a href="#s-1-4">1.4. Target Users</a></li>
+<li><a href="#s-1-5">1.5. Terminology</a></li>
+<li><a href="#s-1-6">1.6. Document Conventions</a></li>
+<li><a href="#requirement-template">Mẫu đặc tả requirement</a></li>
+<li><a href="#s-1-7">1.7. Open Questions của mục 1</a></li>
+</ul></details>
+
+<h2 id="s-1-1">1.1. Purpose</h2>
+<h3>Mục đích của tài liệu</h3>
+<p>PRD này là nguồn tham chiếu chính về <em>sản phẩm cần xây dựng</em> cho AI Research Assistant. Tên chính thức của sản phẩm là <strong>SIRes (Super Intelligence Researcher)</strong>, thuộc nền tảng <strong>eTroy</strong>, do đội ngũ SWE, GEN AI, AIE và PO của eTroy phát triển (<a href="21-assumptions-constraints-and-open-questions.html#dec-43">DEC-43</a>). Tài liệu trả lời bốn câu hỏi:</p>
+<ol>
+<li><strong>Vì sao</strong> sản phẩm tồn tại: vấn đề, tầm nhìn và mục tiêu (mục 1–2).</li>
+<li><strong>Ai</strong> sử dụng và có quyền gì: vai trò người dùng và agent (mục 3).</li>
+<li><strong>Hệ thống vận hành thế nào</strong>: điều hướng, domain model và workflow (mục 4–6, 14).</li>
+<li><strong>Thế nào là đạt</strong>: functional requirements, yêu cầu phi chức năng, dữ liệu và tiêu chí nghiệm thu (mục 7–19).</li>
+</ol>
+<p>PRD theo hướng <em>architecture-aware, workflow-first</em>. Tài liệu mô tả đủ cấu trúc domain, trạng thái và điểm điều phối để coding agent không phải tự suy đoán. Tài liệu <strong>không</strong> chọn technology stack, không thay cho thiết kế kỹ thuật chi tiết và không phải UI mockup cuối cùng. Những quyết định đó được ghi là Assumption hoặc Open Question cho đến khi được xác nhận.</p>
+
+<h3>Đối tượng sử dụng</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Đối tượng</th>
+<th scope="col">Dùng tài liệu để</th>
+<th scope="col">Nên đọc trước</th>
+</tr></thead><tbody>
+<tr><td>Product Owner</td><td>Chốt phạm vi, duyệt requirement, trả lời Open Question, quyết định độ ưu tiên.</td><td>1, 2, 6, 20, 21</td></tr>
+<tr><td>Developers</td><td>Hiểu domain, trạng thái và workflow; thiết kế kỹ thuật và triển khai theo requirement ID.</td><td>5, 6, 14, 18, rồi 7–13</td></tr>
+<tr><td>Coding agents</td><td>Triển khai đúng từng requirement mà không tự mở rộng phạm vi; truy vết code về requirement và acceptance criteria.</td><td>1.5, 1.6, 5, 6, rồi requirement được giao</td></tr>
+<tr><td>QA</td><td>Xây dựng test scenario từ acceptance criteria, workflow và state machine.</td><td>6, 9.8, 18, 19</td></tr>
+</tbody></table></div>
+
+<h3>Cấu trúc tài liệu</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Nhóm</th>
+<th scope="col">Mục</th>
+<th scope="col">Vai trò</th>
+</tr></thead><tbody>
+<tr><td>Bối cảnh sản phẩm</td><td><a href="02-product-scope.html">2</a>, <a href="03-user-roles-and-permissions.html">3</a>, <a href="04-information-architecture-and-navigation.html">4</a></td><td>Phạm vi, vai trò, quyền và điều hướng.</td></tr>
+<tr><td>Nền tảng mô hình</td><td><a href="05-core-domain-model.html">5</a>, <a href="06-end-to-end-product-workflow.html">6</a></td><td>Entity, quan hệ và bảy workflow bắt buộc WF-01–WF-07; các mục sau tham chiếu đến đây.</td></tr>
+<tr><td>Functional Requirements</td><td><a href="07-workspace-and-project.html">7</a>–<a href="13-diagram-agent.html">13</a></td><td>Yêu cầu chức năng theo từng năng lực.</td></tr>
+<tr><td>Kiến trúc và yêu cầu xuyên suốt</td><td><a href="14-shared-context-and-orchestration-architecture.html">14</a>–<a href="18-data-and-state-specifications.html">18</a></td><td>Shared context, UI/UX, phi chức năng, tích hợp, dữ liệu và trạng thái.</td></tr>
+<tr><td>Kiểm chứng và triển khai</td><td><a href="19-acceptance-criteria-and-test-scenarios.html">19</a>–<a href="22-appendices.html">22</a></td><td>Nghiệm thu, kế hoạch MVP, quyết định, giả định, rủi ro và phụ lục truy vết.</td></tr>
+</tbody></table></div>
+
+<h3>Thứ tự ưu tiên khi nội dung mâu thuẫn</h3>
+<p class="status">Confirmed — Product Owner duyệt 29/10/2026 (OQ-005).</p>
+<ol>
+<li>Quyết định đã xác nhận ở <a href="21-assumptions-constraints-and-open-questions.html#s-21-1">21.1</a>.</li>
+<li>Requirement có trạng thái biên soạn <em>Đã duyệt</em> ở các mục 7–18 và acceptance criteria tương ứng ở mục 19.</li>
+<li>Workflow ở mục 6 và domain model ở mục 5.</li>
+<li>Nội dung ở trạng thái <em>Khung</em>, <em>Đang viết</em> hoặc <em>Chờ duyệt</em>.</li>
+</ol>
+<p>Khi phát hiện mâu thuẫn, người đọc (kể cả coding agent) ghi nhận thành Open Question và báo lại; không tự chọn một cách hiểu rồi triển khai.</p>
+
+<h2 id="s-1-2">1.2. Product Vision</h2>
+<h3>Tuyên bố tầm nhìn</h3>
+<p class="status">Confirmed — Product Owner duyệt câu chữ 29/10/2026 (OQ-001).</p>
+<div class="note"><p>AI Research Assistant là ứng dụng web giúp nhà nghiên cứu thực hiện các dự án nghiên cứu kéo dài, từ làm rõ câu hỏi nghiên cứu, lập kế hoạch, tìm và thẩm định tài liệu, tổng hợp bằng chứng đến viết bản thảo LaTeX. Nhiều AI agent phối hợp hỗ trợ, nhưng nhà nghiên cứu giữ quyền quyết định và mọi kết luận đều truy vết được về nguồn.</p></div>
+
+<h3>Vấn đề cần giải quyết</h3>
+<p class="status">Confirmed — Product Owner duyệt 29/10/2026 (OQ-001); hướng giải quyết PRB-03 được bổ sung RAG trên vector database theo phản hồi của Product Owner.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Vấn đề</th>
+<th scope="col">Hướng giải quyết của sản phẩm</th>
+</tr></thead><tbody>
+<tr><td>PRB-01</td><td>Quy trình nghiên cứu bị phân mảnh giữa công cụ tìm kiếm, trình quản lý tài liệu tham khảo, ghi chú, chatbot và trình soạn LaTeX; ngữ cảnh phải sao chép thủ công.</td><td>Một workspace thống nhất, gồm Research Project, Trusted Library, Evidence, Artifact và Manuscript liên kết với nhau.</td></tr>
+<tr><td>PRB-02</td><td>Nghiên cứu kéo dài nhiều tuần và nhiều phiên làm việc; trợ lý AI dạng chat mất ngữ cảnh, quyết định và tiến độ giữa các phiên.</td><td>Research Plan và Task bền vững, Shared Context có cấu trúc, checkpoint và khôi phục workflow.</td></tr>
+<tr><td>PRB-03</td><td>Mô hình ngôn ngữ có thể tạo claim không có căn cứ hoặc citation không tồn tại, ảnh hưởng đến tính liêm chính khoa học.</td><td>Chỉ dùng Trusted Reference làm nguồn. Nội dung Trusted Reference được index vào vector database; agent sinh nội dung bằng Retrieval-Augmented Generation (RAG), dựa trên các đoạn evidence truy xuất được thay vì trí nhớ của model. Liên kết claim với evidence; kiểm tra citation (11.1–11.3, 11.5–11.7).</td></tr>
+<tr><td>PRB-04</td><td>Công cụ tự động hóa hoàn toàn đưa ra các quyết định quan trọng mà người dùng không kiểm soát.</td><td>Human-in-the-loop: phê duyệt Plan, người dùng chọn từng Task, Interactive Agent Prompt cho quyết định quan trọng.</td></tr>
+<tr><td>PRB-05</td><td>Công việc nghiên cứu có phụ thuộc. Khi phương pháp hoặc tài liệu thay đổi, kết quả cũ có thể mất hiệu lực mà không ai nhận ra.</td><td>Dependency graph, kiểm tra readiness và phân tích ảnh hưởng thay đổi (9.4, 9.5, 9.11).</td></tr>
+</tbody></table></div>
+
+<h3>Nguyên tắc sản phẩm</h3>
+<p>Các nguyên tắc dưới đây dùng để đánh giá mọi requirement. Requirement đi ngược nguyên tắc phải được nêu rõ và được Product Owner chấp thuận.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Nguyên tắc</th>
+<th scope="col">Ý nghĩa</th>
+<th scope="col">Cơ sở</th>
+</tr></thead><tbody>
+<tr><td>Human-in-the-loop</td><td>Quyết định quan trọng do người dùng đưa ra; agent đề xuất, người dùng duyệt.</td><td>Confirmed — 21.1</td></tr>
+<tr><td>Plan-driven, user-triggered</td><td>Thực thi chính thức chỉ bắt đầu sau khi Plan được duyệt. Người dùng chọn từng Task; hệ thống không tự chạy Task tiếp theo.</td><td>Confirmed — 21.1</td></tr>
+<tr><td>Evidence-grounded</td><td>Claim và citation phải truy vết được về Trusted Reference và evidence cụ thể; provenance được bảo toàn.</td><td>Confirmed — Product Goals, 6.10</td></tr>
+<tr><td>Persistent and recoverable</td><td>Tiến độ, quyết định, artifact và trạng thái workflow tồn tại qua nhiều phiên và khôi phục được sau gián đoạn.</td><td>Confirmed — Product Goals, 6.11</td></tr>
+<tr><td>Context isolation</td><td>Agent chỉ nhận context được phép cho project, task và tài nguyên liên quan.</td><td>Confirmed — 3.4, 14.5</td></tr>
+<tr><td>Provider-agnostic</td><td>Kiến trúc multi-agent không phụ thuộc một model provider cụ thể.</td><td>Confirmed — 21.1</td></tr>
+</tbody></table></div>
+
+<h3>Ba lớp cần phân biệt</h3>
+<p>Khi đặc tả và triển khai, luôn tách ba lớp sau; không để logic của lớp này ẩn trong lớp khác:</p>
+<ol>
+<li><strong>Quy trình nghiên cứu của người dùng</strong>: Research Project, Plan, Task, review và nghiệm thu. Đây là hệ thống quản lý công việc nghiên cứu dài hạn.</li>
+<li><strong>Workflow điều phối</strong>: cách Orchestrator và Specialist Agent nhận lệnh, chuyển giao kết quả, chờ người dùng, thử lại và khôi phục.</li>
+<li><strong>Dữ liệu và trạng thái dùng chung</strong>: Shared Context, Artifact, Reference, Evidence, Claim, lịch sử phiên bản và audit trail.</li>
+</ol>
+<p>Ví dụ: Task “Completed” là trạng thái ở lớp 1 do người dùng nghiệm thu; một Agent Run “succeeded” ở lớp 2 không tự động làm Task hoàn thành.</p>
+
+<h2 id="s-1-3">1.3. Product Goals</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Mục tiêu</th>
+<th scope="col">Biểu hiện khi đạt</th>
+<th scope="col">Mục liên quan</th>
+</tr></thead><tbody>
+<tr><td>GOAL-01</td><td>Hỗ trợ quy trình nghiên cứu từ tìm tài liệu đến tổng hợp bằng chứng và viết báo cáo.</td><td>Người dùng đi hết luồng tạo project → Plan được duyệt → tìm và duyệt reference → tổng hợp evidence → bản thảo LaTeX compile được, trong cùng sản phẩm.</td><td>6, 10, 11, 12</td></tr>
+<tr><td>GOAL-02</td><td>Quản lý công việc nghiên cứu kéo dài qua nhiều phiên làm việc.</td><td>Khi quay lại sau gián đoạn, người dùng thấy đúng trạng thái Plan/Task, quyết định đang chờ và bước tiếp theo, không phải cung cấp lại ngữ cảnh.</td><td>9, 14, WF-06</td></tr>
+<tr><td>GOAL-03</td><td>Duy trì khả năng kiểm chứng nguồn, kiểm soát của con người và tính liêm chính khoa học.</td><td>Mỗi claim trong tổng hợp và bản thảo có liên kết evidence hoặc được đánh dấu rõ là chưa được hỗ trợ; không reference nào trở thành nguồn tin cậy khi chưa được duyệt.</td><td>3, 10.5, 11, 14.8</td></tr>
+</tbody></table></div>
+<p class="status">Mục tiêu: Confirmed (outline). Cột “Biểu hiện khi đạt”: Assumption.</p>
+
+<h3 id="s-1-3-indicators">Chỉ báo thành công</h3>
+<p class="status">Confirmed — Product Owner chọn chỉ báo và ngưỡng 29/10/2026 (OQ-003). Cách đo và điều kiện kiểm chứng chi tiết được đặc tả ở mục 16 và 19.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Chỉ báo</th>
+<th scope="col">Ngưỡng</th>
+<th scope="col">Gắn với</th>
+</tr></thead><tbody>
+<tr><td>KPI-01</td><td>Tỷ lệ claim trong tổng hợp và bản thảo có evidence liên kết hợp lệ.</td><td>≥ 95%</td><td>GOAL-03, PRB-03</td></tr>
+<tr><td>KPI-02</td><td>Tỷ lệ citation trong bản thảo phân giải được về Trusted Reference.</td><td>= 100%</td><td>GOAL-03, PRB-03</td></tr>
+<tr><td>KPI-03</td><td>Tỷ lệ phiên làm việc bị gián đoạn được khôi phục mà không mất kết quả đã hoàn tất.</td><td>≥ 99%</td><td>GOAL-02, PRB-02</td></tr>
+<tr><td>KPI-04</td><td>Tỷ lệ Task phải chạy lại do thiếu đầu vào, trên tổng số Task đi từ chọn đến nghiệm thu.</td><td>≤ 10%</td><td>GOAL-01, PRB-05</td></tr>
+</tbody></table></div>
+<p>Claim không đủ evidence vẫn được phép tồn tại nếu được đánh dấu rõ là <em>unsupported</em> (GOAL-03); KPI-01 đo mức độ tổng hợp dựa trên bằng chứng, không phải ngưỡng cho phép claim không đánh dấu.</p>
+
+<h3>Không phải mục tiêu của MVP</h3>
+<p>Theo <a href="02-product-scope.html#s-2-2">2.2</a> (Confirmed): cộng tác chỉnh sửa thời gian thực nhiều người; hỗ trợ rộng nhiều nguồn tìm kiếm học thuật; tự động viết báo cáo end-to-end không có checkpoint người dùng; quản trị nhóm và doanh nghiệp nâng cao.</p>
+
+<h2 id="s-1-4">1.4. Target Users</h2>
+<h3>Người dùng chính — Individual researchers</h3>
+<p class="status">Confirmed — individual researchers first (21.1).</p>
+<p>Nhà nghiên cứu làm việc độc lập, tự sở hữu project, Plan, Trusted Library và bản thảo của mình. Trong MVP, Researcher là vai trò con người duy nhất (<a href="03-user-roles-and-permissions.html#s-3-1">3.1</a>).</p>
+<p class="status">Confirmed — đặc điểm điển hình, Product Owner xác nhận 29/10/2026 (OQ-002):</p>
+<ul>
+<li>Nhóm điển hình: học viên cao học, nghiên cứu sinh, giảng viên và nhà nghiên cứu viết bài báo, luận văn hoặc báo cáo khoa học.</li>
+<li>Đa ngành; MVP không tối ưu riêng cho một lĩnh vực.</li>
+<li>Viết bản thảo chủ yếu bằng tiếng Anh. Giao diện hỗ trợ tiếng Việt và tiếng Anh.</li>
+<li>Biết LaTeX ở mức cơ bản: sửa được nội dung và citation trong template có sẵn, nhưng không nhất thiết tự cấu hình build hoặc package.</li>
+<li>Thực hiện đề tài kéo dài nhiều tuần đến nhiều tháng, với nhiều phiên làm việc rời rạc.</li>
+<li>Tìm tài liệu chủ yếu qua Google Scholar.</li>
+<li>Quen dùng trợ lý AI dạng chat nhưng cần kiểm soát nguồn và kết luận.</li>
+</ul>
+
+<h3>Nhu cầu chính</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Người dùng cần</th>
+<th scope="col">Năng lực đáp ứng</th>
+</tr></thead><tbody>
+<tr><td>Biến ý tưởng nghiên cứu còn mơ hồ thành kế hoạch có giai đoạn, task và sản phẩm đầu ra.</td><td>Research context gathering, multi-agent analysis, Plan proposal (6.2–6.5, 9.1)</td></tr>
+<tr><td>Biết việc nào làm được ngay, việc nào bị chặn và vì sao.</td><td>Dependency graph, readiness check (9.4, 9.5, WF-02)</td></tr>
+<tr><td>Tìm, chọn lọc và tái sử dụng tài liệu đáng tin cậy qua nhiều project.</td><td>Google Scholar discovery, account-level Trusted Library (10)</td></tr>
+<tr><td>Tổng hợp tài liệu có căn cứ, thấy rõ chỗ bằng chứng mâu thuẫn hoặc thiếu.</td><td>Evidence retrieval, claim support assessment, synthesis (11)</td></tr>
+<tr><td>Viết và chỉnh bản thảo với citation chính xác, xem trước PDF.</td><td>LaTeX manuscript workspace (12)</td></tr>
+<tr><td>Tự làm những phần bắt buộc phải do con người thực hiện, và được hệ thống ghi nhận đúng.</td><td>Manual editor requirement, WF-03 (9.7)</td></tr>
+</tbody></table></div>
+
+<h3>Người dùng tương lai — Small research groups</h3>
+<p class="status">Confirmed — future collaboration scope; ngoài phạm vi MVP (2.2, 2.3).</p>
+<p>Nhóm nghiên cứu nhỏ cùng làm một project. MVP không xây tính năng cộng tác.</p>
+<p class="status">Confirmed — mức chuẩn bị tối thiểu, Product Owner chọn 29/10/2026 (OQ-004):</p>
+<ul>
+<li>MVP <strong>phải</strong> ghi actor (Researcher, agent cụ thể hoặc System) cho mọi phê duyệt, quyết định và thay đổi dữ liệu trong audit trail.</li>
+<li>Domain model <strong>phải</strong> tách rõ ownership cấp tài khoản (ví dụ Trusted Library) và cấp project.</li>
+<li>MVP <strong>không</strong> xây bảng thành viên project, lời mời, chia sẻ hoặc vai trò con người ngoài Researcher. Những phần này thuộc FUT-02.</li>
+</ul>
+
+<h2 id="s-1-5">1.5. Terminology</h2>
+<p>Thuật ngữ được giữ bằng tiếng Anh trong toàn bộ PRD, giao diện và mã nguồn để thống nhất. Định nghĩa dưới đây ở mức sản phẩm; thuộc tính, quan hệ và vòng đời chi tiết nằm ở <a href="05-core-domain-model.html">mục 5</a>.</p>
+<h3>Thuật ngữ cốt lõi</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thuật ngữ</th>
+<th scope="col">Định nghĩa</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td id="term-research-project">Research Project</td><td>Đơn vị làm việc chính của một đề tài nghiên cứu: mục tiêu, ngữ cảnh, cấu hình, Plan, tài liệu, artifact và bản thảo của đề tài đó.</td><td><a href="05-core-domain-model.html#s-5-1">5.1</a>, <a href="07-workspace-and-project.html">7</a></td></tr>
+<tr><td id="term-plan">Plan (Research Plan)</td><td>Kế hoạch nghiên cứu của một project gồm mục tiêu, giai đoạn, phương pháp, Task và dependency. Plan có phiên bản; phiên bản đã được người dùng duyệt là <em>baseline</em> cho thực thi chính thức.</td><td><a href="05-core-domain-model.html#s-5-2">5.2</a>, <a href="09-research-plan-and-task-management.html">9</a></td></tr>
+<tr><td id="term-task">Task</td><td>Đơn vị công việc trong Plan, có đầu vào, đầu ra mong đợi, điều kiện tiên quyết, acceptance criteria và một execution label. Task do người dùng chọn để thực thi và do người dùng nghiệm thu.</td><td><a href="05-core-domain-model.html#s-5-3">5.3</a>, <a href="09-research-plan-and-task-management.html#s-9-8">9.8</a></td></tr>
+<tr><td id="term-workflow">Workflow</td><td>Chuỗi bước có trạng thái mà hệ thống và các agent thực hiện để hoàn thành một yêu cầu hoặc một lần thực thi Task, kể cả các bước chờ người dùng. Không nhầm với quy trình nghiên cứu của người dùng.</td><td><a href="05-core-domain-model.html#s-5-4">5.4</a>, <a href="06-end-to-end-product-workflow.html">6</a></td></tr>
+<tr><td id="term-agent">Agent</td><td>Thành phần dùng AI model để thực hiện một phạm vi công việc xác định, với đầu vào, đầu ra và hành động được phép rõ ràng. Gồm Orchestrator và Specialist Agent.</td><td><a href="03-user-roles-and-permissions.html">3</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-2">8.2</a></td></tr>
+<tr><td id="term-orchestrator">Orchestrator</td><td>Agent điều phối: hiểu ý định người dùng, đề xuất Plan, kiểm tra readiness, định tuyến context và lệnh tới Specialist Agent, rồi tổng hợp kết quả.</td><td><a href="03-user-roles-and-permissions.html#s-3-2">3.2</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-1">8.1</a></td></tr>
+<tr><td id="term-shared-context">Shared Context</td><td>Ngữ cảnh có cấu trúc, được lưu bền vững, gồm ngữ cảnh project, quyết định của người dùng, trạng thái Plan/Task, evidence, artifact và checkpoint. Agent dùng chung qua hệ thống thay vì dựa vào lịch sử chat.</td><td><a href="05-core-domain-model.html#s-5-5">5.5</a>, <a href="14-shared-context-and-orchestration-architecture.html">14</a></td></tr>
+<tr><td id="term-artifact">Artifact</td><td>Sản phẩm đầu ra có phiên bản và provenance: ghi chú nghiên cứu, bảng, sơ đồ, bản nháp section, file được tạo ra.</td><td><a href="05-core-domain-model.html#s-5-7">5.7</a>, <a href="14-shared-context-and-orchestration-architecture.html#s-14-4">14.4</a></td></tr>
+<tr><td id="term-trusted-reference">Trusted Reference</td><td>Tài liệu tham khảo đã được người dùng duyệt và lưu trong Trusted Library cấp tài khoản; chỉ Trusted Reference mới được dùng làm nguồn cho evidence và citation. Khác với <em>discovered result</em> (kết quả tìm kiếm chưa duyệt).</td><td><a href="05-core-domain-model.html#s-5-6">5.6</a>, <a href="10-academic-discovery-and-trusted-library.html">10</a></td></tr>
+<tr><td id="term-evidence">Evidence</td><td>Đoạn trích cụ thể từ một Trusted Reference, có định danh nguồn và vị trí, được dùng để hỗ trợ hoặc phản bác claim.</td><td><a href="05-core-domain-model.html#s-5-6">5.6</a>, <a href="11-evidence-rag-and-research-synthesis.html#s-11-2">11.2</a></td></tr>
+<tr><td id="term-claim">Claim</td><td>Một phát biểu nghiên cứu được liên kết với evidence và có mức hỗ trợ: supported, partially supported, unsupported hoặc conflicting.</td><td><a href="05-core-domain-model.html#s-5-6">5.6</a>, <a href="11-evidence-rag-and-research-synthesis.html#s-11-5">11.5</a></td></tr>
+<tr><td id="term-interactive-agent-prompt">Interactive Agent Prompt</td><td>Yêu cầu có cấu trúc mà agent gửi đến người dùng để xin quyết định: duyệt, từ chối, chọn phương án, sửa rồi duyệt, hoặc bổ sung thông tin. Prompt gắn với project, task, agent và hành động đang chờ.</td><td><a href="05-core-domain-model.html#s-5-9">5.9</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-4">8.4</a></td></tr>
+</tbody></table></div>
+
+<h3>Thuật ngữ bổ trợ</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thuật ngữ</th>
+<th scope="col">Định nghĩa</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td>Global Workspace / Project Workspace</td><td>Hai cấp không gian làm việc của kiến trúc hybrid workspace: cấp tài khoản (Dashboard, Global AI Assistant, Trusted Library…) và cấp từng project.</td><td><a href="04-information-architecture-and-navigation.html">4</a></td></tr>
+<tr><td>Specialist Agent</td><td>Agent chuyên trách một năng lực. MVP có bảy agent cố định: Discovery Agent, Reference Processing Agent, Evidence Retrieval Agent, Synthesis Agent, Writing Agent, Verification Agent, Diagram Agent.</td><td><a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a>, <a href="03-user-roles-and-permissions.html#s-3-3">3.3</a></td></tr>
+<tr><td>System</td><td>Actor là logic xác định của ứng dụng, không dùng AI model: kiểm soát truy cập, thực hiện chuyển trạng thái, readiness check, lưu trữ, audit và khôi phục. System thực thi quy tắc nhưng không quyết định thay Researcher.</td><td><a href="03-user-roles-and-permissions.html#s-3-0">3.0</a>, <a href="03-user-roles-and-permissions.html#s-3-4">3.4</a></td></tr>
+<tr><td>Provider Connection</td><td>Kết nối tới một model provider (Anthropic Claude, OpenAI, Google Gemini) do người dùng cấu hình trong Settings: tên, provider, base URL và API key. Orchestrator và từng Specialist Agent được gán một Provider Connection và model.</td><td><a href="02-product-scope.html#s-2-1-settings">SCOPE-13</a>, <a href="08-ai-assistant-and-multi-agent-orchestration.html">8</a>, <a href="17-integrations-and-external-dependencies.html">17</a></td></tr>
+<tr><td>Artifact status: draft / accepted</td><td>Trạng thái tối thiểu của Artifact. <em>draft</em>: vừa được agent hoặc người dùng tạo. <em>accepted</em>: Researcher đã chấp nhận; chỉ artifact accepted mới là đầu vào chính thức cho Task khác và cho bản thảo. Trạng thái đầy đủ ở mục 18.</td><td><a href="03-user-roles-and-permissions.html#s-3-4">3.4</a>, <a href="18-data-and-state-specifications.html">18</a></td></tr>
+<tr><td>Agent Run</td><td>Một lần một agent thực thi trong workflow, có model/provider, đầu vào, đầu ra, lỗi và thời điểm.</td><td><a href="05-core-domain-model.html#s-5-4">5.4</a></td></tr>
+<tr><td>Plan Baseline</td><td>Phiên bản Plan đã được người dùng duyệt, dùng làm căn cứ cho thực thi chính thức.</td><td><a href="06-end-to-end-product-workflow.html#s-6-5">6.5</a></td></tr>
+<tr><td>Execution Label</td><td>Nhãn của Task, quyết định ai thực hiện: <code>Available for agent</code> (agent được phép thực thi) hoặc <code>Manual editor requirement</code> (người dùng bắt buộc tự làm).</td><td><a href="09-research-plan-and-task-management.html#s-9-7">9.7</a>, WF-03</td></tr>
+<tr><td>Readiness Check</td><td>Kiểm tra trước khi thực thi Task: Plan đã duyệt, dependency đã hoàn thành, đủ đầu vào, quyết định và quyền.</td><td><a href="09-research-plan-and-task-management.html#s-9-5">9.5</a>, WF-02</td></tr>
+<tr><td>Trusted Library</td><td>Thư viện Trusted Reference ở cấp tài khoản, tái sử dụng qua các project.</td><td><a href="10-academic-discovery-and-trusted-library.html#s-10-6">10.6</a></td></tr>
+<tr><td>Manuscript</td><td>Bản thảo LaTeX của project gồm file nguồn, bibliography, cấu hình build, revision và PDF.</td><td><a href="05-core-domain-model.html#s-5-8">5.8</a>, <a href="12-latex-manuscript-workspace.html">12</a></td></tr>
+<tr><td>RAG (Retrieval-Augmented Generation)</td><td>Cách agent sinh nội dung: trước khi sinh, truy xuất các đoạn liên quan từ Trusted Reference đã được index trong vector database, rồi chỉ dựa trên các đoạn đó. Đây là cơ chế chính để giảm hallucination (PRB-03).</td><td><a href="11-evidence-rag-and-research-synthesis.html">11</a>, <a href="14-shared-context-and-orchestration-architecture.html">14</a></td></tr>
+<tr><td>Provenance</td><td>Thông tin nguồn gốc của dữ liệu hoặc artifact: tạo bởi ai hoặc agent nào, từ đầu vào và nguồn nào, trong Task và workflow nào, vào lúc nào.</td><td><a href="14-shared-context-and-orchestration-architecture.html#s-14-4">14.4</a></td></tr>
+<tr><td>Checkpoint</td><td>Trạng thái nhất quán được lưu của workflow, dùng để khôi phục sau gián đoạn.</td><td><a href="14-shared-context-and-orchestration-architecture.html#s-14-7">14.7</a>, WF-06</td></tr>
+<tr><td>SIRes / eTroy</td><td>SIRes (Super Intelligence Researcher) là tên chính thức của sản phẩm AI Research Assistant. eTroy là nền tảng mà SIRes thuộc về, đồng thời quản lý người dùng. Đội ngũ phát triển: SWE, GEN AI, AIE và PO của eTroy.</td><td><a href="21-assumptions-constraints-and-open-questions.html#dec-43">DEC-43</a>, <a href="21-assumptions-constraints-and-open-questions.html#dec-26">DEC-26</a></td></tr>
+<tr><td>eTroy OIDC</td><td>Dịch vụ định danh OpenID Connect của eTroy; là phương thức đăng nhập duy nhất của SIRes. SIRes không lưu mật khẩu.</td><td><a href="16-non-functional-requirements.html">16.1</a>, <a href="17-integrations-and-external-dependencies.html">17</a>, ASM-13</td></tr>
+<tr><td>Ngưỡng kiểm chứng</td><td>Nhóm cài đặt cá nhân chứa các ngưỡng mà Verification Agent dùng để gán mức hỗ trợ claim và báo citation không khớp; có giá trị mặc định theo DEC-38.</td><td><a href="11-evidence-rag-and-research-synthesis.html">11</a>, <a href="15-ui-ux-requirements.html">15</a>, ASM-15</td></tr>
+</tbody></table></div>
+<p class="status">Định nghĩa: Assumption ở mức câu chữ, dựa trên outline; sẽ được đồng bộ khi mục 5 được viết chi tiết.</p>
+
+<h2 id="s-1-6">1.6. Document Conventions</h2>
+<h3 id="s-1-6-priority">Mức ưu tiên P0 / P1 / P2</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mức</th>
+<th scope="col">Ý nghĩa</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>Bắt buộc cho workflow end-to-end cốt lõi; thiếu thì MVP không dùng được.</td></tr>
+<tr><td>P1</td><td>Có giá trị nhưng không bắt buộc cho bản phát hành dùng được đầu tiên.</td></tr>
+<tr><td>P2</td><td>Mở rộng trong tương lai.</td></tr>
+</tbody></table></div>
+<p>Định nghĩa theo <a href="02-product-scope.html#s-2-4">2.4</a>. Biên soạn đề xuất mức ưu tiên theo tiêu chí 2.4 và ghi “P0 (đề xuất)”; Product Owner duyệt thì bỏ nhãn “(đề xuất)” (<a href="21-assumptions-constraints-and-open-questions.html#dec-22">DEC-22</a>). Requirement chưa được đề xuất để “Chưa gán”.</p>
+
+<h3 id="s-1-6-confirmation">Trạng thái xác nhận</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trạng thái</th>
+<th scope="col">Ý nghĩa</th>
+<th scope="col">Cách xử lý khi triển khai</th>
+</tr></thead><tbody>
+<tr><td>Confirmed Requirement</td><td>Đã được người dùng hoặc Product Owner xác nhận rõ ràng.</td><td>Triển khai đúng như mô tả.</td></tr>
+<tr><td>Assumption</td><td>Người biên soạn suy ra hoặc đề xuất; hợp lý nhưng chưa được xác nhận.</td><td>Có thể dùng làm cơ sở tạm thời, nhưng phải cô lập để dễ thay đổi và không mở rộng thêm.</td></tr>
+<tr><td>Open Question</td><td>Chưa có quyết định.</td><td>Không tự quyết; hỏi lại hoặc để ngoài phạm vi triển khai.</td></tr>
+</tbody></table></div>
+
+<h3>Trạng thái biên soạn</h3>
+<p><strong>Khung</strong> (chỉ có outline) → <strong>Đang viết</strong> → <strong>Chờ duyệt</strong> → <strong>Đã duyệt</strong>. Trạng thái biên soạn áp dụng cho từng mục hoặc từng requirement và độc lập với trạng thái xác nhận: một mục Đã duyệt vẫn có thể chứa Open Question được ghi nhận rõ. Chỉ ghi “Đã duyệt” khi người dùng duyệt rõ ràng.</p>
+
+<h3 id="s-1-6-normative">Từ ngữ bắt buộc</h3>
+<p class="status">Confirmed — Product Owner duyệt 29/10/2026 (OQ-005).</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Từ</th>
+<th scope="col">Tương đương</th>
+<th scope="col">Ý nghĩa</th>
+</tr></thead><tbody>
+<tr><td><strong>phải</strong> / <strong>không được</strong></td><td>MUST / MUST NOT</td><td>Bắt buộc; vi phạm là không đạt acceptance criteria.</td></tr>
+<tr><td><strong>nên</strong> / <strong>không nên</strong></td><td>SHOULD / SHOULD NOT</td><td>Khuyến nghị mạnh; nếu làm khác phải có lý do được ghi nhận.</td></tr>
+<tr><td><strong>có thể</strong></td><td>MAY</td><td>Tùy chọn; không làm vẫn đạt.</td></tr>
+</tbody></table></div>
+
+<h3 id="s-1-6-ids">Functional Requirement ID và Acceptance Criteria</h3>
+<p class="status">Confirmed — quy ước biên soạn, Product Owner duyệt 29/10/2026 (OQ-005). Đây là quy ước của tài liệu, không phải quyết định kiến trúc sản phẩm.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Loại</th>
+<th scope="col">Định dạng</th>
+<th scope="col">Ví dụ</th>
+</tr></thead><tbody>
+<tr><td>Requirement</td><td><code>DOMAIN-CAPABILITY-NNN</code></td><td><code>TASK-READINESS-001</code></td></tr>
+<tr><td>Acceptance criterion</td><td><code>&lt;Requirement ID&gt;-ACNN</code></td><td><code>TASK-READINESS-001-AC01</code></td></tr>
+<tr><td>Workflow</td><td><code>WF-NN</code></td><td><code>WF-02</code> (mục 6)</td></tr>
+<tr><td>Figure</td><td><code>FIG-NNN</code></td><td><code>FIG-001</code> (nguồn <code>.mmd</code>/<code>.puml</code>, ảnh <code>.svg</code>/<code>.png</code> cùng mã)</td></tr>
+<tr><td>Goal / Problem / Chỉ báo thành công</td><td><code>GOAL-NN</code>, <code>PRB-NN</code>, <code>KPI-NN</code></td><td><code>GOAL-02</code>, <code>PRB-03</code>, <code>KPI-01</code> (mục 1)</td></tr>
+<tr><td>Open Question</td><td><code>OQ-NNN</code></td><td><code>OQ-001</code> (tổng hợp ở 21.3)</td></tr>
+<tr><td>Năng lực MVP / Ngoài phạm vi / Tương lai</td><td><code>SCOPE-NN</code>, <code>OOS-NN</code>, <code>FUT-NN</code></td><td><code>SCOPE-12</code>, <code>OOS-05</code>, <code>FUT-04</code> (mục 2)</td></tr>
+<tr><td>Hành động bắt buộc phê duyệt</td><td><code>APR-NN</code></td><td><code>APR-01</code> (mục 3.1)</td></tr>
+<tr><td>Việc trong backlog biên soạn</td><td><code>BL-NN-MM</code>, <code>SYNC-NN</code></td><td><code>BL-01-06</code>, <code>SYNC-01</code> (<a href="../back-log.html">backlog</a>; không dùng trong requirement)</td></tr>
+<tr><td>Anchor trong trang</td><td><code>s-N-M</code>; phụ lục <code>appendix-x</code></td><td><code>s-9-8</code>, <code>appendix-e</code></td></tr>
+</tbody></table></div>
+<p>Tiền tố DOMAIN đề xuất theo mục:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Tiền tố</th>
+<th scope="col">Phạm vi</th>
+<th scope="col">Mục</th>
+</tr></thead><tbody>
+<tr><td><code>WS</code>, <code>PROJ</code></td><td>Workspace, Research Project</td><td>7</td></tr>
+<tr><td><code>ORCH</code>, <code>AGENT</code>, <code>PROMPT</code></td><td>Orchestrator, Specialist Agent, Interactive Agent Prompt</td><td>8</td></tr>
+<tr><td><code>PLAN</code>, <code>TASK</code></td><td>Research Plan, Task</td><td>9</td></tr>
+<tr><td><code>DISC</code>, <code>LIB</code></td><td>Academic discovery, Trusted Library</td><td>10</td></tr>
+<tr><td><code>EVID</code>, <code>CLAIM</code>, <code>SYN</code></td><td>Evidence, claim, synthesis</td><td>11</td></tr>
+<tr><td><code>MS</code></td><td>LaTeX manuscript</td><td>12</td></tr>
+<tr><td><code>DIAG</code></td><td>Diagram Agent</td><td>13</td></tr>
+<tr><td><code>CTX</code></td><td>Shared context, orchestration, audit</td><td>14</td></tr>
+<tr><td><code>UX</code>, <code>NFR</code>, <code>INT</code>, <code>DATA</code></td><td>UI/UX, phi chức năng, tích hợp, dữ liệu và trạng thái</td><td>15–18</td></tr>
+</tbody></table></div>
+<p>Quy tắc: mã đã cấp không được đổi hoặc tái sử dụng; requirement bị loại bỏ được đánh dấu <em>Deprecated</em> và giữ nguyên mã. Mỗi requirement có ít nhất một acceptance criterion, viết theo dạng <em>Given</em> (bối cảnh) / <em>When</em> (hành động) / <em>Then</em> (kết quả kiểm chứng được). Chuỗi truy vết requirement → workflow → entity/state → acceptance criteria được tổng hợp ở <a href="22-appendices.html">phụ lục E và G</a>.</p>
+
+<h2 id="requirement-template">Mẫu đặc tả requirement</h2><p>Để PRD thực sự hữu ích cho coding agent, mỗi chức năng ở các mục 7–18 nên được mô tả theo một mẫu thống nhất:</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trường</th>
+<th scope="col">Nội dung cần có</th>
+</tr></thead><tbody>
+<tr><td>Requirement ID</td><td>Mã duy nhất, ví dụ <code>TASK-READINESS-001</code></td></tr>
+<tr><td>Priority</td><td>P0 / P1 / P2, hoặc “Chưa gán”</td></tr>
+<tr><td>Confirmation</td><td>Confirmed Requirement / Assumption / Open Question</td></tr>
+<tr><td>Purpose</td><td>Vấn đề mà chức năng giải quyết</td></tr>
+<tr><td>Actor</td><td>User, Orchestrator, Specialist Agent hoặc System</td></tr>
+<tr><td>Preconditions</td><td>Điều kiện phải đúng trước khi thao tác</td></tr>
+<tr><td>Trigger</td><td>Sự kiện bắt đầu</td></tr>
+<tr><td>Main Flow</td><td>Luồng xử lý chính theo từng bước</td></tr>
+<tr><td>Alternative / Error Flows</td><td>Thiếu dữ liệu, bị từ chối, lỗi provider, dependency chưa hoàn thành</td></tr>
+<tr><td>Business Rules</td><td>Quy tắc bắt buộc và các trường hợp không được phép</td></tr>
+<tr><td>Data &amp; State Changes</td><td>Dữ liệu, trạng thái và artifact thay đổi</td></tr>
+<tr><td>Acceptance Criteria</td><td>Điều kiện kiểm thử để xác nhận đạt yêu cầu (Given / When / Then)</td></tr>
+<tr><td>Dependencies</td><td>Các chức năng hoặc thành phần phải có trước</td></tr>
+<tr><td>Open Questions</td><td>Điểm chưa được xác nhận, kèm mã <code>OQ-NNN</code></td></tr>
+</tbody></table></div>
+<p>Mẫu trường áp dụng phù hợp với loại yêu cầu ở các mục 7–18. Yêu cầu phi chức năng và ràng buộc dữ liệu dùng cách diễn đạt, chỉ tiêu và điều kiện kiểm chứng tương ứng.</p>
+
+<h2 id="s-1-7">1.7. Open Questions của mục 1</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+<th scope="col">Trạng thái · câu trả lời</th>
+</tr></thead><tbody>
+<tr><td>OQ-001</td><td>Câu chữ tuyên bố tầm nhìn và danh sách PRB-01–PRB-05 có đúng ý Product Owner không?</td><td>1.2, định hướng toàn PRD</td><td>Đã đóng 29/10/2026 — duyệt; bổ sung RAG trên vector database vào hướng giải quyết PRB-03.</td></tr>
+<tr><td>OQ-002</td><td>Đặc điểm người dùng điển hình (bậc học, lĩnh vực, ngôn ngữ viết, mức quen thuộc với LaTeX) là gì?</td><td>1.4, 12, 15</td><td>Đã đóng 29/10/2026 — cao học, NCS, giảng viên; đa ngành; viết chủ yếu tiếng Anh; LaTeX cơ bản; UI tiếng Việt và tiếng Anh.</td></tr>
+<tr><td>OQ-003</td><td>Chỉ báo thành công nào được dùng và ngưỡng bao nhiêu?</td><td>1.3, 16, 19</td><td>Đã đóng 29/10/2026 — KPI-01–KPI-04 (<a href="#s-1-3-indicators">1.3</a>).</td></tr>
+<tr><td>OQ-004</td><td>MVP cần chuẩn bị đến mức nào cho cộng tác nhóm nhỏ trong tương lai?</td><td>1.4, 3, 5, 18</td><td>Đã đóng 29/10/2026 — mức tối thiểu: ghi actor, tách ownership; không có thành viên/chia sẻ.</td></tr>
+<tr><td>OQ-005</td><td>Duyệt thứ tự ưu tiên khi mâu thuẫn, từ ngữ bắt buộc và quy ước mã ở 1.1 và 1.6?</td><td>Toàn bộ quy ước biên soạn</td><td>Đã đóng 29/10/2026 — duyệt nguyên văn.</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><span></span><a href="../index.html">Mục lục PRD</a><a rel="next" href="02-product-scope.html">Mục 2 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

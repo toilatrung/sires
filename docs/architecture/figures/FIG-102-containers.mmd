@@ -1,0 +1,29 @@
+%% FIG-102 — Services and communication (architecture 3.2), v0.2
+flowchart TB
+  WEB[web: React SPA trên CDN] -->|REST /api/v1, SSE /events| GW[gateway: NestJS BFF, OIDC RP]
+  GW -->|OIDC| OIDC[eTroy OIDC]
+  subgraph TS [Service hệ thống — NestJS, mỗi service một database]
+    ID[identity]
+    WS[workspace]
+    PL[planning]
+    OR[orchestration: workflow engine]
+    LB[library]
+    RS[research]
+    MS[manuscript]
+    AU[audit]
+  end
+  GW -->|REST nội bộ| ID & WS & PL & OR & LB & RS & MS & AU
+  MQ{{RabbitMQ: sires.events, agent.run, knowledge.index, sandbox.build}}
+  TS -->|outbox relay| MQ
+  MQ -->|sự kiện| GW
+  MQ -->|agent.run| AC[agent-core: Python — Orchestrator, agents, Context Assembler, Model Gateway]
+  MQ -->|knowledge.index| KN[knowledge: Python — PDF, chunk, embedding, pgvector]
+  MQ -->|sandbox.build| SB[sandbox-runner: gVisor, không mạng]
+  AC -->|REST nội bộ: đọc context, tool, kết quả| TS
+  AC -->|truy xuất| KN
+  AC -->|HTTPS| LLM[Claude / OpenAI / Gemini]
+  KN -->|embedding| LLM
+  LB -->|HTTPS| EXT[Scholar trung gian / OpenAlex / Crossref]
+  TS & KN & SB --> S3[(Object storage)]
+  ID -->|Encrypt| KMS[(KMS)]
+  AC & KN -->|Decrypt| KMS

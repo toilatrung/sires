@@ -1,0 +1,24 @@
+%% FIG-104 — Task execution across services (architecture F-06), v0.2
+sequenceDiagram
+  participant R as Researcher (qua gateway)
+  participant P as planning
+  participant O as orchestration
+  participant Q as RabbitMQ
+  participant AC as agent-core
+  participant X as service sở hữu đầu ra
+  R->>P: activate Task (APR-02)
+  P->>P: readiness RC-01–RC-09 (REST identity, library, research)
+  P->>Q: TX: Task Queued + evt task.activated
+  Q-->>O: task.activated
+  O->>O: TX: Workflow task_execution, AgentRun plan_next, outbox agent.run
+  O->>Q: cmd agent.run
+  Q-->>AC: agent.run
+  AC->>O: start (409 nếu lỗi thời) → evt workflow.started → planning: In Progress
+  loop đến khi đủ đầu ra
+    AC->>AC: lắp ráp context (REST các service), gọi model, kiểm tra tất định
+    AC->>O: result (manifest, structured output, usage)
+    O->>X: ghi đầu ra Draft (idempotency = agentRunId)
+    O->>O: TX: Step Succeeded, Checkpoint, cmd agent.run bước kế
+  end
+  O->>Q: evt workflow.succeeded
+  Q-->>P: Task In Review → Pending Action nghiệm thu (APR-03)

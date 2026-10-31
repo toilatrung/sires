@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PRD SIRes (Super Intelligence Researcher) — yêu cầu sản phẩm, workflow và tiêu chí nghiệm thu.">
+<title>17. Integrations and External Dependencies | SIRes PRD</title>
+<link rel="icon" href="../assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Section 17</p><h1>17. Integrations and External Dependencies</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả các hệ thống bên ngoài mà sản phẩm phụ thuộc và hợp đồng tích hợp ở mức sản phẩm. PRD không chọn nhà cung cấp hạ tầng hay thư viện cụ thể; tên công nghệ chỉ là ví dụ khi ghi rõ. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Ba model provider và RAG trên vector database là <strong>Confirmed</strong> (21.1); phương thức tích hợp Google Scholar, embedding, định dạng tài liệu và eTroy OIDC là <strong>Confirmed — PO chốt 31/10/2026 (PC-01)</strong> theo OQ ghi tại chỗ; còn lại là <strong>Assumption</strong>. Bảng Open Questions ở <a href="#s-17-oq">17.8</a>.</p></div>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Priority</th>
+<th scope="col">Requirement</th>
+</tr></thead><tbody>
+<tr><td>P0</td><td>INT-PROVIDER-001, INT-PROVIDER-003, INT-PROVIDER-006; INT-SCHOLAR-001, INT-SCHOLAR-002, INT-SCHOLAR-003, INT-SCHOLAR-006; INT-DOC-001, INT-DOC-002, INT-DOC-003, INT-VECTOR-001, INT-VECTOR-002, INT-VECTOR-003; INT-LATEX-001, INT-LATEX-002, INT-LATEX-003, INT-LATEX-005; INT-DIAGRAM-001, INT-DIAGRAM-002, INT-DIAGRAM-003; INT-OIDC-001, INT-OIDC-002, INT-OIDC-003</td></tr>
+<tr><td>P1</td><td>INT-PROVIDER-002, INT-PROVIDER-004, INT-PROVIDER-005; INT-SCHOLAR-004, INT-SCHOLAR-005, INT-SCHOLAR-007; INT-LATEX-004; INT-DIAGRAM-004; INT-OIDC-004</td></tr>
+<tr><td>P2</td><td>Không có. Nguồn học thuật ngoài phạm vi MVP thuộc FUT-01 (17.6); provider ngoài ba provider MVP thuộc FUT-05.</td></tr>
+</tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-17-0">Tổng hợp phụ thuộc</a></li>
+<li><a href="#s-17-1">17.1. Model Providers</a></li>
+<li><a href="#s-17-2">17.2. Google Scholar</a></li>
+<li><a href="#s-17-3">17.3. Document Processing</a></li>
+<li><a href="#s-17-4">17.4. LaTeX Build Toolchain</a></li>
+<li><a href="#s-17-5">17.5. Diagram Rendering</a></li>
+<li><a href="#s-17-6">17.6. Future Academic Sources</a></li>
+<li><a href="#s-17-7">17.7. eTroy OIDC (Authentication)</a></li>
+<li><a href="#s-17-oq">17.8. Open Questions của mục 17</a></li>
+</ul></details>
+
+<h2 id="s-17-0">Tổng hợp phụ thuộc</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Phụ thuộc</th>
+<th scope="col">Dùng cho</th>
+<th scope="col">Loại</th>
+<th scope="col">Rủi ro chính</th>
+<th scope="col">Trạng thái</th>
+</tr></thead><tbody>
+<tr><td>Anthropic Claude, OpenAI, Google Gemini</td><td>Orchestrator và Specialist Agent</td><td>Dịch vụ ngoài, key của người dùng</td><td>Khác biệt năng lực, giới hạn tốc độ, lỗi provider</td><td>Confirmed (21.1)</td></tr>
+<tr><td>eTroy OIDC</td><td>Authentication duy nhất của SIRes (SSO tổ chức, 17.7)</td><td>Dịch vụ của nền tảng eTroy, bắt buộc</td><td>eTroy OIDC không khả dụng thì không đăng nhập mới được</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073)</td></tr>
+<tr><td>Embedding model</td><td>Vector hóa chunk và truy vấn cho RAG</td><td>Dịch vụ ngoài qua Provider Connection của người dùng (OpenAI hoặc Gemini)</td><td>Đổi model buộc index lại</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051)</td></tr>
+<tr><td>Vector database</td><td>Lưu và truy xuất embedding (RAG)</td><td>Hạ tầng</td><td>Cách ly dữ liệu giữa tài khoản</td><td>Confirmed (21.1); sản phẩm cụ thể chưa chọn</td></tr>
+<tr><td>Google Scholar</td><td>Discovery</td><td>Dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ (17.2)</td><td>Dịch vụ không trả kết quả; khả năng truy cập hợp lệ</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-081, OQ-006)</td></tr>
+<tr><td>Phân giải metadata DOI (ví dụ Crossref, DataCite)</td><td>Nhập reference thủ công theo DOI (LIB-IMPORT-002)</td><td>Dịch vụ ngoài qua adapter</td><td>DOI không phân giải được; metadata nguồn sai</td><td>Assumption (nguồn cụ thể chốt khi triển khai)</td></tr>
+<tr><td>Document processing (trích xuất PDF, metadata)</td><td>Indexing Source Document</td><td>Thư viện/dịch vụ</td><td>Bố cục phức tạp (PDF scan không được hỗ trợ)</td><td>Phạm vi định dạng: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-050); công cụ: Assumption</td></tr>
+<tr><td>TeX distribution</td><td>Build bản thảo</td><td>Hạ tầng tự host</td><td>Package thiếu, build độc hại</td><td>Assumption</td></tr>
+<tr><td>Mermaid renderer</td><td>Diagram Agent</td><td>Thư viện tự host</td><td>Render lỗi</td><td>Assumption</td></tr>
+</tbody></table></div>
+<p class="status">FIG-030 — Kiến trúc tích hợp. Nguồn: <a href="../figures/FIG-030-integration-architecture.mmd">figures/FIG-030-integration-architecture.mmd</a>.</p>
+
+<h2 id="s-17-1">17.1. Model Providers</h2>
+<p class="status">Giải quyết phần provider của SYNC-03. Confirmed: Claude, OpenAI, Gemini; base URL và API key tùy chỉnh theo từng agent (SCOPE-13). Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014): MVP chỉ hỗ trợ ba provider này; người dùng tự cung cấp API key, hệ thống không có key hay hạn mức mặc định; base URL được trỏ tới proxy, gateway hoặc model tự host nếu tương thích API chính thức của provider tương ứng. Dashboard nhập base URL và API key của nhà cung cấp bất kỳ, kèm kiểm tra hạn mức và tiêu thụ, thuộc FUT-05 (2.3).</p>
+<h3>Cấu hình và credentials</h3>
+<ul>
+<li>Provider Connection (5.11) gồm provider, base URL (mặc định endpoint chính thức), API key; agent dùng kết nối qua Agent Model Assignment.</li>
+<li>Credentials quản lý theo NFR-SECRETS-001–003. Adapter nhận key đã giải mã chỉ trong phạm vi một lời gọi.</li>
+<li>“Kiểm tra kết nối” gọi một thao tác nhẹ của provider (ví dụ liệt kê model) để xác nhận key và base URL; kết quả ghi vào trạng thái <code>Valid</code> / <code>Invalid</code> kèm thời điểm.</li>
+</ul>
+<h3>Interface chuẩn hóa</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thành phần</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td>Đầu vào</td><td>Danh sách message (system, user, assistant, tool result), khai báo tool, yêu cầu đầu ra có cấu trúc (JSON schema), cờ stream. MVP không cho người dùng chỉnh tham số nâng cao của model (OQ-015, PC-01).</td></tr>
+<tr><td>Đầu ra</td><td>Nội dung văn bản, tool call đã chuẩn hóa (tên, tham số), đầu ra có cấu trúc đã kiểm tra theo schema, lý do dừng.</td></tr>
+<tr><td>Usage</td><td>Input tokens, output tokens, số lời gọi; trường bổ sung nếu provider có (NFR-USAGE-001).</td></tr>
+<tr><td>Lỗi</td><td>Dùng đúng bộ mã lỗi chuẩn ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-6">8.6</a>: <code>auth_failed</code>, <code>permission_denied</code>, <code>model_not_found</code>, <code>rate_limited</code>, <code>quota_exceeded</code>, <code>context_too_long</code>, <code>content_refused</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>invalid_response</code>, <code>network_error</code>.</td></tr>
+<tr><td>Capability</td><td>Mỗi model khai báo: tool calling, structured output, streaming, context window, đầu vào hình ảnh/PDF. Nguồn: danh mục do hệ thống duy trì, bổ sung khi lấy danh sách model.</td></tr>
+</tbody></table></div>
+<h3>Requirement</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-provider-001">INT-PROVIDER-001</td><td>Hệ thống cung cấp adapter cho <code>anthropic</code>, <code>openai</code>, <code>google</code>, cùng thực hiện interface chuẩn hóa. Orchestrator và agent không gọi API provider trực tiếp.</td></tr>
+<tr><td id="req-int-provider-002">INT-PROVIDER-002</td><td>Khi gán model cho agent, hệ thống so capability của model với yêu cầu của agent (agent registry) và cảnh báo nếu thiếu, ví dụ agent cần tool calling hoặc structured output.</td></tr>
+<tr><td id="req-int-provider-003">INT-PROVIDER-003</td><td>Chính sách lỗi ở lớp adapter, cho một lần gọi provider: <code>rate_limited</code>, <code>timeout</code>, <code>provider_unavailable</code>, <code>network_error</code> được gọi lại ngay trong cùng Agent Run với backoff tăng dần, tối đa 3 lần; <code>invalid_response</code> (đầu ra sai cấu trúc) được yêu cầu sửa định dạng tối đa 2 lần. Nếu vẫn lỗi, Agent Run → <code>Failed</code> kèm mã lỗi, và việc thử lại bằng Agent Run mới do Orchestrator quyết định theo ORCH-FAILURE-001 ở 8.5 (tối đa 2 lần). Mã lỗi cố định không được thử lại ở cả hai lớp. Chính sách đã chốt (OQ-017 đã giải quyết).</td></tr>
+<tr><td id="req-int-provider-004">INT-PROVIDER-004</td><td>Không tự động chuyển sang provider hoặc model khác khi lỗi; người dùng đổi Provider Connection hoặc model cho agent trong Settings rồi chạy lại (Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01)). Lỗi <code>auth_failed</code>/<code>quota_exceeded</code> đánh dấu Provider Connection cần kiểm tra và tạo notification Provider issue.</td></tr>
+<tr><td id="req-int-provider-005">INT-PROVIDER-005</td><td>Base URL tùy chỉnh phải tương thích API chính thức của đúng provider đã chọn (<code>anthropic</code>, <code>openai</code>, <code>google</code>). Endpoint bên thứ ba (proxy, gateway, model tự host) được chấp nhận nếu tương thích; không có loại provider “tùy ý” trong MVP (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-014); FUT-05).</td></tr>
+<tr><td id="req-int-provider-006">INT-PROVIDER-006</td><td>Mỗi Agent Run ghi Provider Connection, provider, model, phiên bản adapter và capability đã dùng vào provenance (18.3).</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-PROVIDER-001-AC01</strong> — Given ba Provider Connection hợp lệ (Claude, OpenAI, Gemini) gán cho ba agent khác nhau, When chạy một workflow dùng cả ba agent, Then mọi Agent Run thành công và usage được ghi cùng cấu trúc.</li>
+<li><strong>INT-PROVIDER-003-AC01</strong> — Given provider trả lỗi rate limit hai lần rồi thành công, When Agent Run chạy, Then vẫn chỉ có một Agent Run, trạng thái Succeeded, với attempts = 3.</li>
+<li><strong>INT-PROVIDER-003-AC02</strong> — Given API key bị thu hồi, When Agent Run gọi provider, Then Agent Run Failed với <code>auth_failed</code>, không thử lại, và có notification Provider issue.</li>
+<li><strong>INT-PROVIDER-002-AC01</strong> — Given model không hỗ trợ tool calling, When gán cho Discovery Agent, Then hệ thống hiển thị cảnh báo thiếu năng lực.</li>
+<li><strong>INT-PROVIDER-004-AC01</strong> — Given Agent Run thất bại vì <code>provider_unavailable</code> sau mọi lần thử lại, When workflow dừng, Then không Agent Run nào được tạo với provider khác và Researcher nhận notification kèm liên kết tới Settings → Agent Models.</li>
+<li><strong>INT-PROVIDER-005-AC01</strong> — Given Provider Connection loại <code>openai</code> có base URL trỏ tới endpoint không tương thích API OpenAI, When kiểm tra kết nối, Then kết nối <code>Invalid</code> kèm mã lỗi.</li>
+<li><strong>INT-PROVIDER-006-AC01</strong> — Given một Agent Run đã kết thúc, When xem provenance, Then có Provider Connection, provider, model, phiên bản adapter và capability đã dùng.</li>
+</ul>
+
+<h2 id="s-17-2">17.2. Google Scholar</h2>
+<p class="status">Confirmed: Google Scholar là trọng tâm discovery của MVP. Phương thức tích hợp: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-081); phương án dự phòng: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-006).</p>
+<h3>Phương thức tích hợp đã chốt</h3>
+<ul>
+<li>Google Scholar không cung cấp API công khai chính thức. Truy cập tự động trực tiếp có thể vi phạm điều khoản sử dụng và bị chặn bằng giới hạn tốc độ hoặc CAPTCHA, nên không được dùng (INT-SCHOLAR-002).</li>
+<li><strong>Kết hợp hai cách (OQ-081):</strong> (a) dịch vụ trung gian cung cấp kết quả Google Scholar theo hợp đồng, qua source adapter; (b) luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả — chính là nhập reference thủ công <a href="10-academic-discovery-and-trusted-library.html#lib-import-002">LIB-IMPORT-002</a> (10): người dùng tìm trên Google Scholar và nhập kết quả qua DOI, BibTeX/RIS hoặc PDF (INT-SCHOLAR-006).</li>
+<li><strong>Phân giải metadata DOI (dependency):</strong> khi người dùng nhập DOI (LIB-IMPORT-002), metadata được lấy từ nguồn được phép qua một adapter phân giải DOI, ví dụ Crossref hoặc DataCite; kết quả chuẩn hóa theo schema 17.6 và vào trạng thái chờ duyệt. Nguồn cụ thể là Assumption, chốt khi triển khai; nếu không phân giải được, người dùng nhập hoặc sửa metadata thủ công.</li>
+<li><strong>Dự phòng (OQ-006):</strong> nếu truy cập Google Scholar qua dịch vụ trung gian không khả thi hoặc không được phép, MVP dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua cùng hợp đồng source adapter (17.6, 10.9), kèm nhập DOI/BibTeX; WF-04 giữ nguyên (INT-SCHOLAR-007).</li>
+<li>Nhà cung cấp dịch vụ trung gian cụ thể được chọn khi triển khai và ghi vào 21.2 (Technical Assumptions).</li>
+</ul>
+<h3>Requirement</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-scholar-001">INT-SCHOLAR-001</td><td>Google Scholar được tích hợp qua source adapter theo hợp đồng 17.6; Discovery Agent chỉ dùng adapter.</td></tr>
+<tr><td id="req-int-scholar-002">INT-SCHOLAR-002</td><td>Tích hợp tuân thủ điều khoản của nguồn: không vượt giới hạn truy cập, không giải CAPTCHA, không giả lập người dùng (OOS-06). Khi bị giới hạn, trả lỗi rõ ràng cho người dùng.</td></tr>
+<tr><td id="req-int-scholar-003">INT-SCHOLAR-003</td><td>Dữ liệu tối thiểu mỗi kết quả: tiêu đề, tác giả, năm, venue (nếu có), liên kết nguồn, đoạn mô tả ngắn, số trích dẫn (nếu có). Không cam kết full text.</td></tr>
+<tr><td id="req-int-scholar-004">INT-SCHOLAR-004</td><td>Tìm theo tác giả trả về danh sách công bố hiện có từ nguồn và ghi rõ có thể không đầy đủ (10.3).</td></tr>
+<tr><td id="req-int-scholar-005">INT-SCHOLAR-005</td><td>Adapter khai báo giới hạn tốc độ; hệ thống xếp hàng truy vấn để không vượt giới hạn.</td></tr>
+<tr><td id="req-int-scholar-006">INT-SCHOLAR-006</td><td>Khi dịch vụ trung gian không trả kết quả (lỗi, bị giới hạn, không có kết quả), Discovery hiển thị lý do và đề nghị luồng nhập do người dùng hỗ trợ, tức nhập thủ công theo <a href="10-academic-discovery-and-trusted-library.html#lib-import-002">LIB-IMPORT-002</a>: DOI (metadata phân giải qua adapter DOI, ví dụ Crossref/DataCite — Assumption), dán hoặc tải lên BibTeX/RIS, hoặc PDF. Bản ghi nhập vào trạng thái chờ duyệt, qua chuẩn hóa metadata và kiểm tra trùng như WF-04 (OQ-081, OQ-008, PC-01).</td></tr>
+<tr><td id="req-int-scholar-007">INT-SCHOLAR-007</td><td>Phương án dự phòng: nếu dịch vụ trung gian không khả thi hoặc không được phép, cấu hình một source adapter cho nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) theo hợp đồng 17.6, thay cho Google Scholar mà không đổi Discovery Agent và WF-04. Kết quả ghi rõ nguồn thực tế (trường <code>source</code>) (OQ-006, PC-01).</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-SCHOLAR-002-AC01</strong> — Given nguồn trả về trạng thái bị giới hạn, When Discovery Agent tìm kiếm, Then workflow báo lỗi “nguồn tạm giới hạn truy cập” và không gửi thêm truy vấn trong khoảng chờ do adapter khai báo.</li>
+<li><strong>INT-SCHOLAR-004-AC01</strong> — Given tìm theo tác giả, When hiển thị kết quả, Then có ghi chú danh sách có thể không đầy đủ.</li>
+<li><strong>INT-SCHOLAR-001-AC01</strong> — Given Discovery Agent thực hiện tìm kiếm, When kiểm tra lời gọi ra ngoài, Then mọi truy vấn tới Google Scholar đi qua source adapter, không có lời gọi trực tiếp từ agent.</li>
+<li><strong>INT-SCHOLAR-003-AC01</strong> — Given nguồn trả về một kết quả không có venue, When lưu Discovered Result, Then có tiêu đề, tác giả, năm, liên kết nguồn và venue để trống, không bị từ chối.</li>
+<li><strong>INT-SCHOLAR-005-AC01</strong> — Given adapter khai báo tối đa N truy vấn mỗi phút, When người dùng gửi N + 5 truy vấn liên tiếp, Then 5 truy vấn sau được xếp hàng và không vượt giới hạn.</li>
+<li><strong>INT-SCHOLAR-006-AC01</strong> — Given dịch vụ trung gian trả lỗi cho một truy vấn, When Researcher chọn nhập thủ công và dán BibTeX của 3 bài lấy từ Google Scholar, Then 3 bản ghi vào trạng thái chờ duyệt, đã chuẩn hóa metadata và được kiểm tra trùng.</li>
+<li><strong>INT-SCHOLAR-007-AC01</strong> — Given hệ thống cấu hình source adapter dự phòng (ví dụ OpenAlex), When Discovery Agent tìm kiếm, Then kết quả có <code>source</code> là nguồn dự phòng và luồng duyệt WF-04 không thay đổi.</li>
+</ul>
+
+<h2 id="s-17-3">17.3. Document Processing</h2>
+<p class="status">Giải quyết phần dependency của SYNC-08. Confirmed: RAG trên Trusted Reference được index trong vector database (21.1).</p>
+<h3>Pipeline indexing</h3>
+<ol>
+<li><strong>Thu nhận nội dung:</strong> file do người dùng tải lên cho Reference, hoặc nội dung truy cập mở hợp lệ từ liên kết nguồn. Không có nội dung hợp lệ → indexing <code>Unavailable</code>.</li>
+<li><strong>Trích xuất văn bản:</strong> giữ số trang và thứ tự đoạn; xử lý bố cục nhiều cột; loại header/footer lặp lại.</li>
+<li><strong>Trích xuất metadata:</strong> DOI, tiêu đề, tác giả, năm — dùng để đối chiếu với metadata Reference và cảnh báo khi lệch.</li>
+<li><strong>Chia chunk:</strong> mỗi chunk có định danh ổn định và vị trí (trang, đoạn, offset) để Evidence trỏ về.</li>
+<li><strong>Embedding:</strong> vector hóa chunk bằng embedding model của tài khoản, gọi qua Provider Connection của người dùng (OpenAI hoặc Gemini; Anthropic không cung cấp embedding); ghi model và phiên bản (OQ-051, PC-01).</li>
+<li><strong>Lưu vào vector database:</strong> mỗi vector mang metadata accountId, referenceId, chunkId, vị trí, embedding model.</li>
+</ol>
+<p class="status">FIG-031 — Pipeline indexing. Nguồn: <a href="../figures/FIG-031-indexing-pipeline.mmd">figures/FIG-031-indexing-pipeline.mmd</a>.</p>
+<h3>Requirement</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-doc-001">INT-DOC-001</td><td>MVP chỉ index PDF có lớp văn bản, tối đa 50 MB mỗi file; không OCR, không định dạng khác (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-050)). Giới hạn số trang ≤ 500 là Assumption kỹ thuật. File vượt giới hạn hoặc PDF scan bị từ chối với lý do rõ ràng.</td></tr>
+<tr><td id="req-int-doc-002">INT-DOC-002</td><td>Indexing chạy nền, có trạng thái theo 5.6 và báo lỗi cụ thể (không có văn bản, file hỏng, vượt giới hạn).</td></tr>
+<tr><td id="req-int-doc-003">INT-DOC-003</td><td>Indexing idempotent theo (referenceId, hash nội dung, embedding model): chạy lại không tạo vector trùng (18.4).</td></tr>
+<tr><td id="req-int-vector-001">INT-VECTOR-001</td><td>Mọi truy vấn vector database được lọc bắt buộc theo accountId và danh sách referenceId được chọn cho project; không truy vấn nào thiếu bộ lọc này (NFR-ISOL-001).</td></tr>
+<tr><td id="req-int-vector-002">INT-VECTOR-002</td><td>Khi Reference bị thu hồi hoặc xóa, vector của nó không được trả về trong truy xuất mới; khi xóa thì xóa vật lý (NFR-RET-003).</td></tr>
+<tr><td id="req-int-vector-003">INT-VECTOR-003</td><td>Mỗi tài khoản dùng một embedding model, chọn từ Provider Connection OpenAI hoặc Gemini của người dùng. Đổi embedding model có cảnh báo trước và bắt buộc index lại toàn bộ thư viện: các Source Document được đánh dấu cần index lại; truy xuất chỉ so sánh vector cùng model (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051)).</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-VECTOR-001-AC01</strong> — Given hai tài khoản index cùng một bài báo, When tài khoản A truy xuất evidence, Then mọi kết quả có accountId của A.</li>
+<li><strong>INT-DOC-003-AC01</strong> — Given Reference đã Indexed, When yêu cầu index lại cùng file, Then số vector của Reference không tăng.</li>
+<li><strong>INT-DOC-002-AC01</strong> — Given PDF chỉ có ảnh scan, When index, Then trạng thái Failed với lý do “không có lớp văn bản” (thống nhất với EVID-INDEX-001, 11.1).</li>
+<li><strong>INT-DOC-001-AC01</strong> — Given file PDF vượt giới hạn dung lượng đã cấu hình, When tải lên cho Reference, Then bị từ chối với lý do và giới hạn hiện hành (50 MB).</li>
+<li><strong>INT-VECTOR-002-AC01</strong> — Given Reference vừa bị thu hồi, When truy xuất evidence cho project từng chọn nó, Then không kết quả nào thuộc Reference đó.</li>
+<li><strong>INT-VECTOR-003-AC01</strong> — Given Researcher chọn embedding model khác và xác nhận cảnh báo index lại, When xem Trusted Library, Then các Source Document dùng model cũ được đánh dấu cần index lại và truy xuất không so sánh vector khác model.</li>
+</ul>
+
+<h2 id="s-17-4">17.4. LaTeX Build Toolchain</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-latex-001">INT-LATEX-001</td><td>TeX Live cố định phiên bản, đủ các package học thuật phổ biến. Compiler: pdfLaTeX (mặc định) hoặc XeLaTeX. Bibliography: BibTeX với natbib, style mặc định <code>plainnat</code>. Build điều phối nhiều lượt tự động (ví dụ latexmk). <code>references.bib</code> do System sinh lại từ Trusted Reference; người dùng không sửa tay file <code>.bib</code> (12.6).</td></tr>
+<tr><td id="req-int-latex-002">INT-LATEX-002</td><td>Build chạy trong sandbox theo NFR-SANDBOX-001: không mạng, không shell-escape, giới hạn tài nguyên, workspace riêng chỉ chứa file của revision được build. Package cần shell-escape (ví dụ minted) không được hỗ trợ; template Default dùng package thay thế không cần shell-escape (ví dụ listings). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01).</td></tr>
+<tr><td id="req-int-latex-003">INT-LATEX-003</td><td>Kết quả build lưu thành Build (5.8): log đầy đủ, PDF nếu thành công, danh sách lỗi/cảnh báo đã phân tích (file, dòng, loại).</td></tr>
+<tr><td id="req-int-latex-004">INT-LATEX-004</td><td>Lỗi phổ biến (package thiếu, citation không định nghĩa, file \input không tồn tại, lỗi cú pháp) được ánh xạ sang thông điệp dễ hiểu bằng hai ngôn ngữ giao diện (UX-MS-004).</td></tr>
+<tr><td id="req-int-latex-005">INT-LATEX-005</td><td>Template Default biên dịch được với cấu hình mặc định mà không cần người dùng chỉnh (người dùng LaTeX cơ bản, OQ-002).</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-LATEX-005-AC01</strong> — Given manuscript khởi tạo Default chưa sửa, When build, Then Build Succeeded và có PDF.</li>
+<li><strong>INT-LATEX-002-AC01</strong> — Given tài liệu dùng \write18, When build, Then lệnh không được thực thi.</li>
+<li><strong>INT-LATEX-001-AC01</strong> — Given Manuscript cấu hình XeLaTeX, When build, Then build dùng XeLaTeX với BibTeX và natbib, và <code>references.bib</code> được sinh lại từ Trusted Reference trước khi build.</li>
+<li><strong>INT-LATEX-003-AC01</strong> — Given build thất bại, When xem Build, Then có log đầy đủ và danh sách lỗi đã phân tích kèm file và dòng.</li>
+<li><strong>INT-LATEX-004-AC01</strong> — Given build lỗi vì citation chưa định nghĩa, When xem ở giao diện tiếng Anh và tiếng Việt, Then thông điệp dễ hiểu nêu key bị thiếu bằng đúng ngôn ngữ giao diện.</li>
+</ul>
+
+<h2 id="s-17-5">17.5. Diagram Rendering</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-diagram-001">INT-DIAGRAM-001</td><td>MVP chỉ hỗ trợ Mermaid (không có PlantUML). Kiểm tra cú pháp bằng trình phân tích của Mermaid; trả lỗi có vị trí dòng.</td></tr>
+<tr><td id="req-int-diagram-002">INT-DIAGRAM-002</td><td>Render phía server trong sandbox, không truy cập mạng; đầu ra SVG cho preview.</td></tr>
+<tr><td id="req-int-diagram-003">INT-DIAGRAM-003</td><td>Khi đưa vào bản thảo, xuất PDF hoặc PNG để LaTeX dùng được, lưu cùng mã nguồn trong artifact; file hình chèn vào <code>figures/</code> qua Change Proposal.</td></tr>
+<tr><td id="req-int-diagram-004">INT-DIAGRAM-004</td><td>Phân biệt lỗi cú pháp và lỗi render (WF-07.E1, E2).</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-DIAGRAM-001-AC01</strong> — Given mã Mermaid thiếu mũi tên, When kiểm tra, Then trả lỗi cú pháp kèm số dòng.</li>
+<li><strong>INT-DIAGRAM-002-AC01</strong> — Given mã sơ đồ chứa include tới URL ngoài, When render, Then không có truy cập mạng và render báo lỗi.</li>
+<li><strong>INT-DIAGRAM-003-AC01</strong> — Given diagram Accepted được đưa vào bản thảo, When tạo Change Proposal, Then file hình (PDF hoặc PNG) nằm trong <code>figures/</code> và mã nguồn vẫn lưu trong artifact.</li>
+<li><strong>INT-DIAGRAM-004-AC01</strong> — Given mã đúng cú pháp nhưng render lỗi, When xem kết quả, Then lỗi được phân loại là lỗi render, không phải lỗi cú pháp.</li>
+</ul>
+
+<h2 id="s-17-6">17.6. Future Academic Sources</h2>
+<p>Hợp đồng adapter dùng chung cho Google Scholar ở MVP, nguồn dự phòng có API hợp lệ khi cần (INT-SCHOLAR-007, OQ-006) và nguồn tương lai (FUT-01), không mở rộng discovery ngoài phạm vi đã chốt.</p>
+<h3>Hợp đồng source adapter</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thao tác</th>
+<th scope="col">Mô tả</th>
+</tr></thead><tbody>
+<tr><td><code>search(query, filters, page)</code></td><td>Tìm theo query, tiêu đề, tác giả, từ khóa, khoảng năm; trả danh sách bản ghi chuẩn hóa và con trỏ trang.</td></tr>
+<tr><td><code>getRecord(identifier)</code></td><td>Lấy chi tiết theo định danh của nguồn.</td></tr>
+<tr><td><code>listAuthorPublications(author)</code></td><td>Danh sách công bố của tác giả, kèm cờ <code>completeness: partial</code>.</td></tr>
+<tr><td><code>capabilities()</code></td><td>Trường hỗ trợ, bộ lọc, có full text hay không, giới hạn tốc độ, điều khoản sử dụng cần tuân thủ.</td></tr>
+</tbody></table></div>
+<h3>Schema metadata chuẩn hóa</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Trường</th>
+<th scope="col">Kiểu</th>
+<th scope="col">Ghi chú</th>
+</tr></thead><tbody>
+<tr><td>title</td><td>string</td><td>Bắt buộc</td></tr>
+<tr><td>authors</td><td>list {name, affiliation?, sourceAuthorId?}</td><td>Bắt buộc, có thể rỗng nếu nguồn không có</td></tr>
+<tr><td>year</td><td>integer</td><td>Tùy chọn</td></tr>
+<tr><td>venue, publicationType</td><td>string, enum (article, conference, thesis, book, chapter, preprint, report, other)</td><td>Tùy chọn</td></tr>
+<tr><td>identifiers</td><td>{doi?, arxivId?, isbn?, sourceId, url}</td><td>sourceId và url bắt buộc</td></tr>
+<tr><td>abstractOrSnippet</td><td>string</td><td>Tùy chọn</td></tr>
+<tr><td>citationCount</td><td>integer</td><td>Tùy chọn, kèm thời điểm</td></tr>
+<tr><td>source, retrievedAt, raw</td><td>string, timestamp, object</td><td>Bắt buộc; raw giữ bản gốc để đối chiếu</td></tr>
+</tbody></table></div>
+
+<h2 id="s-17-7">17.7. eTroy OIDC (Authentication)</h2>
+<p class="status">Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073): authentication của SIRes là SSO của tổ chức, duy nhất qua eTroy OIDC. SIRes thuộc nền tảng eTroy; quản lý người dùng do eTroy đảm nhận. Đây là dependency bắt buộc. Chi tiết claim, liên kết tài khoản và hành vi khi mất kết nối là Assumption (ASM-13).</p>
+<ul>
+<li>Nguồn: eTroy OIDC (<a href="https://github.com/toilatrung/eTroy_OIDC">github.com/toilatrung/eTroy_OIDC</a>).</li>
+<li>SIRes là OIDC Relying Party (client) của eTroy OIDC, dùng luồng authorization code chuẩn OIDC. SIRes không có form email/mật khẩu, không đăng nhập OAuth Google và không lưu mật khẩu.</li>
+<li>Thông tin ban đầu của tài khoản SIRes (họ tên, email) lấy từ claim OIDC; người dùng chỉnh thông tin cá nhân trong Settings của SIRes (ASM-13).</li>
+</ul>
+<h3>Requirement</h3>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Yêu cầu</th>
+</tr></thead><tbody>
+<tr><td id="req-int-oidc-001">INT-OIDC-001</td><td>Mọi đăng nhập vào SIRes đi qua eTroy OIDC theo luồng authorization code chuẩn OIDC; SIRes kiểm tra <code>state</code>, <code>nonce</code>, chữ ký, issuer, audience và thời hạn của ID token trước khi tạo phiên. Không có phương thức đăng nhập khác (NFR-AUTH-001).</td></tr>
+<tr><td id="req-int-oidc-002">INT-OIDC-002</td><td>Tài khoản SIRes liên kết với định danh eTroy qua cặp (issuer, <code>sub</code>) (18.1 Account). Lần đăng nhập đầu tiên với một <code>sub</code> mới tạo tài khoản SIRes, điền họ tên và email ban đầu từ claim; các lần sau dùng lại tài khoản đó, không tạo trùng (ASM-13).</td></tr>
+<tr><td id="req-int-oidc-003">INT-OIDC-003</td><td>Phiên SIRes gắn với token do eTroy OIDC cấp: phiên hết hạn khi token hết hạn và không được làm mới theo cơ chế eTroy OIDC hỗ trợ; đăng xuất kết thúc phiên SIRes. SIRes không lưu mật khẩu; token lưu phía server, không lộ ra log (NFR-OBS-002).</td></tr>
+<tr><td id="req-int-oidc-004">INT-OIDC-004</td><td>Khi eTroy OIDC không khả dụng: không đăng nhập mới được; màn hình đăng nhập hiển thị thông báo rõ ràng rằng dịch vụ đăng nhập eTroy tạm thời không khả dụng; phiên đang có tiếp tục hoạt động đến khi token hết hạn (Assumption — ASM-13). Không có phương thức đăng nhập dự phòng.</td></tr>
+</tbody></table></div>
+<p><strong>Acceptance criteria</strong></p>
+<ul>
+<li><strong>INT-OIDC-001-AC01</strong> — Given người dùng chưa đăng nhập, When chọn đăng nhập, Then được chuyển tới eTroy OIDC; sau khi xác thực thành công, quay lại SIRes với phiên hợp lệ.</li>
+<li><strong>INT-OIDC-001-AC02</strong> — Given callback mang <code>state</code> không khớp hoặc ID token sai chữ ký, When SIRes xử lý callback, Then không tạo phiên và hiển thị lỗi đăng nhập.</li>
+<li><strong>INT-OIDC-002-AC01</strong> — Given một người dùng eTroy đăng nhập SIRes lần thứ hai, When callback thành công, Then dùng lại tài khoản SIRes đã có cùng <code>sub</code>, không tạo tài khoản mới.</li>
+<li><strong>INT-OIDC-003-AC01</strong> — Given phiên có token đã hết hạn và không làm mới được, When người dùng thao tác, Then được yêu cầu đăng nhập lại qua eTroy OIDC.</li>
+<li><strong>INT-OIDC-004-AC01</strong> — Given eTroy OIDC không phản hồi, When người dùng chưa đăng nhập chọn đăng nhập, Then thấy thông báo dịch vụ đăng nhập eTroy tạm thời không khả dụng; người dùng khác đang có phiên còn hạn vẫn làm việc bình thường.</li>
+</ul>
+
+<h2 id="s-17-oq">17.8. Open Questions của mục 17</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Mã</th>
+<th scope="col">Câu hỏi</th>
+<th scope="col">Ảnh hưởng</th>
+</tr></thead><tbody>
+<tr><td>OQ-079</td><td>Khi provider lỗi kéo dài, có cho phép người dùng cấu hình provider dự phòng cho từng agent (tự động chuyển) không, hay luôn dừng và hỏi? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> MVP không tự động chuyển provider; workflow dừng theo chính sách thử lại và người dùng đổi model trong Settings (INT-PROVIDER-004). Provider dự phòng tự động để sau MVP.</td><td>17.1, 8.5, SCOPE-13</td></tr>
+<tr><td>OQ-080</td><td>Embedding model lấy từ đâu: dùng Provider Connection của người dùng (OpenAI/Gemini có embedding, Anthropic không), hay hệ thống cung cấp model embedding riêng? Có cần thêm mục cấu hình “Embedding” trong Settings không? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-051; trả lời chung ở OQ-051.</td><td>17.3, SCOPE-13, 11.1, 16.6</td></tr>
+<tr><td>OQ-081</td><td>Phương thức tích hợp Google Scholar được chọn sau spike: dịch vụ trung gian theo hợp đồng, luồng nhập do người dùng hỗ trợ, hay kết hợp? <strong>Đã đóng 31/10/2026 (PC-01):</strong> kết hợp — dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả (INT-SCHOLAR-006). Dự phòng theo OQ-006: nguồn có API hợp lệ như OpenAlex hoặc Semantic Scholar (INT-SCHOLAR-007).</td><td>17.2, 10.1, SCOPE-06, 21.2</td></tr>
+<tr><td>OQ-082</td><td>Định dạng tài liệu và giới hạn dung lượng hỗ trợ (đề xuất PDF có lớp văn bản, ≤ 50 MB, ≤ 500 trang; chưa OCR) — cụ thể hóa câu hỏi ở 21.3. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-050; trả lời chung ở OQ-050.</td><td>17.3, 10, 11.1</td></tr>
+<tr><td>OQ-083</td><td>Có cho phép shell-escape (ví dụ package minted) trong build không? Đề xuất: không. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> không cho phép shell-escape; package cần shell-escape không được hỗ trợ (INT-LATEX-002, NFR-SANDBOX-001).</td><td>17.4, 16.1</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="16-non-functional-requirements.html">← Mục 16</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="18-data-and-state-specifications.html">Mục 18 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Product Requirements Document · v1.0.</footer>
+</div>
+</body>
+</html>

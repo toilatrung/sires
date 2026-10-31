@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — sandbox build LaTeX và render sơ đồ.">
+<title>9. Sandbox: LaTeX and Diagrams | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 9</p><h1>9. Sandbox: LaTeX and Diagrams</h1>
+<p class="meta">Trạng thái: bản 0.2 — ADR-11 Accepted; controller viết bằng NestJS · Cơ sở: PRD <a href="../../overview/sections/12-latex-manuscript-workspace.html">12</a>, <a href="../../overview/sections/13-diagram-agent.html">13</a>, <a href="../../overview/sections/17-integrations-and-external-dependencies.html#s-17-4">17.4–17.5</a>, NFR-SANDBOX-001, NFR-PERF-007; ASM-07, ASM-08; ADR-11</p>
+<div class="note"><p><strong>Bài toán:</strong> chạy mã do người dùng và agent viết (TeX là ngôn ngữ Turing-complete; Mermaid chạy trong trình duyệt headless) mà không cho đọc file hệ thống, gọi mạng, chạy lệnh shell hay chiếm tài nguyên; đồng thời build phải bắt đầu trong ≤ 10 giây (NFR-PERF-007) và cho kết quả tái lập được. <strong>Phương án:</strong> pool container cô lập khởi động sẵn, chạy dưới gVisor, không mạng, mỗi job một workspace tạm, image cố định phiên bản.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-9-1">9.1. Mô hình sandbox</a></li>
+<li><a href="#s-9-2">9.2. Lớp cô lập</a></li>
+<li><a href="#s-9-3">9.3. Build LaTeX</a></li>
+<li><a href="#s-9-4">9.4. Kiểm tra và render Mermaid</a></li>
+<li><a href="#s-9-5">9.5. Hàng đợi và dung lượng</a></li>
+</ul></details>
+
+<h2 id="s-9-1">9.1. Mô hình sandbox</h2>
+<pre><code>manuscript ──[TX] Build Queued──► queue sandbox.build ──► sandbox-runner controller (NestJS, ngoài sandbox, quyền S3 hạn chế)
+                                            │ 1 tải file của revision từ object storage
+                                            │ 2 ghi vào thư mục tạm, mount read-write duy nhất
+                                            ▼
+                                     sandbox container (gVisor, no network, non-root, read-only rootfs)
+                                            │ latexmk / mmdc, giới hạn 120 s, 2 GB, CPU, PID, đĩa
+                                            ▼
+                                   controller đọc out.pdf, log → object storage → REST manuscript → [TX:manuscript] Build kết thúc</code></pre>
+<ul>
+<li>Container sandbox <strong>không có thông tin xác thực</strong>, không có quyền tới database hay object storage; chỉ thấy thư mục job. Mọi I/O với bên ngoài do controller làm; controller không có database, trạng thái Build nằm ở manuscript.</li>
+<li>Mỗi job một thư mục mới; container được tái sử dụng trong pool nhưng thư mục bị xóa sau job; cứ sau N job (mặc định 50) hoặc khi có lỗi bất thường thì thay container mới.</li>
+</ul>
+
+<h2 id="s-9-2">9.2. Lớp cô lập</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Lớp</th><th>Biện pháp</th><th>Chống</th></tr></thead>
+<tbody>
+<tr><td>Kernel</td><td>gVisor (<code>runsc</code>) qua RuntimeClass của Kubernetes, node pool riêng</td><td>Khai thác lỗ hổng kernel từ tiến trình trong container</td></tr>
+<tr><td>Mạng</td><td>Pod không có network (NetworkPolicy deny-all cả vào lẫn ra); TeX và Chromium không có proxy</td><td>Gọi mạng, include URL ngoài (INT-DIAGRAM-002-AC01)</td></tr>
+<tr><td>Hệ thống file</td><td>Root filesystem chỉ đọc; chỉ thư mục job ghi được; <code>openin_any=p</code>, <code>openout_any=p</code> (TeX chỉ đọc/ghi trong thư mục hiện hành, không đường dẫn tuyệt đối hay <code>..</code>)</td><td><code>\input{/etc/passwd}</code> (NFR-SANDBOX-001-AC01)</td></tr>
+<tr><td>Thực thi lệnh</td><td><code>-no-shell-escape</code>, <code>shell_escape=f</code> trong texmf.cnf của image</td><td><code>\write18</code>, minted (INT-LATEX-002)</td></tr>
+<tr><td>Tài nguyên</td><td>Thời gian 120 s (bộ đếm của controller, kill cả nhóm tiến trình); bộ nhớ 2 GB (cgroup); CPU 1–2 core; giới hạn PID; quota đĩa thư mục job 500 MB</td><td>Vòng lặp vô hạn, bom bộ nhớ, bom file</td></tr>
+<tr><td>Quyền</td><td>User không root, drop mọi capability, seccomp mặc định, không privilege escalation</td><td>Leo thang quyền</td></tr>
+</tbody></table></div>
+<p>Giới hạn 120 s / 2 GB là mặc định người vận hành cấu hình được (OQ-074); vượt giới hạn → Build Failed với mã <code>timeout</code> hoặc <code>memory_limit</code> và thông điệp rõ ràng.</p>
+
+<h2 id="s-9-3">9.3. Build LaTeX</h2>
+<ul>
+<li><strong>Image:</strong> TeX Live một năm phát hành cố định (ghi phiên bản trong tên image), bộ package học thuật phổ biến (danh sách trong <code>sandbox/latex/packages.txt</code>), font cho XeLaTeX tiếng Việt và tiếng Anh. Đổi image = phát hành có kiểm thử với template Default và luận văn mẫu (ASM-07).</li>
+<li><strong>Lệnh:</strong> <code>latexmk -pdf</code> (pdfLaTeX) hoặc <code>-xelatex</code>, <code>-interaction=nonstopmode -halt-on-error -file-line-error -no-shell-escape</code>; BibTeX + natbib; <code>references.bib</code> được System sinh lại từ Trusted Reference trước khi tải vào workspace (MS-BIB).</li>
+<li><strong>Phân tích log:</strong> bộ phân tích trong controller trích lỗi/cảnh báo dạng (file, dòng, mã, thông điệp gốc) và ánh xạ sang mã thân thiện (<code>missing_package</code>, <code>undefined_citation</code>, <code>missing_file</code>, <code>syntax_error</code>…) để client hiển thị song ngữ (INT-LATEX-004). Đồng thời trích citation key thấy được và key không phân giải cho KPI-02.</li>
+<li><strong>Bộ nhớ đệm:</strong> lưu PDF theo hash của tập file đầu vào + phiên bản image + compiler; build lại cùng revision trả ngay kết quả cũ (không tốn sandbox).</li>
+<li><strong>Kết quả:</strong> log đầy đủ và PDF vào object storage; Build ghi <code>issues[]</code>, <code>citationKeysFound[]</code>, <code>unresolvedKeys[]</code> (INT-LATEX-003).</li>
+</ul>
+
+<h2 id="s-9-4">9.4. Kiểm tra và render Mermaid</h2>
+<ul>
+<li><strong>Kiểm tra cú pháp</strong> (INT-DIAGRAM-001): chạy <code>mermaid.parse</code> trong một tiến trình Node trong sandbox; lỗi trả về kèm dòng. Đây là thao tác nhanh (&lt; 1 s), dùng làm tool của Diagram Agent trong vòng tool calling.</li>
+<li><strong>Render</strong> (INT-DIAGRAM-002): <code>mmdc</code> (mermaid-cli, Chromium headless) → SVG; cấu hình puppeteer chặn mọi request mạng; theme cố định phù hợp in ấn.</li>
+<li><strong>Phân loại lỗi</strong> (INT-DIAGRAM-004): lỗi ở <code>parse</code> = lỗi cú pháp; parse đạt nhưng render lỗi/hết giờ = lỗi render.</li>
+<li><strong>Xuất cho LaTeX</strong> (INT-DIAGRAM-003, OQ-060): SVG → PDF vector bằng <code>rsvg-convert</code>; lỗi thì PNG 300 dpi qua Chromium screenshot và ghi cảnh báo vào Change Proposal.</li>
+<li>Tool do Diagram Agent gọi trong Agent Run đi qua research, được gửi vào <code>sandbox.build</code> với độ ưu tiên cao (priority queue của RabbitMQ), chờ kết quả đồng bộ (timeout 30 s cho parse, 120 s cho render).</li>
+</ul>
+
+<h2 id="s-9-5">9.5. Hàng đợi và dung lượng</h2>
+<ul>
+<li>NFR-PERF-007 (Queued → Running ≤ 10 s, p95) cần container sẵn sàng: pool tối thiểu 2 sandbox LaTeX và 1 sandbox Mermaid luôn chạy; autoscaler (KEDA theo độ sâu queue <code>sandbox.build</code> của RabbitMQ) thêm pod khi hàng đợi &gt; 0 quá 5 giây. Cold start của pod gVisor phải đo ở SPK-06.</li>
+<li>Ưu tiên trong hàng đợi build: parse Mermaid &gt; build do người dùng bấm &gt; build tự động sau chấp nhận Change Proposal.</li>
+<li>Giới hạn công bằng: tối đa 2 build đồng thời mỗi tài khoản; build mới cho cùng manuscript hủy build cũ đang Queued (chỉ build revision mới nhất).</li>
+<li>Ước lượng: 100 tài khoản hoạt động, mỗi tài khoản trung bình 1 build/5 phút khi viết, build 20–60 s → khoảng 4–8 sandbox đồng thời lúc cao điểm.</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="08-model-gateway-and-integrations.html">← Mục 8</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="10-security-architecture.html">Mục 10 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

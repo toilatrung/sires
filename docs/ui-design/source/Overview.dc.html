@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Project Overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1100px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="project" area="Overview" hint-size="100%,57px"></dc-import>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="overview" hint-size="240px,1043px"></dc-import></div>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <sc-if value="{{isArchived}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #FCF9F5; border: 1.5px solid #4D4A44; border-radius: 8px">
+          <span style="font-size: 14px"><strong>Archived — chỉ đọc.</strong> Mọi thao tác thay đổi bị vô hiệu. Prompt còn mở đã chuyển Expired.</span>
+          <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Mở lại project</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{isRecovery}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px">
+          <span style="font-size: 14px"><strong style="color: #9A3412">Workflow T-2.3 bị gián đoạn</strong> · dừng ở bước 3/5 · 1 prompt đang chờ</span>
+          <a href="Workflow.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Mở Recovery decision</a>
+        </div>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px; line-height: 1.15">RAG trong tổng quan tài liệu</h1>
+          <span style="font-size: 13px; color: #4D4A44">Tạo 20/10/2026 · hoạt động cuối 09:42 · bản thảo Default · pdfLaTeX + natbib</span>
+        </div>
+      </div>
+
+      <section aria-labelledby="ctx" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #DBD3C7">
+          <h2 id="ctx" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Research context</h2>
+          <button disabled="{{isArchived}}" title="{{editTitle}}" style="height: 36px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Sửa</button>
+        </div>
+        <dl style="margin: 0; padding: 16px 20px; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px 20px; font-size: 14px; line-height: 1.55">
+          <dt style="color: #4D4A44; font-weight: 600">Câu hỏi nghiên cứu</dt><dd style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-size: 17px">RAG trên tập nguồn đã duyệt có làm giảm tỷ lệ claim không có căn cứ trong literature review do LLM hỗ trợ không?</dd>
+          <dt style="color: #4D4A44; font-weight: 600">Mục tiêu</dt><dd style="margin: 0">So sánh ba cấu hình truy xuất; đo tỷ lệ claim có evidence; đề xuất quy trình cho NCS.</dd>
+          <dt style="color: #4D4A44; font-weight: 600">Ràng buộc</dt><dd style="margin: 0">Tài liệu tiếng Anh, 2019–2026; chỉ dùng PDF truy cập hợp lệ.</dd>
+          <dt style="color: #4D4A44; font-weight: 600">Giả định còn mở</dt><dd style="margin: 0; display: flex; flex-direction: column; gap: 6px"><span style="display: inline-flex; align-self: flex-start; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px dashed #0277DD; color: #025FAC; font-size: 12px; font-weight: 600">assumption · cần xác nhận</span>Đánh giá thủ công 50 claim là đủ cỡ mẫu.</dd>
+        </dl>
+      </section>
+
+      <sc-if value="{{noPlan}}" hint-placeholder-val="{{ false }}">
+        <section style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 24px; background: #FCF9F5; border: 1.5px dashed #0277DD; border-radius: 8px">
+          <div style="display: flex; flex-direction: column; gap: 4px; max-width: 620px">
+            <strong style="font-size: 16px">Project chưa có Plan baseline</strong>
+            <span style="font-size: 14px; line-height: 1.5; color: #4D4A44">Làm rõ ngữ cảnh với Orchestrator, rồi yêu cầu đề xuất Plan. Thực thi chính thức chỉ bắt đầu sau khi bạn duyệt Plan.</span>
+          </div>
+          <a href="Chat.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Mở Project AI Chat</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasPlan}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+          <section aria-labelledby="pl" style="flex: 3 1 480px; min-width: 0; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #DBD3C7">
+              <h2 id="pl" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Plan v3 · Approved</h2>
+              <a href="Plan.dc.html" style="font-size: 14px">Mở Plan and Tasks</a>
+            </div>
+            <sc-for list="{{phases}}" as="p" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px 20px; border-top: {{p.div}}">
+                <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 14px"><strong style="font-weight: 600">{{p.name}}</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">{{p.done}} Completed</span></div>
+                <div style="height: 4px; background: #DBD3C7; border-radius: 2px" role="img" aria-label="{{p.aria}}"><div style="height: 4px; width: {{p.pct}}; background: #0277DD; border-radius: 2px"></div></div>
+                <span style="font-size: 12px; color: #4D4A44">{{p.breakdown}}</span>
+              </div>
+            </sc-for>
+          </section>
+          <div style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <section aria-labelledby="nx" style="background: #FCF9F5; border: 1.5px dashed #0277DD; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+              <h2 id="nx" style="margin: 0; font-size: 14px; font-weight: 600; color: #025FAC">Bước tiếp theo gợi ý · Orchestrator</h2>
+              <span style="font-size: 14px; line-height: 1.5">Trả lời prompt của T-2.3 để mở khóa T-2.5 Ma trận so sánh phương pháp.</span>
+              <a href="Chat.dc.html" style="font-size: 14px; font-weight: 600">Mở prompt</a>
+            </section>
+            <section aria-labelledby="pp" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+              <h2 id="pp" style="margin: 0; padding: 12px 18px; border-bottom: 1px solid #DBD3C7; font-size: 15px; font-weight: 600">Chờ bạn · 3</h2>
+              <sc-for list="{{pending}}" as="w" hint-placeholder-count="3">
+                <a href="{{w.href}}" style="display: flex; flex-direction: column; gap: 3px; padding: 12px 18px; border-top: {{w.div}}; text-decoration: none; color: #1C1B18"><span style="font-size: 12px; font-weight: 600; color: #025FAC">{{w.kind}}</span><span style="font-size: 14px">{{w.title}}</span></a>
+              </sc-for>
+            </section>
+            <section aria-labelledby="ms" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px">
+              <h2 id="ms" style="margin: 0; font-size: 15px; font-weight: 600">Bản thảo</h2>
+              <span style="font-size: 14px">Build OK · 09:41 · revision 18 · 6 trang</span>
+              <span style="font-size: 13px; color: #4D4A44">1 change proposal chờ · 2 citation needs review</span>
+              <a href="Manuscript.dc.html" style="font-size: 14px">Mở Manuscript</a>
+            </section>
+          </div>
+        </div>
+        <section aria-labelledby="at" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+          <h2 id="at" style="margin: 0; padding: 12px 20px; border-bottom: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Task đang hoạt động</h2>
+          <sc-for list="{{active}}" as="t" hint-placeholder-count="3">
+            <a href="Plan.dc.html" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 52px; padding: 6px 20px; border-top: {{t.div}}; text-decoration: none; color: #1C1B18; font-size: 14px">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44; width: 48px">{{t.id}}</span>
+              <span style="flex: 1 1 260px; font-weight: 600">{{t.title}}</span>
+              <span style="font-size: 13px; color: #4D4A44">{{t.agent}}</span>
+              <span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{t.b}}; color: {{t.fg}}; background: {{t.bg}}; font-size: 12px; font-weight: 600"><sc-if value="{{t.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{t.state}}</span>
+            </a>
+          </sc-for>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","no-plan","archived","recovery"],"default":"normal"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'normal';
+    const div = (i) => i === 0 ? '0' : '1px solid #DBD3C7';
+    const ph = (name, done, total, breakdown) => ({ name, done: done + '/' + total, pct: Math.round(done / total * 100) + '%', aria: done + ' trên ' + total + ' Task Completed', breakdown });
+    const ST = { need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'] };
+    const t = (id, title, agent, state, k) => ({ id, title, agent, state, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need' });
+    return {
+      isArchived: s === 'archived', isRecovery: s === 'recovery', noPlan: s === 'no-plan', hasPlan: s !== 'no-plan',
+      editTitle: s === 'archived' ? 'Project Archived — chỉ đọc' : 'Sửa research context',
+      phases: [ph('Phase 1 · Làm rõ phạm vi', 4, 4, '4 Completed'), ph('Phase 2 · Tổng quan tài liệu', 5, 6, '1 Waiting for User · 1 In Progress · 1 In Review · 2 Blocked'), ph('Phase 3 · Viết bản thảo', 0, 4, '4 Blocked (chờ Phase 2)')].map((p, i) => ({ ...p, div: div(i) })),
+      pending: [
+        { kind: 'Agent Prompt', title: 'Chọn phạm vi năm cho T-2.3', href: 'Chat.dc.html' },
+        { kind: 'Task review', title: 'Nghiệm thu T-2.1', href: 'TaskReview.dc.html' },
+        { kind: 'Change proposal', title: 'Sửa mục 1 Introduction', href: 'Manuscript.dc.html' }
+      ].map((p, i) => ({ ...p, div: div(i) })),
+      active: [t('T-2.3', 'So sánh phương pháp đo', 'Discovery Agent đang chờ', 'Waiting for User', 'need'), t('T-2.2', 'Tìm nghiên cứu 2019–2026', 'Evidence Retrieval Agent', 'In Progress', 'run'), t('T-2.1', 'Tổng hợp định nghĩa khái niệm', 'Synthesis Agent · xong', 'In Review', 'need')].map((x, i) => ({ ...x, div: div(i) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

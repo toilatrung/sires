@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Điều hướng Project</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<aside aria-label="Khu vực Project" style="box-sizing: border-box; width: 100%; height: 100%; min-height: 100%; display: flex; flex-direction: column; gap: 18px; padding: 16px 10px; background: #FCF9F5; border-right: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; color: #1C1B18">
+  <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 8px">
+    <span style="font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 19px; line-height: 1.25">{{project}}</span>
+    <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">Plan v3 · Approved · Phase 2/3</span>
+  </div>
+  <nav style="display: flex; flex-direction: column; gap: 2px">
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+      <a href="{{n.href}}" aria-current="{{n.current}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; padding: 0 10px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: {{n.weight}}; color: {{n.color}}; background: {{n.bg}}">
+        <span>{{n.label}}</span>
+        <sc-if value="{{n.hasCount}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 4px; background: #0277DD; color: #FFFFFF; font-size: 11px; font-weight: 600" aria-label="{{n.count}} việc chờ bạn">{{n.count}}</span></sc-if>
+      </a>
+    </sc-for>
+  </nav>
+  <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #DBD3C7; border-radius: 6px">
+    <span style="font-size: 12px; font-weight: 600; color: #4D4A44">Active task</span>
+    <span style="font-size: 14px; line-height: 1.4"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">T-2.3</span> So sánh phương pháp đo</span>
+    <button style="align-self: flex-start; height: 32px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Bỏ active task</button>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","chat","plan","evidence","artifacts","manuscript","activity","history"],"default":"overview"},"project":{"editor":"text","default":"RAG trong tổng quan tài liệu"},"$preview":{"width":240,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'overview';
+    const items = [
+      ['overview', 'Overview', 'Overview.dc.html', 0],
+      ['chat', 'Project AI Chat', 'Chat.dc.html', 1],
+      ['plan', 'Plan and Tasks', 'Plan.dc.html', 1],
+      ['evidence', 'References and Evidence', 'Evidence.dc.html', 0],
+      ['artifacts', 'Research Artifacts', 'Artifacts.dc.html', 0],
+      ['manuscript', 'Manuscript', 'Manuscript.dc.html', 1],
+      ['activity', 'Agent Activity', 'Workflow.dc.html', 0],
+      ['history', 'Activity and History', 'History.dc.html', 0]
+    ];
+    return {
+      project: this.props.project ?? 'RAG trong tổng quan tài liệu',
+      nav: items.map(([k, label, href, c]) => {
+        const on = k === active;
+        return { label, href, count: String(c), hasCount: c > 0, current: on ? 'page' : 'false', weight: on ? 600 : 500, color: on ? '#1C1B18' : '#4D4A44', bg: on ? '#E5DED5' : 'transparent' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

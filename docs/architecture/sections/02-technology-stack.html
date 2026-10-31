@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế kiến trúc SIRes — technology stack.">
+<title>2. Technology Stack | SIRes Architecture</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Architecture</a><span>0.2 · 31/10/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Architecture Design · Section 2</p><h1>2. Technology Stack</h1>
+<p class="meta">Trạng thái: bản 0.2 — các lựa chọn của bản 0.1 ngoài kiểu kiến trúc và ngôn ngữ backend đã được chấp thuận ngày 31/10/2026; phần tách service, NestJS và message broker là đề xuất mới, chờ xác nhận · Cơ sở: PRD 16, 17, 20.2, 21.2; ADR ở <a href="12-decisions-risks-and-open-issues.html#s-12-1">mục 12</a></p>
+<div class="note"><p><strong>Thay đổi so với 0.1 (chỉ đạo ngày 31/10/2026):</strong> backend tách thành nhiều service để nhiều người code song song theo ranh giới service và hợp đồng Swagger; service hệ thống viết bằng TypeScript/NestJS để build và CI nhanh, dễ bảo trì; service agent core giữ Python để có hỗ trợ provider và framework AI tốt nhất; monorepo chung cho FE và BE. Phiên bản cụ thể được ghim khi khởi tạo repo ở M1.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-2-1">2.1. Tổng quan theo lớp</a></li>
+<li><a href="#s-2-2">2.2. Frontend</a></li>
+<li><a href="#s-2-3">2.3. Service hệ thống (NestJS)</a></li>
+<li><a href="#s-2-4">2.4. Agent core và knowledge (Python)</a></li>
+<li><a href="#s-2-5">2.5. Dữ liệu, lưu trữ, messaging</a></li>
+<li><a href="#s-2-6">2.6. Xử lý tài liệu, LaTeX, sơ đồ</a></li>
+<li><a href="#s-2-7">2.7. Monorepo, CI/CD, hạ tầng, quan sát</a></li>
+<li><a href="#s-2-8">2.8. Kiểm thử và chất lượng mã</a></li>
+<li><a href="#s-2-9">2.9. Phương án đã cân nhắc</a></li>
+</ul></details>
+
+<h2 id="s-2-1">2.1. Tổng quan theo lớp</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Lớp</th><th>Lựa chọn</th><th>Vì sao</th><th>ADR</th></tr></thead>
+<tbody>
+<tr><td>Kiểu kiến trúc</td><td>Microservices theo domain (11 service backend, mục 3.2), một database mỗi service trên chung một cụm PostgreSQL</td><td>Nhiều nhóm làm song song, mỗi nhóm sở hữu service và hợp đồng của mình</td><td>ADR-17, ADR-22</td></tr>
+<tr><td>Ngôn ngữ backend</td><td>TypeScript 5 + NestJS cho gateway và service hệ thống; Python 3.12+ cho agent-core và knowledge</td><td>NestJS: build nhanh (SWC), cấu trúc module/DI rõ, hỗ trợ microservice và Swagger sẵn; Python: SDK provider và hệ sinh thái AI/RAG mạnh nhất</td><td>ADR-18</td></tr>
+<tr><td>Web client</td><td>React 18 + Vite, SPA, TypeScript</td><td>Ứng dụng sau đăng nhập, nhiều tương tác; không cần SSR</td><td>ADR-18</td></tr>
+<tr><td>Hợp đồng</td><td>OpenAPI 3.1 (công khai + nội bộ), AsyncAPI cho sự kiện; spec-first</td><td>Ranh giới giữa các nhóm là hợp đồng, không phải mã</td><td>ADR-14, ADR-20</td></tr>
+<tr><td>Messaging</td><td>RabbitMQ (managed) cho sự kiện và job; transactional outbox ở mỗi service</td><td>NestJS và Python đều có client chín muồi; ack thủ công, dead-letter, routing theo topic</td><td>ADR-19</td></tr>
+<tr><td>Workflow engine</td><td>Trong service orchestration, trạng thái ở database của nó; Agent Run gửi qua queue tới agent-core</td><td>Giữ một nguồn sự thật cho Workflow/Checkpoint, không tự chạy lại (NFR-REC-002)</td><td>ADR-03</td></tr>
+<tr><td>Database</td><td>PostgreSQL 16+ managed (HA, PITR), RLS theo tài khoản</td><td>Đã chấp thuận ở 0.1</td><td>ADR-04</td></tr>
+<tr><td>Vector</td><td>pgvector ≥ 0.8 trong database của knowledge</td><td>Đã chấp thuận ở 0.1</td><td>ADR-05</td></tr>
+<tr><td>Object storage</td><td>S3-compatible</td><td>Đã chấp thuận</td><td>ADR-06</td></tr>
+<tr><td>Realtime</td><td>SSE ở gateway, nguồn sự kiện từ RabbitMQ</td><td>Thay LISTEN/NOTIFY vì sự kiện nay đến từ nhiều database</td><td>ADR-07</td></tr>
+<tr><td>LLM</td><td>Model Gateway trong agent-core trên SDK chính thức <code>anthropic</code>, <code>openai</code>, <code>google-genai</code></td><td>Đã chấp thuận; cho phép framework agent bên trong ranh giới Agent Run</td><td>ADR-08</td></tr>
+<tr><td>Xác thực</td><td>gateway là BFF, OIDC RP của eTroy (<code>openid-client</code>); token nội bộ giữa service</td><td>Đã chấp thuận BFF; thêm xác thực service-to-service</td><td>ADR-09, ADR-20</td></tr>
+<tr><td>Bí mật</td><td>Envelope encryption với KMS: identity mã hóa, agent-core/knowledge giải mã</td><td>Đã chấp thuận</td><td>ADR-10</td></tr>
+<tr><td>Sandbox</td><td>Container gVisor không mạng; TeX Live cố định + latexmk; mermaid-cli</td><td>Đã chấp thuận</td><td>ADR-11</td></tr>
+<tr><td>Monorepo</td><td>pnpm workspace + Nx (TS) + uv workspace (Python); Nx điều phối cả hai</td><td>Một repo cho FE + BE; CI chỉ chạy phần bị ảnh hưởng</td><td>ADR-16, ADR-21</td></tr>
+<tr><td>Hạ tầng</td><td>Docker, Kubernetes managed, Terraform, Helm</td><td>Đã chấp thuận</td><td>ADR-12</td></tr>
+<tr><td>Quan sát</td><td>OpenTelemetry + Prometheus/Grafana/Loki/Tempo hoặc managed</td><td>Đã chấp thuận; trace nối qua HTTP và RabbitMQ</td><td>ADR-13</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-2">2.2. Frontend</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Nhu cầu</th><th>Lựa chọn</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>Build, dev server</td><td>Vite, TypeScript 5 strict</td><td>Cùng origin với gateway để cookie <code>SameSite=Lax</code> hoạt động.</td></tr>
+<tr><td>Định tuyến</td><td>React Router</td><td>Cấu trúc URL theo IA PRD 4.</td></tr>
+<tr><td>Dữ liệu từ server</td><td>TanStack Query + client sinh từ OpenAPI công khai (<code>openapi-typescript</code> + <code>openapi-fetch</code>, đặt ở <code>libs/ts/contracts</code>)</td><td>Sự kiện SSE làm mất hiệu lực cache tương ứng.</td></tr>
+<tr><td>Realtime</td><td><code>EventSource</code> với <code>Last-Event-ID</code></td><td>Gateway phát lại sự kiện bị lỡ (F-03).</td></tr>
+<tr><td>Giao diện</td><td>Token của design system (<code>agent/skills/sires-ui-executor/references/tokens.css</code>), component tự xây theo <code>docs/ui-design/design.md</code>; Radix UI primitive không style cho dialog, menu</td><td>WCAG 2.1 AA.</td></tr>
+<tr><td>Đa ngôn ngữ</td><td>i18next (vi, en)</td><td>Server trả mã lỗi ổn định.</td></tr>
+<tr><td>Editor LaTeX, PDF, đồ thị Task</td><td>CodeMirror 6; pdf.js; React Flow + elkjs</td><td>Như bản 0.1.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-3">2.3. Service hệ thống (NestJS)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Nhu cầu</th><th>Lựa chọn</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>Framework</td><td>NestJS (adapter Fastify), Node.js 22 LTS</td><td>Module, DI, guard, interceptor dùng chung qua <code>libs/ts/platform</code>.</td></tr>
+<tr><td>Biên dịch</td><td>SWC (builder của Nest CLI / Nx); <code>tsc --noEmit</code> chạy riêng cho type check, song song và có cache Nx</td><td>Build mỗi service vài giây; type check chỉ chạy cho project bị ảnh hưởng.</td></tr>
+<tr><td>Swagger</td><td><code>@nestjs/swagger</code> sinh spec từ controller; CI so spec sinh ra với spec trong <code>docs/api-design</code> (phải tương đương)</td><td>Spec trong docs là nguồn; spec sinh ra dùng để phát hiện lệch.</td></tr>
+<tr><td>Kiểm tra đầu vào</td><td><code>class-validator</code> + <code>class-transformer</code> (DTO của Nest) hoặc Zod (<code>nestjs-zod</code>) — chọn một ở M1</td><td>Lỗi trả <code>application/problem+json</code>.</td></tr>
+<tr><td>Truy cập DB, migration</td><td>Drizzle ORM + <code>node-postgres</code>; migration bằng drizzle-kit (SQL được review)</td><td>Kiểm soát giao dịch và <code>SET LOCAL app.account_id</code> cho RLS dễ hơn Prisma; schema TS gọn.</td></tr>
+<tr><td>Messaging</td><td><code>@golevelup/nestjs-rabbitmq</code> (hoặc transport RMQ của <code>@nestjs/microservices</code>) với ack thủ công</td><td>Outbox relay và inbox ở <code>libs/ts/platform</code>.</td></tr>
+<tr><td>Job định kỳ</td><td><code>@nestjs/schedule</code> + khóa leader trong PostgreSQL</td><td>Sweeper, purge, KPI.</td></tr>
+<tr><td>HTTP ra ngoài</td><td><code>undici</code> với timeout, chặn địa chỉ nội bộ (10.5)</td><td>Source adapter, DOI.</td></tr>
+<tr><td>OIDC</td><td><code>openid-client</code> trong gateway</td><td>Authorization code + PKCE.</td></tr>
+<tr><td>Thư viện học thuật</td><td>Parser BibTeX (<code>@retorquere/bibtex-parser</code>), parser RIS, so khớp mờ (<code>fastest-levenshtein</code>)</td><td>library service; chất lượng parser kiểm thử ở SPK-03.</td></tr>
+<tr><td>Log</td><td><code>pino</code> (<code>nestjs-pino</code>) + redaction</td><td>NFR-OBS-001/002.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-4">2.4. Agent core và knowledge (Python)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Nhu cầu</th><th>Lựa chọn</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>Runtime, quản lý gói</td><td>Python 3.12+, <code>uv</code> (lock file, cài đặt nhanh, cache trong CI)</td><td>Giảm thời gian CI so với pip/poetry.</td></tr>
+<tr><td>HTTP nội bộ</td><td>FastAPI + Pydantic v2</td><td>Health, API nội bộ (kiểm tra kết nối, truy xuất).</td></tr>
+<tr><td>Consumer</td><td><code>aio-pika</code> (RabbitMQ), ack thủ công, prefetch theo cấu hình</td><td>Mỗi tiến trình chạy nhiều Agent Run async.</td></tr>
+<tr><td>Model</td><td>SDK chính thức ba provider</td><td>Chỉ trong module <code>gateway</code> của agent-core (và embedding ở knowledge qua thư viện dùng chung).</td></tr>
+<tr><td>Framework agent</td><td>Được dùng <em>bên trong một Agent Run</em> (ví dụ vòng tool calling, bộ nhớ ngắn hạn): ứng viên Pydantic AI hoặc LangGraph không bật checkpointer; chọn sau SPK-01</td><td>Không framework nào được giữ trạng thái workflow hay checkpoint — việc đó thuộc orchestration (ADR-08).</td></tr>
+<tr><td>Template prompt</td><td>Jinja2, có phiên bản</td><td>NFR-OBS-006.</td></tr>
+<tr><td>Client service nội bộ</td><td>Sinh từ OpenAPI nội bộ (<code>openapi-python-client</code>) vào <code>libs/py/sires_common</code></td><td>Đọc context, gọi tool.</td></tr>
+<tr><td>Log, trace</td><td><code>structlog</code>, OpenTelemetry</td><td>Như bản 0.1.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-5">2.5. Dữ liệu, lưu trữ, messaging</h2>
+<ul>
+<li><strong>PostgreSQL 16+</strong>: một cụm managed, một database và một vai trò đăng nhập riêng cho mỗi service; extension <code>vector</code> chỉ ở database knowledge; <code>pg_trgm</code>, <code>unaccent</code> ở service có tìm kiếm.</li>
+<li><strong>RabbitMQ</strong> (managed, cụm 3 node, quorum queue): exchange <code>sires.events</code> (topic) cho sự kiện; queue lệnh <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; dead-letter queue cho mỗi consumer.</li>
+<li><strong>Object storage</strong> S3-compatible, khóa theo service và tài khoản (6.6).</li>
+<li><strong>Không Redis</strong> ở MVP: phiên ở database của gateway, rate limit bằng PostgreSQL.</li>
+</ul>
+
+<h2 id="s-2-6">2.6. Xử lý tài liệu, LaTeX, sơ đồ</h2>
+<ul>
+<li>PDF: <code>pypdfium2</code> + <code>pdfplumber</code> trong knowledge (ADR-15).</li>
+<li>TeX Live cố định + <code>latexmk</code>, pdfLaTeX/XeLaTeX, BibTeX + natbib; <code>@mermaid-js/mermaid-cli</code>; <code>rsvg-convert</code> — trong image sandbox, điều khiển bởi sandbox-runner (NestJS).</li>
+</ul>
+
+<h2 id="s-2-7">2.7. Monorepo, CI/CD, hạ tầng, quan sát</h2>
+<ul>
+<li><strong>Nx</strong> quản lý project graph cho cả TS và Python (Python qua target chạy lệnh <code>uv</code>, hoặc plugin <code>@nxlv/python</code>); <code>nx affected</code> chỉ lint, test, build service có thay đổi hoặc phụ thuộc vào thay đổi; Nx remote cache dùng chung giữa CI và máy dev.</li>
+<li><strong>Thay đổi hợp đồng</strong> trong <code>docs/api-design</code> kích hoạt sinh lại <code>libs/ts/contracts</code> và <code>libs/py/sires_common</code>, kéo theo mọi service dùng hợp đồng đó vào tập affected.</li>
+<li><strong>Image:</strong> một image mỗi service; base Node 22 slim cho NestJS (bundle bằng SWC, chỉ <code>node_modules</code> production), base Python slim cho Python.</li>
+<li>Kubernetes, Terraform, Helm, GitHub Actions (giả định), OpenTelemetry — như bản 0.1 (mục 11).</li>
+</ul>
+
+<h2 id="s-2-8">2.8. Kiểm thử và chất lượng mã</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Loại</th><th>TypeScript</th><th>Python</th></tr></thead>
+<tbody>
+<tr><td>Lint, format, type</td><td>ESLint, Prettier, <code>tsc --noEmit</code></td><td>ruff, mypy (hoặc pyright)</td></tr>
+<tr><td>Unit, domain</td><td>Vitest (với SWC) — state machine đủ chuyển hợp lệ và không hợp lệ (NFR-MAINT-003)</td><td>pytest, FakeModelGateway (NFR-MAINT-004)</td></tr>
+<tr><td>Tích hợp</td><td>Testcontainers (PostgreSQL, RabbitMQ)</td><td>Testcontainers (PostgreSQL + pgvector, RabbitMQ)</td></tr>
+<tr><td>Hợp đồng</td><td colspan="2">Schemathesis trên OpenAPI công khai (qua gateway) và nội bộ (từng service); kiểm tra payload sự kiện theo AsyncAPI; consumer-driven contract (Pact) cho các cặp gọi nhau nhiều — tùy chọn</td></tr>
+<tr><td>E2E, giao diện</td><td>Playwright, axe-core, Vitest + Testing Library</td><td>—</td></tr>
+<tr><td>Fault injection, hiệu năng, bảo mật</td><td colspan="2">Dừng service/consumer ở từng bước (KPI-03); k6; npm audit, pip-audit, Trivy, quét chuỗi key mẫu</td></tr>
+<tr><td>Chất lượng agent</td><td>—</td><td>Eval harness (NFR-EVAL)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-9">2.9. Phương án đã cân nhắc</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Phương án</th><th>Kết luận</th></tr></thead>
+<tbody>
+<tr><td>Modular monolith Python (bản 0.1, ADR-01/02)</td><td>Thay bằng microservices NestJS + Python theo chỉ đạo 31/10/2026: CI chậm, khó chia việc song song theo ranh giới cứng.</td></tr>
+<tr><td>Toàn bộ backend NestJS, kể cả agent</td><td>Không chọn: SDK và framework AI ở Python đầy đủ hơn; đội GEN AI/AIE dùng Python.</td></tr>
+<tr><td>Workflow engine trong agent-core (Python)</td><td>Không chọn: workflow là logic hệ thống (trạng thái, quyền, khôi phục) và liên quan nhiều service; đặt ở orchestration giúp agent-core gần như không trạng thái, scale và thay thế dễ.</td></tr>
+<tr><td>Kafka, NATS JetStream</td><td>Kafka nặng cho quy mô MVP; NATS JetStream nhẹ nhưng transport của NestJS chỉ hỗ trợ NATS core, phải dùng thư viện cộng đồng. RabbitMQ đủ và có hỗ trợ chính thức hai phía.</td></tr>
+<tr><td>gRPC giữa service</td><td>Không chọn ở MVP: yêu cầu thống nhất Swagger; REST + OpenAPI đủ cho tải hiện tại.</td></tr>
+<tr><td>Prisma, TypeORM</td><td>Prisma khó kiểm soát <code>SET LOCAL</code> trong giao dịch cho RLS và nặng khi build; TypeORM ít an toàn kiểu. Chọn Drizzle.</td></tr>
+<tr><td>Database chung một schema cho mọi service</td><td>Không chọn: phá ranh giới sở hữu, các nhóm đụng nhau ở migration (ADR-22).</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="01-architecture-overview.html">← Mục 1</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="03-system-context-and-containers.html">Mục 3 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+</div>
+</body>
+</html>

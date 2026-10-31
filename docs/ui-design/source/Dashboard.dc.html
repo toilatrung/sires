@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>SIRes — Dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F2EE}
+a{color:#025FAC}a:hover{color:#1C1B18}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+  <dc-import name="TopBar" mode="global" active="dashboard" hint-size="100%,57px"></dc-import>
+  <main style="max-width: 1240px; margin: 0 auto; padding: 32px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 32px">
+
+    <sc-if value="{{isRecovery}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 16px 20px; background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <strong style="font-size: 15px; color: #9A3412">Một workflow bị gián đoạn khi bạn rời phiên</strong>
+          <span style="font-size: 14px; color: #4D4A44">task_execution · T-2.3 · dừng ở bước 3/5 (Evidence Retrieval Agent). Đầu ra của bước 1–2 đã lưu.</span>
+        </div>
+        <a href="Workflow.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Mở Recovery decision</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{isFirstRun}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 20px; background: #FCF9F5; border: 1.5px dashed #0277DD; border-radius: 8px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <strong style="font-size: 16px">Thêm API key của bạn để agent hoạt động</strong>
+          <span style="font-size: 14px; color: #4D4A44">SIRes không có key hay hạn mức mặc định. Hỗ trợ OpenAI, Anthropic Claude, Google Gemini.</span>
+        </div>
+        <a href="SettingsProviders.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Mở Provider Connections</a>
+      </div>
+    </sc-if>
+
+    <section aria-labelledby="pa" style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+        <h1 id="pa" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">4 việc chờ bạn</h1>
+        <a href="PendingActions.dc.html" style="font-size: 14px">Tất cả Pending Actions</a>
+      </div>
+      <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+        <sc-for list="{{pending}}" as="p" hint-placeholder-count="4">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 16px 20px; border-top: {{p.div}}">
+            <span style="flex: 0 0 190px; display: flex"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; background: #EAF4FE; color: #025FAC; border: 1px solid #80B9EE; font-size: 12px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>{{p.kind}}</span></span>
+            <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+              <span style="font-size: 15px; font-weight: 600; line-height: 1.4">{{p.title}}</span>
+              <span style="font-size: 13px; color: #4D4A44">{{p.meta}}</span>
+            </div>
+            <a href="{{p.href}}" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; color: #025FAC; text-decoration: none; font-size: 14px; font-weight: 600">{{p.cta}}</a>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-labelledby="wf" style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+        <h2 id="wf" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px">Workflow đang chạy</h2>
+        <a href="GlobalActivity.dc.html" style="font-size: 14px">Agent Activity</a>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px">
+        <sc-for list="{{flows}}" as="w" hint-placeholder-count="2">
+          <a href="Workflow.dc.html" style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; text-decoration: none; color: #1C1B18">
+            <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">{{w.type}} · {{w.task}}</span>
+              <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #0277DD; background: #EAF4FE; font-size: 12px; font-weight: 600">Running</span>
+            </div>
+            <span style="font-size: 15px; font-weight: 600">{{w.title}}</span>
+            <span style="font-size: 13px; color: #4D4A44">Bước {{w.step}} · <strong style="color: #1C1B18; font-weight: 600">{{w.agent}}</strong> · {{w.time}}</span>
+            <div style="height: 4px; background: #DBD3C7; border-radius: 2px" role="img" aria-label="{{w.aria}}"><div style="height: 4px; width: {{w.pct}}; background: #0277DD; border-radius: 2px"></div></div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+      <section aria-labelledby="pr" style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+          <h2 id="pr" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px">Project gần đây</h2>
+          <a href="Projects.dc.html" style="font-size: 14px">Tất cả project</a>
+        </div>
+        <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+          <div style="min-width: 600px; font-size: 14px">
+            <div style="display: grid; grid-template-columns: 1.8fr 1.3fr 1.2fr 1fr; gap: 16px; padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-size: 12px; font-weight: 600; color: #4D4A44">
+              <span>Project</span><span>Phase hiện tại</span><span>Task Completed</span><span>Bản thảo</span>
+            </div>
+            <sc-for list="{{projects}}" as="r" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: 1.8fr 1.3fr 1.2fr 1fr; gap: 16px; align-items: center; min-height: 56px; padding: 0 16px; border-bottom: 1px solid #DBD3C7">
+                <a href="Overview.dc.html" style="font-weight: 600; color: #1C1B18; text-decoration: none">{{r.name}}</a>
+                <span style="color: #4D4A44">{{r.phase}}</span>
+                <span style="display: flex; align-items: center; gap: 10px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; width: 40px">{{r.done}}</span><span style="flex: 1; max-width: 110px; height: 4px; background: #DBD3C7; border-radius: 2px" role="img" aria-label="{{r.aria}}"><span style="display: block; height: 4px; width: {{r.pct}}; background: #0277DD; border-radius: 2px"></span></span></span>
+                <span style="color: {{r.msColor}}; font-weight: 500">{{r.ms}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="er" style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="er" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 22px">Lỗi gần đây</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+          <sc-for list="{{errors}}" as="e" hint-placeholder-count="3">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-top: {{e.div}}">
+              <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 12px"><span style="font-weight: 600; color: #BE123C">{{e.kind}}</span><span style="font-variant-numeric: tabular-nums; color: #4D4A44">{{e.time}}</span></span>
+              <span style="font-size: 14px; line-height: 1.45">{{e.text}}</span>
+              <a href="{{e.href}}" style="font-size: 13px">{{e.cta}}</a>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","recovery","first-run"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state ?? 'normal';
+    const project = (name, phase, done, total, ms, warn) => ({ name, phase, done: done + '/' + total, pct: Math.round(done / total * 100) + '%', aria: 'Hoàn thành ' + done + ' trên ' + total + ' Task', ms, msColor: warn ? '#BE123C' : '#4D4A44' });
+    const div = (i) => i === 0 ? '0' : '1px solid #DBD3C7';
+    return {
+      isRecovery: s === 'recovery', isFirstRun: s === 'first-run',
+      pending: [
+        { kind: 'Plan approval', title: 'Duyệt Plan Version v4 — thêm 2 Task, đổi 1 dependency', meta: 'RAG trong tổng quan tài liệu · Orchestrator · 08:10, 31/10', cta: 'Mở để duyệt', href: 'PlanCompare.dc.html' },
+        { kind: 'Agent Prompt', title: 'Chọn phạm vi năm xuất bản cho T-2.3', meta: 'RAG trong tổng quan tài liệu · Discovery Agent · 09:42', cta: 'Trả lời', href: 'Chat.dc.html' },
+        { kind: 'Change proposal', title: 'Writing Agent đề xuất sửa mục 1 Introduction', meta: 'RAG trong tổng quan tài liệu · 2 file · 09:20', cta: 'Xem diff', href: 'Manuscript.dc.html' },
+        { kind: 'Reference approval', title: '5 reference chờ duyệt theo lô', meta: 'Trusted Library · Reference Processing Agent · 09:05', cta: 'Duyệt', href: 'Library.dc.html' }
+      ].map((p, i) => ({ ...p, div: div(i) })),
+      flows: [
+        { type: 'task_execution', task: 'T-2.2', title: 'Tìm nghiên cứu 2019–2026', step: '2/4', agent: 'Evidence Retrieval Agent', time: '6 phút 12 giây', pct: '50%', aria: 'Bước 2 trên 4' },
+        { type: 'indexing', task: '—', title: 'Index 3 Source Document', step: '1/2', agent: 'Reference Processing Agent', time: '1 phút 40 giây', pct: '30%', aria: 'Bước 1 trên 2' }
+      ],
+      projects: [
+        project('RAG trong tổng quan tài liệu', '2 · Tổng quan tài liệu', 9, 14, 'Build OK · 09:41', false),
+        project('Độ tin cậy của LLM trong giáo dục', 'Chưa có Plan baseline', 0, 1, 'Chưa khởi tạo', false),
+        project('Học máy trong chẩn đoán ảnh', '3 · Viết bản thảo', 11, 12, 'Build lỗi', true)
+      ],
+      errors: [
+        { kind: 'Build LaTeX lỗi', time: '08:52', text: 'Thiếu package booktabs ở main.tex dòng 4.', cta: 'Mở build log', href: 'Manuscript.dc.html' },
+        { kind: 'Provider issue', time: 'Hôm qua', text: 'Kết nối “Gemini cá nhân” bị từ chối (auth_failed). Ảnh hưởng: Diagram Agent.', cta: 'Mở Provider Connections', href: 'SettingsProviders.dc.html' },
+        { kind: 'Indexing thất bại', time: '29/10', text: 'PDF không có lớp văn bản: “Survey of RAG.pdf”.', cta: 'Mở reference', href: 'Reference.dc.html' }
+      ].map((e, i) => ({ ...e, div: div(i) })
+      )
+    };
+  }
+}
+</script>
+</body>
+</html>
