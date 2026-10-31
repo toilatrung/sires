@@ -103,7 +103,7 @@ Repo hiện chứa tài liệu sản phẩm, thiết kế và công cụ dựng 
 
 | Tài liệu | Trạng thái |
 | --- | --- |
-| [PRD](docs/overview/index.html) | v1.0, 22 section, PO duyệt 31/10/2026 (phiếu chốt PC-01) |
+| [PRD](docs/overview/index.html) | v1.0, 21 section, PO duyệt 31/10/2026 (phiếu chốt PC-01) |
 | [Thiết kế giao diện](docs/ui-design/README.md) | PO duyệt 31/10/2026 |
 | [Kiến trúc](docs/architecture/README.md) | v0.2. Đã chốt hướng; ADR-17, ADR-19–ADR-23 chờ xác nhận |
 | [API](docs/api-design/README.md) | OpenAPI 3.1 mức MVP, hợp đồng nội bộ và sự kiện AsyncAPI |
@@ -114,7 +114,7 @@ Kiến trúc dự kiến là monorepo FE + BE: NestJS cho các service hệ th�
 
 | Đường dẫn | Nội dung |
 | --- | --- |
-| `docs/overview/` | PRD: 22 section, backlog, sơ đồ Mermaid |
+| `docs/overview/` | PRD: 21 section, backlog, sơ đồ Mermaid |
 | `docs/architecture/` | Thiết kế kiến trúc: 12 section, sơ đồ, sổ ADR |
 | `docs/api-design/` | OpenAPI (`openapi.yaml`, `paths/`, `components/`), API nội bộ (`internal/`), sự kiện (`events/`) |
 | `docs/ui-design/` | Thiết kế giao diện: nguồn `source/`, trang tĩnh `pages/`, quy tắc `design.md` |

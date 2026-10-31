@@ -40,7 +40,7 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 - **Service:** tên viết thường không dấu (`orchestration`, `agent-core`…); thư mục `apps/<service>` (mục 3).
 - **Hợp đồng:** OpenAPI công khai ở `docs/api-design/openapi.yaml`; nội bộ ở `docs/api-design/internal/<service>.yaml`; sự kiện ở `docs/api-design/events/asyncapi.yaml` (ADR-20).
 - **Hình:** `FIG-1NN` — dải 100 trở lên dành cho kiến trúc, tránh trùng FIG-001–033 của PRD.
-- **Spike:** `SPK-NN`, mỗi spike kiểm chứng một hoặc nhiều giả định ASM-NN của PRD 21.2.
+- **Spike:** `SPK-NN`, mỗi spike kiểm chứng một hoặc nhiều giả định ASM-NN của PRD 20.2.
 - **Câu hỏi mở:** câu hỏi kỹ thuật `AQ-NN` (Tech lead trả lời); câu hỏi cần PO quyết định cấp mã `OQ-NNN` tiếp theo trong PRD (từ OQ-098).
 - **Truy vết:** mỗi phương án ghi requirement PRD mà nó phục vụ (ví dụ `CTX-RECOVERY-001`, `NFR-SECRETS-001`).
 - **Ngôn ngữ:** nội dung tiếng Việt; tên thành phần, công nghệ, mã, trường dữ liệu tiếng Anh.
@@ -54,7 +54,7 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 ## Quy tắc cập nhật
 
 1. Quyết định mới hoặc thay đổi quyết định: thêm/sửa ADR ở mục 12 trước, rồi cập nhật section liên quan.
-2. Khi ADR được duyệt, đổi trạng thái `Accepted`, ghi ngày và người duyệt; cập nhật ASM-11 trong PRD 21.2 nếu liên quan stack.
+2. Khi ADR được duyệt, đổi trạng thái `Accepted`, ghi ngày và người duyệt; cập nhật ASM-11 trong PRD 20.2 nếu liên quan stack.
 3. Sơ đồ: sửa file `.mmd` trong `figures/`, giữ mã FIG ổn định.
 4. Cập nhật nhật ký trong [../docs_context.md](../docs_context.md).
 

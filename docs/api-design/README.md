@@ -42,7 +42,7 @@ Các mục còn lại của PRD không sinh endpoint riêng; ràng buộc của 
 | --- | --- |
 | `x-requirements` | Mã requirement PRD mà operation phục vụ (ví dụ `TASK-TRIGGER-001`) |
 | `x-priority` | P0/P1 theo bảng Priority đã duyệt (DEC-44) |
-| `x-milestone` | M1–M7 (PRD 20.1) |
+| `x-milestone` | M1–M7 (kế hoạch triển khai lập riêng, ngoài PRD) |
 | `x-apr` | Quyền phê duyệt độc quyền của Researcher (APR-01–APR-10, PRD 3.3) — agent không bao giờ gọi |
 | `x-transition` | Mã chuyển trạng thái Task (PRD 9.8) |
 

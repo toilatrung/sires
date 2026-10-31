@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 05</p><h1>5. Core Domain Model</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–4, mục 21.1</p><div class="note"><p>Mục này định nghĩa các entity của sản phẩm ở mức khái niệm: mục đích, thuộc tính chính, ownership, vòng đời và các quy tắc luôn phải đúng (<em>invariant</em>). Schema chi tiết, enumeration và chuyển trạng thái đầy đủ ở <a href="18-data-and-state-specifications.html">mục 18</a>. Tên trạng thái trong mục này là chuẩn cho toàn PRD. Nhóm entity lấy từ outline (<strong>Confirmed</strong>); thuộc tính, trạng thái và invariant là <strong>Assumption</strong> trừ khi ghi khác. Điểm chưa quyết định ở <a href="#s-5-12">5.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-5-0">Nguyên tắc mô hình</a></li>
+<p class="eyebrow">Product Requirements Document · Section 05</p><h1>5. Core Domain Model</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–4, mục 20.1</p><div class="note"><p>Mục này định nghĩa các entity của sản phẩm ở mức khái niệm: mục đích, thuộc tính chính, ownership, vòng đời và các quy tắc luôn phải đúng (<em>invariant</em>). Schema chi tiết, enumeration và chuyển trạng thái đầy đủ ở <a href="18-data-and-state-specifications.html">mục 18</a>. Tên trạng thái trong mục này là chuẩn cho toàn PRD. Nhóm entity lấy từ outline (<strong>Confirmed</strong>); thuộc tính, trạng thái và invariant là <strong>Assumption</strong> trừ khi ghi khác. Điểm chưa quyết định ở <a href="#s-5-12">5.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-5-0">Nguyên tắc mô hình</a></li>
 <li><a href="#s-5-1">5.1. Research Project</a></li>
 <li><a href="#s-5-2">5.2. Research Plan</a></li>
 <li><a href="#s-5-3">5.3. Task</a></li>
@@ -80,7 +80,7 @@
 <tr><td><code>Superseded</code></td><td>Từng là baseline, đã bị thay bởi phiên bản duyệt sau.</td></tr>
 <tr><td><code>Rejected</code></td><td>Bị Researcher từ chối.</td></tr>
 </tbody></table></div>
-<p><strong>Invariant:</strong> tại mọi thời điểm có tối đa một Plan Version <code>Approved</code> và tối đa một <code>Draft</code> hoặc <code>Proposed</code> đang mở. Không Task nào được thực thi chính thức khi chưa có version <code>Approved</code> (Confirmed — 21.1). Dependency graph trong một version không có chu trình (9.4).</p>
+<p><strong>Invariant:</strong> tại mọi thời điểm có tối đa một Plan Version <code>Approved</code> và tối đa một <code>Draft</code> hoặc <code>Proposed</code> đang mở. Không Task nào được thực thi chính thức khi chưa có version <code>Approved</code> (Confirmed — 20.1). Dependency graph trong một version không có chu trình (9.4).</p>
 
 <h2 id="s-5-3">5.3. Task</h2>
 <p>Đơn vị công việc nghiên cứu. Task có định danh ổn định qua các Plan Version: cùng một Task có thể được sửa định nghĩa ở version mới mà vẫn giữ lịch sử thực thi.</p>
@@ -89,7 +89,7 @@
 <th scope="col">Thuộc tính chính</th>
 </tr></thead><tbody>
 <tr><td>Định nghĩa (theo version)</td><td>taskId, tiêu đề, mô tả, mục tiêu, Phase, đầu vào cần có (context, reference, artifact, quyết định), đầu ra mong đợi (loại artifact), điều kiện tiên quyết (Task Dependency), acceptance criteria, checklist, agent chịu trách nhiệm đề xuất.</td></tr>
-<tr><td>Execution label</td><td><code>Available for agent</code> hoặc <code>Manual editor requirement</code> (Confirmed — 21.1).</td></tr>
+<tr><td>Execution label</td><td><code>Available for agent</code> hoặc <code>Manual editor requirement</code> (Confirmed — 20.1).</td></tr>
 <tr><td>Trạng thái</td><td>Xem bảng dưới.</td></tr>
 <tr><td>Lịch sử</td><td>Các lần thực thi (Workflow), kết quả readiness check, lần review và phản hồi, artifact tạo ra, Plan Version mà mỗi lần thực thi dựa vào.</td></tr>
 </tbody></table></div>
@@ -172,7 +172,7 @@
 </tr></thead><tbody>
 <tr><td>Discovered Result</td><td>Tài khoản</td><td>Nguồn (Google Scholar), truy vấn, metadata thô, liên kết nguồn, thời điểm, Agent Run.</td><td><code>New</code>, <code>Selected</code>, <code>Rejected</code>, <code>Imported</code></td></tr>
 <tr><td>Reference</td><td>Tài khoản</td><td>referenceId, metadata chuẩn hóa (tiêu đề, tác giả, năm, venue, DOI/định danh, URL), BibTeX key, nguồn gốc (discovered result hoặc nhập thủ công), phiên bản metadata, thông tin duyệt/thu hồi.</td><td>Duyệt: <code>Pending Approval</code>, <code>Trusted</code>, <code>Rejected</code>, <code>Revoked</code>. Indexing: <code>Not Indexed</code>, <code>Queued</code>, <code>Indexing</code>, <code>Indexed</code>, <code>Failed</code>, <code>Unavailable</code></td></tr>
-<tr><td>Source Document</td><td>Tài khoản</td><td>Nội dung truy cập hợp lệ của Reference (ví dụ PDF do người dùng cung cấp hoặc nguồn mở), trích xuất văn bản, các đoạn (chunk) có định danh và vị trí; vector embedding trong vector database (Confirmed — 21.1, RAG). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): index một lần ở cấp tài khoản và dùng lại cho mọi project chọn Reference đó; truy xuất luôn lọc theo Project Reference Selection.</td><td>Theo trạng thái indexing của Reference</td></tr>
+<tr><td>Source Document</td><td>Tài khoản</td><td>Nội dung truy cập hợp lệ của Reference (ví dụ PDF do người dùng cung cấp hoặc nguồn mở), trích xuất văn bản, các đoạn (chunk) có định danh và vị trí; vector embedding trong vector database (Confirmed — 20.1, RAG). Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01): index một lần ở cấp tài khoản và dùng lại cho mọi project chọn Reference đó; truy xuất luôn lọc theo Project Reference Selection.</td><td>Theo trạng thái indexing của Reference</td></tr>
 <tr><td>Project Reference Selection</td><td>Project</td><td>projectId, referenceId, người chọn, thời điểm, lý do.</td><td><code>Active</code>, <code>Removed</code></td></tr>
 <tr><td>Evidence</td><td>Project</td><td>evidenceId, referenceId, định danh đoạn và vị trí (trang, đoạn), văn bản trích, truy vấn hoặc Task đã truy xuất, Agent Run, điểm liên quan.</td><td><code>Active</code>, <code>Excluded</code> (Researcher loại), <code>Stale</code> (nguồn bị thu hồi hoặc index lại)</td></tr>
 <tr><td>Claim</td><td>Project</td><td>claimId, phát biểu, Task/artifact tạo ra, liên kết evidence (supporting / contradicting), mức hỗ trợ, kết quả kiểm chứng gần nhất.</td><td>Duyệt: <code>Draft</code>, <code>Accepted</code>, <code>Rejected</code>. Hỗ trợ: <code>Supported</code>, <code>Partially Supported</code>, <code>Unsupported</code>, <code>Conflicting</code>, <code>Not Assessed</code></td></tr>
@@ -204,7 +204,7 @@
 <th scope="col">Thuộc tính chính</th>
 <th scope="col">Trạng thái</th>
 </tr></thead><tbody>
-<tr><td>Manuscript</td><td>manuscriptId, projectId, chế độ khởi tạo (<code>Default</code> / <code>Blank</code> — Confirmed 21.1), file chính (main.tex), cấu hình build (compiler, file chính), revision hiện hành.</td><td>—</td></tr>
+<tr><td>Manuscript</td><td>manuscriptId, projectId, chế độ khởi tạo (<code>Default</code> / <code>Blank</code> — Confirmed 20.1), file chính (main.tex), cấu hình build (compiler, file chính), revision hiện hành.</td><td>—</td></tr>
 <tr><td>Manuscript File</td><td>Đường dẫn, loại (tex, bib, figure, khác), nội dung hiện hành.</td><td><code>Active</code>, <code>Deleted</code></td></tr>
 <tr><td>Manuscript Revision</td><td>Số revision, tập thay đổi file, actor, nguồn (Researcher sửa trực tiếp hoặc Change Proposal được chấp nhận), Task/artifact liên quan, thời điểm.</td><td>Bất biến</td></tr>
 <tr><td>Change Proposal</td><td>Diff đề xuất bởi Writing Agent (hoặc nhập sơ đồ), revision gốc, Task, evidence/claim dùng, Agent Run.</td><td><code>Proposed</code>, <code>Accepted</code>, <code>Rejected</code>, <code>Outdated</code> (file đã đổi so với revision gốc)</td></tr>

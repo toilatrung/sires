@@ -57,7 +57,7 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 ## Ghi chú thiết kế (đã duyệt)
 
 - Dữ liệu mẫu (tên project, tác giả, model, số liệu) chỉ để minh họa. Giá trị Ngưỡng kiểm chứng ghi trong ngoặc vuông là placeholder.
-- DEC-18 ở PRD 21.1 đã cập nhật theo thiết kế này (31/10/2026).
+- DEC-18 ở PRD 20.1 đã cập nhật theo thiết kế này (31/10/2026).
 - Cream gốc dùng #0277DD cho chữ xanh; ở đây chữ xanh dùng #025FAC và chữ phụ dùng #4D4A44 (không dùng #7A756C) để đạt WCAG AA. Cảnh báo #9A3412, lỗi #BE123C.
 - Bản thảo PDF và đoạn trích evidence giữ chữ có chân (Times) để giống tài liệu in.
 - Manuscript bỏ ProjectRail để dành chỗ cho ba vùng; quay lại project bằng nút “Project” trên thanh công cụ.

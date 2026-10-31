@@ -1,7 +1,7 @@
 # Figures — AI Research Assistant PRD
 
 Thư mục dành cho nguồn sơ đồ có thể chỉnh sửa và ảnh xuất dùng trong PRD.
-Ngày 30/10/2026 đã có 17 nguồn Mermaid (FIG-001–005, 010–013, 020–023, 030–033); danh mục ở phụ lục B, C, D của mục 22. Chưa có ảnh xuất .svg/.png vì tài liệu không dùng tài nguyên mạng để render.
+Ngày 30/10/2026 đã có 17 nguồn Mermaid (FIG-001–005, 010–013, 020–023, 030–033); danh mục ở phụ lục B, C, D của mục 21. Ngày 01/11/2026: thêm FIG-034 (DEC-47); bỏ FIG-005 cùng mục MVP Delivery Plan (DEC-49), mã không tái sử dụng. Chưa có ảnh xuất .svg/.png vì tài liệu không dùng tài nguyên mạng để render.
 
 ## Quy ước đề xuất
 

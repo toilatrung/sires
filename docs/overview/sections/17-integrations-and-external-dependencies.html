@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 17</p><h1>17. Integrations and External Dependencies</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 21.1</p><div class="note"><p>Mục này đặc tả các hệ thống bên ngoài mà sản phẩm phụ thuộc và hợp đồng tích hợp ở mức sản phẩm. PRD không chọn nhà cung cấp hạ tầng hay thư viện cụ thể; tên công nghệ chỉ là ví dụ khi ghi rõ. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở mục 20). Ba model provider và RAG trên vector database là <strong>Confirmed</strong> (21.1); phương thức tích hợp Google Scholar, embedding, định dạng tài liệu và eTroy OIDC là <strong>Confirmed — PO chốt 31/10/2026 (PC-01)</strong> theo OQ ghi tại chỗ; còn lại là <strong>Assumption</strong>. Bảng Open Questions ở <a href="#s-17-oq">17.8</a>.</p></div>
+<p class="eyebrow">Product Requirements Document · Section 17</p><h1>17. Integrations and External Dependencies</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–6, mục 20.1</p><div class="note"><p>Mục này đặc tả các hệ thống bên ngoài mà sản phẩm phụ thuộc và hợp đồng tích hợp ở mức sản phẩm. PRD không chọn nhà cung cấp hạ tầng hay thư viện cụ thể; tên công nghệ chỉ là ví dụ khi ghi rõ. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở 2.4). Ba model provider và RAG trên vector database là <strong>Confirmed</strong> (20.1); phương thức tích hợp Google Scholar, embedding, định dạng tài liệu và eTroy OIDC là <strong>Confirmed — PO chốt 31/10/2026 (PC-01)</strong> theo OQ ghi tại chỗ; còn lại là <strong>Assumption</strong>. Bảng Open Questions ở <a href="#s-17-oq">17.8</a>.</p></div>
 <div class="table-wrap"><table><thead><tr>
 <th scope="col">Priority</th>
 <th scope="col">Requirement</th>
@@ -45,10 +45,10 @@
 <th scope="col">Rủi ro chính</th>
 <th scope="col">Trạng thái</th>
 </tr></thead><tbody>
-<tr><td>Anthropic Claude, OpenAI, Google Gemini</td><td>Orchestrator và Specialist Agent</td><td>Dịch vụ ngoài, key của người dùng</td><td>Khác biệt năng lực, giới hạn tốc độ, lỗi provider</td><td>Confirmed (21.1)</td></tr>
+<tr><td>Anthropic Claude, OpenAI, Google Gemini</td><td>Orchestrator và Specialist Agent</td><td>Dịch vụ ngoài, key của người dùng</td><td>Khác biệt năng lực, giới hạn tốc độ, lỗi provider</td><td>Confirmed (20.1)</td></tr>
 <tr><td>eTroy OIDC</td><td>Authentication duy nhất của SIRes (SSO tổ chức, 17.7)</td><td>Dịch vụ của nền tảng eTroy, bắt buộc</td><td>eTroy OIDC không khả dụng thì không đăng nhập mới được</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073)</td></tr>
 <tr><td>Embedding model</td><td>Vector hóa chunk và truy vấn cho RAG</td><td>Dịch vụ ngoài qua Provider Connection của người dùng (OpenAI hoặc Gemini)</td><td>Đổi model buộc index lại</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-051)</td></tr>
-<tr><td>Vector database</td><td>Lưu và truy xuất embedding (RAG)</td><td>Hạ tầng</td><td>Cách ly dữ liệu giữa tài khoản</td><td>Confirmed (21.1); sản phẩm cụ thể chưa chọn</td></tr>
+<tr><td>Vector database</td><td>Lưu và truy xuất embedding (RAG)</td><td>Hạ tầng</td><td>Cách ly dữ liệu giữa tài khoản</td><td>Confirmed (20.1); sản phẩm cụ thể chưa chọn</td></tr>
 <tr><td>Google Scholar</td><td>Discovery</td><td>Dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ (17.2)</td><td>Dịch vụ không trả kết quả; khả năng truy cập hợp lệ</td><td>Confirmed — PO chốt 31/10/2026 (PC-01, OQ-081, OQ-006)</td></tr>
 <tr><td>Phân giải metadata DOI (ví dụ Crossref, DataCite)</td><td>Nhập reference thủ công theo DOI (LIB-IMPORT-002)</td><td>Dịch vụ ngoài qua adapter</td><td>DOI không phân giải được; metadata nguồn sai</td><td>Assumption (nguồn cụ thể chốt khi triển khai)</td></tr>
 <tr><td>Document processing (trích xuất PDF, metadata)</td><td>Indexing Source Document</td><td>Thư viện/dịch vụ</td><td>Bố cục phức tạp (PDF scan không được hỗ trợ)</td><td>Phạm vi định dạng: Confirmed — PO chốt 31/10/2026 (PC-01, OQ-050); công cụ: Assumption</td></tr>
@@ -107,7 +107,7 @@
 <li><strong>Kết hợp hai cách (OQ-081):</strong> (a) dịch vụ trung gian cung cấp kết quả Google Scholar theo hợp đồng, qua source adapter; (b) luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả — chính là nhập reference thủ công <a href="10-academic-discovery-and-trusted-library.html#lib-import-002">LIB-IMPORT-002</a> (10): người dùng tìm trên Google Scholar và nhập kết quả qua DOI, BibTeX/RIS hoặc PDF (INT-SCHOLAR-006).</li>
 <li><strong>Phân giải metadata DOI (dependency):</strong> khi người dùng nhập DOI (LIB-IMPORT-002), metadata được lấy từ nguồn được phép qua một adapter phân giải DOI, ví dụ Crossref hoặc DataCite; kết quả chuẩn hóa theo schema 17.6 và vào trạng thái chờ duyệt. Nguồn cụ thể là Assumption, chốt khi triển khai; nếu không phân giải được, người dùng nhập hoặc sửa metadata thủ công.</li>
 <li><strong>Dự phòng (OQ-006):</strong> nếu truy cập Google Scholar qua dịch vụ trung gian không khả thi hoặc không được phép, MVP dùng một nguồn có API hợp lệ (ví dụ OpenAlex hoặc Semantic Scholar) qua cùng hợp đồng source adapter (17.6, 10.9), kèm nhập DOI/BibTeX; WF-04 giữ nguyên (INT-SCHOLAR-007).</li>
-<li>Nhà cung cấp dịch vụ trung gian cụ thể được chọn khi triển khai và ghi vào 21.2 (Technical Assumptions).</li>
+<li>Nhà cung cấp dịch vụ trung gian cụ thể được chọn khi triển khai và ghi vào 20.2 (Technical Assumptions).</li>
 </ul>
 <h3>Requirement</h3>
 <div class="table-wrap"><table><thead><tr>
@@ -134,7 +134,7 @@
 </ul>
 
 <h2 id="s-17-3">17.3. Document Processing</h2>
-<p class="status">Giải quyết phần dependency của SYNC-08. Confirmed: RAG trên Trusted Reference được index trong vector database (21.1).</p>
+<p class="status">Giải quyết phần dependency của SYNC-08. Confirmed: RAG trên Trusted Reference được index trong vector database (20.1).</p>
 <h3>Pipeline indexing</h3>
 <ol>
 <li><strong>Thu nhận nội dung:</strong> file do người dùng tải lên cho Reference, hoặc nội dung truy cập mở hợp lệ từ liên kết nguồn. Không có nội dung hợp lệ → indexing <code>Unavailable</code>.</li>
@@ -267,8 +267,8 @@
 </tr></thead><tbody>
 <tr><td>OQ-079</td><td>Khi provider lỗi kéo dài, có cho phép người dùng cấu hình provider dự phòng cho từng agent (tự động chuyển) không, hay luôn dừng và hỏi? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> MVP không tự động chuyển provider; workflow dừng theo chính sách thử lại và người dùng đổi model trong Settings (INT-PROVIDER-004). Provider dự phòng tự động để sau MVP.</td><td>17.1, 8.5, SCOPE-13</td></tr>
 <tr><td>OQ-080</td><td>Embedding model lấy từ đâu: dùng Provider Connection của người dùng (OpenAI/Gemini có embedding, Anthropic không), hay hệ thống cung cấp model embedding riêng? Có cần thêm mục cấu hình “Embedding” trong Settings không? <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-051; trả lời chung ở OQ-051.</td><td>17.3, SCOPE-13, 11.1, 16.6</td></tr>
-<tr><td>OQ-081</td><td>Phương thức tích hợp Google Scholar được chọn sau spike: dịch vụ trung gian theo hợp đồng, luồng nhập do người dùng hỗ trợ, hay kết hợp? <strong>Đã đóng 31/10/2026 (PC-01):</strong> kết hợp — dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả (INT-SCHOLAR-006). Dự phòng theo OQ-006: nguồn có API hợp lệ như OpenAlex hoặc Semantic Scholar (INT-SCHOLAR-007).</td><td>17.2, 10.1, SCOPE-06, 21.2</td></tr>
-<tr><td>OQ-082</td><td>Định dạng tài liệu và giới hạn dung lượng hỗ trợ (đề xuất PDF có lớp văn bản, ≤ 50 MB, ≤ 500 trang; chưa OCR) — cụ thể hóa câu hỏi ở 21.3. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-050; trả lời chung ở OQ-050.</td><td>17.3, 10, 11.1</td></tr>
+<tr><td>OQ-081</td><td>Phương thức tích hợp Google Scholar được chọn sau spike: dịch vụ trung gian theo hợp đồng, luồng nhập do người dùng hỗ trợ, hay kết hợp? <strong>Đã đóng 31/10/2026 (PC-01):</strong> kết hợp — dịch vụ trung gian theo hợp đồng, kèm luồng nhập do người dùng hỗ trợ khi dịch vụ không trả kết quả (INT-SCHOLAR-006). Dự phòng theo OQ-006: nguồn có API hợp lệ như OpenAlex hoặc Semantic Scholar (INT-SCHOLAR-007).</td><td>17.2, 10.1, SCOPE-06, 20.2</td></tr>
+<tr><td>OQ-082</td><td>Định dạng tài liệu và giới hạn dung lượng hỗ trợ (đề xuất PDF có lớp văn bản, ≤ 50 MB, ≤ 500 trang; chưa OCR) — cụ thể hóa câu hỏi ở 20.3. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> trùng với OQ-050; trả lời chung ở OQ-050.</td><td>17.3, 10, 11.1</td></tr>
 <tr><td>OQ-083</td><td>Có cho phép shell-escape (ví dụ package minted) trong build không? Đề xuất: không. <strong>Đã giải quyết (biên soạn, 30/10/2026; PO duyệt 31/10/2026, PC-01):</strong> không cho phép shell-escape; package cần shell-escape không được hỗ trợ (INT-LATEX-002, NFR-SANDBOX-001).</td><td>17.4, 16.1</td></tr>
 </tbody></table></div>
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="16-non-functional-requirements.html">← Mục 16</a><a href="../index.html">Mục lục PRD</a><a rel="next" href="18-data-and-state-specifications.html">Mục 18 →</a></nav>
