@@ -48,10 +48,10 @@ a{color:#025FAC}a:hover{color:#1C1B18}
           </div>
           <sc-for list="{{before}}" as="a" hint-placeholder-count="3">
             <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; min-height: 52px; padding: 6px 16px; border-bottom: 1px solid #DBD3C7">
-              <span style="font-weight: 600">{{a.name}}</span>
+              <span style="font-weight: 600">{{a.name}}<sc-if value="{{a.hasSub}}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">{{a.sub}}</span></sc-if></span>
               <span style="color: {{a.connColor}}">{{a.conn}}</span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{a.connColor}}">{{a.model}}</span>
-              <span style="font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}">{{a.cap}}</span>
+              <span style="display: flex; gap: 6px; align-items: flex-start; font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}"><sc-if value="{{a.warn}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg></sc-if>{{a.cap}}</span>
               <a href="#" style="font-size: 14px">Sửa</a>
             </div>
           </sc-for>
@@ -96,15 +96,20 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             </div>
           </section>
 
-          <sc-for list="{{after}}" as="a" hint-placeholder-count="4">
+          <sc-for list="{{after}}" as="a" hint-placeholder-count="6">
             <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; min-height: 52px; padding: 6px 16px; border-bottom: 1px solid #DBD3C7">
-              <span style="font-weight: 600">{{a.name}}</span>
+              <span style="font-weight: 600">{{a.name}}<sc-if value="{{a.hasSub}}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">{{a.sub}}</span></sc-if></span>
               <span style="color: {{a.connColor}}">{{a.conn}}</span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{a.connColor}}">{{a.model}}</span>
-              <span style="font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}">{{a.cap}}</span>
+              <span style="display: flex; gap: 6px; align-items: flex-start; font-size: 13px; color: {{a.capColor}}; font-weight: {{a.capW}}"><sc-if value="{{a.warn}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg></sc-if>{{a.cap}}</span>
               <a href="#" style="font-size: 14px">Sửa</a>
             </div>
           </sc-for>
+
+          <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-bottom: 1px solid #DBD3C7; border-left: 3px solid #9A3412; font-size: 13px; line-height: 1.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.2" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>
+            <span><strong style="color: #9A3412">Analysis Agent A và B cùng dùng gpt-5 trên “OpenAI cá nhân”.</strong> Hai bên thảo luận dễ sai giống nhau. Nên chọn model khác cho một instance; không bắt buộc khác provider. Cấu hình vẫn được lưu, và cảnh báo được ghi vào Deliberation Record của các phiên sau.</span>
+          </div>
 
           <div style="display: grid; grid-template-columns: 1.5fr 1.3fr 1.3fr 1.2fr 64px; gap: 16px; align-items: center; padding: 14px 16px; background: #F6F2EE">
             <span style="font-weight: 600">Embedding model<span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">Một model cho cả tài khoản</span></span>
@@ -142,11 +147,12 @@ class Component extends DCLogic {
   renderVals() {
     const nav = [['profile', 'Profile', 'SettingsProfile.dc.html'], ['providers', 'Provider Connections', 'SettingsProviders.dc.html'], ['agents', 'Agent Models', 'SettingsAgents.dc.html'], ['prefs', 'Preferences', 'SettingsPreferences.dc.html']];
     // inherit = true: agent follows the default connection/model
-    const a = (name, conn, model, inherit, cap) => ({
-      name, model,
+    // warn = true: cap is a non-blocking warning (ORCH-DELIB-005), not an error
+    const a = (name, conn, model, inherit, cap, warn, sub) => ({
+      name, model, hasSub: !!sub, sub: sub || '', warn: !!warn,
       conn: inherit ? 'Dùng mặc định (' + conn + ')' : conn,
       connColor: inherit ? '#4D4A44' : '#1C1B18',
-      cap: cap || 'Sẵn sàng', capColor: cap ? '#BE123C' : '#4D4A44', capW: cap ? 600 : 400
+      cap: cap || 'Sẵn sàng', capColor: warn ? '#9A3412' : cap ? '#BE123C' : '#4D4A44', capW: cap ? 600 : 400
     });
     const pick = (on) => ({ checked: on ? 'true' : 'false', bg: on ? '#EAF4FE' : '#FCF9F5', border: on ? '#80B9EE' : '#DBD3C7', ring: on ? '5px solid #0277DD' : '1px solid #C7C7C7' });
     const conn = (name, meta, status, on, invalid) => Object.assign(pick(on), {
@@ -177,6 +183,8 @@ class Component extends DCLogic {
         a('Synthesis Agent', 'Claude cá nhân', 'claude-sonnet-5-5', true),
         a('Writing Agent', 'Claude cá nhân', 'claude-sonnet-5-5', true),
         a('Verification Agent', 'Claude cá nhân', 'claude-opus-5-5', false),
+        a('Analysis Agent A', 'OpenAI cá nhân', 'gpt-5', false, 'Cùng model với Analysis Agent B', true, 'Instance A · chỉ chạy trong phiên thảo luận'),
+        a('Analysis Agent B', 'OpenAI cá nhân', 'gpt-5', false, 'Cùng model với Analysis Agent A', true, 'Instance B · chỉ chạy trong phiên thảo luận'),
         a('Diagram Agent', 'Gemini cá nhân', 'gemini-2.5-pro', false, 'Connection Invalid, Task cần agent này sẽ bị Blocked')
       ]
     };

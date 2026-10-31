@@ -24,7 +24,7 @@ body{margin:0}
     <span role="status" style="font-size: 13px; color: {{t.muted}}; font-variant-numeric: tabular-nums">{{summary}}</span>
   </div>
   <ul style="margin: 0; padding: 0; list-style: none">
-    <sc-for list="{{agents}}" as="a" hint-placeholder-count="5">
+    <sc-for list="{{agents}}" as="a" hint-placeholder-count="7">
       <li style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-top: {{a.div}}">
         <span aria-hidden="true" style="flex: none; width: 32px; height: 32px; border-radius: 16px; background: {{t.raised}}; color: {{t.text}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">{{a.mono}}</span>
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
@@ -44,7 +44,7 @@ body{margin:0}
   </ul>
 </section>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted"],"default":"running"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":380,"height":420}}'>
+<script type="text/x-dc" data-dc-script data-props='{"wfState":{"editor":"enum","options":["running","waiting","interrupted","deliberation","synthesis"],"default":"running"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":380,"height":560}}'>
 class Component extends DCLogic {
   renderVals() {
     const wf = this.props.wfState ?? 'running';
@@ -56,15 +56,20 @@ class Component extends DCLogic {
           run: ['#0277DD', '#EAF4FE', '#1C1B18'], idle: ['#DBD3C7', '#F6F2EE', '#4D4A44'], err: ['#BE123C', '#FFF1F2', '#9F1239'] };
     // Who is doing what in workflow wf-52d (T-2.3), per workflow state.
     const plan = {
-      running: { orc: ['run', 'điều phối bước 3/5'], dis: ['idle'], evi: ['run', 'bước 3/5 · 02:14'], syn: ['idle'], ver: ['idle'] },
-      waiting: { orc: ['idle'], dis: ['run', 'bước 2/5 · chờ bạn trả lời prompt'], evi: ['idle'], syn: ['idle'], ver: ['idle'] },
-      interrupted: { orc: ['idle'], dis: ['idle'], evi: ['err', 'gián đoạn ở bước 3/5 · 09:58'], syn: ['idle'], ver: ['idle'] }
+      running: { orc: ['run', 'điều phối bước 3/5'], evi: ['run', 'bước 3/5 · 02:14'] },
+      waiting: { dis: ['run', 'bước 2/5 · chờ bạn trả lời prompt'] },
+      interrupted: { evi: ['err', 'gián đoạn ở bước 3/5 · 09:58'] },
+      // Step 4/5 is a deliberation (8.7): Orchestrator and both Analysis Agent instances write in parallel.
+      deliberation: { orc: ['run', 'thảo luận bước 4/5 · Vòng 2'], anaA: ['run', 'thảo luận bước 4/5 · Vòng 2'], anaB: ['run', 'thảo luận bước 4/5 · Vòng 2'] },
+      synthesis: { orc: ['run', 'điều phối bước 5/5'], syn: ['run', 'bước 5/5 · theo phương án bạn đã chọn'] }
     }[wf] || {};
     const label = { run: 'Đang chạy', idle: 'Đang rảnh', err: 'Lỗi' };
     const roster = [
       ['orc', 'OR', 'Orchestrator', 'Điều phối, giao việc cho agent'],
       ['dis', 'DI', 'Discovery Agent', 'Tìm tài liệu học thuật'],
       ['evi', 'ER', 'Evidence Retrieval Agent', 'Truy xuất evidence từ nguồn đã duyệt'],
+      ['anaA', 'AA', 'Analysis Agent A', 'Đề xuất và phản biện trong phiên thảo luận'],
+      ['anaB', 'AB', 'Analysis Agent B', 'Đề xuất và phản biện trong phiên thảo luận'],
       ['syn', 'SY', 'Synthesis Agent', 'Tổng hợp, lập ma trận so sánh'],
       ['ver', 'VE', 'Verification Agent', 'Kiểm chứng claim và citation']
     ];
