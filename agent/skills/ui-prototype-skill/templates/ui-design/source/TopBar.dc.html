@@ -1,0 +1,46 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="__UI_LANG__">
+<head>
+<meta charset="utf-8">
+<title>Thanh điều hướng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.ui-topbar { display: flex; align-items: center; gap: var(--ui-space-4); height: 56px; padding: 0 var(--ui-space-4); background: var(--ui-surface); border-bottom: 1px solid var(--ui-line); }
+.ui-topbar strong { font-weight: 600; }
+.ui-topbar nav { display: flex; gap: var(--ui-space-3); }
+.ui-topbar a { color: var(--ui-muted); text-decoration: none; }
+.ui-topbar a[aria-current="page"] { color: var(--ui-ink); font-weight: 600; }
+</style>
+</helmet>
+<header class="ui-topbar">
+  <strong>{{product}}</strong>
+  <nav aria-label="Khu vực">
+    <sc-for list="{{tabs}}" as="t">
+      <a href="{{t.href}}" aria-current="{{t.current}}">{{t.label}}</a>
+    </sc-for>
+  </nav>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","settings"],"default":"home"},"$preview":{"width":1440,"height":56}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'home';
+    const tab = (id, label, href) => ({ label, href, current: id === active ? 'page' : null });
+    return {
+      product: '[Tên sản phẩm]',
+      tabs: [tab('home', 'Trang chủ', 'Home.dc.html'), tab('settings', 'Cài đặt', 'Home.dc.html')]
+    };
+  }
+}
+</script>
+</body>
+</html>
