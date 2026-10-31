@@ -20,7 +20,7 @@ Cập nhật: 31/10/2026.
 
 Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã tiếp theo xem [docs_context.md](docs_context.md)) để PO trả lời; không tự chốt thay PO.
 
-> `docs/` được quản lý trong Git (repo `toilatrung/sires`), nhưng repo chưa có `CODEOWNERS` hay cấu hình bảo vệ nhánh cho `docs/`, nên quy tắc này hiện chỉ có hiệu lực theo thỏa thuận. Để hệ thống tự chặn, nên thêm `.github/CODEOWNERS` cho `docs/` trỏ tới PO và bật bảo vệ nhánh `main` (bắt buộc pull request và review của code owner; chỉ PO được bypass).
+> `docs/` được quản lý trong Git (repo `toilatrung/sires`). [`.github/CODEOWNERS`](../.github/CODEOWNERS) gán PO làm code owner của `docs/`. CODEOWNERS chỉ chặn được thay đổi khi nhánh `main` bật bảo vệ (bắt buộc pull request và review của code owner; chỉ PO được bypass); khi chưa bật, quy tắc này chỉ có hiệu lực theo thỏa thuận.
 
 ## Cấu trúc thư mục
 
