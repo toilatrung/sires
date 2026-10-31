@@ -1,8 +1,8 @@
 # Architecture — SIRes (MVP)
 
-Tài liệu thiết kế hệ thống cho SIRes ở mức MVP (milestone M1–M7): technology stack, thành phần, luồng hoạt động và phương án cho các bài toán kỹ thuật của hệ thống. Suy ra từ PRD v1.0 tại [../overview/index.html](../overview/index.html) và bám hợp đồng API tại [../api-design/index.html](../api-design/index.html).
+Tài liệu thiết kế hệ thống cho SIRes ở mức MVP: technology stack, thành phần, luồng hoạt động và phương án cho các bài toán kỹ thuật của hệ thống. Suy ra từ PRD v1.0 tại [../overview/index.html](../overview/index.html) và bám hợp đồng API tại [../api-design/index.html](../api-design/index.html).
 
-Trạng thái: **phiên bản 0.2 (31/10/2026).** Đã chốt hướng: backend nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE, các đề xuất stack còn lại của bản 0.1. knowledge là service Python riêng (ADR-18). Danh sách service, broker, hợp đồng nội bộ và công cụ monorepo (ADR-17, ADR-19–ADR-23) còn chờ xác nhận.
+Trạng thái: **phiên bản 0.2 (31/10/2026).** Bổ sung 01/11/2026 theo PRD DEC-47–DEC-49: phiên thảo luận và Analysis Agent (5.12, F-13), Deliberation Board và Context Snapshot (5.13, 6.1, ADR-24 Proposed, SPK-11, TR-10); bỏ kế hoạch theo milestone khỏi tài liệu kiến trúc (11.8 cũ, cột “Trước” ở 12.2 và 12.4). Đã chốt hướng: backend nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE, các đề xuất stack còn lại của bản 0.1. knowledge là service Python riêng (ADR-18). Danh sách service, broker, hợp đồng nội bộ và công cụ monorepo (ADR-17, ADR-19–ADR-23) còn chờ xác nhận.
 
 ## Cấu trúc thư mục
 

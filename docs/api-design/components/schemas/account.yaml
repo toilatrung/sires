@@ -181,6 +181,9 @@ AgentModelAssignment:
   allOf:
     - $ref: common.yaml#/EntityMeta
     - type: object
+      description: |
+        Duy nhất theo (accountId, agent, instance). Analysis Agent có một dòng cho mỗi instance A, B (UX-SETTINGS-003,
+        ORCH-DELIB-005); instance chưa gán riêng thừa kế `default` như agent khác.
       required: [agent, providerConnectionId, model]
       properties:
         agent:
@@ -188,6 +191,11 @@ AgentModelAssignment:
           oneOf:
             - $ref: common.yaml#/AgentName
             - const: default
+        instance:
+          description: Bắt buộc khi agent = `analysis`; `null` với agent khác và `default` (DEC-47).
+          oneOf:
+            - $ref: common.yaml#/AgentInstance
+            - type: 'null'
         providerConnectionId: { $ref: common.yaml#/Id }
         model: { type: string }
         capabilityWarnings:
@@ -203,6 +211,12 @@ AgentModelAssignment:
           type: boolean
           readOnly: true
           description: true nếu đây là cấu hình đang áp dụng (gán riêng hoặc thừa kế default).
+        sameModelWarning:
+          type: boolean
+          readOnly: true
+          description: |
+            Chỉ trên dòng `analysis`: true khi cấu hình hiệu lực của instance A và B cùng provider và cùng model
+            (ORCH-DELIB-005). Chỉ cảnh báo, không chặn lưu (OQ-102).
 
 AgentDefinition:
   type: object
@@ -223,6 +237,10 @@ AgentDefinition:
       description: Loại bản đề xuất agent được tạo (luôn ở trạng thái Draft/Proposed).
       items: { type: string }
     outputSchemaRef: { type: string }
+    instances:
+      type: array
+      description: Instance chạy trong một phiên — chỉ Analysis Agent có (`[A, B]`, AGENT-ANALYSIS-001).
+      items: { $ref: common.yaml#/AgentInstance }
 
 EmbeddingSettings:
   type: object

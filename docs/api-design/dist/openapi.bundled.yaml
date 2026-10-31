@@ -5,7 +5,7 @@ openapi: 3.1.0
 info:
   title: SIRes API (MVP)
   version: 0.1.0-mvp
-  summary: REST API cho SIRes (Super Intelligence Researcher) — phạm vi MVP M1–M7.
+  summary: REST API cho SIRes (Super Intelligence Researcher) — phạm vi MVP.
   description: |
     Đặc tả API mức MVP, suy ra từ PRD SIRes v1.0 (PO duyệt qua phiếu chốt PC-01, 31/10/2026).
     Mỗi file trong `paths/` tương ứng một mục của PRD (`docs/overview/sections/NN-slug.html`);
@@ -54,45 +54,47 @@ security:
   - sessionCookie: []
 tags:
   - name: Auth
-    description: Đăng nhập qua eTroy OIDC — PRD 17.7, 15.12 (M1).
+    description: Đăng nhập qua eTroy OIDC — PRD 17.7, 15.12.
   - name: Account & Settings
-    description: Profile, Preferences, Ngưỡng kiểm chứng — PRD 15.12, 18.1 (M1).
+    description: Profile, Preferences, Ngưỡng kiểm chứng — PRD 15.12, 18.1.
   - name: Provider Connections
-    description: Kết nối Claude, OpenAI, Gemini do người dùng cấp key — PRD 8.6, SCOPE-13 (M1).
+    description: Kết nối Claude, OpenAI, Gemini do người dùng cấp key — PRD 8.6, SCOPE-13.
   - name: Agent Models
-    description: Gán model cho Orchestrator và 7 Specialist Agent — PRD 8.6, 8.2 (M1).
+    description: Gán model cho Orchestrator và 8 Specialist Agent (Analysis Agent theo instance A, B) — PRD 8.6, 8.2, 8.7.
   - name: Workspace
-    description: Dashboard, tìm kiếm, Pending Actions, Notifications — PRD 4.4, 7 (M2).
+    description: Dashboard, tìm kiếm, Pending Actions, Notifications — PRD 4.4, 7.
   - name: Projects
-    description: Research Project và Research Context có phiên bản — PRD 7 (M2).
+    description: Research Project và Research Context có phiên bản — PRD 7.
   - name: Conversations
-    description: Global AI Assistant và Project AI Chat — PRD 7, 8.1 (M2).
+    description: Global AI Assistant và Project AI Chat — PRD 7, 8.1.
   - name: Prompts
-    description: Interactive Agent Prompt — PRD 8.4, 5.9 (M2).
+    description: Interactive Agent Prompt — PRD 8.4, 5.9.
   - name: Plan
-    description: Research Plan và Plan Version — PRD 9.1–9.3, 9.11 (M3).
+    description: Research Plan và Plan Version — PRD 9.1–9.3, 9.11.
   - name: Tasks
-    description: Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10 (M3).
+    description: Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10.
   - name: Discovery
-    description: Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2 (M4).
+    description: Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2.
   - name: Trusted Library
-    description: Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9 (M4).
+    description: Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9.
   - name: Evidence & Claims
-    description: Indexing, RAG evidence, claim, kiểm chứng — PRD 11 (M4–M5).
+    description: Indexing, RAG evidence, claim, kiểm chứng — PRD 11.
   - name: Artifacts
-    description: Artifact và Artifact Version có provenance — PRD 5.7, 14.4 (M2–M5).
+    description: Artifact và Artifact Version có provenance — PRD 5.7, 14.4.
   - name: Manuscript
-    description: LaTeX workspace, Change Proposal, bibliography, build — PRD 12 (M6).
+    description: LaTeX workspace, Change Proposal, bibliography, build — PRD 12.
   - name: Diagrams
-    description: Diagram Agent, Mermaid — PRD 13 (M6).
+    description: Diagram Agent, Mermaid — PRD 13.
   - name: Orchestration
-    description: Workflow, Agent Run, khôi phục — PRD 8.5, 14.6–14.7 (M2, M7).
+    description: Workflow, Agent Run, khôi phục — PRD 8.5, 14.6–14.7.
+  - name: Deliberation
+    description: Phiên thảo luận giữa Orchestrator và Analysis Agent, Deliberation Board, Context Snapshot — PRD 8.7, 14.9 (DEC-47).
   - name: Shared Context
-    description: Context Item và khung nhìn Shared Context — PRD 14.1–14.3 (M2).
+    description: Context Item và khung nhìn Shared Context — PRD 14.1–14.3.
   - name: Audit
-    description: Audit trail chỉ ghi thêm và export — PRD 14.8 (M1, M7).
+    description: Audit trail chỉ ghi thêm và export — PRD 14.8.
   - name: Events
-    description: Luồng sự kiện realtime cho giao diện — PRD 15.8, DATA-PERSIST-001 (M2).
+    description: Luồng sự kiện realtime cho giao diện — PRD 15.8, DATA-PERSIST-001.
 paths:
   /auth/login:
     get:
@@ -106,7 +108,6 @@ paths:
       x-requirements:
         - INT-OIDC-001
       x-priority: P0
-      x-milestone: M1
       security: []
       parameters:
         - name: returnTo
@@ -138,7 +139,6 @@ paths:
         - INT-OIDC-001
         - INT-OIDC-002
       x-priority: P0
-      x-milestone: M1
       security: []
       parameters:
         - name: code
@@ -171,7 +171,6 @@ paths:
       x-requirements:
         - INT-OIDC-003
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -189,7 +188,6 @@ paths:
       x-requirements:
         - INT-OIDC-003
       x-priority: P0
-      x-milestone: M1
       responses:
         '200':
           description: Phiên hợp lệ.
@@ -220,7 +218,6 @@ paths:
         - INT-OIDC-002
         - UX-I18N-001
       x-priority: P0
-      x-milestone: M1
       responses:
         '200':
           description: Tài khoản hiện tại.
@@ -244,7 +241,6 @@ paths:
         - UX-SETTINGS-001
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -283,7 +279,6 @@ paths:
         - CTX-REGISTRY-002
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -318,7 +313,6 @@ paths:
         - CLAIM-SUPPORT-001
         - CLAIM-CITATION-001
       x-priority: P0
-      x-milestone: M5
       responses:
         '200':
           description: Bộ ngưỡng hiện hành của tài khoản.
@@ -340,7 +334,6 @@ paths:
         - CLAIM-SUPPORT-001
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -371,7 +364,6 @@ paths:
         - CLAIM-SUPPORT-001
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -390,7 +382,6 @@ paths:
       x-requirements:
         - AGENT-PROVIDER-002
       x-priority: P0
-      x-milestone: M1
       responses:
         '200':
           description: Mọi kết nối của tài khoản; API key chỉ ở dạng `keyHint`.
@@ -415,7 +406,6 @@ paths:
         - NFR-SECRETS-001
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -457,7 +447,6 @@ paths:
       x-requirements:
         - AGENT-PROVIDER-002
       x-priority: P0
-      x-milestone: M1
       responses:
         '200':
           description: Kết nối.
@@ -481,7 +470,6 @@ paths:
         - AGENT-PROVIDER-002
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -516,7 +504,6 @@ paths:
         - AGENT-PROVIDER-002
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
         - name: replacementConnectionId
@@ -547,7 +534,6 @@ paths:
         - AGENT-PROVIDER-002
         - INT-PROVIDER-001
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -564,12 +550,13 @@ paths:
       tags:
         - Agent Models
       operationId: listAgents
-      summary: Agent registry (Orchestrator + 7 Specialist Agent)
+      summary: Agent registry (Orchestrator + 8 Specialist Agent)
+      description: Chín định nghĩa; Analysis Agent có `instances = [A, B]` (DEC-47, AGENT-ANALYSIS-001).
       x-requirements:
         - AGENT-REGISTRY-001
         - AGENT-SCOPE-001
+        - AGENT-ANALYSIS-001
       x-priority: P1
-      x-milestone: M2
       responses:
         '200':
           description: Định nghĩa agent, chỉ đọc trong MVP.
@@ -588,11 +575,14 @@ paths:
         - Agent Models
       operationId: listAgentModelAssignments
       summary: Cấu hình model của từng agent
-      description: Trả cấu hình `default` và cấu hình hiệu lực cho cả 8 agent, kèm cảnh báo năng lực.
+      description: |
+        Trả cấu hình `default` và cấu hình hiệu lực cho cả 9 agent, kèm cảnh báo năng lực. Analysis Agent có hai dòng
+        (`instance` A, B); hai dòng này mang `sameModelWarning` khi cùng provider và model (UX-SETTINGS-003, ORCH-DELIB-005).
       x-requirements:
         - AGENT-PROVIDER-003
+        - UX-SETTINGS-003
+        - ORCH-DELIB-005
       x-priority: P0
-      x-milestone: M1
       responses:
         '200':
           description: Danh sách gán model.
@@ -614,17 +604,29 @@ paths:
           oneOf:
             - $ref: '#/components/schemas/AgentName'
             - const: default
+      - name: instance
+        in: query
+        required: false
+        description: |
+          Bắt buộc khi `agent = analysis` (thiếu → `422 instance_required`); gửi cho agent khác → `422 instance_not_allowed`.
+          Assumption của biên soạn về cách định danh dòng theo instance.
+        schema:
+          $ref: '#/components/schemas/AgentInstance'
     put:
       tags:
         - Agent Models
       operationId: setAgentModelAssignment
-      summary: Gán Provider Connection và model cho một agent (APR-09)
-      description: Model phải thuộc `availableModels` hoặc được nhập và kiểm tra. Không áp dụng cho Agent Run đang chạy.
+      summary: Gán Provider Connection và model cho một agent hoặc một instance Analysis Agent (APR-09)
+      description: |
+        Model phải thuộc `availableModels` hoặc được nhập và kiểm tra. Không áp dụng cho Agent Run đang chạy.
+        Với `analysis`, khi instance A và B có cùng provider và model, cấu hình vẫn được lưu và phản hồi có
+        `sameModelWarning = true` (ORCH-DELIB-005-AC01).
       x-requirements:
         - AGENT-PROVIDER-003
+        - ORCH-DELIB-005
+        - UX-SETTINGS-003
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -643,7 +645,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Đã gán; có thể kèm `capabilityWarnings`.
+          description: Đã gán; có thể kèm `capabilityWarnings` và (với `analysis`) `sameModelWarning`.
           content:
             application/json:
               schema:
@@ -661,7 +663,6 @@ paths:
         - AGENT-PROVIDER-003
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -679,7 +680,6 @@ paths:
         - PROMPT-LIFECYCLE-001
         - UX-PROMPT-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
         - name: status
@@ -716,7 +716,6 @@ paths:
       x-requirements:
         - PROMPT-LIFECYCLE-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Prompt.
@@ -743,7 +742,6 @@ paths:
         - PROMPT-APPROVAL-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -768,6 +766,88 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /projects/{projectId}/deliberations:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags:
+        - Deliberation
+      operationId: listDeliberations
+      summary: Các phiên thảo luận của project (lọc theo workflow)
+      description: |
+        Mỗi workflow có một Deliberation Board; mỗi phiên là một phần của board (CTX-BOARD-001). Trả tóm tắt phiên
+        (Problem Brief, bên tham gia, vòng hiện tại, trạng thái, usage tổng, `sameModelWarning`); entry xem ở chi tiết phiên.
+      x-requirements:
+        - UX-MONITOR-006
+        - UX-MONITOR-007
+        - ORCH-DELIB-001
+        - ORCH-DELIB-004
+        - CTX-BOARD-001
+      x-priority: P0
+      parameters:
+        - name: workflowId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DeliberationStatus'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Phiên theo thứ tự bắt đầu, mới nhất trước.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Deliberation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /projects/{projectId}/deliberations/{deliberationId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/DeliberationId'
+    get:
+      tags:
+        - Deliberation
+      operationId: getDeliberation
+      summary: Chi tiết phiên thảo luận — chế độ xem thảo luận ở Agent Activity
+      description: |
+        Problem Brief, bên tham gia, các vòng, entry Researcher được xem, bản tổng hợp, Context Snapshot (cờ lỗi thời và
+        entity đã đổi), usage theo từng bên và tổng, `sameModelWarning`, prompt quyết định và lựa chọn đã chọn.
+        Entry chỉ hiển thị khi vòng chứa nó đóng (OQ-101, CTX-BOARD-002); entry của vòng đang mở nằm trong `pendingEntries`
+        không kèm nội dung. Entry bất biến; đổi lập trường thể hiện bằng `supersedesEntryId`, rút lại bằng `status = retracted`.
+        Deliberation Record chính thức là Artifact Version Draft loại `deliberation_record` (`recordArtifactVersionId`),
+        xem qua API Artifact. `snapshotOutdated` lặp lại `contextSnapshot.outdated` cho giao diện.
+      x-requirements:
+        - UX-MONITOR-006
+        - UX-MONITOR-007
+        - ORCH-DELIB-001
+        - ORCH-DELIB-002
+        - ORCH-DELIB-003
+        - ORCH-DELIB-004
+        - ORCH-DELIB-005
+        - CTX-BOARD-002
+        - CTX-BOARD-001
+        - CTX-SNAPSHOT-001
+        - NFR-USAGE-005
+      x-priority: P0
+      responses:
+        '200':
+          description: Phiên thảo luận.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliberationDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /dashboard:
     get:
       tags:
@@ -778,7 +858,6 @@ paths:
       x-requirements:
         - WS-DASHBOARD-001
       x-priority: P1
-      x-milestone: M2
       responses:
         '200':
           description: Dữ liệu Dashboard.
@@ -798,7 +877,6 @@ paths:
       x-requirements:
         - WS-SEARCH-001
       x-priority: P1
-      x-milestone: M2
       parameters:
         - name: q
           in: query
@@ -847,7 +925,6 @@ paths:
       x-requirements:
         - UX-PENDING-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
         - name: status
@@ -896,7 +973,6 @@ paths:
       x-requirements:
         - UX-PENDING-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -917,7 +993,6 @@ paths:
       x-requirements:
         - UX-PENDING-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
         - name: status
@@ -953,7 +1028,6 @@ paths:
       x-requirements:
         - UX-PENDING-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -985,7 +1059,6 @@ paths:
         - PROJ-CRUD-003
         - NFR-ISOL-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - name: status
           in: query
@@ -1033,7 +1106,6 @@ paths:
         - PROJ-CONTEXT-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1071,7 +1143,6 @@ paths:
         - PROJ-CRUD-001
         - UX-OVERVIEW-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Project.
@@ -1093,7 +1164,6 @@ paths:
       x-requirements:
         - PROJ-CRUD-002
       x-priority: P1
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1133,7 +1203,6 @@ paths:
         - NFR-RET-002
       x-apr: APR-08
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1161,7 +1230,6 @@ paths:
         - PROJ-CRUD-003
       x-apr: APR-08
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1185,7 +1253,6 @@ paths:
       x-requirements:
         - PROJ-CRUD-003
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -1210,7 +1277,6 @@ paths:
         - PROJ-CRUD-003
         - NFR-RET-002
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -1235,7 +1301,6 @@ paths:
       x-requirements:
         - PROJ-CONTEXT-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Các version, mới nhất trước.
@@ -1260,7 +1325,6 @@ paths:
         - PROJ-CONTEXT-001
         - PROJ-CONTEXT-002
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1302,7 +1366,6 @@ paths:
       x-requirements:
         - PROJ-CONTEXT-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Version.
@@ -1324,7 +1387,6 @@ paths:
       x-requirements:
         - PROJ-CHAT-002
       x-priority: P1
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -1360,7 +1422,6 @@ paths:
         - WS-CHAT-001
         - PROJ-CHAT-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - name: scope
           in: query
@@ -1391,7 +1452,6 @@ paths:
         - WS-CHAT-001
         - PROJ-CHAT-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -1438,7 +1498,6 @@ paths:
         - PROJ-CHAT-001
         - TASK-PROGRESS-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -1470,7 +1529,6 @@ paths:
         - PROJ-CHAT-001
         - ORCH-INTENT-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1505,7 +1563,6 @@ paths:
         - PLAN-VIEWS-001
         - PLAN-APPROVAL-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Research Plan.
@@ -1531,7 +1588,6 @@ paths:
         - PLAN-GENERATE-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1563,7 +1619,6 @@ paths:
       x-requirements:
         - PLAN-REVIEW-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - name: status
           in: query
@@ -1589,7 +1644,6 @@ paths:
       x-requirements:
         - PLAN-REVIEW-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1625,7 +1679,6 @@ paths:
         - TASK-DEFINE-001
         - TASK-DEPENDENCY-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Plan Version.
@@ -1649,7 +1702,6 @@ paths:
         - PLAN-REVIEW-001
         - DATA-CONC-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1684,7 +1736,6 @@ paths:
       x-requirements:
         - PLAN-REVIEW-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -1710,7 +1761,6 @@ paths:
         - TASK-DEPENDENCY-001
         - DATA-VALID-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1743,7 +1793,6 @@ paths:
         - CTX-CONSISTENCY-003
       x-apr: APR-01
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1780,7 +1829,6 @@ paths:
         - PLAN-APPROVAL-001
       x-apr: APR-01
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1817,7 +1865,6 @@ paths:
       x-requirements:
         - PLAN-REVIEW-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -1842,7 +1889,6 @@ paths:
       x-requirements:
         - PLAN-REVIEW-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - name: against
           in: query
@@ -1870,7 +1916,6 @@ paths:
       x-requirements:
         - PLAN-IMPACT-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Task, artifact, claim bị ảnh hưởng.
@@ -1891,7 +1936,6 @@ paths:
         - TASK-PROGRESS-001
         - UX-TASK-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - name: status
           in: query
@@ -1941,7 +1985,6 @@ paths:
         - TASK-DEFINE-001
         - TASK-PROGRESS-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Task.
@@ -1967,7 +2010,6 @@ paths:
       x-requirements:
         - TASK-READINESS-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Readiness.
@@ -1991,7 +2033,6 @@ paths:
         - T-04
         - T-16
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
         - name: includeSemantic
@@ -2033,7 +2074,6 @@ paths:
         - T-05
         - T-06
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2070,7 +2110,6 @@ paths:
       x-transition:
         - T-07
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2100,7 +2139,6 @@ paths:
       x-transition:
         - T-11
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2135,7 +2173,6 @@ paths:
       x-requirements:
         - TASK-CHECKLIST-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2175,7 +2212,6 @@ paths:
       x-requirements:
         - TASK-CHECKLIST-001
       x-priority: P0
-      x-milestone: M3
       responses:
         '200':
           description: Review, mới nhất trước.
@@ -2206,7 +2242,6 @@ paths:
         - T-14
         - T-15
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2249,7 +2284,6 @@ paths:
       x-transition:
         - T-19
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2286,7 +2320,6 @@ paths:
       x-requirements:
         - PLAN-IMPACT-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -2321,7 +2354,6 @@ paths:
       x-transition:
         - T-18
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2358,7 +2390,6 @@ paths:
         - DISC-ADAPTER-001
         - INT-SCHOLAR-001
       x-priority: P0
-      x-milestone: M4
       responses:
         '200':
           description: Danh sách nguồn.
@@ -2385,7 +2416,6 @@ paths:
         - INT-SCHOLAR-002
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2414,7 +2444,6 @@ paths:
       x-requirements:
         - DISC-AUTHOR-001
       x-priority: P1
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2438,7 +2467,6 @@ paths:
       x-requirements:
         - DISC-REVIEW-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - name: workflowId
           in: query
@@ -2479,7 +2507,6 @@ paths:
       x-requirements:
         - DISC-REVIEW-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -2520,7 +2547,6 @@ paths:
         - LIB-METADATA-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2554,7 +2580,6 @@ paths:
         - LIB-LIBRARY-001
         - UX-REF-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - name: approvalStatus
           in: query
@@ -2607,7 +2632,6 @@ paths:
         - LIB-IMPORT-002
         - LIB-METADATA-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2652,7 +2676,6 @@ paths:
         - LIB-CONTENT-001
         - INT-DOC-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2693,7 +2716,6 @@ paths:
         - DATA-IDEMP-001
       x-apr: APR-04
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2723,7 +2745,6 @@ paths:
       x-requirements:
         - LIB-LIBRARY-001
       x-priority: P0
-      x-milestone: M4
       responses:
         '200':
           description: Reference.
@@ -2746,7 +2767,6 @@ paths:
       x-requirements:
         - LIB-METADATA-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2777,7 +2797,6 @@ paths:
         - LIB-LIFECYCLE-001
       x-apr: APR-08
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -2801,7 +2820,6 @@ paths:
         - DATA-AUDIT-001
       x-apr: APR-04
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2843,7 +2861,6 @@ paths:
         - LIB-LIFECYCLE-001
       x-apr: APR-04
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2876,7 +2893,6 @@ paths:
       x-requirements:
         - LIB-METADATA-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -2912,7 +2928,6 @@ paths:
         - LIB-LIBRARY-001
         - LIB-LIFECYCLE-001
       x-priority: P0
-      x-milestone: M4
       responses:
         '200':
           description: Quan hệ ngược được tính toán (OWN-02).
@@ -2932,7 +2947,6 @@ paths:
         - LIB-CONTENT-001
         - EVID-INSPECTOR-001
       x-priority: P0
-      x-milestone: M4
       responses:
         '200':
           description: File PDF.
@@ -2956,7 +2970,6 @@ paths:
         - EVID-INDEX-001
         - INT-DOC-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -2995,7 +3008,6 @@ paths:
       x-requirements:
         - EVID-INDEX-002
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -3014,7 +3026,6 @@ paths:
       x-requirements:
         - LIB-PROJECT-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - name: status
           in: query
@@ -3045,7 +3056,6 @@ paths:
       x-requirements:
         - LIB-PROJECT-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -3093,7 +3103,6 @@ paths:
       x-requirements:
         - LIB-PROJECT-001
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -3111,7 +3120,6 @@ paths:
         - EVID-INDEX-001
         - INT-VECTOR-001
       x-priority: P0
-      x-milestone: M4
       responses:
         '200':
           description: Cấu hình hiện hành và tiến độ index lại (nếu có).
@@ -3137,7 +3145,6 @@ paths:
         - EVID-INDEX-003
       x-apr: APR-09
       x-priority: P0
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -3167,7 +3174,6 @@ paths:
         - EVID-RETRIEVAL-001
         - UX-EVID-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - name: referenceId
           in: query
@@ -3212,7 +3218,6 @@ paths:
         - INT-VECTOR-002
         - CTX-ISOLATION-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -3244,7 +3249,6 @@ paths:
       x-requirements:
         - EVID-INSPECTOR-001
       x-priority: P0
-      x-milestone: M5
       responses:
         '200':
           description: Evidence kèm đoạn trước/sau, reference và claim liên kết.
@@ -3267,7 +3271,6 @@ paths:
       x-requirements:
         - EVID-INSPECTOR-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -3299,7 +3302,6 @@ paths:
       x-requirements:
         - EVID-INSPECTOR-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -3323,7 +3325,6 @@ paths:
         - CLAIM-MAPPING-001
         - UX-CLAIM-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - name: approvalStatus
           in: query
@@ -3373,7 +3374,6 @@ paths:
         - CLAIM-MAPPING-001
         - CLAIM-SUPPORT-001
       x-priority: P0
-      x-milestone: M5
       responses:
         '200':
           description: Claim.
@@ -3396,7 +3396,6 @@ paths:
       x-requirements:
         - SYN-HUMAN-REVIEW-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3431,7 +3430,6 @@ paths:
         - CLAIM-MAPPING-001
         - CLAIM-CONFLICT-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -3464,7 +3462,6 @@ paths:
       x-requirements:
         - CLAIM-MAPPING-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -3488,7 +3485,6 @@ paths:
         - CLAIM-SUPPORT-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3509,7 +3505,6 @@ paths:
       x-requirements:
         - CLAIM-SUPPORT-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3545,7 +3540,6 @@ paths:
         - CTX-CONSISTENCY-003
       x-apr: APR-06
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3580,7 +3574,6 @@ paths:
         - SYN-HUMAN-REVIEW-001
       x-apr: APR-06
       x-priority: P0
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3613,7 +3606,6 @@ paths:
         - CLAIM-SUPPORT-001
         - CLAIM-CITATION-001
       x-priority: P0
-      x-milestone: M5
       parameters:
         - name: targetType
           in: query
@@ -3653,7 +3645,6 @@ paths:
       x-requirements:
         - MS-INIT-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Manuscript.
@@ -3681,7 +3672,6 @@ paths:
         - MS-INIT-001
         - MS-TEMPLATE-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3708,7 +3698,6 @@ paths:
       x-requirements:
         - MS-BUILD-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3738,7 +3727,6 @@ paths:
       x-requirements:
         - MS-EDITOR-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - name: revisionId
           in: query
@@ -3775,7 +3763,6 @@ paths:
       x-requirements:
         - MS-EDITOR-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - name: revisionId
           in: query
@@ -3810,7 +3797,6 @@ paths:
       x-requirements:
         - MS-REVISION-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -3839,7 +3825,6 @@ paths:
         - MS-EDITOR-001
         - MS-REVISION-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3876,7 +3861,6 @@ paths:
       x-requirements:
         - MS-REVISION-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Revision.
@@ -3899,7 +3883,6 @@ paths:
         - MS-AIWRITE-001
         - MS-DIFF-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - name: status
           in: query
@@ -3933,7 +3916,6 @@ paths:
         - MS-DIFF-001
         - CLAIM-CITATION-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Change Proposal.
@@ -3962,7 +3944,6 @@ paths:
         - DATA-IDEMP-001
       x-apr: APR-05
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -3993,7 +3974,6 @@ paths:
         - MS-DIFF-001
       x-apr: APR-05
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4027,7 +4007,6 @@ paths:
         - MS-DIAGRAM-001
         - INT-DIAGRAM-003
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4059,7 +4038,6 @@ paths:
       x-requirements:
         - MS-BIB-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Entry BibTeX; entry của reference Revoked bị đánh dấu.
@@ -4082,7 +4060,6 @@ paths:
         - MS-BIB-001
         - CLAIM-CITATION-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -4128,7 +4105,6 @@ paths:
       x-requirements:
         - MS-BIB-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -4147,7 +4123,6 @@ paths:
       x-requirements:
         - MS-BUILD-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -4177,7 +4152,6 @@ paths:
         - MS-BUILDENV-001
         - INT-LATEX-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -4214,7 +4188,6 @@ paths:
       x-requirements:
         - MS-BUILD-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Build.
@@ -4236,7 +4209,6 @@ paths:
       x-requirements:
         - MS-BUILD-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Log.
@@ -4258,7 +4230,6 @@ paths:
       x-requirements:
         - MS-BUILD-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: PDF.
@@ -4284,7 +4255,6 @@ paths:
         - MS-EXPORT-001
         - NFR-RET-005
       x-priority: P1
-      x-milestone: M6
       parameters:
         - name: format
           in: query
@@ -4328,7 +4298,6 @@ paths:
       x-requirements:
         - DIAG-TYPES-001
       x-priority: P0
-      x-milestone: M6
       responses:
         '200':
           description: Danh sách loại.
@@ -4358,7 +4327,6 @@ paths:
         - DIAG-VALIDATE-001
         - DATA-IDEMP-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4388,7 +4356,6 @@ paths:
         - DIAG-VALIDATE-001
         - INT-DIAGRAM-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -4418,7 +4385,6 @@ paths:
         - DIAG-SOURCE-001
         - DIAG-REVIEW-001
       x-priority: P0
-      x-milestone: M6
       parameters:
         - name: format
           in: query
@@ -4451,7 +4417,6 @@ paths:
         - UX-MONITOR-001
         - CTX-RECOVERY-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
         - name: status
@@ -4497,7 +4462,6 @@ paths:
         - UX-MONITOR-001
         - ORCH-CONSOLIDATE-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Workflow.
@@ -4519,7 +4483,6 @@ paths:
       x-requirements:
         - ORCH-FAILURE-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4544,7 +4507,6 @@ paths:
       x-requirements:
         - ORCH-FAILURE-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4575,7 +4537,6 @@ paths:
       x-transition:
         - T-10
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4611,7 +4572,6 @@ paths:
         - CTX-RECOVERY-001
         - NFR-REC-002
       x-priority: P0
-      x-milestone: M7
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4644,7 +4604,6 @@ paths:
         - UX-MONITOR-001
         - CTX-REGISTRY-002
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Agent Run theo thứ tự bước.
@@ -4675,7 +4634,6 @@ paths:
         - AGENT-PROVIDER-001
         - NFR-USAGE-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Agent Run.
@@ -4702,7 +4660,6 @@ paths:
         - CTX-REGISTRY-002
         - NFR-RET-009
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Transcript.
@@ -4723,7 +4680,6 @@ paths:
       x-requirements:
         - CTX-STORE-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Shared Context.
@@ -4744,7 +4700,6 @@ paths:
       x-requirements:
         - CTX-STORE-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - name: kind
           in: query
@@ -4787,7 +4742,6 @@ paths:
       x-requirements:
         - CTX-STORE-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -4823,7 +4777,6 @@ paths:
       x-requirements:
         - CTX-STORE-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -4855,7 +4808,6 @@ paths:
         - CTX-REGISTRY-001
         - SYN-PERSIST-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - name: type
           in: query
@@ -4896,7 +4848,6 @@ paths:
       x-requirements:
         - CTX-REGISTRY-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Artifact.
@@ -4916,7 +4867,6 @@ paths:
         - CTX-REGISTRY-001
       x-apr: APR-08
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       responses:
@@ -4936,7 +4886,6 @@ paths:
       x-requirements:
         - CTX-REGISTRY-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Version, mới nhất trước.
@@ -4958,7 +4907,6 @@ paths:
         - CTX-REGISTRY-001
         - DIAG-REVIEW-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -4991,7 +4939,6 @@ paths:
         - DATA-PROV-001
         - SYN-PERSIST-001
       x-priority: P0
-      x-milestone: M2
       responses:
         '200':
           description: Artifact Version.
@@ -5024,7 +4971,6 @@ paths:
         - APR-06
         - APR-07
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -5060,7 +5006,6 @@ paths:
         - APR-06
         - APR-07
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/CsrfToken'
@@ -5092,7 +5037,6 @@ paths:
         - TASK-CHECKLIST-001
         - MS-EDITOR-001
       x-priority: P0
-      x-milestone: M3
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -5143,7 +5087,6 @@ paths:
         - CTX-AUDIT-001
         - DATA-AUDIT-001
       x-priority: P0
-      x-milestone: M1
       parameters:
         - name: objectType
           in: query
@@ -5199,7 +5142,6 @@ paths:
         - CTX-AUDIT-002
         - NFR-RET-008
       x-priority: P1
-      x-milestone: M7
       parameters:
         - name: format
           in: query
@@ -5234,7 +5176,6 @@ paths:
       x-requirements:
         - CTX-AUDIT-001
       x-priority: P0
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -5266,7 +5207,6 @@ paths:
         - UX-STATE-001
         - DATA-PERSIST-001
       x-priority: P0
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
         - name: Last-Event-ID
@@ -5306,6 +5246,11 @@ paths:
                       - reference.indexing_status_changed
                       - build.status_changed
                       - change_proposal.status_changed
+                      - deliberation.started
+                      - deliberation.round_closed
+                      - deliberation.entry_retracted
+                      - deliberation.status_changed
+                      - context_snapshot.outdated
                   projectId:
                     $ref: common.yaml#/Id
                   objectType:
@@ -5391,7 +5336,9 @@ components:
       format: date-time
     AgentName:
       type: string
-      description: Orchestrator và bảy Specialist Agent cố định trong MVP (SCOPE-14).
+      description: |
+        Orchestrator và tám Specialist Agent cố định trong MVP (SCOPE-14, AGENT-REGISTRY-001). `analysis` (Analysis Agent)
+        bổ sung theo DEC-47: chỉ chạy trong phiên thảo luận (PRD 8.7) và luôn đi kèm `instance`.
       enum:
         - orchestrator
         - discovery
@@ -5401,6 +5348,15 @@ components:
         - writing
         - verification
         - diagram
+        - analysis
+    AgentInstance:
+      type: string
+      description: |
+        Instance của Analysis Agent trong phiên thảo luận (AGENT-ANALYSIS-001). MVP dùng đúng 2 instance (OQ-098, DEC-48).
+        Chỉ có giá trị khi agent = `analysis`; với agent khác trường mang kiểu này để trống hoặc `null`.
+      enum:
+        - A
+        - B
     ActorRef:
       type: object
       description: Actor của mọi thay đổi (OQ-004). `agentRunId` bắt buộc khi `type = agent`.
@@ -5417,6 +5373,9 @@ components:
           $ref: '#/components/schemas/Id'
         agent:
           $ref: '#/components/schemas/AgentName'
+        instance:
+          $ref: '#/components/schemas/AgentInstance'
+          description: Chỉ khi agent = `analysis` (DEC-47).
         agentRunId:
           $ref: '#/components/schemas/Id'
         component:
@@ -5749,10 +5708,18 @@ components:
             type: string
         outputSchemaRef:
           type: string
+        instances:
+          type: array
+          description: Instance chạy trong một phiên — chỉ Analysis Agent có (`[A, B]`, AGENT-ANALYSIS-001).
+          items:
+            $ref: '#/components/schemas/AgentInstance'
     AgentModelAssignment:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
         - type: object
+          description: |
+            Duy nhất theo (accountId, agent, instance). Analysis Agent có một dòng cho mỗi instance A, B (UX-SETTINGS-003,
+            ORCH-DELIB-005); instance chưa gán riêng thừa kế `default` như agent khác.
           required:
             - agent
             - providerConnectionId
@@ -5763,6 +5730,11 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/AgentName'
                 - const: default
+            instance:
+              description: Bắt buộc khi agent = `analysis`; `null` với agent khác và `default` (DEC-47).
+              oneOf:
+                - $ref: '#/components/schemas/AgentInstance'
+                - type: 'null'
             providerConnectionId:
               $ref: '#/components/schemas/Id'
             model:
@@ -5782,6 +5754,12 @@ components:
               type: boolean
               readOnly: true
               description: true nếu đây là cấu hình đang áp dụng (gán riêng hoặc thừa kế default).
+            sameModelWarning:
+              type: boolean
+              readOnly: true
+              description: |
+                Chỉ trên dòng `analysis`: true khi cấu hình hiệu lực của instance A và B cùng provider và cùng model
+                (ORCH-DELIB-005). Chỉ cảnh báo, không chặn lưu (OQ-102).
     PromptStatus:
       type: string
       description: Không có hết hạn theo thời gian (OQ-023). Expired/Cancelled không bao giờ là đồng ý.
@@ -5809,6 +5787,93 @@ components:
         - choice
         - edit_and_approve
         - information_request
+    PromptPurpose:
+      type: string
+      description: |
+        Mục đích của prompt (Assumption — biên soạn, DEC-47). `general` cho mọi prompt hiện có.
+        `deliberation_proposal`: prompt `choice` Orchestrator đề xuất mở phiên thảo luận, choices `deliberate` | `skip`
+        (OQ-099, UX-MONITOR-007); chọn `skip` thì không tạo Agent Run của Analysis Agent và kết quả mang nhãn
+        “không qua thảo luận”; lựa chọn `skip` sinh Audit Event (ORCH-DELIB-001-AC03). `deliberation_decision`: prompt `choice` sau tổng hợp (phương án từ bản tổng hợp, thêm
+        `rerun` khi snapshot lỗi thời) hoặc khi phiên Failed (`rerun` | `continue_without_deliberation`) — ORCH-DELIB-002/004.
+        Researcher trả lời qua `POST /prompts/{promptId}/response` hiện có; không có endpoint riêng.
+      enum:
+        - general
+        - deliberation_proposal
+        - deliberation_decision
+      default: general
+    ProblemType:
+      type: string
+      description: Loại vấn đề được đưa ra thảo luận (PRD 8.7). Vấn đề ngoài danh sách bị từ chối mở phiên (ORCH-DELIB-001).
+      enum:
+        - research_direction
+        - plan_structure
+        - methodology
+        - evidence_conflict
+        - recovery_option
+        - major_change_impact
+    DeliberationPartyRef:
+      type: object
+      description: Định danh một bên trong phiên — Orchestrator hoặc một instance Analysis Agent.
+      required:
+        - agent
+      properties:
+        agent:
+          type: string
+          enum:
+            - orchestrator
+            - analysis
+        instance:
+          description: Bắt buộc khi agent = `analysis`.
+          oneOf:
+            - $ref: '#/components/schemas/AgentInstance'
+            - type: 'null'
+    DeliberationProposal:
+      type: object
+      description: Nội dung đề xuất mở phiên để Researcher quyết định (UX-MONITOR-007). Assumption của biên soạn.
+      required:
+        - problem
+        - problemType
+        - reason
+        - participants
+        - maxRounds
+        - sameModelWarning
+      properties:
+        problem:
+          type: string
+        problemType:
+          $ref: '#/components/schemas/ProblemType'
+        reason:
+          type: string
+          description: Lý do Orchestrator đề xuất mở phiên.
+        participants:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/DeliberationPartyRef'
+              - type: object
+                required:
+                  - providerConnectionId
+                  - model
+                properties:
+                  perspective:
+                    type: string
+                    description: Góc nhìn dự kiến giao (ORCH-DELIB-005).
+                  providerConnectionId:
+                    $ref: '#/components/schemas/Id'
+                  model:
+                    type: string
+        estimatedAgentRuns:
+          type: integer
+          description: Số Agent Run dự kiến nếu chạy đủ số vòng tối đa (ước lượng số lượt, không ước lượng chi phí).
+        maxRounds:
+          type: integer
+          description: Số vòng tối đa sau Vòng 1 (ORCH-DELIB-002).
+        sameModelWarning:
+          type: boolean
+          description: Instance A và B cùng provider và model (ORCH-DELIB-005).
+        costNote:
+          type: string
+          description: Ghi chú chi phí — usage tính trên API key của Researcher (OQ-099).
     AprCode:
       type: string
       description: Quyền phê duyệt độc quyền của Researcher (3.3).
@@ -5881,6 +5946,19 @@ components:
               $ref: '#/components/schemas/AgentName'
             type:
               $ref: '#/components/schemas/PromptType'
+            purpose:
+              $ref: '#/components/schemas/PromptPurpose'
+            deliberationProposal:
+              description: Có khi `purpose = deliberation_proposal` (UX-MONITOR-007, ORCH-DELIB-001); `null` với prompt khác.
+              oneOf:
+                - $ref: '#/components/schemas/DeliberationProposal'
+                - type: 'null'
+            deliberationId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: Phiên liên quan khi `purpose = deliberation_decision`.
             question:
               type: string
             blocking:
@@ -5929,6 +6007,642 @@ components:
               type: string
             response:
               $ref: '#/components/schemas/PromptResponseRecord'
+    DeliberationStatus:
+      type: string
+      description: |
+        Running → Completed (bản tổng hợp qua kiểm tra, ORCH-DELIB-004); Running → Failed (thiếu lập trường sau thử lại,
+        ORCH-DELIB-002); Running → Cancelled (workflow bị hủy). Workflow Interrupted không đổi trạng thái Deliberation (18.2).
+      enum:
+        - Running
+        - Completed
+        - Failed
+        - Cancelled
+    ProblemBrief:
+      type: object
+      description: Problem Brief (ORCH-DELIB-001). Mỗi Analysis Agent có một góc nhìn ghi rõ (ORCH-DELIB-005, OQ-100).
+      required:
+        - problem
+        - criteria
+        - perspectives
+      properties:
+        problem:
+          type: string
+        constraints:
+          type: array
+          items:
+            type: string
+        criteria:
+          type: array
+          minItems: 1
+          description: Tiêu chí đánh giá (khả thi, chặt chẽ về phương pháp, đủ evidence, thời gian…).
+          items:
+            type: string
+        knownOptions:
+          type: array
+          items:
+            type: string
+        perspectives:
+          type: array
+          items:
+            type: object
+            required:
+              - participant
+              - perspective
+            properties:
+              participant:
+                $ref: '#/components/schemas/DeliberationPartyRef'
+              perspective:
+                type: string
+                examples:
+                  - xây dựng phương án
+                  - tìm rủi ro và phương án thay thế
+    DeliberationParticipant:
+      allOf:
+        - $ref: '#/components/schemas/DeliberationPartyRef'
+        - type: object
+          description: |
+            Bên tham gia kèm cấu hình model ghi lúc mở phiên (không đổi khi Researcher sửa Agent Models giữa phiên) và trạng
+            thái chạy hiện tại cho Agent Activity (UX-MONITOR-006). Assumption của biên soạn.
+          required:
+            - providerConnectionId
+            - provider
+            - model
+            - status
+          properties:
+            providerConnectionId:
+              $ref: '#/components/schemas/Id'
+            providerConnectionName:
+              type: string
+            provider:
+              $ref: '#/components/schemas/ProviderName'
+            model:
+              type: string
+            status:
+              type: string
+              description: idle — không có Agent Run đang chạy; running — có; error — Agent Run gần nhất Failed.
+              enum:
+                - idle
+                - running
+                - error
+            currentAgentRunId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+    UsageTotal:
+      type: object
+      description: Usage cộng dồn; khớp tổng các Agent Run tương ứng, sai lệch 0 (NFR-USAGE-005).
+      properties:
+        inputTokens:
+          type: integer
+        outputTokens:
+          type: integer
+        cost:
+          type:
+            - number
+            - 'null'
+          description: Chi phí theo provider trả về; `null` khi provider không trả (không ước tính — NFR-USAGE-001).
+    Deliberation:
+      allOf:
+        - $ref: '#/components/schemas/EntityMeta'
+        - type: object
+          description: Phiên thảo luận (PRD 8.7, 18.1). Một phần của Deliberation Board của workflow (CTX-BOARD-001).
+          required:
+            - workflowId
+            - stepId
+            - problemType
+            - brief
+            - participants
+            - currentRound
+            - maxRounds
+            - contextSnapshotId
+            - status
+            - startedAt
+          properties:
+            workflowId:
+              $ref: '#/components/schemas/Id'
+            stepId:
+              $ref: '#/components/schemas/Id'
+            problemType:
+              $ref: '#/components/schemas/ProblemType'
+            brief:
+              $ref: '#/components/schemas/ProblemBrief'
+            participants:
+              type: array
+              minItems: 3
+              description: Orchestrator và đúng 2 instance Analysis Agent (A, B) trong MVP (OQ-098).
+              items:
+                $ref: '#/components/schemas/DeliberationParticipant'
+            currentRound:
+              type: integer
+              minimum: 0
+              description: 0 = Problem Brief; 1 = đề xuất độc lập; 2 = phản biện chéo; 3 = vòng hẹp (nếu có).
+            maxRounds:
+              type: integer
+              description: Số vòng tối đa sau Vòng 1, mặc định 2 (Vòng 2 và một vòng hẹp), cấu hình cấp hệ thống (ORCH-DELIB-002).
+            contextSnapshotId:
+              $ref: '#/components/schemas/Id'
+            status:
+              $ref: '#/components/schemas/DeliberationStatus'
+            recordArtifactId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: Artifact loại `deliberation_record` (có khi Completed).
+            recordArtifactVersionId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: Artifact Version Draft loại `deliberation_record` của phiên (ORCH-DELIB-004); Researcher mở để xem Record.
+            usageTotal:
+              $ref: '#/components/schemas/UsageTotal'
+            sameModelWarning:
+              type: boolean
+              description: true khi hai instance Analysis Agent dùng cùng provider và cùng model lúc mở phiên (ORCH-DELIB-005).
+            startedAt:
+              $ref: '#/components/schemas/Timestamp'
+            endedAt:
+              $ref: '#/components/schemas/Timestamp'
+    DeliberationRound:
+      type: object
+      readOnly: true
+      description: Vòng của phiên. `kind` là Assumption của biên soạn để giao diện dựng cột theo vòng (UX-MONITOR-006).
+      required:
+        - round
+        - kind
+        - closed
+      properties:
+        round:
+          type: integer
+          minimum: 0
+        kind:
+          type: string
+          enum:
+            - brief
+            - independent
+            - cross_critique
+            - narrow
+            - synthesis
+        focus:
+          type: string
+          description: Điểm bất đồng của vòng hẹp.
+        closed:
+          type: boolean
+        closedAt:
+          $ref: '#/components/schemas/Timestamp'
+    DeliberationAuthor:
+      allOf:
+        - $ref: '#/components/schemas/DeliberationPartyRef'
+        - type: object
+          required:
+            - agentRunId
+          properties:
+            agentRunId:
+              $ref: '#/components/schemas/Id'
+    DeliberationEntryType:
+      type: string
+      enum:
+        - problem_brief
+        - position
+        - critique
+        - finding
+        - synthesis
+        - retraction
+    TypedRef:
+      type: object
+      description: Tham chiếu có phiên bản tới entity khác (inputRefs, outputRefs, provenance.inputs).
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+          examples:
+            - artifact_version
+            - evidence
+            - reference
+            - context_item
+            - research_context_version
+            - claim
+            - deliberation_entry
+        id:
+          $ref: '#/components/schemas/Id'
+        version:
+          type: integer
+    DeliberationPoint:
+      type: object
+      description: |
+        Một điểm có `id` ổn định trong entry để phản biện trỏ tới (UX-MONITOR-006: nối điểm bị phản biện với phản biện).
+        `id` duy nhất trong entry, giữ nguyên khi entry mới supersede entry cũ và điểm không đổi. Assumption của biên soạn.
+      required:
+        - id
+        - text
+      properties:
+        id:
+          type: string
+          examples:
+            - p1
+            - r2
+        text:
+          type: string
+        assumption:
+          type: boolean
+          description: System gắn true khi nhận định về tài liệu không có tham chiếu Trusted Reference/Evidence (ORCH-DELIB-003).
+        sourceRefs:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypedRef'
+    Confidence:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+    PositionContent:
+      type: object
+      description: |
+        Lập trường theo mẫu cố định (ORCH-DELIB-003): phương án; lý do theo tiêu chí; giả định; rủi ro; tham chiếu nguồn;
+        độ tin cậy. PRD 18.1 ghi rationale[] {criterion, text}, assumptions[], risks[]; ở đây mọi điểm gom vào `points` có
+        `id` ổn định, phân biệt bằng `kind` (Assumption — cần đồng bộ PRD 18.1).
+      required:
+        - option
+        - points
+        - confidence
+      properties:
+        option:
+          type: string
+          description: Phương án đề xuất.
+        points:
+          type: array
+          minItems: 1
+          items:
+            allOf:
+              - $ref: '#/components/schemas/DeliberationPoint'
+              - type: object
+                required:
+                  - kind
+                properties:
+                  kind:
+                    type: string
+                    enum:
+                      - rationale
+                      - assumption
+                      - risk
+                  criterion:
+                    type: string
+                    description: Bắt buộc khi kind = `rationale` — tiêu chí của Problem Brief.
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+    CritiqueKind:
+      type: string
+      enum:
+        - agree
+        - disagree
+        - add_information
+    CritiqueContent:
+      type: object
+      description: Phản biện trỏ tới từng điểm của lập trường bị phản biện (ORCH-DELIB-003).
+      required:
+        - targetEntryId
+        - points
+      properties:
+        targetEntryId:
+          $ref: '#/components/schemas/Id'
+        points:
+          type: array
+          minItems: 1
+          description: Mỗi điểm phản biện có `id` riêng và trỏ tới `targetPointId` của entry đích; `text` là lý do/thông tin bổ sung.
+          items:
+            allOf:
+              - $ref: '#/components/schemas/DeliberationPoint'
+              - type: object
+                required:
+                  - targetPointId
+                  - kind
+                properties:
+                  targetEntryId:
+                    $ref: '#/components/schemas/Id'
+                    description: Mặc định là `targetEntryId` của critique; ghi khi điểm trỏ tới entry khác.
+                  targetPointId:
+                    type: string
+                  kind:
+                    $ref: '#/components/schemas/CritiqueKind'
+    FindingContent:
+      type: object
+      description: Phát hiện trung gian của bước song song (CTX-BOARD-003). Cấu trúc là Assumption (PRD chưa chi tiết).
+      required:
+        - summary
+      properties:
+        summary:
+          type: string
+        detail:
+          type: string
+    ChangedEntity:
+      type: object
+      required:
+        - type
+        - id
+        - newVersion
+      properties:
+        type:
+          type: string
+        id:
+          $ref: '#/components/schemas/Id'
+        newVersion:
+          type: integer
+    SynthesisContent:
+      type: object
+      description: |
+        Bản tổng hợp của Orchestrator (ORCH-DELIB-004). System từ chối khi không tham chiếu lập trường cuối của mọi bên
+        hoặc bỏ sót critique đang phản đối. Tên trường là Assumption (PRD 18.1 chỉ ghi “có cấu trúc theo type”).
+      required:
+        - consensus
+        - disagreements
+        - options
+        - recommendation
+        - finalPositionEntryIds
+      properties:
+        consensus:
+          type: array
+          items:
+            type: string
+        disagreements:
+          type: array
+          items:
+            type: object
+            required:
+              - point
+              - positions
+            properties:
+              point:
+                type: string
+              positions:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - participant
+                    - entryId
+                  properties:
+                    participant:
+                      $ref: '#/components/schemas/DeliberationPartyRef'
+                    entryId:
+                      $ref: '#/components/schemas/Id'
+                    summary:
+                      type: string
+              openCritiqueEntryIds:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Id'
+        options:
+          type: array
+          description: Bảng phương án và đánh đổi theo tiêu chí của Problem Brief; là nguồn cho `choices` của prompt choice.
+          items:
+            type: object
+            required:
+              - id
+              - label
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+              proposedBy:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliberationPartyRef'
+              tradeoffs:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    criterion:
+                      type: string
+                    assessment:
+                      type: string
+        recommendation:
+          type: object
+          required:
+            - optionId
+            - rationale
+          properties:
+            optionId:
+              type: string
+            rationale:
+              type: string
+        questions:
+          type: array
+          description: Câu hỏi cho Researcher.
+          items:
+            type: string
+        finalPositionEntryIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Id'
+        outdatedEntities:
+          type: array
+          description: Entity đã đổi khi Context Snapshot lỗi thời (ORCH-DELIB-004 luồng thay thế).
+          items:
+            $ref: '#/components/schemas/ChangedEntity'
+    RetractionContent:
+      type: object
+      required:
+        - targetEntryId
+        - reason
+      properties:
+        targetEntryId:
+          $ref: '#/components/schemas/Id'
+        reason:
+          type: string
+    DeliberationEntryContent:
+      description: Nội dung có cấu trúc theo `type` của entry (18.1); System kiểm tra schema trước khi ghi (ORCH-DELIB-003).
+      anyOf:
+        - $ref: '#/components/schemas/ProblemBrief'
+        - $ref: '#/components/schemas/PositionContent'
+        - $ref: '#/components/schemas/CritiqueContent'
+        - $ref: '#/components/schemas/FindingContent'
+        - $ref: '#/components/schemas/SynthesisContent'
+        - $ref: '#/components/schemas/RetractionContent'
+    DeliberationEntryStatus:
+      type: string
+      description: |
+        draft → final (System, khi tác giả xác nhận hoặc Agent Run kết thúc thành công); draft/final → retracted (khi tác giả
+        ghi entry `retraction`). Nội dung bất biến ở mọi trạng thái (CTX-BOARD-001, 18.2).
+      enum:
+        - draft
+        - final
+        - retracted
+    DeliberationEntry:
+      allOf:
+        - $ref: '#/components/schemas/EntityMeta'
+        - type: object
+          description: |
+            Entry trên Deliberation Board (CTX-BOARD-001, 18.1). Chỉ ghi thêm; không sửa tại chỗ. Chỉ System chuyển trạng thái.
+            `content` theo `type`: problem_brief → ProblemBrief, position → PositionContent, critique → CritiqueContent,
+            finding → FindingContent, synthesis → SynthesisContent, retraction → RetractionContent.
+          required:
+            - workflowId
+            - author
+            - type
+            - content
+            - status
+            - createdAt
+          properties:
+            workflowId:
+              $ref: '#/components/schemas/Id'
+            deliberationId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: '`null` với finding của bước song song ngoài phiên thảo luận (CTX-BOARD-003).'
+            round:
+              type:
+                - integer
+                - 'null'
+              description: Vòng của entry trong phiên; `null` ngoài phiên.
+            author:
+              $ref: '#/components/schemas/DeliberationAuthor'
+            type:
+              $ref: '#/components/schemas/DeliberationEntryType'
+            content:
+              $ref: '#/components/schemas/DeliberationEntryContent'
+            sourceRefs:
+              type: array
+              description: Chỉ Trusted Reference, Evidence, Claim hoặc artifact của project; không trỏ tới Discovered Result.
+              items:
+                $ref: '#/components/schemas/TypedRef'
+            assumptionFlags:
+              type: array
+              description: |
+                `id` các điểm mang nhãn giả định (`points[].assumption = true`) — tóm tắt để lọc nhanh (ORCH-DELIB-003).
+              items:
+                type: string
+            status:
+              $ref: '#/components/schemas/DeliberationEntryStatus'
+            supersedesEntryId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+            changeReason:
+              type: string
+              description: Bắt buộc khi entry đổi lập trường (`supersedesEntryId` trỏ tới position) — thiếu thì bị từ chối.
+            needsReview:
+              type: boolean
+              description: Cờ cần xem lại khi entry được tham chiếu bị rút lại (CTX-BOARD-003).
+            visibleFrom:
+              description: Thời điểm vòng chứa entry đóng — từ lúc này Researcher và các bên thấy entry (CTX-BOARD-002, OQ-101).
+              oneOf:
+                - $ref: '#/components/schemas/Timestamp'
+                - type: 'null'
+    ContextSnapshot:
+      type: object
+      readOnly: true
+      description: |
+        Context Snapshot bất biến của phiên (CTX-SNAPSHOT-001): chỉ tham chiếu và phiên bản, không sao chép nội dung, không
+        API key, không dữ liệu project khác. `outdated` chỉ chuyển false → true.
+      required:
+        - id
+        - projectId
+        - deliberationId
+        - entities
+        - outdated
+        - createdAt
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        projectId:
+          $ref: '#/components/schemas/Id'
+        deliberationId:
+          $ref: '#/components/schemas/Id'
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/TypedRef'
+        outdated:
+          type: boolean
+        changedEntities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangedEntity'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+    ParticipantUsage:
+      allOf:
+        - $ref: '#/components/schemas/DeliberationPartyRef'
+        - $ref: '#/components/schemas/UsageTotal'
+        - type: object
+          properties:
+            agentRunIds:
+              type: array
+              items:
+                $ref: '#/components/schemas/Id'
+    DeliberationDetail:
+      allOf:
+        - $ref: '#/components/schemas/Deliberation'
+        - type: object
+          readOnly: true
+          description: |
+            Chế độ xem thảo luận cho Researcher (UX-MONITOR-006). `entries` chỉ gồm entry của vòng đã đóng (OQ-101);
+            entry của vòng đang mở chỉ xuất hiện trong `pendingEntries` dạng “đang viết, mở khi vòng đóng”, không có nội dung.
+          required:
+            - rounds
+            - entries
+            - contextSnapshot
+            - usageByParticipant
+          properties:
+            rounds:
+              type: array
+              items:
+                $ref: '#/components/schemas/DeliberationRound'
+            entries:
+              type: array
+              items:
+                $ref: '#/components/schemas/DeliberationEntry'
+            pendingEntries:
+              type: array
+              items:
+                type: object
+                required:
+                  - round
+                  - author
+                  - type
+                properties:
+                  round:
+                    type: integer
+                  author:
+                    $ref: '#/components/schemas/DeliberationPartyRef'
+                  type:
+                    $ref: '#/components/schemas/DeliberationEntryType'
+            synthesisEntryId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+            contextSnapshot:
+              $ref: '#/components/schemas/ContextSnapshot'
+            snapshotOutdated:
+              type: boolean
+              description: Bằng `contextSnapshot.outdated` — cờ snapshot lỗi thời cho giao diện (CTX-SNAPSHOT-001).
+            usageByParticipant:
+              type: array
+              description: Usage theo từng bên; tổng ở `usageTotal` (NFR-USAGE-005).
+              items:
+                $ref: '#/components/schemas/ParticipantUsage'
+            decisionPromptId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: Prompt `choice` trình Researcher sau tổng hợp (hoặc chạy lại/tiếp tục không thảo luận khi Failed).
+            chosenOptionIds:
+              type: array
+              description: Lựa chọn Researcher đã chọn, lấy từ câu trả lời prompt.
+              items:
+                type: string
     PendingActionKind:
       type: string
       description: Loại pending action (4.4).
@@ -5975,6 +6689,9 @@ components:
               description: Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4).
     WorkflowType:
       type: string
+      description: |
+        `deliberation` — workflow do Researcher yêu cầu thảo luận từ Project AI Chat (ORCH-DELIB-001). Phiên mở trong
+        workflow đang chạy (ví dụ plan_proposal ở 6.3) là một bước của workflow đó, không tạo workflow mới.
       enum:
         - plan_proposal
         - task_execution
@@ -5986,6 +6703,7 @@ components:
         - manuscript_edit
         - diagram
         - readiness_semantic
+        - deliberation
         - recovery
     WorkflowStatus:
       type: string
@@ -6007,26 +6725,6 @@ components:
         - Succeeded
         - Failed
         - Cancelled
-    TypedRef:
-      type: object
-      description: Tham chiếu có phiên bản tới entity khác (inputRefs, outputRefs, provenance.inputs).
-      required:
-        - type
-        - id
-      properties:
-        type:
-          type: string
-          examples:
-            - artifact_version
-            - evidence
-            - reference
-            - context_item
-            - research_context_version
-            - claim
-        id:
-          $ref: '#/components/schemas/Id'
-        version:
-          type: integer
     WorkflowStep:
       type: object
       required:
@@ -6056,6 +6754,12 @@ components:
             $ref: '#/components/schemas/TypedRef'
         openPromptId:
           $ref: '#/components/schemas/Id'
+        deliberationId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+          description: Phiên thảo luận chạy trong bước này (bước loại deliberation — ORCH-DELIB-001); `null` với bước khác.
         attemptCount:
           type: integer
         agentRunIds:
@@ -6367,6 +7071,31 @@ components:
               type: string
             lastMessageAt:
               $ref: '#/components/schemas/Timestamp'
+    DeliberationLabel:
+      type: object
+      description: |
+        Nhãn “qua thảo luận” / “không qua thảo luận” (ORCH-DELIB-001, DEC-47). Assumption của biên soạn về cấu trúc.
+        `skipped` khi Researcher chọn bỏ qua; khi đó `deliberationId` và `recordArtifactVersionId` là `null`. Lựa chọn
+        `skip` sinh Audit Event (ORCH-DELIB-001-AC03). Dùng ở Provenance, ContextItem và Message.
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - deliberated
+            - skipped
+        deliberationId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        recordArtifactVersionId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+          description: Artifact Version loại `deliberation_record`.
     Message:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
@@ -6390,6 +7119,13 @@ components:
               description: Interactive Agent Prompt nhúng trong tin nhắn (UX-PROMPT).
             agentRunId:
               $ref: '#/components/schemas/Id'
+            deliberation:
+              description: |
+                Nhãn “qua thảo luận” / “không qua thảo luận” trên tin nhắn của Orchestrator đưa ra phương án (ORCH-DELIB-001,
+                DEC-47); `null` với tin nhắn khác. Assumption của biên soạn.
+              oneOf:
+                - $ref: '#/components/schemas/DeliberationLabel'
+                - type: 'null'
             links:
               type: array
               description: Gợi ý điều hướng do Orchestrator trả về (WS-CHAT-001).
@@ -6513,6 +7249,7 @@ components:
         - Manual editor requirement
     ArtifactType:
       type: string
+      description: '`deliberation_record` — Deliberation Record của phiên thảo luận (ORCH-DELIB-004, DEC-47).'
       enum:
         - note
         - table
@@ -6522,6 +7259,7 @@ components:
         - file
         - manual_submission
         - verification_report
+        - deliberation_record
     TaskDefinition:
       type: object
       description: Định nghĩa Task theo Plan Version; bất biến (TASK-DEFINE-001).
@@ -7733,6 +8471,11 @@ components:
                 $ref: '#/components/schemas/Id'
         approval:
           $ref: '#/components/schemas/ApprovalRecord'
+        deliberation:
+          description: Nhãn thảo luận của đầu ra (ORCH-DELIB-001, ORCH-PLAN-001); `null` khi không thuộc diện thảo luận.
+          oneOf:
+            - $ref: '#/components/schemas/DeliberationLabel'
+            - type: 'null'
     Claim:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
@@ -8315,6 +9058,22 @@ components:
               $ref: '#/components/schemas/Id'
             agent:
               $ref: '#/components/schemas/AgentName'
+            instance:
+              description: Instance của Analysis Agent (`A`, `B`); `null` với agent khác (AGENT-ANALYSIS-001).
+              oneOf:
+                - $ref: '#/components/schemas/AgentInstance'
+                - type: 'null'
+            deliberationId:
+              type:
+                - string
+                - 'null'
+              format: uuid
+              description: Phiên thảo luận mà Agent Run thuộc về; `null` ngoài phiên (ORCH-DELIB-002, NFR-USAGE-005).
+            deliberationRound:
+              type:
+                - integer
+                - 'null'
+              description: Vòng thảo luận của Agent Run (0 = Problem Brief).
             providerConnectionId:
               $ref: '#/components/schemas/Id'
             provider:
@@ -8470,6 +9229,11 @@ components:
                 - Retracted
             supersedesId:
               $ref: '#/components/schemas/Id'
+            deliberation:
+              description: Nhãn thảo luận của quyết định (ORCH-DELIB-001); `null` khi vấn đề không thuộc diện thảo luận.
+              oneOf:
+                - $ref: '#/components/schemas/DeliberationLabel'
+                - type: 'null'
     SharedContextView:
       type: object
       readOnly: true
@@ -8756,7 +9520,12 @@ components:
     UnprocessableEntity:
       description: |
         Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
-        `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`.
+        `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`, `instance_required` (gán model cho
+        `analysis` thiếu `instance`), `instance_not_allowed` (gửi `instance` cho agent khác).
+        Mã của Deliberation Board (DEC-47), chủ yếu trả trong `WriteAck.rejected` của API nội bộ: `draft_reference` (đầu ra
+        chính thức tham chiếu entry draft — CTX-BOARD-003), `change_reason_required` (đổi lập trường không nêu lý do —
+        ORCH-DELIB-003), `entry_immutable` (sửa entry đã ghi — CTX-BOARD-001), `synthesis_incomplete` (bản tổng hợp thiếu
+        lập trường cuối hoặc critique đang phản đối — ORCH-DELIB-004), `problem_type_not_allowed` (ORCH-DELIB-001).
       content:
         application/problem+json:
           schema:
@@ -8837,6 +9606,12 @@ components:
         maxLength: 128
     ProjectId:
       name: projectId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    DeliberationId:
+      name: deliberationId
       in: path
       required: true
       schema:

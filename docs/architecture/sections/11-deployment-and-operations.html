@@ -29,7 +29,6 @@
 <li><a href="#s-11-5">11.5. Khả năng mở rộng</a></li>
 <li><a href="#s-11-6">11.6. Sẵn sàng và sự cố</a></li>
 <li><a href="#s-11-7">11.7. Eval harness</a></li>
-<li><a href="#s-11-8">11.8. Kế hoạch dựng theo milestone</a></li>
 </ul></details>
 
 <h2 id="s-11-1">11.1. Môi trường</h2>
@@ -38,7 +37,7 @@
 <tbody>
 <tr><td>local</td><td>Phát triển: <code>docker compose</code> (PostgreSQL+pgvector, RabbitMQ, MinIO, sandbox); service đang sửa chạy bằng <code>nx serve</code>/<code>uv run</code>, service khác chạy bằng image đã build</td><td>Fake/recorded gateway; tùy chọn key cá nhân</td><td>FakeOidcProvider</td><td>Seed mẫu</td></tr>
 <tr><td>ci</td><td>Test tự động</td><td>Fake gateway</td><td>FakeOidcProvider</td><td>Testcontainers</td></tr>
-<tr><td>staging</td><td>Tích hợp, demo milestone, kiểm thử chấp nhận</td><td>Thật, key của đội phát triển (DEC-40)</td><td>eTroy OIDC môi trường thử (SPK-02)</td><td>Bộ dữ liệu nghiệm thu DEC-39, dữ liệu mẫu 16.4</td></tr>
+<tr><td>staging</td><td>Tích hợp, demo, kiểm thử chấp nhận</td><td>Thật, key của đội phát triển (DEC-40)</td><td>eTroy OIDC môi trường thử (SPK-02)</td><td>Bộ dữ liệu nghiệm thu DEC-39, dữ liệu mẫu 16.4</td></tr>
 <tr><td>eval</td><td>Eval harness (NFR-EVAL-001), tách biệt production</td><td>Thật, key của đội phát triển</td><td>Không cần</td><td>Chỉ bộ dữ liệu nghiệm thu</td></tr>
 <tr><td>production</td><td>Người dùng thật</td><td>Key của người dùng</td><td>eTroy OIDC</td><td>Dữ liệu người dùng</td></tr>
 </tbody></table></div>
@@ -94,7 +93,7 @@
 <tr><td>RabbitMQ</td><td>Cụm managed 3 node; quorum queue</td><td>Cần lưu và phát lại sự kiện dài hạn → cân nhắc Kafka (ADR-19)</td></tr>
 <tr><td>Sandbox</td><td>Pool theo độ sâu hàng đợi build</td><td>Chi phí node gVisor; cân nhắc microVM nếu cần cô lập mạnh hơn</td></tr>
 </tbody></table></div>
-<p>Mục tiêu MVP: 100 tài khoản hoạt động đồng thời, mỗi tài khoản ≥ 3 workflow đồng thời (NFR-SCALE-003) — dưới một PostgreSQL cỡ trung bình. Load test k6 trên dữ liệu mẫu 16.4 ở M7.</p>
+<p>Mục tiêu MVP: 100 tài khoản hoạt động đồng thời, mỗi tài khoản ≥ 3 workflow đồng thời (NFR-SCALE-003) — dưới một PostgreSQL cỡ trung bình. Load test k6 trên dữ liệu mẫu 16.4 trước release.</p>
 
 <h2 id="s-11-6">11.6. Sẵn sàng và sự cố</h2>
 <ul>
@@ -115,19 +114,6 @@
 <li>Baseline đã duyệt lưu trong repo (<code>eval/baselines/*.json</code>); cổng hồi quy so sánh trong CI (11.3).</li>
 <li>Môi trường eval không có kết nối tới database production (NFR-EVAL-001: 0 truy cập dữ liệu người dùng).</li>
 </ul>
-
-<h2 id="s-11-8">11.8. Kế hoạch dựng theo milestone</h2>
-<div class="table-wrap"><table>
-<thead><tr><th>Milestone</th><th>Thành phần kiến trúc cần có</th><th>Spike trước</th></tr></thead>
-<tbody>
-<tr><td>M1</td><td>Monorepo (Nx, pnpm, uv), CI affected, thư viện platform TS/Python (RLS, outbox, inbox, audit, idempotency, token nội bộ), hạ tầng staging (Terraform, RabbitMQ), gateway (OIDC BFF), identity (KMS + provider_secret), audit, agent-core với Model Gateway ba adapter, log/trace cơ bản</td><td>SPK-01, SPK-02, SPK-10</td></tr>
-<tr><td>M2</td><td>workspace, orchestration (workflow engine: bước tuần tự, prompt, checkpoint, heartbeat, sweeper), Context Assembler và agent registry trong agent-core, SSE ở gateway, chat stream</td><td>SPK-08</td></tr>
-<tr><td>M3</td><td>planning (Plan/Task, readiness), Orchestrator StepPlan, saga áp dụng đầu ra, bước song song</td><td>—</td></tr>
-<tr><td>M4</td><td>library (source adapter + rate limiter, DOI/BibTeX/RIS), knowledge (trích xuất PDF, chunk, embedding, pgvector)</td><td>SPK-03, SPK-04, SPK-05</td></tr>
-<tr><td>M5</td><td>research, truy xuất lai ở knowledge, kiểm tra tất định 7.5, Verification + thresholds, KPI-01, eval harness bản đầu</td><td>—</td></tr>
-<tr><td>M6</td><td>manuscript, sandbox node pool, sandbox-runner, image TeX/Mermaid, cổng citation, cache build</td><td>SPK-06, SPK-07</td></tr>
-<tr><td>M7</td><td>Fault injection, cảnh báo đầy đủ, load test, purge/retention, export, diễn tập khôi phục, kiểm thử bảo mật</td><td>SPK-09</td></tr>
-</tbody></table></div>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="10-security-architecture.html">← Mục 10</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="12-decisions-risks-and-open-issues.html">Mục 12 →</a></nav>
 </main>

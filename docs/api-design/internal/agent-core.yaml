@@ -37,11 +37,12 @@ paths:
         orchestration dùng để kiểm tra StepPlan và cấp `agentScope` trong token; identity dùng để chặn/cảnh báo khi gán
         model thiếu capability (OQ-034); gateway có thể chuyển tiếp cho màn Settings › Agent Models.
       x-callers: [orchestration, identity, gateway]
-      x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001, NFR-MAINT-002]
-      x-milestone: M2
+      x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001, NFR-MAINT-002, AGENT-ANALYSIS-001]
       responses:
         '200':
-          description: Danh sách tám agent của MVP.
+          description: |
+            Chín định nghĩa của MVP (Orchestrator + 8 Specialist Agent). Analysis Agent (`analysis`, DEC-47) có
+            `instances = [A, B]`, `writes = [deliberation_entry]`, công cụ đọc board và truy xuất nội bộ chỉ đọc.
           content:
             application/json:
               schema:
@@ -85,7 +86,6 @@ paths:
         tới địa chỉ nội bộ (SSRF). Kết quả do identity ghi vào Provider Connection.
       x-callers: [identity]
       x-requirements: [AGENT-PROVIDER-001, INT-PROVIDER-005, NFR-TRANSIT-001]
-      x-milestone: M1
       requestBody:
         required: true
         content:

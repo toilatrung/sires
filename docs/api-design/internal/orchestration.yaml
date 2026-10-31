@@ -9,7 +9,8 @@ info:
   summary: API nội bộ của orchestration — vòng đời Agent Run với agent-core, Shared Context, prompt từ service khác.
   description: |
     orchestration giữ workflow engine (architecture mục 5): Workflow, WorkflowStep, AgentRun, Checkpoint,
-    InteractiveAgentPrompt, ContextItem. agent-core nhận lệnh `agent.run` qua RabbitMQ (events/asyncapi.yaml) rồi gọi
+    InteractiveAgentPrompt, ContextItem, Deliberation, DeliberationEntry, ContextSnapshot (DEC-47).
+    agent-core nhận lệnh `agent.run` qua RabbitMQ (events/asyncapi.yaml) rồi gọi
     các endpoint dưới đây theo thứ tự: `start` → `heartbeat` (mỗi 30 s) → `result` hoặc `failure`.
     API công khai của workflow, prompt và Shared Context ở `paths/08-…` và `paths/14-…`.
   contact:
@@ -29,6 +30,8 @@ tags:
     description: Context Item cho Context Assembler (CTX-STORE-001, lớp 3 và 7).
   - name: Prompts
     description: Prompt do service khác yêu cầu mở (8.4).
+  - name: Deliberation board
+    description: Deliberation Board và Context Snapshot do orchestration sở hữu (CTX-BOARD-001–003, CTX-SNAPSHOT-001).
 
 paths:
   /internal/agent-runs/{agentRunId}/start:
@@ -43,7 +46,6 @@ paths:
         Gọi lại `start` cho run đã Running bởi cùng `consumerId` trả lại cùng work order (idempotent).
       x-callers: [agent-core]
       x-requirements: [CTX-CONSISTENCY-001, CTX-ROUTING-001, NFR-REC-002]
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/AgentRunId'
       requestBody:
@@ -77,7 +79,6 @@ paths:
         agent-core dừng ngay, không gửi kết quả.
       x-callers: [agent-core]
       x-requirements: [CTX-RECOVERY-001, NFR-REC-001, ORCH-FAILURE-001]
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/AgentRunId'
       requestBody:
@@ -112,9 +113,11 @@ paths:
         từng `outputs[i]` vào service sở hữu (saga, idempotency key `agentRunId:i` — architecture 5.8). Trả `202` ngay sau
         khi lưu; agent-core ack message sau khi nhận `202`. Gửi lại cùng run trả `202` (idempotent).
         Run không còn hiện hành: lưu AgentRun với `discarded = true` và trả `409`.
+        Đầu ra `deliberation_entry` ghi vào board của chính orchestration; đầu ra chính thức tham chiếu entry chưa `final`
+        bị loại với `draft_reference` (CTX-BOARD-003). Entry draft của run chuyển `final` khi run Succeeded.
       x-callers: [agent-core]
-      x-requirements: [CTX-REGISTRY-001, CTX-REGISTRY-002, CTX-CONSISTENCY-002, NFR-USAGE-001, NFR-OBS-006, INT-PROVIDER-006]
-      x-milestone: M2
+      x-requirements: [CTX-REGISTRY-001, CTX-REGISTRY-002, CTX-CONSISTENCY-002, NFR-USAGE-001, NFR-OBS-006, INT-PROVIDER-006,
+        CTX-BOARD-001, CTX-BOARD-003, NFR-USAGE-005]
       parameters:
         - $ref: '#/components/parameters/AgentRunId'
       requestBody:
@@ -140,7 +143,6 @@ paths:
         cho identity (reportProviderIssue).
       x-callers: [agent-core]
       x-requirements: [ORCH-FAILURE-001, INT-PROVIDER-003, INT-PROVIDER-004]
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/AgentRunId'
       requestBody:
@@ -165,7 +167,6 @@ paths:
         Item Superseded/Retracted không bao giờ trả.
       x-callers: [agent-core]
       x-requirements: [CTX-STORE-001, CTX-ASSEMBLY-001, CTX-ISOLATION-001]
-      x-milestone: M2
       parameters:
         - $ref: ../components/parameters.yaml#/ProjectId
         - name: taskId
@@ -206,7 +207,6 @@ paths:
         đối tượng đổi phiên bản thì prompt Cancelled (CTX-CONSISTENCY-003). Workflow chuyển Waiting for User.
       x-callers: [planning, library]
       x-requirements: [PROMPT-LIFECYCLE-001, PROMPT-APPROVAL-001, LIB-APPROVAL-001]
-      x-milestone: M2
       parameters:
         - $ref: ../components/parameters.yaml#/ProjectId
         - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -255,6 +255,149 @@ paths:
         '403': { $ref: responses.yaml#/CallerNotAllowed }
         '404': { $ref: responses.yaml#/NotFound }
         '409': { $ref: responses.yaml#/Conflict }
+
+  # ---- Deliberation Board và Context Snapshot (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 đang viết) ----
+  /internal/workflows/{workflowId}/board:
+    get:
+      tags: [Deliberation board]
+      operationId: readDeliberationBoard
+      summary: Đọc Deliberation Board cho Agent Run (lọc theo quyền xem theo vòng)
+      description: |
+        Công cụ đọc board của agent và nguồn entry cho Context Assembler. orchestration lấy `agentRunId` từ token nội bộ
+        và chỉ trả entry bên gọi được xem (CTX-BOARD-002): trong Vòng 1, position của bên khác bị ẩn tới khi vòng đóng;
+        từ Vòng 2, entry của vòng đã đóng và entry `final` của vòng hiện tại. Entry yêu cầu theo `entryIds` mà đang bị ẩn
+        không được trả (kết quả rỗng cho entry đó) và orchestration ghi Audit Event truy cập bị từ chối.
+        Finding của bước song song (CTX-BOARD-003) đọc được cả khi còn `draft` — agent chỉ dùng để định hướng.
+        Context manifest ghi entry đã dùng dưới dạng `TypedRef` loại `deliberation_entry`.
+      x-callers: [agent-core]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-002, CTX-BOARD-003, AGENT-ANALYSIS-001]
+      parameters:
+        - $ref: ../components/parameters.yaml#/WorkflowId
+        - name: deliberationId
+          in: query
+          schema: { $ref: ../components/schemas/common.yaml#/Id }
+        - name: types
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryType }
+        - name: entryIds
+          in: query
+          style: form
+          explode: false
+          schema:
+            type: array
+            maxItems: 100
+            items: { $ref: ../components/schemas/common.yaml#/Id }
+        - name: since
+          in: query
+          description: Chỉ entry tạo sau thời điểm này (đọc tiếp sau sự kiện `deliberation.entry_added`).
+          schema: { $ref: ../components/schemas/common.yaml#/Timestamp }
+      responses:
+        '200':
+          description: Entry bên gọi được xem.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entries]
+                properties:
+                  deliberation:
+                    type: object
+                    properties:
+                      deliberationId: { $ref: ../components/schemas/common.yaml#/Id }
+                      currentRound: { type: integer }
+                      status: { $ref: ../components/schemas/orchestration.yaml#/DeliberationStatus }
+                  entries:
+                    type: array
+                    items: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntry }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/agent-runs/{agentRunId}/deliberation-entries:
+    post:
+      tags: [Deliberation board]
+      operationId: writeDeliberationEntry
+      summary: Ghi entry lên board trong lúc Agent Run đang chạy
+      description: |
+        Dùng khi entry cần hiện trước khi Agent Run kết thúc — chủ yếu finding draft của bước song song (CTX-BOARD-003).
+        Entry còn lại ghi qua `outputs` loại `deliberation_entry` của `submitAgentRunResult`. orchestration đặt `author`,
+        `round`, `status`, gắn `assumption` cho điểm thiếu nguồn, kiểm tra schema và quyền; ghi bền vững rồi phát
+        `deliberation.entry_added`. Chỉ ghi thêm; không có thao tác sửa. Lỗi nghiệp vụ trả `422` với `code`:
+        `change_reason_required`, `synthesis_incomplete`, `problem_type_not_allowed`, `schema_invalid`.
+      x-callers: [agent-core]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-003, ORCH-DELIB-003, AGENT-SCOPE-001]
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryWrite }
+      responses:
+        '201':
+          description: Entry đã ghi.
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntry }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+        '422': { $ref: responses.yaml#/UnprocessableEntity }
+
+  /internal/agent-runs/{agentRunId}/deliberation-entries/{entryId}/finalize:
+    post:
+      tags: [Deliberation board]
+      operationId: finalizeDeliberationEntry
+      summary: Tác giả xác nhận entry draft (draft → final)
+      description: |
+        Chỉ Agent Run tác giả gọi được. Entry draft chưa xác nhận chuyển `final` khi Agent Run Succeeded; khi Agent Run
+        Failed/Cancelled entry giữ `draft` và không tính là entry final của vòng (Assumption). Gọi lại trả cùng kết quả.
+      x-callers: [agent-core]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-003]
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+        - name: entryId
+          in: path
+          required: true
+          schema: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Entry final.
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntry }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+        '409': { $ref: responses.yaml#/Conflict }
+
+  /internal/deliberations/{deliberationId}/context-snapshot:
+    get:
+      tags: [Deliberation board]
+      operationId: getContextSnapshotForAssembly
+      summary: Context Snapshot của phiên để lắp ráp context
+      description: |
+        Context Assembler của agent-core lấy danh sách tham chiếu có phiên bản rồi đọc nội dung từ service sở hữu đúng phiên
+        bản đó, trong phạm vi đọc của agent (CTX-SNAPSHOT-001, AGENT-ANALYSIS-001-AC03). Snapshot lỗi thời vẫn được dùng
+        tới hết phiên.
+      x-callers: [agent-core]
+      x-requirements: [CTX-SNAPSHOT-001, CTX-ASSEMBLY-001, CTX-ISOLATION-001]
+      parameters:
+        - $ref: ../components/parameters.yaml#/DeliberationId
+      responses:
+        '200':
+          description: Snapshot.
+          content:
+            application/json:
+              schema: { $ref: ../components/schemas/orchestration.yaml#/ContextSnapshot }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
 
 components:
   securitySchemes:

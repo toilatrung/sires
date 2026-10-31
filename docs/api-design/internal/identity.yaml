@@ -43,7 +43,6 @@ paths:
         (họ tên, email từ claim); các lần sau trả tài khoản có sẵn, không cập nhật Profile đã chỉnh. Ghi Audit Event đăng nhập.
       x-callers: [gateway]
       x-requirements: [INT-OIDC-002, NFR-AUTH-001]
-      x-milestone: M1
       requestBody:
         required: true
         content:
@@ -79,9 +78,10 @@ paths:
       description: |
         Dùng cho readiness check (RC kiểm tra Agent Model Assignment và Provider Connection Valid — WF-02.S4)
         và khi orchestration giao Agent Run. Mỗi agent trả cấu hình hiệu lực (gán riêng hoặc thừa kế `default`).
+        Analysis Agent trả một mục cho mỗi instance (A, B); orchestration chỉ mở phiên thảo luận khi cả hai `ready`
+        (ORCH-DELIB-001) và chép `sameModelWarning` vào Deliberation (ORCH-DELIB-005).
       x-callers: [planning, orchestration, agent-core]
-      x-requirements: [TASK-READINESS-001, AGENT-PROVIDER-002, NFR-SECRETS-003]
-      x-milestone: M1
+      x-requirements: [TASK-READINESS-001, AGENT-PROVIDER-002, NFR-SECRETS-003, AGENT-ANALYSIS-001, ORCH-DELIB-005]
       parameters:
         - $ref: '#/components/parameters/AccountId'
       responses:
@@ -100,6 +100,9 @@ paths:
                       required: [agent, ready]
                       properties:
                         agent: { $ref: ../components/schemas/common.yaml#/AgentName }
+                        instance:
+                          $ref: ../components/schemas/common.yaml#/AgentInstance
+                          description: Chỉ khi agent = `analysis`.
                         providerConnectionId: { $ref: ../components/schemas/common.yaml#/Id }
                         provider: { $ref: ../components/schemas/common.yaml#/ProviderName }
                         model: { type: string }
@@ -110,6 +113,9 @@ paths:
                         ready:
                           type: boolean
                           description: false khi chưa gán, kết nối không Valid, đã xóa key, hoặc thiếu capability bắt buộc.
+                        sameModelWarning:
+                          type: boolean
+                          description: Chỉ trên mục `analysis` — instance A và B cùng provider và model hiệu lực (cảnh báo, không chặn).
         '401': { $ref: responses.yaml#/InvalidServiceToken }
         '403': { $ref: responses.yaml#/CallerNotAllowed }
         '404': { $ref: responses.yaml#/NotFound }
@@ -124,7 +130,6 @@ paths:
         Researcher bật “Dùng lĩnh vực nghiên cứu làm context cho agent”; mọi trường cá nhân khác không bao giờ được trả (DEC-24).
       x-callers: [orchestration, agent-core]
       x-requirements: [CTX-ASSEMBLY-001, CTX-REGISTRY-002, NFR-PRIV-001]
-      x-milestone: M2
       parameters:
         - $ref: '#/components/parameters/AccountId'
       responses:
@@ -151,7 +156,6 @@ paths:
       summary: Ngưỡng kiểm chứng hiện hành để Verification Agent chụp lại
       x-callers: [agent-core, research]
       x-requirements: [CLAIM-SUPPORT-001, DEC-38]
-      x-milestone: M5
       parameters:
         - $ref: '#/components/parameters/AccountId'
       responses:
@@ -171,7 +175,6 @@ paths:
       summary: Embedding model và Provider Connection của tài khoản
       x-callers: [knowledge]
       x-requirements: [INT-VECTOR-003, DEC-31]
-      x-milestone: M4
       parameters:
         - $ref: '#/components/parameters/AccountId'
       responses:
@@ -197,7 +200,6 @@ paths:
       description: Context window, tool calling, structured output, streaming, embedding dim, giá (nếu có) — architecture 8.3.
       x-callers: [agent-core, knowledge]
       x-requirements: [AGENT-PROVIDER-003, NFR-USAGE-003]
-      x-milestone: M1
       responses:
         '200':
           description: Danh mục.
@@ -241,7 +243,6 @@ paths:
         Token phải mang `accountId` trùng chủ kết nối. Không cache ở bên gọi quá 5 phút. Không ghi log nội dung phản hồi.
       x-callers: [agent-core, knowledge]
       x-requirements: [NFR-SECRETS-001, NFR-SECRETS-003, INT-PROVIDER-001]
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/ConnectionId'
       responses:
@@ -267,7 +268,6 @@ paths:
         Notification Provider issue (INT-PROVIDER-004). Gửi lại cùng `Idempotency-Key` không tạo thêm thông báo.
       x-callers: [agent-core, knowledge]
       x-requirements: [INT-PROVIDER-004]
-      x-milestone: M1
       parameters:
         - $ref: '#/components/parameters/ConnectionId'
         - $ref: ../components/parameters.yaml#/IdempotencyKey

@@ -1,7 +1,7 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# PRD 14 Shared Context and Orchestration Architecture · 8.5 lỗi và khôi phục · WF-06 — milestone M2, M7.
+# PRD 14 Shared Context and Orchestration Architecture · 8.5 lỗi và khôi phục · WF-06.
 # Workflow, Agent Run, Context Item, Artifact registry, Audit trail, luồng sự kiện.
 
 /workflows:
@@ -11,7 +11,6 @@
     summary: Danh sách workflow (Agent Activity)
     x-requirements: [UX-MONITOR-001, CTX-RECOVERY-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/ProjectIdFilter
       - name: status
@@ -51,7 +50,6 @@
     summary: Chi tiết workflow, các bước và checkpoint gần nhất
     x-requirements: [UX-MONITOR-001, ORCH-CONSOLIDATE-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Workflow.
@@ -70,7 +68,6 @@
     description: Agent Run đang chạy hoàn tất bước hiện tại; không bắt đầu bước mới.
     x-requirements: [ORCH-FAILURE-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -92,7 +89,6 @@
     description: Workflow Interrupted phải đi qua `recovery-decision`.
     x-requirements: [ORCH-FAILURE-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -118,7 +114,6 @@
     x-requirements: [ORCH-FAILURE-001, CTX-CONSISTENCY-002]
     x-transition: [T-10]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -149,7 +144,6 @@
       Trước quyết định này không có Agent Run mới hay lời gọi provider nào (NFR-REC-002-AC01).
     x-requirements: [CTX-RECOVERY-001, NFR-REC-002]
     x-priority: P0
-    x-milestone: M7
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -176,7 +170,6 @@
     summary: Agent Run của workflow
     x-requirements: [UX-MONITOR-001, CTX-REGISTRY-002]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Agent Run theo thứ tự bước.
@@ -201,7 +194,6 @@
     summary: Chi tiết Agent Run — provider, model, usage, context manifest, đầu ra có cấu trúc
     x-requirements: [CTX-ASSEMBLY-001, CTX-REGISTRY-002, AGENT-PROVIDER-001, NFR-USAGE-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Agent Run.
@@ -223,7 +215,6 @@
     description: Không có hoặc đã hết hạn trả `404`. Chỉ chủ tài khoản xem được; không nằm trong export mặc định.
     x-requirements: [CTX-REGISTRY-002, NFR-RET-009]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Transcript.
@@ -241,7 +232,6 @@
     summary: Khung nhìn hợp nhất Shared Context
     x-requirements: [CTX-STORE-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Shared Context.
@@ -259,7 +249,6 @@
     summary: Context Item (quyết định, ràng buộc, sự kiện, giả định, tóm tắt)
     x-requirements: [CTX-STORE-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - name: kind
         in: query
@@ -291,7 +280,6 @@
     description: Không sửa tại chỗ; `supersedesId` đánh dấu item cũ Superseded. Không bao giờ chứa API key.
     x-requirements: [CTX-STORE-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -321,7 +309,6 @@
     summary: Rút lại Context Item (Active → Retracted)
     x-requirements: [CTX-STORE-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -348,7 +335,6 @@
     summary: Artifact registry của project
     x-requirements: [CTX-REGISTRY-001, SYN-PERSIST-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - name: type
         in: query
@@ -384,7 +370,6 @@
     summary: Chi tiết artifact
     x-requirements: [CTX-REGISTRY-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Artifact.
@@ -400,7 +385,6 @@
     x-requirements: [CTX-REGISTRY-001]
     x-apr: APR-08
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
@@ -417,7 +401,6 @@
     summary: Các version của artifact
     x-requirements: [CTX-REGISTRY-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Version, mới nhất trước.
@@ -435,7 +418,6 @@
     summary: Researcher sửa nội dung — tạo version Draft mới
     x-requirements: [CTX-REGISTRY-001, DIAG-REVIEW-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -463,7 +445,6 @@
     summary: Nội dung và provenance của một version
     x-requirements: [DATA-PROV-001, SYN-PERSIST-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Artifact Version.
@@ -487,7 +468,6 @@
     x-requirements: [SYN-HUMAN-REVIEW-001, SYN-PERSIST-001, DIAG-REVIEW-001, CTX-CONSISTENCY-003]
     x-apr: [APR-03, APR-06, APR-07]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -515,7 +495,6 @@
     x-requirements: [SYN-HUMAN-REVIEW-001, DIAG-REVIEW-001]
     x-apr: [APR-03, APR-06, APR-07]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -541,7 +520,6 @@
       File chưa được tham chiếu bị dọn sau thời hạn cấu hình.
     x-requirements: [DATA-STORE-001, TASK-CHECKLIST-001, MS-EDITOR-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -580,7 +558,6 @@
     summary: Activity and History của project
     x-requirements: [CTX-AUDIT-001, DATA-AUDIT-001]
     x-priority: P0
-    x-milestone: M1
     parameters:
       - name: objectType
         in: query
@@ -618,7 +595,6 @@
     description: Chỉ event của project này, không gồm event cấp tài khoản; không chứa API key. Ghi AuditEvent cho thao tác export.
     x-requirements: [CTX-AUDIT-002, NFR-RET-008]
     x-priority: P1
-    x-milestone: M7
     parameters:
       - name: format
         in: query
@@ -644,7 +620,6 @@
     summary: Audit Event cấp tài khoản (Settings, Provider Connection, Trusted Library)
     x-requirements: [CTX-AUDIT-001]
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
@@ -672,7 +647,6 @@
       các endpoint GET. Sự kiện chỉ thuộc tài khoản của phiên.
     x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/ProjectIdFilter
       - name: Last-Event-ID

@@ -1,7 +1,7 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# PRD 9 Research Plan and Task Management — WF-01, WF-02, WF-03 — milestone M3.
+# PRD 9 Research Plan and Task Management — WF-01, WF-02, WF-03.
 # Chuyển trạng thái Task theo bảng chuẩn TASK-STATE-001 (T-01–T-19, PRD 9.8); x-transition ghi mã tương ứng.
 
 /projects/{projectId}/plan:
@@ -13,7 +13,6 @@
     summary: Research Plan, baseline và danh sách version
     x-requirements: [PLAN-VIEWS-001, PLAN-APPROVAL-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Research Plan.
@@ -34,7 +33,6 @@
       trình duyệt. Bị chặn nếu đã có Draft/Proposed đang mở (`409 open_plan_version_exists`).
     x-requirements: [ORCH-PLAN-001, PLAN-GENERATE-001, DATA-IDEMP-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -63,7 +61,6 @@
     summary: Danh sách Plan Version
     x-requirements: [PLAN-REVIEW-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - name: status
         in: query
@@ -85,7 +82,6 @@
     summary: Researcher tạo Draft mới (từ baseline hoặc version khác)
     x-requirements: [PLAN-REVIEW-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -113,7 +109,6 @@
     summary: Nội dung Plan Version (phase, task, dependency)
     x-requirements: [PLAN-GENERATE-001, TASK-DEFINE-001, TASK-DEPENDENCY-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Plan Version.
@@ -130,7 +125,6 @@
     description: Chỉ Draft sửa được; version khác trả `409 action_not_allowed_in_state` (DATA-STATE-002-AC01).
     x-requirements: [PLAN-REVIEW-001, DATA-CONC-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IfMatch
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -156,7 +150,6 @@
     summary: Hủy bản nháp (xóa mềm Draft)
     x-requirements: [PLAN-REVIEW-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
@@ -177,7 +170,6 @@
       Tạo pending action `plan_approval`.
     x-requirements: [PLAN-APPROVAL-001, TASK-DEPENDENCY-001, DATA-VALID-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -204,7 +196,6 @@
     x-requirements: [PLAN-APPROVAL-001, PLAN-IMPACT-001, CTX-CONSISTENCY-003]
     x-apr: APR-01
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -237,7 +228,6 @@
     x-requirements: [PLAN-APPROVAL-001]
     x-apr: APR-01
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -268,7 +258,6 @@
     summary: Rút lại để sửa (Proposed → Rejected “withdrawn” + Draft mới sao chép nội dung)
     x-requirements: [PLAN-REVIEW-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -290,7 +279,6 @@
     summary: So sánh hai Plan Version
     x-requirements: [PLAN-REVIEW-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - name: against
         in: query
@@ -314,7 +302,6 @@
     summary: Phân tích ảnh hưởng nếu duyệt version này
     x-requirements: [PLAN-IMPACT-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Task, artifact, claim bị ảnh hưởng.
@@ -331,7 +318,6 @@
     summary: Task board / danh sách Task
     x-requirements: [PLAN-VIEWS-001, TASK-PROGRESS-001, UX-TASK-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - name: status
         in: query
@@ -374,7 +360,6 @@
     summary: Chi tiết Task, readiness gần nhất và hành động hợp lệ
     x-requirements: [TASK-DEFINE-001, TASK-PROGRESS-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Task.
@@ -395,7 +380,6 @@
     summary: Kết quả readiness check gần nhất (RC-01–RC-09)
     x-requirements: [TASK-READINESS-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Readiness.
@@ -412,7 +396,6 @@
     x-requirements: [TASK-READINESS-001, ORCH-READINESS-001]
     x-transition: [T-03, T-04, T-16]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
       - name: includeSemantic
@@ -443,7 +426,6 @@
     x-apr: APR-02
     x-transition: [T-05, T-06]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -475,7 +457,6 @@
     x-requirements: [TASK-STATE-001]
     x-transition: [T-07]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -499,7 +480,6 @@
     x-requirements: [TASK-LABEL-001, TASK-CHECKLIST-001, DATA-IDEMP-001]
     x-transition: [T-11]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -528,7 +508,6 @@
     summary: Đánh dấu mục checklist
     x-requirements: [TASK-CHECKLIST-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IfMatch
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -562,7 +541,6 @@
     summary: Lịch sử review của Task
     x-requirements: [TASK-CHECKLIST-001]
     x-priority: P0
-    x-milestone: M3
     responses:
       '200':
         description: Review, mới nhất trước.
@@ -585,7 +563,6 @@
     x-apr: APR-03
     x-transition: [T-13, T-14, T-15]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -620,7 +597,6 @@
     x-requirements: [TASK-STATE-001]
     x-transition: [T-19]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -651,7 +627,6 @@
     summary: Xác nhận “vẫn hợp lệ” để gỡ cờ needsReview
     x-requirements: [PLAN-IMPACT-001]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -681,7 +656,6 @@
     x-requirements: [TASK-STATE-001]
     x-transition: [T-18]
     x-priority: P0
-    x-milestone: M3
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken

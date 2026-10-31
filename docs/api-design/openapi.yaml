@@ -6,7 +6,7 @@ openapi: 3.1.0
 info:
   title: SIRes API (MVP)
   version: 0.1.0-mvp
-  summary: REST API cho SIRes (Super Intelligence Researcher) — phạm vi MVP M1–M7.
+  summary: REST API cho SIRes (Super Intelligence Researcher) — phạm vi MVP.
   description: |
     Đặc tả API mức MVP, suy ra từ PRD SIRes v1.0 (PO duyệt qua phiếu chốt PC-01, 31/10/2026).
     Mỗi file trong `paths/` tương ứng một mục của PRD (`docs/overview/sections/NN-slug.html`);
@@ -58,45 +58,47 @@ security:
 
 tags:
   - name: Auth
-    description: "Đăng nhập qua eTroy OIDC — PRD 17.7, 15.12 (M1)."
+    description: "Đăng nhập qua eTroy OIDC — PRD 17.7, 15.12."
   - name: Account & Settings
-    description: "Profile, Preferences, Ngưỡng kiểm chứng — PRD 15.12, 18.1 (M1)."
+    description: "Profile, Preferences, Ngưỡng kiểm chứng — PRD 15.12, 18.1."
   - name: Provider Connections
-    description: "Kết nối Claude, OpenAI, Gemini do người dùng cấp key — PRD 8.6, SCOPE-13 (M1)."
+    description: "Kết nối Claude, OpenAI, Gemini do người dùng cấp key — PRD 8.6, SCOPE-13."
   - name: Agent Models
-    description: "Gán model cho Orchestrator và 7 Specialist Agent — PRD 8.6, 8.2 (M1)."
+    description: "Gán model cho Orchestrator và 8 Specialist Agent (Analysis Agent theo instance A, B) — PRD 8.6, 8.2, 8.7."
   - name: Workspace
-    description: "Dashboard, tìm kiếm, Pending Actions, Notifications — PRD 4.4, 7 (M2)."
+    description: "Dashboard, tìm kiếm, Pending Actions, Notifications — PRD 4.4, 7."
   - name: Projects
-    description: "Research Project và Research Context có phiên bản — PRD 7 (M2)."
+    description: "Research Project và Research Context có phiên bản — PRD 7."
   - name: Conversations
-    description: "Global AI Assistant và Project AI Chat — PRD 7, 8.1 (M2)."
+    description: "Global AI Assistant và Project AI Chat — PRD 7, 8.1."
   - name: Prompts
-    description: "Interactive Agent Prompt — PRD 8.4, 5.9 (M2)."
+    description: "Interactive Agent Prompt — PRD 8.4, 5.9."
   - name: Plan
-    description: "Research Plan và Plan Version — PRD 9.1–9.3, 9.11 (M3)."
+    description: "Research Plan và Plan Version — PRD 9.1–9.3, 9.11."
   - name: Tasks
-    description: "Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10 (M3)."
+    description: "Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10."
   - name: Discovery
-    description: "Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2 (M4)."
+    description: "Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2."
   - name: Trusted Library
-    description: "Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9 (M4)."
+    description: "Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9."
   - name: Evidence & Claims
-    description: "Indexing, RAG evidence, claim, kiểm chứng — PRD 11 (M4–M5)."
+    description: "Indexing, RAG evidence, claim, kiểm chứng — PRD 11."
   - name: Artifacts
-    description: "Artifact và Artifact Version có provenance — PRD 5.7, 14.4 (M2–M5)."
+    description: "Artifact và Artifact Version có provenance — PRD 5.7, 14.4."
   - name: Manuscript
-    description: "LaTeX workspace, Change Proposal, bibliography, build — PRD 12 (M6)."
+    description: "LaTeX workspace, Change Proposal, bibliography, build — PRD 12."
   - name: Diagrams
-    description: "Diagram Agent, Mermaid — PRD 13 (M6)."
+    description: "Diagram Agent, Mermaid — PRD 13."
   - name: Orchestration
-    description: "Workflow, Agent Run, khôi phục — PRD 8.5, 14.6–14.7 (M2, M7)."
+    description: "Workflow, Agent Run, khôi phục — PRD 8.5, 14.6–14.7."
+  - name: Deliberation
+    description: "Phiên thảo luận giữa Orchestrator và Analysis Agent, Deliberation Board, Context Snapshot — PRD 8.7, 14.9 (DEC-47)."
   - name: Shared Context
-    description: "Context Item và khung nhìn Shared Context — PRD 14.1–14.3 (M2)."
+    description: "Context Item và khung nhìn Shared Context — PRD 14.1–14.3."
   - name: Audit
-    description: "Audit trail chỉ ghi thêm và export — PRD 14.8 (M1, M7)."
+    description: "Audit trail chỉ ghi thêm và export — PRD 14.8."
   - name: Events
-    description: "Luồng sự kiện realtime cho giao diện — PRD 15.8, DATA-PERSIST-001 (M2)."
+    description: "Luồng sự kiện realtime cho giao diện — PRD 15.8, DATA-PERSIST-001."
 
 paths:
   # ---- 15. Settings and Sign-in · 17.7 eTroy OIDC ----
@@ -138,6 +140,10 @@ paths:
     $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1prompts~1{promptId}
   /prompts/{promptId}/response:
     $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1prompts~1{promptId}~1response
+  /projects/{projectId}/deliberations:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1projects~1{projectId}~1deliberations
+  /projects/{projectId}/deliberations/{deliberationId}:
+    $ref: paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/~1projects~1{projectId}~1deliberations~1{deliberationId}
 
   # ---- 07. Workspace and Project ----
   /dashboard:

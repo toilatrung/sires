@@ -66,7 +66,12 @@ PayloadTooLarge:
 UnprocessableEntity:
   description: |
     Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
-    `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`.
+    `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`, `instance_required` (gán model cho
+    `analysis` thiếu `instance`), `instance_not_allowed` (gửi `instance` cho agent khác).
+    Mã của Deliberation Board (DEC-47), chủ yếu trả trong `WriteAck.rejected` của API nội bộ: `draft_reference` (đầu ra
+    chính thức tham chiếu entry draft — CTX-BOARD-003), `change_reason_required` (đổi lập trường không nêu lý do —
+    ORCH-DELIB-003), `entry_immutable` (sửa entry đã ghi — CTX-BOARD-001), `synthesis_incomplete` (bản tổng hợp thiếu
+    lập trường cuối hoặc critique đang phản đối — ORCH-DELIB-004), `problem_type_not_allowed` (ORCH-DELIB-001).
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }

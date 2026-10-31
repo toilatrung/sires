@@ -111,6 +111,12 @@ AgentRunAssignment:
     projectId: { $ref: ../components/schemas/common.yaml#/Id }
     taskId: { $ref: ../components/schemas/common.yaml#/Id }
     agent: { $ref: ../components/schemas/common.yaml#/AgentName }
+    instance:
+      $ref: ../components/schemas/common.yaml#/AgentInstance
+      description: Chỉ khi agent = `analysis` (DEC-47).
+    deliberationId:
+      $ref: ../components/schemas/common.yaml#/Id
+      description: Có khi Agent Run thuộc một phiên thảo luận (ORCH-DELIB-002).
     attempt: { type: integer, minimum: 1, maximum: 3, description: Lần thứ mấy của bước (tối đa 1 + 2 Agent Run mới — 8.5). }
     priority:
       type: string
@@ -130,6 +136,23 @@ AgentRunWorkOrder:
     taskId: { $ref: ../components/schemas/common.yaml#/Id }
     conversationId: { $ref: ../components/schemas/common.yaml#/Id }
     agent: { $ref: ../components/schemas/common.yaml#/AgentName }
+    instance:
+      $ref: ../components/schemas/common.yaml#/AgentInstance
+      description: Chỉ khi agent = `analysis`; Agent Model Assignment lấy theo (agent, instance).
+    deliberation:
+      type: object
+      description: |
+        Có khi Agent Run thuộc phiên thảo luận. Context lắp ráp từ Context Snapshot của phiên (CTX-SNAPSHOT-001); entry
+        đọc qua `GET /internal/workflows/{workflowId}/board` (orchestration lọc theo quyền xem theo vòng).
+      required: [deliberationId, round, contextSnapshotId]
+      properties:
+        deliberationId: { $ref: ../components/schemas/common.yaml#/Id }
+        round: { type: integer, minimum: 0 }
+        roundKind: { type: string, enum: [brief, independent, cross_critique, narrow, synthesis] }
+        problemType: { $ref: ../components/schemas/orchestration.yaml#/ProblemType }
+        perspective: { type: string, description: Góc nhìn Orchestrator giao cho bên này trong Problem Brief (ORCH-DELIB-005). }
+        contextSnapshotId: { $ref: ../components/schemas/common.yaml#/Id }
+        narrowFocus: { type: string, description: Điểm bất đồng của vòng hẹp. }
     agentVersion: { type: string, description: Phiên bản định nghĩa agent mà StepPlan đã kiểm tra. }
     goal: { type: string, description: Mục tiêu bước do Orchestrator lập (StepPlan). }
     inputRefs:
@@ -182,7 +205,12 @@ AgentOutput:
     kind:
       type: string
       enum: [plan_version, discovered_results, reference_proposals, evidence, claims, artifact_version,
-        verification_results, change_proposal, message, context_item, prompt, step_plan, readiness_semantic]
+        verification_results, change_proposal, message, context_item, prompt, step_plan, readiness_semantic,
+        deliberation_entry]
+      description: |
+        `deliberation_entry` — payload `DeliberationEntryWrite`; orchestration tự ghi vào board (service sở hữu), entry thành
+        `final` khi run Succeeded. Với mọi kind khác, orchestration từ chối đầu ra có `TypedRef` loại `deliberation_entry`
+        trỏ tới entry chưa `final` (`draft_reference`, CTX-BOARD-003) trước khi chuyển sang service đích.
     payload:
       type: object
       additionalProperties: true
@@ -292,7 +320,9 @@ WriteAck:
         type: object
         properties:
           index: { type: integer }
-          code: { type: string }
+          code:
+            type: string
+            examples: [draft_reference, change_reason_required, entry_immutable, synthesis_incomplete, schema_invalid]
           message: { type: string }
 
 # ---------- Bí mật provider ----------

@@ -20,7 +20,7 @@
 <main id="main-content">
 <p class="eyebrow">Architecture Design · Section 2</p><h1>2. Technology Stack</h1>
 <p class="meta">Trạng thái: bản 0.2 — các lựa chọn của bản 0.1 ngoài kiểu kiến trúc và ngôn ngữ backend đã được chấp thuận ngày 31/10/2026; phần tách service, NestJS và message broker là đề xuất mới, chờ xác nhận · Cơ sở: PRD 16, 17, 20.2; ADR ở <a href="12-decisions-risks-and-open-issues.html#s-12-1">mục 12</a></p>
-<div class="note"><p><strong>Thay đổi so với 0.1 (chỉ đạo ngày 31/10/2026):</strong> backend tách thành nhiều service để nhiều người code song song theo ranh giới service và hợp đồng Swagger; service hệ thống viết bằng TypeScript/NestJS để build và CI nhanh, dễ bảo trì; service agent core giữ Python để có hỗ trợ provider và framework AI tốt nhất; monorepo chung cho FE và BE. Phiên bản cụ thể được ghim khi khởi tạo repo ở M1.</p></div>
+<div class="note"><p><strong>Thay đổi so với 0.1 (chỉ đạo ngày 31/10/2026):</strong> backend tách thành nhiều service để nhiều người code song song theo ranh giới service và hợp đồng Swagger; service hệ thống viết bằng TypeScript/NestJS để build và CI nhanh, dễ bảo trì; service agent core giữ Python để có hỗ trợ provider và framework AI tốt nhất; monorepo chung cho FE và BE. Phiên bản cụ thể được ghim khi khởi tạo repo.</p></div>
 <details class="local-toc"><summary>Nội dung trong mục</summary><ul>
 <li><a href="#s-2-1">2.1. Tổng quan theo lớp</a></li>
 <li><a href="#s-2-2">2.2. Frontend</a></li>
@@ -76,7 +76,7 @@
 <tr><td>Framework</td><td>NestJS (adapter Fastify), Node.js 22 LTS</td><td>Module, DI, guard, interceptor dùng chung qua <code>libs/ts/platform</code>.</td></tr>
 <tr><td>Biên dịch</td><td>SWC (builder của Nest CLI / Nx); <code>tsc --noEmit</code> chạy riêng cho type check, song song và có cache Nx</td><td>Build mỗi service vài giây; type check chỉ chạy cho project bị ảnh hưởng.</td></tr>
 <tr><td>Swagger</td><td><code>@nestjs/swagger</code> sinh spec từ controller; CI so spec sinh ra với spec trong <code>docs/api-design</code> (phải tương đương)</td><td>Spec trong docs là nguồn; spec sinh ra dùng để phát hiện lệch.</td></tr>
-<tr><td>Kiểm tra đầu vào</td><td><code>class-validator</code> + <code>class-transformer</code> (DTO của Nest) hoặc Zod (<code>nestjs-zod</code>) — chọn một ở M1</td><td>Lỗi trả <code>application/problem+json</code>.</td></tr>
+<tr><td>Kiểm tra đầu vào</td><td><code>class-validator</code> + <code>class-transformer</code> (DTO của Nest) hoặc Zod (<code>nestjs-zod</code>) — chọn một khi khởi tạo repo</td><td>Lỗi trả <code>application/problem+json</code>.</td></tr>
 <tr><td>Truy cập DB, migration</td><td>Drizzle ORM + <code>node-postgres</code>; migration bằng drizzle-kit (SQL được review)</td><td>Kiểm soát giao dịch và <code>SET LOCAL app.account_id</code> cho RLS dễ hơn Prisma; schema TS gọn.</td></tr>
 <tr><td>Messaging</td><td><code>@golevelup/nestjs-rabbitmq</code> (hoặc transport RMQ của <code>@nestjs/microservices</code>) với ack thủ công</td><td>Outbox relay và inbox ở <code>libs/ts/platform</code>.</td></tr>
 <tr><td>Job định kỳ</td><td><code>@nestjs/schedule</code> + khóa leader trong PostgreSQL</td><td>Sweeper, purge, KPI.</td></tr>
@@ -105,7 +105,7 @@
 <li><strong>PostgreSQL 16+</strong>: một cụm managed, một database và một vai trò đăng nhập riêng cho mỗi service; extension <code>vector</code> chỉ ở database knowledge; <code>pg_trgm</code>, <code>unaccent</code> ở service có tìm kiếm.</li>
 <li><strong>RabbitMQ</strong> (managed, cụm 3 node, quorum queue): exchange <code>sires.events</code> (topic) cho sự kiện; queue lệnh <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; dead-letter queue cho mỗi consumer.</li>
 <li><strong>Object storage</strong> S3-compatible, khóa theo service và tài khoản (6.6).</li>
-<li><strong>Không Redis</strong> ở MVP: phiên ở database của gateway, rate limit bằng PostgreSQL.</li>
+<li><strong>Không Redis</strong> ở MVP: phiên ở database của gateway, rate limit bằng PostgreSQL; Deliberation Board và Context Snapshot lưu ở database orchestration, thông báo qua RabbitMQ (ADR-24).</li>
 </ul>
 
 <h2 id="s-2-6">2.6. Xử lý tài liệu, LaTeX, sơ đồ</h2>

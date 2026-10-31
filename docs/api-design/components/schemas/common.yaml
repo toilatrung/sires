@@ -14,8 +14,18 @@ Timestamp:
 
 AgentName:
   type: string
-  description: Orchestrator và bảy Specialist Agent cố định trong MVP (SCOPE-14).
-  enum: [orchestrator, discovery, reference_processing, evidence_retrieval, synthesis, writing, verification, diagram]
+  description: |
+    Orchestrator và tám Specialist Agent cố định trong MVP (SCOPE-14, AGENT-REGISTRY-001). `analysis` (Analysis Agent)
+    bổ sung theo DEC-47: chỉ chạy trong phiên thảo luận (PRD 8.7) và luôn đi kèm `instance`.
+  enum: [orchestrator, discovery, reference_processing, evidence_retrieval, synthesis, writing, verification, diagram,
+    analysis]
+
+AgentInstance:
+  type: string
+  description: |
+    Instance của Analysis Agent trong phiên thảo luận (AGENT-ANALYSIS-001). MVP dùng đúng 2 instance (OQ-098, DEC-48).
+    Chỉ có giá trị khi agent = `analysis`; với agent khác trường mang kiểu này để trống hoặc `null`.
+  enum: [A, B]
 
 ActorRef:
   type: object
@@ -27,6 +37,9 @@ ActorRef:
       enum: [researcher, agent, system]
     accountId: { $ref: '#/Id' }
     agent: { $ref: '#/AgentName' }
+    instance:
+      $ref: '#/AgentInstance'
+      description: Chỉ khi agent = `analysis` (DEC-47).
     agentRunId: { $ref: '#/Id' }
     component:
       type: string
@@ -83,7 +96,7 @@ TypedRef:
   properties:
     type:
       type: string
-      examples: [artifact_version, evidence, reference, context_item, research_context_version, claim]
+      examples: [artifact_version, evidence, reference, context_item, research_context_version, claim, deliberation_entry]
     id: { $ref: '#/Id' }
     version: { type: integer }
 
@@ -111,6 +124,30 @@ Provenance:
           referenceId: { $ref: '#/Id' }
           chunkId: { $ref: '#/Id' }
     approval: { $ref: '#/ApprovalRecord' }
+    deliberation:
+      description: Nhãn thảo luận của đầu ra (ORCH-DELIB-001, ORCH-PLAN-001); `null` khi không thuộc diện thảo luận.
+      oneOf:
+        - $ref: '#/DeliberationLabel'
+        - type: 'null'
+
+DeliberationLabel:
+  type: object
+  description: |
+    Nhãn “qua thảo luận” / “không qua thảo luận” (ORCH-DELIB-001, DEC-47). Assumption của biên soạn về cấu trúc.
+    `skipped` khi Researcher chọn bỏ qua; khi đó `deliberationId` và `recordArtifactVersionId` là `null`. Lựa chọn
+    `skip` sinh Audit Event (ORCH-DELIB-001-AC03). Dùng ở Provenance, ContextItem và Message.
+  required: [status]
+  properties:
+    status:
+      type: string
+      enum: [deliberated, skipped]
+    deliberationId:
+      type: [string, 'null']
+      format: uuid
+    recordArtifactVersionId:
+      type: [string, 'null']
+      format: uuid
+      description: Artifact Version loại `deliberation_record`.
 
 ProviderName:
   type: string

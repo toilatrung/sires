@@ -121,6 +121,7 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 
 ## Bước tiếp theo
 
+1. Đồng bộ PRD 18.1 với API đã sửa (01/11/2026): AgentModelAssignment có instance và ràng buộc duy nhất (accountId, agent, instance); AgentRun có instance, deliberationId; position/critique dùng points[] có id và targetPointId; assumptionFlags là danh sách point id; participant, recordArtifactVersionId, purpose, deliberationProposal, nhãn deliberation. Chờ PO duyệt.
 1. Đồng bộ DEC-47/DEC-48 sang docs/architecture (mục 5, 6, ADR mới), docs/api-design (internal/orchestration.yaml, events/asyncapi.yaml) và docs/ui-design (màn Workflow: chế độ xem thảo luận; Settings › Agent Models: Analysis Agent A/B).
 1. PO xác nhận cách hiểu ASM-13–ASM-16 (eTroy OIDC, URL hồ sơ Scholar, Ngưỡng kiểm chứng, FUT-05); kiểm tra INT-OIDC-001–004 với repo eTroy_OIDC.
 2. Câu hỏi mới phát sinh cấp mã từ OQ-103; quyết định mới từ DEC-50; rủi ro từ RISK-12; figure từ FIG-035; chỉ ghi “Đã duyệt” khi PO duyệt rõ.
@@ -143,6 +144,7 @@ Hai loại trạng thái độc lập; outline đã chốt không có nghĩa m�
 - 01/11/2026: PO duyệt toàn bộ bổ sung DEC-47 và chốt OQ-098–OQ-102 theo đề xuất (DEC-48). Cập nhật trạng thái ở 1, 5, 8, 14, 15, 16, 21, 22, FIG-034, backlog (mục 8, 14 trở lại Đã hoàn thành), index.
 
 - 01/11/2026: Theo PO, bỏ hẳn mục MVP Delivery Plan khỏi PRD (DEC-49); chuyển Priority sang 2.4, REL-01–REL-10, bộ dữ liệu nghiệm thu, Definition of Done sang 19.14; bỏ mọi tham chiếu milestone trong PRD (cột “Trước” ở 20.2, phụ lục F, mitigation, DISC-SCHOLAR-002), DEC-41 Deprecated, OQ-028 không còn hiệu lực, xóa FIG-005; đánh số lại mục 21→20, 22→21 (file, anchor, tham chiếu ở overview, architecture, api-design, ui-design, README, AGENT.md; dựng lại dist/openapi.bundled.yaml). Milestone M1–M7 trong docs/architecture và x-milestone trong docs/api-design vẫn còn, thuộc kế hoạch triển khai.
+- 01/11/2026: Theo yêu cầu PO, đồng bộ docs/architecture và docs/api-design theo DEC-47–DEC-49. Architecture: 03 (orchestration sở hữu Deliberation, Deliberation Board, Context Snapshot; agent-core chạy Analysis Agent A, B), 04 (F-13 phiên thảo luận và kết quả trung gian), 05 (5.12 Deliberation, 5.13 Board và Snapshot; bước deliberation trong StepPlan; registry 9 định nghĩa), 06 (bảng và quy tắc bất biến), 02 (không Redis), 12 (ADR-24 Proposed, SPK-11, TR-10); bỏ 11.8 kế hoạch theo milestone và cột “Trước” ở 12.2, 12.4, mọi mốc M1–M7. API (Assumption): schema Deliberation*, ContextSnapshot, DeliberationLabel (nhãn deliberated/skipped trên Provenance, ContextItem, Message), PromptPurpose và DeliberationProposal, AgentModelAssignment theo instance và sameModelWarning; GET /projects/{projectId}/deliberations(/{deliberationId}); 4 endpoint nội bộ của board; 6 sự kiện deliberation.*/context_snapshot.outdated; mã lỗi draft_reference và 6 mã khác; gỡ 213 dòng x-milestone; dựng lại dist. Lệch cần sửa ở PRD 18.1 (instance, deliberationId, points có id, targetPointId…) ghi vào bước tiếp theo.
 ## Kiểm tra bộ khung
 
 - Đã đối chiếu đủ 22 section, 160 đề mục con và 406 dòng nội dung outline gốc.
