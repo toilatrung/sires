@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 01</p><h1>1. Document Overview</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 29/10/2026 (đã đóng OQ-001–OQ-005); bổ sung thuật ngữ SIRes, eTroy OIDC, Ngưỡng kiểm chứng theo PC-01 ngày 31/10/2026 · Cơ sở: outline đã chốt, mục 21.1 và ngữ cảnh biên soạn</p><div class="note"><p>Mục này đã được viết chi tiết từ outline. Nội dung đã có cơ sở xác nhận được ghi <strong>Confirmed</strong>. Nội dung do người biên soạn suy ra hoặc đề xuất được ghi <strong>Assumption</strong>. Điểm chưa quyết định được ghi <strong>Open Question</strong> và tổng hợp ở <a href="#s-1-7">1.7</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-1-1">1.1. Purpose</a></li>
+<p class="eyebrow">Product Requirements Document · Section 01</p><h1>1. Document Overview</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 29/10/2026 (đã đóng OQ-001–OQ-005); bổ sung thuật ngữ SIRes, eTroy OIDC, Ngưỡng kiểm chứng theo PC-01 ngày 31/10/2026; bổ sung thuật ngữ evaluation (1.5) ngày 31/10/2026, chờ PO duyệt cùng 16.10 · Cơ sở: outline đã chốt, mục 21.1 và ngữ cảnh biên soạn</p><div class="note"><p>Mục này đã được viết chi tiết từ outline. Nội dung đã có cơ sở xác nhận được ghi <strong>Confirmed</strong>. Nội dung do người biên soạn suy ra hoặc đề xuất được ghi <strong>Assumption</strong>. Điểm chưa quyết định được ghi <strong>Open Question</strong> và tổng hợp ở <a href="#s-1-7">1.7</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-1-1">1.1. Purpose</a></li>
 <li><a href="#s-1-2">1.2. Product Vision</a></li>
 <li><a href="#s-1-3">1.3. Product Goals</a></li>
 <li><a href="#s-1-4">1.4. Target Users</a></li>
@@ -234,6 +234,25 @@
 </tbody></table></div>
 <p class="status">Định nghĩa: Assumption ở mức câu chữ, dựa trên outline; sẽ được đồng bộ khi mục 5 được viết chi tiết.</p>
 
+<h3 id="s-1-5-eval">Thuật ngữ đánh giá chất lượng agent (Evaluation)</h3>
+<p class="status">Đề xuất (biên soạn, 31/10/2026) — bổ sung 31/10/2026, chờ PO duyệt cùng 16.10. Các thuật ngữ phía trên của 1.5 giữ trạng thái Đã duyệt. Nguồn: <a href="16-non-functional-requirements.html#s-16-10">16.10. Evaluation và Eval Trace</a>.</p>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Thuật ngữ</th>
+<th scope="col">Định nghĩa</th>
+<th scope="col">Chi tiết</th>
+</tr></thead><tbody>
+<tr><td id="term-retrieval">Retrieval (truy xuất)</td><td>Bước tìm trong vector database các đoạn của Trusted Reference liên quan nhất tới một truy vấn để đưa vào context của model; là chữ “R” trong RAG. Trong SIRes, bước này do Evidence Retrieval Agent thực hiện.</td><td><a href="11-evidence-rag-and-research-synthesis.html#s-11-2">11.2</a>, <a href="16-non-functional-requirements.html#req-nfr-eval-003">NFR-EVAL-003</a></td></tr>
+<tr><td id="term-retrieval-recall">Recall của retrieval</td><td>Tỷ lệ đoạn căn cứ đúng (theo nhãn evidence của chuyên gia) mà retrieval tìm ra được. Ví dụ: claim có 4 đoạn căn cứ đúng, retrieval tìm ra 3 → recall 75%.</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-003">NFR-EVAL-003&nbsp;(d)</a>, <a href="16-non-functional-requirements.html#oq-096">OQ-096</a></td></tr>
+<tr><td id="term-evidence-label">Nhãn evidence</td><td>Đánh dấu của chuyên gia cho biết đoạn nào trong reference là căn cứ của một claim; là đáp án để đo recall của retrieval. Khác với nhãn mức hỗ trợ, vốn cho biết claim là Supported, Partially Supported, Unsupported hay Conflicting.</td><td><a href="16-non-functional-requirements.html#oq-096">OQ-096</a>, <a href="21-assumptions-constraints-and-open-questions.html#dec-45">DEC-45</a>, <a href="20-mvp-delivery-plan.html#s-20-4">20.4</a></td></tr>
+<tr><td id="term-supported-precision">Precision của nhãn Supported</td><td>Trong các claim Verification Agent chấm <code>Supported</code>, tỷ lệ được chuyên gia đồng ý. Precision thấp nghĩa là agent chấm dễ dãi và <a href="#s-1-3-indicators">KPI-01</a> bị thổi phồng.</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-003">NFR-EVAL-003&nbsp;(b)</a></td></tr>
+<tr><td id="term-eval-harness">Eval harness</td><td>Bộ chạy đánh giá offline: chạy bộ dữ liệu nghiệm thu (<a href="20-mvp-delivery-plan.html#s-20-4">20.4</a>) qua các agent với provider thật, rồi tính điểm so với nhãn chuyên gia. Harness chạy tách khỏi production và không đọc dữ liệu người dùng.</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-001">NFR-EVAL-001</a>, <a href="19-acceptance-criteria-and-test-scenarios.html#ts-13-10">TS-13-10</a></td></tr>
+<tr><td id="term-eval-trace">Eval Trace</td><td>Bản ghi đầy đủ đầu vào và đầu ra (toàn văn prompt, phản hồi, evidence được truy xuất kèm điểm) của mỗi Agent Run trong eval harness, dùng để xem lại vì sao agent sai. Khác với trace vận hành (<a href="16-non-functional-requirements.html#req-nfr-obs-004">NFR-OBS-004</a>), vốn chỉ chứa metadata (<a href="16-non-functional-requirements.html#req-nfr-obs-002">NFR-OBS-002</a>).</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-002">NFR-EVAL-002</a></td></tr>
+<tr><td id="term-eval-baseline">Baseline (đánh giá)</td><td>Kết quả đánh giá của phiên bản đã được chấp nhận, dùng làm mốc so sánh cho các thay đổi sau. Không nhầm với Plan Baseline (phiên bản Plan đã duyệt).</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-004">NFR-EVAL-004</a></td></tr>
+<tr><td id="term-regression">Hồi quy (regression)</td><td>Một thay đổi (prompt template, cấu hình retrieval, provider adapter…) làm metric chất lượng giảm so với baseline.</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-004">NFR-EVAL-004</a></td></tr>
+<tr><td id="term-regression-gate">Cổng hồi quy (regression gate)</td><td>Quy tắc bắt buộc chạy lại eval harness và so với baseline trước khi phát hành thay đổi; metric giảm vượt dung sai hồi quy thì thay đổi không được phát hành.</td><td><a href="16-non-functional-requirements.html#req-nfr-eval-004">NFR-EVAL-004</a>, <a href="19-acceptance-criteria-and-test-scenarios.html#ts-13-11">TS-13-11</a></td></tr>
+<tr><td id="term-regression-tolerance">Dung sai hồi quy</td><td>Mức giảm cho phép so với baseline, được coi là dao động bình thường của model. Ví dụ: baseline 90%, dung sai 2 điểm phần trăm → 88% vẫn đạt, 87% bị chặn; giá trị đã chốt là 2 điểm phần trăm cho tỷ lệ khớp mức hỗ trợ và tỷ lệ phát hiện citation không khớp, KPI-02 không được giảm.</td><td><a href="16-non-functional-requirements.html#oq-097">OQ-097</a>, <a href="21-assumptions-constraints-and-open-questions.html#dec-45">DEC-45</a>, <a href="16-non-functional-requirements.html#req-nfr-eval-004">NFR-EVAL-004</a></td></tr>
+</tbody></table></div>
+
 <h2 id="s-1-6">1.6. Document Conventions</h2>
 <h3 id="s-1-6-priority">Mức ưu tiên P0 / P1 / P2</h3>
 <div class="table-wrap"><table><thead><tr>
@@ -305,6 +324,7 @@
 <tr><td><code>DIAG</code></td><td>Diagram Agent</td><td>13</td></tr>
 <tr><td><code>CTX</code></td><td>Shared context, orchestration, audit</td><td>14</td></tr>
 <tr><td><code>UX</code>, <code>NFR</code>, <code>INT</code>, <code>DATA</code></td><td>UI/UX, phi chức năng, tích hợp, dữ liệu và trạng thái</td><td>15–18</td></tr>
+<tr><td><code>NFR-EVAL</code></td><td>Evaluation và Eval Trace: đánh giá chất lượng agent offline bằng eval harness (<a href="#s-1-5-eval">thuật ngữ</a>; bổ sung 31/10/2026, chờ PO duyệt cùng 16.10)</td><td><a href="16-non-functional-requirements.html#s-16-10">16.10</a></td></tr>
 </tbody></table></div>
 <p>Quy tắc: mã đã cấp không được đổi hoặc tái sử dụng; requirement bị loại bỏ được đánh dấu <em>Deprecated</em> và giữ nguyên mã. Mỗi requirement có ít nhất một acceptance criterion, viết theo dạng <em>Given</em> (bối cảnh) / <em>When</em> (hành động) / <em>Then</em> (kết quả kiểm chứng được). Chuỗi truy vết requirement → workflow → entity/state → acceptance criteria được tổng hợp ở <a href="22-appendices.html">phụ lục E và G</a>.</p>
 

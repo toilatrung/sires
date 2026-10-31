@@ -73,6 +73,27 @@
 </table>
 </div>
 
+<h2 id="internal">Hợp đồng nội bộ giữa các service</h2>
+<p>Theo <a href="../architecture/sections/03-system-context-and-containers.html">kiến trúc nhiều service</a> (v0.2), gateway định tuyến API công khai tới service sở hữu. Giữa các service dùng REST nội bộ (OpenAPI 3.1, xác thực bằng token nội bộ, extension <code>x-callers</code>) và message qua RabbitMQ (AsyncAPI 3.0). Quy ước chi tiết: <a href="README.md">README</a>.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Service</th><th>File</th><th>Endpoint</th><th>Bên gọi chính</th></tr></thead>
+<tbody>
+<tr><td>identity</td><td><a href="internal/identity.yaml"><code>internal/identity.yaml</code></a></td><td>8</td><td>gateway, planning, orchestration, agent-core, knowledge, research</td></tr>
+<tr><td>orchestration</td><td><a href="internal/orchestration.yaml"><code>internal/orchestration.yaml</code></a></td><td>6</td><td>agent-core, planning, library</td></tr>
+<tr><td>agent-core</td><td><a href="internal/agent-core.yaml"><code>internal/agent-core.yaml</code></a></td><td>2</td><td>orchestration, identity, gateway</td></tr>
+<tr><td>workspace</td><td><a href="internal/workspace.yaml"><code>internal/workspace.yaml</code></a></td><td>5</td><td>agent-core, planning, orchestration, gateway</td></tr>
+<tr><td>planning</td><td><a href="internal/planning.yaml"><code>internal/planning.yaml</code></a></td><td>5</td><td>agent-core, orchestration, gateway</td></tr>
+<tr><td>library</td><td><a href="internal/library.yaml"><code>internal/library.yaml</code></a></td><td>6</td><td>agent-core, orchestration, knowledge, planning, research, manuscript, gateway</td></tr>
+<tr><td>research</td><td><a href="internal/research.yaml"><code>internal/research.yaml</code></a></td><td>10</td><td>orchestration, agent-core, planning, manuscript, audit, gateway</td></tr>
+<tr><td>manuscript</td><td><a href="internal/manuscript.yaml"><code>internal/manuscript.yaml</code></a></td><td>5</td><td>agent-core, orchestration, sandbox-runner, audit</td></tr>
+<tr><td>knowledge</td><td><a href="internal/knowledge.yaml"><code>internal/knowledge.yaml</code></a></td><td>3</td><td>agent-core, research</td></tr>
+<tr><td>Sự kiện và lệnh</td><td><a href="events/asyncapi.yaml"><code>events/asyncapi.yaml</code></a></td><td>29 sự kiện, 5 loại lệnh/stream</td><td>Mọi service</td></tr>
+</tbody>
+</table>
+</div>
+<p>Schema dùng chung: <a href="internal/schemas.yaml"><code>internal/schemas.yaml</code></a> (token nội bộ, ContextBundle, AgentRunWorkOrder/Result, AgentWriteMeta, WriteAck, EventEnvelope, SandboxJob); lỗi riêng: <a href="internal/responses.yaml"><code>internal/responses.yaml</code></a>. Cả 10 file đã qua <code>redocly lint</code>.</p>
+
 <h2 id="next">Bước tiếp theo</h2>
 <ul>
 <li>Kiểm tra luồng <code>/auth/*</code> với repo eTroy_OIDC (ASM-13) và chốt URL discovery, host server.</li>

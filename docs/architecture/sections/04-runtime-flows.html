@@ -102,7 +102,7 @@
 <ol>
 <li>Researcher yêu cầu lập Plan → planning kiểm tra sáu trường thiết yếu của Research Context (REST workspace); thiếu thì yêu cầu orchestration mở prompt <code>information_request</code>.</li>
 <li>planning <strong>[TX:planning]</strong> evt:<code>plan.generation_requested</code> → orchestration tạo Workflow <code>plan_proposal</code>, cmd:<code>agent.run</code>.</li>
-<li>agent-core trả PlanVersion đề xuất (structured output) → orchestration gọi REST planning <code>POST /internal/plan-versions</code> (idempotency key = <code>agentRunId</code>); planning kiểm tra cấu trúc (18.5: DAG không chu trình, mọi Task có acceptance criteria) rồi ghi Draft.</li>
+<li>agent-core trả PlanVersion đề xuất (structured output) → orchestration gọi REST planning <code>POST /internal/projects/{projectId}/plan/versions</code> (idempotency key = <code>agentRunId</code>); planning kiểm tra cấu trúc (18.5: DAG không chu trình, mọi Task có acceptance criteria) rồi ghi Draft.</li>
 <li>orchestration mở prompt <code>approval</code>; Workflow → Waiting for User.</li>
 <li>Researcher duyệt (<code>POST …/plan/versions/{id}/approve</code>, APR-01) → <strong>[TX:planning]</strong> PlanVersion Approved, baseline cũ Superseded, Task cập nhật, phân tích ảnh hưởng (9.11), ApprovalRecord, Audit Event, evt:<code>plan_version.status_changed.approved</code> → orchestration đóng prompt và kết thúc workflow.</li>
 </ol>
