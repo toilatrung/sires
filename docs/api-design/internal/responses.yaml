@@ -1,0 +1,50 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+# Phản hồi dùng chung cho API nội bộ. Lỗi nghiệp vụ dùng lại ../components/responses.yaml.
+
+InvalidServiceToken:
+  description: Thiếu token nội bộ, sai chữ ký, hết hạn hoặc `aud` không phải service này (ADR-20).
+  content:
+    application/problem+json:
+      schema: { $ref: ../components/schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/invalid_service_token
+        title: Token nội bộ không hợp lệ
+        status: 401
+        code: invalid_service_token
+
+CallerNotAllowed:
+  description: |
+    Service gọi (`sub` của token) không nằm trong `x-callers` của operation. Truy cập entity ngoài phạm vi tài khoản
+    hoặc phạm vi agent vẫn trả `404` như API công khai (NFR-ISOL-001), không dùng mã này.
+  content:
+    application/problem+json:
+      schema: { $ref: ../components/schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/caller_not_allowed
+        title: Service không được phép gọi endpoint này
+        status: 403
+        code: caller_not_allowed
+
+StaleAgentRun:
+  description: Agent Run không còn là run hiện hành của bước, hoặc workflow không còn Running — kết quả bị bỏ (CTX-CONSISTENCY-002).
+  content:
+    application/problem+json:
+      schema: { $ref: ../components/schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/stale_agent_run
+        title: Agent Run không còn hiện hành
+        status: 409
+        code: stale_agent_run
+
+NotFound:
+  $ref: ../components/responses.yaml#/NotFound
+BadRequest:
+  $ref: ../components/responses.yaml#/BadRequest
+Conflict:
+  $ref: ../components/responses.yaml#/Conflict
+UnprocessableEntity:
+  $ref: ../components/responses.yaml#/UnprocessableEntity
+ServiceUnavailable:
+  $ref: ../components/responses.yaml#/ServiceUnavailable

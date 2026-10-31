@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -57,12 +62,12 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Sự kiện</th><th>Workflow</th><th>Step / Agent Run</th><th>Ghi kèm</th></tr></thead>
 <tbody>
-<tr><td>agent-core bắt tay <code>start</code> cho run đầu tiên</td><td>Created → Running</td><td>Step Pending → Running; Run Pending → Running</td><td>evt:<code>workflow.started</code> → planning chuyển Task Queued → In Progress (T-06)</td></tr>
+<tr><td>agent-core bắt tay <code>start</code> cho run đầu tiên</td><td>Created → Running</td><td>Step Pending → Running; Run Pending → Running</td><td>evt:<code>workflow.status_changed.running</code> → planning chuyển Task Queued → In Progress (T-06)</td></tr>
 <tr><td>Agent Run trả kết quả hợp lệ</td><td>giữ Running</td><td>Run → Succeeded; Step → Succeeded</td><td>Đầu ra Draft đã được service sở hữu xác nhận (5.8), Checkpoint, Audit, outbox → message bước kế</td></tr>
 <tr><td>Đầu ra yêu cầu người dùng</td><td>Running → Waiting for User</td><td>Step → Waiting</td><td>Prompt, PendingAction, Checkpoint (trước điểm chờ, WF-06.S1)</td></tr>
 <tr><td>Prompt được trả lời</td><td>Waiting for User → Running</td><td>Step → Pending/Succeeded tùy loại</td><td>Context Item decision, message bước kế</td></tr>
-<tr><td>Hết thử lại ở cả hai lớp</td><td>Running → Failed</td><td>Run → Failed (mã chuẩn 8.6)</td><td>evt:<code>workflow.failed</code> → planning chuyển Task → Failed theo 9.8; workspace tạo Notification</td></tr>
-<tr><td>Mọi đầu ra mong đợi đã có</td><td>Running → Succeeded</td><td>—</td><td>evt:<code>workflow.succeeded</code> → planning: Task → In Review; workspace: PendingAction nghiệm thu</td></tr>
+<tr><td>Hết thử lại ở cả hai lớp</td><td>Running → Failed</td><td>Run → Failed (mã chuẩn 8.6)</td><td>evt:<code>workflow.status_changed.failed</code> → planning chuyển Task → Failed theo 9.8; workspace tạo Notification</td></tr>
+<tr><td>Mọi đầu ra mong đợi đã có</td><td>Running → Succeeded</td><td>—</td><td>evt:<code>workflow.status_changed.succeeded</code> → planning: Task → In Review; workspace: PendingAction nghiệm thu</td></tr>
 <tr><td>Không heartbeat 2 phút</td><td>Running → Interrupted</td><td>Run → Failed (<code>interrupted</code>)</td><td>PendingAction Recovery decision</td></tr>
 </tbody></table></div>
 
@@ -160,7 +165,7 @@
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="04-runtime-flows.html">← Mục 4</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="06-data-architecture.html">Mục 6 →</a></nav>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

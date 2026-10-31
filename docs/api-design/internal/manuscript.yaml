@@ -1,0 +1,215 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — manuscript
+  version: 0.1.0-mvp
+  summary: API nội bộ của manuscript — context bản thảo, ghi Change Proposal, nhận kết quả build, số liệu KPI-02.
+  description: |
+    manuscript sở hữu Manuscript, ManuscriptFile, ManuscriptRevision, ChangeProposal, BibliographyEntry, Build và cổng
+    citation (architecture F-11). Chấp nhận Change Proposal (APR-05) chỉ qua API công khai `paths/12-…`.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://manuscript.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Manuscript context
+    description: File bản thảo và bibliography cho Writing Agent.
+  - name: Agent outputs
+    description: Ghi Change Proposal do Writing Agent tạo.
+  - name: Builds
+    description: Kết quả build từ sandbox-runner.
+  - name: KPI
+    description: Số liệu KPI-01 (phần bản thảo) và KPI-02 cho audit.
+
+paths:
+  /internal/projects/{projectId}/manuscript/context-bundle:
+    post:
+      tags: [Manuscript context]
+      operationId: getManuscriptContextBundle
+      summary: Nội dung file ở revision hiện hành và danh sách citation key hợp lệ
+      x-callers: [agent-core]
+      x-requirements: [MS-AIWRITE-001, CTX-ASSEMBLY-001]
+      x-milestone: M6
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paths:
+                  type: array
+                  description: Bỏ trống để lấy cây file (không nội dung) và file chính.
+                  items: { type: string }
+      responses:
+        '200':
+          description: Bundle bản thảo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [revisionId, bundle, citationKeys]
+                properties:
+                  revisionId: { $ref: ../components/schemas/common.yaml#/Id }
+                  fileTree:
+                    type: array
+                    items: { type: string }
+                  bundle: { $ref: schemas.yaml#/ContextBundle }
+                  citationKeys:
+                    type: array
+                    description: Key của BibliographyEntry gắn Reference Trusted — Writing Agent chỉ được trích các key này.
+                    items:
+                      type: object
+                      properties:
+                        key: { type: string }
+                        referenceId: { $ref: ../components/schemas/common.yaml#/Id }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/projects/{projectId}/manuscript/change-proposals:
+    post:
+      tags: [Agent outputs]
+      operationId: createChangeProposalFromAgent
+      summary: Ghi Change Proposal do Writing Agent tạo, chạy cổng citation
+      description: |
+        Gắn `baseRevisionId`; khác revision hiện hành tại lúc chấp nhận thì Outdated (MS-DIFF-001). Cổng citation tất định:
+        mọi key `\cite*` sau khi áp diff phải phân giải tới Reference Trusted, nếu không proposal bị đánh dấu chặn chấp nhận
+        (KPI-02). Hình sơ đồ tham chiếu artifact version đã Accepted (APR-07).
+      x-callers: [orchestration]
+      x-requirements: [MS-AIWRITE-001, MS-DIFF-001, MS-BIB-001, MS-DIAGRAM-001, KPI-02]
+      x-milestone: M6
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectId
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meta, baseRevisionId, diff]
+              properties:
+                meta: { $ref: schemas.yaml#/AgentWriteMeta }
+                baseRevisionId: { $ref: ../components/schemas/common.yaml#/Id }
+                summary: { type: string }
+                diff:
+                  type: array
+                  items:
+                    type: object
+                    required: [path, operation]
+                    properties:
+                      path: { type: string }
+                      operation: { type: string, enum: [add, modify, delete] }
+                      hunks:
+                        type: array
+                        items: { $ref: ../components/schemas/manuscript.yaml#/DiffHunk }
+                taskId: { $ref: ../components/schemas/common.yaml#/Id }
+                claimIds:
+                  type: array
+                  items: { $ref: ../components/schemas/common.yaml#/Id }
+                evidenceIds:
+                  type: array
+                  items: { $ref: ../components/schemas/common.yaml#/Id }
+                artifactVersionIds:
+                  type: array
+                  items: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '201':
+          description: Đã tạo proposal; `rejected` liệt kê citation key không phân giải (proposal vẫn tạo nhưng bị chặn chấp nhận).
+          content:
+            application/json:
+              schema: { $ref: schemas.yaml#/WriteAck }
+        '400': { $ref: responses.yaml#/BadRequest }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/builds/{buildId}/result:
+    post:
+      tags: [Builds]
+      operationId: submitBuildResult
+      summary: sandbox-runner gửi kết quả build LaTeX
+      description: |
+        Build Running → Succeeded/Failed; lưu khóa log và PDF, issues đã phân tích, citation key thấy được và key không
+        phân giải (INT-LATEX-003). Build đã kết thúc thì gửi lại trả `204` (idempotent).
+      x-callers: [sandbox-runner]
+      x-requirements: [MS-BUILD-001, INT-LATEX-003, INT-LATEX-004, NFR-SANDBOX-001]
+      x-milestone: M6
+      parameters:
+        - $ref: ../components/parameters.yaml#/BuildId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: schemas.yaml#/SandboxResult }
+      responses:
+        '204': { $ref: ../components/responses.yaml#/NoContent }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+
+  /internal/builds/{buildId}/started:
+    post:
+      tags: [Builds]
+      operationId: markBuildStarted
+      summary: sandbox-runner báo build bắt đầu chạy (Queued → Running)
+      description: Dùng đo NFR-PERF-007 (chờ hàng đợi ≤ 10 s).
+      x-callers: [sandbox-runner]
+      x-requirements: [MS-BUILD-001, NFR-PERF-007]
+      x-milestone: M6
+      parameters:
+        - $ref: ../components/parameters.yaml#/BuildId
+      responses:
+        '204': { $ref: ../components/responses.yaml#/NoContent }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '404': { $ref: responses.yaml#/NotFound }
+        '409': { $ref: responses.yaml#/Conflict }
+
+  /internal/kpi/citations:
+    get:
+      tags: [KPI]
+      operationId: getKpi02Data
+      summary: KPI-02 (citation phân giải) và claim trong revision hiện hành cho KPI-01
+      x-callers: [audit]
+      x-requirements: [NFR-KPI-001, KPI-02, KPI-01]
+      x-milestone: M6
+      parameters:
+        - $ref: ../components/parameters.yaml#/ProjectIdFilter
+      responses:
+        '200':
+          description: Số liệu.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [citationKeysTotal, citationKeysResolved, asOf]
+                properties:
+                  citationKeysTotal: { type: integer }
+                  citationKeysResolved: { type: integer }
+                  claimIdsInCurrentRevision:
+                    type: array
+                    items: { $ref: ../components/schemas/common.yaml#/Id }
+                  asOf: { $ref: ../components/schemas/common.yaml#/Timestamp }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

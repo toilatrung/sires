@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -16,7 +21,7 @@
 <p class="eyebrow">Architecture Design · Section 12</p><h1>12. Decisions, Risks and Open Issues</h1>
 <p class="meta">Trạng thái: bản 0.2 · Cơ sở: PRD <a href="../../overview/sections/21-assumptions-constraints-and-open-questions.html">21</a>, 20.2; chỉ đạo ngày 31/10/2026</p>
 <div class="note"><p>Nơi tổng hợp duy nhất của quyết định kiến trúc (ADR), spike kiểm chứng giả định kỹ thuật của PRD, rủi ro kỹ thuật và câu hỏi còn mở. Khi ADR bị thay, ghi <code>Superseded by ADR-NN</code>, không xóa.</p>
-<p><strong>Ngày 31/10/2026:</strong> chỉ đạo tách backend thành nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE; các đề xuất còn lại của technology stack được chấp thuận. ADR-01, ADR-02 bị thay bằng ADR-17, ADR-18. ADR-03, ADR-04, ADR-07, ADR-08 được chấp thuận về hướng chính và điều chỉnh phạm vi cho kiến trúc nhiều service. ADR-19–ADR-23 là quyết định mới phát sinh, ở trạng thái Proposed.</p></div>
+<p><strong>Ngày 31/10/2026:</strong> chỉ đạo tách backend thành nhiều service (NestJS cho service hệ thống, Python cho agent core), monorepo chung FE + BE; các đề xuất còn lại của technology stack được chấp thuận. ADR-01, ADR-02 bị thay bằng ADR-17, ADR-18. ADR-03, ADR-04, ADR-07, ADR-08 được chấp thuận về hướng chính và điều chỉnh phạm vi cho kiến trúc nhiều service. ADR-19–ADR-23 là quyết định mới phát sinh, ở trạng thái Proposed. Cùng ngày: giữ knowledge là service Python riêng (ADR-18 Accepted, AQ-07 đóng).</p></div>
 <details class="local-toc"><summary>Nội dung trong mục</summary><ul>
 <li><a href="#s-12-1">12.1. Sổ quyết định kiến trúc (ADR)</a></li>
 <li><a href="#s-12-2">12.2. Spike kiểm chứng</a></li>
@@ -45,7 +50,7 @@
 <tr id="adr-15"><td>ADR-15</td><td><code>pypdfium2</code> + <code>pdfplumber</code> trong knowledge; không dùng thư viện AGPL.</td><td>PyMuPDF; GROBID.</td><td>SPK-05.</td><td>Accepted (31/10/2026)</td></tr>
 <tr id="adr-16"><td>ADR-16</td><td>Monorepo chung FE + BE.</td><td>Nhiều repo.</td><td>Công cụ cụ thể ở ADR-21.</td><td>Accepted (31/10/2026)</td></tr>
 <tr id="adr-17"><td>ADR-17</td><td>Microservices theo domain: gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, sandbox-runner, agent-core, knowledge (3.2). Mỗi service sở hữu entity, database, hợp đồng của mình.</td><td>Modular monolith (ADR-01); ít service hơn (gộp research + manuscript; gộp knowledge vào agent-core).</td><td>Nhiều người code song song; đổi lại phải xử lý nhất quán xuyên service bằng saga + outbox (5.8, 6.4). Có thể gộp service ít thay đổi khi đội nhỏ, giữ nguyên hợp đồng.</td><td>Accepted về hướng (31/10/2026); danh sách service: Proposed</td></tr>
-<tr id="adr-18"><td>ADR-18</td><td>TypeScript + NestJS (SWC, Fastify adapter, Drizzle) cho gateway và service hệ thống; Python 3.12+ (FastAPI, uv) cho agent-core và knowledge; frontend React + Vite.</td><td>Toàn Python (ADR-02); toàn NestJS.</td><td>Xếp knowledge vào nhóm Python vì là phần lõi RAG (3.2) — cần xác nhận (AQ-07).</td><td>Accepted về hướng (31/10/2026); vị trí knowledge: Proposed</td></tr>
+<tr id="adr-18"><td>ADR-18</td><td>TypeScript + NestJS (SWC, Fastify adapter, Drizzle) cho gateway và service hệ thống; Python 3.12+ (FastAPI, uv) cho agent-core và knowledge; frontend React + Vite.</td><td>Toàn Python (ADR-02); toàn NestJS.</td><td>knowledge là service Python riêng, tách khỏi agent-core (chốt 31/10/2026, AQ-07).</td><td>Accepted (31/10/2026)</td></tr>
 <tr id="adr-19"><td>ADR-19</td><td>RabbitMQ managed (quorum queue) cho sự kiện (topic exchange <code>sires.events</code>) và job (<code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>); outbox ở mỗi service, inbox idempotent ở consumer.</td><td>Kafka; NATS JetStream; hàng đợi PostgreSQL dùng chung.</td><td>Thêm một hạ tầng cần vận hành (dùng bản managed). Xem lại nếu cần lưu sự kiện dài hạn để phát lại (Kafka).</td><td>Proposed</td></tr>
 <tr id="adr-20"><td>ADR-20</td><td>Hợp đồng nội bộ: OpenAPI cho từng service (<code>docs/api-design/internal/</code>), AsyncAPI cho sự kiện (<code>docs/api-design/events/</code>); xác thực service-to-service bằng token ký nội bộ (JWT ngắn hạn, khóa trong KMS) mang <code>sub</code>=service, <code>act</code>=actor, <code>account_id</code>, <code>project_id</code>, phạm vi agent; mTLS ở lớp mạng nếu dùng service mesh.</td><td>Mạng nội bộ tin cậy, không xác thực; gRPC.</td><td>Mọi service tự kiểm tra quyền theo token, kể cả khi gọi từ agent-core (10.4).</td><td>Proposed</td></tr>
 <tr id="adr-21"><td>ADR-21</td><td>Công cụ monorepo: pnpm workspace + Nx (affected, remote cache) cho TS; uv workspace cho Python, gọi qua target Nx; thư viện chung <code>libs/ts/platform</code>, <code>libs/ts/contracts</code>, <code>libs/py/sires_common</code>.</td><td>Turborepo; Lerna; Bazel.</td><td>Nx hỗ trợ NestJS và React sẵn, đồ thị phụ thuộc cho CI nhanh.</td><td>Proposed</td></tr>
@@ -95,13 +100,13 @@
 <tr><td>AQ-04</td><td>Ngân sách kiểm thử xâm nhập độc lập?</td><td>10.8</td><td>M7</td></tr>
 <tr><td>AQ-05</td><td>Năng lực vận hành Kubernetes và RabbitMQ (hay dùng bản managed)?</td><td>ADR-12, ADR-19</td><td>M1</td></tr>
 <tr><td>AQ-06</td><td>Dung sai hồi quy eval (OQ-097) — đề xuất 2 điểm phần trăm cho tỷ lệ khớp, 0 cho KPI-02.</td><td>11.7</td><td>M5</td></tr>
-<tr><td>AQ-07</td><td>Xác nhận service knowledge (PDF, chunk, embedding, truy xuất) viết bằng Python; hay gộp vào agent-core thành một service Python?</td><td>ADR-17, ADR-18</td><td>M1</td></tr>
+<tr><td>AQ-07</td><td>Xác nhận service knowledge (PDF, chunk, embedding, truy xuất) viết bằng Python; hay gộp vào agent-core thành một service Python? <strong>Đã trả lời 31/10/2026:</strong> giữ knowledge là service Python riêng.</td><td>ADR-17, ADR-18</td><td>Đã đóng</td></tr>
 <tr><td>AQ-08</td><td>Phân công nhóm sở hữu từng service (ownership) để quy tắc 3.6 có người chịu trách nhiệm.</td><td>3.2, CODEOWNERS</td><td>M1</td></tr>
 </tbody></table></div>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="11-deployment-and-operations.html">← Mục 11</a><a href="../index.html">Mục lục kiến trúc</a><a href="../index.html">Về mục lục →</a></nav>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

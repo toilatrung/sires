@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -130,7 +135,7 @@ COMMIT;</code></pre>
 <div class="table-wrap"><table>
 <thead><tr><th>Chính sách PRD</th><th>Hiện thực</th></tr></thead>
 <tbody>
-<tr><td>NFR-RET-002 xóa project: xóa mềm, khôi phục 30 ngày, rồi xóa vĩnh viễn</td><td>workspace đặt <code>deleted_at</code>, <code>purge_after</code>, phát <code>project.deleted</code>; mọi service ẩn dữ liệu của project đó. Hết hạn: workspace phát <code>project.purge_due</code>; mỗi service (kể cả audit, research, orchestration) tự xóa dữ liệu và blob cấp project của mình, báo <code>project.purged.&lt;service&gt;</code>; workspace theo dõi đủ xác nhận. Khôi phục trong hạn: <code>project.restored</code>. Trusted Reference không bị ảnh hưởng.</td></tr>
+<tr><td>NFR-RET-002 xóa project: xóa mềm, khôi phục 30 ngày, rồi xóa vĩnh viễn</td><td>workspace đặt <code>deleted_at</code>, <code>purge_after</code>, phát <code>project.lifecycle_changed.deleted</code>; mọi service ẩn dữ liệu của project đó. Hết hạn: workspace phát <code>project.purge_due</code>; mỗi service (kể cả audit, research, orchestration) tự xóa dữ liệu và blob cấp project của mình, báo <code>data.purged</code>; workspace theo dõi đủ xác nhận. Khôi phục trong hạn: <code>project.lifecycle_changed.restored</code>. Trusted Reference không bị ảnh hưởng.</td></tr>
 <tr><td>NFR-RET-003 xóa Reference khi không project nào dùng</td><td>library kiểm tra Project Reference Selection Active, xóa Reference, phát <code>reference.deleted</code>; knowledge xóa SourceDocument, Chunk, vector trong một giao dịch và blob của mình.</td></tr>
 <tr><td>NFR-RET-004 xóa tài khoản trong 30 ngày, vô hiệu key ngay</td><td>Ngay khi yêu cầu: identity xóa ciphertext API key và khóa tài khoản, gateway hủy phiên; sự kiện <code>account.deletion_requested</code> → mỗi service xóa dữ liệu theo <code>account_id</code> và prefix object storage của mình trong ≤ 30 ngày, báo xác nhận về identity. (Endpoint chưa có trong API MVP, PRD để P1.)</td></tr>
 <tr><td>NFR-RET-007 log vận hành 30 ngày</td><td>Cấu hình retention của kho log.</td></tr>
@@ -164,7 +169,7 @@ COMMIT;</code></pre>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="05-workflow-engine-and-orchestration.html">← Mục 5</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="07-rag-and-document-pipeline.html">Mục 7 →</a></nav>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

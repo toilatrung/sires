@@ -63,3 +63,8 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 - Manuscript bỏ ProjectRail để dành chỗ cho ba vùng; quay lại project bằng nút “Project” trên thanh công cụ.
 - Pending Actions nằm ở phía phải TopBar (luôn hiện số đếm) thay vì là một tab Global.
 - Đã rà soát theo taste-skill (Leonxlnx/taste-skill, phần app screens): bo góc chặt nhất quán; chip trạng thái nền nhạt thay vì màu đặc chữ trắng; điều hướng và tab đang chọn dùng màu trung tính (màu xanh chỉ cho một nút chính mỗi màn và dữ liệu); công tắc bật màu mực; chữ mono chỉ cho ID, mã, LaTeX; bỏ nhãn meta nằm trên tiêu đề; tiêu đề màn ứng dụng 26px. Taste-skill cũng cảnh báo nền kem là một dấu hiệu AI phổ biến; vẫn giữ theo lựa chọn của bạn.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../LICENSES.md).

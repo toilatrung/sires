@@ -57,3 +57,8 @@ Nếu màn hoặc trạng thái chưa có trong `pages/`:
    Sửa mọi lỗi `error`; với `warn`, sửa hoặc giải thích.
 2. Nếu có trình duyệt và ứng dụng chạy được: mở màn đã dựng và `docs/ui-design/pages/<Tên>.html` ở cùng khổ (1440 và 390), so sánh bố cục, component, trạng thái, chữ. Nên dùng skill `sires-ui-review` cho bước này.
 3. Báo cáo ngắn: màn đã làm, màn tham chiếu đã dùng, requirement PRD đã đáp ứng, chỗ lệch thiết kế (nếu có) và lý do, phần chưa kiểm chứng.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

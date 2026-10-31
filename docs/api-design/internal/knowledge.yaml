@@ -1,0 +1,186 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+openapi: 3.1.0
+info:
+  title: SIRes internal API — knowledge
+  version: 0.1.0-mvp
+  summary: API nội bộ của knowledge (Python) — truy xuất lai, đọc chunk, kiểm tra quote.
+  description: |
+    knowledge sở hữu SourceDocument, Chunk, văn bản chunk và vector (pgvector) — architecture mục 7. Indexing chạy
+    theo sự kiện `reference.trusted` và lệnh `knowledge.index` (events/asyncapi.yaml), không có endpoint công khai.
+    Phạm vi truy xuất do knowledge tự tính từ token và bản sao selection; request không mở rộng được phạm vi.
+  contact:
+    name: eTroy — đội SWE, GEN AI, AIE và PO
+  license:
+    name: eTroy Non-Commercial License 1.0 (see LICENSES.md)
+    identifier: LicenseRef-eTroy-NC-1.0
+servers:
+  - url: http://knowledge.sires.svc.cluster.local:8080
+    description: Service nội bộ trong Kubernetes.
+security:
+  - serviceToken: []
+tags:
+  - name: Retrieval
+    description: Tool `retrieve_evidence` (EVID-RETRIEVAL-001, architecture 7.4).
+  - name: Chunks
+    description: Đọc chunk và kiểm tra quote tất định (architecture 7.5).
+
+paths:
+  /internal/retrievals:
+    post:
+      tags: [Retrieval]
+      operationId: retrieveEvidence
+      summary: Truy xuất lai vector + full-text trong phạm vi project
+      description: |
+        Phạm vi = accountId và projectId của token ∩ Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng
+        embedding model hiện hành (INT-VECTOR-001, OQ-053). `referenceIds` trong request chỉ thu hẹp thêm, không mở rộng.
+        Embedding truy vấn dùng Provider Connection của tài khoản (DEC-31). Không ghi Evidence — research ghi qua saga.
+      x-callers: [agent-core]
+      x-requirements: [EVID-RETRIEVAL-001, INT-VECTOR-001, INT-VECTOR-002, NFR-PERF-006, NFR-OBS-006]
+      x-milestone: M5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/evidence.yaml#/EvidenceRetrievalRequest
+                - type: object
+                  properties:
+                    excludeRegions:
+                      type: array
+                      items: { type: string, enum: [references, appendix] }
+      responses:
+        '200':
+          description: Ứng viên evidence kèm vị trí lấy từ chunk.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: ../components/schemas/evidence.yaml#/EvidenceRetrievalResult
+                  - type: object
+                    required: [retrievalConfigVersion]
+                    properties:
+                      retrievalConfigVersion: { type: string }
+                      notReadyReferenceIds:
+                        type: array
+                        description: Reference trong phạm vi nhưng chưa có vector của model hiện hành (đang index lại).
+                        items: { $ref: ../components/schemas/common.yaml#/Id }
+                      usage: { $ref: schemas.yaml#/AgentRunUsage }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '422': { $ref: responses.yaml#/UnprocessableEntity }
+
+  /internal/chunks/get:
+    post:
+      tags: [Chunks]
+      operationId: getChunks
+      summary: Văn bản và vị trí của các chunk
+      description: Dùng khi Verification Agent cần toàn văn chunk của evidence liên kết; chỉ chunk thuộc tài khoản của token.
+      x-callers: [agent-core, research]
+      x-requirements: [EVID-INSPECTOR-001, CLAIM-SUPPORT-001]
+      x-milestone: M5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chunkIds]
+              properties:
+                chunkIds:
+                  type: array
+                  maxItems: 200
+                  items: { $ref: ../components/schemas/common.yaml#/Id }
+      responses:
+        '200':
+          description: Chunk tìm thấy.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [chunkId, referenceId, text, page]
+                      properties:
+                        chunkId: { $ref: ../components/schemas/common.yaml#/Id }
+                        referenceId: { $ref: ../components/schemas/common.yaml#/Id }
+                        text: { type: string }
+                        page: { type: integer }
+                        paragraph: { type: integer }
+                        charStart: { type: integer }
+                        charEnd: { type: integer }
+                        region: { type: string, enum: [body, references, appendix] }
+                  notFound:
+                    type: array
+                    items: { $ref: ../components/schemas/common.yaml#/Id }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+  /internal/chunks/verify-quotes:
+    post:
+      tags: [Chunks]
+      operationId: verifyQuotes
+      summary: Kiểm tra quote có thật trong chunk (so khớp sau chuẩn hóa, mờ ≥ 0,95)
+      description: Kiểm tra tất định chống bịa evidence (architecture 7.5); trả vị trí chính xác lấy từ chunk.
+      x-callers: [research, agent-core]
+      x-requirements: [EVID-RETRIEVAL-001, KPI-01]
+      x-milestone: M5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [chunkId, quote]
+                    properties:
+                      chunkId: { $ref: ../components/schemas/common.yaml#/Id }
+                      quote: { type: string }
+      responses:
+        '200':
+          description: Kết quả theo thứ tự đầu vào.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [chunkId, found, similarity]
+                      properties:
+                        chunkId: { $ref: ../components/schemas/common.yaml#/Id }
+                        found: { type: boolean }
+                        similarity: { type: number }
+                        location:
+                          type: object
+                          properties:
+                            page: { type: integer }
+                            paragraph: { type: integer }
+                            charStart: { type: integer }
+                            charEnd: { type: integer }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token nội bộ ký bằng KMS (ADR-20); nội dung theo `schemas.yaml#/ServiceTokenClaims`.

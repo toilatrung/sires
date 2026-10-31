@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -64,7 +69,7 @@
 <h2 id="s-7-4">7.4. Truy xuất</h2>
 <p>Tool <code>retrieve_evidence(query, k, filters)</code> của Evidence Retrieval Agent và Verification Agent; NFR-PERF-006: ≤ 3 giây cho project 500 reference (không tính embedding truy vấn).</p>
 <ol>
-<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001, OQ-053): <code>account_id</code> và <code>project_id</code> lấy từ token nội bộ của Agent Run + <code>reference_id IN</code> (Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng model hiện hành). knowledge tính phạm vi từ bản sao chỉ đọc nhận qua sự kiện của library (<code>reference.*</code>, <code>project_reference.*</code>), không nhận từ model; tool không có tham số để mở rộng.</li>
+<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001, OQ-053): <code>account_id</code> và <code>project_id</code> lấy từ token nội bộ của Agent Run + <code>reference_id IN</code> (Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng model hiện hành). knowledge tính phạm vi từ bản sao chỉ đọc nhận qua sự kiện của library (<code>reference.status_changed.*</code>, <code>project_reference.changed.*</code>), không nhận từ model; tool không có tham số để mở rộng.</li>
 <li><strong>Nhánh vector:</strong> embedding truy vấn bằng model của tài khoản; top 50 theo cosine.
   <ul>
   <li>Phạm vi nhỏ (≤ ~50.000 chunk, gồm cả trần 500 reference × ~100 chunk): quét chính xác trên tập đã lọc bằng index <code>(account_id, reference_id)</code> — chính xác 100%, đủ nhanh.</li>
@@ -97,7 +102,7 @@
 
 <h2 id="s-7-7">7.7. Thu hồi, xóa, index lại</h2>
 <ul>
-<li><strong>Thu hồi</strong> (LIB-LIFECYCLE-001, OQ-018): <strong>[TX]</strong> Reference Revoked; Evidence từ Reference đó → Stale; claim, citation, Task phụ thuộc gắn needs review. knowledge nhận <code>reference.revoked</code> và loại khỏi phạm vi 7.4 ngay (trễ tối đa vài giây theo sự kiện) — không cần xóa vector (INT-VECTOR-002). research nhận cùng sự kiện để chuyển Evidence → Stale và gắn needs review.</li>
+<li><strong>Thu hồi</strong> (LIB-LIFECYCLE-001, OQ-018): <strong>[TX]</strong> Reference Revoked; Evidence từ Reference đó → Stale; claim, citation, Task phụ thuộc gắn needs review. knowledge nhận <code>reference.status_changed.revoked</code> và loại khỏi phạm vi 7.4 ngay (trễ tối đa vài giây theo sự kiện) — không cần xóa vector (INT-VECTOR-002). research nhận cùng sự kiện để chuyển Evidence → Stale và gắn needs review.</li>
 <li><strong>Xóa</strong> (NFR-RET-003): xóa vector và chunk trong cùng giao dịch; blob bằng job.</li>
 <li><strong>Đổi embedding model</strong> (INT-VECTOR-003): cảnh báo, xác nhận → đánh dấu mọi SourceDocument <code>needs_reindex</code>; job nhúng lại từ văn bản chunk đã lưu (không trích xuất lại PDF); trong lúc chờ, truy xuất chỉ dùng chunk đã có vector của model mới và báo số tài liệu chưa sẵn sàng. Vector model cũ xóa khi hoàn tất.</li>
 <li><strong>Đổi phiên bản bộ trích xuất/chunker:</strong> chỉ áp dụng cho tài liệu index mới; index lại toàn bộ là thao tác vận hành có kế hoạch vì làm đổi <code>chunk_key</code> (Evidence cũ vẫn giữ quote và vị trí đã lưu).</li>
@@ -113,7 +118,7 @@
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="06-data-architecture.html">← Mục 6</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="08-model-gateway-and-integrations.html">Mục 8 →</a></nav>
 </main>
-<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất).</footer>
+<footer>AI Research Assistant (SIRes) · Architecture Design · 0.2 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>
