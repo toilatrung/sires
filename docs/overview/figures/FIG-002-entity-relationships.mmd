@@ -2,12 +2,17 @@
 %% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 %% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 %% FIG-002 — Entity relationships (section 5.10, appendix D)
+%% 01/11/2026: Deliberation, Deliberation Entry, Context Snapshot (DEC-47, 5.5, 18.1); Agent Model Assignment and Agent Run carry instance (DEC-50)
 erDiagram
   ACCOUNT ||--o{ RESEARCH_PROJECT : owns
   ACCOUNT ||--o{ REFERENCE : "Trusted Library"
   ACCOUNT ||--o{ DISCOVERED_RESULT : discovers
   ACCOUNT ||--o{ PROVIDER_CONNECTION : configures
   PROVIDER_CONNECTION ||--o{ AGENT_MODEL_ASSIGNMENT : "used by"
+  AGENT_MODEL_ASSIGNMENT {
+    string agent
+    string instance "unique per account, agent, instance"
+  }
   REFERENCE ||--o| SOURCE_DOCUMENT : "indexed as"
   DISCOVERED_RESULT |o--o| REFERENCE : "imported to"
   RESEARCH_PROJECT ||--|| RESEARCH_PLAN : has
@@ -40,3 +45,15 @@ erDiagram
   AGENT_RUN ||--o{ EVIDENCE : retrieves
   AGENT_RUN ||--o{ CLAIM : drafts
   AGENT_RUN ||--o{ CHANGE_PROPOSAL : proposes
+  AGENT_RUN {
+    string agent
+    string instance "A or B for analysis"
+  }
+  WORKFLOW ||--o{ DELIBERATION_ENTRY : "Deliberation Board"
+  WORKFLOW_STEP ||--o{ DELIBERATION : opens
+  RESEARCH_PROJECT ||--o{ DELIBERATION : has
+  DELIBERATION |o--o{ DELIBERATION_ENTRY : contains
+  DELIBERATION ||--|| CONTEXT_SNAPSHOT : "reads from"
+  AGENT_RUN ||--o{ DELIBERATION_ENTRY : writes
+  DELIBERATION |o--o{ AGENT_RUN : "runs in rounds"
+  DELIBERATION |o--o| ARTIFACT_VERSION : "Deliberation Record"

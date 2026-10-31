@@ -144,7 +144,7 @@ ChangeProposal:
     - $ref: common.yaml#/EntityMeta
     - type: object
       description: Chấp nhận/từ chối nguyên khối (OQ-083, DEC-35).
-      required: [manuscriptId, baseRevisionId, diff, createdByAgentRunId, status]
+      required: [manuscriptId, baseRevisionId, diff, createdByAgentRunId, status, provenance]
       properties:
         manuscriptId: { $ref: common.yaml#/Id }
         baseRevisionId: { $ref: common.yaml#/Id }
@@ -192,6 +192,10 @@ ChangeProposal:
         status: { $ref: '#/ChangeProposalStatus' }
         approval: { $ref: common.yaml#/ApprovalRecord }
         resultingRevisionId: { $ref: common.yaml#/Id }
+        provenance:
+          allOf:
+            - $ref: common.yaml#/Provenance
+          description: Provenance (18.3, DATA-PROV-001) — Change Proposal luôn do agent tạo (`createdByAgentRunId`).
 
 DiagramInsertionRequest:
   type: object
@@ -207,9 +211,10 @@ DiagramInsertionRequest:
 BibliographyEntry:
   type: object
   readOnly: true
-  required: [id, bibtexKey, referenceId, bibtex]
+  required: [id, manuscriptId, bibtexKey, referenceId, bibtex, generatedFromMetadataVersion]
   properties:
     id: { $ref: common.yaml#/Id }
+    manuscriptId: { $ref: common.yaml#/Id }
     bibtexKey: { type: string }
     referenceId: { $ref: common.yaml#/Id }
     referenceApprovalStatus: { $ref: library.yaml#/ReferenceApprovalStatus }
@@ -239,9 +244,10 @@ Build:
   type: object
   readOnly: true
   description: Build cô lập, không shell-escape, giới hạn mặc định 120 s / 2 GB (MS-BUILDENV-001, NFR-SANDBOX).
-  required: [id, revisionId, status, queuedAt]
+  required: [id, manuscriptId, revisionId, status, queuedAt]
   properties:
     id: { $ref: common.yaml#/Id }
+    manuscriptId: { $ref: common.yaml#/Id }
     revisionId: { $ref: common.yaml#/Id }
     revisionNumber: { type: integer }
     compiler: { $ref: '#/Compiler' }

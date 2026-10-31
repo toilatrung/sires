@@ -39,8 +39,10 @@ stateDiagram-v2
     Created --> Running
     Running --> Waiting: prompt open
     Waiting --> Running: answered
+    Waiting --> Paused: user pause (DEC-53)
     Running --> Paused: user pause
     Paused --> Running: resume
+    Paused --> Waiting: resume, blocking prompt still Open (DEC-53)
     Running --> Interrupted: system detected stop
     Interrupted --> Running: recovery decision
     Running --> Succeeded

@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="__UI_LANG__">
+<head>
+<meta charset="utf-8">
+<title>Style guide</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.ui-guide { max-width: 1120px; margin: 0 auto; padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-4); }
+.ui-guide h1 { margin: 0; font-size: var(--ui-title); }
+.ui-guide h2 { margin: 0 0 var(--ui-space-2); font-size: 16px; }
+.ui-swatches { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); list-style: none; margin: 0; padding: 0; }
+.ui-swatches li { width: 160px; display: flex; flex-direction: column; gap: var(--ui-space-1); font-size: var(--ui-text-sm); }
+.ui-swatches span:first-child { height: 56px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius); }
+.ui-swatches code { font-family: var(--ui-font-mono); }
+</style>
+</helmet>
+<main class="ui-guide">
+  <h1>Style guide</h1>
+  <p>Mỗi token trong design.md mục 2 có một mẫu ở đây. Giá trị lấy từ assets/tokens.css.</p>
+  <section aria-labelledby="c">
+    <h2 id="c">Màu</h2>
+    <ul class="ui-swatches">
+      <sc-for list="{{colors}}" as="c">
+        <li><span style="background: var({{c.token}})"></span><code>{{c.token}}</code><span>{{c.use}}</span></li>
+      </sc-for>
+    </ul>
+  </section>
+  <section aria-labelledby="t">
+    <h2 id="t">Chữ</h2>
+    <sc-for list="{{type}}" as="t">
+      <p style="margin: 0; font-size: var({{t.token}})">{{t.label}} · <code>{{t.token}}</code></p>
+    </sc-for>
+  </section>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      colors: [
+        { token: '--ui-ground', use: 'Nền trang' },
+        { token: '--ui-surface', use: 'Thẻ, panel' },
+        { token: '--ui-line', use: 'Viền' },
+        { token: '--ui-ink', use: 'Chữ chính' },
+        { token: '--ui-muted', use: 'Chữ phụ' },
+        { token: '--ui-accent', use: 'Hành động chính' },
+        { token: '--ui-warn', use: 'Cảnh báo' },
+        { token: '--ui-danger', use: 'Lỗi' }
+      ],
+      type: [
+        { token: '--ui-title', label: 'Tiêu đề màn' },
+        { token: '--ui-text', label: 'Thân' },
+        { token: '--ui-text-sm', label: 'Meta' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

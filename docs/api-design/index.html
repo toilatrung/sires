@@ -22,7 +22,7 @@
 <h1>SIRes API — phạm vi MVP</h1>
 <p class="meta">Suy ra từ <a href="../overview/index.html">PRD SIRes v1.0</a> (PO duyệt qua phiếu chốt PC-01, 31/10/2026) · Khởi tạo: 31/10/2026 · Trạng thái: Assumption — đề xuất của biên soạn</p>
 <p>Đặc tả REST cho giao diện web SIRes và các luồng WF-01–WF-07. Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone. File gốc: <a href="openapi.yaml"><code>openapi.yaml</code></a>; bản gộp một file: <a href="dist/openapi.bundled.yaml"><code>dist/openapi.bundled.yaml</code></a>; quy ước biên soạn: <a href="README.md"><code>README.md</code></a>.</p>
-<div class="note"><p><strong>Chưa phải quyết định kiến trúc.</strong> Technology stack và hạ tầng chưa chọn (DEC-27, OQ-091). Khi spec và PRD khác nhau, PRD là chuẩn. Spec đã qua <code>redocly lint</code> (hợp lệ, không lỗi).</p></div>
+<div class="note"><p><strong>Chưa phải quyết định kiến trúc.</strong> Technology stack và hạ tầng chưa chọn (DEC-27, OQ-091). Khi spec và PRD khác nhau, PRD là chuẩn. Spec qua <code>redocly lint</code> (hợp lệ, không lỗi, không cảnh báo) với Redocly CLI 2.11.1 và 2.72.1.</p></div>
 
 <h2 id="principles">Quy ước xuyên suốt</h2>
 <ul>
@@ -80,7 +80,7 @@
 <thead><tr><th>Service</th><th>File</th><th>Endpoint</th><th>Bên gọi chính</th></tr></thead>
 <tbody>
 <tr><td>identity</td><td><a href="internal/identity.yaml"><code>internal/identity.yaml</code></a></td><td>8</td><td>gateway, planning, orchestration, agent-core, knowledge, research</td></tr>
-<tr><td>orchestration</td><td><a href="internal/orchestration.yaml"><code>internal/orchestration.yaml</code></a></td><td>10</td><td>agent-core, planning, library</td></tr>
+<tr><td>orchestration</td><td><a href="internal/orchestration.yaml"><code>internal/orchestration.yaml</code></a></td><td>11</td><td>agent-core, planning, library</td></tr>
 <tr><td>agent-core</td><td><a href="internal/agent-core.yaml"><code>internal/agent-core.yaml</code></a></td><td>2</td><td>orchestration, identity, gateway</td></tr>
 <tr><td>workspace</td><td><a href="internal/workspace.yaml"><code>internal/workspace.yaml</code></a></td><td>5</td><td>agent-core, planning, orchestration, gateway</td></tr>
 <tr><td>planning</td><td><a href="internal/planning.yaml"><code>internal/planning.yaml</code></a></td><td>5</td><td>agent-core, orchestration, gateway</td></tr>
@@ -88,11 +88,11 @@
 <tr><td>research</td><td><a href="internal/research.yaml"><code>internal/research.yaml</code></a></td><td>10</td><td>orchestration, agent-core, planning, manuscript, audit, gateway</td></tr>
 <tr><td>manuscript</td><td><a href="internal/manuscript.yaml"><code>internal/manuscript.yaml</code></a></td><td>5</td><td>agent-core, orchestration, sandbox-runner, audit</td></tr>
 <tr><td>knowledge</td><td><a href="internal/knowledge.yaml"><code>internal/knowledge.yaml</code></a></td><td>3</td><td>agent-core, research</td></tr>
-<tr><td>Sự kiện và lệnh</td><td><a href="events/asyncapi.yaml"><code>events/asyncapi.yaml</code></a></td><td>35 sự kiện, 5 loại lệnh/stream</td><td>Mọi service</td></tr>
+<tr><td>Sự kiện và lệnh</td><td><a href="events/asyncapi.yaml"><code>events/asyncapi.yaml</code></a></td><td>36 sự kiện, 5 loại lệnh/stream</td><td>Mọi service</td></tr>
 </tbody>
 </table>
 </div>
-<p>Schema dùng chung: <a href="internal/schemas.yaml"><code>internal/schemas.yaml</code></a> (token nội bộ, ContextBundle, AgentRunWorkOrder/Result, AgentWriteMeta, WriteAck, EventEnvelope, SandboxJob); lỗi riêng: <a href="internal/responses.yaml"><code>internal/responses.yaml</code></a>. Cả 10 file đã qua <code>redocly lint</code>.</p>
+<p>Schema dùng chung: <a href="internal/schemas.yaml"><code>internal/schemas.yaml</code></a> (token nội bộ, ContextBundle, AgentRunWorkOrder/Result, AgentWriteMeta, WriteAck, EventEnvelope, SandboxJob); lỗi riêng: <a href="internal/responses.yaml"><code>internal/responses.yaml</code></a>. Cả 10 file (9 file service và <code>events/asyncapi.yaml</code>) qua <code>redocly lint</code> không lỗi, không cảnh báo với Redocly CLI 2.11.1 (phiên bản chốt trong README) và 2.72.1 (01/11/2026).</p>
 
 <h2 id="next">Bước tiếp theo</h2>
 <ul>

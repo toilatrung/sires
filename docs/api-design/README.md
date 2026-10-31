@@ -4,14 +4,24 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — Agent Deliberation (DEC-47, DEC-48; 01/11/2026)
+### Thay đổi gần nhất — sửa lỗi rà soát theo yêu cầu PO (01/11/2026)
 
-Phản ánh PRD 8.7 (Analysis Agent, ORCH-DELIB-001–005), 14.9 (CTX-SNAPSHOT-001, CTX-BOARD-001–003), UX-MONITOR-006/007, UX-SETTINGS-003, NFR-USAGE-005. Toàn bộ phần dưới là **Assumption** của biên soạn; service sở hữu Deliberation, DeliberationEntry, ContextSnapshot là orchestration (ADR-24 đang viết).
+- DEC-53 (PO chốt 01/11/2026): `POST /workflows/{workflowId}/pause` nhận cả `Waiting for User` → `Paused`; trạng thái khác trả `409 invalid_transition`. Việc quay lại `Waiting for User` khi tiếp tục mà prompt chặn còn Open là Assumption, chờ PO xác nhận.
+- Provenance (18.3) có ở PlanVersion, Evidence, ChangeProposal, DiscoveredResult; `provenance.deliberation` cho Plan tham chiếu Deliberation Record hoặc mang nhãn `skipped` (ORCH-PLAN-001, ORCH-DELIB-001).
+- Đồng bộ PRD 18.1/18.2: `AgentRunUsage` dùng chung cho API công khai và nội bộ (bỏ `estimatedCost`, `durationMs`; thêm `noData`, `extra`); `UsageTotal` chỉ cộng số liệu provider trả về, kèm số đếm để đối chiếu (NFR-USAGE-005); trường bắt buộc của AgentRun, Workflow (`idempotencyKey`, `lastCheckpointId`), InteractiveAgentPrompt (`purpose`), DeliberationPoint (`assumption`), DeliberationProposal (`estimatedAgentRuns`), TaskDefinition (`planVersionId`), BibliographyEntry, Build (`manuscriptId`); `projectId` bắt buộc ở Deliberation, DeliberationEntry, Evidence, Artifact; `decisionPromptId` chuyển lên `Deliberation`; enum `DeliberationRoundKind`, `ParticipantStatus`; `FindingContent {summary, points[]}`; `pointId` trong bất đồng của bản tổng hợp.
+- `ProblemBrief` có `problemType`, `contextRefs`; endpoint nội bộ mới `openDeliberation` (mở phiên: Deliberation, Context Snapshot, entry `problem_brief` trong một giao dịch); quy tắc `DeliberationEntryWrite.deliberationId`; luồng “Analysis Agent thiếu cấu hình” dùng `PromptPurpose = deliberation_proposal` (PRD 18.2 không có giá trị riêng).
+- Sự kiện: thêm `deliberation.entry_finalized`; `message.posted` phát cho cả tin của Orchestrator và được gateway đẩy SSE; orchestration nghe `project_reference.changed`, `reference.metadata_updated` (CTX-SNAPSHOT-001); `Event.type` của SSE là enum tên sự kiện có thật; `deliveryMode` chuyển sang operation binding; server RabbitMQ khai báo security (Assumption).
+- `GET /workflows/{workflowId}/agent-runs` lọc theo `deliberationId`, `agent`, `instance`.
+- Mã DEC và KPI chuyển khỏi `x-requirements` sang `x-decisions`, `x-kpis`.
+
+### Agent Deliberation (DEC-47, DEC-48; 01/11/2026)
+
+Phản ánh PRD 8.7 (Analysis Agent, ORCH-DELIB-001–005), 14.9 (CTX-SNAPSHOT-001, CTX-BOARD-001–003), UX-MONITOR-006/007, UX-SETTINGS-003, NFR-USAGE-005. Toàn bộ phần dưới là **Assumption** của biên soạn; service sở hữu Deliberation, DeliberationEntry, ContextSnapshot là orchestration (ADR-24 (Proposed)).
 
 - Schema: `AgentName` thêm `analysis`, `AgentInstance` (`A`, `B`); `WorkflowType` thêm `deliberation`; `ArtifactType` thêm `deliberation_record`; mới `Deliberation`, `DeliberationDetail`, `DeliberationEntry`, `ContextSnapshot`, `DeliberationParticipant`, `DeliberationPoint`, `DeliberationLabel` và enum `ProblemType`, `DeliberationStatus`, `DeliberationEntryType`, `DeliberationEntryStatus`, `CritiqueKind`, `Confidence`, `PromptPurpose`. `AgentRun` có `instance`, `deliberationId`; `AgentModelAssignment` có `instance`, `sameModelWarning`; nhãn `deliberation` ở `Provenance`, `ContextItem`, `Message`.
 - API công khai: `GET /projects/{projectId}/deliberations`, `GET /projects/{projectId}/deliberations/{deliberationId}`; Agent Models nhận `?instance=` cho `analysis`. Quyết định của Researcher (thảo luận/bỏ qua, chọn phương án) đi qua `POST /prompts/{promptId}/response` với `purpose` của prompt.
 - API nội bộ orchestration: đọc board theo quyền xem theo vòng, ghi entry giữa Agent Run, xác nhận entry, đọc Context Snapshot; đầu ra `deliberation_entry` trong `AgentRunResult`; mã từ chối `draft_reference`.
-- Sự kiện: `deliberation.started`, `deliberation.round_closed`, `deliberation.entry_added`, `deliberation.entry_retracted`, `deliberation.status_changed`, `context_snapshot.outdated`.
+- Sự kiện: `deliberation.started`, `deliberation.round_closed`, `deliberation.entry_added`, `deliberation.entry_finalized`, `deliberation.entry_retracted`, `deliberation.status_changed`, `context_snapshot.outdated`.
 
 ## Cấu trúc thư mục
 
@@ -50,7 +60,9 @@ Các mục còn lại của PRD không sinh endpoint riêng; ràng buộc của 
 
 | Extension | Ý nghĩa |
 | --- | --- |
-| `x-requirements` | Mã requirement PRD mà operation phục vụ (ví dụ `TASK-TRIGGER-001`) |
+| `x-requirements` | Mã requirement PRD mà operation phục vụ (ví dụ `TASK-TRIGGER-001`). Chỉ ghi mã requirement có trong `docs/overview/sections/`; không ghi DEC, KPI, OQ, ADR |
+| `x-decisions` | Mã quyết định (`DEC-NN`, PRD 20.1) mà operation hoặc message phản ánh |
+| `x-kpis` | Mã KPI (`KPI-NN`, PRD 16.9) mà operation cung cấp số liệu |
 | `x-priority` | P0/P1 theo bảng Priority đã duyệt (DEC-44) |
 | `x-apr` | Quyền phê duyệt độc quyền của Researcher (APR-01–APR-10, PRD 3.3) — agent không bao giờ gọi |
 | `x-transition` | Mã chuyển trạng thái Task (PRD 9.8) |
@@ -94,7 +106,7 @@ Backend chia thành nhiều service (architecture mục 3, ADR-17–ADR-20). API
 | File | Service | Endpoint chính |
 | --- | --- | --- |
 | [internal/identity.yaml](internal/identity.yaml) | identity | resolve tài khoản OIDC, cấu hình agent cho readiness (Analysis Agent theo instance), tùy chọn agent, ngưỡng kiểm chứng, embedding, danh mục model, envelope API key, báo lỗi provider |
-| [internal/orchestration.yaml](internal/orchestration.yaml) | orchestration | `start` / `heartbeat` / `result` / `failure` của Agent Run, Context Item cho lắp ráp context, mở prompt thay service khác, Deliberation Board và Context Snapshot |
+| [internal/orchestration.yaml](internal/orchestration.yaml) | orchestration | `start` / `heartbeat` / `result` / `failure` của Agent Run, Context Item cho lắp ráp context, mở prompt thay service khác, mở phiên thảo luận, Deliberation Board và Context Snapshot |
 | [internal/agent-core.yaml](internal/agent-core.yaml) | agent-core | agent registry, kiểm tra kết nối provider |
 | [internal/workspace.yaml](internal/workspace.yaml) | workspace | context project, danh bạ project cho Global Assistant, tin nhắn gần đây, ghi tin của Orchestrator, tìm kiếm |
 | [internal/planning.yaml](internal/planning.yaml) | planning | context Task, baseline, ghi Plan Version Draft, readiness ngữ nghĩa, tìm kiếm |
@@ -113,7 +125,7 @@ gateway, audit và sandbox-runner không mở endpoint nội bộ: gateway chỉ
 - **Ghi đầu ra của agent:** body có `meta: AgentWriteMeta` (agentRunId, outputIndex, provenance); `Idempotency-Key` = `agentRunId:outputIndex`; phản hồi `WriteAck`. Mục không hợp lệ nằm trong `rejected`, không làm hỏng cả lô (architecture 5.8).
 - **Context bundle:** mọi API đọc cho Context Assembler trả `ContextBundle` gồm mục có `TypedRef` có phiên bản và lớp context (PRD 14.2), để ghi context manifest.
 - **Không bao giờ trả API key dạng rõ:** identity chỉ trả envelope mã hóa cho agent-core và knowledge (ADR-10).
-- Extension giữ như API công khai: `x-requirements`; thêm `x-callers`. Message trong AsyncAPI có `x-producer`, `x-consumers`, `x-requirements`.
+- Extension giữ như API công khai: `x-requirements`, `x-decisions`, `x-kpis`; thêm `x-callers`. Message trong AsyncAPI có `x-producer`, `x-consumers`, `x-requirements` (thêm `x-decisions` khi cần).
 
 ### Sự kiện và lệnh
 

@@ -7,7 +7,9 @@
 /* Chuyển động của SIRes UI (design.md mục 2.4, DEC-51).
    Port sang CSS thuần từ token và recipe của Animate UI, mức subtle:
    agent/skills/vendor/animate-ui/references/tokens.md, recipes/press.md, modal.md, overlay.md, disclosure.md.
-   tools/render.mjs gắn file này vào mọi trang trong pages/. */
+   Đây là nguồn chuẩn. tools/render.mjs (1) gắn file này vào mọi trang trong pages/ bằng <link>,
+   (2) chép nguyên văn vào khối <style data-sires-motion> trong helmet của mỗi source/*.dc.html
+   để canvas cũng hiển thị đúng chuyển động. Sửa ở đây rồi chạy lại render; không sửa khối đã chép. */
 
 :root {
   /* Đường cong (tokens.md § Curves) */
@@ -74,11 +76,15 @@ button:not(:disabled):active,
   from { opacity: 0; transform: var(--sires-dialog-from); }
 }
 
-/* Tooltip: mọc từ góc gắn với nơi gọi nó (recipes/overlay.md). */
-[role="tooltip"] {
+/* Tooltip, popover: mọc từ phía nơi gọi nó (recipes/overlay.md). Phía ghi bằng data-side:
+   bottom (mặc định, hiện dưới nơi gọi), top, left, right; căn theo mép đầu của nơi gọi. */
+[role="tooltip"], [data-popover] {
   transform-origin: top left;
   animation: sires-tooltip-in var(--sires-dur-menu) var(--sires-ease-out) both;
 }
+[data-side="top"]:is([role="tooltip"], [data-popover]) { transform-origin: bottom left; }
+[data-side="left"]:is([role="tooltip"], [data-popover]) { transform-origin: top right; }
+[data-side="right"]:is([role="tooltip"], [data-popover]) { transform-origin: top left; }
 @keyframes sires-tooltip-in {
   from { opacity: 0; transform: var(--sires-tooltip-from); }
 }
@@ -111,7 +117,7 @@ details[open] > :not(summary) {
   width: 7px;
   height: 7px;
   border-radius: 4px;
-  background: #0277DD;
+  background: var(--sires-running-dot, #0277DD); /* nền tối: --sires-running-dot: #3DA5FF */
   animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
 }
 
@@ -130,7 +136,7 @@ details[open] > :not(summary) {
   overflow: hidden;
   height: 4px;
   background: #DBD3C7;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 [data-progress="indeterminate"]::after {
   content: "";
@@ -138,7 +144,7 @@ details[open] > :not(summary) {
   inset: 0 auto 0 0;
   width: 30%;
   background: #0277DD;
-  border-radius: 2px;
+  border-radius: 4px;
   animation: sires-sweep var(--sires-dur-sweep) linear infinite;
 }
 @keyframes sires-sweep {

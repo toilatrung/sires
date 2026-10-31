@@ -2,7 +2,7 @@
 
 Thư mục `docs/` chứa toàn bộ tài liệu sản phẩm và thiết kế của **SIRes (Super Intelligence Researcher)**, thuộc nền tảng eTroy. Trang vào chung: [index.html](index.html). Ngữ cảnh biên soạn, quyết định và nhật ký: [docs_context.md](docs_context.md).
 
-Cập nhật: 31/10/2026.
+Cập nhật: 01/11/2026.
 
 ## Quyền ghi và phê duyệt
 
