@@ -35,6 +35,7 @@
 <li><a href="#f-10">F-10. Evidence, synthesis và kiểm chứng</a></li>
 <li><a href="#f-11">F-11. Change Proposal, build và sơ đồ</a></li>
 <li><a href="#f-12">F-12. Gián đoạn và khôi phục</a></li>
+<li><a href="#f-13">F-13. Phiên thảo luận và Deliberation Board</a></li>
 </ul></details>
 
 <h2 id="s-4-0">Bảng luồng</h2>
@@ -53,6 +54,7 @@
 <tr><td>F-10</td><td>WF-05 S1–S4</td><td>agent-core, knowledge, research, orchestration</td><td>agent.run</td></tr>
 <tr><td>F-11</td><td>WF-05 S5+, WF-07</td><td>manuscript, research, sandbox-runner, agent-core</td><td>agent.run, sandbox.build</td></tr>
 <tr><td>F-12</td><td>WF-06</td><td>orchestration, gateway</td><td>agent.run</td></tr>
+<tr><td>F-13</td><td>6.3, 8.7, 14.9 (DEC-47)</td><td>orchestration, agent-core, knowledge, workspace, gateway</td><td>agent.run</td></tr>
 </tbody></table></div>
 
 <h2 id="f-01">F-01. Đăng nhập qua eTroy OIDC</h2>
@@ -101,7 +103,7 @@
 <p class="status">WF-01, PLAN-GENERATE, PLAN-APPROVAL, APR-01, DEC-28</p>
 <ol>
 <li>Researcher yêu cầu lập Plan → planning kiểm tra sáu trường thiết yếu của Research Context (REST workspace); thiếu thì yêu cầu orchestration mở prompt <code>information_request</code>.</li>
-<li>planning <strong>[TX:planning]</strong> evt:<code>plan.generation_requested</code> → orchestration tạo Workflow <code>plan_proposal</code>, cmd:<code>agent.run</code>.</li>
+<li>planning <strong>[TX:planning]</strong> evt:<code>plan.generation_requested</code> → orchestration tạo Workflow <code>plan_proposal</code>; bước phân tích chạy như một phiên thảo luận (F-13), sau đó cmd:<code>agent.run</code> cho Orchestrator lập PlanVersion từ Deliberation Record. Researcher bỏ qua thảo luận thì Plan mang nhãn “không qua thảo luận”.</li>
 <li>agent-core trả PlanVersion đề xuất (structured output) → orchestration gọi REST planning <code>POST /internal/projects/{projectId}/plan/versions</code> (idempotency key = <code>agentRunId</code>); planning kiểm tra cấu trúc (18.5: DAG không chu trình, mọi Task có acceptance criteria) rồi ghi Draft.</li>
 <li>orchestration mở prompt <code>approval</code>; Workflow → Waiting for User.</li>
 <li>Researcher duyệt (<code>POST …/plan/versions/{id}/approve</code>, APR-01) → <strong>[TX:planning]</strong> PlanVersion Approved, baseline cũ Superseded, Task cập nhật, phân tích ảnh hưởng (9.11), ApprovalRecord, Audit Event, evt:<code>plan_version.status_changed.approved</code> → orchestration đóng prompt và kết thúc workflow.</li>
@@ -184,6 +186,21 @@
 <li>Researcher chọn tiếp tục / chạy lại bước / hủy (<code>POST /workflows/{workflowId}/recovery-decision</code>) → <strong>[TX:orchestration]</strong> Running + AgentRun mới + cmd:<code>agent.run</code>, hoặc Cancelled.</li>
 <li>Kết quả muộn của run cũ bị từ chối ở bước 8 của F-07 → <code>discarded</code>.</li>
 </ol>
+
+<h2 id="f-13">F-13. Phiên thảo luận và Deliberation Board</h2>
+<p class="status">PRD 8.7 (AGENT-ANALYSIS-001, ORCH-DELIB-001–005), 14.9 (CTX-SNAPSHOT-001, CTX-BOARD-001–003), UX-MONITOR-006–007, NFR-USAGE-005; ADR-24. Trạng thái: Đề xuất (Assumption).</p>
+<ol>
+<li><strong>Mở phiên:</strong> Agent Run của Orchestrator trả StepPlan có bước <code>deliberation</code> kèm Problem Brief (problemType, ràng buộc, tiêu chí, góc nhìn cho A, B). Trừ bước phân tích của 6.3, orchestration mở prompt <code>choice</code> “Thảo luận / Bỏ qua” trước (OQ-099). <strong>[TX:orchestration]</strong> tạo Deliberation <code>Running</code>, ContextSnapshot (danh sách <code>{type, id, version}</code> theo Problem Brief), entry <code>problem_brief</code>; evt:<code>deliberation.started</code>.</li>
+<li><strong>Vòng 1:</strong> engine phát đồng thời ba cmd:<code>agent.run</code> (Orchestrator, analysis/A, analysis/B) có <code>deliberationId</code>, <code>round=1</code>. Context Assembler lắp ráp theo snapshot (đọc đúng phiên bản, không đọc bản mới nhất). Mỗi Agent Run gửi kết quả là entry <code>position</code>; orchestration ghi entry <code>draft</code>, chuyển <code>final</code> khi Agent Run Succeeded; evt:<code>deliberation.entry_added</code>.</li>
+<li><strong>Ẩn theo vòng:</strong> API đọc board của orchestration (tool <code>read_board</code> của agent-core gọi qua REST nội bộ, kèm <code>agentRunId</code>) trả entry của vòng đang mở chỉ cho chính tác giả; entry có <code>visible_from</code> = thời điểm vòng đóng. Kiểm tra ở orchestration, không dựa vào prompt (CTX-BOARD-002).</li>
+<li><strong>Đóng vòng:</strong> khi mọi bên có entry <code>final</code>, <strong>[TX:orchestration]</strong> đặt <code>visible_from</code>, checkpoint theo vòng; evt:<code>deliberation.round_closed</code> → gateway đẩy SSE cho Agent Activity (OQ-101: Researcher thấy entry khi vòng đóng).</li>
+<li><strong>Vòng 2 và vòng hẹp:</strong> như Vòng 1 với entry <code>critique</code>; entry đổi lập trường thiếu <code>changeReason</code> bị từ chối. Orchestrator có thể yêu cầu một vòng hẹp; engine dừng khi đồng thuận, khi đạt <code>maxRounds</code> (mặc định 2 sau Vòng 1, tính vào giới hạn 30 bước của workflow) hoặc khi Orchestrator báo bất đồng chỉ còn lựa chọn giá trị.</li>
+<li><strong>Tổng hợp:</strong> Agent Run của Orchestrator trả entry <code>synthesis</code>. orchestration kiểm tra tất định: synthesis tham chiếu entry cuối cùng của mọi bên và mọi critique <code>disagree</code> chưa bị thay thế; thiếu → từ chối, chạy lại Agent Run tổng hợp (ORCH-DELIB-004). Đạt → gọi REST research ghi Artifact Version Draft loại <code>deliberation_record</code> (idempotency key = <code>agentRunId</code>), Deliberation <code>Completed</code>, mở prompt <code>choice</code>; evt:<code>deliberation.status_changed</code>.</li>
+<li><strong>Lỗi:</strong> Agent Run của một bên lỗi sau thử lại hai lớp (5.6): còn ít hơn hai lập trường Analysis Agent hoặc thiếu lập trường Orchestrator → Deliberation <code>Failed</code>, prompt chạy lại hoặc tiếp tục không thảo luận. Gián đoạn (F-12): vòng đã đóng giữ nguyên; vòng dở chỉ chạy lại bên chưa có entry <code>final</code>.</li>
+<li><strong>Snapshot lỗi thời:</strong> orchestration tiêu thụ sự kiện tạo phiên bản (Research Context, Plan, Context Item, Claim, Artifact) và so với snapshot đang mở; trùng thì đánh dấu <code>outdated</code>, evt:<code>context_snapshot.outdated</code>; phiên vẫn chạy trên snapshot cũ.</li>
+<li><strong>Usage:</strong> orchestration cộng usage của mọi Agent Run có cùng <code>deliberationId</code>, theo bên (NFR-USAGE-005).</li>
+</ol>
+<p><strong>Kết quả trung gian giữa bước song song (CTX-BOARD-003):</strong> trong một workflow, Agent Run của bước song song ghi entry <code>finding</code> lên board của workflow; bước khác đang chạy nhận evt:<code>deliberation.entry_added</code> qua agent-core và đọc bằng <code>read_board</code>. Khi áp dụng đầu ra chính thức (saga, 5.8), orchestration từ chối đầu ra có <code>inputRefs</code> trỏ tới entry <code>draft</code> hoặc <code>retracted</code> (mã <code>draft_reference</code>). Entry bị rút lại: evt:<code>deliberation.entry_retracted</code>; service sở hữu đầu ra Draft tham chiếu entry đó gắn cờ <code>needs_review</code>.</p>
 <p class="status">FIG-106 — Phát hiện gián đoạn và khôi phục. Nguồn: <a href="../figures/FIG-106-recovery.mmd">figures/FIG-106-recovery.mmd</a>.</p>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="03-system-context-and-containers.html">← Mục 3</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="05-workflow-engine-and-orchestration.html">Mục 5 →</a></nav>

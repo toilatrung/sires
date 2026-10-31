@@ -67,6 +67,36 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Từ chối</button>
           </div>
         </article>
+        <sc-if value="{{proposed}}" hint-placeholder-val="{{ true }}">
+          <article aria-labelledby="dl1" style="border: 1.5px solid #0277DD; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px">
+              <span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 4px; background: #EAF4FE; color: #025FAC; border: 1px solid #80B9EE; font-weight: 600"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>Đề xuất thảo luận · methodology</span>
+              <span style="color: #4D4A44">Orchestrator · 10:01 · bước 4/5 của <a href="Workflow.dc.html">wf-52d</a></span>
+            </div>
+            <h3 id="dl1" style="margin: 0; font-size: 16px; font-weight: 600">Chọn khung so sánh các phương pháp đo hallucination cho T-2.3</h3>
+            <dl style="margin: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; font-size: 13px; line-height: 1.5">
+              <dt style="color: #4D4A44">Vì sao thảo luận</dt><dd style="margin: 0">Có ít nhất ba cách so sánh hợp lý; chọn sai sẽ phải làm lại ma trận.</dd>
+              <dt style="color: #4D4A44">Các bên</dt><dd style="margin: 0">Orchestrator · Analysis Agent A (xây dựng phương án) · Analysis Agent B (tìm rủi ro và phương án thay thế)</dd>
+              <dt style="color: #4D4A44">Chi phí</dt><dd style="margin: 0">Khoảng 7 Agent Run, tính trên API key của bạn (Claude cá nhân, OpenAI cá nhân). Tối đa 2 vòng sau Vòng 1.</dd>
+            </dl>
+            <div style="display: flex; gap: 8px; padding: 8px 12px; border: 1.5px solid #9A3412; border-radius: 6px; font-size: 13px; line-height: 1.45"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.2" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg><span>Analysis Agent A và B đang dùng cùng model <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">gpt-5</span>. <a href="SettingsAgents.dc.html">Đổi trong Agent Models</a></span></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <button style="height: 38px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Thảo luận</button>
+              <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Bỏ qua</button>
+              <span style="font-size: 13px; color: #4D4A44">Bỏ qua: Orchestrator tự đưa phương án, kết quả mang nhãn “không qua thảo luận”.</span>
+            </div>
+          </article>
+        </sc-if>
+        <sc-if value="{{skipped}}" hint-placeholder-val="{{ false }}">
+          <div style="align-self: flex-end; max-width: 80%; display: flex; flex-direction: column; gap: 4px; align-items: flex-end">
+            <span style="font-size: 12px; color: #4D4A44">Bạn · 10:02</span>
+            <div style="padding: 10px 14px; border-radius: 8px; background: #EAF4FE">Bỏ qua thảo luận: <em>Chọn khung so sánh các phương pháp đo hallucination cho T-2.3</em></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 88%">
+            <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: #4D4A44"><span><strong style="color: #1C1B18">Orchestrator</strong> · 10:03 · <a href="Workflow.dc.html">Agent Run ar-82d0</a></span><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px; border: 1px solid #DBD3C7; color: #4D4A44; font-size: 11px; font-weight: 600">Không qua thảo luận</span></span>
+            <div>Tôi đề xuất so sánh theo ba trục: loại tác vụ, cách gán nhãn và khả năng tái lập. Phương án này chưa được Analysis Agent phản biện. Bạn vẫn có thể yêu cầu mở thảo luận cho vấn đề này ngay trong chat.</div>
+          </div>
+        </sc-if>
       </div>
 
       <div style="border-top: 1px solid #DBD3C7; padding: 12px clamp(16px, 3vw, 40px) 16px; display: flex; flex-direction: column; gap: 8px; max-width: 860px; width: 100%; box-sizing: border-box; margin: 0 auto">
@@ -95,10 +125,12 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"deliberation":{"editor":"enum","options":["proposed","skipped"],"default":"proposed"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
-    return {};
+    // Orchestrator proposes a deliberation session (UX-MONITOR-007); the Researcher confirms or skips it.
+    const skipped = (this.props.deliberation ?? 'proposed') === 'skipped';
+    return { proposed: !skipped, skipped };
   }
 }
 </script>

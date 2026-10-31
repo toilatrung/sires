@@ -57,10 +57,12 @@ a{color:#025FAC}a:hover{color:#1C1B18}
 
       <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
       <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
-      <div role="tablist" aria-label="Chế độ xem" style="display: flex; gap: 2px; border-bottom: 1px solid #DBD3C7">
-        <button role="tab" aria-selected="true" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Dòng thời gian</button>
-        <button role="tab" aria-selected="false" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Danh sách bước</button>
+      <div role="tablist" aria-label="Chế độ xem" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #DBD3C7">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+          <button role="tab" aria-selected="{{t.sel}}" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid {{t.line}}; background: transparent; font: {{t.w}} 14px Montserrat, sans-serif; color: {{t.fg}}">{{t.label}}</button>
+        </sc-for>
       </div>
+      <sc-if value="{{isTimeline}}" hint-placeholder-val="{{ true }}">
       <ol aria-live="polite" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border-left: 1px solid #DBD3C7; margin-left: 8px">
         <sc-for list="{{events}}" as="e" hint-placeholder-count="7">
           <li style="position: relative; display: flex; gap: 14px; padding: 10px 0 10px 20px">
@@ -73,27 +75,157 @@ a{color:#025FAC}a:hover{color:#1C1B18}
           </li>
         </sc-for>
       </ol>
+      </sc-if>
+
+      <sc-if value="{{isDelib}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="dl-h" style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <h2 id="dl-h" style="margin: 0; font-size: 18px; font-weight: 600">Phiên thảo luận dl-3c1</h2>
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 11px">methodology</span>
+              <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{d.chipB}}; background: {{d.chipBg}}; font-size: 12px; font-weight: 600">{{d.status}}</span>
+              <span style="font-size: 13px; color: #4D4A44">{{d.roundNote}}</span>
+            </div>
+            <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">bước 4/5 · deliberation · mở 10:02 · Context Snapshot cs-2a (7 entity) · tối đa 2 vòng sau Vòng 1</span>
+          </div>
+
+          <sc-for list="{{d.warnings}}" as="w" hint-placeholder-count="1">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px; font-size: 13px; line-height: 1.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2.2" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>
+              <span><strong style="color: #9A3412">{{w.title}}</strong> {{w.text}}</span>
+            </div>
+          </sc-for>
+
+          <section aria-labelledby="pb-h" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px">
+              <h3 id="pb-h" style="margin: 0; font-size: 15px; font-weight: 600">Problem Brief</h3>
+              <span style="font-size: 12px; color: #4D4A44">Orchestrator · 10:02 · entry đầu tiên trên Deliberation Board</span>
+            </div>
+            <dl style="margin: 0; display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 8px 12px; font-size: 13px; line-height: 1.5">
+              <sc-for list="{{d.brief}}" as="b" hint-placeholder-count="6">
+                <dt style="color: #4D4A44">{{b.k}}</dt><dd style="margin: 0">{{b.v}}</dd>
+              </sc-for>
+            </dl>
+          </section>
+
+          <div role="region" aria-label="Lập trường và phản biện theo vòng" tabindex="0" style="overflow-x: auto">
+            <div style="min-width: 660px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+                <sc-for list="{{d.parties}}" as="p" hint-placeholder-count="3">
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 2px 8px; border-bottom: 2px solid #1C1B18">
+                    <span style="font-size: 14px; font-weight: 600">{{p.name}}</span>
+                    <span style="font-size: 12px; color: #4D4A44; line-height: 1.4">{{p.persp}}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4D4A44">{{p.model}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-for list="{{d.rounds}}" as="r" hint-placeholder-count="2">
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <h3 style="margin: 0; font-size: 13px; font-weight: 600">{{r.label}} <span style="font-weight: 400; color: #4D4A44">· {{r.note}}</span></h3>
+                  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: stretch">
+                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3">
+                      <sc-if value="{{c.hidden}}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 96px; padding: 12px; border: 1.5px dashed #C7C7C7; border-radius: 8px; color: #4D4A44; font-size: 13px; text-align: center">
+                          <span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: #0277DD; animation: sires-pulse 1.6s ease-in-out infinite"></span>Đang viết, mở khi vòng đóng
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{c.shown}}" hint-placeholder-val="{{ true }}">
+                        <article style="display: flex; flex-direction: column; gap: 8px; padding: 12px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; font-size: 13px; line-height: 1.5">
+                          <span style="font-size: 11px; font-weight: 600; color: #4D4A44">{{c.kind}}</span>
+                          <sc-if value="{{c.hasOption}}" hint-placeholder-val="{{ true }}"><strong style="font-weight: 600; font-size: 14px; line-height: 1.4">{{c.option}}</strong></sc-if>
+                          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+                            <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="2">
+                              <li id="{{l.anchor}}" style="display: flex; flex-direction: column; gap: 3px">
+                                <span style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+                                  <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; border: 1px solid {{l.tagB}}; color: {{l.tagFg}}; font-size: 11px; font-weight: 600">{{l.tag}}</span>
+                                  <sc-if value="{{l.hasTarget}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px">→ <a href="{{l.targetHref}}" style="font-family: 'JetBrains Mono', monospace">{{l.target}}</a></span></sc-if>
+                                  <sc-if value="{{l.assume}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 11px; font-weight: 600">Giả định</span></sc-if>
+                                </span>
+                                <span>{{l.text}}</span>
+                                <sc-if value="{{l.hasRef}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #4D4A44">Nguồn: <a href="Evidence.dc.html" style="font-family: 'JetBrains Mono', monospace">{{l.ref}}</a></span></sc-if>
+                              </li>
+                            </sc-for>
+                          </ul>
+                          <span style="margin-top: auto; font-size: 12px; color: #4D4A44">{{c.foot}}</span>
+                        </article>
+                      </sc-if>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <section aria-labelledby="us-h" style="display: flex; flex-direction: column; gap: 8px">
+            <h3 id="us-h" style="margin: 0; font-size: 15px; font-weight: 600">Usage của phiên</h3>
+            <div style="overflow-x: auto; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+              <table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums">
+                <thead><tr style="color: #4D4A44; font-size: 12px; text-align: left"><th scope="col" style="padding: 8px 14px; font-weight: 600">Bên</th><th scope="col" style="padding: 8px 14px; font-weight: 600; text-align: right">Agent Run</th><th scope="col" style="padding: 8px 14px; font-weight: 600; text-align: right">Token in</th><th scope="col" style="padding: 8px 14px; font-weight: 600; text-align: right">Token out</th><th scope="col" style="padding: 8px 14px; font-weight: 600; text-align: right">Chi phí</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{d.usage}}" as="u" hint-placeholder-count="4">
+                    <tr style="border-top: 1px solid #DBD3C7; font-weight: {{u.w}}"><th scope="row" style="padding: 8px 14px; text-align: left; font-weight: {{u.w}}">{{u.name}}</th><td style="padding: 8px 14px; text-align: right">{{u.runs}}</td><td style="padding: 8px 14px; text-align: right">{{u.tin}}</td><td style="padding: 8px 14px; text-align: right">{{u.tout}}</td><td style="padding: 8px 14px; text-align: right">{{u.cost}}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <span style="font-size: 12px; color: #4D4A44">{{d.usageNote}}</span>
+          </section>
+
+          <sc-if value="{{d.done}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="sy-h" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px; font-size: 14px; line-height: 1.55">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px">
+                <h3 id="sy-h" style="margin: 0; font-size: 15px; font-weight: 600">Bản tổng hợp</h3>
+                <span style="font-size: 12px; color: #4D4A44">Orchestrator · Vòng 3 · 10:24 · <a href="Artifacts.dc.html">Deliberation Record v1 (Draft)</a></span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <h4 style="margin: 0; font-size: 13px; font-weight: 600">Đồng thuận</h4>
+                <ul style="margin: 0; padding-left: 18px"><sc-for list="{{d.consensus}}" as="x" hint-placeholder-count="2"><li>{{x}}</li></sc-for></ul>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #9A3412">Bất đồng còn lại</h4>
+                <ul style="margin: 0; padding-left: 18px"><sc-for list="{{d.disagree}}" as="x" hint-placeholder-count="2"><li><strong style="font-weight: 600">{{x.point}}</strong> — {{x.pos}}</li></sc-for></ul>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+                  <caption style="text-align: left; padding-bottom: 6px; font-size: 13px; font-weight: 600">Phương án và đánh đổi theo tiêu chí của Problem Brief</caption>
+                  <thead><tr style="text-align: left; color: #4D4A44; font-size: 12px"><th scope="col" style="padding: 6px 10px; font-weight: 600; border-bottom: 1px solid #DBD3C7">Phương án</th><th scope="col" style="padding: 6px 10px; font-weight: 600; border-bottom: 1px solid #DBD3C7">Tái lập được</th><th scope="col" style="padding: 6px 10px; font-weight: 600; border-bottom: 1px solid #DBD3C7">Đủ evidence</th><th scope="col" style="padding: 6px 10px; font-weight: 600; border-bottom: 1px solid #DBD3C7">Thời gian</th></tr></thead>
+                  <tbody><sc-for list="{{d.tradeoff}}" as="o" hint-placeholder-count="3"><tr style="background: {{o.bg}}"><th scope="row" style="padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #DBD3C7">{{o.name}}</th><td style="padding: 8px 10px; border-bottom: 1px solid #DBD3C7">{{o.rep}}</td><td style="padding: 8px 10px; border-bottom: 1px solid #DBD3C7">{{o.evi}}</td><td style="padding: 8px 10px; border-bottom: 1px solid #DBD3C7">{{o.time}}</td></tr></sc-for></tbody>
+                </table>
+              </div>
+              <p style="margin: 0"><strong style="font-weight: 600">Khuyến nghị của Orchestrator:</strong> {{d.recommend}}</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1.5px solid #1C1B18; border-radius: 6px">
+                <span style="font-size: 13px; font-weight: 600">Bạn đã chọn</span>
+                <span>{{d.chosen}}</span>
+                <span style="font-size: 12px; color: #4D4A44">Nguyễn Thanh · 10:31 · prompt choice → Context Item decision</span>
+              </div>
+            </section>
+          </sc-if>
+          <sc-if value="{{d.notDone}}" hint-placeholder-val="{{ true }}">
+            <p style="margin: 0; font-size: 13px; color: #4D4A44">Bản tổng hợp, bảng đánh đổi và prompt chọn phương án xuất hiện khi vòng cuối đóng.</p>
+          </sc-if>
+        </section>
+      </sc-if>
       </div>
-      <div style="flex: 1 1 300px; max-width: 380px; min-width: 0">
-        <dc-import name="AgentList" wf-state="{{wfKey}}" theme="light" hint-size="100%,420px"></dc-import>
+      <div style="flex: 1 1 {{agentBasis}}; max-width: 380px; min-width: 0">
+        <dc-import name="AgentList" wf-state="{{agentState}}" theme="light" hint-size="100%,560px"></dc-import>
       </div>
       </div>
     </main>
 
     <aside aria-labelledby="ar" style="flex: 1 1 360px; max-width: 420px; box-sizing: border-box; background: #FCF9F5; border-left: 1px solid #DBD3C7; display: flex; flex-direction: column">
       <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
-        <h2 id="ar" style="margin: 0; font-size: 17px; font-weight: 600">Discovery Agent</h2>
-        <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">Agent Run ar-7f3a · bước 2</span>
-        <span style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 12px; font-weight: 600">Succeeded</span>
+        <h2 id="ar" style="margin: 0; font-size: 17px; font-weight: 600">{{run.agent}}</h2>
+        <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{run.id}}</span>
+        <span style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{run.chipB}}; background: {{run.chipBg}}; font-size: 12px; font-weight: 600">{{run.status}}</span>
       </div>
       <dl style="margin: 0; padding: 14px 20px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 9px 12px; font-size: 13px; line-height: 1.45; border-bottom: 1px solid #DBD3C7">
-        <dt style="color: #4D4A44">Provider Connection</dt><dd style="margin: 0">OpenAI cá nhân</dd>
-        <dt style="color: #4D4A44">Model thực tế</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">gpt-5-mini</dd>
-        <dt style="color: #4D4A44">Context đầu vào</dt><dd style="margin: 0">Research context v4 · T-2.3 định nghĩa v3 · câu trả lời prompt “2019–2026”</dd>
-        <dt style="color: #4D4A44">Công cụ đã gọi</dt><dd style="margin: 0">scholar.search × 3 · dedupe.check × 1</dd>
-        <dt style="color: #4D4A44">Đầu ra</dt><dd style="margin: 0"><a href="Discover.dc.html">18 discovered result</a></dd>
-        <dt style="color: #4D4A44">Usage</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">12 840 in · 2 115 out</dd>
-        <dt style="color: #4D4A44">Thời gian · thử</dt><dd style="margin: 0">1 phút 52 giây · lần 2/3 (lần 1: rate_limited)</dd>
+        <dt style="color: #4D4A44">Provider Connection</dt><dd style="margin: 0">{{run.conn}}</dd>
+        <dt style="color: #4D4A44">Model thực tế</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{run.model}}</dd>
+        <dt style="color: #4D4A44">Context đầu vào</dt><dd style="margin: 0">{{run.ctx}}</dd>
+        <dt style="color: #4D4A44">Công cụ đã gọi</dt><dd style="margin: 0">{{run.tools}}</dd>
+        <dt style="color: #4D4A44">Đầu ra</dt><dd style="margin: 0"><a href="{{run.outHref}}">{{run.out}}</a></dd>
+        <dt style="color: #4D4A44">Usage</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{run.usage}}</dd>
+        <dt style="color: #4D4A44">Thời gian · thử</dt><dd style="margin: 0">{{run.time}}</dd>
       </dl>
       <div style="padding: 14px 20px; font-size: 13px; line-height: 1.5; color: #4D4A44">{{debugNote}}</div>
       <sc-if value="{{debug}}" hint-placeholder-val="{{ false }}">
@@ -107,10 +239,14 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","waiting","interrupted"],"default":"waiting"},"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","waiting","interrupted"],"default":"waiting"},"view":{"editor":"enum","options":["timeline","deliberation-running","deliberation-done"],"default":"timeline"},"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
 class Component extends DCLogic {
   renderVals() {
-    const wfKey = this.props.state ?? 'waiting';
+    const view = this.props.view ?? 'timeline';
+    const isDelib = view !== 'timeline';
+    const dDone = view === 'deliberation-done';
+    // The deliberation views show step 4 of wf-52d, so the workflow is Running there.
+    const wfKey = isDelib ? 'running' : (this.props.state ?? 'waiting');
     const intr = wfKey === 'interrupted';
     const run = wfKey === 'running';
     const dbg = !!this.props.debug;
@@ -132,10 +268,108 @@ class Component extends DCLogic {
     const chip = intr ? ['solid #9A3412', '#9A3412', '#FCF9F5', 'Interrupted', false]
       : run ? ['solid #0277DD', '#1C1B18', '#EAF4FE', 'Running', false]
       : ['solid #80B9EE', '#025FAC', '#EAF4FE', 'Waiting for User', true];
+    const tabs = [['Dòng thời gian', !isDelib], ['Danh sách bước', false], ['Thảo luận', isDelib]].map(([label, on]) => ({
+      label, sel: on ? 'true' : 'false', line: on ? '#1C1B18' : 'transparent', w: on ? 600 : 500, fg: on ? '#1C1B18' : '#4D4A44'
+    }));
+
+    // Deliberation dl-3c1 (step 4/5): Orchestrator + Analysis Agent A, B (8.7, UX-MONITOR-006).
+    const pt = (anchor, tag, text, ref, assume) => ({ anchor, tag, text, tagB: '#DBD3C7', tagFg: '#1C1B18', hasTarget: false, assume: !!assume, hasRef: !!ref, ref: ref || '' });
+    const STANCE = { agree: ['Đồng ý', '#4D4A44', '#1C1B18'], disagree: ['Phản đối', '#9A3412', '#9A3412'], info: ['Bổ sung thông tin', '#80B9EE', '#025FAC'], supersede: ['Đổi lập trường', '#1C1B18', '#1C1B18'] };
+    const cr = (stance, target, text, ref) => ({ anchor: null, tag: STANCE[stance][0], tagB: STANCE[stance][1], tagFg: STANCE[stance][2], hasTarget: !!target, target: target || '', targetHref: target ? '#pt-' + target.replace('·', '-').toLowerCase() : '#', text, assume: false, hasRef: !!ref, ref: ref || '' });
+    const cell = (kind, option, lines, foot) => ({ hidden: false, shown: true, kind, hasOption: !!option, option: option || '', lines, foot });
+    const hidden = { hidden: true, shown: false };
+    const round1 = [
+      cell('Lập trường · position', 'So sánh theo 3 trục: loại tác vụ, cách gán nhãn, khả năng tái lập', [
+        pt('pt-o-o1', 'O1', 'Ba trục phủ cả tiêu chí tái lập và tiêu chí đủ evidence.', 'E-09, E-12'),
+        pt('pt-o-o2', 'O2', 'Làm xong trong 2 tuần với 14 Trusted Reference đã chọn.', 'Research context v4')
+      ], 'Độ tin cậy: trung bình · final 10:06'),
+      cell('Lập trường · position', 'Ma trận theo benchmark công bố (TruthfulQA, HaluEval, FActScore)', [
+        pt('pt-a-a1', 'A1', 'Cả ba benchmark có số liệu công bố, lập ma trận nhanh.', 'R-03, R-07'),
+        pt('pt-a-a2', 'A2', 'Cách so theo benchmark phổ biến trong lĩnh vực.', null, true)
+      ], 'Độ tin cậy: cao · final 10:05'),
+      cell('Lập trường · position', 'Phân loại theo cơ chế đo: đối chiếu nguồn, tự nhất quán, người chấm', [
+        pt('pt-b-b1', 'B1', 'Các benchmark dùng phiên bản dataset khác nhau, số liệu không so trực tiếp được.', 'E-14'),
+        pt('pt-b-b2', 'B2', 'Cách gán nhãn của người chấm khó tái lập.', null, true)
+      ], 'Độ tin cậy: trung bình · final 10:07')
+    ];
+    const round2 = [
+      cell('Phản biện · critique', null, [
+        cr('disagree', 'A·A2', 'Chưa có Trusted Reference nào xác nhận; giữ nhãn giả định.'),
+        cr('agree', 'B·B1', 'E-14 ghi rõ hai phiên bản HaluEval.')
+      ], 'final 10:15'),
+      cell('Phản biện · critique', null, [
+        cr('info', 'B·B2', 'R-11 công bố quy trình gán nhãn, giảm rủi ro tái lập.', 'R-11'),
+        cr('supersede', 'A·A1', 'Lập trường mới: ma trận benchmark kèm trục cơ chế đo. Lý do: B1 và E-14.')
+      ], 'final 10:16 · supersedes lập trường Vòng 1'),
+      cell('Phản biện · critique', null, [
+        cr('disagree', 'A·A1', 'Số liệu công bố dùng phiên bản dataset khác nhau (E-14).', 'E-14'),
+        cr('agree', 'O·O2', 'Thời gian 2 tuần khớp ràng buộc.')
+      ], 'final 10:17')
+    ];
+    const rounds = [
+      { label: 'Vòng 1 — đề xuất độc lập', note: 'đã đóng 10:07; lập trường bị ẩn với nhau cho đến khi vòng đóng', cells: round1 },
+      { label: 'Vòng 2 — phản biện chéo', note: dDone ? 'đã đóng 10:17' : 'đang chạy, 3 Agent Run song song', cells: dDone ? round2 : [hidden, hidden, hidden] }
+    ];
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    const u = (name, runs, tin, tout, cost) => ({ name, runs, tin, tout, cost });
+    const parts = dDone
+      ? [u('Orchestrator', 3, 18420, 3960, 0.11), u('Analysis Agent A', 2, 15210, 2880, 0.07), u('Analysis Agent B', 2, 16050, 3120, 0.08)]
+      : [u('Orchestrator', 1, 6100, 1300, 0.04), u('Analysis Agent A', 1, 7400, 1450, 0.03), u('Analysis Agent B', 1, 7900, 1520, 0.03)];
+    const sum = (k) => parts.reduce((s, p) => s + p[k], 0);
+    const usage = parts.concat([u('Tổng phiên', sum('runs'), sum('tin'), sum('tout'), sum('cost'))]).map((p, i, all) => ({
+      name: p.name, runs: p.runs, tin: fmt(p.tin), tout: fmt(p.tout), cost: '$' + p.cost.toFixed(2).replace('.', ','), w: i === all.length - 1 ? 600 : 400
+    }));
+    const warnings = [{ title: 'Hai Analysis Agent dùng cùng model.', text: 'A và B cùng chạy gpt-5 trên “OpenAI cá nhân”, nên dễ sai giống nhau. Đổi model ở Settings › Agent Models.' }];
+    if (dDone) warnings.push({ title: 'Context Snapshot lỗi thời.', text: 'R-15 được duyệt vào Trusted Library lúc 10:20, sau khi phiên mở; bản tổng hợp không dùng R-15. Prompt có thêm lựa chọn chạy lại phiên trên context mới.' });
+    const d = {
+      done: dDone, notDone: !dDone,
+      status: dDone ? 'Completed' : 'Running', chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? '#FCF9F5' : '#EAF4FE',
+      roundNote: dDone ? 'kết thúc sau Vòng 2 · bất đồng còn lại là lựa chọn giá trị' : 'Vòng 2/3',
+      warnings,
+      brief: [
+        { k: 'Vấn đề', v: 'Chọn khung so sánh các phương pháp đo hallucination cho T-2.3.' },
+        { k: 'Loại vấn đề', v: 'methodology' },
+        { k: 'Context', v: 'Research context v4 · T-2.3 định nghĩa v3 · 14 Trusted Reference · 6 Evidence từ bước 3' },
+        { k: 'Ràng buộc', v: 'Chỉ nguồn 2019–2026 (câu trả lời prompt 09:44) · xong trong 2 tuần' },
+        { k: 'Tiêu chí đánh giá', v: 'Tái lập được · Đủ evidence · Thời gian' },
+        { k: 'Góc nhìn được giao', v: 'Analysis Agent A: xây dựng phương án · Analysis Agent B: tìm rủi ro và phương án thay thế' }
+      ],
+      parties: [
+        { name: 'Orchestrator', persp: 'Lập trường riêng, không phân xử cuối', model: 'Claude cá nhân · claude-sonnet-5-5' },
+        { name: 'Analysis Agent A', persp: 'Xây dựng phương án', model: 'OpenAI cá nhân · gpt-5' },
+        { name: 'Analysis Agent B', persp: 'Tìm rủi ro và phương án thay thế', model: 'OpenAI cá nhân · gpt-5' }
+      ],
+      rounds, usage,
+      usageNote: dDone ? 'Tổng phiên bằng tổng 7 Agent Run. Chi phí theo số liệu provider trả về.' : 'Chỉ tính Agent Run đã kết thúc; 3 Agent Run của Vòng 2 được cộng khi xong.',
+      consensus: ['Khả năng tái lập là tiêu chí ưu tiên (cả ba bên).', 'Số liệu benchmark công bố không so trực tiếp được khi khác phiên bản dataset (B1; Orchestrator đồng ý; A đổi lập trường).'],
+      disagree: [
+        { point: 'Trục chính của bảng so sánh', pos: 'Orchestrator: ba trục tác vụ, gán nhãn, tái lập · A: benchmark kèm trục cơ chế đo · B: chỉ theo cơ chế đo.' },
+        { point: 'A2 (giả định)', pos: 'A cho rằng so theo benchmark là phổ biến; Orchestrator phản đối vì chưa có nguồn.' }
+      ],
+      tradeoff: [
+        { name: 'Orchestrator — ba trục', rep: 'Cao', evi: 'Trung bình', time: '2 tuần', bg: 'transparent' },
+        { name: 'A — benchmark kèm cơ chế đo', rep: 'Trung bình', evi: 'Cao', time: '1,5 tuần', bg: '#EAF4FE' },
+        { name: 'B — theo cơ chế đo', rep: 'Cao (B2 là giả định)', evi: 'Trung bình', time: '2,5 tuần', bg: 'transparent' }
+      ],
+      recommend: 'phương án A đã sửa — đủ evidence nhất và vẫn có trục tái lập; ghi rõ phiên bản dataset trong ma trận để xử lý rủi ro B1.',
+      chosen: 'A — benchmark kèm trục cơ chế đo'
+    };
+    const runInfo = isDelib
+      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81c4 · bước 4 · Vòng 2 · instance B', status: dDone ? 'Succeeded' : 'Running', chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? 'transparent' : '#EAF4FE',
+          conn: 'OpenAI cá nhân', model: 'gpt-5', ctx: 'Problem Brief · Context Snapshot cs-2a (7 entity) · lập trường Vòng 1 của Orchestrator và A',
+          tools: 'retrieval.search × 2 (chỉ đọc, Trusted Reference đã index)', out: dDone ? '2 critique trên Deliberation Board' : 'đang viết, mở khi vòng đóng', outHref: '#dl-h',
+          usage: dDone ? '8 150 in · 1 600 out' : '—', time: dDone ? '48 giây · lần 1/3' : '00:37 · lần 1/3' }
+      : { agent: 'Discovery Agent', id: 'Agent Run ar-7f3a · bước 2', status: 'Succeeded', chipB: 'solid #1C1B18', chipBg: 'transparent',
+          conn: 'OpenAI cá nhân', model: 'gpt-5-mini', ctx: 'Research context v4 · T-2.3 định nghĩa v3 · câu trả lời prompt “2019–2026”',
+          tools: 'scholar.search × 3 · dedupe.check × 1', out: '18 discovered result', outHref: 'Discover.dc.html',
+          usage: '12 840 in · 2 115 out', time: '1 phút 52 giây · lần 2/3 (lần 1: rate_limited)' };
     return {
       wfKey, isInterrupted: intr, notInterrupted: !intr,
+      agentBasis: isDelib ? '100%' : '300px',
+      agentState: isDelib ? (dDone ? 'synthesis' : 'deliberation') : wfKey,
       wfState: chip[3], wfB: chip[0], wfFg: chip[1], wfBg: chip[2], wfNeed: chip[4],
       debug: dbg, debugNote: dbg ? 'Chế độ debug bật khi chạy: toàn văn được lưu đến 30/11/2026.' : 'Không lưu toàn văn (chế độ debug tắt). Xem context manifest và đầu ra có cấu trúc ở trên.',
+      tabs, isTimeline: !isDelib, isDelib, d, run: runInfo,
       events
     };
   }

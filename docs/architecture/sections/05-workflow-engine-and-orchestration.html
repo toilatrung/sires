@@ -33,6 +33,8 @@
 <li><a href="#s-5-9">5.9. Orchestrator</a></li>
 <li><a href="#s-5-10">5.10. Agent registry</a></li>
 <li><a href="#s-5-11">5.11. Vì sao không dùng Temporal ở MVP</a></li>
+<li><a href="#s-5-12">5.12. Phiên thảo luận (Deliberation)</a></li>
+<li><a href="#s-5-13">5.13. Deliberation Board và Context Snapshot</a></li>
 </ul></details>
 
 <h2 id="s-5-1">5.1. Mô hình thực thi</h2>
@@ -105,6 +107,7 @@
 <li>Engine chỉ phát message cho bước có mọi phụ thuộc Succeeded và <code>write_set</code> không giao với bước đang chạy cùng workflow.</li>
 <li>Bước song song cùng tính vào giới hạn đồng thời của tài khoản (5.2).</li>
 <li>Checkpoint ghi sau mỗi bước hoàn tất; một bước song song lỗi không hủy bước kia; Orchestrator nhận cả hai kết quả khi lập bước kế.</li>
+<li>Bước song song có thể chia sẻ kết quả trung gian qua Deliberation Board của workflow (entry <code>finding</code>, 5.13); đọc board không tạo phụ thuộc giữa bước (CTX-BOARD-003).</li>
 </ul>
 
 <h2 id="s-5-8">5.8. Idempotency và kết quả lỗi thời</h2>
@@ -131,7 +134,8 @@
 <ul>
 <li><strong>Giới hạn an toàn:</strong> tối đa 30 bước và 10 vòng <code>plan_next</code> mỗi workflow (cấu hình) để tránh vòng lặp vô hạn và chi phí ngoài dự kiến (RISK-07); chạm giới hạn → Orchestrator phải mở prompt hỏi Researcher.</li>
 <li><strong>Workflow cố định:</strong> các loại <code>indexing</code>, <code>reference_processing</code>, <code>verification</code>, <code>readiness_semantic</code> có chuỗi bước định sẵn trong mã, không cần Orchestrator lập kế hoạch — rẻ và tất định hơn.</li>
-<li><strong>Mâu thuẫn</strong> (ORCH-CONFLICT-001): StepPlan có <code>conflict</code> → engine mở prompt <code>choice</code>.</li>
+<li><strong>Mâu thuẫn</strong> (ORCH-CONFLICT-001): StepPlan có <code>conflict</code> → engine mở prompt <code>choice</code>; khi cần phán đoán, Orchestrator có thể khai báo bước <code>deliberation</code> loại <code>evidence_conflict</code> trước (5.12).</li>
+<li><strong>Thảo luận:</strong> StepPlan có thể chứa bước <code>{type: "deliberation", problemBrief}</code>; engine chạy bước này theo vòng ở 5.12 thay vì một Agent Run đơn.</li>
 <li><strong>Chuyển giao giữa agent</strong> chỉ bằng tham chiếu entity trong <code>inputRefs</code>; không chuyển văn bản chat (CTX-ROUTING-001).</li>
 </ul>
 
@@ -151,6 +155,7 @@
 <li><code>required_capabilities</code> dùng để chặn lưu Agent Model Assignment thiếu năng lực bắt buộc, cảnh báo khi thiếu năng lực khuyến nghị (OQ-034).</li>
 <li><code>context_scope</code> là nguồn cho kiểm tra phạm vi ở F-07.S2 và cho bộ lọc của tool.</li>
 <li><code>version</code> của định nghĩa và của template ghi vào Agent Run (NFR-OBS-006); đổi phiên bản kích hoạt cổng hồi quy của eval harness (NFR-EVAL-004).</li>
+<li>Registry có 9 định nghĩa: Orchestrator và 8 Specialist Agent, trong đó <code>analysis</code> (Analysis Agent, PRD 8.7) là một định nghĩa chạy thành instance <code>A</code>, <code>B</code>: Agent Run ghi <code>instance</code>, Agent Model Assignment ở identity có khóa <code>(agent_key, instance)</code> và trả <code>sameModelWarning</code> khi hai instance cùng provider và model (ORCH-DELIB-005). Định nghĩa <code>analysis</code>: tool chỉ đọc <code>retrieve_evidence</code>, <code>read_board</code>; <code>context_scope</code> chỉ gồm entity trong Context Snapshot của phiên; <code>writes</code> chỉ <code>deliberation_entry</code>.</li>
 </ul>
 
 <h2 id="s-5-11">5.11. Vì sao không dùng Temporal ở MVP</h2>
@@ -162,6 +167,33 @@
 <li>Thêm một cụm (Temporal server + database riêng) cho đội nhỏ tự vận hành.</li>
 </ol>
 <p><strong>Điều kiện xem lại:</strong> cần workflow lồng nhau phức tạp, timer dài có lịch, saga xuyên dịch vụ, hoặc engine tự xây vượt ~1.500 dòng và có lỗi đồng bộ lặp lại. Interface <code>WorkflowEngine</code> trong service orchestration giữ cho việc thay thế không chạm vào agent-core và các service khác.</p>
+
+<h2 id="s-5-12">5.12. Phiên thảo luận (Deliberation)</h2>
+<p class="status">PRD 8.7 (DEC-47, DEC-48); luồng chi tiết ở <a href="04-runtime-flows.html#f-13">F-13</a>. Trạng thái: Đề xuất (Assumption).</p>
+<pre><code>bước deliberation (trong workflow plan_proposal, task_execution hoặc workflow riêng loại deliberation)
+  R0  Problem Brief + ContextSnapshot                      [TX:orchestration]
+  R1  agent.run × 3 song song: orchestrator, analysis/A, analysis/B → entry position (ẩn theo vòng)
+      đóng vòng khi mọi bên final → visible_from, checkpoint
+  R2  agent.run × 3 song song → entry critique (đổi lập trường phải có changeReason)
+  Rn  vòng hẹp tùy chọn, tổng số vòng sau R1 ≤ maxRounds (mặc định 2)
+  S   agent.run orchestrator → entry synthesis → kiểm tra tất định → deliberation_record + prompt choice</code></pre>
+<ul>
+<li><strong>Trạng thái:</strong> Deliberation <code>Running → Completed | Failed | Cancelled</code>. Workflow <code>Interrupted</code> không đổi trạng thái Deliberation; khôi phục chạy tiếp từ vòng dở.</li>
+<li><strong>Kiểm tra tất định ở orchestration:</strong> schema entry theo type; <code>changeReason</code> khi <code>supersedes</code> là lập trường cũ; synthesis phủ mọi critique <code>disagree</code> đang hiệu lực; nhận định không có <code>sourceRefs</code> giữ cờ <code>assumption</code>.</li>
+<li><strong>Giới hạn:</strong> số Agent Run của phiên tính vào giới hạn 30 bước của workflow (RISK-07); Agent Run song song vẫn đi qua semaphore theo Provider Connection ở agent-core, thời gian chờ ghi vào Agent Run để Agent Activity hiển thị.</li>
+<li><strong>Kích hoạt (OQ-099):</strong> trừ bước phân tích của 6.3, engine chỉ chạy bước <code>deliberation</code> sau khi Researcher chọn “Thảo luận” trong prompt <code>choice</code>; “Bỏ qua” → bước chuyển <code>Succeeded</code> với cờ <code>skipped</code>, kết quả sau đó mang nhãn “không qua thảo luận”.</li>
+</ul>
+
+<h2 id="s-5-13">5.13. Deliberation Board và Context Snapshot</h2>
+<p class="status">PRD 14.9 (CTX-SNAPSHOT-001, CTX-BOARD-001–003); ADR-24. Trạng thái: Đề xuất (Assumption).</p>
+<ul>
+<li><strong>Nguồn sự thật:</strong> bảng <code>deliberation</code>, <code>deliberation_entry</code>, <code>context_snapshot</code> trong database orchestration (6.1). Không có Redis; mọi lớp cache (cache context đã lắp ráp trong bộ nhớ agent-core, prompt caching của provider) chỉ tăng tốc, mất cache không mất dữ liệu.</li>
+<li><strong>Chỉ ghi thêm:</strong> entry bất biến; đổi nội dung = entry mới có <code>supersedes</code>; rút lại = entry <code>retraction</code> và đổi <code>status</code> entry gốc sang <code>retracted</code>; chỉ orchestration đổi <code>status</code>, <code>visible_from</code>, <code>needs_review</code>.</li>
+<li><strong>Ghi đồng thời:</strong> mỗi Agent Run ghi entry của mình trong giao dịch riêng, khóa theo <code>(deliberation_id, round)</code> chỉ khi đóng vòng; hai entry đồng thời không ghi đè nhau (CTX-BOARD-001-AC01).</li>
+<li><strong>Đọc theo quyền:</strong> <code>GET /internal/workflows/{workflowId}/board?agentRunId=…</code> lọc theo tác giả, vòng và <code>visible_from</code>; Context Assembler dùng cùng bộ lọc. Truy cập entry bị ẩn ghi Audit Event.</li>
+<li><strong>Context Snapshot:</strong> chỉ lưu tham chiếu và phiên bản; Context Assembler nạp đúng phiên bản (các service sở hữu đã có API đọc theo phiên bản). Cờ <code>outdated</code> đặt khi orchestration nhận sự kiện phiên bản mới của entity trong snapshot.</li>
+<li><strong>Prompt caching:</strong> Model Gateway đặt Problem Brief và context từ snapshot ở đầu prompt theo thứ tự cố định để provider tái dùng cache khi các bên cùng provider; không bắt buộc khác provider (OQ-102), identity cảnh báo khi hai instance cùng model.</li>
+</ul>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="04-runtime-flows.html">← Mục 4</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="06-data-architecture.html">Mục 6 →</a></nav>
 </main>

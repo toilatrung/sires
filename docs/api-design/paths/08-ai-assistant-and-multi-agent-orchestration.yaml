@@ -1,8 +1,8 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# PRD 8 AI Assistant and Multi-Agent Orchestration — Provider Connection, Agent Models (8.6, M1),
-# agent registry (8.2) và Interactive Agent Prompt (8.4, M2).
+# PRD 8 AI Assistant and Multi-Agent Orchestration — Provider Connection, Agent Models (8.6),
+# agent registry (8.2), Interactive Agent Prompt (8.4) và phiên thảo luận — Agent Deliberation (8.7, 14.9, DEC-47).
 
 /provider-connections:
   get:
@@ -11,7 +11,6 @@
     summary: Danh sách Provider Connection
     x-requirements: [AGENT-PROVIDER-002]
     x-priority: P0
-    x-milestone: M1
     responses:
       '200':
         description: Mọi kết nối của tài khoản; API key chỉ ở dạng `keyHint`.
@@ -31,7 +30,6 @@
     x-requirements: [AGENT-PROVIDER-002, INT-PROVIDER-005, NFR-SECRETS-001]
     x-apr: APR-09
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -63,7 +61,6 @@
     summary: Chi tiết Provider Connection
     x-requirements: [AGENT-PROVIDER-002]
     x-priority: P0
-    x-milestone: M1
     responses:
       '200':
         description: Kết nối.
@@ -81,7 +78,6 @@
     x-requirements: [AGENT-PROVIDER-002]
     x-apr: APR-09
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/IfMatch
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -109,7 +105,6 @@
     x-requirements: [AGENT-PROVIDER-002]
     x-apr: APR-09
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
       - name: replacementConnectionId
@@ -133,7 +128,6 @@
     description: Gọi một yêu cầu nhẹ tới provider → Valid kèm danh sách model, hoặc Invalid kèm mã lỗi chuẩn (8.6).
     x-requirements: [AGENT-PROVIDER-002, INT-PROVIDER-001]
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
@@ -148,10 +142,10 @@
   get:
     tags: [Agent Models]
     operationId: listAgents
-    summary: Agent registry (Orchestrator + 7 Specialist Agent)
-    x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001]
+    summary: Agent registry (Orchestrator + 8 Specialist Agent)
+    description: Chín định nghĩa; Analysis Agent có `instances = [A, B]` (DEC-47, AGENT-ANALYSIS-001).
+    x-requirements: [AGENT-REGISTRY-001, AGENT-SCOPE-001, AGENT-ANALYSIS-001]
     x-priority: P1
-    x-milestone: M2
     responses:
       '200':
         description: Định nghĩa agent, chỉ đọc trong MVP.
@@ -169,10 +163,11 @@
     tags: [Agent Models]
     operationId: listAgentModelAssignments
     summary: Cấu hình model của từng agent
-    description: Trả cấu hình `default` và cấu hình hiệu lực cho cả 8 agent, kèm cảnh báo năng lực.
-    x-requirements: [AGENT-PROVIDER-003]
+    description: |
+      Trả cấu hình `default` và cấu hình hiệu lực cho cả 9 agent, kèm cảnh báo năng lực. Analysis Agent có hai dòng
+      (`instance` A, B); hai dòng này mang `sameModelWarning` khi cùng provider và model (UX-SETTINGS-003, ORCH-DELIB-005).
+    x-requirements: [AGENT-PROVIDER-003, UX-SETTINGS-003, ORCH-DELIB-005]
     x-priority: P0
-    x-milestone: M1
     responses:
       '200':
         description: Danh sách gán model.
@@ -194,15 +189,24 @@
         oneOf:
           - $ref: ../components/schemas/common.yaml#/AgentName
           - const: default
+    - name: instance
+      in: query
+      required: false
+      description: |
+        Bắt buộc khi `agent = analysis` (thiếu → `422 instance_required`); gửi cho agent khác → `422 instance_not_allowed`.
+        Assumption của biên soạn về cách định danh dòng theo instance.
+      schema: { $ref: ../components/schemas/common.yaml#/AgentInstance }
   put:
     tags: [Agent Models]
     operationId: setAgentModelAssignment
-    summary: Gán Provider Connection và model cho một agent (APR-09)
-    description: Model phải thuộc `availableModels` hoặc được nhập và kiểm tra. Không áp dụng cho Agent Run đang chạy.
-    x-requirements: [AGENT-PROVIDER-003]
+    summary: Gán Provider Connection và model cho một agent hoặc một instance Analysis Agent (APR-09)
+    description: |
+      Model phải thuộc `availableModels` hoặc được nhập và kiểm tra. Không áp dụng cho Agent Run đang chạy.
+      Với `analysis`, khi instance A và B có cùng provider và model, cấu hình vẫn được lưu và phản hồi có
+      `sameModelWarning = true` (ORCH-DELIB-005-AC01).
+    x-requirements: [AGENT-PROVIDER-003, ORCH-DELIB-005, UX-SETTINGS-003]
     x-apr: APR-09
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -217,7 +221,7 @@
               model: { type: string }
     responses:
       '200':
-        description: Đã gán; có thể kèm `capabilityWarnings`.
+        description: Đã gán; có thể kèm `capabilityWarnings` và (với `analysis`) `sameModelWarning`.
         content:
           application/json:
             schema: { $ref: ../components/schemas/account.yaml#/AgentModelAssignment }
@@ -230,7 +234,6 @@
     x-requirements: [AGENT-PROVIDER-003]
     x-apr: APR-09
     x-priority: P0
-    x-milestone: M1
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
@@ -244,7 +247,6 @@
     summary: Danh sách Interactive Agent Prompt
     x-requirements: [PROMPT-LIFECYCLE-001, UX-PROMPT-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/ProjectIdFilter
       - name: status
@@ -277,7 +279,6 @@
     summary: Chi tiết prompt
     x-requirements: [PROMPT-LIFECYCLE-001]
     x-priority: P0
-    x-milestone: M2
     responses:
       '200':
         description: Prompt.
@@ -299,7 +300,6 @@
       Orchestrator tạo prompt mới (PROMPT-APPROVAL-001). Câu trả lời được ghi thành Context Item loại decision.
     x-requirements: [PROMPT-LIFECYCLE-001, PROMPT-APPROVAL-001, DATA-IDEMP-001]
     x-priority: P0
-    x-milestone: M2
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -318,3 +318,71 @@
       '404': { $ref: ../components/responses.yaml#/NotFound }
       '409': { $ref: ../components/responses.yaml#/Conflict }
       '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
+
+
+# ---- 8.7 Agent Deliberation (DEC-47, DEC-48) — Assumption của biên soạn ----
+# Quyết định của Researcher không có endpoint riêng — đều là prompt `choice` trả lời qua POST /prompts/{promptId}/response:
+# xác nhận mở phiên hay “Bỏ qua” (purpose = deliberation_proposal, choiceIds `deliberate` | `skip` — OQ-099, UX-MONITOR-007);
+# chọn phương án sau tổng hợp, chạy lại phiên hoặc tiếp tục không thảo luận khi Failed (purpose = deliberation_decision).
+# Researcher yêu cầu thảo luận một vấn đề bằng tin nhắn trong Project AI Chat.
+
+/projects/{projectId}/deliberations:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+  get:
+    tags: [Deliberation]
+    operationId: listDeliberations
+    summary: Các phiên thảo luận của project (lọc theo workflow)
+    description: |
+      Mỗi workflow có một Deliberation Board; mỗi phiên là một phần của board (CTX-BOARD-001). Trả tóm tắt phiên
+      (Problem Brief, bên tham gia, vòng hiện tại, trạng thái, usage tổng, `sameModelWarning`); entry xem ở chi tiết phiên.
+    x-requirements: [UX-MONITOR-006, UX-MONITOR-007, ORCH-DELIB-001, ORCH-DELIB-004, CTX-BOARD-001]
+    x-priority: P0
+    parameters:
+      - name: workflowId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: status
+        in: query
+        schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationStatus }
+      - $ref: ../components/parameters.yaml#/Limit
+      - $ref: ../components/parameters.yaml#/Cursor
+    responses:
+      '200':
+        description: Phiên theo thứ tự bắt đầu, mới nhất trước.
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: ../components/schemas/common.yaml#/Page
+                - properties:
+                    items:
+                      type: array
+                      items: { $ref: ../components/schemas/orchestration.yaml#/Deliberation }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+
+/projects/{projectId}/deliberations/{deliberationId}:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ProjectId
+    - $ref: ../components/parameters.yaml#/DeliberationId
+  get:
+    tags: [Deliberation]
+    operationId: getDeliberation
+    summary: Chi tiết phiên thảo luận — chế độ xem thảo luận ở Agent Activity
+    description: |
+      Problem Brief, bên tham gia, các vòng, entry Researcher được xem, bản tổng hợp, Context Snapshot (cờ lỗi thời và
+      entity đã đổi), usage theo từng bên và tổng, `sameModelWarning`, prompt quyết định và lựa chọn đã chọn.
+      Entry chỉ hiển thị khi vòng chứa nó đóng (OQ-101, CTX-BOARD-002); entry của vòng đang mở nằm trong `pendingEntries`
+      không kèm nội dung. Entry bất biến; đổi lập trường thể hiện bằng `supersedesEntryId`, rút lại bằng `status = retracted`.
+      Deliberation Record chính thức là Artifact Version Draft loại `deliberation_record` (`recordArtifactVersionId`),
+      xem qua API Artifact. `snapshotOutdated` lặp lại `contextSnapshot.outdated` cho giao diện.
+    x-requirements: [UX-MONITOR-006, UX-MONITOR-007, ORCH-DELIB-001, ORCH-DELIB-002, ORCH-DELIB-003, ORCH-DELIB-004, ORCH-DELIB-005, CTX-BOARD-002,
+      CTX-BOARD-001, CTX-SNAPSHOT-001, NFR-USAGE-005]
+    x-priority: P0
+    responses:
+      '200':
+        description: Phiên thảo luận.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationDetail }
+      '404': { $ref: ../components/responses.yaml#/NotFound }

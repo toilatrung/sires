@@ -40,7 +40,7 @@
 <thead><tr><th>Kho</th><th>Dữ liệu</th><th>Ghi chú</th></tr></thead>
 <tbody>
 <tr><td>Database của từng service</td><td>Entity mà service sở hữu (3.3), bảng <code>outbox</code>, <code>inbox</code>, <code>idempotency_key</code>, bản sao chỉ đọc cần thiết</td><td>Giao dịch, ràng buộc, RLS trong phạm vi service</td></tr>
-<tr><td>Database orchestration</td><td>Workflow, Step, AgentRun (manifest, structured output, usage), Checkpoint, Prompt, ContextItem</td><td>Nguồn sự thật của workflow (ADR-03)</td></tr>
+<tr><td>Database orchestration</td><td>Workflow, Step, AgentRun (manifest, structured output, usage, <code>instance</code>, <code>deliberation_id</code>), Checkpoint, Prompt, ContextItem, Deliberation, DeliberationEntry (Deliberation Board), ContextSnapshot</td><td>Nguồn sự thật của workflow (ADR-03) và của trao đổi giữa agent (ADR-24)</td></tr>
 <tr><td>Database knowledge</td><td>SourceDocument, Chunk, <code>chunk_text</code> (+ tsvector), bảng vector theo embedding model, bản sao chỉ đọc Project Reference Selection và trạng thái Reference</td><td>Extension <code>vector</code> chỉ ở đây</td></tr>
 <tr><td>Database audit</td><td><code>audit_event</code> chỉ ghi thêm, <code>kpi_snapshot</code></td><td>Vai trò của service audit chỉ INSERT/SELECT; vai trò purge riêng</td></tr>
 <tr><td>Database gateway</td><td>Phiên đăng nhập, log sự kiện SSE 24 giờ</td><td>—</td></tr>
@@ -102,6 +102,7 @@ COMMIT;</code></pre>
 <tr><td>AgentRun</td><td>Bất biến sau trạng thái cuối, trừ xóa debugTranscript</td><td>Trigger; debug transcript là bảng/đối tượng riêng có <code>expires_at</code></td></tr>
 <tr><td>ArtifactVersion, Reference metadata</td><td>Sửa tạo phiên bản mới</td><td>Bảng version + con trỏ <code>current_*_id</code></td></tr>
 <tr><td>Context Item</td><td>Chỉ ghi thêm; Superseded/Retracted</td><td>Chỉ cho đổi <code>status</code> và <code>superseded_by</code></td></tr>
+<tr><td>DeliberationEntry, ContextSnapshot</td><td>Bất biến; entry chỉ đổi trạng thái theo PRD 18.2</td><td>Trigger chỉ cho đổi <code>status</code>, <code>visible_from</code>, <code>needs_review</code> của entry; ContextSnapshot chỉ cho đổi <code>outdated</code>, <code>changed_entities</code></td></tr>
 <tr><td>AuditEvent</td><td>Chỉ ghi thêm</td><td>Quyền database (6.4)</td></tr>
 </tbody></table></div>
 <p>Provenance (18.3) lưu ở cột <code>provenance jsonb</code> của mọi đầu ra: <code>{actor, agentRunId, workflowId, taskId, inputs:[{type,id,version}]}</code>, bắt buộc ở lớp ứng dụng (thiếu → từ chối ghi, CTX-REGISTRY-001).</p>

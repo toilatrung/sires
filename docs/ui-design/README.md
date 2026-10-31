@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 56 trang HTML tĩnh (33 nguồn + biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 63 trang HTML tĩnh (33 nguồn + biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -29,7 +29,7 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | — | Main | Style guide (Cream) | DEC-18 |
 | — | Components | Nhãn trạng thái, execution label, prompt 4 trạng thái | 15.5, 5 |
 | — | TopBar, ProjectRail | Điều hướng dùng chung | UX-LAYOUT-001/003 |
-| — | AgentList, AgentListPreview | Danh sách agent và trạng thái (Đang chạy, Đang rảnh, Lỗi), light và dark; gắn ở P9 | SCOPE-12, UX-MONITOR-001 |
+| — | AgentList, AgentListPreview | Danh sách agent (gồm Analysis Agent A, B) và trạng thái (Đang chạy, Đang rảnh, Lỗi), light và dark; gắn ở P9 | SCOPE-12, UX-MONITOR-001, AGENT-ANALYSIS-001 |
 | G1 | Dashboard | Dashboard (biến thể recovery, first-run) | 15.1, UX-STATE-005, UX-SETTINGS-002 |
 | G2 | Projects | Research Projects + tạo project | 7.2 |
 | G3 | Discover | Tìm Google Scholar + nhập thủ công | 10.1–10.4 |
@@ -40,16 +40,16 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | G8 | GlobalActivity | Agent Activity cấp Global | UX-MONITOR-001 |
 | G9 | PendingActions | Pending Actions + nhóm Hết hiệu lực | UX-PENDING-001/002 |
 | S0 | SignIn | Đăng nhập eTroy OIDC (lỗi OIDC, hết phiên) | UX-AUTH-001/002 |
-| S1–S4 | Settings* | Profile, Provider Connections, Agent Models, Preferences | 15.12 |
+| S1–S4 | Settings* | Profile, Provider Connections, Agent Models (dòng Analysis Agent A, B và cảnh báo cùng model), Preferences | 15.12, ORCH-DELIB-005 |
 | P1 | Overview | Overview (no-plan, archived, recovery) | 15.2 |
-| P2 | Chat | Project AI Chat + Interactive Agent Prompt | 15.3 |
+| P2 | Chat | Project AI Chat + Interactive Agent Prompt + thẻ đề xuất thảo luận (biến thể bỏ qua) | 15.3, UX-MONITOR-007 |
 | P3 | Plan | Task board + chi tiết Task + readiness | UX-TASK-001–005 |
 | P4 | PlanCompare | So sánh và duyệt Plan Version | UX-PLAN-001/002 |
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
 | P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
 | P7 | Artifacts | Research Artifacts, phiên bản, provenance | 5.7, 13 |
 | P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision | 15.7 |
-| P9 | Workflow | Chi tiết workflow + Agent Run + Recovery decision | UX-MONITOR-002–004, WF-06 |
+| P9 | Workflow | Chi tiết workflow + Agent Run + Recovery decision + chế độ xem thảo luận (đang chạy, hoàn tất) | UX-MONITOR-002–004, UX-MONITOR-006, WF-06 |
 | P10 | History | Activity and History | 14.8 |
 | X1 | States | Loading, trống, lỗi, khôi phục, notification | 15.8 |
 | M1–M2 | Mobile* | Pending Actions và trả lời prompt ở 390px | UX-RESP-001 |
@@ -57,7 +57,7 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 ## Ghi chú thiết kế (đã duyệt)
 
 - Dữ liệu mẫu (tên project, tác giả, model, số liệu) chỉ để minh họa. Giá trị Ngưỡng kiểm chứng ghi trong ngoặc vuông là placeholder.
-- DEC-18 ở PRD 21.1 đã cập nhật theo thiết kế này (31/10/2026).
+- DEC-18 ở PRD 20.1 đã cập nhật theo thiết kế này (31/10/2026).
 - Cream gốc dùng #0277DD cho chữ xanh; ở đây chữ xanh dùng #025FAC và chữ phụ dùng #4D4A44 (không dùng #7A756C) để đạt WCAG AA. Cảnh báo #9A3412, lỗi #BE123C.
 - Bản thảo PDF và đoạn trích evidence giữ chữ có chân (Times) để giống tài liệu in.
 - Manuscript bỏ ProjectRail để dành chỗ cho ba vùng; quay lại project bằng nút “Project” trên thanh công cụ.

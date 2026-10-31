@@ -62,6 +62,12 @@ channels:
       workflowStatusChanged: { $ref: '#/components/messages/workflowStatusChanged' }
       agentRunStatusChanged: { $ref: '#/components/messages/agentRunStatusChanged' }
       promptStatusChanged: { $ref: '#/components/messages/promptStatusChanged' }
+      deliberationStarted: { $ref: '#/components/messages/deliberationStarted' }
+      deliberationRoundClosed: { $ref: '#/components/messages/deliberationRoundClosed' }
+      deliberationEntryAdded: { $ref: '#/components/messages/deliberationEntryAdded' }
+      deliberationEntryRetracted: { $ref: '#/components/messages/deliberationEntryRetracted' }
+      deliberationStatusChanged: { $ref: '#/components/messages/deliberationStatusChanged' }
+      contextSnapshotOutdated: { $ref: '#/components/messages/contextSnapshotOutdated' }
       referenceStatusChanged: { $ref: '#/components/messages/referenceStatusChanged' }
       referenceMetadataUpdated: { $ref: '#/components/messages/referenceMetadataUpdated' }
       referenceDeleted: { $ref: '#/components/messages/referenceDeleted' }
@@ -177,6 +183,12 @@ operations:
       - $ref: '#/channels/events/messages/workflowStatusChanged'
       - $ref: '#/channels/events/messages/agentRunStatusChanged'
       - $ref: '#/channels/events/messages/promptStatusChanged'
+      - $ref: '#/channels/events/messages/deliberationStarted'
+      - $ref: '#/channels/events/messages/deliberationRoundClosed'
+      - $ref: '#/channels/events/messages/deliberationEntryAdded'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
+      - $ref: '#/channels/events/messages/deliberationStatusChanged'
+      - $ref: '#/channels/events/messages/contextSnapshotOutdated'
       - $ref: '#/channels/events/messages/auditRecorded'
       - $ref: '#/channels/events/messages/dataPurged'
   libraryPublishes:
@@ -268,6 +280,11 @@ operations:
       - $ref: '#/channels/events/messages/projectReferenceChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
       - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
+      - $ref: '#/channels/events/messages/deliberationStarted'
+      - $ref: '#/channels/events/messages/deliberationRoundClosed'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
+      - $ref: '#/channels/events/messages/deliberationStatusChanged'
+      - $ref: '#/channels/events/messages/contextSnapshotOutdated'
       - $ref: '#/channels/events/messages/accountDeletionRequested'
   gatewayConsumesChat:
     action: receive
@@ -292,6 +309,7 @@ operations:
       - $ref: '#/channels/events/messages/promptStatusChanged'
       - $ref: '#/channels/events/messages/referenceStatusChanged'
       - $ref: '#/channels/events/messages/manuscriptObjectStatusChanged'
+      - $ref: '#/channels/events/messages/deliberationStatusChanged'
       - $ref: '#/channels/events/messages/dataPurged'
   planningConsumes:
     action: receive
@@ -306,10 +324,11 @@ operations:
       - $ref: '#/channels/events/messages/workflowStatusChanged'
       - $ref: '#/channels/events/messages/referenceStatusChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   orchestrationConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
-    title: orchestration tạo workflow, đóng/hủy prompt
+    title: orchestration tạo workflow, đóng/hủy prompt; đánh dấu Context Snapshot lỗi thời (CTX-SNAPSHOT-001)
     messages:
       - $ref: '#/channels/events/messages/accountDeletionRequested'
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
@@ -320,6 +339,9 @@ operations:
       - $ref: '#/channels/events/messages/taskActivated'
       - $ref: '#/channels/events/messages/taskActivationCancelled'
       - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/researchContextVersioned'
+      - $ref: '#/channels/events/messages/taskStatusChanged'
+      - $ref: '#/channels/events/messages/researchObjectStatusChanged'
   libraryConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
@@ -351,6 +373,7 @@ operations:
       - $ref: '#/channels/events/messages/referenceStatusChanged'
       - $ref: '#/channels/events/messages/referenceDeleted'
       - $ref: '#/channels/events/messages/projectReferenceChanged'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   manuscriptConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
@@ -362,6 +385,7 @@ operations:
       - $ref: '#/channels/events/messages/referenceStatusChanged'
       - $ref: '#/channels/events/messages/referenceMetadataUpdated'
       - $ref: '#/channels/events/messages/referenceDeleted'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   auditConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
@@ -370,6 +394,13 @@ operations:
       - $ref: '#/channels/events/messages/auditRecorded'
       - $ref: '#/channels/events/messages/accountDeletionRequested'
       - $ref: '#/channels/events/messages/projectPurgeDue'
+  agentCoreConsumes:
+    action: receive
+    channel: { $ref: '#/channels/events' }
+    title: agent-core báo Agent Run đang chạy cùng workflow có entry mới trên board (queue agent-core.events — Assumption)
+    messages:
+      - $ref: '#/channels/events/messages/deliberationEntryAdded'
+      - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   agentCoreReceivesAgentRun:
     action: receive
     channel: { $ref: '#/channels/agentRun' }
@@ -571,7 +602,7 @@ components:
       name: research_context.versioned
       title: Research Context có phiên bản mới — planning phân tích ảnh hưởng (9.11)
       x-producer: workspace
-      x-consumers: [planning]
+      x-consumers: [planning, orchestration]
       x-requirements: [PROJ-CONTEXT-001, PLAN-IMPACT-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
@@ -708,7 +739,7 @@ components:
       name: task.status_changed
       title: Task đổi trạng thái (T-01–T-19); có reasonCode khi trả lại/chặn (KPI-04)
       x-producer: planning
-      x-consumers: [workspace, gateway]
+      x-consumers: [workspace, gateway, orchestration]
       x-requirements: [TASK-STATE-001, NFR-KPI-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
@@ -823,6 +854,177 @@ components:
                       workflowId: { $ref: '#/components/schemas/Id' }
                       taskId: { $ref: '#/components/schemas/Id' }
 
+    # ---------- orchestration: Deliberation (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 đang viết) ----------
+    deliberationStarted:
+      name: deliberation.started
+      title: Phiên thảo luận được mở (Deliberation Running, Problem Brief và Context Snapshot đã ghi)
+      x-producer: orchestration
+      x-consumers: [gateway]
+      x-requirements: [ORCH-DELIB-001, CTX-SNAPSHOT-001, UX-MONITOR-006]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.started }
+              data:
+                type: object
+                required: [workflowId, stepId, deliberationId, problemType, contextSnapshotId, participants]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  stepId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { $ref: '#/components/schemas/Id' }
+                  problemType: { $ref: ../components/schemas/orchestration.yaml#/ProblemType }
+                  contextSnapshotId: { $ref: '#/components/schemas/Id' }
+                  participants:
+                    type: array
+                    items: { $ref: ../components/schemas/orchestration.yaml#/DeliberationPartyRef }
+                  sameModelWarning: { type: boolean }
+    deliberationRoundClosed:
+      name: deliberation.round_closed
+      title: Một vòng thảo luận đóng — entry của vòng mở cho mọi bên và cho Researcher (CTX-BOARD-002, OQ-101)
+      description: |
+        Phát sau khi orchestration lưu checkpoint của phiên (CTX-BOARD-001). gateway đẩy SSE để Agent Activity tải entry
+        của vòng; agent-core không cần nghe vì Agent Run của vòng sau được giao bằng lệnh `agent.run` mới.
+      x-producer: orchestration
+      x-consumers: [gateway]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-002, ORCH-DELIB-002, UX-MONITOR-006]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.round_closed }
+              data:
+                type: object
+                required: [workflowId, deliberationId, round, roundKind, entryIds, visibleFrom]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { $ref: '#/components/schemas/Id' }
+                  round: { type: integer }
+                  roundKind: { type: string, enum: [brief, independent, cross_critique, narrow, synthesis] }
+                  entryIds:
+                    type: array
+                    items: { $ref: '#/components/schemas/Id' }
+                  visibleFrom: { type: string, format: date-time }
+                  nextRound: { type: [integer, 'null'], description: '`null` khi chuyển sang tổng hợp hoặc kết thúc.' }
+    deliberationEntryAdded:
+      name: deliberation.entry_added
+      title: Entry mới trên Deliberation Board — báo các bên đang chạy trong workflow (CTX-BOARD-001, CTX-BOARD-003)
+      description: |
+        Payload không chứa nội dung entry: Agent Run đọc qua `GET /internal/workflows/{workflowId}/board`, nơi
+        orchestration áp quyền xem theo vòng. gateway không đẩy sự kiện này tới Researcher (entry chỉ hiển thị khi vòng
+        đóng — OQ-101); finding ngoài phiên (`deliberationId = null`) cũng không đẩy (Assumption).
+      x-producer: orchestration
+      x-consumers: [agent-core]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-003]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.entry_added }
+              data:
+                type: object
+                required: [workflowId, entryId, entryType, status, author]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { type: [string, 'null'], format: uuid }
+                  round: { type: [integer, 'null'] }
+                  entryId: { $ref: '#/components/schemas/Id' }
+                  entryType: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryType }
+                  status: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntryStatus }
+                  author: { $ref: ../components/schemas/orchestration.yaml#/DeliberationAuthor }
+                  supersedesEntryId: { type: [string, 'null'], format: uuid }
+    deliberationEntryRetracted:
+      name: deliberation.entry_retracted
+      title: Entry bị rút lại — đánh dấu cần xem lại entry và đầu ra Draft đã tham chiếu (CTX-BOARD-003)
+      description: |
+        research, manuscript, planning gắn cờ needs review cho đầu ra Draft của mình có `TypedRef` loại `deliberation_entry`
+        trỏ tới `entryId` (Artifact Version, Claim, Change Proposal, Plan Version Draft). orchestration tự đánh dấu entry
+        tham chiếu nó trên board (`needsReview`).
+      x-producer: orchestration
+      x-consumers: [research, manuscript, planning, agent-core, gateway]
+      x-requirements: [CTX-BOARD-001, CTX-BOARD-003, ORCH-CONSOLIDATE-001]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.entry_retracted }
+              data:
+                type: object
+                required: [workflowId, entryId, retractionEntryId]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { type: [string, 'null'], format: uuid }
+                  round: { type: [integer, 'null'] }
+                  entryId: { $ref: '#/components/schemas/Id' }
+                  retractionEntryId: { $ref: '#/components/schemas/Id' }
+                  needsReviewEntryIds:
+                    type: array
+                    items: { $ref: '#/components/schemas/Id' }
+    deliberationStatusChanged:
+      name: deliberation.status_changed
+      title: Deliberation Completed, Failed, Cancelled
+      description: |
+        Routing key con `deliberation.status_changed.<toState>`. Completed kèm `recordArtifactVersionId` (Artifact Version
+        Draft loại `deliberation_record`) và `decisionPromptId`; Failed kèm prompt chạy lại / tiếp tục không thảo luận.
+      x-producer: orchestration
+      x-consumers: [gateway, workspace]
+      x-requirements: [ORCH-DELIB-002, ORCH-DELIB-004, NFR-USAGE-005]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: deliberation.status_changed }
+              data:
+                allOf:
+                  - $ref: '#/components/schemas/StateChange'
+                  - type: object
+                    required: [workflowId, deliberationId]
+                    properties:
+                      workflowId: { $ref: '#/components/schemas/Id' }
+                      deliberationId: { $ref: '#/components/schemas/Id' }
+                      recordArtifactId: { type: [string, 'null'], format: uuid }
+                      recordArtifactVersionId: { type: [string, 'null'], format: uuid }
+                      decisionPromptId: { type: [string, 'null'], format: uuid }
+                      usageTotal: { $ref: ../components/schemas/orchestration.yaml#/UsageTotal }
+    contextSnapshotOutdated:
+      name: context_snapshot.outdated
+      title: Context Snapshot của phiên lỗi thời — một entity trong snapshot có phiên bản mới (CTX-SNAPSHOT-001)
+      description: |
+        orchestration phát khi nhận sự kiện thay đổi của entity nằm trong snapshot (`research_context.versioned`,
+        `plan_version.status_changed`, `task.status_changed`, `research.object_status_changed`, `reference.status_changed`)
+        hoặc khi Context Item của chính nó đổi. Phiên vẫn chạy trên snapshot cũ. Chỉ phát một lần cho lần chuyển
+        false → true; entity đổi thêm sau đó cập nhật `changedEntities` (lấy qua API), không phát lại (Assumption).
+      x-producer: orchestration
+      x-consumers: [gateway]
+      x-requirements: [CTX-SNAPSHOT-001, ORCH-DELIB-004, UX-MONITOR-006]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: context_snapshot.outdated }
+              data:
+                type: object
+                required: [workflowId, deliberationId, contextSnapshotId, changedEntities]
+                properties:
+                  workflowId: { $ref: '#/components/schemas/Id' }
+                  deliberationId: { $ref: '#/components/schemas/Id' }
+                  contextSnapshotId: { $ref: '#/components/schemas/Id' }
+                  changedEntities:
+                    type: array
+                    items: { $ref: ../components/schemas/orchestration.yaml#/ChangedEntity }
+
     # ---------- library ----------
     referenceStatusChanged:
       name: reference.status_changed
@@ -934,7 +1136,7 @@ components:
       title: Evidence, Claim, Artifact Version đổi trạng thái (Accepted, Rejected, Stale, needs review)
       description: Routing key con `research.object_status_changed.<objectType>`.
       x-producer: research
-      x-consumers: [planning, gateway]
+      x-consumers: [planning, gateway, orchestration]
       x-requirements: [CLAIM-SUPPORT-001, SYN-HUMAN-REVIEW-001, LIB-LIFECYCLE-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:

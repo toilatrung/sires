@@ -1,7 +1,7 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# PRD 12 LaTeX Manuscript Workspace · 17.4 LaTeX build — WF-05 S5–S7 — milestone M6.
+# PRD 12 LaTeX Manuscript Workspace · 17.4 LaTeX build — WF-05 S5–S7.
 # Một Manuscript mỗi project (OQ-022). Mọi thay đổi file tạo Manuscript Revision (MS-REVISION-001).
 
 /projects/{projectId}/manuscript:
@@ -13,7 +13,6 @@
     summary: Manuscript của project
     x-requirements: [MS-INIT-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Manuscript.
@@ -34,7 +33,6 @@
     description: Tạo revision `init`. Đã có Manuscript trả `409`.
     x-requirements: [MS-INIT-001, MS-TEMPLATE-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -56,7 +54,6 @@
     summary: Sửa cấu hình build (file chính, compiler)
     x-requirements: [MS-BUILD-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IfMatch
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -82,7 +79,6 @@
     summary: File explorer
     x-requirements: [MS-EDITOR-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - name: revisionId
         in: query
@@ -114,7 +110,6 @@
     summary: Nội dung file
     x-requirements: [MS-EDITOR-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - name: revisionId
         in: query
@@ -142,7 +137,6 @@
     summary: Lịch sử revision
     x-requirements: [MS-REVISION-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
@@ -167,7 +161,6 @@
       `409 base_revision_mismatch`. Change Proposal đang Proposed trên file bị đổi chuyển Outdated.
     x-requirements: [MS-EDITOR-001, MS-REVISION-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -198,7 +191,6 @@
     summary: Chi tiết revision và diff so với revision cha
     x-requirements: [MS-REVISION-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Revision.
@@ -217,7 +209,6 @@
     description: Writing Agent tạo proposal trong workflow `task_execution` hoặc `manuscript_edit` (MS-AIWRITE-001), không qua endpoint ghi trực tiếp.
     x-requirements: [MS-AIWRITE-001, MS-DIFF-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - name: status
         in: query
@@ -247,7 +238,6 @@
     summary: Diff, claim/evidence dùng và kết quả kiểm tra citation
     x-requirements: [MS-DIFF-001, CLAIM-CITATION-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Change Proposal.
@@ -270,7 +260,6 @@
     x-requirements: [MS-DIFF-001, CLAIM-CITATION-001, CTX-CONSISTENCY-002, DATA-IDEMP-001]
     x-apr: APR-05
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -297,7 +286,6 @@
     x-requirements: [MS-DIFF-001]
     x-apr: APR-05
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -326,7 +314,6 @@
     description: Artifact Version diagram phải Accepted (APR-07). Kết quả là Change Proposal chờ APR-05 (WF-07).
     x-requirements: [MS-DIAGRAM-001, INT-DIAGRAM-003]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
       - $ref: ../components/parameters.yaml#/CsrfToken
@@ -353,7 +340,6 @@
     summary: Bibliography sinh từ Trusted Reference
     x-requirements: [MS-BIB-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Entry BibTeX; entry của reference Revoked bị đánh dấu.
@@ -372,7 +358,6 @@
     description: Chỉ Trusted Reference đang chọn cho project; idempotent theo (manuscriptId, referenceId) (DATA-IDEMP-005).
     x-requirements: [MS-BIB-001, CLAIM-CITATION-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -411,7 +396,6 @@
     description: Bị chặn nếu key vẫn được cite trong bản thảo (KPI-02 = 100%).
     x-requirements: [MS-BIB-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
@@ -427,7 +411,6 @@
     summary: Lịch sử build
     x-requirements: [MS-BUILD-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
@@ -452,7 +435,6 @@
       yêu cầu lặp nhận lại Build đã có (DATA-IDEMP-005-AC01).
     x-requirements: [MS-BUILD-001, MS-BUILDENV-001, INT-LATEX-001]
     x-priority: P0
-    x-milestone: M6
     parameters:
       - $ref: ../components/parameters.yaml#/CsrfToken
     requestBody:
@@ -486,7 +468,6 @@
     summary: Trạng thái và lỗi build (thông báo thân thiện)
     x-requirements: [MS-BUILD-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Build.
@@ -505,7 +486,6 @@
     summary: Log build đầy đủ
     x-requirements: [MS-BUILD-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: Log.
@@ -524,7 +504,6 @@
     summary: PDF preview của build thành công
     x-requirements: [MS-BUILD-001]
     x-priority: P0
-    x-milestone: M6
     responses:
       '200':
         description: PDF.
@@ -545,7 +524,6 @@
       để giao diện đề nghị compile lại (MS-EXPORT-001-AC02).
     x-requirements: [MS-EXPORT-001, NFR-RET-005]
     x-priority: P1
-    x-milestone: M6
     parameters:
       - name: format
         in: query

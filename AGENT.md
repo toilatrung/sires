@@ -16,7 +16,7 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 
 | Việc | Đọc |
 | --- | --- |
-| Yêu cầu sản phẩm, phạm vi, nghiệm thu | [docs/overview/index.html](docs/overview/index.html) (PRD v1.0, 22 section) và [back-log.html](docs/overview/back-log.html) |
+| Yêu cầu sản phẩm, phạm vi, nghiệm thu | [docs/overview/index.html](docs/overview/index.html) (PRD v1.0, 21 section) và [back-log.html](docs/overview/back-log.html) |
 | Kiến trúc, stack, luồng | [docs/architecture/README.md](docs/architecture/README.md) |
 | API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md) |
 | Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/sires-ui-executor`, `agent/skills/sires-ui-review` |
@@ -40,7 +40,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 - **Không tự chốt thay PO.** Câu hỏi mới ghi thành Open Question (`OQ-NNN`); giả định ghi thành `ASM-NN` và nói rõ là giả định.
 - **Không sửa tay file sinh tự động:** `docs/ui-design/pages/`, `docs/ui-design/index.html`, `docs/api-design/dist/`. Sửa nguồn rồi dựng lại (`node docs/ui-design/tools/render.mjs`; bundle OpenAPI theo `docs/api-design/README.md`).
 - **Mã ID không tái sử dụng** (PRD 1.6). Lấy mã tiếp theo từ `docs/docs_context.md`.
-- **Ghi vết sau mỗi thay đổi tài liệu:** nhật ký trong `docs/docs_context.md`; với PRD, cập nhật thêm backlog và, khi là quyết định mới, PRD 21.1.
+- **Ghi vết sau mỗi thay đổi tài liệu:** nhật ký trong `docs/docs_context.md`; với PRD, cập nhật thêm backlog và, khi là quyết định mới, PRD 20.1.
 - **Giấy phép:** file mới chạy `node scripts/docs/add-license.mjs`; kiểm tra bằng `--check`.
 - **Ngôn ngữ:** nội dung tiếng Việt; giữ thuật ngữ tiếng Anh và nhãn đã chốt (glossary ở PRD 1.5).
 
