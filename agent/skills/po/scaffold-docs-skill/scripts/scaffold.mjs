@@ -6,8 +6,8 @@
 
 // Scaffold a spec-docs tree (PRD, backlog, context log, architecture, API, UI design) in a repository,
 // following the layout of the SIRes repo. Never overwrites an existing file unless --force.
-// Usage: node scaffold.mjs --config <spec-docs.config.json> [--root <repo>] [--dry-run] [--force]
-// Config fields: see ../assets/spec-docs.config.example.json and ../references/structure.md.
+// Usage: node scaffold.mjs --config <scaffold-docs.config.json> [--root <repo>] [--dry-run] [--force]
+// Config fields: see ../assets/scaffold-docs.config.example.json and ../references/structure.md.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +20,7 @@ const dryRun = argv.includes('--dry-run');
 const force = argv.includes('--force');
 const ROOT = path.resolve(opt('--root') ?? '.');
 const configPath = opt('--config');
-if (!configPath) { console.error('Thiếu --config <file>. Mẫu: assets/spec-docs.config.example.json'); process.exit(2); }
+if (!configPath) { console.error('Thiếu --config <file>. Mẫu: assets/scaffold-docs.config.example.json'); process.exit(2); }
 
 const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 const fail = (m) => { console.error(`Config lỗi: ${m}`); process.exit(2); };
@@ -437,7 +437,7 @@ Khung — ghi mục tiêu bộ tài liệu, người đọc, và nguồn nội d
 
 ## Phương án đã được PO duyệt
 
-- Cấu trúc \`docs/\` theo spec-docs-skill: PRD ${SECTIONS.length} section HTML tĩnh, backlog, docs_context.md${SETS.has('architecture') ? ', architecture' : ''}${SETS.has('api-design') ? ', api-design' : ''}${SETS.has('ui-design') ? ', ui-design' : ''}.
+- Cấu trúc \`docs/\` theo scaffold-docs-skill: PRD ${SECTIONS.length} section HTML tĩnh, backlog, docs_context.md${SETS.has('architecture') ? ', architecture' : ''}${SETS.has('api-design') ? ', api-design' : ''}${SETS.has('ui-design') ? ', ui-design' : ''}.
 
 ## Quyết định sản phẩm đã xác nhận
 
@@ -475,7 +475,7 @@ Chưa có.
 
 ## Nhật ký
 
-- ${DATE}: Khởi tạo bộ khung tài liệu bằng spec-docs-skill theo yêu cầu của PO.
+- ${DATE}: Khởi tạo bộ khung tài liệu bằng scaffold-docs-skill theo yêu cầu của PO.
 `;
 
 const figuresReadme = (scope, band) => `# Figures — ${P.name} ${scope}

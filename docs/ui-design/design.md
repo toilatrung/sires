@@ -44,7 +44,7 @@ Dùng đúng các giá trị dưới đây; không tự tạo sắc độ trung 
 | `scrim` | `rgba(28,27,24,.32)` | Lớp phủ sau dialog |
 | `shadow-float` | `0 4px 16px rgba(28,27,24,.10)` | Bóng của lớp nổi (menu, popover, dialog); không dùng cho bề mặt tĩnh |
 
-Tên token khớp biến `--sires-<token>` trong `agent/skills/sires-ui-executor/references/tokens.css`.
+Tên token khớp biến `--sires-<token>` trong `agent/skills/dev/sires-ui-executor/references/tokens.css`.
 
 **Dark mode** hiện chỉ có ở component Agent List (`source/AgentList.dc.html`, xem cạnh light ở `AgentListPreview`). Cùng tên token, chỉ đổi giá trị (`[data-theme="dark"]` trong `tokens.css`). Khi làm dark theme cho toàn ứng dụng, mở rộng từ bảng này; không thêm giá trị ngoài bảng.
 
@@ -90,7 +90,7 @@ Viết hoa kiểu câu ở mọi nơi. Không nhãn chữ hoa giãn chữ, khôn
 
 ### 2.4 Chuyển động
 
-Chuyển động phải phục vụ một mục đích: phản hồi thao tác, cho biết vật thể đến từ đâu, hoặc báo trạng thái đã đổi. Không dùng để trang trí. Giá trị lấy từ token của Animate UI, áp dụng ở mức **subtle** (skill ở `agent/skills/vendor/animate-ui`, DEC-51). Bản CSS dùng chung là [`assets/motion.css`](assets/motion.css), là nguồn chuẩn duy nhất. `tools/render.mjs` làm hai việc: chép nguyên văn file này vào khối `<style data-sires-motion>` trong `<helmet>` của mọi `source/*.dc.html`, để nguồn mở trên canvas tự hiển thị đúng chuyển động (thanh indeterminate, skeleton, chấm `data-running`, dialog, alert, tooltip, bấm); rồi bỏ khối đó khi dựng và gắn `motion.css` một lần bằng `<link>` vào mọi trang trong `pages/`. Muốn đổi chuyển động: sửa `motion.css`, chạy lại render; không sửa khối đã chép trong nguồn.
+Chuyển động phải phục vụ một mục đích: phản hồi thao tác, cho biết vật thể đến từ đâu, hoặc báo trạng thái đã đổi. Không dùng để trang trí. Giá trị lấy từ token của Animate UI, áp dụng ở mức **subtle** (skill ở `agent/skills/ui-design/vendor/animate-ui`, DEC-51). Bản CSS dùng chung là [`assets/motion.css`](assets/motion.css), là nguồn chuẩn duy nhất. `tools/render.mjs` làm hai việc: chép nguyên văn file này vào khối `<style data-sires-motion>` trong `<helmet>` của mọi `source/*.dc.html`, để nguồn mở trên canvas tự hiển thị đúng chuyển động (thanh indeterminate, skeleton, chấm `data-running`, dialog, alert, tooltip, bấm); rồi bỏ khối đó khi dựng và gắn `motion.css` một lần bằng `<link>` vào mọi trang trong `pages/`. Muốn đổi chuyển động: sửa `motion.css`, chạy lại render; không sửa khối đã chép trong nguồn.
 
 | Thành phần | Chuyển động | Giá trị |
 | --- | --- | --- |

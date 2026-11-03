@@ -19,7 +19,8 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 | Yêu cầu sản phẩm, phạm vi, nghiệm thu | [docs/overview/index.html](docs/overview/index.html) (PRD v1.0, 21 section) và [back-log.html](docs/overview/back-log.html) |
 | Kiến trúc, stack, luồng | [docs/architecture/README.md](docs/architecture/README.md) |
 | API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md) |
-| Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/sires-ui-executor`, `agent/skills/sires-ui-review` |
+| Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/dev/sires-ui-executor`, `agent/skills/qc/sires-ui-review` |
+| Làm một ticket `TK-NNN` | Skill `agent/skills/dev/spec-read-skill` (đọc ticket, spec, xác định nghiệp vụ, cổng sẵn sàng); spec viết bằng `agent/skills/po/spec-docs-skill` |
 
 PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval-001"`) thay vì đọc cả trang; anchor có dạng `s-16-10`, `req-…`, `oq-096`, `asm-13`.
 
@@ -28,7 +29,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | Đường dẫn | Nội dung |
 | --- | --- |
 | `docs/` | Tài liệu: `overview/` (PRD), `architecture/`, `api-design/`, `ui-design/`; trang vào `docs/index.html` |
-| `agent/skills/` | Skill cho agent: dựng và review UI theo thiết kế đã duyệt (`sires-ui-*`); dựng và giữ bộ tài liệu đặc tả theo mẫu `docs/` này (`spec-docs-skill`) |
+| `agent/skills/` | Skill cho agent, chia theo vai trò ([agent/skills/README.md](agent/skills/README.md)): `po/` (dựng và giữ `docs/`, viết spec ticket), `dev/` (đọc spec trước khi làm, dựng UI), `ui-design/` (prototype UI, Animate UI), `qc/` (review UI) |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html`) |
 | `scripts/agent/`, `scripts/deployment/`, `scripts/development/` | Chưa có nội dung |
 | `.github/CODEOWNERS` | PO là code owner của `docs/` |

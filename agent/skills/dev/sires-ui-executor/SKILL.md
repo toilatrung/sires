@@ -45,7 +45,7 @@ Không dùng màu, bo góc, font, bóng nào ngoài token. Nếu thiếu một g
 
 ## 4. Chuyển động và tác vụ chạy lâu
 
-Luật là design.md §2.4 và §2.4.1. Skill bên thứ ba `agent/skills/vendor/animate-ui` là nguồn kỹ thuật (recipe, cách gắn Motion vào Radix/Base UI/React Aria, kiểm tra), luôn ở mức **subtle**. Khi skill đó và design.md khác nhau, design.md thắng:
+Luật là design.md §2.4 và §2.4.1. Skill bên thứ ba `agent/skills/ui-design/vendor/animate-ui` là nguồn kỹ thuật (recipe, cách gắn Motion vào Radix/Base UI/React Aria, kiểm tra), luôn ở mức **subtle**. Khi skill đó và design.md khác nhau, design.md thắng:
 
 | Animate UI mặc định | SIRes |
 | --- | --- |
@@ -80,7 +80,7 @@ Nếu màn hoặc trạng thái chưa có trong `pages/`:
 ## 6. Trước khi báo xong
 
 1. Chạy kiểm tra token tĩnh của skill review:
-   `node agent/skills/sires-ui-review/scripts/check-ui.mjs <thư mục hoặc file đã sửa>`
+   `node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs <thư mục hoặc file đã sửa>`
    Sửa mọi lỗi `error`; với `warn`, sửa hoặc giải thích. Script cũng cảnh báo chuyển động sai luật (animate width/height, ease-in, spinner, nảy, nghiêng, phóng to khi hover, thiếu reduced-motion).
 2. Nếu có trình duyệt và ứng dụng chạy được: mở màn đã dựng và `docs/ui-design/pages/<Tên>.html` ở cùng khổ (1440 và 390), so sánh bố cục, component, trạng thái, chữ. Với chuyển động: xem khung giữa animation (DevTools Animations ở 10%) và bật reduced motion (`emulateMedia({ reducedMotion: 'reduce' })` hoặc cài đặt hệ điều hành). Nên dùng skill `sires-ui-review` cho bước này.
 3. Báo cáo ngắn: màn đã làm, màn tham chiếu đã dùng, requirement PRD đã đáp ứng, chỗ lệch thiết kế (nếu có) và lý do, phần chưa kiểm chứng.
@@ -88,4 +88,4 @@ Nếu màn hoặc trạng thái chưa có trong `pages/`:
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../../LICENSES.md).

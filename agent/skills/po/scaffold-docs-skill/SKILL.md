@@ -1,16 +1,18 @@
 ---
-name: spec-docs-skill
-description: Set up and maintain a product-spec documentation tree the way the SIRes repo does it — a static-HTML PRD with numbered sections, a review backlog, docs_context.md as the running context log, optional architecture / API (OpenAPI) / UI-design sets, stable ID codes (OQ, DEC, ASM, FIG, requirement IDs) and PO-only write rules R-01–R-07. Use when asked to "cấu hình docs như SIRes", scaffold or bootstrap docs/PRD for a new project, add a documentation set, or when editing such a docs/ tree (adding requirements, open questions, decisions, backlog and log entries) and checking it (duplicate ids, broken links/anchors, next free codes).
+name: scaffold-docs-skill
+description: Set up and maintain a product-spec documentation tree the way the SIRes repo does it — a static-HTML PRD with numbered sections, a review backlog, docs_context.md as the running context log, optional architecture / API (OpenAPI) / UI-design sets, stable ID codes (OQ, DEC, ASM, FIG, requirement IDs) and PO-only write rules R-01–R-07. Use when asked to "cấu hình docs như SIRes", scaffold or bootstrap docs/PRD for a new project, add a documentation set, or when editing such a docs/ tree (adding requirements, open questions, decisions, backlog and log entries) and checking it (duplicate ids, broken links/anchors, next free codes). Formerly named spec-docs-skill. Not for writing a ticket's technical spec (use spec-docs-skill) or for reading a spec before implementing (use spec-read-skill).
 ---
 
-# Spec docs — dựng và giữ bộ tài liệu đặc tả theo mẫu SIRes
+# Scaffold docs — dựng và giữ bộ tài liệu đặc tả theo mẫu SIRes
+
+Tên cũ: `spec-docs-skill` (đổi 03/11/2026). Skill cùng bộ: [spec-docs-skill](../spec-docs-skill/SKILL.md) viết tài liệu kỹ thuật chi tiết của từng ticket `TK-NNN`; [spec-read-skill](../../dev/spec-read-skill/SKILL.md) đọc tài liệu và xác định nghiệp vụ trước khi agent làm.
 
 Skill này làm hai việc:
 
 1. **Dựng khung** bộ `docs/` cho một dự án mới (hoặc bổ sung bộ còn thiếu) theo đúng cấu trúc của repo SIRes.
 2. **Biên soạn và kiểm tra** trong một bộ `docs/` đã dựng: thêm requirement, OQ, DEC, ASM, ghi vết vào backlog và `docs_context.md`, kiểm tra liên kết và mã.
 
-Đường dẫn trong skill tính từ thư mục skill (`agent/skills/spec-docs-skill/`) trừ khi ghi khác.
+Đường dẫn trong skill tính từ thư mục skill (`agent/skills/po/scaffold-docs-skill/`) trừ khi ghi khác.
 
 | File | Dùng khi |
 | --- | --- |
@@ -20,7 +22,7 @@ Skill này làm hai việc:
 | `scripts/scaffold.mjs` | Dựng khung từ file config |
 | `scripts/check-docs.mjs` | Kiểm tra id trùng, liên kết, anchor, thẻ HTML; liệt kê mã tiếp theo |
 | `scripts/update-index.mjs` | Đồng bộ `docs/index.html` với các thư mục trong `docs/` |
-| `assets/spec-docs.config.example.json` | Mẫu config |
+| `assets/scaffold-docs.config.example.json` | Mẫu config |
 | `assets/styles.css` | Stylesheet học thuật dùng chung (nền trắng, serif, không tài nguyên mạng) |
 
 ## Nguyên tắc không đổi
@@ -47,11 +49,11 @@ Nếu PO đưa sẵn outline PRD, giữ nguyên thứ tự mục và đề mục
 
 ### 2. Viết config và dựng
 
-Chép `assets/spec-docs.config.example.json` ra ngoài `docs/` (ví dụ scratchpad), sửa theo đầu vào, rồi chạy thử trước:
+Chép `assets/scaffold-docs.config.example.json` ra ngoài `docs/` (ví dụ scratchpad), sửa theo đầu vào, rồi chạy thử trước:
 
 ```
-node agent/skills/spec-docs-skill/scripts/scaffold.mjs --config <config.json> --root <repo> --dry-run
-node agent/skills/spec-docs-skill/scripts/scaffold.mjs --config <config.json> --root <repo>
+node agent/skills/po/scaffold-docs-skill/scripts/scaffold.mjs --config <config.json> --root <repo> --dry-run
+node agent/skills/po/scaffold-docs-skill/scripts/scaffold.mjs --config <config.json> --root <repo>
 ```
 
 - Script **không ghi đè** file đã có (báo `= giữ`). Chỉ dùng `--force` khi PO yêu cầu thay file cụ thể; xem trước nội dung file sẽ bị ghi đè.
@@ -88,4 +90,4 @@ Nói thẳng: đã tạo/sửa file nào, căn cứ PO nào, mã nào đã cấp
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../../LICENSES.md).
