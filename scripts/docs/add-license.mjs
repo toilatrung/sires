@@ -22,8 +22,8 @@ const LINES = [
   'Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.',
   `SPDX-License-Identifier: ${ID} — see LICENSES.md`,
 ];
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', 'venv', '__pycache__', '.next', '.turbo', 'build', 'target', 'coverage', 'vendor']);
-const SKIP_FILES = new Set(['LICENSES.md']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', 'venv', '__pycache__', '.next', '.turbo', 'build', 'target', 'coverage', 'vendor', 'dist', '.nx', 'others']);
+const SKIP_FILES = new Set(['LICENSES.md', 'pnpm-lock.yaml']); // pnpm rewrites its lock file on every install
 const check = process.argv.includes('--check');
 
 const rel = (file) => path.relative(path.dirname(file), path.join(ROOT, 'LICENSES.md')).split(path.sep).join('/');

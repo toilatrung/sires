@@ -1,0 +1,57 @@
+{
+  "name": "@sires/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Types generated from docs/api-design (OpenAPI public and internal)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "openapi-typescript": "catalog:",
+    "typescript": "catalog:"
+  },
+  "nx": {
+    "tags": [
+      "type:lib",
+      "lang:ts",
+      "scope:contracts"
+    ],
+    "targets": {
+      "generate": {
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/docs/api-design/**/*.yaml",
+          "{projectRoot}/scripts/**/*"
+        ],
+        "outputs": [
+          "{projectRoot}/src/generated"
+        ]
+      },
+      "build": {
+        "dependsOn": [
+          "generate"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "generate"
+        ]
+      }
+    }
+  }
+}
