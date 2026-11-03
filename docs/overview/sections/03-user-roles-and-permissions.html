@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 03</p><h1>3. User Roles and Permissions</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 2 đã duyệt, mục 20.1</p><div class="note"><p>Mục này xác định ai, hoặc thành phần nào, được làm gì với tài nguyên nào. Các vai trò lấy từ outline (<strong>Confirmed</strong>). Quyền chi tiết và permission matrix do biên soạn suy ra từ các nguyên tắc ở <a href="01-document-overview.html#s-1-2">1.2</a> và phạm vi ở <a href="02-product-scope.html">mục 2</a>, đã được Product Owner duyệt trong phiếu chốt PC-01 ngày 31/10/2026 (<strong>Confirmed</strong>). Các câu hỏi của mục đã đóng, xem <a href="#s-3-6">3.6</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-3-0">Tổng quan các actor</a></li>
+<p class="eyebrow">Product Requirements Document · Section 03</p><h1>3. User Roles and Permissions</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01); bổ sung 01/11/2026: Analysis Agent và phiên thảo luận (DEC-47, DEC-48); đồng bộ sau rà soát 01/11/2026 (quyền của Orchestrator trong phiên thảo luận ở 3.2, danh sách agent ở 3.3) · Cơ sở: outline đã chốt, mục 2 đã duyệt, mục 20.1</p><div class="note"><p>Mục này xác định ai, hoặc thành phần nào, được làm gì với tài nguyên nào. Các vai trò lấy từ outline (<strong>Confirmed</strong>). Quyền chi tiết và permission matrix do biên soạn suy ra từ các nguyên tắc ở <a href="01-document-overview.html#s-1-2">1.2</a> và phạm vi ở <a href="02-product-scope.html">mục 2</a>, đã được Product Owner duyệt trong phiếu chốt PC-01 ngày 31/10/2026 (<strong>Confirmed</strong>). Các câu hỏi của mục đã đóng, xem <a href="#s-3-6">3.6</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-3-0">Tổng quan các actor</a></li>
 <li><a href="#s-3-1">3.1. Researcher</a></li>
 <li><a href="#s-3-2">3.2. Orchestrator Agent</a></li>
 <li><a href="#s-3-3">3.3. Specialist Agents</a></li>
@@ -89,6 +89,7 @@
 <li>Yêu cầu System chạy readiness check và trình kết quả cho Researcher.</li>
 <li>Tạo Interactive Agent Prompt để xin quyết định hoặc thông tin.</li>
 <li>Tổng hợp kết quả của Specialist Agent; ghi nhận bất đồng, giả định và rủi ro.</li>
+<li>Đề xuất mở phiên thảo luận với Analysis Agent cho vấn đề thuộc danh sách ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-7">8.7</a>; phiên chỉ chạy sau khi Researcher xác nhận, trừ bước phân tích của 6.3 trong workflow <code>plan_proposal</code> (ORCH-DELIB-001; OQ-099, DEC-48). Trong phiên, Orchestrator lập Problem Brief và giao góc nhìn cho từng instance (ORCH-DELIB-005), ghi lập trường của mình lên Deliberation Board, rồi viết bản tổng hợp để chuyển Researcher quyết định (ORCH-DELIB-002–004). Context Snapshot do System tạo khi mở phiên và Deliberation Record do System lưu từ bản tổng hợp (14.9). Bổ sung 01/11/2026 (DEC-47, DEC-48).</li>
 <li>Thử lại, tạm dừng một bước trong giới hạn chính sách ở <a href="08-ai-assistant-and-multi-agent-orchestration.html#s-8-5">8.5</a>: với lỗi tạm thời, tối đa 2 Agent Run mới, sau khi lớp adapter đã gọi lại tối đa 3 lần trong cùng Agent Run (<a href="17-integrations-and-external-dependencies.html#s-17-1">17.1</a>); lỗi cố định không thử lại. Chốt (biên soạn 30/10/2026; PO duyệt 31/10/2026, PC-01) — OQ-017.</li>
 </ul>
 <h3>Không được phép</h3>
@@ -101,7 +102,7 @@
 </ul>
 
 <h2 id="s-3-3">3.3. Specialist Agents</h2>
-<p class="status">Confirmed (outline): discovery, reference processing, evidence retrieval, synthesis, writing, verification và diagram generation. Tên và phạm vi từng agent: theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a> đã duyệt. Quyền đọc và ghi bên dưới: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
+<p class="status">Confirmed (outline): discovery, reference processing, evidence retrieval, synthesis, writing, verification và diagram generation. Analysis Agent (Specialist Agent thứ tám, chạy đúng hai instance A, B trong phiên thảo luận): Confirmed — PO chốt 01/11/2026 (DEC-47, DEC-48). Tên và phạm vi từng agent: theo <a href="02-product-scope.html#s-2-1-agents">SCOPE-14</a> đã duyệt. Quyền đọc và ghi bên dưới: Confirmed — PO duyệt 31/10/2026 (PC-01).</p>
 <h3>Quy tắc chung</h3>
 <ul>
 <li>Specialist Agent chỉ chạy khi Orchestrator giao việc, trong phạm vi một workflow, thường gắn với một Task.</li>

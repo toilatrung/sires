@@ -12,7 +12,7 @@ Evidence:
     - $ref: common.yaml#/EntityMeta
     - type: object
       description: Luôn tham chiếu một Trusted Reference và vị trí cụ thể; không có evidence “không nguồn” (5.6).
-      required: [referenceId, chunkId, quote, location, status]
+      required: [projectId, referenceId, chunkId, quote, location, status]
       properties:
         referenceId: { $ref: common.yaml#/Id }
         chunkId: { $ref: common.yaml#/Id }
@@ -30,6 +30,11 @@ Evidence:
         relevanceScore: { type: number }
         status: { $ref: '#/EvidenceStatus' }
         statusReason: { type: string }
+        provenance:
+          description: Provenance (18.3, DATA-PROV-001) — có khi Evidence do agent tạo (`createdByAgentRunId`); `null` khi Researcher tạo.
+          oneOf:
+            - $ref: common.yaml#/Provenance
+            - type: 'null'
 
 EvidenceInContext:
   description: Evidence kèm đoạn văn xung quanh trong nguồn (EVID-INSPECTOR-001).

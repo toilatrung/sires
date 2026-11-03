@@ -13,12 +13,182 @@
 <body>
 <x-dc>
 <helmet>
+<style data-sires-motion>
+/* Bản chép từ assets/motion.css do tools/render.mjs tạo; sửa motion.css rồi chạy lại render. */
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+
+/* Chuyển động của SIRes UI (design.md mục 2.4, DEC-51).
+   Port sang CSS thuần từ token và recipe của Animate UI, mức subtle:
+   agent/skills/vendor/animate-ui/references/tokens.md, recipes/press.md, modal.md, overlay.md, disclosure.md.
+   Đây là nguồn chuẩn. tools/render.mjs (1) gắn file này vào mọi trang trong pages/ bằng <link>,
+   (2) chép nguyên văn vào khối <style data-sires-motion> trong helmet của mỗi source/*.dc.html
+   để canvas cũng hiển thị đúng chuyển động. Sửa ở đây rồi chạy lại render; không sửa khối đã chép. */
+
+:root {
+  /* Đường cong (tokens.md § Curves) */
+  --sires-ease-out: cubic-bezier(0.23, 1, 0.32, 1);    /* ease.out: vào hoặc rời */
+  --sires-ease-soft: cubic-bezier(0.215, 0.61, 0.355, 1); /* ease.soft: dialog, menu, disclosure */
+  --sires-ease-color: cubic-bezier(0.25, 0.1, 0.25, 1);  /* ease.color: đổi màu */
+
+  /* Thời lượng (tokens.md § Tweens) */
+  --sires-dur-press: 160ms;    /* thay cho spring.press (~120ms tới nơi) */
+  --sires-dur-color: 200ms;    /* transition.color */
+  --sires-dur-menu: 220ms;     /* transition.menu, dùng cho tooltip */
+  --sires-dur-reveal: 300ms;   /* transition.reveal */
+  --sires-dur-disclose: 350ms; /* transition.disclosure */
+  --sires-dur-dialog: 400ms;   /* transition.dialogFade */
+
+  /* Điểm bắt đầu (tokens.md § Scales, nhẹ hơn một bậc theo feel.md "subtler") */
+  --sires-press: 0.97;         /* scale.press */
+  --sires-dialog-from: scale(0.9);
+  --sires-tooltip-from: scale(0.85);
+  --sires-reveal-from: translateY(4px);
+  --sires-disclose-from: translateY(-4px);
+
+  /* Tác vụ chạy lâu (design.md 2.4.1) */
+  --sires-dur-progress: 550ms; /* spring.progress: không vượt, ổn định ~550ms */
+  --sires-dur-pulse: 1.6s;     /* chấm Đang chạy và skeleton */
+  --sires-dur-sweep: 1.4s;     /* dải chạy của thanh không xác định */
+  --sires-progress-from: scaleX(0);
+}
+
+/* Giảm chuyển động: bỏ mọi dịch chuyển và co giãn, giữ hiệu ứng mờ dần. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sires-press: 1;
+    --sires-dialog-from: none;
+    --sires-tooltip-from: none;
+    --sires-reveal-from: none;
+    --sires-disclose-from: none;
+    --sires-progress-from: none;
+  }
+}
+
+/* Đổi màu khi hover, focus, chọn: chuyển mượt thay vì nhảy. */
+a, button, summary, input, select, textarea,
+[role="tab"], [role="radio"], [role="switch"] {
+  transition:
+    color var(--sires-dur-color) var(--sires-ease-color),
+    background-color var(--sires-dur-color) var(--sires-ease-color),
+    border-color var(--sires-dur-color) var(--sires-ease-color),
+    outline-color var(--sires-dur-color) var(--sires-ease-color),
+    transform var(--sires-dur-press) var(--sires-ease-out);
+}
+
+/* Bấm: lún 0.97, không phóng to khi hover (recipes/press.md). */
+button:not(:disabled):active,
+[role="tab"]:active, [role="radio"]:active, [role="switch"]:active {
+  transform: scale(var(--sires-press));
+}
+
+/* Dialog: hiện dần và co từ 0.9, giữ nguyên tâm (recipes/modal.md, bỏ góc nghiêng). */
+[role="dialog"] {
+  animation: sires-dialog-in var(--sires-dur-dialog) var(--sires-ease-soft) both;
+}
+@keyframes sires-dialog-in {
+  from { opacity: 0; transform: var(--sires-dialog-from); }
+}
+
+/* Tooltip, popover: mọc từ phía nơi gọi nó (recipes/overlay.md). Phía ghi bằng data-side:
+   bottom (mặc định, hiện dưới nơi gọi), top, left, right; căn theo mép đầu của nơi gọi. */
+[role="tooltip"], [data-popover] {
+  transform-origin: top left;
+  animation: sires-tooltip-in var(--sires-dur-menu) var(--sires-ease-out) both;
+}
+[data-side="top"]:is([role="tooltip"], [data-popover]) { transform-origin: bottom left; }
+[data-side="left"]:is([role="tooltip"], [data-popover]) { transform-origin: top right; }
+[data-side="right"]:is([role="tooltip"], [data-popover]) { transform-origin: top left; }
+@keyframes sires-tooltip-in {
+  from { opacity: 0; transform: var(--sires-tooltip-from); }
+}
+
+/* Thông báo lỗi: hiện dần, nhích lên 4px (transition.reveal). */
+[role="alert"] {
+  animation: sires-reveal-in var(--sires-dur-reveal) var(--sires-ease-out) both;
+}
+@keyframes sires-reveal-in {
+  from { opacity: 0; transform: var(--sires-reveal-from); }
+}
+
+/* <details>: nội dung mở ra mượt (recipes/disclosure.md, dạng mờ dần, không đổi chiều cao). */
+details[open] > :not(summary) {
+  animation: sires-disclose-in var(--sires-dur-disclose) var(--sires-ease-soft) both;
+}
+@keyframes sires-disclose-in {
+  from { opacity: 0; transform: var(--sires-disclose-from); }
+}
+
+/* ---- Tác vụ chạy lâu: Running, tiến độ, đang tải (UX-STATE-001) ---- */
+
+/* Chấm 7px nhấp nháy trước nhãn của mọi chip đang chạy (Running, In Progress, Indexing, Đang build…).
+   Gắn bằng thuộc tính data-running trên chip; chữ trạng thái vẫn là tín hiệu chính. */
+@keyframes sires-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+[data-running] { gap: 5px; }
+[data-running]::before {
+  content: "";
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--sires-running-dot, #0277DD); /* nền tối: --sires-running-dot: #3DA5FF */
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Thanh tiến độ biết số bước: phần tô (data-progress) trượt từ 0 tới giá trị, chỉ dùng transform. */
+[data-progress]:not([data-progress="indeterminate"]) {
+  transform-origin: left center;
+  animation: sires-progress-in var(--sires-dur-progress) var(--sires-ease-out) both;
+}
+@keyframes sires-progress-in {
+  from { transform: var(--sires-progress-from); }
+}
+
+/* Thanh không xác định thời lượng (build, tìm kiếm): một dải 30% chạy lặp tuyến tính trên rãnh. */
+[data-progress="indeterminate"] {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  background: #DBD3C7;
+  border-radius: 4px;
+}
+[data-progress="indeterminate"]::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: #0277DD;
+  border-radius: 4px;
+  animation: sires-sweep var(--sires-dur-sweep) linear infinite;
+}
+@keyframes sires-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(333%); }
+}
+
+/* Skeleton khi tải danh sách: khối nền control mờ dần lặp lại, không shimmer. */
+[data-skeleton] {
+  display: block;
+  background: #E5DED5;
+  border-radius: 4px;
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Giảm chuyển động: mọi vòng lặp đứng yên; thanh không xác định hiện cả rãnh màu nhạt thay vì dải chạy. */
+@media (prefers-reduced-motion: reduce) {
+  [data-running]::before,
+  [data-skeleton],
+  [style*="sires-pulse"] { animation: none !important; }
+  [data-progress="indeterminate"]::after { animation: none; width: 100%; opacity: .35; }
+}
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#F6F2EE}
 a{color:#025FAC}a:hover{color:#1C1B18}
-@keyframes sires-pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@media (prefers-reduced-motion: reduce){[style*="sires-pulse"]{animation:none!important}}
 </style>
 </helmet>
 <div style="min-height: 1100px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
@@ -31,15 +201,22 @@ a{color:#025FAC}a:hover{color:#1C1B18}
           <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
             <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">T-2.3 So sánh phương pháp đo</h1>
             <span data-running="{{wfRun}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{wfB}}; color: {{wfFg}}; background: {{wfBg}}; font-size: 12px; font-weight: 600"><sc-if value="{{wfNeed}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{wfState}}</span>
-            <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">14:05 đã chạy</span>
+            <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{elapsed}}</span>
           </div>
-          <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">wf-52d · task_execution · baseline v3 · kích hoạt bởi Nguyễn Thanh 09:37</span>
+          <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">wf-52d · task_execution · baseline v3 · kích hoạt bởi Nguyễn Thanh 09:37 · <a href="ProjectActivity.dc.html">Tất cả workflow của project</a></span>
         </div>
         <div style="display: flex; gap: 8px">
-          <sc-if value="{{notInterrupted}}" hint-placeholder-val="{{ true }}"><button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tạm dừng</button></sc-if>
-          <button style="height: 38px; padding: 0 14px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Hủy workflow</button>
+          <sc-if value="{{canPause}}" hint-placeholder-val="{{ true }}"><button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tạm dừng</button></sc-if>
+          <sc-if value="{{canCancel}}" hint-placeholder-val="{{ true }}"><button style="height: 38px; padding: 0 14px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Hủy workflow</button></sc-if>
         </div>
       </div>
+
+      <sc-if value="{{isCancelled}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; background: #F6F2EE; border: 1.5px solid #4D4A44; border-radius: 8px; font-size: 14px; line-height: 1.5">
+          <strong style="font-weight: 600">Workflow Cancelled lúc 10:12 · Nguyễn Thanh</strong>
+          <span style="color: #4D4A44">Phiên thảo luận dl-3c1 chuyển Cancelled; entry đã ghi được giữ để xem lại. T-2.3 về Ready; đầu ra bước 1–3 giữ ở dạng Draft.</span>
+        </div>
+      </sc-if>
 
       <sc-if value="{{isInterrupted}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="rc" style="background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
@@ -77,13 +254,43 @@ a{color:#025FAC}a:hover{color:#1C1B18}
       </ol>
       </sc-if>
 
+      <sc-if value="{{isSteps}}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Danh sách bước" style="display: flex; flex-direction: column; gap: 8px">
+          <div style="overflow-x: auto; position: relative; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
+            <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px; line-height: 1.45">
+              <thead>
+                <tr style="text-align: left; font-size: 12px; color: #4D4A44">
+                  <th scope="col" style="padding: 10px 12px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Bước</th>
+                  <th scope="col" style="padding: 10px 12px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Agent</th>
+                  <th scope="col" style="padding: 10px 12px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Trạng thái</th>
+                  <th scope="col" style="padding: 10px 12px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Đầu vào</th>
+                  <th scope="col" style="padding: 10px 12px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Đầu ra</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+                  <tr style="vertical-align: top">
+                    <th scope="row" style="padding: 12px; border-bottom: 1px solid #DBD3C7; text-align: left; font-weight: 600"><span style="font-variant-numeric: tabular-nums; color: #4D4A44; font-weight: 500">{{s.n}}/5</span> {{s.title}}<span style="display: block; font-size: 12px; font-weight: 400; color: #4D4A44">{{s.meta}}</span></th>
+                    <td style="padding: 12px; border-bottom: 1px solid #DBD3C7">{{s.agent}}</td>
+                    <td style="padding: 12px; border-bottom: 1px solid #DBD3C7"><span data-running="{{s.run}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{s.b}}; color: {{s.fg}}; background: {{s.bg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><sc-if value="{{s.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{s.state}}</span></td>
+                    <td style="padding: 12px; border-bottom: 1px solid #DBD3C7"><sc-for list="{{s.inputs}}" as="l" hint-placeholder-count="2"><a href="{{l.href}}" style="display: block">{{l.label}}</a></sc-for><sc-if value="{{s.noInput}}" hint-placeholder-val="{{ false }}"><span style="color: #4D4A44">—</span></sc-if></td>
+                    <td style="padding: 12px; border-bottom: 1px solid #DBD3C7"><sc-for list="{{s.outputs}}" as="l" hint-placeholder-count="1"><a href="{{l.href}}" style="display: block">{{l.label}}</a></sc-for><sc-if value="{{s.noOutput}}" hint-placeholder-val="{{ false }}"><span style="color: #4D4A44">{{s.outNote}}</span></sc-if></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <span style="font-size: 12px; color: #4D4A44">Đầu vào và đầu ra là liên kết tới entity theo version (18.1 WorkflowStep). Agent Run của bước ghi dưới tên bước.</span>
+        </section>
+      </sc-if>
+
       <sc-if value="{{isDelib}}" hint-placeholder-val="{{ false }}">
         <section aria-labelledby="dl-h" style="display: flex; flex-direction: column; gap: 16px">
           <div style="display: flex; flex-direction: column; gap: 6px">
             <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
               <h2 id="dl-h" style="margin: 0; font-size: 18px; font-weight: 600">Phiên thảo luận dl-3c1</h2>
               <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 11px">methodology</span>
-              <span data-running="{{d.isRun}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{d.chipB}}; background: {{d.chipBg}}; font-size: 12px; font-weight: 600">{{d.status}}</span>
+              <span data-running="{{d.isRun}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{d.chipB}}; background: {{d.chipBg}}; color: {{d.chipFg}}; font-size: 12px; font-weight: 600">{{d.status}}</span>
               <span style="font-size: 13px; color: #4D4A44">{{d.roundNote}}</span>
             </div>
             <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">bước 4/5 · deliberation · mở 10:02 · Context Snapshot cs-2a (7 entity) · tối đa 2 vòng sau Vòng 1</span>
@@ -126,7 +333,17 @@ a{color:#025FAC}a:hover{color:#1C1B18}
                     <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3">
                       <sc-if value="{{c.hidden}}" hint-placeholder-val="{{ false }}">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 96px; padding: 12px; border: 1.5px dashed #C7C7C7; border-radius: 8px; color: #4D4A44; font-size: 13px; text-align: center">
-                          <span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: #0277DD; animation: sires-pulse 1.6s ease-in-out infinite"></span>Đang viết, mở khi vòng đóng
+                          <span data-running style="display: inline-flex; align-items: center">Đang viết, mở khi vòng đóng</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{c.missing}}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; align-items: center; justify-content: center; min-height: 96px; padding: 12px; background: #F6F2EE; border: 1.5px dashed #C7C7C7; border-radius: 8px; color: #4D4A44; font-size: 13px; line-height: 1.5; text-align: center">{{c.msg}}</div>
+                      </sc-if>
+                      <sc-if value="{{c.failed}}" hint-placeholder-val="{{ false }}">
+                        <div role="note" style="display: flex; flex-direction: column; gap: 6px; min-height: 96px; box-sizing: border-box; padding: 12px; background: #FFF1F2; border: 1.5px solid #BE123C; border-radius: 8px; font-size: 13px; line-height: 1.5">
+                          <strong style="font-weight: 600; color: #9F1239">Không có lập trường</strong>
+                          <span>{{c.msg}}</span>
+                          <a href="#ar" style="font-size: 12px">{{c.link}}</a>
                         </div>
                       </sc-if>
                       <sc-if value="{{c.shown}}" hint-placeholder-val="{{ true }}">
@@ -200,8 +417,29 @@ a{color:#025FAC}a:hover{color:#1C1B18}
               </div>
             </section>
           </sc-if>
-          <sc-if value="{{d.notDone}}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{d.failed}}" hint-placeholder-val="{{ false }}">
+            <article aria-labelledby="fp-h" style="border: 1.5px solid #0277DD; border-radius: 8px; padding: 16px 18px; background: #FCF9F5; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px">
+                <span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 4px; background: #EAF4FE; color: #025FAC; border: 1px solid #80B9EE; font-weight: 600"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>Interactive Agent Prompt · choice · Open</span>
+                <span style="color: #4D4A44">Orchestrator · 10:06 · bước 4/5</span>
+              </div>
+              <h3 id="fp-h" style="margin: 0; font-size: 16px; font-weight: 600">Phiên thảo luận dl-3c1 Failed: chỉ còn lập trường của Analysis Agent A. Tiếp tục bước 4 thế nào?</h3>
+              <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+                <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Phương án</legend>
+                <label style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px; line-height: 1.45"><input type="radio" name="df" style="margin-top: 3px"><span><strong>Chạy lại phiên</strong><br><span style="color: #4D4A44; font-size: 13px">Hệ quả: phiên mới trên Context Snapshot mới, khoảng 7 Agent Run tính trên API key của bạn. Lập trường đã ghi của phiên này được giữ để xem lại. Nên đổi model của Analysis Agent B hoặc chờ provider ổn định trước.</span></span></label>
+                <label style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px; line-height: 1.45"><input type="radio" name="df" style="margin-top: 3px"><span><strong>Tiếp tục không thảo luận</strong><br><span style="color: #4D4A44; font-size: 13px">Hệ quả: Orchestrator tự chọn khung so sánh cho bước 4; kết quả mang nhãn “không qua thảo luận”.</span></span></label>
+              </fieldset>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Xác nhận</button>
+                <span style="font-size: 13px; color: #4D4A44">Chọn một phương án để xác nhận. Cũng trả lời được trong <a href="Chat.dc.html">Project AI Chat</a>.</span>
+              </div>
+            </article>
+          </sc-if>
+          <sc-if value="{{d.pending}}" hint-placeholder-val="{{ true }}">
             <p style="margin: 0; font-size: 13px; color: #4D4A44">Bản tổng hợp, bảng đánh đổi và prompt chọn phương án xuất hiện khi vòng cuối đóng.</p>
+          </sc-if>
+          <sc-if value="{{d.cancelled}}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: 13px; color: #4D4A44">Phiên Cancelled trước khi tổng hợp: không có bản tổng hợp, Deliberation Record hay prompt chọn phương án.</p>
           </sc-if>
         </section>
       </sc-if>
@@ -216,7 +454,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
       <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
         <h2 id="ar" style="margin: 0; font-size: 17px; font-weight: 600">{{run.agent}}</h2>
         <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{run.id}}</span>
-        <span data-running="{{run.isRun}}" style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{run.chipB}}; background: {{run.chipBg}}; font-size: 12px; font-weight: 600">{{run.status}}</span>
+        <span data-running="{{run.isRun}}" style="align-self: flex-start; display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{run.chipB}}; background: {{run.chipBg}}; color: {{run.chipFg}}; font-size: 12px; font-weight: 600">{{run.status}}</span>
       </div>
       <dl style="margin: 0; padding: 14px 20px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 9px 12px; font-size: 13px; line-height: 1.45; border-bottom: 1px solid #DBD3C7">
         <dt style="color: #4D4A44">Provider Connection</dt><dd style="margin: 0">{{run.conn}}</dd>
@@ -239,23 +477,36 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","waiting","interrupted"],"default":"waiting"},"view":{"editor":"enum","options":["timeline","deliberation-running","deliberation-done"],"default":"timeline"},"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["running","waiting","interrupted"],"default":"waiting"},"view":{"editor":"enum","options":["timeline","steps","deliberation-running","deliberation-done","deliberation-failed","deliberation-cancelled"],"default":"timeline"},"debug":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1100}}'>
 class Component extends DCLogic {
   renderVals() {
     const view = this.props.view ?? 'timeline';
-    const isDelib = view !== 'timeline';
+    const isDelib = view.startsWith('deliberation');
     const dDone = view === 'deliberation-done';
-    // The deliberation views show step 4 of wf-52d, so the workflow is Running there.
-    const wfKey = isDelib ? 'running' : (this.props.state ?? 'waiting');
+    const dFail = view === 'deliberation-failed';
+    const dCanc = view === 'deliberation-cancelled';
+    // Workflow state per view. Deliberation views show step 4 of wf-52d: Running while the session runs or after it is done;
+    // Waiting for User when the session failed and the Orchestrator asks (ORCH-DELIB-002); Cancelled when the Researcher cancelled.
+    const wfKey = view === 'deliberation-running' || dDone ? 'running' : dFail ? 'waiting' : dCanc ? 'cancelled' : (this.props.state ?? 'waiting');
     const intr = wfKey === 'interrupted';
     const run = wfKey === 'running';
+    const canc = wfKey === 'cancelled';
     const dbg = !!this.props.debug;
+    // Elapsed time since the workflow started (09:37:02), at the moment each variant shows. Same clock as Agent Activity.
+    const elapsed = dCanc ? 'Cancelled 10:12 · đã chạy 34:58'
+      : dFail ? 'đã chạy 31:00 · chờ bạn từ 10:06'
+      : dDone ? 'đã chạy 54:38'
+      : isDelib ? 'đã chạy 30:35'
+      : intr ? 'dừng 09:58 · đã chạy 21:29'
+      : run ? 'đã chạy 09:19'
+      : 'đã chạy 15:12 · chờ bạn từ 09:42';
     const ev = (time, actor, text, kind, link, href) => ({ time, actor, text, hasLink: !!link, link: link || '', href: href || '#', dot: kind === 'need' ? '#025FAC' : kind === 'warn' ? '#9A3412' : '#FFFFFF', dotB: kind === 'need' ? '#025FAC' : kind === 'warn' ? '#9A3412' : '#4D4A44' });
     const events = [
       ev('09:37:02', 'Nguyễn Thanh', 'xác nhận thực thi T-2.3 (APR-02) → Queued'),
       ev('09:37:05', 'Orchestrator', 'tạo workflow, lập 5 bước; giao bước 1 cho Discovery Agent'),
       ev('09:38:40', 'Discovery Agent', 'lần thử 1 lỗi rate_limited; thử lại sau 20 giây', 'warn'),
       ev('09:40:32', 'Discovery Agent', 'hoàn tất bước 1 — 18 discovered result', null, 'Agent Run ar-7f3a', 'Workflow.dc.html'),
+      ev('09:40:34', 'Orchestrator', 'giao bước 2 (lọc theo phạm vi năm) cho Discovery Agent'),
       ev('09:42:10', 'Discovery Agent', 'tạo Interactive Agent Prompt: giới hạn năm xuất bản', 'need', 'Trả lời trong chat', 'Chat.dc.html'),
       ev('09:42:10', 'System', 'workflow → Waiting for User')
     ];
@@ -267,64 +518,91 @@ class Component extends DCLogic {
     if (intr) events.push(ev('09:58:31', 'System', 'mất kết nối hạ tầng ở bước 3 → Interrupted', 'warn'));
     const chip = intr ? ['solid #9A3412', '#9A3412', '#FCF9F5', 'Interrupted', false]
       : run ? ['solid #0277DD', '#1C1B18', '#EAF4FE', 'Running', false]
+      : canc ? ['solid #DBD3C7', '#4D4A44', '#F6F2EE', 'Cancelled', false]
       : ['solid #80B9EE', '#025FAC', '#EAF4FE', 'Waiting for User', true];
-    const tabs = [['Dòng thời gian', !isDelib], ['Danh sách bước', false], ['Thảo luận', isDelib]].map(([label, on]) => ({
+    const isSteps = view === 'steps';
+    const tabs = [['Dòng thời gian', view === 'timeline'], ['Danh sách bước', isSteps], ['Thảo luận', isDelib]].map(([label, on]) => ({
       label, sel: on ? 'true' : 'false', line: on ? '#1C1B18' : 'transparent', w: on ? 600 : 500, fg: on ? '#1C1B18' : '#4D4A44'
     }));
+
+    // Step list (UX-MONITOR-002): StepStatus Pending, Running, Waiting for User, Succeeded, Failed, Cancelled (18.2).
+    const SS = { 'Succeeded': ['solid #1C1B18', '#1C1B18', '#FCF9F5'], 'Waiting for User': ['solid #80B9EE', '#025FAC', '#EAF4FE'], 'Running': ['solid #0277DD', '#1C1B18', '#EAF4FE'], 'Pending': ['solid #DBD3C7', '#4D4A44', '#F6F2EE'] };
+    const L = (label, href) => ({ label, href });
+    const step = (n, title, meta, agent, state, inputs, outputs, outNote) => ({ n, title, meta, agent, state, b: SS[state][0], fg: SS[state][1], bg: SS[state][2], need: state === 'Waiting for User', run: state === 'Running',
+      inputs, outputs, noInput: !inputs.length, noOutput: !outputs.length, outNote: outNote || '—' });
+    const steps = [
+      step(1, 'Tìm tài liệu trên Google Scholar', 'Agent Run ar-7f3a · lần 2/3 · xong 09:40', 'Discovery Agent', 'Succeeded', [L('Research context v4', 'Overview.dc.html'), L('T-2.3 định nghĩa v3', 'Plan.dc.html')], [L('18 discovered result', 'Discover.dc.html')]),
+      step(2, 'Lọc theo phạm vi năm xuất bản', 'Agent Run ar-7f52 · lần 1/3 · chờ từ 09:42', 'Discovery Agent', 'Waiting for User', [L('18 discovered result (bước 1)', 'Discover.dc.html')], [L('Prompt pr-118 · choice · Open', 'Chat.dc.html')]),
+      step(3, 'Truy xuất evidence cho từng phương pháp đo', 'chưa có Agent Run', 'Evidence Retrieval Agent', 'Pending', [], [], 'chờ bước 2'),
+      step(4, 'Chọn khung so sánh (có thể mở thảo luận)', 'chưa có Agent Run', 'Orchestrator · Analysis Agent A, B', 'Pending', [], [], 'chờ bước 3'),
+      step(5, 'Lập ma trận so sánh phương pháp', 'chưa có Agent Run', 'Synthesis Agent', 'Pending', [], [], 'chờ bước 4')
+    ];
 
     // Deliberation dl-3c1 (step 4/5): Orchestrator + Analysis Agent A, B (8.7, UX-MONITOR-006).
     const pt = (anchor, tag, text, ref, assume) => ({ anchor, tag, text, tagB: '#DBD3C7', tagFg: '#1C1B18', hasTarget: false, assume: !!assume, hasRef: !!ref, ref: ref || '' });
     const STANCE = { agree: ['Đồng ý', '#4D4A44', '#1C1B18'], disagree: ['Phản đối', '#9A3412', '#9A3412'], info: ['Bổ sung thông tin', '#80B9EE', '#025FAC'], supersede: ['Đổi lập trường', '#1C1B18', '#1C1B18'] };
     const cr = (stance, target, text, ref) => ({ anchor: null, tag: STANCE[stance][0], tagB: STANCE[stance][1], tagFg: STANCE[stance][2], hasTarget: !!target, target: target || '', targetHref: target ? '#pt-' + target.replace('·', '-').toLowerCase() : '#', text, assume: false, hasRef: !!ref, ref: ref || '' });
-    const cell = (kind, option, lines, foot) => ({ hidden: false, shown: true, kind, hasOption: !!option, option: option || '', lines, foot });
-    const hidden = { hidden: true, shown: false };
-    const round1 = [
-      cell('Lập trường · position', 'So sánh theo 3 trục: loại tác vụ, cách gán nhãn, khả năng tái lập', [
-        pt('pt-o-o1', 'O1', 'Ba trục phủ cả tiêu chí tái lập và tiêu chí đủ evidence.', 'E-09, E-12'),
-        pt('pt-o-o2', 'O2', 'Làm xong trong 2 tuần với 14 Trusted Reference đã chọn.', 'Research context v4')
-      ], 'Độ tin cậy: trung bình · final 10:06'),
-      cell('Lập trường · position', 'Ma trận theo benchmark công bố (TruthfulQA, HaluEval, FActScore)', [
-        pt('pt-a-a1', 'A1', 'Cả ba benchmark có số liệu công bố, lập ma trận nhanh.', 'R-03, R-07'),
-        pt('pt-a-a2', 'A2', 'Cách so theo benchmark phổ biến trong lĩnh vực.', null, true)
-      ], 'Độ tin cậy: cao · final 10:05'),
-      cell('Lập trường · position', 'Phân loại theo cơ chế đo: đối chiếu nguồn, tự nhất quán, người chấm', [
-        pt('pt-b-b1', 'B1', 'Các benchmark dùng phiên bản dataset khác nhau, số liệu không so trực tiếp được.', 'E-14'),
-        pt('pt-b-b2', 'B2', 'Cách gán nhãn của người chấm khó tái lập.', null, true)
-      ], 'Độ tin cậy: trung bình · final 10:07')
-    ];
-    const round2 = [
-      cell('Phản biện · critique', null, [
-        cr('disagree', 'A·A2', 'Chưa có Trusted Reference nào xác nhận; giữ nhãn giả định.'),
-        cr('agree', 'B·B1', 'E-14 ghi rõ hai phiên bản HaluEval.')
-      ], 'final 10:15'),
-      cell('Phản biện · critique', null, [
-        cr('info', 'B·B2', 'R-11 công bố quy trình gán nhãn, giảm rủi ro tái lập.', 'R-11'),
-        cr('supersede', 'A·A1', 'Lập trường mới: ma trận benchmark kèm trục cơ chế đo. Lý do: B1 và E-14.')
-      ], 'final 10:16 · supersedes lập trường Vòng 1'),
-      cell('Phản biện · critique', null, [
-        cr('disagree', 'A·A1', 'Số liệu công bố dùng phiên bản dataset khác nhau (E-14).', 'E-14'),
-        cr('agree', 'O·O2', 'Thời gian 2 tuần khớp ràng buộc.')
-      ], 'final 10:17')
-    ];
-    const rounds = [
-      { label: 'Vòng 1 — đề xuất độc lập', note: 'đã đóng 10:07; lập trường bị ẩn với nhau cho đến khi vòng đóng', cells: round1 },
-      { label: 'Vòng 2 — phản biện chéo', note: dDone ? 'đã đóng 10:17' : 'đang chạy, 3 Agent Run song song', cells: dDone ? round2 : [hidden, hidden, hidden] }
+    const cell = (kind, option, lines, foot) => ({ shown: true, kind, hasOption: !!option, option: option || '', lines, foot });
+    const hidden = { hidden: true };
+    const missing = (msg) => ({ missing: true, msg });
+    const failed = (msg, link) => ({ failed: true, msg, link });
+    const posO = cell('Lập trường · position', 'So sánh theo 3 trục: loại tác vụ, cách gán nhãn, khả năng tái lập', [
+      pt('pt-o-o1', 'O1', 'Ba trục phủ cả tiêu chí tái lập và tiêu chí đủ evidence.', 'E-09, E-12'),
+      pt('pt-o-o2', 'O2', 'Làm xong trong 2 tuần với 14 Trusted Reference đã chọn.', 'Research context v4')
+    ], 'Độ tin cậy: trung bình · final 10:06');
+    const posA = cell('Lập trường · position', 'Ma trận theo benchmark công bố (TruthfulQA, HaluEval, FActScore)', [
+      pt('pt-a-a1', 'A1', 'Cả ba benchmark có số liệu công bố, lập ma trận nhanh.', 'R-03, R-07'),
+      pt('pt-a-a2', 'A2', 'Cách so theo benchmark phổ biến trong lĩnh vực.', null, true)
+    ], 'Độ tin cậy: cao · final 10:05');
+    const posB = cell('Lập trường · position', 'Phân loại theo cơ chế đo: đối chiếu nguồn, tự nhất quán, người chấm', [
+      pt('pt-b-b1', 'B1', 'Các benchmark dùng phiên bản dataset khác nhau, số liệu không so trực tiếp được.', 'E-14'),
+      pt('pt-b-b2', 'B2', 'Cách gán nhãn của người chấm khó tái lập.', null, true)
+    ], 'Độ tin cậy: trung bình · final 10:07');
+    const critO = cell('Phản biện · critique', null, [
+      cr('disagree', 'A·A2', 'Chưa có Trusted Reference nào xác nhận; giữ nhãn giả định.'),
+      cr('agree', 'B·B1', 'E-14 ghi rõ hai phiên bản HaluEval.')
+    ], 'final 10:15');
+    const critA = cell('Phản biện · critique', null, [
+      cr('info', 'B·B2', 'R-11 công bố quy trình gán nhãn, giảm rủi ro tái lập.', 'R-11'),
+      cr('supersede', 'A·A1', 'Lập trường mới: ma trận benchmark kèm trục cơ chế đo. Lý do: B1 và E-14.')
+    ], dCanc ? 'final 10:11' : 'final 10:16 · supersedes lập trường Vòng 1');
+    const critB = cell('Phản biện · critique', null, [
+      cr('disagree', 'A·A1', 'Số liệu công bố dùng phiên bản dataset khác nhau (E-14).', 'E-14'),
+      cr('agree', 'O·O2', 'Thời gian 2 tuần khớp ràng buộc.')
+    ], 'final 10:17');
+    // Failed: B errored in round 1 after 3 attempts, so only one Analysis Agent position exists and the session stops (ORCH-DELIB-002).
+    // In the failed view the round never closed, so A's and the Orchestrator's positions are shown to the Researcher only now.
+    const rounds = dFail ? [
+      { label: 'Vòng 1 — đề xuất độc lập', note: 'dừng 10:06; thiếu lập trường của Analysis Agent B nên phiên Failed', cells: [posO, posA, failed('Agent Run ar-81b2 lỗi provider_unavailable ở cả 3 lần thử (10:03–10:06).', 'Xem Agent Run ar-81b2')] }
+    ] : [
+      { label: 'Vòng 1 — đề xuất độc lập', note: 'đã đóng 10:07; lập trường bị ẩn với nhau cho đến khi vòng đóng', cells: [posO, posA, posB] },
+      dCanc
+        ? { label: 'Vòng 2 — phản biện chéo', note: 'dừng 10:12 khi workflow bị hủy; chỉ entry final được giữ', cells: [missing('Không có entry final: Agent Run bị hủy lúc 10:12.'), critA, missing('Không có entry final: Agent Run bị hủy lúc 10:12.')] }
+        : { label: 'Vòng 2 — phản biện chéo', note: dDone ? 'đã đóng 10:17' : 'đang chạy, 3 Agent Run song song', cells: dDone ? [critO, critA, critB] : [hidden, hidden, hidden] }
     ];
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     const u = (name, runs, tin, tout, cost) => ({ name, runs, tin, tout, cost });
     const parts = dDone
       ? [u('Orchestrator', 3, 18420, 3960, 0.11), u('Analysis Agent A', 2, 15210, 2880, 0.07), u('Analysis Agent B', 2, 16050, 3120, 0.08)]
+      : dFail ? [u('Orchestrator', 1, 6100, 1300, 0.04), u('Analysis Agent A', 1, 7400, 1450, 0.03), u('Analysis Agent B', 1, 0, 0, 0)]
+      : dCanc ? [u('Orchestrator', 2, 12300, 2210, 0.07), u('Analysis Agent A', 2, 15210, 2880, 0.07), u('Analysis Agent B', 2, 13900, 2480, 0.06)]
       : [u('Orchestrator', 1, 6100, 1300, 0.04), u('Analysis Agent A', 1, 7400, 1450, 0.03), u('Analysis Agent B', 1, 7900, 1520, 0.03)];
     const sum = (k) => parts.reduce((s, p) => s + p[k], 0);
     const usage = parts.concat([u('Tổng phiên', sum('runs'), sum('tin'), sum('tout'), sum('cost'))]).map((p, i, all) => ({
       name: p.name, runs: p.runs, tin: fmt(p.tin), tout: fmt(p.tout), cost: '$' + p.cost.toFixed(2).replace('.', ','), w: i === all.length - 1 ? 600 : 400
     }));
+    const usageNote = dDone ? 'Tổng phiên bằng tổng 7 Agent Run. Chi phí theo số liệu provider trả về.'
+      : dFail ? 'Agent Run ar-81b2 của B lỗi ở cả 3 lần thử; provider không trả usage nên tính 0. Chi phí theo số liệu provider trả về.'
+      : dCanc ? 'Gồm cả Agent Run bị hủy ở Vòng 2, tính theo usage provider trả về tới lúc hủy.'
+      : 'Chỉ tính Agent Run đã kết thúc; 3 Agent Run của Vòng 2 được cộng khi xong.';
     const warnings = [{ title: 'Hai Analysis Agent dùng cùng model.', text: 'A và B cùng chạy gpt-5 trên “OpenAI cá nhân”, nên dễ sai giống nhau. Đổi model ở Settings › Agent Models.' }];
     if (dDone) warnings.push({ title: 'Context Snapshot lỗi thời.', text: 'R-15 được duyệt vào Trusted Library lúc 10:20, sau khi phiên mở; bản tổng hợp không dùng R-15. Prompt có thêm lựa chọn chạy lại phiên trên context mới.' });
+    const DS = { Running: ['solid #0277DD', '#EAF4FE', '#1C1B18'], Completed: ['solid #1C1B18', '#FCF9F5', '#1C1B18'], Failed: ['solid #BE123C', '#FFF1F2', '#9F1239'], Cancelled: ['solid #DBD3C7', '#F6F2EE', '#4D4A44'] };
+    const dStatus = dDone ? 'Completed' : dFail ? 'Failed' : dCanc ? 'Cancelled' : 'Running';
     const d = {
-      done: dDone, notDone: !dDone,
-      status: dDone ? 'Completed' : 'Running', isRun: !dDone, chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? '#FCF9F5' : '#EAF4FE',
-      roundNote: dDone ? 'kết thúc sau Vòng 2 · bất đồng còn lại là lựa chọn giá trị' : 'Vòng 2/3',
+      done: dDone, failed: dFail, cancelled: dCanc, pending: !dDone && !dFail && !dCanc,
+      status: dStatus, isRun: dStatus === 'Running', chipB: DS[dStatus][0], chipBg: DS[dStatus][1], chipFg: DS[dStatus][2],
+      roundNote: dDone ? 'kết thúc sau Vòng 2 · bất đồng còn lại là lựa chọn giá trị' : dFail ? 'dừng ở Vòng 1 · thiếu lập trường của Analysis Agent B' : dCanc ? 'dừng ở Vòng 2 · workflow bị hủy 10:12' : 'Vòng 2/3',
       warnings,
       brief: [
         { k: 'Vấn đề', v: 'Chọn khung so sánh các phương pháp đo hallucination cho T-2.3.' },
@@ -339,8 +617,7 @@ class Component extends DCLogic {
         { name: 'Analysis Agent A', persp: 'Xây dựng phương án', model: 'OpenAI cá nhân · gpt-5' },
         { name: 'Analysis Agent B', persp: 'Tìm rủi ro và phương án thay thế', model: 'OpenAI cá nhân · gpt-5' }
       ],
-      rounds, usage,
-      usageNote: dDone ? 'Tổng phiên bằng tổng 7 Agent Run. Chi phí theo số liệu provider trả về.' : 'Chỉ tính Agent Run đã kết thúc; 3 Agent Run của Vòng 2 được cộng khi xong.',
+      rounds, usage, usageNote,
       consensus: ['Khả năng tái lập là tiêu chí ưu tiên (cả ba bên).', 'Số liệu benchmark công bố không so trực tiếp được khi khác phiên bản dataset (B1; Orchestrator đồng ý; A đổi lập trường).'],
       disagree: [
         { point: 'Trục chính của bảng so sánh', pos: 'Orchestrator: ba trục tác vụ, gán nhãn, tái lập · A: benchmark kèm trục cơ chế đo · B: chỉ theo cơ chế đo.' },
@@ -354,22 +631,33 @@ class Component extends DCLogic {
       recommend: 'phương án A đã sửa — đủ evidence nhất và vẫn có trục tái lập; ghi rõ phiên bản dataset trong ma trận để xử lý rủi ro B1.',
       chosen: 'A — benchmark kèm trục cơ chế đo'
     };
-    const runInfo = isDelib
-      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81c4 · bước 4 · Vòng 2 · instance B', status: dDone ? 'Succeeded' : 'Running', isRun: !dDone, chipB: dDone ? 'solid #1C1B18' : 'solid #0277DD', chipBg: dDone ? 'transparent' : '#EAF4FE',
+    const RUN = { Running: ['solid #0277DD', '#EAF4FE', '#1C1B18'], Succeeded: ['solid #1C1B18', 'transparent', '#1C1B18'], Failed: ['solid #BE123C', '#FFF1F2', '#9F1239'], Cancelled: ['solid #DBD3C7', '#F6F2EE', '#4D4A44'] };
+    const runStatus = dDone ? 'Succeeded' : dFail ? 'Failed' : dCanc ? 'Cancelled' : isDelib ? 'Running' : 'Succeeded';
+    const runInfo = dFail
+      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81b2 · bước 4 · Vòng 1 · instance B',
+          conn: 'OpenAI cá nhân', model: 'gpt-5', ctx: 'Problem Brief · Context Snapshot cs-2a (7 entity)',
+          tools: 'Không gọi công cụ (lỗi trước khi bắt đầu)', out: 'Không có entry — lỗi provider_unavailable', outHref: '#dl-h',
+          usage: '—', time: 'lỗi 10:06 · lần 3/3 (cả 3 lần provider_unavailable)' }
+      : isDelib
+      ? { agent: 'Analysis Agent B', id: 'Agent Run ar-81c4 · bước 4 · Vòng 2 · instance B',
           conn: 'OpenAI cá nhân', model: 'gpt-5', ctx: 'Problem Brief · Context Snapshot cs-2a (7 entity) · lập trường Vòng 1 của Orchestrator và A',
-          tools: 'retrieval.search × 2 (chỉ đọc, Trusted Reference đã index)', out: dDone ? '2 critique trên Deliberation Board' : 'đang viết, mở khi vòng đóng', outHref: '#dl-h',
-          usage: dDone ? '8 150 in · 1 600 out' : '—', time: dDone ? '48 giây · lần 1/3' : '00:37 · lần 1/3' }
-      : { agent: 'Discovery Agent', id: 'Agent Run ar-7f3a · bước 2', status: 'Succeeded', chipB: 'solid #1C1B18', chipBg: 'transparent',
-          conn: 'OpenAI cá nhân', model: 'gpt-5-mini', ctx: 'Research context v4 · T-2.3 định nghĩa v3 · câu trả lời prompt “2019–2026”',
+          tools: 'retrieval.search × 2 (chỉ đọc, Trusted Reference đã index)', out: dDone ? '2 critique trên Deliberation Board' : dCanc ? 'Không có entry final (hủy 10:12)' : 'đang viết, mở khi vòng đóng', outHref: '#dl-h',
+          usage: dDone ? '8 150 in · 1 600 out' : dCanc ? '6 000 in · 960 out (tới lúc hủy)' : '—', time: dDone ? '48 giây · lần 1/3' : dCanc ? '4 phút 50 giây · lần 1/3 · hủy 10:12' : '00:37 · lần 1/3' }
+      // Step 1 ran before the prompt existed, so its context never contains the prompt answer.
+      : { agent: 'Discovery Agent', id: 'Agent Run ar-7f3a · bước 1',
+          conn: 'OpenAI cá nhân', model: 'gpt-5-mini', ctx: 'Research context v4 · T-2.3 định nghĩa v3 · 14 Trusted Reference (để tránh trùng)',
           tools: 'scholar.search × 3 · dedupe.check × 1', out: '18 discovered result', outHref: 'Discover.dc.html',
-          usage: '12 840 in · 2 115 out', time: '1 phút 52 giây · lần 2/3 (lần 1: rate_limited)' };
+          usage: '12 840 in · 2 115 out', time: '09:37:05–09:40:32 · lần 2/3 (lần 1: rate_limited 09:38:40)' };
+    Object.assign(runInfo, { status: runStatus, isRun: runStatus === 'Running', chipB: RUN[runStatus][0], chipBg: RUN[runStatus][1], chipFg: RUN[runStatus][2] });
     return {
-      wfKey, isInterrupted: intr, notInterrupted: !intr,
+      wfKey, isInterrupted: intr, isCancelled: canc, elapsed,
+      // UX-MONITOR-004 and DEC-53: Pause is valid while Running or Waiting for User; nothing to control once Cancelled; Interrupted goes through Recovery decision.
+      canPause: !intr && !canc, canCancel: !canc,
       agentBasis: isDelib ? '100%' : '300px',
-      agentState: isDelib ? (dDone ? 'synthesis' : 'deliberation') : wfKey,
+      agentState: dFail ? 'deliberation-failed' : dCanc ? 'cancelled' : isDelib ? (dDone ? 'synthesis' : 'deliberation') : wfKey,
       wfState: chip[3], wfB: chip[0], wfFg: chip[1], wfBg: chip[2], wfNeed: chip[4], wfRun: chip[3] === 'Running',
       debug: dbg, debugNote: dbg ? 'Chế độ debug bật khi chạy: toàn văn được lưu đến 30/11/2026.' : 'Không lưu toàn văn (chế độ debug tắt). Xem context manifest và đầu ra có cấu trúc ở trên.',
-      tabs, isTimeline: !isDelib, isDelib, d, run: runInfo,
+      tabs, isTimeline: view === 'timeline', isSteps, steps, isDelib, d, run: runInfo,
       events
     };
   }

@@ -256,7 +256,64 @@ paths:
         '404': { $ref: responses.yaml#/NotFound }
         '409': { $ref: responses.yaml#/Conflict }
 
-  # ---- Deliberation Board và Context Snapshot (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 đang viết) ----
+  # ---- Deliberation Board và Context Snapshot (PRD 8.7, 14.9 — DEC-47; Assumption, ADR-24 (Proposed)) ----
+  /internal/agent-runs/{agentRunId}/deliberations:
+    post:
+      tags: [Deliberation board]
+      operationId: openDeliberation
+      summary: Orchestrator mở phiên thảo luận bằng Problem Brief (Vòng 0)
+      description: |
+        Hợp đồng duy nhất để mở phiên (ORCH-DELIB-001). Agent Run gọi phải là của `orchestrator` và thuộc Workflow Step loại
+        deliberation chưa có phiên (`WorkflowStep.deliberationId = null`) — bước do StepPlan lập, hoặc bước đầu của workflow
+        `deliberation` khi Researcher yêu cầu từ chat. Trong một giao dịch orchestration:
+        (1) kiểm tra Problem Brief đủ trường và `problemType` thuộc danh sách 8.7; (2) kiểm tra Researcher đã chọn
+        `deliberate` ở prompt `deliberation_proposal` (`proposalPromptId`), trừ bước phân tích của workflow `plan_proposal`
+        (OQ-099); (3) kiểm tra hai instance Analysis Agent có Agent Model Assignment hợp lệ, ghi cấu hình model vào
+        `participants` và tính `sameModelWarning` (ORCH-DELIB-005); (4) tạo Deliberation `Running` (`currentRound = 0`),
+        Context Snapshot bất biến từ `contextRefs` của brief và các entity dùng chung trong phạm vi đọc của các bên
+        (CTX-SNAPSHOT-001), entry `problem_brief` `final` làm entry đầu tiên trên board; gắn `deliberationId` vào bước;
+        ghi Audit Event; phát `deliberation.started` qua outbox. Agent Run Vòng 1 chỉ được giao sau khi giao dịch commit
+        (ORCH-DELIB-001-AC01).
+        Lỗi nghiệp vụ trả `422`: `problem_type_not_allowed` (vấn đề thuộc nhóm không thảo luận), `schema_invalid` (brief
+        thiếu trường), `analysis_agent_not_configured` (Analysis Agent thiếu cấu hình hợp lệ — không mở phiên; Orchestrator
+        tạo prompt `deliberation_proposal` để Researcher cấu hình lại hoặc tiếp tục không thảo luận),
+        `deliberation_not_confirmed` (thiếu xác nhận của Researcher). Gọi lại cùng `Idempotency-Key` trả lại phiên đã tạo.
+        Entry `problem_brief` không ghi được qua `writeDeliberationEntry` hay đầu ra `deliberation_entry`.
+      x-callers: [agent-core]
+      x-requirements: [ORCH-DELIB-001, ORCH-DELIB-005, CTX-SNAPSHOT-001, CTX-BOARD-001, AGENT-ANALYSIS-001]
+      parameters:
+        - $ref: '#/components/parameters/AgentRunId'
+        - $ref: ../components/parameters.yaml#/IdempotencyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brief]
+              properties:
+                brief: { $ref: ../components/schemas/orchestration.yaml#/ProblemBrief }
+                proposalPromptId:
+                  type: [string, 'null']
+                  format: uuid
+                  description: Prompt `deliberation_proposal` đã được trả lời `deliberate`; `null` với bước phân tích của 6.3.
+      responses:
+        '201':
+          description: Phiên đã mở; kèm Context Snapshot vừa tạo.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deliberation, contextSnapshot, problemBriefEntryId]
+                properties:
+                  deliberation: { $ref: ../components/schemas/orchestration.yaml#/Deliberation }
+                  contextSnapshot: { $ref: ../components/schemas/orchestration.yaml#/ContextSnapshot }
+                  problemBriefEntryId: { $ref: ../components/schemas/common.yaml#/Id }
+        '401': { $ref: responses.yaml#/InvalidServiceToken }
+        '403': { $ref: responses.yaml#/CallerNotAllowed }
+        '409': { $ref: responses.yaml#/StaleAgentRun }
+        '422': { $ref: responses.yaml#/UnprocessableEntity }
+
   /internal/workflows/{workflowId}/board:
     get:
       tags: [Deliberation board]
@@ -326,8 +383,9 @@ paths:
         Dùng khi entry cần hiện trước khi Agent Run kết thúc — chủ yếu finding draft của bước song song (CTX-BOARD-003).
         Entry còn lại ghi qua `outputs` loại `deliberation_entry` của `submitAgentRunResult`. orchestration đặt `author`,
         `round`, `status`, gắn `assumption` cho điểm thiếu nguồn, kiểm tra schema và quyền; ghi bền vững rồi phát
-        `deliberation.entry_added`. Chỉ ghi thêm; không có thao tác sửa. Lỗi nghiệp vụ trả `422` với `code`:
-        `change_reason_required`, `synthesis_incomplete`, `problem_type_not_allowed`, `schema_invalid`.
+        `deliberation.entry_added`. Chỉ ghi thêm; không có thao tác sửa. `deliberationId` theo quy tắc ở
+        `DeliberationEntryWrite`; `problem_brief` chỉ ghi qua `openDeliberation`. Lỗi nghiệp vụ trả `422` với `code`:
+        `change_reason_required`, `synthesis_incomplete`, `deliberation_mismatch`, `schema_invalid`.
       x-callers: [agent-core]
       x-requirements: [CTX-BOARD-001, CTX-BOARD-003, ORCH-DELIB-003, AGENT-SCOPE-001]
       parameters:
@@ -357,6 +415,7 @@ paths:
       description: |
         Chỉ Agent Run tác giả gọi được. Entry draft chưa xác nhận chuyển `final` khi Agent Run Succeeded; khi Agent Run
         Failed/Cancelled entry giữ `draft` và không tính là entry final của vòng (Assumption). Gọi lại trả cùng kết quả.
+        Mỗi lần draft → final (qua endpoint này hoặc khi Agent Run Succeeded) phát `deliberation.entry_finalized`.
       x-callers: [agent-core]
       x-requirements: [CTX-BOARD-001, CTX-BOARD-003]
       parameters:

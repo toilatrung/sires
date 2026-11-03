@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 05</p><h1>5. Core Domain Model</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01) · Cơ sở: outline đã chốt, mục 1–4, mục 20.1</p><div class="note"><p>Mục này định nghĩa các entity của sản phẩm ở mức khái niệm: mục đích, thuộc tính chính, ownership, vòng đời và các quy tắc luôn phải đúng (<em>invariant</em>). Schema chi tiết, enumeration và chuyển trạng thái đầy đủ ở <a href="18-data-and-state-specifications.html">mục 18</a>. Tên trạng thái trong mục này là chuẩn cho toàn PRD. Nhóm entity lấy từ outline (<strong>Confirmed</strong>); thuộc tính, trạng thái và invariant là <strong>Assumption</strong> trừ khi ghi khác. Điểm chưa quyết định ở <a href="#s-5-12">5.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-5-0">Nguyên tắc mô hình</a></li>
+<p class="eyebrow">Product Requirements Document · Section 05</p><h1>5. Core Domain Model</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01); bổ sung 01/11/2026: Deliberation, Deliberation Entry, Context Snapshot (DEC-47, DEC-48), Waiting for User → Paused (DEC-53); đồng bộ sau rà soát 01/11/2026 (Plan Version, Agent Model Assignment, 5.10) · Cơ sở: outline đã chốt, mục 1–4, mục 20.1</p><div class="note"><p>Mục này định nghĩa các entity của sản phẩm ở mức khái niệm: mục đích, thuộc tính chính, ownership, vòng đời và các quy tắc luôn phải đúng (<em>invariant</em>). Schema chi tiết, enumeration và chuyển trạng thái đầy đủ ở <a href="18-data-and-state-specifications.html">mục 18</a>. Tên trạng thái trong mục này là chuẩn cho toàn PRD. Nhóm entity lấy từ outline (<strong>Confirmed</strong>); thuộc tính, trạng thái và invariant là <strong>Assumption</strong> trừ khi ghi khác. Điểm chưa quyết định ở <a href="#s-5-12">5.12</a>.</p></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-5-0">Nguyên tắc mô hình</a></li>
 <li><a href="#s-5-1">5.1. Research Project</a></li>
 <li><a href="#s-5-2">5.2. Research Plan</a></li>
 <li><a href="#s-5-3">5.3. Task</a></li>
@@ -66,7 +66,7 @@
 <th scope="col">Thuộc tính chính</th>
 </tr></thead><tbody>
 <tr><td>Research Plan</td><td>planId, projectId, baselineVersionId (phiên bản đã duyệt hiện hành), danh sách version.</td></tr>
-<tr><td>Plan Version</td><td>versionId, số thứ tự, trạng thái, mục tiêu (goals), các Phase, phương pháp (methods), deliverables, milestone, rủi ro và giả định, ảnh chụp định nghĩa Task và dependency tại phiên bản này, phiên bản Research Context dựa vào, tạo bởi (actor, Agent Run nếu có), lý do thay đổi so với bản trước, thông tin phê duyệt.</td></tr>
+<tr><td>Plan Version</td><td>versionId, số thứ tự, trạng thái, mục tiêu (goals), các Phase, phương pháp (methods), deliverables, milestone, rủi ro và giả định, ảnh chụp định nghĩa Task và dependency tại phiên bản này, phiên bản Research Context dựa vào, tạo bởi (actor, Agent Run nếu có), lý do thay đổi so với bản trước, thông tin phê duyệt, nhãn thảo luận trong provenance (DeliberationLabel: <code>deliberated</code> kèm tham chiếu Deliberation Record của phiên, hoặc <code>skipped</code> — nhãn “không qua thảo luận” khi Researcher bỏ qua thảo luận; ORCH-DELIB-001, DEC-50).</td></tr>
 <tr><td>Phase</td><td>Tên, mục tiêu, thứ tự, danh sách Task.</td></tr>
 </tbody></table></div>
 <p><strong>Trạng thái Plan Version:</strong></p>
@@ -128,7 +128,7 @@
 <tr><td>Agent Run</td><td>agentRunId, agent (Orchestrator hoặc một trong tám Specialist Agent; với Analysis Agent ghi thêm instance), Provider Connection và model thực tế, tóm tắt context đầu vào, đầu ra (tham chiếu artifact, evidence, claim…), hành động/công cụ đã gọi, usage, thời gian, trạng thái, lỗi, số lần thử.</td></tr>
 <tr><td>Checkpoint</td><td>Workflow, bước, thời điểm, trạng thái các bước, tham chiếu đầu ra đã lưu.</td></tr>
 </tbody></table></div>
-<p><strong>Trạng thái Workflow:</strong> <code>Created</code> → <code>Running</code> ⇄ <code>Waiting for User</code>; <code>Running</code> ⇄ <code>Paused</code>; kết thúc ở <code>Succeeded</code>, <code>Failed</code> hoặc <code>Cancelled</code>. <code>Interrupted</code> là trạng thái do System gán khi phát hiện workflow dừng ngoài ý muốn (mất phiên, lỗi hạ tầng); chỉ thoát ra qua khôi phục (WF-06).</p>
+<p><strong>Trạng thái Workflow:</strong> <code>Created</code> → <code>Running</code> ⇄ <code>Waiting for User</code>; <code>Running</code> ⇄ <code>Paused</code>; <code>Waiting for User</code> → <code>Paused</code> khi Researcher tạm dừng workflow đang chờ (DEC-53); tiếp tục là <code>Paused</code> → <code>Running</code>, hoặc <code>Paused</code> → <code>Waiting for User</code> khi prompt chặn vẫn Open (DEC-53); kết thúc ở <code>Succeeded</code>, <code>Failed</code> hoặc <code>Cancelled</code>. <code>Interrupted</code> là trạng thái do System gán khi phát hiện workflow dừng ngoài ý muốn (mất phiên, lỗi hạ tầng); chỉ thoát ra qua khôi phục (WF-06).</p>
 <p><strong>Trạng thái Agent Run:</strong> <code>Pending</code>, <code>Running</code>, <code>Succeeded</code>, <code>Failed</code>, <code>Cancelled</code>.</p>
 <p><strong>Invariant:</strong> Agent Run bất biến sau khi kết thúc; chạy lại tạo Agent Run mới. Đầu ra của Agent Run chỉ được ghi khi Agent Run thuộc Workflow còn hoạt động; kết quả đến sau khi Workflow bị hủy hoặc đã được thay bằng lần chạy mới bị lưu dạng “bị bỏ” và không ghi đè (14.6). Đổi model trong Settings không ảnh hưởng Agent Run đang chạy (SCOPE-13).</p>
 
@@ -232,13 +232,19 @@
 <pre><code>Account 1──* Research Project
 Account 1──* Reference ──1 Source Document (0..1)
 Account 1──* Discovered Result ──0..1 Reference
-Account 1──* Provider Connection 1──* Agent Model Assignment (8 agent)
+Account 1──* Provider Connection 1──* Agent Model Assignment
+        (9 định nghĩa agent: Orchestrator + 8 Specialist Agent; Analysis Agent gán riêng cho
+         từng instance A, B → tối đa 10 dòng gán theo agent, cộng dòng default)
 Research Project 1──1 Research Plan 1──* Plan Version 1──* Phase
 Research Project 1──* Task          (định nghĩa theo Plan Version)
 Task *──* Task (Task Dependency, trong một Plan Version)
 Task 1──* Workflow 1──* Workflow Step 1──* Agent Run
 Workflow 1──* Checkpoint
 Workflow Step 0..1──* Interactive Agent Prompt
+Workflow Step 1──0..1 Deliberation 1──1 Context Snapshot
+Workflow 1──* Deliberation Entry *──0..1 Deliberation   (Deliberation Board; finding của bước song song không gắn phiên)
+Deliberation 1──0..1 Artifact Version (Deliberation Record)
+Plan Version, Context Item, Message *──0..1 Deliberation   (DeliberationLabel: deliberated kèm Record | skipped)
 Research Project 1──1 Shared Context 1──* Context Item
 Research Project *──* Reference     (Project Reference Selection)
 Research Project 1──* Evidence *──1 Reference
@@ -246,7 +252,7 @@ Research Project 1──* Claim *──* Evidence (Claim–Evidence Link)
 Research Project 1──* Artifact 1──* Artifact Version
 Research Project 1──0..1 Manuscript 1──* Manuscript File
 Manuscript 1──* Manuscript Revision, Change Proposal, Build, Bibliography Entry
-Agent Run 1──* (Artifact Version | Evidence | Claim | Change Proposal | Discovered Result)
+Agent Run 1──* (Artifact Version | Evidence | Claim | Change Proposal | Discovered Result | Deliberation Entry)
 mọi entity ──* Audit Event</code></pre>
 <p class="status">FIG-002 — Entity relationship. Nguồn Mermaid: <a href="../figures/FIG-002-entity-relationships.mmd">figures/FIG-002-entity-relationships.mmd</a>; phụ lục D.</p>
 <h3>Quy tắc ownership và tham chiếu</h3>
@@ -270,7 +276,7 @@ mọi entity ──* Audit Event</code></pre>
 </tr></thead><tbody>
 <tr><td>Account / Profile</td><td>Tài khoản</td><td>accountId, định danh eTroy OIDC (<code>sub</code>; DEC-26, ASM-13), Profile (họ tên, đơn vị, lĩnh vực nghiên cứu, ảnh đại diện, URL hồ sơ Google Scholar), Preferences (ngôn ngữ giao diện, ngôn ngữ phản hồi, công tắc đưa lĩnh vực nghiên cứu vào context, Ngưỡng kiểm chứng) — DEC-24, DEC-38.</td></tr>
 <tr><td>Provider Connection</td><td>Tài khoản</td><td>Tên, provider (<code>anthropic</code>, <code>openai</code>, <code>google</code>), base URL, API key (mã hóa, chỉ hiển thị dạng che), trạng thái kiểm tra (<code>Untested</code>, <code>Valid</code>, <code>Invalid</code>), danh sách model khả dụng.</td></tr>
-<tr><td>Agent Model Assignment</td><td>Tài khoản</td><td>Agent (Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, hoặc <em>default</em>), Provider Connection, model.</td></tr>
+<tr><td>Agent Model Assignment</td><td>Tài khoản</td><td>Agent (Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Analysis, Diagram, hoặc <em>default</em>), instance (<code>A</code> hoặc <code>B</code>, bắt buộc với Analysis Agent và chỉ dùng cho agent này; DEC-47, DEC-48), Provider Connection, model, cảnh báo thiếu năng lực, <code>sameModelWarning</code> (chỉ đọc; bật khi hai instance Analysis Agent có cùng provider và model hiệu lực, kể cả khi cùng thừa kế <em>default</em>). Duy nhất theo (account, agent, instance) — DEC-50.</td></tr>
 <tr><td>Conversation / Message</td><td>Tài khoản (global) hoặc Project</td><td>Ngữ cảnh (global hoặc projectId), active task tại thời điểm gửi, người gửi (Researcher hoặc agent), nội dung, prompt nhúng.</td></tr>
 <tr><td>Pending Action / Notification</td><td>Tài khoản hoặc Project</td><td>Loại (4.4), đối tượng liên quan, trạng thái (<code>Open</code>, <code>Resolved</code>, <code>Expired</code>; notification: <code>Unread</code>, <code>Read</code>).</td></tr>
 <tr><td>Audit Event</td><td>Tài khoản hoặc Project</td><td>Actor (Researcher / agent + Agent Run / System), hành động, đối tượng và phiên bản, giá trị trước/sau (tóm tắt), APR liên quan, thời điểm. Chỉ ghi thêm (14.8).</td></tr>

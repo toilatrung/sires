@@ -53,8 +53,14 @@ Workflow:
   allOf:
     - $ref: common.yaml#/EntityMeta
     - type: object
-      required: [type, triggeredBy, status]
+      required: [type, triggeredBy, status, idempotencyKey]
       properties:
+        idempotencyKey:
+          type: string
+          readOnly: true
+          description: |
+            Khóa idempotency của lệnh tạo workflow (PRD 18.1, DATA-IDEMP-001): `Idempotency-Key` của Researcher, hoặc khóa
+            tự nhiên do System đặt (ví dụ `activationId` của `task.activated`) — gửi lại không tạo workflow thứ hai.
         type: { $ref: '#/WorkflowType' }
         taskId: { $ref: common.yaml#/Id }
         planVersionId: { $ref: common.yaml#/Id }
@@ -72,7 +78,15 @@ Workflow:
             code: { $ref: common.yaml#/ProviderErrorCode }
             message: { type: string }
             agentRunId: { $ref: common.yaml#/Id }
-        lastCheckpoint: { $ref: '#/Checkpoint' }
+        lastCheckpointId:
+          type: [string, 'null']
+          format: uuid
+          description: Checkpoint nhất quán gần nhất (PRD 18.1); `null` khi chưa bước nào Succeeded.
+        lastCheckpoint:
+          description: Nội dung checkpoint `lastCheckpointId`, trả kèm để giao diện khôi phục không cần gọi thêm.
+          oneOf:
+            - $ref: '#/Checkpoint'
+            - type: 'null'
 
 Checkpoint:
   type: object
@@ -107,8 +121,12 @@ AgentRun:
   allOf:
     - $ref: common.yaml#/EntityMeta
     - type: object
-      description: Bất biến sau trạng thái cuối (5.4). Toàn văn prompt/phản hồi chỉ có khi bật debug.
-      required: [workflowId, stepId, agent, provider, model, status, attempts, discarded]
+      description: |
+        Bất biến sau trạng thái cuối (5.4). Toàn văn prompt/phản hồi chỉ có khi bật debug. Trường bắt buộc theo PRD 18.1;
+        khi Agent Run còn Pending/Running, `contextManifest` và `structuredOutput` có thể là object rỗng, `inputSummary`
+        có thể rỗng, tới khi Agent Run kết thúc. `instance` bắt buộc khi `agent = analysis` (DEC-50).
+      required: [workflowId, stepId, agent, providerConnectionId, provider, model, adapterVersion, inputSummary,
+        contextManifest, structuredOutput, usage, status, attempts, discarded]
       properties:
         workflowId: { $ref: common.yaml#/Id }
         stepId: { $ref: common.yaml#/Id }
@@ -164,14 +182,7 @@ AgentRun:
         structuredOutput:
           type: object
           additionalProperties: true
-        usage:
-          type: object
-          properties:
-            inputTokens: { type: integer }
-            outputTokens: { type: integer }
-            calls: { type: integer }
-            durationMs: { type: integer }
-            estimatedCost: { type: number }
+        usage: { $ref: '#/AgentRunUsage' }
         status: { $ref: '#/AgentRunStatus' }
         attempts:
           type: integer
@@ -187,6 +198,35 @@ AgentRun:
           type: boolean
           description: Kết quả đến muộn bị bỏ, không ghi đè (DATA-IDEMP-003).
         hasDebugTranscript: { type: boolean }
+
+AgentRunUsage:
+  type: object
+  description: |
+    Usage do provider trả về cho Agent Run, đã chuẩn hóa (NFR-USAGE-001, 17.1; PRD 18.1 `usage {inputTokens,
+    outputTokens, calls, extra}`). Không ước tính: khi không lời gọi nào của Agent Run có usage từ provider thì
+    `noData = true` (“không có dữ liệu”, NFR-USAGE-001-AC01) và `inputTokens`, `outputTokens` là `null`; provider
+    không trả một trường thì trường đó `null`. Chi phí ước tính theo bảng giá không lưu ở Agent Run — chỉ tính khi
+    hiển thị, có bảng giá và gắn nhãn “ước tính” (NFR-USAGE-003). Dùng chung cho API công khai và nội bộ.
+  required: [noData, inputTokens, outputTokens, calls]
+  properties:
+    noData:
+      type: boolean
+      description: true khi provider không trả usage cho lời gọi nào của Agent Run.
+    inputTokens: { type: [integer, 'null'], minimum: 0 }
+    outputTokens: { type: [integer, 'null'], minimum: 0 }
+    calls:
+      type: integer
+      minimum: 0
+      description: Số lời gọi provider trong Agent Run (System đếm, không phụ thuộc provider trả usage).
+    extra:
+      type: object
+      description: |
+        Trường khác provider trả về, đã chuẩn hóa tên (ví dụ token cache). `cost` và `currency` chỉ có khi phản hồi của
+        provider chứa chi phí — không tính từ bảng giá.
+      properties:
+        cost: { type: number, minimum: 0 }
+        currency: { type: string, examples: [USD] }
+      additionalProperties: true
 
 DebugTranscript:
   type: object
@@ -213,7 +253,7 @@ InteractiveAgentPrompt:
   allOf:
     - $ref: common.yaml#/EntityMeta
     - type: object
-      required: [workflowId, stepId, createdByAgentRunId, type, question, pendingAction, status]
+      required: [workflowId, stepId, createdByAgentRunId, type, purpose, question, pendingAction, status]
       properties:
         taskId: { $ref: common.yaml#/Id }
         workflowId: { $ref: common.yaml#/Id }
@@ -264,11 +304,16 @@ InteractiveAgentPrompt:
 PromptPurpose:
   type: string
   description: |
-    Mục đích của prompt (Assumption — biên soạn, DEC-47). `general` cho mọi prompt hiện có.
+    Mục đích của prompt (PRD 18.2, DEC-50). `general` cho mọi prompt khác.
     `deliberation_proposal`: prompt `choice` Orchestrator đề xuất mở phiên thảo luận, choices `deliberate` | `skip`
     (OQ-099, UX-MONITOR-007); chọn `skip` thì không tạo Agent Run của Analysis Agent và kết quả mang nhãn
-    “không qua thảo luận”; lựa chọn `skip` sinh Audit Event (ORCH-DELIB-001-AC03). `deliberation_decision`: prompt `choice` sau tổng hợp (phương án từ bản tổng hợp, thêm
-    `rerun` khi snapshot lỗi thời) hoặc khi phiên Failed (`rerun` | `continue_without_deliberation`) — ORCH-DELIB-002/004.
+    “không qua thảo luận”; lựa chọn `skip` sinh Audit Event (ORCH-DELIB-001-AC03).
+    Cùng giá trị này dùng cho luồng “Analysis Agent thiếu cấu hình hợp lệ” (ORCH-DELIB-001, luồng lỗi): phiên chưa mở,
+    `deliberationProposal.reason` nêu instance và cấu hình còn thiếu; `deliberate` nghĩa là “cấu hình lại rồi thảo luận”
+    — System kiểm tra lại Agent Models khi Researcher chọn, vẫn thiếu thì tạo prompt mới; `skip` nghĩa là “tiếp tục không
+    thảo luận”. PRD 18.2 không có giá trị PromptPurpose riêng cho luồng này nên không thêm enum.
+    `deliberation_decision`: prompt `choice` sau tổng hợp (phương án từ bản tổng hợp, thêm `rerun` khi snapshot lỗi thời)
+    hoặc khi phiên Failed (`rerun` | `continue_without_deliberation`) — ORCH-DELIB-002/004.
     Researcher trả lời qua `POST /prompts/{promptId}/response` hiện có; không có endpoint riêng.
   enum: [general, deliberation_proposal, deliberation_decision]
   default: general
@@ -276,7 +321,7 @@ PromptPurpose:
 DeliberationProposal:
   type: object
   description: Nội dung đề xuất mở phiên để Researcher quyết định (UX-MONITOR-007). Assumption của biên soạn.
-  required: [problem, problemType, reason, participants, maxRounds, sameModelWarning]
+  required: [problem, problemType, reason, participants, estimatedAgentRuns, maxRounds, sameModelWarning]
   properties:
     problem: { type: string }
     problemType: { $ref: '#/ProblemType' }
@@ -429,16 +474,21 @@ Event:
   type: object
   description: |
     Sự kiện phát qua SSE sau khi giao dịch commit (outbox — DATA-PERSIST-001). `id` dùng cho `Last-Event-ID` khi kết nối lại.
+    `type` là đúng tên message trong `events/asyncapi.yaml` mà gateway nghe ở `gatewayConsumesForSse`, cộng `chat.delta`
+    từ stream `sires.stream` (không có `id` bền, không phát lại). Prompt mới là `prompt.status_changed` với
+    `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed` (phân biệt bằng `objectType`).
   required: [id, type, at]
   properties:
     id: { type: string }
     type:
       type: string
-      examples: [workflow.status_changed, agent_run.status_changed, prompt.created, prompt.status_changed,
-        task.status_changed, message.created, pending_action.created, notification.created,
-        reference.indexing_status_changed, build.status_changed, change_proposal.status_changed,
-        deliberation.started, deliberation.round_closed, deliberation.entry_retracted, deliberation.status_changed,
-        context_snapshot.outdated]
+      enum: [account.deletion_requested, provider_connection.changed, provider_connection.issue_reported,
+        project.lifecycle_changed, message.posted, pending_action.changed, notification.created,
+        plan_version.status_changed, task.status_changed, workflow.status_changed, agent_run.status_changed,
+        prompt.status_changed, deliberation.started, deliberation.round_closed, deliberation.entry_retracted,
+        deliberation.status_changed, context_snapshot.outdated, reference.status_changed,
+        reference.indexing_status_changed, project_reference.changed, research.object_status_changed,
+        manuscript.object_status_changed, chat.delta]
     projectId: { $ref: common.yaml#/Id }
     objectType: { type: string }
     objectId: { $ref: common.yaml#/Id }
@@ -447,7 +497,7 @@ Event:
     at: { $ref: common.yaml#/Timestamp }
 
 # ---------- Deliberation (PRD 8.7, 14.9, 18.1 — DEC-47, DEC-48) ----------
-# Trạng thái: Assumption — bản đề xuất của biên soạn; service sở hữu: orchestration (ADR-24 đang viết).
+# Trạng thái: Assumption — bản đề xuất của biên soạn; service sở hữu: orchestration (ADR-24 (Proposed)).
 
 ProblemType:
   type: string
@@ -475,6 +525,18 @@ DeliberationEntryStatus:
 CritiqueKind:
   type: string
   enum: [agree, disagree, add_information]
+
+DeliberationRoundKind:
+  type: string
+  description: Loại vòng (PRD 18.2, DEC-50) — brief = vòng 0, independent = vòng 1, cross_critique = vòng 2, narrow = vòng hẹp.
+  enum: [brief, independent, cross_critique, narrow, synthesis]
+
+ParticipantStatus:
+  type: string
+  description: |
+    Trạng thái chạy của một bên (PRD 18.2, DEC-50): idle — không có Agent Run đang chạy; running — có; error — Agent Run
+    gần nhất Failed.
+  enum: [idle, running, error]
 
 Confidence:
   type: string
@@ -507,10 +569,7 @@ DeliberationParticipant:
         providerConnectionName: { type: string }
         provider: { $ref: common.yaml#/ProviderName }
         model: { type: string }
-        status:
-          type: string
-          description: idle — không có Agent Run đang chạy; running — có; error — Agent Run gần nhất Failed.
-          enum: [idle, running, error]
+        status: { $ref: '#/ParticipantStatus' }
         currentAgentRunId:
           type: [string, 'null']
           format: uuid
@@ -525,10 +584,23 @@ DeliberationAuthor:
 
 ProblemBrief:
   type: object
-  description: Problem Brief (ORCH-DELIB-001). Mỗi Analysis Agent có một góc nhìn ghi rõ (ORCH-DELIB-005, OQ-100).
-  required: [problem, criteria, perspectives]
+  description: |
+    Problem Brief (ORCH-DELIB-001): vấn đề; problemType; tham chiếu context; ràng buộc; tiêu chí đánh giá; phương án đã
+    biết. Mỗi Analysis Agent có một góc nhìn ghi rõ (ORCH-DELIB-005, OQ-100). PRD 18.1 liệt kê
+    `brief {problem, constraints[], criteria[], knownOptions[], perspectives[]}`; `problemType` và `contextRefs` thêm theo
+    Main Flow của ORCH-DELIB-001 (Assumption về tên trường). `problemType` phải bằng `Deliberation.problemType`.
+  required: [problem, problemType, contextRefs, criteria, perspectives]
   properties:
     problem: { type: string }
+    problemType: { $ref: '#/ProblemType' }
+    contextRefs:
+      type: array
+      minItems: 1
+      description: |
+        Tham chiếu context có phiên bản của vấn đề — Research Context Version, Plan Version, Task, entity liên quan
+        (`research_context_version`, `plan_version`, `task`, `artifact_version`, `evidence`, `claim`, `reference`…).
+        System đưa các tham chiếu này vào Context Snapshot của phiên (CTX-SNAPSHOT-001).
+      items: { $ref: common.yaml#/TypedRef }
     constraints:
       type: array
       items: { type: string }
@@ -551,21 +623,35 @@ ProblemBrief:
 
 UsageTotal:
   type: object
-  description: Usage cộng dồn; khớp tổng các Agent Run tương ứng, sai lệch 0 (NFR-USAGE-005).
+  description: |
+    Usage cộng dồn từ `usage` (AgentRunUsage) của các Agent Run trong phạm vi — cả phiên, hoặc một bên ở
+    `usageByParticipant` — khớp tổng các Agent Run, sai lệch 0 (NFR-USAGE-005, ORCH-DELIB-002). Quy tắc cộng, không
+    ước tính: `inputTokens`, `outputTokens`, `calls` = tổng các giá trị khác `null`; `cost` = tổng `usage.extra.cost` do
+    provider trả về, `null` khi không Agent Run nào có. `agentRunCount`, `noDataAgentRunCount`, `costAgentRunCount`
+    cho phép đối chiếu với danh sách Agent Run (`GET /workflows/{workflowId}/agent-runs?deliberationId=`). Các trường
+    đếm là Assumption của biên soạn (PRD 18.1 ghi `usageTotal {inputTokens, outputTokens, cost}`).
+  required: [inputTokens, outputTokens, calls, agentRunCount, noDataAgentRunCount]
   properties:
-    inputTokens: { type: integer }
-    outputTokens: { type: integer }
+    inputTokens: { type: integer, minimum: 0 }
+    outputTokens: { type: integer, minimum: 0 }
+    calls: { type: integer, minimum: 0 }
     cost:
       type: [number, 'null']
-      description: Chi phí theo provider trả về; `null` khi provider không trả (không ước tính — NFR-USAGE-001).
+      description: Tổng chi phí provider trả về; `null` khi không Agent Run nào có chi phí từ provider (NFR-USAGE-001).
+    currency:
+      type: [string, 'null']
+      description: Đơn vị của `cost`; khi các Agent Run có đơn vị khác nhau thì `cost` và `currency` là `null`.
+    agentRunCount: { type: integer, minimum: 0, description: Số Agent Run được cộng. }
+    noDataAgentRunCount: { type: integer, minimum: 0, description: Số Agent Run có `usage.noData = true`. }
+    costAgentRunCount: { type: integer, minimum: 0, description: Số Agent Run có `usage.extra.cost`. }
 
 Deliberation:
   allOf:
     - $ref: common.yaml#/EntityMeta
     - type: object
       description: Phiên thảo luận (PRD 8.7, 18.1). Một phần của Deliberation Board của workflow (CTX-BOARD-001).
-      required: [workflowId, stepId, problemType, brief, participants, currentRound, maxRounds, contextSnapshotId,
-        status, startedAt]
+      required: [projectId, workflowId, stepId, problemType, brief, participants, currentRound, maxRounds,
+        contextSnapshotId, status, startedAt]
       properties:
         workflowId: { $ref: common.yaml#/Id }
         stepId: { $ref: common.yaml#/Id }
@@ -593,6 +679,12 @@ Deliberation:
           type: [string, 'null']
           format: uuid
           description: Artifact Version Draft loại `deliberation_record` của phiên (ORCH-DELIB-004); Researcher mở để xem Record.
+        decisionPromptId:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Prompt `choice` (`purpose = deliberation_decision`) trình Researcher sau tổng hợp, hoặc chạy lại/tiếp tục không
+            thảo luận khi Failed (PRD 18.1, DEC-50).
         usageTotal: { $ref: '#/UsageTotal' }
         sameModelWarning:
           type: boolean
@@ -605,13 +697,15 @@ DeliberationPoint:
   description: |
     Một điểm có `id` ổn định trong entry để phản biện trỏ tới (UX-MONITOR-006: nối điểm bị phản biện với phản biện).
     `id` duy nhất trong entry, giữ nguyên khi entry mới supersede entry cũ và điểm không đổi. Assumption của biên soạn.
-  required: [id, text]
+  required: [id, text, assumption]
   properties:
     id: { type: string, examples: [p1, r2] }
     text: { type: string }
     assumption:
       type: boolean
-      description: System gắn true khi nhận định về tài liệu không có tham chiếu Trusted Reference/Evidence (ORCH-DELIB-003).
+      description: |
+        System gắn true khi điểm không có `sourceRefs` tới Trusted Reference/Evidence (ORCH-DELIB-003, PRD 18.1). Agent
+        không gửi được giá trị khác với quy tắc này — System ghi đè khi lưu.
     sourceRefs:
       type: array
       items: { $ref: common.yaml#/TypedRef }
@@ -620,8 +714,8 @@ PositionContent:
   type: object
   description: |
     Lập trường theo mẫu cố định (ORCH-DELIB-003): phương án; lý do theo tiêu chí; giả định; rủi ro; tham chiếu nguồn;
-    độ tin cậy. PRD 18.1 ghi rationale[] {criterion, text}, assumptions[], risks[]; ở đây mọi điểm gom vào `points` có
-    `id` ổn định, phân biệt bằng `kind` (Assumption — cần đồng bộ PRD 18.1).
+    độ tin cậy. Theo PRD 18.1 (DEC-50): `position {option, points[], confidence}` — mọi điểm có `id` ổn định, phân biệt
+    bằng `kind` (rationale | assumption | risk) và `criterion` khi là lý do.
   required: [option, points, confidence]
   properties:
     option: { type: string, description: Phương án đề xuất. }
@@ -666,17 +760,23 @@ CritiqueContent:
 
 FindingContent:
   type: object
-  description: Phát hiện trung gian của bước song song (CTX-BOARD-003). Cấu trúc là Assumption (PRD chưa chi tiết).
-  required: [summary]
+  description: |
+    Phát hiện trung gian (CTX-BOARD-003). Theo PRD 18.1 (DEC-50): `finding {summary, points[]}` — mỗi điểm là
+    DeliberationPoint có `id` ổn định để entry khác trỏ tới.
+  required: [summary, points]
   properties:
     summary: { type: string }
-    detail: { type: string }
+    points:
+      type: array
+      items: { $ref: '#/DeliberationPoint' }
 
 SynthesisContent:
   type: object
   description: |
     Bản tổng hợp của Orchestrator (ORCH-DELIB-004). System từ chối khi không tham chiếu lập trường cuối của mọi bên
-    hoặc bỏ sót critique đang phản đối. Tên trường là Assumption (PRD 18.1 chỉ ghi “có cấu trúc theo type”).
+    hoặc bỏ sót critique đang phản đối. Trường theo PRD 18.1 (DEC-50): `synthesis {consensus[], disagreements[]
+    (tham chiếu entry và point của từng bên), options[], recommendation, questions[], finalPositionEntryIds[],
+    outdatedEntities[]}`; tên trường con là Assumption của biên soạn.
   required: [consensus, disagreements, options, recommendation, finalPositionEntryIds]
   properties:
     consensus:
@@ -693,10 +793,13 @@ SynthesisContent:
             type: array
             items:
               type: object
-              required: [participant, entryId]
+              required: [participant, entryId, pointId]
               properties:
                 participant: { $ref: '#/DeliberationPartyRef' }
                 entryId: { $ref: common.yaml#/Id }
+                pointId:
+                  type: string
+                  description: '`id` của DeliberationPoint trong entry `entryId` thể hiện lập trường của bên này về điểm bất đồng.'
                 summary: { type: string }
           openCritiqueEntryIds:
             type: array
@@ -763,7 +866,7 @@ DeliberationEntry:
         Entry trên Deliberation Board (CTX-BOARD-001, 18.1). Chỉ ghi thêm; không sửa tại chỗ. Chỉ System chuyển trạng thái.
         `content` theo `type`: problem_brief → ProblemBrief, position → PositionContent, critique → CritiqueContent,
         finding → FindingContent, synthesis → SynthesisContent, retraction → RetractionContent.
-      required: [workflowId, author, type, content, status, createdAt]
+      required: [projectId, workflowId, author, type, content, status, createdAt]
       properties:
         workflowId: { $ref: common.yaml#/Id }
         deliberationId:
@@ -808,10 +911,19 @@ DeliberationEntryWrite:
     `needsReview` do System đặt, agent không gửi.
   required: [type, content]
   properties:
-    deliberationId: { $ref: common.yaml#/Id }
+    deliberationId:
+      type: [string, 'null']
+      format: uuid
+      description: |
+        Phiên mà entry thuộc về. `position`, `critique`, `synthesis`: bắt buộc và phải bằng `deliberationId` của Agent Run
+        ghi (phiên đang Running), lệch trả `deliberation_mismatch`. `retraction`: bằng phiên của entry bị rút lại (`null`
+        khi rút finding ngoài phiên). `finding`: `null`/bỏ trống với finding của bước song song ngoài phiên
+        (CTX-BOARD-003), hoặc phiên của Agent Run khi finding thuộc phiên. Trường này không mở phiên mới — phiên chỉ
+        mở qua `openDeliberation` (internal/orchestration.yaml).
     type:
       type: string
-      enum: [problem_brief, position, critique, finding, synthesis, retraction]
+      description: '`problem_brief` không ghi qua payload này (chỉ qua `openDeliberation`).'
+      enum: [position, critique, finding, synthesis, retraction]
     content: { $ref: '#/DeliberationEntryContent' }
     sourceRefs:
       type: array
@@ -854,13 +966,11 @@ ContextSnapshot:
 DeliberationRound:
   type: object
   readOnly: true
-  description: Vòng của phiên. `kind` là Assumption của biên soạn để giao diện dựng cột theo vòng (UX-MONITOR-006).
+  description: Vòng của phiên; giao diện dựng cột theo vòng (UX-MONITOR-006).
   required: [round, kind, closed]
   properties:
     round: { type: integer, minimum: 0 }
-    kind:
-      type: string
-      enum: [brief, independent, cross_critique, narrow, synthesis]
+    kind: { $ref: '#/DeliberationRoundKind' }
     focus:
       type: string
       description: Điểm bất đồng của vòng hẹp.
@@ -913,10 +1023,6 @@ DeliberationDetail:
           type: array
           description: Usage theo từng bên; tổng ở `usageTotal` (NFR-USAGE-005).
           items: { $ref: '#/ParticipantUsage' }
-        decisionPromptId:
-          type: [string, 'null']
-          format: uuid
-          description: Prompt `choice` trình Researcher sau tổng hợp (hoặc chạy lại/tiếp tục không thảo luận khi Failed).
         chosenOptionIds:
           type: array
           description: Lựa chọn Researcher đã chọn, lấy từ câu trả lời prompt.

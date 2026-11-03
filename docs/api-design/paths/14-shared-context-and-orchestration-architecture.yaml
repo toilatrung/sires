@@ -64,9 +64,15 @@
   post:
     tags: [Orchestration]
     operationId: pauseWorkflow
-    summary: Tạm dừng (Running → Paused)
-    description: Agent Run đang chạy hoàn tất bước hiện tại; không bắt đầu bước mới.
-    x-requirements: [ORCH-FAILURE-001]
+    summary: Tạm dừng (Running hoặc Waiting for User → Paused)
+    description: |
+      Nhận workflow ở `Running` hoặc `Waiting for User` (Waiting for User → Paused theo DEC-53, PO chốt 01/11/2026).
+      Từ Running: Agent Run đang chạy hoàn tất bước hiện tại; không bắt đầu bước mới. Từ Waiting for User: prompt chặn
+      giữ `Open` (không bị hủy, không coi là đồng ý). Trong khi Paused không bắt đầu Agent Run mới, kể cả khi prompt
+      được trả lời. Trạng thái khác (Created, Paused, Interrupted, Succeeded, Failed, Cancelled) trả `409`
+      `invalid_transition` kèm `currentState` (DATA-STATE-001).
+    x-requirements: [ORCH-FAILURE-001, DATA-STATE-001, DATA-STATE-002]
+    x-decisions: [DEC-53]
     x-priority: P0
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -85,8 +91,12 @@
   post:
     tags: [Orchestration]
     operationId: resumeWorkflow
-    summary: Tiếp tục workflow Paused (Paused → Running)
-    description: Workflow Interrupted phải đi qua `recovery-decision`.
+    summary: Tiếp tục workflow Paused (Paused → Running hoặc Waiting for User)
+    description: |
+      Workflow Interrupted phải đi qua `recovery-decision`. Workflow tạm dừng từ Waiting for User (DEC-53) mà prompt
+      chặn vẫn `Open` lúc tiếp tục thì quay lại `Waiting for User` thay vì Running (Paused → Waiting for User,
+      DEC-53, PRD 18.2).
+    x-decisions: [DEC-53]
     x-requirements: [ORCH-FAILURE-001]
     x-priority: P0
     parameters:
@@ -168,8 +178,23 @@
     tags: [Orchestration]
     operationId: listAgentRuns
     summary: Agent Run của workflow
-    x-requirements: [UX-MONITOR-001, CTX-REGISTRY-002]
+    description: |
+      Lọc theo phiên thảo luận và instance Analysis Agent để dựng cột theo bên và cộng usage theo bên (UX-MONITOR-006,
+      NFR-USAGE-005). `instance` chỉ có nghĩa với Agent Run của `analysis`.
+    x-requirements: [UX-MONITOR-001, CTX-REGISTRY-002, UX-MONITOR-006, NFR-USAGE-005]
     x-priority: P0
+    parameters:
+      - name: deliberationId
+        in: query
+        description: Chỉ Agent Run thuộc phiên thảo luận này (ORCH-DELIB-002).
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: agent
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/AgentName }
+      - name: instance
+        in: query
+        description: Instance Analysis Agent (AGENT-ANALYSIS-001); kèm `agent` khác `analysis` trả `422 instance_not_allowed`.
+        schema: { $ref: ../components/schemas/common.yaml#/AgentInstance }
     responses:
       '200':
         description: Agent Run theo thứ tự bước.
@@ -181,6 +206,8 @@
                 items:
                   type: array
                   items: { $ref: ../components/schemas/orchestration.yaml#/AgentRun }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
+      '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
 
 /agent-runs/{agentRunId}:
   parameters:

@@ -1,6 +1,6 @@
 # SIRes UI — hướng dẫn thiết kế
 
-Phiên bản 1.2, PO duyệt ngày 31/10/2026; bổ sung mục 2.4 Chuyển động (DEC-51) và 2.4.1 Tác vụ chạy lâu (DEC-52) ngày 01/11/2026. Đây là bộ quy tắc cho bất kỳ ai, người hay agent, khi xây dựng hoặc review giao diện SIRes. Màn hình tham chiếu đã render nằm ở [`pages/`](pages/) và duyệt được qua [`index.html`](index.html). Nếu file này và màn tham chiếu mâu thuẫn, hãy nêu ra, đừng tự đoán.
+Phiên bản 1.3, PO duyệt ngày 31/10/2026; bổ sung mục 2.4 Chuyển động (DEC-51) và 2.4.1 Tác vụ chạy lâu (DEC-52) ngày 01/11/2026; sửa theo rà soát ngày 01/11/2026 theo yêu cầu PO (bảng token đủ, dark mode, trạng thái agent, motion trong nguồn canvas, DEC-53). Đây là bộ quy tắc cho bất kỳ ai, người hay agent, khi xây dựng hoặc review giao diện SIRes. Màn hình tham chiếu đã render nằm ở [`pages/`](pages/) và duyệt được qua [`index.html`](index.html). Nếu file này và màn tham chiếu mâu thuẫn, hãy nêu ra, đừng tự đoán.
 
 Bối cảnh sản phẩm: SIRes (Super Intelligence Researcher) là ứng dụng web thuộc nền tảng eTroy cho người làm nghiên cứu (học viên cao học, NCS, giảng viên). Đây là công cụ làm việc hằng ngày trong phiên dài: Plan, Task, evidence, bản thảo LaTeX và nhiều AI agent làm việc dưới sự phê duyệt của con người. PRD ở [`../overview/`](../overview/index.html); hành vi màn hình nằm ở PRD mục 4 (kiến trúc thông tin) và mục 15 (yêu cầu UI/UX).
 
@@ -38,9 +38,30 @@ Dùng đúng các giá trị dưới đây; không tự tạo sắc độ trung 
 | `danger` | `#BE123C` | Failed, Invalid, lỗi, nút phá hủy |
 | `danger-tint` | `#FFF1F2` | Nền hộp lỗi |
 | `danger-ink` | `#9F1239` | Chữ trong chip lỗi |
-| `pdf-paper` | `#FFFFFF` | Chỉ trang giấy trong PDF preview |
+| `highlight` | `#CFE6FC` | Phần khớp trong đoạn trích evidence |
+| `diff-removed` | `#FFE4E6` | Dòng bị xóa trong diff của change proposal |
+| `pdf-paper` | `#FFFFFF` | Chỉ trang giấy trong PDF preview; chữ trên nút chính và ô chọn màu `ink` |
+| `scrim` | `rgba(28,27,24,.32)` | Lớp phủ sau dialog |
+| `shadow-float` | `0 4px 16px rgba(28,27,24,.10)` | Bóng của lớp nổi (menu, popover, dialog); không dùng cho bề mặt tĩnh |
 
-Dark mode hiện chỉ có ở component Agent List (`source/AgentList.dc.html`): surface `#1C1B18`, raised `#2E2B26`, line `#3A372F`, text `#F6F2EE`, muted `#C9C2B6`, brand `#3DA5FF`, link `#7CC0FF`, error `#F87171`. Khi làm dark theme cho toàn ứng dụng, mở rộng từ các giá trị này.
+Tên token khớp biến `--sires-<token>` trong `agent/skills/sires-ui-executor/references/tokens.css`.
+
+**Dark mode** hiện chỉ có ở component Agent List (`source/AgentList.dc.html`, xem cạnh light ở `AgentListPreview`). Cùng tên token, chỉ đổi giá trị (`[data-theme="dark"]` trong `tokens.css`). Khi làm dark theme cho toàn ứng dụng, mở rộng từ bảng này; không thêm giá trị ngoài bảng.
+
+| Token | Hex (dark) | Dùng cho |
+| --- | --- | --- |
+| `ground` | `#12110F` | Nền trang; nền chip Đang rảnh |
+| `surface` | `#1C1B18` | Thẻ, pane |
+| `control` | `#2E2B26` | Ô nhập, vòng tròn chữ viết tắt của agent |
+| `line` | `#3A372F` | Viền thẻ, đường kẻ hàng, viền chip Đang rảnh |
+| `ink` | `#F6F2EE` | Chữ chính |
+| `muted` | `#C9C2B6` | Chữ phụ |
+| `brand` | `#3DA5FF` | Viền chip Đang chạy, chấm Đang chạy (`--sires-running-dot`) |
+| `brand-ink` | `#7CC0FF` | Liên kết; viền và chữ chip “cần bạn xử lý” |
+| `brand-tint` | `#0E2A45` | Nền chip Đang chạy và “cần bạn xử lý” |
+| `warn` | `#FB923C` | Viền và chữ chip cảnh báo (Gián đoạn) |
+| `danger` | `#F87171` | Viền và chữ chip lỗi (dark không có `danger-ink` riêng) |
+| `danger-tint` | `#3A1518` | Nền chip lỗi |
 
 ### 2.2 Chữ
 
@@ -60,7 +81,7 @@ Viết hoa kiểu câu ở mọi nơi. Không nhãn chữ hoa giãn chữ, khôn
 
 ### 2.3 Hình khối và khoảng cách
 
-- **Bo góc chặt và cố định**: thẻ, panel, dialog, khung bảng `8px`; nút, ô nhập, select, textarea, hộp nhỏ `6px`; chip và tag `4px`; avatar và núm công tắc tròn hoàn toàn. Không giá trị nào khác. Không nút dạng viên thuốc, không bo mềm 12–24px.
+- **Bo góc chặt và cố định**: thẻ, panel, dialog, khung bảng `8px`; nút, ô nhập, select, textarea, hộp nhỏ `6px`; chip, tag, skeleton và thanh tiến độ (rãnh và phần tô cao 4px) `4px`; avatar, chấm trạng thái, huy hiệu số đếm và núm công tắc tròn hoàn toàn. Không giá trị nào khác (không có 2px). Không nút dạng viên thuốc, không bo mềm 12–24px.
 - **Không đổ bóng** trên bề mặt tĩnh. Chỉ lớp nổi (menu, popover, dialog) được dùng `0 4px 16px rgba(28,27,24,.10)`.
 - **Viền**: 1px `line` cho thẻ và pane; 1.5px cho chip trạng thái và thẻ mang trạng thái (proposal, prompt, recovery).
 - **Khoảng cách** theo lưới 4px. Padding thẻ 16–24px, khoảng cách giữa thẻ 16–24px, lề trang `clamp(16px, 3vw, 32px)`, khoảng cách giữa khu vực 24–32px.
@@ -69,14 +90,14 @@ Viết hoa kiểu câu ở mọi nơi. Không nhãn chữ hoa giãn chữ, khôn
 
 ### 2.4 Chuyển động
 
-Chuyển động phải phục vụ một mục đích: phản hồi thao tác, cho biết vật thể đến từ đâu, hoặc báo trạng thái đã đổi. Không dùng để trang trí. Giá trị lấy từ token của Animate UI, áp dụng ở mức **subtle** (skill ở `agent/skills/vendor/animate-ui`, DEC-51). Bản CSS dùng chung là [`assets/motion.css`](assets/motion.css); `tools/render.mjs` gắn file này vào mọi trang trong `pages/`.
+Chuyển động phải phục vụ một mục đích: phản hồi thao tác, cho biết vật thể đến từ đâu, hoặc báo trạng thái đã đổi. Không dùng để trang trí. Giá trị lấy từ token của Animate UI, áp dụng ở mức **subtle** (skill ở `agent/skills/vendor/animate-ui`, DEC-51). Bản CSS dùng chung là [`assets/motion.css`](assets/motion.css), là nguồn chuẩn duy nhất. `tools/render.mjs` làm hai việc: chép nguyên văn file này vào khối `<style data-sires-motion>` trong `<helmet>` của mọi `source/*.dc.html`, để nguồn mở trên canvas tự hiển thị đúng chuyển động (thanh indeterminate, skeleton, chấm `data-running`, dialog, alert, tooltip, bấm); rồi bỏ khối đó khi dựng và gắn `motion.css` một lần bằng `<link>` vào mọi trang trong `pages/`. Muốn đổi chuyển động: sửa `motion.css`, chạy lại render; không sửa khối đã chép trong nguồn.
 
 | Thành phần | Chuyển động | Giá trị |
 | --- | --- | --- |
 | Đổi màu (hover, focus, chọn) của link, nút, tab, radio, công tắc, ô nhập | Chuyển màu chữ, nền, viền | 200ms, `cubic-bezier(0.25, 0.1, 0.25, 1)` |
 | Bấm nút, tab, radio, công tắc | Lún xuống 0.97; không phóng to khi hover | 160ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
 | Dialog | Hiện dần, co từ 0.9, giữ nguyên tâm, không nghiêng | 400ms, `cubic-bezier(0.215, 0.61, 0.355, 1)` |
-| Tooltip, popover | Hiện dần, mọc từ phía nơi gọi nó, từ 0.85 | 220ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
+| Tooltip, popover | Hiện dần, mọc từ phía nơi gọi nó, từ 0.85. Ghi phía bằng `data-side` (`bottom` mặc định, `top`, `left`, `right`); `motion.css` đặt `transform-origin` theo phía, căn mép đầu nơi gọi. Popover dùng thuộc tính `data-popover` | 220ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
 | Thông báo lỗi (`role="alert"`) | Hiện dần, nhích lên 4px | 300ms, `cubic-bezier(0.23, 1, 0.32, 1)` |
 | Nội dung `<details>` khi mở | Hiện dần, trượt xuống 4px | 350ms, `cubic-bezier(0.215, 0.61, 0.355, 1)` |
 
@@ -91,7 +112,7 @@ Theo UX-STATE-001 (workflow, indexing, build, tìm kiếm). Chuyển động ch�
 
 | Tình huống | Hiển thị | Cách gắn trong mẫu (`motion.css`) |
 | --- | --- | --- |
-| Chip đang chạy: Running, In Progress, Indexing, Đang build, Đang tìm | Chấm 7px `brand` nhấp nháy trước nhãn, 1.6s lặp | Thuộc tính `data-running` trên chip |
+| Chip đang chạy: Running, In Progress, Indexing, Đang build, Đang tìm, Đang chạy (agent) | Chấm 7px `brand` nhấp nháy trước nhãn, 1.6s lặp; nền tối đặt `--sires-running-dot` | Thuộc tính `data-running` trên chip |
 | Thao tác biết số bước | Thanh 4px, phần tô trượt từ 0 tới giá trị trong 550ms, không vượt; kèm chữ "Bước 2/4" | `data-progress` trên phần tô |
 | Thao tác chưa biết thời lượng (build, tìm kiếm) | Rãnh 4px với dải `brand` 30% chạy lặp tuyến tính 1.4s; luôn kèm thời gian đã chạy | `data-progress="indeterminate"` trên rãnh |
 | Tải danh sách ngắn (Library, Discover, bảng) | Skeleton theo đúng bố cục dòng thật: khối `control`, bo 4px, mờ dần lặp 1.6s, không shimmer; dòng chữ `role="status"` nêu đang tải gì; khối skeleton `aria-hidden` | `data-skeleton` trên từng khối |
@@ -99,7 +120,7 @@ Theo UX-STATE-001 (workflow, indexing, build, tìm kiếm). Chuyển động ch�
 - Thao tác của agent hay System không dùng skeleton mà dùng thẻ thao tác dài (`States`): tên thao tác, ai làm, thời gian đã chạy, thanh tiến độ, hoạt động gần nhất, nút hủy khi hủy được, ghi rõ rời trang được.
 - Một màn chỉ có một thanh tiến độ cho mỗi thao tác; không đặt spinner xoay.
 - `prefers-reduced-motion: reduce`: chấm và skeleton đứng yên, phần tô hiện ngay giá trị, thanh không xác định hiện cả rãnh màu nhạt.
-- Màn tham chiếu: `States` (thẻ thao tác dài, thao tác chưa biết thời lượng, đang tải danh sách), `Library` biến thể loading, `Discover` biến thể searching, `Manuscript` biến thể building.
+- Màn tham chiếu: `States` (thẻ thao tác dài, thao tác chưa biết thời lượng, đang tải danh sách), `Library` biến thể loading, `Discover` biến thể searching, `Manuscript` biến thể building, `Workflow` (running, thảo luận đang chạy), `AgentList`.
 
 ## 3. Ngôn ngữ trạng thái
 
@@ -111,9 +132,21 @@ Mỗi trạng thái chuẩn (PRD mục 5) có một nhãn duy nhất, cùng ch�
 | Đã chốt | Viền 1.5px **nét liền** | Approved, Ready (brand), Accepted, Trusted, Completed, Succeeded (ink) |
 | **Cần bạn xử lý** | Nền `brand-tint`, viền `brand-line`, chữ `brand-ink`, kèm biểu tượng tròn có dấu chấm than | Waiting for User, In Review, Plan Proposed, Pending Approval, mọi pending action |
 | Đang chạy | Viền liền `brand`, nền `brand-tint`, chữ ink, chấm 7px nhấp nháy trước nhãn (mục 2.4.1), đứng yên khi `prefers-reduced-motion` | In Progress, Running, Indexing, Đang chạy, Đang build, Đang tìm |
-| Cảnh báo | Viền `warn` (liền = trạng thái, đứt = cờ nhẹ) | Blocked, Interrupted, Conflicting (liền); Unsupported, needs review (đứt) |
-| Lỗi | Viền `danger`, nền `danger-tint` | Failed, Invalid, Lỗi |
-| Trung tính / kết thúc | Viền `line`, nền `ground`, chữ muted | Queued, Cancelled, Superseded, Rejected, Paused, Đang rảnh |
+| Cảnh báo | Viền `warn` (liền = trạng thái, đứt = cờ nhẹ) | Blocked, Interrupted, Gián đoạn (agent), Conflicting (liền); Unsupported, needs review (đứt) |
+| Lỗi | Viền `danger`, nền `danger-tint`, chữ `danger-ink` | Failed, Invalid, Lỗi |
+| Trung tính / kết thúc | Viền `line`, nền `ground`, chữ muted | Queued, Pending (bước), Cancelled, Superseded, Rejected, Paused, Đang rảnh |
+
+**Ngoại lệ: trạng thái của agent trong Agent List.** Quy tắc “tên trạng thái giữ tiếng Anh” áp dụng cho trạng thái chuẩn của entity ở PRD mục 5 (Task, Workflow, Workflow Step, Agent Run, Deliberation, Reference…). Agent (Orchestrator, Discovery Agent…) không phải entity có trạng thái chuẩn; Agent List chỉ tóm tắt việc agent đang làm trong project, nên dùng nhãn theo ngôn ngữ giao diện (EN: Running, Needs you, Interrupted, Error, Idle). Năm nhãn tiếng Việt, mỗi nhãn đúng một kiểu ở bảng trên:
+
+| Nhãn agent | Kiểu | Khi nào |
+| --- | --- | --- |
+| Đang chạy | Đang chạy (chấm `data-running`) | Có Agent Run Running |
+| Chờ bạn | Cần bạn xử lý (icon chấm than) | Workflow của agent đang Waiting for User vì prompt của agent đó |
+| Gián đoạn | Cảnh báo, viền liền `warn` (icon tam giác) | Agent Run dừng vì workflow Interrupted |
+| Lỗi | Lỗi (icon dấu ×) | Agent Run Failed sau khi thử lại, hoặc agent không chạy được (Provider Connection bị từ chối) |
+| Đang rảnh | Trung tính | Không có việc trong project |
+
+Một agent có nhiều việc cùng lúc hiện nhãn khẩn nhất: Chờ bạn > Lỗi > Gián đoạn > Đang chạy > Đang rảnh. Chi tiết dòng luôn nêu Task (hoặc workflow) và bước bằng chữ; trạng thái chuẩn của workflow và Agent Run vẫn ghi tiếng Anh ở màn Workflow.
 
 Execution label là tag (bo 4px) có icon riêng, luôn tiếng Anh: **Available for agent** (icon chip, viền `line`, nền `ground`) và **Manual editor requirement** (icon bút, viền 1.5px `ink`). Xuất hiện ở mọi nơi có Task.
 
@@ -125,18 +158,22 @@ Nguồn tham chiếu ở `source/`, bản render ở `pages/`.
 
 | Component | Tham chiếu | Quy tắc |
 | --- | --- | --- |
-| Top bar | `TopBar` | Logo → Dashboard; bộ chuyển ngữ cảnh (“Global” hoặc tên project); tab khu vực Global (gạch chân màu `ink`, không dùng brand); bên phải: Trợ lý (chỉ ở Global), Pending Actions kèm số đếm (phần khung duy nhất có viền brand), thông báo, VI/EN, Settings, avatar. Có trên mọi màn. |
+| Top bar | `TopBar` | Logo → Dashboard; bộ chuyển ngữ cảnh (“Global” hoặc tên project); tab khu vực Global (gạch chân màu `ink`, không dùng brand); bên phải: Trợ lý (chỉ ở Global), Pending Actions kèm số đếm mọi pending action của tài khoản (phần khung duy nhất có viền brand), chuông Notifications kèm số chưa đọc (mở `Notifications`), VI/EN, Settings, avatar. Có trên mọi màn. Số trên Pending Actions bằng số mục ở `PendingActions`, `Dashboard`, `MobilePending`; tổng số trên Project rail bằng số pending action của project đó. |
 | Project rail | `ProjectRail` | 220–240px, nền `surface`, tên project + trạng thái Plan, tám khu vực, số việc chờ người dùng, ô active task ở đáy. Mục đang chọn: nền `control`, chữ ink. Manuscript ẩn rail để đủ chỗ và có nút “Project” để quay lại. |
 | Nút | `Components`, `Main` | Chính: nền `brand`, chữ trắng, **một nút mỗi màn**. Phụ: nền `surface`, viền `line`, chữ ink. Viền xanh (hành động phụ trong thẻ quyết định): viền `brand`, chữ brand-ink. Nút chữ: brand-ink, không viền. Phá hủy: viền và chữ `danger` trên `surface`. Vô hiệu: nền `ground`, chữ `disabled-ink`, kèm lý do viết cạnh nút. |
 | Ô nhập | mọi form | Nhãn phía trên (13px/600), cao 40px, nền `control`, viền `line-control`, bo 6px. Lỗi: viền 1.5px `danger` + thông báo dưới ô nêu sai gì và cho biết chưa lưu. |
 | Công tắc | `SettingsProfile`, `SettingsPreferences` | Rãnh 44×26; tắt = nền `surface`, núm `muted`; bật = nền `ink`, núm trắng. Nhãn ghi trạng thái hiện tại bằng chữ. |
 | Segmented control | `Plan`, `Manuscript` | Viền `line`, ô đang chọn nền `ink`, chữ trắng. |
 | Bảng | `Projects`, `Library`, `GlobalActivity` | Đặt trong thẻ `surface`; tiêu đề cột 12px muted, viết hoa kiểu câu; đường kẻ hàng 1px; không zebra, không dải nền tiêu đề; ID dùng mono; wrapper `position: relative; overflow-x: auto` để bảng rộng cuộn trong thẻ. |
-| Danh sách chờ | `Dashboard`, `PendingActions` | Cũ nhất lên trên; mỗi dòng: chip cần-xử-lý ghi loại, tiêu đề, project và thời điểm, một nút viền xanh mở đối tượng trong đúng ngữ cảnh. Việc hết hiệu lực ở nhóm riêng viền đứt kèm lý do. |
+| Danh sách chờ | `Dashboard`, `PendingActions`, `Overview`, `MobilePending` | Cũ nhất lên trên; mỗi dòng: chip cần-xử-lý ghi loại, tiêu đề, project và thời điểm, một nút viền xanh mở đối tượng trong đúng ngữ cảnh. Tên loại đúng nguyên văn PRD 4.4, giống bộ lọc: Plan approval request, Interactive Agent Prompt, Reference approval, Task review request, Manual work required, Manuscript change proposal, Recovery decision. Việc hết hiệu lực ở nhóm riêng viền đứt kèm lý do. |
+| Notifications | `Notifications`, `States` | Tách khỏi Pending Actions (PRD 4.4): mới nhất lên trên; chấm brand = chưa đọc, chấm rỗng = đã đọc, kèm nhãn cho trình đọc màn hình; chip loại (Blocked task và Impact warning kiểu cảnh báo, Failure và Provider issue kiểu lỗi, Completion kiểu đã chốt); project, thời điểm, một liên kết mở đúng đối tượng. Lọc theo Chưa đọc và theo loại. Không nút chính tô màu. |
+| Danh sách workflow | `GlobalActivity`, `ProjectActivity` | UX-MONITOR-001: bảng gồm mã và loại workflow, Task, trạng thái, bước · agent hiện tại, thời gian chạy (tính cả lúc chờ), prompt đang chờ, điều khiển hợp lệ. Workflow đang hoạt động ở trên. Running và Waiting for User có Tạm dừng và Hủy (DEC-53); Paused có Tiếp tục và Hủy; đã kết thúc chỉ có “Xem chi tiết”. |
+| Chi tiết workflow | `Workflow` | Ba chế độ xem: Dòng thời gian, Danh sách bước (bước, agent, StepStatus, đầu vào và đầu ra dạng liên kết, UX-MONITOR-002), Thảo luận (UX-MONITOR-006; Deliberation Running, Completed, Failed kèm prompt chạy lại hoặc tiếp tục không thảo luận, Cancelled giữ entry đã ghi). Panel Agent Run bên phải. |
+| Dependency graph | `Plan` (biến thể graph, graph-cycle) | UX-TASK-002: nút Task theo Phase, chip trạng thái như board; cạnh đã thỏa nét liền `muted`, cạnh đang chặn nét đứt `warn`; Task bị chặn có viền `warn` và ghi Task gây chặn; danh sách chữ “Task đang bị chặn” kèm liên kết tới Task gây chặn; sơ đồ cuộn ngang trong thẻ. Khi soạn Draft có chu trình: Task và cạnh trong chu trình viền liền `danger` 2–2.5px, hộp `role="alert"` nêu chuỗi Task, mã lỗi và nút bỏ dependency vừa thêm; Draft vẫn lưu nhưng không gửi đề xuất được. |
 | Thẻ prompt | `Chat`, `MobilePrompt` | Xem mục 3. Phương án là các dòng radio rộng hết thẻ, kèm hệ quả. |
 | Change proposal | `Manuscript` | Hộp viền đứt brand ngay trong editor: agent tác giả, Task, số claim/evidence, diff (− nền `#FFE4E6`, + nền `brand-tint`), chip kiểm tra citation; chấp nhận/từ chối cả proposal; khi Outdated thay nút Chấp nhận bằng “Yêu cầu tạo lại”. |
 | Evidence Inspector | `Evidence` | Liên kết Reference, vị trí (trang, đoạn, chunk), đoạn trích chữ có chân với phần khớp tô `#CFE6FC`, các claim đang dùng, Active/Excluded/Stale. Claim Conflicting hiện cả evidence hỗ trợ và phản bác. |
-| Agent List | `AgentList` | Tiêu đề “Agents” + tóm tắt bằng chữ; mỗi dòng: vòng tròn chữ viết tắt, tên, vai trò, chip trạng thái, liên kết Task và bước khi đang chạy hoặc lỗi. Trạng thái: Đang chạy, Đang rảnh, Lỗi. Bind theo trạng thái workflow. |
+| Agent List | `AgentList`, `AgentListPreview` | Tiêu đề “Agents” + tóm tắt bằng chữ (“1 đang chạy, 2 chờ bạn, 1 lỗi, 6 đang rảnh”) + phạm vi (project, thời điểm); mỗi dòng: vòng tròn chữ viết tắt, tên, vai trò, chip trạng thái, liên kết Task và bước khi không rảnh. Đủ 10 dòng: Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, Analysis Agent A, Analysis Agent B. Nhãn trạng thái theo ngoại lệ ở mục 3. Bind theo trạng thái workflow và các workflow khác của project. |
 | Banner | `Dashboard`, `Overview` | Khôi phục (viền 1.5px `warn`), nhắc thêm API key lần đầu (viền đứt brand), Archived chỉ đọc (viền 1.5px muted). Một câu nêu chuyện gì xảy ra, cái gì đã giữ lại, một hành động. |
 | Dialog | `SettingsAgents` (xác nhận đổi embedding) | Rộng 480px, nền `surface`, bo 8px, lớp phủ `rgba(28,27,24,.32)`; nêu hệ quả bằng con số trước nút xác nhận; nút hủy gọi tên phương án an toàn. |
 | Trống / lỗi / đang tải | `States` | Trống: lý do + hành động tiếp. Lỗi: chuyện gì xảy ra, cái gì đã lưu, làm gì tiếp, mã lỗi; không stack trace, không key. Thao tác dài: bước, agent, thời gian đã chạy, hoạt động gần nhất. |
@@ -183,7 +220,7 @@ WCAG 2.1 AA cho mọi màn của WF-01–WF-07: tương phản chữ ≥ 4.5:1 (
 | `tools/render.mjs` | Dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs` | Phục vụ thư mục tại http://localhost:5178 |
 | `assets/sires-logo.svg` | Logo |
-| `assets/motion.css` | Token và quy tắc chuyển động (mục 2.4, 2.4.1) |
+| `assets/motion.css` | Token và quy tắc chuyển động (mục 2.4, 2.4.1); nguồn chuẩn, `render.mjs` chép vào helmet của mọi nguồn và gắn vào mọi trang |
 
 ---
 

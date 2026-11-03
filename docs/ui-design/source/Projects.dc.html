@@ -13,6 +13,178 @@
 <body>
 <x-dc>
 <helmet>
+<style data-sires-motion>
+/* Bản chép từ assets/motion.css do tools/render.mjs tạo; sửa motion.css rồi chạy lại render. */
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+
+/* Chuyển động của SIRes UI (design.md mục 2.4, DEC-51).
+   Port sang CSS thuần từ token và recipe của Animate UI, mức subtle:
+   agent/skills/vendor/animate-ui/references/tokens.md, recipes/press.md, modal.md, overlay.md, disclosure.md.
+   Đây là nguồn chuẩn. tools/render.mjs (1) gắn file này vào mọi trang trong pages/ bằng <link>,
+   (2) chép nguyên văn vào khối <style data-sires-motion> trong helmet của mỗi source/*.dc.html
+   để canvas cũng hiển thị đúng chuyển động. Sửa ở đây rồi chạy lại render; không sửa khối đã chép. */
+
+:root {
+  /* Đường cong (tokens.md § Curves) */
+  --sires-ease-out: cubic-bezier(0.23, 1, 0.32, 1);    /* ease.out: vào hoặc rời */
+  --sires-ease-soft: cubic-bezier(0.215, 0.61, 0.355, 1); /* ease.soft: dialog, menu, disclosure */
+  --sires-ease-color: cubic-bezier(0.25, 0.1, 0.25, 1);  /* ease.color: đổi màu */
+
+  /* Thời lượng (tokens.md § Tweens) */
+  --sires-dur-press: 160ms;    /* thay cho spring.press (~120ms tới nơi) */
+  --sires-dur-color: 200ms;    /* transition.color */
+  --sires-dur-menu: 220ms;     /* transition.menu, dùng cho tooltip */
+  --sires-dur-reveal: 300ms;   /* transition.reveal */
+  --sires-dur-disclose: 350ms; /* transition.disclosure */
+  --sires-dur-dialog: 400ms;   /* transition.dialogFade */
+
+  /* Điểm bắt đầu (tokens.md § Scales, nhẹ hơn một bậc theo feel.md "subtler") */
+  --sires-press: 0.97;         /* scale.press */
+  --sires-dialog-from: scale(0.9);
+  --sires-tooltip-from: scale(0.85);
+  --sires-reveal-from: translateY(4px);
+  --sires-disclose-from: translateY(-4px);
+
+  /* Tác vụ chạy lâu (design.md 2.4.1) */
+  --sires-dur-progress: 550ms; /* spring.progress: không vượt, ổn định ~550ms */
+  --sires-dur-pulse: 1.6s;     /* chấm Đang chạy và skeleton */
+  --sires-dur-sweep: 1.4s;     /* dải chạy của thanh không xác định */
+  --sires-progress-from: scaleX(0);
+}
+
+/* Giảm chuyển động: bỏ mọi dịch chuyển và co giãn, giữ hiệu ứng mờ dần. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sires-press: 1;
+    --sires-dialog-from: none;
+    --sires-tooltip-from: none;
+    --sires-reveal-from: none;
+    --sires-disclose-from: none;
+    --sires-progress-from: none;
+  }
+}
+
+/* Đổi màu khi hover, focus, chọn: chuyển mượt thay vì nhảy. */
+a, button, summary, input, select, textarea,
+[role="tab"], [role="radio"], [role="switch"] {
+  transition:
+    color var(--sires-dur-color) var(--sires-ease-color),
+    background-color var(--sires-dur-color) var(--sires-ease-color),
+    border-color var(--sires-dur-color) var(--sires-ease-color),
+    outline-color var(--sires-dur-color) var(--sires-ease-color),
+    transform var(--sires-dur-press) var(--sires-ease-out);
+}
+
+/* Bấm: lún 0.97, không phóng to khi hover (recipes/press.md). */
+button:not(:disabled):active,
+[role="tab"]:active, [role="radio"]:active, [role="switch"]:active {
+  transform: scale(var(--sires-press));
+}
+
+/* Dialog: hiện dần và co từ 0.9, giữ nguyên tâm (recipes/modal.md, bỏ góc nghiêng). */
+[role="dialog"] {
+  animation: sires-dialog-in var(--sires-dur-dialog) var(--sires-ease-soft) both;
+}
+@keyframes sires-dialog-in {
+  from { opacity: 0; transform: var(--sires-dialog-from); }
+}
+
+/* Tooltip, popover: mọc từ phía nơi gọi nó (recipes/overlay.md). Phía ghi bằng data-side:
+   bottom (mặc định, hiện dưới nơi gọi), top, left, right; căn theo mép đầu của nơi gọi. */
+[role="tooltip"], [data-popover] {
+  transform-origin: top left;
+  animation: sires-tooltip-in var(--sires-dur-menu) var(--sires-ease-out) both;
+}
+[data-side="top"]:is([role="tooltip"], [data-popover]) { transform-origin: bottom left; }
+[data-side="left"]:is([role="tooltip"], [data-popover]) { transform-origin: top right; }
+[data-side="right"]:is([role="tooltip"], [data-popover]) { transform-origin: top left; }
+@keyframes sires-tooltip-in {
+  from { opacity: 0; transform: var(--sires-tooltip-from); }
+}
+
+/* Thông báo lỗi: hiện dần, nhích lên 4px (transition.reveal). */
+[role="alert"] {
+  animation: sires-reveal-in var(--sires-dur-reveal) var(--sires-ease-out) both;
+}
+@keyframes sires-reveal-in {
+  from { opacity: 0; transform: var(--sires-reveal-from); }
+}
+
+/* <details>: nội dung mở ra mượt (recipes/disclosure.md, dạng mờ dần, không đổi chiều cao). */
+details[open] > :not(summary) {
+  animation: sires-disclose-in var(--sires-dur-disclose) var(--sires-ease-soft) both;
+}
+@keyframes sires-disclose-in {
+  from { opacity: 0; transform: var(--sires-disclose-from); }
+}
+
+/* ---- Tác vụ chạy lâu: Running, tiến độ, đang tải (UX-STATE-001) ---- */
+
+/* Chấm 7px nhấp nháy trước nhãn của mọi chip đang chạy (Running, In Progress, Indexing, Đang build…).
+   Gắn bằng thuộc tính data-running trên chip; chữ trạng thái vẫn là tín hiệu chính. */
+@keyframes sires-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+[data-running] { gap: 5px; }
+[data-running]::before {
+  content: "";
+  flex: 0 0 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--sires-running-dot, #0277DD); /* nền tối: --sires-running-dot: #3DA5FF */
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Thanh tiến độ biết số bước: phần tô (data-progress) trượt từ 0 tới giá trị, chỉ dùng transform. */
+[data-progress]:not([data-progress="indeterminate"]) {
+  transform-origin: left center;
+  animation: sires-progress-in var(--sires-dur-progress) var(--sires-ease-out) both;
+}
+@keyframes sires-progress-in {
+  from { transform: var(--sires-progress-from); }
+}
+
+/* Thanh không xác định thời lượng (build, tìm kiếm): một dải 30% chạy lặp tuyến tính trên rãnh. */
+[data-progress="indeterminate"] {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  background: #DBD3C7;
+  border-radius: 4px;
+}
+[data-progress="indeterminate"]::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: #0277DD;
+  border-radius: 4px;
+  animation: sires-sweep var(--sires-dur-sweep) linear infinite;
+}
+@keyframes sires-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(333%); }
+}
+
+/* Skeleton khi tải danh sách: khối nền control mờ dần lặp lại, không shimmer. */
+[data-skeleton] {
+  display: block;
+  background: #E5DED5;
+  border-radius: 4px;
+  animation: sires-pulse var(--sires-dur-pulse) ease-in-out infinite;
+}
+
+/* Giảm chuyển động: mọi vòng lặp đứng yên; thanh không xác định hiện cả rãnh màu nhạt thay vì dải chạy. */
+@media (prefers-reduced-motion: reduce) {
+  [data-running]::before,
+  [data-skeleton],
+  [style*="sires-pulse"] { animation: none !important; }
+  [data-progress="indeterminate"]::after { animation: none; width: 100%; opacity: .35; }
+}
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0;background:#F6F2EE}
@@ -96,7 +268,7 @@ class Component extends DCLogic {
   renderVals() {
     return {
       rows: [
-        { name: 'RAG trong tổng quan tài liệu', q: 'RAG trên nguồn đã duyệt có giảm claim không có căn cứ trong literature review?', plan: 'v3 Approved', pb: 'solid #0277DD', pc: '#025FAC', prog: '9/14 Task', wait: '3 việc', last: '09:42 hôm nay' },
+        { name: 'RAG trong tổng quan tài liệu', q: 'RAG trên nguồn đã duyệt có giảm claim không có căn cứ trong literature review?', plan: 'v3 Approved', pb: 'solid #0277DD', pc: '#025FAC', prog: '4/15 Task', wait: '6 việc', last: '09:42 hôm nay' },
         { name: 'Học máy trong chẩn đoán ảnh', q: 'So sánh CNN và ViT trên dữ liệu X-quang ngực công khai.', plan: 'v2 Approved', pb: 'solid #0277DD', pc: '#025FAC', prog: '11/12 Task', wait: '—', last: '30/10/2026' },
         { name: 'Độ tin cậy của LLM trong giáo dục', q: 'Mức độ chính xác của câu trả lời LLM khi hỗ trợ sinh viên tự học?', plan: 'v1 Proposed', pb: 'dashed #0277DD', pc: '#025FAC', prog: 'Chưa có baseline', wait: '1 việc', last: '29/10/2026' }
       ]

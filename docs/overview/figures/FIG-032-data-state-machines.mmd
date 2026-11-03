@@ -1,7 +1,7 @@
 %% SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 %% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 %% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-%% FIG-032 — State machines for Plan Version, Reference, Evidence, Claim, Artifact Version, Change Proposal, Prompt (section 18.2)
+%% FIG-032 — State machines for Plan Version, Reference, Evidence, Claim, Artifact Version, Change Proposal, Prompt, Deliberation, Deliberation Entry (section 18.2)
 stateDiagram-v2
   state "Plan Version" as PV {
     [*] --> Draft
@@ -59,4 +59,18 @@ stateDiagram-v2
     Open --> Answered
     Open --> Expired: project archived (no time-based expiry)
     Open --> Cancelled: workflow cancelled or awaited object changed version
+  }
+  state "Deliberation (DEC-47)" as DL {
+    [*] --> DLRunning
+    DLRunning --> DLCompleted: synthesis passes checks (ORCH-DELIB-004)
+    DLRunning --> DLFailed: fewer than two Analysis Agent positions or no Orchestrator position after retries (ORCH-DELIB-002)
+    DLRunning --> DLCancelled: workflow cancelled
+    note right of DLRunning: workflow Interrupted does not change the status; recovery resumes the open round
+  }
+  state "Deliberation Entry (DEC-47)" as DE {
+    [*] --> EntryDraft
+    EntryDraft --> EntryFinal: author confirms or Agent Run succeeds
+    EntryDraft --> EntryRetracted: author writes a retraction entry
+    EntryFinal --> EntryRetracted: author writes a retraction entry
+    note right of EntryFinal: content is immutable in every status
   }
