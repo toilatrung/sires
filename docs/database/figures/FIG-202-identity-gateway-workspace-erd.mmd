@@ -1,0 +1,42 @@
+%% SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+%% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+%% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+%% FIG-202 — ERD sires_identity, sires_gateway, sires_workspace (docs/database 4); đường chấm = ref xuyên database
+erDiagram
+  account ||--|| verification_thresholds : "có"
+  account ||--o{ provider_connection : "có"
+  provider_connection ||--|| provider_secret : "ciphertext"
+  account ||--o{ agent_model_assignment : "gán"
+  provider_connection ||--o{ agent_model_assignment : "dùng"
+  account |o..o| provider_connection : "embedding DEC-31"
+  session }o..|| account : "ref account_id"
+  research_project ||--|{ research_context_version : "phiên bản"
+  research_project ||--o{ conversation : "scope project"
+  conversation ||--o{ message : "chứa"
+  research_project ||--o{ pending_action : "project_id"
+  research_project ||--o{ notification : "project_id"
+  research_project ||--o| project_purge : "purge"
+  account {
+    uuid id PK
+    text auth_issuer
+    text auth_subject
+    text status
+  }
+  provider_connection {
+    uuid id PK
+    text name
+    text provider
+    text test_status
+  }
+  agent_model_assignment {
+    uuid id PK
+    text agent
+    text instance
+    text model
+  }
+  research_project {
+    uuid id PK
+    text status
+    timestamptz deleted_at
+    timestamptz purge_after
+  }

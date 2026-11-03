@@ -1,0 +1,97 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — orchestration.">
+<title>6. orchestration | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 6</p><h1>6. orchestration</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/05-core-domain-model.html">5.4–5.5, 5.9</a>, <a href="../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html">8</a> (8.7), <a href="../../overview/sections/14-shared-context-and-orchestration-architecture.html">14</a>, 18.1–18.4; kiến trúc <a href="../../architecture/sections/05-workflow-engine-and-orchestration.html">5</a> (ADR-03, ADR-24) · DDL: <a href="../ddl/orchestration.sql"><code>orchestration.sql</code></a> · ERD: <a href="../figures/FIG-204-orchestration-erd.mmd">FIG-204</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-6-1">6.1. Workflow và Workflow Step</a></li>
+<li><a href="#s-6-2">6.2. Agent Run</a></li>
+<li><a href="#s-6-3">6.3. Checkpoint và Interactive Agent Prompt</a></li>
+<li><a href="#s-6-4">6.4. Shared Context, Deliberation, Context Snapshot</a></li>
+<li><a href="#s-6-5">6.5. Usage</a></li>
+<li><a href="#s-6-6">6.6. Giao dịch của engine</a></li>
+</ul></details>
+
+<p>Database orchestration là nguồn sự thật của workflow (ADR-03): khôi phục là đọc bảng, không replay sự kiện. Mọi chuyển trạng thái của engine khóa hàng <code>workflow</code> (<code>SELECT … FOR UPDATE</code>) trước khi ghi.</p>
+
+<h2 id="s-6-1">6.1. Workflow và Workflow Step</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>workflow</code></td><td>Workflow</td><td><code>type</code> 12 WorkflowType (gồm deliberation); <code>status</code> 8 WorkflowStatus; <code>task_id</code> bắt buộc với task_execution; <code>idempotency_key</code> UQ trong tài khoản (DATA-IDEMP-001); <code>ended_at</code> có khi và chỉ khi trạng thái cuối; cột engine: <code>heartbeat_at</code>, <code>lease_owner</code>, <code>pause_requested</code>; giới hạn an toàn <code>plan_next_count</code> ≤ 10, <code>step_count</code> ≤ 30 (5.9, RISK-07); <code>current_step_id</code>, <code>last_checkpoint_id</code> FK deferrable.</td><td><strong>PUQ (task_id) WHERE status ∈ {Created, Running, Waiting for User, Paused, Interrupted}</strong> (DATA-IDEMP-002); partial (heartbeat_at) WHERE Running cho sweeper; (account_id, project_id, created_at DESC); partial Waiting for User/Interrupted</td></tr>
+<tr><td><code>workflow_step</code></td><td>WorkflowStep</td><td><code>kind</code> agent_run|deliberation|system; <code>status</code> 6 StepStatus; <code>depends_on</code> uuid[], <code>write_set</code> text[] (5.7); <code>input_refs</code>, <code>output_refs</code> có phiên bản; <code>attempt_count</code> ≤ 3; <code>current_agent_run_id</code>, <code>open_prompt_id</code> FK deferrable; <code>awaiting_slot_since</code> (đợi lượt theo giới hạn mềm tài khoản, 5.2); <code>deliberation_skipped</code> (OQ-099).</td><td>UQ (workflow_id, order); partial (account_id, awaiting_slot_since)</td></tr>
+</tbody></table></div>
+<p>Vị trí chờ của Task Queued (9.6) tính bằng thứ hạng <code>awaiting_slot_since</code> trong tài khoản, không hỏi RabbitMQ.</p>
+
+<h2 id="s-6-2">6.2. Agent Run</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>agent_run</code></td><td>AgentRun</td><td><code>agent</code> 9 khóa; <code>instance</code> A|B khi và chỉ khi analysis; <code>deliberation_id</code> + <code>deliberation_round</code> cùng có hoặc cùng NULL; provider, model, <code>adapter_version</code>; <code>agent_definition_version</code>, <code>prompt_template_version</code>, <code>retrieval_config_version</code>, <code>embedding_model</code> (NFR-OBS-006, kiến trúc 5.10, 7.8); <code>context_manifest</code> NOT NULL (14.2); <code>structured_output</code> bắt buộc khi Succeeded; <code>usage</code> bắt buộc khi Succeeded/Failed (giá trị hoặc <code>{unavailable: true}</code>, NFR-USAGE-001), cột sinh <code>input_tokens</code>, <code>output_tokens</code>; <code>error.code</code> bắt buộc khi Failed; <code>attempts</code> (lời gọi provider trong run, DATA-IDEMP-004); <code>queue_wait_ms</code>; <code>discarded</code>; <code>task_id</code> sao từ workflow để tổng hợp.</td><td>(step_id, created_at); (workflow_id, created_at); partial (account_id) WHERE Pending/Running; (account_id, project_id, ended_at) INCLUDE usage; partial (deliberation_id, round)</td></tr>
+<tr><td><code>agent_run_debug_transcript</code></td><td>AgentRun.debugTranscript</td><td>Chỉ có khi <code>account.debug_mode</code> bật (OQ-062); khóa object storage của prompt/response đã mã hóa; <code>expires_at</code> = captured_at + 30 ngày (CHECK, NFR-RET-009). Tách bảng để xóa được mà Agent Run vẫn bất biến.</td><td>(expires_at)</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Bất biến sau trạng thái cuối:</strong> trigger <code>agent_run_final</code> chỉ cho đổi <code>discarded</code> khi run đã Succeeded/Failed/Cancelled (kết quả đến muộn, DATA-IDEMP-003-AC01).</li>
+<li><strong>Thử lại:</strong> thử lại tạm thời trong cùng run tăng <code>attempts</code>; chạy lại sau khi Failed tạo dòng <code>agent_run</code> mới cho cùng step, <code>workflow_step.attempt_count + 1</code> (DATA-IDEMP-004-AC01).</li>
+<li><strong>Bắt tay start</strong> (kiến trúc 5.2): <code>UPDATE agent_run SET status='Running' WHERE id = :id AND status='Pending'</code> và step.current_agent_run_id = :id; 0 dòng → 409.</li>
+</ul>
+
+<h2 id="s-6-3">6.3. Checkpoint và Interactive Agent Prompt</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>checkpoint</code></td><td>Checkpoint</td><td>Chỉ ghi thêm; UQ (workflow_id, sequence); <code>step_statuses</code> {stepId: StepStatus}; <code>saved_output_refs</code>; <code>open_prompt_ids</code>; <code>consistent</code>. Ghi cùng giao dịch với bước Succeeded (DATA-PERSIST-002).</td><td>UQ</td></tr>
+<tr><td><code>interactive_agent_prompt</code></td><td>InteractiveAgentPrompt</td><td><code>type</code> 4 PromptType; <code>purpose</code> general|deliberation_proposal|deliberation_decision; <code>deliberation_proposal</code> có khi và chỉ khi purpose deliberation_proposal; <code>deliberation_id</code> bắt buộc với deliberation_decision; <code>pending_action</code> {apr?, objectType, objectId, objectVersion}; <code>response</code> có khi và chỉ khi Answered (tối đa một response, 18.5); trigger chặn mọi UPDATE khi đã rời Open. Không có cột hết hạn theo thời gian (5.9).</td><td>partial (account_id, project_id) WHERE Open; (workflow_id)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-6-4">6.4. Shared Context, Deliberation, Context Snapshot</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>context_item</code></td><td>ContextItem</td><td>Chỉ ghi thêm, chỉ đổi <code>status</code> và <code>superseded_by_id</code>; <code>scope</code> project|task (task_id khi task); <code>kind</code> 5 giá trị; <code>source_type</code> 5 giá trị; Superseded khi và chỉ khi có <code>superseded_by_id</code>; <code>deliberation</code> (DEC-50).</td><td>partial (account_id, project_id, scope, task_id) WHERE Active</td></tr>
+<tr><td><code>deliberation</code></td><td>Deliberation</td><td>UQ <code>step_id</code> (một phiên mỗi bước deliberation); <code>problem_type</code> 6 ProblemType; <code>brief</code>; <code>current_round</code>, <code>max_rounds</code> (mặc định 2); <code>context_snapshot_id</code> NOT NULL; <code>record_artifact_id</code>, <code>record_artifact_version_id</code> (ref research); <code>decision_prompt_id</code>; <code>usage_total</code> (NFR-USAGE-005); <code>same_model_warning</code>.</td><td>(account_id, project_id, started_at DESC)</td></tr>
+<tr><td><code>deliberation_participant</code></td><td>Deliberation.participants[]</td><td>PK (deliberation_id, agent, instance); orchestrator dùng instance <code>''</code>, analysis A|B; provider, model, tên connection ghi lúc mở phiên; <code>status</code> idle|running|error; <code>current_agent_run_id</code>. Tách bảng vì trạng thái từng bên đổi trong phiên (DBD-04).</td><td>PK</td></tr>
+<tr><td><code>deliberation_entry</code></td><td>DeliberationEntry (Deliberation Board)</td><td>Nội dung bất biến; chỉ đổi <code>status</code>, <code>visible_from</code>, <code>needs_review</code>; <code>type</code> 6 giá trị; <code>content</code> + <code>content_schema_version</code>; <code>source_refs</code>; <code>assumption_flags</code> (id point); <code>supersedes_entry_id</code> kèm <code>change_reason</code> bắt buộc; <code>deliberation_id</code> NULL cho entry finding của bước song song (CTX-BOARD-003), khi đó <code>round</code> cũng NULL.</td><td>(deliberation_id, round, created_at); (workflow_id, created_at)</td></tr>
+<tr><td><code>context_snapshot</code></td><td>ContextSnapshot</td><td>Bất biến; chỉ đổi <code>outdated</code> (false → true, không chuyển ngược) và <code>changed_entities</code>.</td><td>GIN (entities jsonb_path_ops) WHERE NOT outdated — tìm snapshot chứa entity vừa đổi phiên bản</td></tr>
+</tbody></table></div>
+<p><strong>Quyền xem theo vòng</strong> (entry ẩn với bên khác tới khi vòng đóng): API nội bộ đọc board lọc <code>visible_from &lt;= now()</code> hoặc <code>author_agent_run_id</code> thuộc chính bên hỏi. Không làm bằng RLS vì phạm vi là theo agent trong một tài khoản.</p>
+
+<h2 id="s-6-5">6.5. Usage</h2>
+<p><code>usage_ledger</code> gộp một dòng cho mỗi Agent Run kết thúc và mỗi lô embedding do knowledge báo về (DBD-10), UQ (source, source_id), chỉ ghi thêm. Tổng hợp NFR-USAGE-002 theo project, Task, agent, Provider Connection, khoảng thời gian chạy trên một bảng; sai lệch 0 với tổng Agent Run vì dòng ghi trong cùng giao dịch kết thúc run. Provider không trả usage → <code>unavailable = true</code>, không ước tính (NFR-USAGE-001). Cách knowledge báo usage embedding: DBQ-03.</p>
+
+<h2 id="s-6-6">6.6. Giao dịch của engine</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Sự kiện</th><th>Ghi trong một giao dịch</th></tr></thead>
+<tbody>
+<tr><td>Kích hoạt Task (nhận <code>task.activated</code>)</td><td>INSERT workflow Created (PUQ chặn trùng) + step đầu + agent_run Pending + outbox <code>agent.run</code> + inbox</td></tr>
+<tr><td>agent-core bắt tay start</td><td>agent_run → Running; step → Running; workflow Created → Running; outbox <code>workflow.status_changed.running</code>, audit</td></tr>
+<tr><td>Kết quả Agent Run hợp lệ (sau khi service sở hữu xác nhận đầu ra)</td><td>Khóa workflow; kiểm <code>status='Running'</code> và <code>current_agent_run_id</code>; agent_run → Succeeded; step → Succeeded + output_refs; checkpoint mới; usage_ledger; outbox audit + bước kế</td></tr>
+<tr><td>Kết quả muộn</td><td>Chỉ <code>agent_run.discarded = true</code></td></tr>
+<tr><td>Sweeper (không heartbeat 110 s)</td><td>Khóa workflow; Running → Interrupted; agent_run → Failed (error.code interrupted); outbox PendingAction Recovery decision</td></tr>
+<tr><td>Prompt được trả lời</td><td>prompt Open → Answered + response; context_item decision; workflow Waiting for User → Running; outbox bước kế</td></tr>
+<tr><td>Hủy workflow</td><td>workflow → Cancelled; step chưa xong → Cancelled; agent_run Pending/Running → Cancelled; prompt Open → Cancelled; deliberation Running → Cancelled</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="05-planning.html">← Mục 5</a><a href="../index.html">Mục lục database</a><a rel="next" href="07-library-and-knowledge.html">Mục 7 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

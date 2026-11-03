@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — library và knowledge.">
+<title>7. library, knowledge | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 7</p><h1>7. library, knowledge</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/10-academic-discovery-and-trusted-library.html">10</a>, <a href="../../overview/sections/11-evidence-rag-and-research-synthesis.html">11.1</a>, 17.3, 17.6, 18.1–18.5; kiến trúc <a href="../../architecture/sections/07-rag-and-document-pipeline.html">7</a> (ADR-05, ADR-15), 6.6–6.7 · DDL: <a href="../ddl/library.sql"><code>library.sql</code></a>, <a href="../ddl/knowledge.sql"><code>knowledge.sql</code></a> · ERD: <a href="../figures/FIG-205-library-knowledge-erd.mmd">FIG-205</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-7-1">7.1. sires_library</a></li>
+<li><a href="#s-7-2">7.2. Vòng đời Reference</a></li>
+<li><a href="#s-7-3">7.3. Tìm kiếm Trusted Library</a></li>
+<li><a href="#s-7-4">7.4. sires_knowledge</a></li>
+<li><a href="#s-7-5">7.5. Vector và truy xuất</a></li>
+</ul></details>
+
+<h2 id="s-7-1">7.1. sires_library</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>discovered_result</code></td><td>DiscoveredResult</td><td>Cấp tài khoản (5.6); <code>project_id</code> chỉ là ngữ cảnh nơi chạy discovery; <code>source</code>, <code>query</code>, <code>metadata</code> (17.6), <code>source_url</code>; <code>status</code> New|Selected|Rejected|Imported, Imported khi và chỉ khi có <code>imported_reference_id</code>; <code>provenance</code> bắt buộc khi do agent tạo.</td><td>(account_id, status, created_at DESC)</td></tr>
+<tr><td><code>reference</code></td><td>Reference</td><td><code>metadata</code> hiện hành + <code>metadata_version</code>; cột tra cứu: <code>title</code> (sinh), <code>doi</code> chuẩn hóa, <code>year</code>, <code>authors_text</code>; <code>bibtex_key</code> UQ trong tài khoản (18.5); <code>origin</code> discovered|manual khớp <code>discovered_result_id</code>; hai trục: <code>approval_status</code>, <code>indexing_status</code> + <code>indexing_error</code>; <code>approval</code> bắt buộc khi Trusted; <code>revocation</code> có <code>reason</code> khi Revoked; <code>merged_into_id</code>; <code>pdf_object_key</code> + <code>pdf_sha256</code> cùng có hoặc cùng NULL.</td><td>UQ (account_id, bibtex_key); (account_id, doi) không unique; (account_id, approval_status, created_at DESC); GIN search_tsv; GIN trgm title, authors_text</td></tr>
+<tr><td><code>reference_metadata_version</code></td><td>Lịch sử metadata (18.3)</td><td>PK (reference_id, metadata_version); bất biến; BibliographyEntry ghi version đã dùng.</td><td>PK</td></tr>
+<tr><td><code>project_reference_selection</code></td><td>ProjectReferenceSelection</td><td>Một dòng mỗi (project, reference), UQ; <code>status</code> Active ⇄ Removed; trigger chỉ cho Active khi Reference Trusted (10.5); chặn ghi khi project không Active.</td><td>UQ; partial (account_id, project_id) WHERE Active; partial (reference_id) WHERE Active</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7-2">7.2. Vòng đời Reference</h2>
+<ul>
+<li><strong>Duyệt (APR-04):</strong> Pending Approval → Trusted kèm <code>approval</code>; outbox <code>reference.status_changed.trusted</code> → knowledge xếp job index.</li>
+<li><strong>Sửa metadata:</strong> INSERT <code>reference_metadata_version</code> (bản mới), cập nhật <code>reference.metadata</code> và <code>metadata_version + 1</code> trong một giao dịch; outbox <code>reference.metadata_updated</code>.</li>
+<li><strong>DOI trùng:</strong> không chặn cứng (18.5) — truy vấn <code>reference_doi_idx</code> khi ghi để cảnh báo và đề xuất gộp; gộp đặt <code>merged_into_id</code> và chuyển selection sang bản giữ lại.</li>
+<li><strong>Thu hồi (APR-04):</strong> Trusted → Revoked kèm <code>revocation.reason</code>; mọi selection Active → Removed (System) trong cùng giao dịch; outbox cho knowledge (loại khỏi phạm vi), research (Evidence Stale), manuscript.</li>
+<li><strong>Xóa</strong> (NFR-RET-003): chỉ khi không còn selection Active ở project nào; xóa <code>reference</code> và lịch sử metadata; outbox <code>reference.deleted</code>. Reference còn được provenance hay Audit Event tham chiếu thì không xóa vật lý mà giữ trạng thái Revoked (OWN-05) — kiểm qua API research/manuscript trước khi xóa.</li>
+</ul>
+
+<h2 id="s-7-3">7.3. Tìm kiếm Trusted Library</h2>
+<p>NFR-PERF-002: ≤ 2 giây với 5.000 reference (OQ-031: chỉ tiêu đề, tên, metadata). <code>search_tsv</code> có trọng số A tiêu đề, B tác giả, C venue/DOI/BibTeX key, cập nhật bằng trigger vì <code>unaccent</code> không IMMUTABLE nên không dùng cột sinh được (DBD-11).</p>
+<pre>SELECT id, title, ts_rank(search_tsv, q) AS rank
+FROM app.reference, websearch_to_tsquery('app.sires_simple', :text) q
+WHERE account_id = app.current_account_id() AND search_tsv @@ q
+UNION
+SELECT id, title, similarity(title, :text)
+FROM app.reference
+WHERE account_id = app.current_account_id() AND title % :text      -- gõ sai, pg_trgm
+ORDER BY rank DESC LIMIT 50;</pre>
+
+<h2 id="s-7-4">7.4. sires_knowledge</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>source_document</code></td><td>SourceDocument</td><td>Cấp tài khoản, UQ <code>reference_id</code> (18.5); <code>content_hash</code>; <code>file_ref</code> trỏ prefix PDF của library (ngoại lệ có chủ đích, kiến trúc 6.6); <code>page_count</code> ≤ 500; <code>embedding_model</code> FK catalog; <code>extractor_version</code>; <code>needs_reindex</code>; <code>metadata_warnings</code>.</td><td>UQ; partial (account_id) WHERE needs_reindex</td></tr>
+<tr><td><code>indexing_job</code></td><td>— (job knowledge.index)</td><td>UQ (reference_id, content_hash, embedding_model, kind) — khóa tự nhiên DATA-IDEMP-005; <code>attempts</code> ≤ 3; <code>status</code> gồm <code>Waiting Configuration</code> khi tài khoản chưa có Provider Connection embedding (ASM-12). Trạng thái hiển thị cho người dùng vẫn là <code>reference.indexing_status</code> ở library.</td><td>UQ; partial (status, created_at) WHERE Queued/Waiting Configuration</td></tr>
+<tr><td><code>chunk</code></td><td>Chunk</td><td><code>chunk_key</code> = sha256(sourceDocumentId | page | paragraph | char_start), UQ trong tài liệu; <code>page</code>, <code>paragraph</code>, <code>char_start</code> &lt; <code>char_end</code>; <code>region</code> body|references|appendix (references bị loại khỏi truy xuất mặc định); <code>reference_id</code> sao để lọc phạm vi.</td><td>UQ; partial (account_id, reference_id) WHERE body</td></tr>
+<tr><td><code>chunk_text</code></td><td>Chunk.textRef</td><td>Văn bản chunk + <code>tsv</code> (trigger) — nhánh từ khóa và kiểm tra trích dẫn có thật (kiến trúc 7.5) không cần đọc object storage.</td><td>GIN tsv; (account_id, reference_id)</td></tr>
+<tr><td><code>embedding_model_catalog</code></td><td>— (danh mục hệ thống)</td><td><code>slug</code>, provider openai|google, <code>dimensions</code>, <code>table_name</code>. Dữ liệu toàn hệ thống, không có <code>account_id</code>, vai trò <code>_app</code> chỉ đọc.</td><td>PK</td></tr>
+<tr><td><code>vec.emb_&lt;slug&gt;</code></td><td>Vector (17.3)</td><td>Một bảng mỗi embedding model: <code>chunk_id</code> PK FK, <code>account_id</code>, <code>reference_id</code>, <code>embedding vector(D)</code>.</td><td>(account_id, reference_id); HNSW <code>vector_cosine_ops</code></td></tr>
+<tr><td><code>embedding_usage</code></td><td>— (usage embedding, 7.3)</td><td>Theo job: <code>provider_connection_id</code>, <code>model</code>, <code>input_tokens</code>, <code>calls</code>, <code>unavailable</code>; <code>reported_at</code> khi đã báo sang orchestration (DBQ-03).</td><td>partial (at) WHERE chưa báo</td></tr>
+<tr><td><code>replica.*</code></td><td>Bản sao từ library, identity, workspace</td><td><code>reference_state</code>, <code>project_reference_scope</code>, <code>account_embedding</code>, <code>project_state</code> (<a href="03-topology-and-ownership.html#s-3-5">3.5</a>).</td><td>partial (account_id, project_id) WHERE Active</td></tr>
+</tbody></table></div>
+<p>Ghi kết quả index (kiến trúc 7.1 bước 8) trong một giao dịch: <code>source_document</code>, <code>chunk</code>, <code>chunk_text</code>, vector, <code>indexing_job</code> → Indexed, outbox <code>reference.indexing_status_changed</code>. Xóa Reference xóa SourceDocument; chunk, chunk_text và vector xóa theo ON DELETE CASCADE trong cùng giao dịch (NFR-RET-003).</p>
+
+<h2 id="s-7-5">7.5. Vector và truy xuất</h2>
+<ul>
+<li><strong>Bảng theo model</strong> vì các model có số chiều khác nhau (DEC-31, kiến trúc 7.3). Thêm model = migration thêm dòng catalog, bảng và index. Danh mục model thật: DBQ-05. Ví dụ trong DDL: <code>vec.emb_openai_text_embedding_3_small</code>, 1.536 chiều.</li>
+<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001): <code>reference_id</code> IN (selection Active của project ∩ reference Trusted ∩ đã có vector của model hiện hành), tính từ bản sao, không nhận từ model.</li>
+</ul>
+<pre>WITH scope AS (
+  SELECT s.reference_id FROM replica.project_reference_scope s
+  JOIN replica.reference_state r USING (reference_id)
+  WHERE s.account_id = app.current_account_id() AND s.project_id = :project
+    AND s.status = 'Active' AND r.approval_status = 'Trusted')
+SELECT v.chunk_id, v.embedding &lt;=&gt; :q AS distance
+FROM vec.emb_openai_text_embedding_3_small v
+JOIN app.chunk c ON c.id = v.chunk_id AND c.region = 'body'
+WHERE v.account_id = app.current_account_id() AND v.reference_id IN (SELECT reference_id FROM scope)
+ORDER BY distance LIMIT 50;    -- nhánh từ khóa: chunk_text.tsv, gộp RRF k = 60 ở ứng dụng</pre>
+<p>Phạm vi nhỏ (≤ ~50.000 chunk) quét chính xác qua index (account_id, reference_id); phạm vi lớn dùng HNSW với <code>SET LOCAL hnsw.iterative_scan = relaxed_order</code>. Ngưỡng chuyển và việc dùng <code>halfvec</code> do SPK-04 đo (kiến trúc 7.4).</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="06-orchestration.html">← Mục 6</a><a href="../index.html">Mục lục database</a><a rel="next" href="08-research-and-manuscript.html">Mục 8 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

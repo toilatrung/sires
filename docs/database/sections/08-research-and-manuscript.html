@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — research và manuscript.">
+<title>8. research, manuscript | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 8</p><h1>8. research, manuscript</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/11-evidence-rag-and-research-synthesis.html">11</a>, <a href="../../overview/sections/12-latex-manuscript-workspace.html">12</a>, <a href="../../overview/sections/13-diagram-agent.html">13</a>, 5.6–5.8, 18.1–18.5; kiến trúc 7.5–7.7, 9 · DDL: <a href="../ddl/research.sql"><code>research.sql</code></a>, <a href="../ddl/manuscript.sql"><code>manuscript.sql</code></a> · ERD: <a href="../figures/FIG-206-research-manuscript-erd.mmd">FIG-206</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-8-1">8.1. sires_research: Artifact</a></li>
+<li><a href="#s-8-2">8.2. sires_research: Evidence và Claim</a></li>
+<li><a href="#s-8-3">8.3. Thu hồi Reference và needs review</a></li>
+<li><a href="#s-8-4">8.4. sires_manuscript</a></li>
+<li><a href="#s-8-5">8.5. Revision, Change Proposal, Build</a></li>
+</ul></details>
+
+<h2 id="s-8-1">8.1. sires_research: Artifact</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>artifact</code></td><td>Artifact</td><td><code>type</code> 9 ArtifactType (gồm diagram, deliberation_record); <code>current_accepted_version_id</code> FK ghép deferrable; <code>search_tsv</code> (tiêu đề).</td><td>(account_id, project_id, type); (task_id); GIN</td></tr>
+<tr><td><code>artifact_version</code></td><td>ArtifactVersion</td><td>UQ (artifact_id, version_number); đúng một trong <code>content</code> (jsonb, nội dung nhỏ) hoặc <code>file_ref</code> (object storage, SVG/PDF sơ đồ, file lớn); <code>content_hash</code>; <code>provenance</code> NOT NULL (DATA-PROV-001); chỉ đổi <code>status</code>, <code>review</code>, <code>approval</code>; <code>approval</code> bắt buộc khi Accepted/Superseded.</td><td>UQ; <strong>PUQ (artifact_id) WHERE Accepted</strong> (18.5); partial Draft</td></tr>
+</tbody></table></div>
+<p>Chấp nhận version mới (APR-03/06/07): trong một giao dịch, version Accepted cũ → Superseded, version mới Draft → Accepted, cập nhật <code>artifact.current_accepted_version_id</code>. Sửa version Draft tạo version mới, không sửa tại chỗ.</p>
+
+<h2 id="s-8-2">8.2. sires_research: Evidence và Claim</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>evidence</code></td><td>Evidence</td><td><code>reference_id</code>, <code>chunk_id</code> (ref knowledge); <code>quote</code>; <code>location</code> có <code>page</code> (lấy từ Chunk, kiến trúc 7.5); <code>status</code> Active|Excluded|Stale + <code>status_reason</code>; chỉ đổi status; trigger INSERT chỉ nhận Reference Trusted và được chọn Active cho project (18.5, qua bản sao); <code>provenance</code> khi do agent tạo.</td><td>(account_id, project_id, status); partial (reference_id) WHERE Active; (task_id)</td></tr>
+<tr><td><code>claim</code></td><td>Claim</td><td><code>statement</code> + <code>revision</code>; hai trục <code>approval_status</code> Draft|Accepted|Rejected và <code>support_status</code> 5 SupportStatus; Accepted chỉ khi support ≠ Not Assessed và có <code>approval</code> (APR-06); <code>support_override</code> (Researcher điều chỉnh có lý do); <code>last_verification_id</code> FK; needs review.</td><td>(account_id, project_id, approval_status); partial needs_review</td></tr>
+<tr><td><code>claim_revision</code></td><td>Lịch sử Claim (18.2: Accepted → Draft tạo bản ghi lịch sử)</td><td>PK (claim_id, revision); bất biến; chép phát biểu, trạng thái, approval trước khi sửa.</td><td>PK</td></tr>
+<tr><td><code>claim_evidence_link</code></td><td>ClaimEvidenceLink</td><td>PK (claim_id, evidence_id); <code>relation</code> supports|contradicts|context; FK ghép cùng tài khoản và project ở cả hai đầu. Claim không có link supports thì không được Supported (DEC-32) — kiểm ở ứng dụng khi ánh xạ ngưỡng.</td><td>(evidence_id)</td></tr>
+<tr><td><code>verification_result</code></td><td>VerificationResult</td><td>Chỉ ghi thêm; <code>target_type</code> claim|citation|change_proposal; <code>outcome</code> SupportStatus hoặc resolved|unresolved|mismatch; <code>thresholds_used</code> NOT NULL (bản chụp, OQ-092).</td><td>(target_type, target_id, at DESC)</td></tr>
+<tr><td><code>provenance_input</code></td><td>— (truy vấn ngược provenance)</td><td>(dependent_type artifact_version|claim|evidence, dependent_id, input_type, input_id, input_version) ghi cùng giao dịch với đầu ra.</td><td>(account_id, input_type, input_id)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-3">8.3. Thu hồi Reference và needs review</h2>
+<p>Consumer <code>reference.status_changed.revoked</code> (vai trò <code>_system</code>, một giao dịch): cập nhật <code>replica.reference_state</code>; <code>evidence</code> Active của Reference đó → Stale; Claim liên kết qua <code>claim_evidence_link</code> và đầu ra tìm qua <code>provenance_input</code> → <code>needs_review = true</code> kèm lý do; ghi inbox và outbox <code>research.object_status_changed</code>. Thay đổi phiên bản đầu vào khác (artifact version mới Accepted, context item Superseded) lan truyền cùng cách (9.11, 10.8).</p>
+
+<h2 id="s-8-4">8.4. sires_manuscript</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>manuscript</code></td><td>Manuscript</td><td>UQ <code>project_id</code> (tối đa một mỗi project); <code>init_mode</code> Default|Blank; <code>compiler</code> pdflatex|xelatex|lualatex; <code>bibliography_tool</code> bibtex, style mặc định plainnat; <code>current_revision_id</code> FK ghép deferrable.</td><td>UQ</td></tr>
+<tr><td><code>manuscript_file</code></td><td>ManuscriptFile</td><td>Trạng thái hiện hành của cây file; <code>path</code> tương đối (CHECK không bắt đầu bằng <code>/</code>, không có <code>..</code>); <code>file_type</code> tex|bib|figure|other; <code>content_ref</code> + <code>content_hash</code> (khử trùng lặp theo sha256, DATA-STORE-001); Active|Deleted + <code>deleted_at</code>.</td><td><strong>PUQ (manuscript_id, path) WHERE Active</strong></td></tr>
+<tr><td><code>manuscript_revision</code></td><td>ManuscriptRevision</td><td>Bất biến; UQ (manuscript_id, revision_number); revision 1 không có parent; <code>changes</code> theo PRD; <code>tree</code> = bản chụp {path: sha256} cả cây (DBD-09); <code>source</code> direct_edit|change_proposal|init, change_proposal khi và chỉ khi có <code>change_proposal_id</code>.</td><td>UQ</td></tr>
+<tr><td><code>change_proposal</code></td><td>ChangeProposal</td><td><code>base_revision_id</code> FK cùng manuscript; <code>diff</code>; <code>claim_ids</code>, <code>evidence_ids</code>, <code>artifact_version_ids</code> (ref research); <code>citation_check_id</code> + <code>citation_check_passed</code>; Accepted chỉ khi citation check đạt, có <code>approval</code> (APR-05) và base = revision hiện hành (trigger); chỉ đổi trạng thái và kết quả kiểm tra; <code>provenance</code> NOT NULL.</td><td>partial (manuscript_id) WHERE Proposed</td></tr>
+<tr><td><code>bibliography_entry</code></td><td>BibliographyEntry</td><td>UQ (manuscript_id, bibtex_key) và UQ (manuscript_id, reference_id) — khóa tự nhiên DATA-IDEMP-005; trigger INSERT chỉ nhận Reference Trusted (bản sao); <code>generated_from_metadata_version</code>; <code>needs_review</code>.</td><td>UQ ×2; (reference_id)</td></tr>
+<tr><td><code>build</code></td><td>Build</td><td><strong>UQ (revision_id, config_hash)</strong> — yêu cầu build trùng nhận Build đã có (DATA-IDEMP-005-AC01); <code>status</code> Queued|Running|Succeeded|Failed; <code>log_ref</code>, <code>pdf_ref</code>; <code>issues</code>; <code>citation_keys_found</code>, <code>unresolved_keys</code>; <code>failure_reason</code>.</td><td>UQ; (manuscript_id, queued_at DESC); partial Queued</td></tr>
+<tr><td><code>replica.reference_state</code></td><td>Bản sao từ library</td><td><code>approval_status</code>, <code>bibtex_key</code>, <code>metadata_version</code> (NULL khi chưa nhận <code>reference.metadata_updated</code>, DBQ-04).</td><td>PK</td></tr>
+</tbody></table></div>
+
+<h2 id="s-8-5">8.5. Revision, Change Proposal, Build</h2>
+<ul>
+<li><strong>Sửa trực tiếp hoặc chấp nhận proposal</strong> (một giao dịch): khóa hàng <code>manuscript</code>; INSERT revision mới (parent = current, <code>tree</code> mới); cập nhật <code>manuscript_file</code>; đổi <code>current_revision_id</code>; mọi proposal Proposed khác có base cũ → Outdated; outbox <code>manuscript.object_status_changed</code>.</li>
+<li><strong>Vì sao lưu <code>tree</code>:</strong> PRD chỉ yêu cầu <code>changes</code>; dựng lại cây của revision bất kỳ từ chuỗi changes cần đọc cả lịch sử (tới 2.000 revision, NFR-SCALE-001). Bản chụp path → sha256 làm build, so sánh và export đọc một dòng; kích thước nhỏ (200 file × ~100 byte). Trường <code>tree</code> đã thêm vào PRD 18.1 (DBD-09, DEC-57).</li>
+<li><strong>Build:</strong> manuscript tạo dòng Build rồi ghi outbox <code>sandbox.build</code>; sandbox-runner trả kết quả qua <code>sandbox.reply</code>; manuscript cập nhật trạng thái, log, PDF. Revision bị thay khi còn Queued → Failed (<code>failure_reason = 'superseded'</code>).</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="07-library-and-knowledge.html">← Mục 7</a><a href="../index.html">Mục lục database</a><a rel="next" href="09-audit-and-platform.html">Mục 9 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

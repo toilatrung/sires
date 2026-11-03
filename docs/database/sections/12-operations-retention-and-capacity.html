@@ -1,0 +1,122 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — vận hành, retention và dung lượng.">
+<title>12. Operations, Retention and Capacity | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 12</p><h1>12. Operations, Retention and Capacity</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/16-non-functional-requirements.html">16.3–16.4, 16.8</a> (NFR-RET-002–009, NFR-BACKUP-001, NFR-SCALE-001–002, NFR-PERF-001–007); kiến trúc <a href="../../architecture/sections/06-data-architecture.html#s-6-8">6.8–6.10</a>, 11; DBD-02, DBD-12, DBD-13</p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-12-1">12.1. Purge theo project và tài khoản</a></li>
+<li><a href="#s-12-2">12.2. Job dọn theo retention</a></li>
+<li><a href="#s-12-3">12.3. Sao lưu và khôi phục</a></li>
+<li><a href="#s-12-4">12.4. Migration, DDL tham chiếu và kết quả chạy thử</a></li>
+<li><a href="#s-12-5">12.5. Dữ liệu mẫu</a></li>
+<li><a href="#s-12-6">12.6. Dung lượng và hiệu năng</a></li>
+</ul></details>
+
+<h2 id="s-12-1">12.1. Purge theo project và tài khoản</h2>
+<ul>
+<li><strong>Xóa mềm project</strong> (NFR-RET-002): workspace đặt <code>deleted_at</code>, <code>purge_after</code>, <code>status_before_deletion</code>; các service nhận <code>project.lifecycle_changed.deleted</code>, cập nhật <code>replica.project_state</code> và ẩn dữ liệu project. Khôi phục khi <code>now() &lt; purge_after</code> xóa ba cột và phát <code>restored</code>; quá hạn bị từ chối (DATA-STATE-001-AC03).</li>
+<li><strong>Xóa vĩnh viễn:</strong> job của workspace (vai trò <code>_system</code>) chọn project <code>purge_after &lt;= now()</code> qua <code>research_project_purge_idx</code>, ghi <code>project_purge</code>, phát <code>project.purge_due</code>. Mỗi service chạy purge bằng vai trò <code>_purge</code>: <code>DELETE … WHERE project_id = :p</code> theo thứ tự con → cha trong một giao dịch, xóa blob theo prefix, phát <code>data.purged</code>. workspace đánh dấu hoàn tất khi đủ xác nhận, rồi xóa dòng project của mình. Audit Event cấp project bị xóa cùng (OQ-078).</li>
+<li><strong>Xóa tài khoản</strong> (NFR-RET-004): identity khóa tài khoản và xóa <code>provider_secret</code> ngay; mỗi service xóa theo <code>account_id</code> trong ≤ 30 ngày bằng <code>_purge</code>, báo về identity. Bảng không có <code>project_id</code> (Trusted Library, Source Document, Discovered Result, Account) chỉ bị xóa ở bước này.</li>
+<li><strong>Xóa Reference</strong> (NFR-RET-003) và các xóa do người dùng khác đi qua vai trò <code>_app</code> với quyền DELETE giới hạn (<a href="11-security-and-tenancy.html#s-11-2">11.2</a>).</li>
+</ul>
+
+<h2 id="s-12-2">12.2. Job dọn theo retention</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Dữ liệu</th><th>Giữ</th><th>Job</th><th>Nguồn</th></tr></thead>
+<tbody>
+<tr><td><code>agent_run_debug_transcript</code> + object</td><td>30 ngày</td><td>Hằng ngày, <code>expires_at &lt; now()</code>; vòng đời object storage là lớp thứ hai</td><td>NFR-RET-009</td></tr>
+<tr><td><code>idempotency_key</code></td><td>24 giờ</td><td>Hằng giờ, mọi database</td><td>Kiến trúc 5.8</td></tr>
+<tr><td><code>outbox</code> đã publish</td><td>24 giờ</td><td>Hằng giờ</td><td>Kiến trúc 6.4</td></tr>
+<tr><td><code>inbox</code></td><td>7 ngày</td><td>Hằng ngày</td><td>Đề xuất (lớn hơn thời gian giao lại của broker)</td></tr>
+<tr><td><code>gateway.sse_event_log</code></td><td>24 giờ</td><td>Hằng giờ, theo <code>created_at</code></td><td>ADR-07</td></tr>
+<tr><td><code>gateway.session</code> hết hạn hoặc thu hồi</td><td>30 ngày sau hết hạn</td><td>Hằng ngày</td><td>Đề xuất (điều tra sự cố đăng nhập)</td></tr>
+<tr><td><code>audit_export</code> + gói zip</td><td>7 ngày</td><td>Hằng ngày</td><td>Kiến trúc 6.6</td></tr>
+<tr><td><code>model_catalog_cache</code>, <code>provider_slot</code> lease quá hạn</td><td>theo <code>expires_at</code>/<code>lease_until</code></td><td>Khi đọc</td><td>—</td></tr>
+<tr><td>Dữ liệu nghiệp vụ còn lại, Audit Event</td><td>Cùng vòng đời project/tài khoản</td><td>Purge (12.1)</td><td>NFR-RET-001, NFR-RET-008</td></tr>
+</tbody></table></div>
+<p>Job dọn chạy bằng <code>_purge</code>, xóa theo lô (ví dụ 5.000 dòng mỗi giao dịch) để không giữ khóa lâu và không làm phình WAL.</p>
+
+<h2 id="s-12-3">12.3. Sao lưu và khôi phục</h2>
+<ul>
+<li>PITR (WAL liên tục) + snapshot hằng ngày giữ 35 ngày trên cụm managed (kiến trúc 6.9): RPO tính bằng phút, tốt hơn yêu cầu 24 giờ (NFR-BACKUP-001). Chọn dịch vụ managed ở AQ-12 phải đáp ứng điều này.</li>
+<li>Diễn tập khôi phục mỗi quý vào môi trường trống, đo RTO ≤ 8 giờ; sau khôi phục chạy kiểm tra: số dòng theo bảng, outbox chưa publish được relay đẩy lại (consumer idempotent theo inbox), sweeper chuyển workflow Running quá hạn sang Interrupted.</li>
+<li>Khôi phục ngữ nghĩa giữa các database: 11 database khôi phục về cùng một thời điểm PITR; lệch nhỏ giữa các service được hấp thụ bởi saga và đối soát định kỳ (kiến trúc 5.8, TR-02).</li>
+<li>Bản sao lưu chỉ chứa ciphertext của API key; mất KEK thì key không giải mã được (kiến trúc 6.9).</li>
+</ul>
+
+<h2 id="s-12-4">12.4. Migration, DDL tham chiếu và kết quả chạy thử</h2>
+<ul>
+<li><strong>DDL tham chiếu là chuẩn thiết kế (DBD-02).</strong> Migration drizzle-kit (NestJS) và Alembic (knowledge, agent-core) phải sinh ra cùng schema; CI dựng database từ migration, dựng database thứ hai từ <code>ddl/</code>, so sánh bằng công cụ diff schema (ví dụ <code>migra</code>) và báo lệch (DR-05).</li>
+<li>Migration chỉ tiến; thay đổi phá vỡ theo mẫu mở rộng → di chuyển dữ liệu → thu hẹp qua nhiều bản phát hành (kiến trúc 6.10). Thêm giá trị enum = sửa CHECK và bảng chuyển trạng thái trong cùng migration.</li>
+<li>Index lớn tạo bằng <code>CREATE INDEX CONCURRENTLY</code> ngoài giao dịch migration; bảng vector mới (model embedding mới) tạo rỗng rồi nạp bằng job nhúng lại.</li>
+</ul>
+<p><strong>Kết quả chạy thử ngày 02/11/2026.</strong> Toàn bộ 12 file DDL được chạy trên PGlite 0.5.14 (PostgreSQL 17 biên dịch WebAssembly, có pgcrypto, unaccent, pg_trgm): cả 11 database dựng được schema không lỗi. Bộ kiểm thử hành vi chạy trên planning và orchestration bằng vai trò <code>_app</code>, 35/35 trường hợp đúng kỳ vọng, gồm:</p>
+<ul>
+<li>DATA-STATE-001-AC01 (Draft/Ready → Completed bị từ chối), T-02, Workflow Running → Created bị từ chối;</li>
+<li>DATA-STATE-001-AC02 (không thể có hai Plan Version Approved), DATA-STATE-002-AC01 (Plan Proposed không sửa được nội dung);</li>
+<li>DATA-IDEMP-001 (trùng idempotency key), DATA-IDEMP-002-AC01 (workflow thứ hai cho cùng Task bị chặn, được tạo lại sau khi workflow cũ kết thúc);</li>
+<li>DATA-VALID-001-AC01 (phát hiện chu trình T1 → T2 → T1), reasonCode bắt buộc khi trả lại, Agent Run analysis thiếu instance;</li>
+<li>Agent Run Succeeded thiếu structured output bị từ chối, bất biến sau kết thúc nhưng vẫn đặt được <code>discarded</code>; prompt không trả lời được lần hai;</li>
+<li>RLS: tài khoản B thấy 0 dòng của A, thiếu <code>app.account_id</code> thấy 0 dòng, ghi dòng cho tài khoản khác bị từ chối; <code>_app</code> không DELETE được Task; project Archived chặn ghi;</li>
+<li>Tìm kiếm không dấu: “tai lieu” khớp “Tài liệu”.</li>
+</ul>
+<p><strong>Chưa kiểm:</strong> kiểu <code>vector</code> và index HNSW (PGlite bản này không có pgvector; lúc chạy thử thay bằng <code>real[]</code>); hành vi trên PostgreSQL 16 thật, pooler và vai trò BYPASSRLS của dịch vụ managed; hiệu năng. Phải chạy lại trên PostgreSQL 16 + pgvector ≥ 0.8 (Testcontainers) khi dựng service mẫu (SPK-10). Bộ kiểm thử hành vi nằm ngoài repo; đưa vào CI cùng lúc.</p>
+
+<h2 id="s-12-5">12.5. Dữ liệu mẫu</h2>
+<p>Bộ dữ liệu mẫu cho phép đo 16.3–16.4 (NFR-SCALE-001, NFR-SCALE-002):</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Số dòng (1 tài khoản, 1 project ở trần)</th></tr></thead>
+<tbody>
+<tr><td>plan_version / task_definition</td><td>50 / 200 mỗi version (≤ 10.000)</td></tr>
+<tr><td>workflow / agent_run</td><td>2.000 / 20.000</td></tr>
+<tr><td>reference / project_reference_selection</td><td>5.000 tài khoản / 500 project</td></tr>
+<tr><td>source_document / chunk (+ chunk_text, vector)</td><td>2.000 / ~300.000</td></tr>
+<tr><td>evidence / artifact_version</td><td>10.000 / 2.000</td></tr>
+<tr><td>manuscript_file / manuscript_revision</td><td>200 / 2.000</td></tr>
+<tr><td>audit_event</td><td>~200.000 (ước ~10 sự kiện mỗi workflow + thao tác người dùng)</td></tr>
+</tbody></table></div>
+<p>Kèm 100 tài khoản nhỏ để đo NFR-SCALE-003 và kiểm RLS trên dữ liệu nhiều tenant.</p>
+
+<h2 id="s-12-6">12.6. Dung lượng và hiệu năng</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Hạng mục (một tài khoản ở trần 16.4)</th><th>Ước lượng</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>chunk + chunk_text (~600 token ≈ 2,5 KB văn bản)</td><td>~0,8 GB + GIN tsv ~0,3 GB</td><td>Văn bản trong PostgreSQL (kiến trúc 7.2)</td></tr>
+<tr><td>Vector 300.000 × 1.536 × 4 byte</td><td>~1,8 GB + HNSW ~1,5–2×</td><td><code>halfvec</code> giảm một nửa (SPK-04)</td></tr>
+<tr><td>agent_run (~10 KB manifest + output)</td><td>~200 MB/project</td><td>Toàn văn chỉ khi debug, ở object storage</td></tr>
+<tr><td>audit_event (~0,5 KB)</td><td>~100 MB/project</td><td>Ba index</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table>
+<thead><tr><th>Chỉ tiêu</th><th>Truy vấn quyết định</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td>NFR-PERF-001 mở Task, lưu Plan/file ≤ 1 s</td><td>Đọc theo PK + bảng con theo FK</td><td>PK, (task_id, …), (plan_version_id)</td></tr>
+<tr><td>NFR-PERF-002 tìm Library ≤ 2 s, 5.000 reference</td><td>tsvector + trgm (<a href="07-library-and-knowledge.html#s-7-3">7.3</a>)</td><td>GIN search_tsv, GIN trgm</td></tr>
+<tr><td>NFR-PERF-006 truy xuất ≤ 3 s, 500 reference</td><td>Vector có lọc phạm vi + full-text (<a href="07-library-and-knowledge.html#s-7-5">7.5</a>)</td><td>(account_id, reference_id), HNSW, GIN tsv</td></tr>
+<tr><td>Sweeper mỗi 10 s</td><td><code>status='Running' AND heartbeat_at &lt; now() - 110 s</code></td><td>partial <code>workflow_heartbeat_idx</code></td></tr>
+<tr><td>Activity and History theo project</td><td><code>audit_event</code> theo (account, project, at DESC) phân trang keyset</td><td><code>audit_event_project_idx</code></td></tr>
+</tbody></table></div>
+<p>Không partition ở MVP (DBD-12). Xem lại khi một bảng vượt khoảng 50 triệu dòng hoặc job dọn theo thời gian chiếm quá nhiều I/O: ứng viên <code>audit_event</code> (partition theo tháng của <code>at</code>, khóa chính thành (id, at)), <code>sse_event_log</code> (partition theo ngày, xóa partition thay vì DELETE), <code>agent_run</code>.</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="11-security-and-tenancy.html">← Mục 11</a><a href="../index.html">Mục lục database</a><a rel="next" href="13-decisions-risks-and-open-issues.html">Mục 13 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

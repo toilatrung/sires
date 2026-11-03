@@ -4,7 +4,7 @@ File này dành cho mọi coding agent (Claude Code, Codex, Cursor…) làm vi�
 
 ## Repo là gì
 
-**SIRes (Super Intelligence Researcher)** là AI Research Assistant thuộc nền tảng eTroy, cho người làm nghiên cứu (học viên cao học, NCS, giảng viên). Hiện repo chỉ có tài liệu sản phẩm, thiết kế và công cụ dựng tài liệu; chưa có mã ứng dụng. Kiến trúc dự kiến là monorepo FE + BE (NestJS cho service hệ thống, Python cho agent core) — xem `docs/architecture/`.
+**SIRes (Super Intelligence Researcher)** là AI Research Assistant thuộc nền tảng eTroy, cho người làm nghiên cứu (học viên cao học, NCS, giảng viên). Repo là monorepo FE + BE (pnpm + Nx cho TypeScript, uv cho Python; NestJS cho service hệ thống, Python cho agent core) — xem `docs/architecture/` mục 3. Hiện có tài liệu sản phẩm và scaffold: mỗi service khởi động được và trả `/health`, chưa có logic nghiệp vụ. Ranh giới luồng và kế hoạch triển khai ở `docs/tickets/`.
 
 Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** (GitHub `toilatrung`). Toàn bộ repo theo giấy phép phi thương mại `LicenseRef-eTroy-NC-1.0` ([LICENSES.md](LICENSES.md)).
 
@@ -20,6 +20,7 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 | Kiến trúc, stack, luồng | [docs/architecture/README.md](docs/architecture/README.md) |
 | API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md) |
 | Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/dev/sires-ui-executor`, `agent/skills/qc/sires-ui-review` |
+| Code một service, ranh giới luồng, giai đoạn | [docs/tickets/index.html](docs/tickets/index.html) (quy tắc 1.4) và `apps/<service>/README.md` |
 | Làm một ticket `TK-NNN` | Skill `agent/skills/dev/spec-read-skill` (đọc ticket, spec, xác định nghiệp vụ, cổng sẵn sàng); spec viết bằng `agent/skills/po/spec-docs-skill` |
 
 PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval-001"`) thay vì đọc cả trang; anchor có dạng `s-16-10`, `req-…`, `oq-096`, `asm-13`.
@@ -28,12 +29,16 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 
 | Đường dẫn | Nội dung |
 | --- | --- |
-| `docs/` | Tài liệu: `overview/` (PRD), `architecture/`, `api-design/`, `ui-design/`; trang vào `docs/index.html` |
+| `docs/` | Tài liệu: `overview/` (PRD), `architecture/`, `api-design/`, `database/`, `ui-design/`, `tickets/` (kế hoạch triển khai); trang vào `docs/index.html` |
+| `apps/<service>/` | 13 service (kiến trúc 3.2); mỗi thư mục là một luồng, chỉ luồng đó sửa |
+| `libs/ts/{platform,contracts,testing}`, `libs/py/sires_common` | Thư viện dùng chung; `contracts` sinh type từ `docs/api-design` (`src/generated/` không commit) |
+| `e2e/`, `eval/`, `infra/` | Playwright; eval harness; compose cục bộ, Dockerfile, Helm, Terraform |
 | `agent/skills/` | Skill cho agent, chia theo vai trò ([agent/skills/README.md](agent/skills/README.md)): `po/` (dựng và giữ `docs/`, viết spec ticket), `dev/` (đọc spec trước khi làm, dựng UI), `ui-design/` (prototype UI, Animate UI), `qc/` (review UI) |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html`) |
-| `scripts/agent/`, `scripts/deployment/`, `scripts/development/` | Chưa có nội dung |
-| `.github/CODEOWNERS` | PO là code owner của `docs/` |
-| `.claude/launch.json` | Cấu hình máy chủ xem `ui-design` (cổng 5178) |
+| `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1) |
+| `scripts/agent/`, `scripts/deployment/` | Chưa có nội dung |
+| `.github/CODEOWNERS`, `.github/workflows/ci.yml` | PO là code owner của `docs/`; CI pull request (`nx affected`, Python, giấy phép) |
+| `.claude/launch.json` | Máy chủ xem `ui-design` (cổng 5178) và `web` (cổng 5173) |
 
 ## Quy tắc bắt buộc
 
@@ -50,6 +55,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 - HTML: không có `id` trùng trong một trang, liên kết và anchor nội bộ trỏ đúng, thẻ cân bằng.
 - `node scripts/docs/add-license.mjs --check` và `node scripts/docs/update-index.mjs --check` đều sạch.
 - UI: chạy skill `sires-ui-review` (có `scripts/check-ui.mjs`).
+- Code: `pnpm nx affected -t lint typecheck test build`; luật `@nx/enforce-module-boundaries` chặn import chéo service.
 
 ## Git
 

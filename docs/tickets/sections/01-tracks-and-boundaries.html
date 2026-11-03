@@ -1,0 +1,130 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kế hoạch triển khai SIRes — điểm bắt đầu, danh sách luồng service, khu vực dùng chung và quy tắc ranh giới mã nguồn.">
+<title>1. Tracks and Source Boundaries | SIRes Delivery Plan</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 03/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Delivery Plan · Section 1</p><h1>1. Tracks and Source Boundaries</h1>
+<p class="meta">Trạng thái: Đề xuất — chờ PO duyệt · Cơ sở: kiến trúc <a href="../../architecture/sections/03-system-context-and-containers.html">3</a> (3.2 service, 3.4 monorepo, 3.6 quy tắc), <a href="../../architecture/sections/11-deployment-and-operations.html">11</a>; <a href="../../api-design/README.md">api-design</a>; <a href="../../database/index.html">database</a> (DEC-57); <a href="../../ui-design/README.md">ui-design</a></p>
+<div class="note"><p>Mục này định nghĩa <strong>luồng</strong> (track): một phần mã nguồn có thư mục riêng, database riêng (nếu có) và hợp đồng riêng, để một nhóm code trong luồng của mình mà không sửa mã của luồng khác. Kế hoạch chưa gán người cho luồng nào; phân công làm sau, ngoài tài liệu này.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-1-1">1.1. Điểm bắt đầu</a></li>
+<li><a href="#s-1-2">1.2. Luồng service</a></li>
+<li><a href="#s-1-3">1.3. Luồng dùng chung và khu vực PO giữ</a></li>
+<li><a href="#s-1-4">1.4. Quy tắc ranh giới mã nguồn</a></li>
+<li><a href="#s-1-5">1.5. Khu vực tính năng của web</a></li>
+<li><a href="#s-1-6">1.6. Module con của service lớn</a></li>
+</ul></details>
+
+<h2 id="s-1-1">1.1. Điểm bắt đầu</h2>
+<p>Kế hoạch bắt đầu khi monorepo đã có scaffold và cấu trúc đầy đủ theo kiến trúc 3.4. “Đầy đủ” nghĩa là có đủ các điều kiện sau; thiếu điều nào thì việc đó chưa thuộc PH-01 mà phải làm xong trước.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Điều kiện</th><th>Nội dung</th></tr></thead>
+<tbody>
+<tr><td id="entry-structure">Cấu trúc thư mục</td><td><code>apps/</code> đủ 13 service (3.2), <code>libs/ts/{platform,contracts,testing}</code>, <code>libs/py/sires_common</code>, <code>eval/</code>, <code>e2e/</code>, <code>infra/{local,docker,helm,terraform}</code>.</td></tr>
+<tr><td id="entry-tooling">Công cụ</td><td>pnpm workspace + Nx cho TypeScript, uv workspace cho Python (ADR-21); mỗi project có target <code>build</code>, <code>lint</code>, <code>typecheck</code>, <code>test</code> chạy được dù chưa có logic.</td></tr>
+<tr><td id="entry-services">Service khung</td><td>Mỗi service khởi động được, trả <code>GET /health</code>, có cổng cố định khi chạy cục bộ, README ghi phạm vi sở hữu.</td></tr>
+<tr><td id="entry-local">Môi trường local</td><td>Docker compose: PostgreSQL 16 + pgvector (11 database <code>sires_&lt;service&gt;</code>), RabbitMQ, MinIO (kiến trúc 11.1).</td></tr>
+<tr><td id="entry-ci">CI</td><td>Pull request chạy lint, typecheck, test, build cho phần bị ảnh hưởng (<code>nx affected</code>), ruff và pytest cho Python, kiểm tra PR chạm nhiều luồng (1.4.1).</td></tr>
+<tr><td id="entry-contracts">Sinh type</td><td><code>libs/ts/contracts</code> sinh được type từ <code>docs/api-design</code> (OpenAPI công khai, nội bộ).</td></tr>
+</tbody></table></div>
+<p><strong>Chưa thuộc scaffold</strong> (là việc của kế hoạch): logic nghiệp vụ, thư viện platform (RLS, outbox, inbox, idempotency, audit-emit, service token), migration, sinh type từ AsyncAPI và client Python, hạ tầng staging và production.</p>
+
+<h2 id="s-1-2">1.2. Luồng service</h2>
+<p>Mỗi service ở kiến trúc 3.2 là một luồng. Tên luồng là tên thư mục <code>apps/&lt;service&gt;</code>. Luồng sở hữu toàn bộ thư mục của mình: mã, test, migration, Dockerfile riêng (nếu có), README, giá trị triển khai <code>deploy/values.yaml</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Luồng</th><th>Ngôn ngữ</th><th>Database</th><th>Hợp đồng luồng cung cấp</th><th>Requirement chính</th></tr></thead>
+<tbody>
+<tr><td id="trk-web"><code>web</code></td><td>TypeScript, React 18 + Vite</td><td>—</td><td>— (chỉ gọi <code>gateway</code>)</td><td>UX-*, mục 15</td></tr>
+<tr><td id="trk-gateway"><code>gateway</code></td><td>TypeScript, NestJS</td><td><code>sires_gateway</code></td><td>Định tuyến <code>/api/v1/*</code>, <code>/auth/*</code>, SSE <code>/events</code>, tìm kiếm toàn cục</td><td>INT-OIDC, NFR-AUTH, WS-SEARCH</td></tr>
+<tr><td id="trk-identity"><code>identity</code></td><td>TypeScript, NestJS</td><td><code>sires_identity</code></td><td>Path 15 (Settings), 08 (Provider Connections, Agent Models); nội bộ 8 endpoint</td><td>AGENT-PROVIDER, INT-PROVIDER-002/005, NFR-SECRETS</td></tr>
+<tr><td id="trk-workspace"><code>workspace</code></td><td>TypeScript, NestJS</td><td><code>sires_workspace</code></td><td>Path 07; nội bộ 5 endpoint</td><td>WS-*, PROJ-*</td></tr>
+<tr><td id="trk-planning"><code>planning</code></td><td>TypeScript, NestJS</td><td><code>sires_planning</code></td><td>Path 09; nội bộ 5 endpoint</td><td>PLAN-*, TASK-*, ORCH-READINESS</td></tr>
+<tr><td id="trk-orchestration"><code>orchestration</code></td><td>TypeScript, NestJS</td><td><code>sires_orchestration</code></td><td>Path 08 (Prompts), 14 (Workflows, Agent Runs, Shared Context); nội bộ 11 endpoint; lệnh <code>agent.run</code></td><td>ORCH-*, PROMPT-*, CTX-*, NFR-USAGE</td></tr>
+<tr><td id="trk-library"><code>library</code></td><td>TypeScript, NestJS</td><td><code>sires_library</code></td><td>Path 10; nội bộ 6 endpoint</td><td>DISC-*, LIB-*, INT-SCHOLAR</td></tr>
+<tr><td id="trk-research"><code>research</code></td><td>TypeScript, NestJS</td><td><code>sires_research</code></td><td>Path 11, 13, 14 (Artifacts); nội bộ 10 endpoint</td><td>EVID-*, CLAIM-*, SYN-*, DIAG-*, CTX-REGISTRY-001</td></tr>
+<tr><td id="trk-manuscript"><code>manuscript</code></td><td>TypeScript, NestJS</td><td><code>sires_manuscript</code></td><td>Path 12; nội bộ 5 endpoint; lệnh <code>sandbox.build</code></td><td>MS-*, INT-LATEX, KPI-02</td></tr>
+<tr><td id="trk-audit"><code>audit</code></td><td>TypeScript, NestJS</td><td><code>sires_audit</code></td><td>Path 14 (Audit); export; KPI</td><td>CTX-AUDIT, NFR-RET-008, NFR-KPI-001</td></tr>
+<tr><td id="trk-sandbox-runner"><code>sandbox-runner</code></td><td>TypeScript (controller) + image TeX Live, mermaid-cli</td><td>—</td><td>Nhận <code>sandbox.build</code>, trả <code>sandbox.reply.*</code></td><td>INT-LATEX, DIAG-*, NFR-PERF-007</td></tr>
+<tr><td id="trk-agent-core"><code>agent-core</code></td><td>Python, FastAPI</td><td><code>sires_agent_core</code></td><td>Nhận <code>agent.run</code>; stream <code>chat.delta</code>; nội bộ 2 endpoint (kiểm tra kết nối provider)</td><td>AGENT-*, CTX-ASSEMBLY, INT-PROVIDER-001/003/004/006</td></tr>
+<tr><td id="trk-knowledge"><code>knowledge</code></td><td>Python, FastAPI</td><td><code>sires_knowledge</code></td><td>Nhận <code>knowledge.index</code>; nội bộ 3 endpoint (truy xuất)</td><td>EVID-INDEX, INT-DOC, INT-VECTOR</td></tr>
+</tbody></table></div>
+<p class="status">Số endpoint nội bộ theo <code>docs/api-design/internal/&lt;service&gt;.yaml</code> ngày 03/11/2026. Ai gọi endpoint nào ghi ở <code>x-callers</code> của từng operation; phụ thuộc giữa luồng ở <a href="03-track-plans.html">mục 3</a>.</p>
+
+<h2 id="s-1-3">1.3. Luồng dùng chung và khu vực PO giữ</h2>
+<p>Phần mã dùng chung cho mọi service có luồng sở hữu riêng. Luồng service không sửa trực tiếp các thư mục này mà gửi yêu cầu (issue hoặc PR) để luồng sở hữu review.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Luồng</th><th>Thư mục</th><th>Nội dung</th></tr></thead>
+<tbody>
+<tr><td id="trk-platform"><code>platform</code></td><td><code>libs/ts/platform</code>, <code>libs/ts/testing</code>, <code>libs/py/sires_common</code></td><td>Tenancy (RLS, <code>SET LOCAL app.account_id</code>), transaction, outbox + relay, inbox, idempotency, audit-emit, problem+json, OpenTelemetry, logger che dữ liệu, service-auth guard, UUIDv7; fake dùng chung (OIDC, broker, Model Gateway giả lập có hành vi xác định), Testcontainers.</td></tr>
+<tr><td id="trk-contracts"><code>contracts</code></td><td><code>libs/ts/contracts</code> và client Python sinh từ spec</td><td>Sinh type và client từ <code>docs/api-design</code>; kiểm tra code lệch spec trong CI (ADR-14). Không gồm nội dung spec.</td></tr>
+<tr><td id="trk-infra"><code>infra</code></td><td><code>infra/</code>, <code>.github/workflows/</code>, <code>scripts/development/</code>, file cấu hình gốc (<code>package.json</code>, <code>pnpm-workspace.yaml</code>, <code>nx.json</code>, <code>tsconfig.base.json</code>, <code>eslint.config.mjs</code>, <code>pyproject.toml</code>)</td><td>Docker compose local, Dockerfile chung, Helm chart chung, Terraform, CI/CD, staging, eval, production.</td></tr>
+<tr><td id="trk-eval"><code>eval</code></td><td><code>eval/</code></td><td>Eval harness (NFR-EVAL-001–004), bộ dữ liệu nghiệm thu dạng máy đọc, baseline, báo cáo (kiến trúc 11.7).</td></tr>
+<tr><td id="trk-e2e"><code>e2e</code></td><td><code>e2e/</code></td><td>Playwright theo kịch bản TS của PRD 19, kiểm thử tải k6, kiểm thử bảo mật tự động, smoke cho staging và production.</td></tr>
+</tbody></table></div>
+<p><strong>Khu vực PO giữ</strong> (R-01–R-07): toàn bộ <code>docs/</code>, gồm hợp đồng <code>docs/api-design</code> và DDL tham chiếu <code>docs/database/ddl</code>. Thay đổi hợp đồng trong lúc code đi qua PR riêng có PO review (CODEOWNERS). Cách duyệt khi 13 luồng code song song là <a href="04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>.</p>
+
+<h2 id="s-1-4">1.4. Quy tắc ranh giới mã nguồn</h2>
+<p>Các quy tắc dưới bổ sung quy tắc cho người viết service ở kiến trúc 3.6; trích dẫn theo số, ví dụ “quy tắc 1.4.3”.</p>
+<ol>
+<li id="rule-1-4-1"><strong>Một PR chạm một luồng.</strong> Ngoại lệ: PR hợp đồng (sửa <code>docs/api-design</code> rồi sinh lại <code>libs/ts/contracts</code>) và PR của luồng dùng chung. CI báo khi PR chạm nhiều luồng (<code>scripts/development/check-tracks.mjs</code>).</li>
+<li id="rule-1-4-2"><strong>Không import mã của service khác.</strong> Service chỉ phụ thuộc <code>libs/</code> và type sinh từ hợp đồng; không đọc database của service khác (kiến trúc 3.5).</li>
+<li id="rule-1-4-3"><strong>Hợp đồng trước, code sau</strong> (ADR-14, kiến trúc 3.6.1). Cần endpoint hay sự kiện mới của luồng khác thì mở yêu cầu hợp đồng; khi hợp đồng đã merge, luồng gọi viết stub theo type sinh ra và code tiếp, không chờ luồng kia hiện thực xong.</li>
+<li id="rule-1-4-4"><strong>Stub nằm ở phía gọi.</strong> Mỗi luồng tự viết stub cho service mình gọi, trong thư mục test của mình. Fake dùng chung (OIDC, broker, Model Gateway giả lập) do luồng <code>platform</code> giữ.</li>
+<li id="rule-1-4-5"><strong>Thư viện dùng chung chỉ đổi tương thích ngược.</strong> Đổi phá vỡ thì thêm API mới, đánh dấu API cũ deprecated; từng luồng tự chuyển trong thư mục của mình. Luồng <code>platform</code> không sửa mã service.</li>
+<li id="rule-1-4-6"><strong>Migration trong thư mục service</strong>, chỉ chạm database của service, theo thứ tự expand → migrate → contract (kiến trúc 6.10). DDL tham chiếu ở <code>docs/database/ddl</code> là chuẩn (DEC-57); lệch thì ghi DBQ, không tự đổi schema.</li>
+<li id="rule-1-4-7"><strong>Phụ thuộc gói</strong> khai báo trong <code>package.json</code> hoặc <code>pyproject.toml</code> của chính luồng. Phiên bản dùng chung khai báo một chỗ (pnpm catalog, ràng buộc uv) do luồng <code>infra</code> giữ. Xung đột ở <code>pnpm-lock.yaml</code> hay <code>uv.lock</code> không sửa tay: rebase rồi chạy lại <code>pnpm install</code> hoặc <code>uv lock</code>.</li>
+<li id="rule-1-4-8"><strong>Cấu hình triển khai riêng</strong> của service ở <code>apps/&lt;service&gt;/deploy/values.yaml</code>; chart chung ở <code>infra/helm</code> thuộc luồng <code>infra</code>.</li>
+<li id="rule-1-4-9"><strong>web chia theo khu vực tính năng</strong> (1.5): mỗi khu vực có thư mục, route và namespace i18n riêng, nên hai khu vực không sửa chung file dịch.</li>
+<li id="rule-1-4-10"><strong>Service lớn chia module con</strong> (1.6) để nhiều người làm cùng service mà ít đụng file của nhau.</li>
+<li id="rule-1-4-11"><strong>Nhánh mang tên luồng:</strong> <code>&lt;luồng&gt;/&lt;mô-tả-ngắn&gt;</code>, ví dụ <code>library/bibtex-parser</code>; vào <code>main</code> qua pull request.</li>
+<li id="rule-1-4-12"><strong>CODEOWNERS theo thư mục luồng</strong> được điền khi PO phân công. Trước đó, kiểm tra 1.4.1 chỉ cảnh báo, không chặn merge.</li>
+</ol>
+
+<h2 id="s-1-5">1.5. Khu vực tính năng của web</h2>
+<p><code>web</code> là một ứng dụng nhưng nhiều màn, nên chia khu vực theo nhóm màn của <a href="../../ui-design/README.md">ui-design</a>. Khu vực <code>shell</code> giữ phần dùng chung; các khu vực khác chỉ dùng shell qua API của nó.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Khu vực</th><th>Thư mục</th><th>Màn (mã ui-design)</th><th>Path API chính</th></tr></thead>
+<tbody>
+<tr><td id="web-shell"><code>shell</code></td><td><code>apps/web/src/shell</code></td><td>TopBar, ProjectRail, Components, States (X1); routing theo IA PRD 4; token Cream; i18n chung; client API; client SSE</td><td><code>/auth/*</code>, <code>/events</code></td></tr>
+<tr><td id="web-settings"><code>settings</code></td><td><code>apps/web/src/features/settings</code></td><td>S0 SignIn, S1–S4 Settings</td><td>15, 08 (Provider Connections, Agent Models)</td></tr>
+<tr><td id="web-global"><code>global</code></td><td><code>apps/web/src/features/global</code></td><td>G1 Dashboard, G2 Projects, G6 Assistant, G9 PendingActions, G10 Notifications, M1–M2 mobile</td><td>07, 08 (Prompts)</td></tr>
+<tr><td id="web-library"><code>library</code></td><td><code>apps/web/src/features/library</code></td><td>G3 Discover, G4 Library, G5 Reference</td><td>10</td></tr>
+<tr><td id="web-project"><code>project</code></td><td><code>apps/web/src/features/project</code></td><td>P1 Overview, P2 Chat</td><td>07, 08</td></tr>
+<tr><td id="web-planning"><code>planning</code></td><td><code>apps/web/src/features/planning</code></td><td>P3 Plan, P4 PlanCompare, P5 TaskReview, G7 GlobalTasks</td><td>09</td></tr>
+<tr><td id="web-research"><code>research</code></td><td><code>apps/web/src/features/research</code></td><td>P6 Evidence, P7 Artifacts</td><td>11, 13, 14 (Artifacts)</td></tr>
+<tr><td id="web-manuscript"><code>manuscript</code></td><td><code>apps/web/src/features/manuscript</code></td><td>P8 Manuscript</td><td>12</td></tr>
+<tr><td id="web-monitoring"><code>monitoring</code></td><td><code>apps/web/src/features/monitoring</code></td><td>G8 GlobalActivity, P9 ProjectActivity, Workflow, AgentList, P10 History</td><td>14, 08</td></tr>
+</tbody></table></div>
+<p>Giao diện dựng và rà theo skill <code>agent/skills/dev/sires-ui-executor</code> và <code>sires-ui-review</code> (design.md 1.2). Trong lúc backend chưa sẵn, khu vực chạy với mock sinh từ OpenAPI công khai; mock thuộc thư mục test của khu vực (quy tắc 1.4.4).</p>
+
+<h2 id="s-1-6">1.6. Module con của service lớn</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Service</th><th>Module con</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td><code>agent-core</code></td><td><code>gateway</code> (Model Gateway ba provider), <code>context</code> (Context Assembler), <code>registry</code>, <code>tools</code>, <code>agents/&lt;agent&gt;</code> và <code>prompts/&lt;agent&gt;</code> cho từng agent: orchestrator, discovery, reference_processing, evidence_retrieval, synthesis, writing, verification, diagram, analysis</td><td>Mỗi agent một thư mục, nên agent khác nhau làm song song. Thay đổi prompt, định nghĩa agent, RetrievalConfig, logic Verification, adapter chạy eval harness (NFR-EVAL-004).</td></tr>
+<tr><td><code>orchestration</code></td><td><code>engine</code> (Workflow, Step, Checkpoint, heartbeat, sweeper, Recovery decision), <code>prompts</code> (InteractiveAgentPrompt, phê duyệt APR), <code>context-store</code> (ContextItem), <code>deliberation</code> (Deliberation, Board, Snapshot), <code>usage</code></td><td><code>engine</code> là lõi; module khác gọi engine qua interface trong service, không sửa trạng thái workflow trực tiếp.</td></tr>
+<tr><td><code>knowledge</code></td><td><code>extraction</code> (PDF), <code>chunking</code>, <code>embedding</code>, <code>retrieval</code> (truy xuất lai)</td><td>Theo kiến trúc 7.</td></tr>
+<tr><td><code>library</code></td><td><code>sources</code> (adapter Scholar trung gian, OpenAlex, Semantic Scholar), <code>doi</code>, <code>importers</code> (BibTeX, RIS, PDF), <code>references</code> (duyệt, selection)</td><td>Adapter nguồn tách để đổi nhà cung cấp không chạm phần duyệt reference.</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a href="../index.html">Mục lục kế hoạch</a><a rel="next" href="02-phases-and-gates.html">Mục 2 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Delivery Plan · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

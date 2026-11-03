@@ -1,0 +1,43 @@
+%% SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+%% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+%% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+%% FIG-206 — ERD sires_research và sires_manuscript (docs/database 8); đường chấm = ref xuyên database
+erDiagram
+  artifact ||--|{ artifact_version : "phiên bản, current accepted"
+  claim ||--o{ claim_evidence_link : "liên kết"
+  evidence ||--o{ claim_evidence_link : "liên kết"
+  claim ||--o{ claim_revision : "lịch sử"
+  claim |o--o| verification_result : "lần kiểm chứng cuối"
+  artifact_version |o--o{ claim : "thuộc"
+  artifact_version ||--o{ provenance_input : "đầu vào"
+  manuscript ||--|{ manuscript_revision : "revision, current"
+  manuscript ||--o{ manuscript_file : "cây file"
+  manuscript_revision ||--o{ change_proposal : "base"
+  change_proposal |o--o| manuscript_revision : "tạo revision"
+  manuscript ||--o{ bibliography_entry : "bib"
+  manuscript_revision ||--o{ build : "build"
+  change_proposal }o..o{ claim : "ref claim_ids"
+  evidence {
+    uuid id PK
+    uuid reference_id
+    uuid chunk_id
+    text status
+  }
+  claim {
+    uuid id PK
+    text approval_status
+    text support_status
+    bool needs_review
+  }
+  manuscript_revision {
+    uuid id PK
+    int revision_number
+    jsonb changes
+    jsonb tree
+  }
+  build {
+    uuid id PK
+    uuid revision_id
+    bytea config_hash
+    text status
+  }

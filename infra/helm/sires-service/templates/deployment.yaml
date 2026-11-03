@@ -1,0 +1,36 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.service }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.service }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.service }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.service }}
+    spec:
+      containers:
+        - name: {{ .Values.service }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: PORT
+              value: "{{ .Values.port }}"
+          ports:
+            - containerPort: {{ .Values.port }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.port }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.port }}

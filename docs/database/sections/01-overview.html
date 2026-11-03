@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — tổng quan.">
+<title>1. Database Design Overview | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 1</p><h1>1. Database Design Overview</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/05-core-domain-model.html">5</a>, <a href="../../overview/sections/18-data-and-state-specifications.html">18</a>, <a href="../../overview/sections/16-non-functional-requirements.html">16</a>; kiến trúc <a href="../../architecture/sections/03-system-context-and-containers.html">3</a>, <a href="../../architecture/sections/06-data-architecture.html">6</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-1-1">1.1. Mục đích và đối tượng</a></li>
+<li><a href="#s-1-2">1.2. Phạm vi</a></li>
+<li><a href="#s-1-3">1.3. Nguồn và quan hệ với tài liệu khác</a></li>
+<li><a href="#s-1-4">1.4. Động lực thiết kế từ PRD</a></li>
+<li><a href="#s-1-5">1.5. Nguyên tắc</a></li>
+<li><a href="#s-1-6">1.6. Quy ước mã và cách đọc</a></li>
+</ul></details>
+
+<h2 id="s-1-1">1.1. Mục đích và đối tượng</h2>
+<p>PRD 18 đặc tả <em>schema logic</em> (entity, trường, enum, chuyển trạng thái, quy tắc phiên bản, idempotency, kiểm tra dữ liệu) và để kiểu dữ liệu, bảng lưu trữ, công nghệ database cho quyết định kỹ thuật. Kiến trúc mục 6 chốt <em>cách lưu</em> ở mức nguyên tắc (database theo service, RLS, outbox, retention). Tài liệu này đi tiếp một bước: <strong>bảng, cột, kiểu, khóa, index, trigger, vai trò và quyền</strong> cho từng database, đủ để:</p>
+<ul>
+<li>SWE viết migration drizzle-kit/Alembic và repository mà không phải tự quyết schema;</li>
+<li>QA viết test cách ly (19.12), test state machine và bộ dữ liệu mẫu theo 16.4;</li>
+<li>Tech lead rà cách các requirement dữ liệu (DATA-*, NFR-ISOL, NFR-RET, NFR-DUR) được bảo đảm ở database;</li>
+<li>coding agent tra nhanh bảng nào chứa trường nào, ràng buộc nào đã có ở database.</li>
+</ul>
+
+<h2 id="s-1-2">1.2. Phạm vi</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Trong phạm vi</th><th>Ngoài phạm vi</th></tr></thead>
+<tbody>
+<tr><td>11 database của các service có dữ liệu (identity, gateway, workspace, planning, orchestration, library, knowledge, research, manuscript, audit, agent-core); mọi entity PRD 18.1; bảng nền tảng (outbox, inbox, idempotency key, khóa job); bản sao chỉ đọc; bảng vector.</td><td>Cấu trúc object storage (đã ở kiến trúc 6.6, chỉ tham chiếu khóa); nội dung message RabbitMQ (AsyncAPI); log vận hành và metric (kiến trúc 11); sandbox-runner (không có database).</td></tr>
+<tr><td>Ràng buộc và trigger hiện thực 18.2–18.5; RLS và quyền; index phục vụ NFR-PERF-001–007; retention, purge, sao lưu, migration; ước lượng dung lượng.</td><td>Logic domain (state machine chính nằm trong module domain của service, kiến trúc 3.3); câu truy vấn của từng endpoint; lựa chọn nhà cloud (AQ-12).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-1-3">1.3. Nguồn và quan hệ với tài liệu khác</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Nguồn</th><th>Lấy gì</th><th>Khi khác nhau</th></tr></thead>
+<tbody>
+<tr><td>PRD 5, 18.1–18.5</td><td>Entity, trường bắt buộc (*), enum, bảng chuyển trạng thái, ràng buộc duy nhất, toàn vẹn tham chiếu</td><td>PRD là chuẩn; bảng/cột sửa theo</td></tr>
+<tr><td>PRD 16.3–16.4, 16.8</td><td>Chỉ tiêu hiệu năng, quy mô dữ liệu mẫu, retention</td><td>PRD là chuẩn</td></tr>
+<tr><td>Kiến trúc 3.2–3.3</td><td>Service sở hữu entity nào</td><td>Kiến trúc là chuẩn về sở hữu</td></tr>
+<tr><td>Kiến trúc 5, 6, 7, 10</td><td>Cột kỹ thuật của engine (heartbeat, lease), outbox, RLS, vector, mã hóa API key</td><td>Kiến trúc là chuẩn về cơ chế</td></tr>
+<tr><td>API <code>components/schemas</code></td><td>Tên trường và giá trị enum ở hợp đồng</td><td>API là chuẩn về tên trường</td></tr>
+<tr><td>AsyncAPI <code>events/asyncapi.yaml</code></td><td>Sự kiện cập nhật bản sao chỉ đọc</td><td>Thiếu sự kiện/trường → DBQ, sửa AsyncAPI trước</td></tr>
+</tbody></table></div>
+<p>Trạng thái hạ tầng theo kiến trúc ngày 02/11/2026: ở MVP SIRes dùng <strong>cụm PostgreSQL managed riêng</strong> (ADR-28, ADR-22); sau MVP có thể chuyển sang hạ tầng PostgreSQL dùng chung của eTroy One (ADR-25) — thiết kế này giữ được việc chuyển đó vì mọi service truy cập qua adapter và tên vai trò có tiền tố <code>sires_</code> (<a href="03-topology-and-ownership.html#s-3-2">3.2</a>).</p>
+
+<h2 id="s-1-4">1.4. Động lực thiết kế từ PRD</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Requirement</th><th>Hệ quả cho database</th><th>Mục</th></tr></thead>
+<tbody>
+<tr><td>DATA-PERSIST-001, CTX-AUDIT-001, NFR-DUR-001</td><td>Chuyển trạng thái, dữ liệu liên quan, Audit Event và sự kiện ghi trong một giao dịch → bảng <code>outbox</code> trong mọi database</td><td><a href="09-audit-and-platform.html#s-9-2">9.2</a></td></tr>
+<tr><td>DATA-PERSIST-002</td><td>Checkpoint ghi cùng giao dịch với bước Succeeded</td><td><a href="06-orchestration.html#s-6-3">6.3</a></td></tr>
+<tr><td>DATA-IDEMP-001–005</td><td>Bảng <code>idempotency_key</code>; partial unique “một Workflow hoạt động mỗi Task”; khóa tự nhiên của indexing, build, BibliographyEntry</td><td><a href="10-integrity-state-and-versioning.html#s-10-1">10.1</a></td></tr>
+<tr><td>DATA-CONC-001</td><td><code>row_version</code> trên mọi entity sửa được, tăng đúng 1</td><td><a href="02-schema-conventions.html#s-2-3">2.3</a></td></tr>
+<tr><td>DATA-STATE-001, DATA-STATE-002</td><td>Trạng thái CHECK + bảng chuyển trạng thái + trigger; chặn ghi khi project không Active</td><td><a href="10-integrity-state-and-versioning.html#s-10-2">10.2</a></td></tr>
+<tr><td>DATA-PROV-001, 18.3</td><td>Cột <code>provenance</code> bắt buộc với đầu ra của agent; bảng liên kết cho truy vấn ngược</td><td><a href="10-integrity-state-and-versioning.html#s-10-4">10.4</a></td></tr>
+<tr><td>DATA-VALID-001, 18.5</td><td>Unique, partial unique, khóa ngoại ghép theo tài khoản/project, hàm phát hiện chu trình</td><td><a href="10-integrity-state-and-versioning.html#s-10-1">10.1</a></td></tr>
+<tr><td>NFR-ISOL-001, OWN-01–OWN-03</td><td>RLS theo <code>account_id</code>, vai trò không BYPASSRLS cho đường người dùng</td><td><a href="11-security-and-tenancy.html#s-11-1">11.1</a></td></tr>
+<tr><td>NFR-SECRETS-001–003</td><td>Ciphertext API key tách bảng, không vai trò nào đọc được key rõ</td><td><a href="11-security-and-tenancy.html#s-11-3">11.3</a></td></tr>
+<tr><td>NFR-RET-002–009, NFR-BACKUP-001</td><td>Xóa mềm theo PRD, purge theo project/tài khoản, job dọn, PITR</td><td><a href="12-operations-retention-and-capacity.html#s-12-1">12.1</a></td></tr>
+<tr><td>NFR-PERF-001–007, NFR-SCALE-001–002</td><td>Index ghép bắt đầu bằng <code>account_id</code>, GIN cho tìm kiếm, HNSW/quét chính xác cho vector</td><td><a href="12-operations-retention-and-capacity.html#s-12-6">12.6</a></td></tr>
+<tr><td>NFR-USAGE-001–002, NFR-OBS-006</td><td>Usage chuẩn hóa trên Agent Run, cột phiên bản agent/template/retrieval</td><td><a href="06-orchestration.html#s-6-2">6.2</a></td></tr>
+</tbody></table></div>
+
+<h2 id="s-1-5">1.5. Nguyên tắc</h2>
+<ol>
+<li><strong>Một entity, một database.</strong> Mỗi entity PRD 18.1 nằm trong database của đúng một service sở hữu (kiến trúc 3.3). Service khác giữ bản sao chỉ đọc trong schema <code>replica</code> khi cần kiểm tra cục bộ.</li>
+<li><strong>Database là lớp bảo vệ thứ hai.</strong> Quy tắc nghiệp vụ nằm ở module domain; database chặn những vi phạm không được phép xảy ra dù ứng dụng có lỗi: tenant, “tối đa một”, chuyển trạng thái ngoài bảng, sửa bản ghi bất biến, thiếu actor hoặc provenance.</li>
+<li><strong>Không mất dấu.</strong> Không xóa vật lý entity còn được provenance, ApprovalRecord hoặc AuditEvent tham chiếu (OWN-05); xóa vật lý chỉ qua purge theo project/tài khoản.</li>
+<li><strong>Tên và giá trị khớp PRD và API.</strong> Không đặt tên trạng thái mới; khi cần trạng thái kỹ thuật thì đặt ở bảng kỹ thuật, không ở entity PRD (ngoại lệ ghi rõ: DBD-07).</li>
+<li><strong>Đơn giản trước.</strong> Không partition, không cụm riêng cho vector, không materialized view ở MVP; điều kiện xem lại ghi ở DBD-12.</li>
+</ol>
+
+<h2 id="s-1-6">1.6. Quy ước mã và cách đọc</h2>
+<p>Mã của bộ này: <code>DBD-NN</code> quyết định, <code>DBQ-NN</code> câu hỏi kỹ thuật, <code>DR-NN</code> rủi ro, <code>FIG-2NN</code> hình (chi tiết ở <a href="../README.md">README</a>). Mã PRD và kiến trúc (DATA-*, NFR-*, ADR-NN, AQ-NN) giữ nguyên.</p>
+<p>Mỗi mục 4–9 có bảng “Bảng · Entity PRD · Cột và ràng buộc chính · Index”. Danh sách cột đầy đủ, kiểu và CHECK ở file DDL tương ứng; các cột chung (<a href="02-schema-conventions.html#s-2-3">2.3</a>) không nhắc lại. Ký hiệu: <strong>PK</strong> khóa chính, <strong>UQ</strong> unique, <strong>PUQ</strong> partial unique index, <strong>FK</strong> khóa ngoại (cùng database), <strong>ref</strong> id logic sang database khác (không FK).</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a href="../index.html">Mục lục database</a><a rel="next" href="02-schema-conventions.html">Mục 2 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

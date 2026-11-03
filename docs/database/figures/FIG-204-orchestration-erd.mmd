@@ -1,0 +1,45 @@
+%% SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+%% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+%% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+%% FIG-204 — ERD sires_orchestration (docs/database 6)
+erDiagram
+  workflow ||--|{ workflow_step : "bước"
+  workflow_step ||--o{ agent_run : "lần chạy"
+  agent_run ||--o| agent_run_debug_transcript : "debug 30 ngày"
+  workflow ||--o{ checkpoint : "sequence"
+  workflow_step ||--o{ interactive_agent_prompt : "prompt"
+  agent_run ||--o{ interactive_agent_prompt : "tạo"
+  workflow_step ||--o| deliberation : "bước deliberation"
+  deliberation ||--|| context_snapshot : "snapshot"
+  deliberation ||--|{ deliberation_participant : "bên tham gia"
+  deliberation ||--o{ deliberation_entry : "board"
+  workflow ||--o{ deliberation_entry : "finding song song"
+  agent_run ||--o{ deliberation_entry : "tác giả"
+  agent_run ||--o| usage_ledger : "usage"
+  context_item |o--o| context_item : "supersedes"
+  workflow {
+    uuid id PK
+    text type
+    text status
+    uuid task_id
+    timestamptz heartbeat_at
+  }
+  agent_run {
+    uuid id PK
+    text agent
+    text instance
+    text status
+    bool discarded
+  }
+  deliberation {
+    uuid id PK
+    text problem_type
+    text status
+    smallint current_round
+  }
+  deliberation_entry {
+    uuid id PK
+    text type
+    text status
+    timestamptz visible_from
+  }

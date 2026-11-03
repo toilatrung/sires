@@ -1,0 +1,117 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — topology và sở hữu dữ liệu.">
+<title>3. Topology and Data Ownership | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 3</p><h1>3. Topology and Data Ownership</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: kiến trúc <a href="../../architecture/sections/03-system-context-and-containers.html#s-3-3">3.3</a>, <a href="../../architecture/sections/06-data-architecture.html#s-6-1">6.1</a>; ADR-22, ADR-25, ADR-28; DBD-05, DBD-06, DBD-08</p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-3-1">3.1. Cụm và database</a></li>
+<li><a href="#s-3-2">3.2. Vai trò đăng nhập</a></li>
+<li><a href="#s-3-3">3.3. Extension và kết nối</a></li>
+<li><a href="#s-3-4">3.4. Sở hữu entity</a></li>
+<li><a href="#s-3-5">3.5. Tham chiếu xuyên service và bản sao chỉ đọc</a></li>
+</ul></details>
+
+<h2 id="s-3-1">3.1. Cụm và database</h2>
+<p>Ở MVP, SIRes có <strong>một cụm PostgreSQL 16+ managed riêng</strong> (ADR-28) chứa một database cho mỗi service có dữ liệu (ADR-22). Sau MVP, cụm có thể chuyển sang hạ tầng PostgreSQL dùng chung của eTroy One (ADR-25) mà không đổi schema: tên database và vai trò mang tiền tố <code>sires_</code> để không trùng ứng dụng khác trên cùng cụm. Môi trường dev và CI dùng PostgreSQL cục bộ qua Testcontainers.</p>
+<pre>cụm PostgreSQL 16+ (managed, HA, PITR)
+ ├─ sires_identity        account, provider_connection, provider_secret, agent_model_assignment
+ ├─ sires_gateway         session, sse_event_log
+ ├─ sires_workspace       research_project, research_context_version, conversation, message, pending_action, notification
+ ├─ sires_planning        research_plan, plan_version, phase, task, task_definition, task_dependency, readiness, review
+ ├─ sires_orchestration   workflow, workflow_step, agent_run, checkpoint, prompt, context_item, deliberation*, usage_ledger
+ ├─ sires_library         discovered_result, reference, reference_metadata_version, project_reference_selection
+ ├─ sires_knowledge       source_document, chunk, chunk_text, vec.emb_*, indexing_job        (pgvector)
+ ├─ sires_research        evidence, claim, claim_evidence_link, verification_result, artifact, artifact_version
+ ├─ sires_manuscript      manuscript, manuscript_file, manuscript_revision, change_proposal, bibliography_entry, build
+ ├─ sires_audit           audit_event, kpi_snapshot, audit_export
+ └─ sires_agent_core      provider_slot, model_catalog_cache                                  (kỹ thuật)
+mọi database: app.outbox · app.inbox · app.idempotency_key · app.job_lock · app.state_transition
+sandbox-runner: không có database (trạng thái build ở manuscript, job qua RabbitMQ)</pre>
+<p class="status">FIG-201 — Database theo service, schema và luồng cập nhật bản sao. Nguồn: <a href="../figures/FIG-201-database-topology.mmd">figures/FIG-201-database-topology.mmd</a>.</p>
+<p>Không service nào có quyền kết nối database của service khác; không có <code>dblink</code>/<code>postgres_fdw</code>. Khi một service tải cao (knowledge) cần cụm riêng, tách database đó sang cụm khác không đổi schema (ADR-22).</p>
+
+<h2 id="s-3-2">3.2. Vai trò đăng nhập</h2>
+<p>Mỗi database có bốn vai trò (DBD-06). Vai trò do hạ tầng (Terraform) tạo; mật khẩu hoặc chứng chỉ ở secret manager, cấp cho pod của đúng service.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Vai trò</th><th>LOGIN</th><th>RLS</th><th>Dùng cho</th><th>Quyền</th></tr></thead>
+<tbody>
+<tr><td><code>sires_&lt;svc&gt;_owner</code></td><td>không (migration đăng nhập bằng vai trò migrator là thành viên)</td><td>—</td><td>Sở hữu schema, bảng, hàm; chạy migration</td><td>DDL</td></tr>
+<tr><td><code>sires_&lt;svc&gt;_app</code></td><td>có</td><td>áp dụng</td><td>Request của người dùng và lời gọi nội bộ có tenant (token nội bộ mang <code>account_id</code>)</td><td>SELECT/INSERT/UPDATE trên <code>app.*</code>, DELETE chỉ bảng được liệt kê; INSERT <code>outbox</code>; SELECT <code>replica.*</code></td></tr>
+<tr><td><code>sires_&lt;svc&gt;_system</code></td><td>có</td><td>BYPASSRLS</td><td>Outbox relay, consumer sự kiện, sweeper, job định kỳ quét nhiều tài khoản</td><td>Như <code>_app</code> + đọc/ghi <code>outbox</code>, <code>inbox</code>, <code>job_lock</code>, ghi <code>replica.*</code></td></tr>
+<tr><td><code>sires_&lt;svc&gt;_purge</code></td><td>có</td><td>BYPASSRLS</td><td>Purge project/tài khoản, dọn theo retention (debug transcript, idempotency key, outbox đã publish)</td><td>SELECT/DELETE mọi bảng</td></tr>
+</tbody></table></div>
+<p>Chi tiết quyền theo bảng và lý do ở <a href="11-security-and-tenancy.html#s-11-2">11.2</a>. Nếu dịch vụ managed của nhà cloud chọn ở AQ-12 không cho tạo vai trò BYPASSRLS, phương án thay thế ghi ở DBQ-01.</p>
+
+<h2 id="s-3-3">3.3. Extension và kết nối</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Extension</th><th>Database</th><th>Dùng cho</th></tr></thead>
+<tbody>
+<tr><td><code>pgcrypto</code></td><td>mọi database</td><td><code>gen_random_bytes</code> trong <code>app.uuid_v7()</code></td></tr>
+<tr><td><code>unaccent</code>, <code>pg_trgm</code></td><td>mọi database (dùng ở workspace, planning, library, research, knowledge)</td><td>Tìm kiếm tiếng Việt không dấu, tìm gần đúng (kiến trúc 6.7)</td></tr>
+<tr><td><code>vector</code> ≥ 0.8</td><td>sires_knowledge</td><td>Vector, HNSW, <code>hnsw.iterative_scan</code> (ADR-05, 7.4)</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Kết nối:</strong> TLS bắt buộc. Pooler (PgBouncer hoặc pooler của dịch vụ managed) ở chế độ transaction; mọi biến phiên đặt bằng <code>SET LOCAL</code> trong giao dịch nên an toàn với pooler; không dùng <code>SET</code> cấp phiên, advisory lock cấp phiên hay <code>LISTEN</code>.</li>
+<li><strong>Đầu mỗi giao dịch của vai trò <code>_app</code>:</strong> <code>SET LOCAL app.account_id = '&lt;uuid&gt;'</code> (lấy từ token nội bộ), tùy chọn <code>SET LOCAL app.actor = '&lt;ActorRef json&gt;'</code> cho log. Repository của libs/ts/platform và sires_common làm việc này, không có hàm truy vấn “không tenant”.</li>
+<li><strong>Hạn mức:</strong> số kết nối tối đa đặt theo vai trò (<code>ALTER ROLE … CONNECTION LIMIT</code>) để một service không chiếm hết cụm.</li>
+</ul>
+
+<h2 id="s-3-4">3.4. Sở hữu entity</h2>
+<p>Mỗi entity PRD 18.1 nằm ở đúng một database (kiến trúc 3.3, NFR-MAINT-003).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Database</th><th>Entity PRD 18.1</th><th>Bảng kỹ thuật thêm</th><th>Mục</th></tr></thead>
+<tbody>
+<tr><td>sires_identity</td><td>Account/Profile, VerificationThresholds, ProviderConnection, AgentModelAssignment</td><td><code>provider_secret</code>, view <code>analysis_same_model</code></td><td><a href="04-identity-gateway-workspace.html#s-4-1">4.1</a></td></tr>
+<tr><td>sires_gateway</td><td>—</td><td><code>session</code>, <code>sse_event_log</code></td><td><a href="04-identity-gateway-workspace.html#s-4-2">4.2</a></td></tr>
+<tr><td>sires_workspace</td><td>ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification</td><td><code>project_purge</code></td><td><a href="04-identity-gateway-workspace.html#s-4-3">4.3</a></td></tr>
+<tr><td>sires_planning</td><td>ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, ReadinessResult, TaskReview</td><td><code>task_input_ref</code></td><td><a href="05-planning.html">5</a></td></tr>
+<tr><td>sires_orchestration</td><td>Workflow, WorkflowStep, AgentRun, Checkpoint, InteractiveAgentPrompt, ContextItem, Deliberation, DeliberationEntry, ContextSnapshot</td><td><code>agent_run_debug_transcript</code>, <code>deliberation_participant</code>, <code>usage_ledger</code></td><td><a href="06-orchestration.html">6</a></td></tr>
+<tr><td>sires_library</td><td>DiscoveredResult, Reference, ProjectReferenceSelection</td><td><code>reference_metadata_version</code></td><td><a href="07-library-and-knowledge.html#s-7-1">7.1</a></td></tr>
+<tr><td>sires_knowledge</td><td>SourceDocument, Chunk</td><td><code>chunk_text</code>, <code>vec.emb_*</code>, <code>embedding_model_catalog</code>, <code>indexing_job</code>, <code>embedding_usage</code></td><td><a href="07-library-and-knowledge.html#s-7-4">7.4</a></td></tr>
+<tr><td>sires_research</td><td>Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion</td><td><code>claim_revision</code>, <code>provenance_input</code></td><td><a href="08-research-and-manuscript.html#s-8-1">8.1</a></td></tr>
+<tr><td>sires_manuscript</td><td>Manuscript, ManuscriptFile, ManuscriptRevision, ChangeProposal, BibliographyEntry, Build</td><td>—</td><td><a href="08-research-and-manuscript.html#s-8-4">8.4</a></td></tr>
+<tr><td>sires_audit</td><td>AuditEvent</td><td><code>kpi_snapshot</code>, <code>audit_export</code></td><td><a href="09-audit-and-platform.html#s-9-1">9.1</a></td></tr>
+<tr><td>sires_agent_core</td><td>—</td><td><code>provider_slot</code>, <code>model_catalog_cache</code></td><td><a href="09-audit-and-platform.html#s-9-5">9.5</a></td></tr>
+</tbody></table></div>
+<p class="status">ERD theo nhóm: FIG-202 (identity, gateway, workspace), FIG-203 (planning), FIG-204 (orchestration), FIG-205 (library, knowledge), FIG-206 (research, manuscript), ở <a href="../figures/README.md">figures/</a>.</p>
+
+<h2 id="s-3-5">3.5. Tham chiếu xuyên service và bản sao chỉ đọc</h2>
+<p>Tham chiếu sang entity ở database khác là cột uuid không FK (ký hiệu <strong>ref</strong>). Tính đúng được bảo đảm bằng một trong ba cách:</p>
+<ol>
+<li><strong>Kiểm tra khi ghi qua API nội bộ</strong> của service sở hữu (mặc định). Ví dụ: planning tạo PlanVersion với <code>context_version_id</code> đã đọc từ workspace.</li>
+<li><strong>Bản sao chỉ đọc</strong> trong schema <code>replica</code>, cập nhật bằng consumer (vai trò <code>_system</code>) trong cùng giao dịch với <code>inbox</code>, khi cần kiểm tra cục bộ ở mỗi lần ghi hoặc truy vấn theo lô (DBD-08). Mỗi dòng có <code>source_version</code>; sự kiện có phiên bản nhỏ hơn bị bỏ.</li>
+<li><strong>Saga</strong> cho đầu ra của Agent Run ghi sang nhiều service (kiến trúc 5.8), idempotency key <code>agentRunId:chỉ số</code>.</li>
+</ol>
+<div class="table-wrap"><table>
+<thead><tr><th>Bản sao</th><th>Ở database</th><th>Nguồn (AsyncAPI)</th><th>Dùng cho</th></tr></thead>
+<tbody>
+<tr><td><code>replica.project_state</code></td><td>planning, orchestration, library, knowledge, research, manuscript</td><td><code>project.lifecycle_changed</code></td><td>Chặn ghi khi project Archived hoặc đã xóa mềm (<code>tg_project_writable</code>); ẩn dữ liệu project đã xóa</td></tr>
+<tr><td><code>replica.reference_state</code></td><td>knowledge, research, manuscript</td><td><code>reference.status_changed</code>, <code>reference.metadata_updated</code> (manuscript), <code>reference.deleted</code></td><td>Phạm vi truy xuất (7.4); Evidence chỉ từ Reference Trusted; BibliographyEntry chỉ từ Reference Trusted; needs review khi metadata đổi</td></tr>
+<tr><td><code>replica.project_reference_scope</code></td><td>knowledge, research</td><td><code>project_reference.changed</code></td><td>Phạm vi truy xuất theo project (INT-VECTOR-001); Evidence chỉ từ Reference được chọn Active</td></tr>
+<tr><td><code>replica.account_embedding</code></td><td>knowledge</td><td><code>embedding_model.changed</code></td><td>Model embedding của tài khoản (DEC-31), xếp job index lại</td></tr>
+</tbody></table></div>
+<p>Hai khoảng trống với đặc tả sự kiện hiện tại: envelope chưa có <code>aggregateVersion</code> (kiến trúc 6.4 có nhắc), và <code>reference.status_changed</code> chưa mang <code>metadataVersion</code>. Cho tới khi bổ sung, <code>source_version</code> (bigint) lấy epoch millisecond của <code>occurredAt</code> và <code>metadata_version</code> ở manuscript có thể NULL (DBQ-04).</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-schema-conventions.html">← Mục 2</a><a href="../index.html">Mục lục database</a><a rel="next" href="04-identity-gateway-workspace.html">Mục 4 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

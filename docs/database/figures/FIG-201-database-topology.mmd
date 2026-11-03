@@ -1,0 +1,32 @@
+%% SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+%% Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+%% SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+%% FIG-201 — Database theo service, schema và luồng cập nhật bản sao (docs/database 3.1, 3.5)
+flowchart LR
+  subgraph cluster["Cụm PostgreSQL 16+ managed của SIRes (ADR-28, ADR-22)"]
+    identity[(sires_identity)]
+    gateway[(sires_gateway)]
+    workspace[(sires_workspace)]
+    planning[(sires_planning)]
+    orchestration[(sires_orchestration)]
+    library[(sires_library)]
+    knowledge[(sires_knowledge + pgvector)]
+    research[(sires_research)]
+    manuscript[(sires_manuscript)]
+    audit[(sires_audit)]
+    agentcore[(sires_agent_core)]
+  end
+  mq{{RabbitMQ sires.events}}
+  identity -- outbox --> mq
+  workspace -- outbox --> mq
+  planning -- outbox --> mq
+  orchestration -- outbox --> mq
+  library -- outbox --> mq
+  knowledge -- outbox --> mq
+  research -- outbox --> mq
+  manuscript -- outbox --> mq
+  mq -- "audit.recorded" --> audit
+  mq -- "project.lifecycle_changed: replica.project_state" --> planning & orchestration & library & knowledge & research & manuscript
+  mq -- "reference.status_changed, project_reference.changed: replica.*" --> knowledge & research & manuscript
+  mq -- "embedding_model.changed: replica.account_embedding" --> knowledge
+  mq -- "log SSE 24 giờ" --> gateway

@@ -48,7 +48,8 @@
 <ul>
 <li>Duy nhất eTroy OIDC (DEC-26); luồng và kiểm tra token ở <a href="04-runtime-flows.html#f-01">F-01</a> và <a href="08-model-gateway-and-integrations.html#s-8-8">8.8</a>.</li>
 <li>Mẫu BFF: token OIDC không bao giờ xuống trình duyệt; trình duyệt chỉ giữ cookie phiên <code>sires_session</code> (HttpOnly, Secure, SameSite=Lax, path <code>/</code>), id phiên xoay mới sau đăng nhập.</li>
-<li>Hết hạn phiên: theo token eTroy; thêm hạn không hoạt động (mặc định 12 giờ) — cần PO/eTroy xác nhận (AQ-03).</li>
+<li>Hết hạn phiên: theo token eTroy; thêm hạn không hoạt động 12 giờ (PO chốt 02/11/2026, AQ-03; PRD DEC-54, DEC-55, INT-OIDC-003). Chỉ thao tác do người dùng thực hiện (lệnh ghi, điều hướng, mở màn hình) cập nhật <code>last_activity</code> của phiên; kết nối SSE, polling trạng thái và refresh token chạy nền không tính. Quá 12 giờ kể từ thao tác cuối, gateway hủy phiên server-side và yêu cầu đăng nhập lại qua eTroy OIDC (ADR-27).</li>
+<li>Đăng xuất: gateway hủy phiên SIRes rồi chuyển trình duyệt tới endpoint logout của eTroy OIDC (RP-initiated, kèm <code>post_logout_redirect_uri</code>), nên phiên eTroy cũng kết thúc. Đăng xuất ở eTroy chỉ kết thúc phiên SIRes khi eTroy One hỗ trợ back-channel logout (ETR-07); gateway khi đó nhận logout token và hủy mọi phiên SIRes theo <code>sid</code>/<code>sub</code> (ADR-27).</li>
 <li>Không có tài khoản quản trị trong ứng dụng; thao tác vận hành dữ liệu đi qua công cụ nội bộ có audit, không qua API sản phẩm.</li>
 </ul>
 
@@ -102,13 +103,13 @@ Dùng:  Model Gateway: KMS.Decrypt(wrapped DEK) → giải mã key trong bộ nh
 <li>Chỉ context do Context Assembler lắp ráp được gửi; Profile chỉ đóng góp lĩnh vực nghiên cứu khi người dùng bật (DEC-24) — kiểm tra bằng test trên context manifest.</li>
 <li>Log vận hành chỉ có metadata và độ dài; <code>accountId</code> trong log là giá trị băm có khóa (NFR-OBS-001).</li>
 <li>Debug transcript mã hóa lớp ứng dụng (DEK riêng mỗi tài khoản), chỉ chủ tài khoản xem, xóa sau 30 ngày.</li>
-<li>Vùng lưu trữ dữ liệu chốt khi chọn nhà cloud (DEC-27); mọi kho dữ liệu cùng vùng.</li>
+<li>Vùng lưu trữ dữ liệu chốt khi chọn nhà cloud (DEC-27, AQ-12); mọi kho dữ liệu cùng vùng. Ở MVP mọi kho do SIRes tự vận hành (ADR-28).</li>
 </ul>
 
 <h2 id="s-10-8">10.8. Kiểm chứng bảo mật</h2>
 <ul>
 <li>Test tự động: endpoint không phiên (NFR-AUTH-001-AC01), vượt quyền (NFR-AUTHZ-001-AC01), chéo tài khoản (NFR-ISOL-001-AC01), chuỗi key mẫu (NFR-SECRETS-001-AC01), base URL http và địa chỉ nội bộ, sandbox đọc file/gọi mạng/vòng lặp vô hạn.</li>
-<li>Review bảo mật trước khi triển khai auth và secrets, và trước release; kiểm thử xâm nhập độc lập trước phát hành rộng — đề xuất, cần ngân sách (AQ-04).</li>
+<li>Review bảo mật trước khi triển khai auth và secrets, và trước release; giai đoạn dùng nội bộ: review bảo mật nội bộ và quét tự động trong CI (OWASP ZAP baseline, Trivy, npm audit, pip-audit); bắt buộc một lần kiểm thử xâm nhập độc lập trước phát hành rộng, phạm vi phiên và BFF, lưu API key, sandbox, cách ly giữa tài khoản (chốt 02/11/2026, AQ-04).</li>
 </ul>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="09-sandbox-latex-and-diagrams.html">← Mục 9</a><a href="../index.html">Mục lục kiến trúc</a><a rel="next" href="11-deployment-and-operations.html">Mục 11 →</a></nav>

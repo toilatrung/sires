@@ -1,0 +1,43 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+# Local environment (architecture 11.1): PostgreSQL 16 + pgvector, RabbitMQ, MinIO.
+# Services under development run with nx/uv on the host. Pin image digests in PH-01.
+name: sires-local
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: sires
+      POSTGRES_PASSWORD: sires-local
+    ports: ["5432:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sires"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: sires
+      MINIO_ROOT_PASSWORD: sires-local
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - minio-data:/data
+
+volumes:
+  postgres-data:
+  minio-data:

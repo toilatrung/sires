@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes mức MVP: database theo service, bảng, ràng buộc, state machine, cách ly tenant, retention, DDL tham chiếu PostgreSQL.">
+<title>Thiết kế cơ sở dữ liệu | SIRes</title>
+<link rel="icon" href="../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design Document</p>
+<h1>SIRes — Thiết kế cơ sở dữ liệu (MVP)</h1>
+<p class="meta">Suy ra từ <a href="../overview/index.html">PRD SIRes v1.0</a> (mục 5, 14, 16, 18) và <a href="../architecture/index.html">Architecture 0.2</a> (mục 3, 5, 6, 7, 10; ADR-03–ADR-06, ADR-22–ADR-24, ADR-28) · Khởi tạo: 02/11/2026 theo yêu cầu PO · Phiên bản 0.1 · PO duyệt 03/11/2026 (DEC-57)</p>
+<div class="note"><p><strong>Đã duyệt — PO 03/11/2026 (DEC-57).</strong> PO duyệt bộ tài liệu theo đề xuất. Quyết định thiết kế mang mã <code>DBD-NN</code>, DBD-01–DBD-13 <code>Accepted</code>; câu hỏi kỹ thuật <code>DBQ-NN</code> chờ Tech lead (<a href="sections/13-decisions-risks-and-open-issues.html">mục 13</a>). Khi tài liệu này khác PRD, kiến trúc hoặc đặc tả API, ba nguồn đó là chuẩn (<a href="README.md">README</a>).</p></div>
+<p>Tài liệu mô tả <em>schema vật lý</em> của SIRes trên PostgreSQL: mỗi service một database, bảng và cột của từng entity PRD 18.1, khóa và ràng buộc thực thi 18.5, state machine 18.2 ở mức database, bất biến và phiên bản 18.3, outbox/inbox/idempotency 18.4, Row-Level Security theo tài khoản, quyền theo vai trò, index cho chỉ tiêu hiệu năng 16.3–16.4, retention và purge 16.8. Kèm DDL tham chiếu chạy được trong thư mục <code>ddl/</code> (<a href="#ddl">danh sách file</a>). Đối tượng: SWE viết migration và repository, GEN AI/AIE (knowledge, agent-core), QA viết test cách ly và dữ liệu mẫu, coding agent.</p>
+
+<h2 id="summary">Tóm tắt thiết kế</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Vấn đề</th><th>Phương án</th><th>Mã</th></tr></thead>
+<tbody>
+<tr><td>Phân bổ</td><td>Cụm PostgreSQL 16+ managed riêng của SIRes ở MVP; 11 database <code>sires_&lt;service&gt;</code> (sandbox-runner không có database); không truy vấn chéo database; tham chiếu khác database là id logic.</td><td>ADR-22, ADR-28, DBD-05</td></tr>
+<tr><td>Tổ chức schema</td><td><code>app</code> (bảng nghiệp vụ và nền tảng), <code>replica</code> (bản sao chỉ đọc nhận qua sự kiện), <code>vec</code> (vector, chỉ knowledge).</td><td>DBD-01, DBD-08</td></tr>
+<tr><td>Khóa và kiểu</td><td>UUIDv7 do ứng dụng sinh; trạng thái <code>text</code> + CHECK đúng chuỗi PRD; jsonb có hàm kiểm tra cho ActorRef, ApprovalRecord, Provenance; <code>timestamptz</code> UTC.</td><td>DBD-03, DBD-04</td></tr>
+<tr><td>Toàn vẹn trong database</td><td>Khóa ngoại ghép <code>(account_id, project_id, id)</code> buộc OWN-01–OWN-03; partial unique index cho mọi “tối đa một” của 18.5.</td><td>DBD-05</td></tr>
+<tr><td>State machine</td><td>Bảng <code>app.state_transition</code> + trigger là lớp bảo vệ thứ hai sau module domain (DATA-STATE-001).</td><td>DBD-03</td></tr>
+<tr><td>Bất biến, phiên bản</td><td>Trigger <code>tg_immutable</code> với danh sách cột được đổi; <code>row_version</code> tăng đúng 1 (DATA-CONC-001); thu quyền UPDATE trên bảng chỉ ghi thêm.</td><td>DBD-03</td></tr>
+<tr><td>Cách ly tenant</td><td>RLS <code>account_id = app.current_account_id()</code> trên mọi bảng có <code>account_id</code>, FORCE; <code>SET LOCAL app.account_id</code> mỗi giao dịch; bốn vai trò mỗi service.</td><td>DBD-06</td></tr>
+<tr><td>Nhất quán xuyên service</td><td>Outbox cùng giao dịch, inbox idempotent, idempotency key 24 giờ, saga theo <code>agentRunId</code>.</td><td>ADR-19, ADR-23</td></tr>
+<tr><td>Tìm kiếm, vector</td><td><code>tsvector</code> cấu hình <code>app.sires_simple</code> (simple + unaccent) + pg_trgm; pgvector bảng theo embedding model, HNSW.</td><td>ADR-05, DBD-11</td></tr>
+<tr><td>Retention</td><td>Xóa mềm chỉ ở entity PRD yêu cầu; purge theo project/tài khoản bằng vai trò <code>_purge</code>; job dọn theo bảng.</td><td>DBD-13</td></tr>
+</tbody>
+</table>
+</div>
+<p class="status">FIG-201 — Database theo service và luồng dữ liệu giữa chúng. Nguồn: <a href="figures/FIG-201-database-topology.mmd">figures/FIG-201-database-topology.mmd</a>.</p>
+
+<h2 id="contents">Mục lục</h2>
+<nav aria-label="Mục lục thiết kế cơ sở dữ liệu"><ol class="contents">
+<li><a href="sections/01-overview.html">Database Design Overview</a><span class="status">Mục đích, phạm vi, nguồn, động lực từ PRD, nguyên tắc, cách đọc · PRD 5, 18; kiến trúc 6</span></li>
+<li><a href="sections/02-schema-conventions.html">Schema Conventions</a><span class="status">Đặt tên, kiểu dữ liệu, cột chung, jsonb, enum, trạng thái, index, ràng buộc · PRD 18.1, 18.4</span></li>
+<li><a href="sections/03-topology-and-ownership.html">Topology and Data Ownership</a><span class="status">Database theo service, vai trò, extension, sở hữu entity, tham chiếu xuyên service, bản sao chỉ đọc · ADR-22, ADR-28</span></li>
+<li><a href="sections/04-identity-gateway-workspace.html">identity, gateway, workspace</a><span class="status">Account, Provider Connection, phiên, project, hội thoại, pending action · PRD 5.1, 7, 15</span></li>
+<li><a href="sections/05-planning.html">planning</a><span class="status">Research Plan, Plan Version, Task, readiness, review · PRD 5.2–5.3, 9</span></li>
+<li><a href="sections/06-orchestration.html">orchestration</a><span class="status">Workflow, Step, Agent Run, Checkpoint, Prompt, Shared Context, Deliberation · PRD 5.4–5.5, 8, 14</span></li>
+<li><a href="sections/07-library-and-knowledge.html">library, knowledge</a><span class="status">Discovered Result, Reference, selection, Source Document, Chunk, vector · PRD 10, 11.1, 17.3</span></li>
+<li><a href="sections/08-research-and-manuscript.html">research, manuscript</a><span class="status">Evidence, Claim, Artifact, Manuscript, Change Proposal, Build · PRD 11–13</span></li>
+<li><a href="sections/09-audit-and-platform.html">audit and platform tables</a><span class="status">Audit Event, KPI, outbox, inbox, idempotency, khóa job, agent-core · PRD 14.8, 16.9</span></li>
+<li><a href="sections/10-integrity-state-and-versioning.html">Integrity, State and Versioning</a><span class="status">Ràng buộc 18.5, state machine, bất biến, provenance, needs review · PRD 18.2–18.5</span></li>
+<li><a href="sections/11-security-and-tenancy.html">Security and Tenancy</a><span class="status">RLS, vai trò và quyền, dữ liệu nhạy cảm, mã hóa · PRD 16.1; kiến trúc 10</span></li>
+<li><a href="sections/12-operations-retention-and-capacity.html">Operations, Retention and Capacity</a><span class="status">Purge, job dọn, sao lưu, migration, dữ liệu mẫu, dung lượng, hiệu năng · PRD 16.3–16.8</span></li>
+<li><a href="sections/13-decisions-risks-and-open-issues.html">Decisions, Risks and Open Issues</a><span class="status">Sổ DBD, rủi ro DR, câu hỏi DBQ, truy vết requirement → bảng</span></li>
+</ol></nav>
+
+<h2 id="ddl">DDL tham chiếu</h2>
+<p>Thư mục <code>ddl/</code>: <a href="ddl/00-common.sql"><code>00-common.sql</code></a> chạy trước trong mọi database, rồi một file cho mỗi service. Đã chạy thử toàn bộ trên PostgreSQL 17 nhúng (PGlite) ngày 02/11/2026; pgvector chưa có trong bản chạy thử nên kiểu <code>vector</code> và index HNSW chưa được kiểm (<a href="sections/12-operations-retention-and-capacity.html#s-12-4">12.4</a>).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>File</th><th>Database</th><th>Mục</th></tr></thead>
+<tbody>
+<tr><td><a href="ddl/00-common.sql"><code>00-common.sql</code></a></td><td>mọi database</td><td><a href="sections/02-schema-conventions.html">2</a>, <a href="sections/09-audit-and-platform.html">9</a>, <a href="sections/11-security-and-tenancy.html">11</a></td></tr>
+<tr><td><a href="ddl/identity.sql"><code>identity.sql</code></a>, <a href="ddl/gateway.sql"><code>gateway.sql</code></a>, <a href="ddl/workspace.sql"><code>workspace.sql</code></a></td><td>sires_identity, sires_gateway, sires_workspace</td><td><a href="sections/04-identity-gateway-workspace.html">4</a></td></tr>
+<tr><td><a href="ddl/planning.sql"><code>planning.sql</code></a></td><td>sires_planning</td><td><a href="sections/05-planning.html">5</a></td></tr>
+<tr><td><a href="ddl/orchestration.sql"><code>orchestration.sql</code></a></td><td>sires_orchestration</td><td><a href="sections/06-orchestration.html">6</a></td></tr>
+<tr><td><a href="ddl/library.sql"><code>library.sql</code></a>, <a href="ddl/knowledge.sql"><code>knowledge.sql</code></a></td><td>sires_library, sires_knowledge</td><td><a href="sections/07-library-and-knowledge.html">7</a></td></tr>
+<tr><td><a href="ddl/research.sql"><code>research.sql</code></a>, <a href="ddl/manuscript.sql"><code>manuscript.sql</code></a></td><td>sires_research, sires_manuscript</td><td><a href="sections/08-research-and-manuscript.html">8</a></td></tr>
+<tr><td><a href="ddl/audit.sql"><code>audit.sql</code></a>, <a href="ddl/agent-core.sql"><code>agent-core.sql</code></a></td><td>sires_audit, sires_agent_core</td><td><a href="sections/09-audit-and-platform.html">9</a></td></tr>
+</tbody></table></div>
+
+<h2 id="next">Bước tiếp theo</h2>
+<ul>
+<li>Tech lead trả lời DBQ-01–DBQ-08 (DBQ-09 đã đóng), nhất là DBQ-01 (managed PostgreSQL của nhà cloud chọn ở AQ-12 có cho vai trò BYPASSRLS và extension cần thiết không).</li>
+<li>Chạy lại DDL trên PostgreSQL 16 có pgvector ≥ 0.8 (Testcontainers) và đưa bộ kiểm thử hành vi vào CI khi dựng khung service mẫu (SPK-10).</li>
+<li>Đồng bộ đặc tả sự kiện nếu DBQ-03, DBQ-04 cần thêm sự kiện hoặc trường payload (<code>docs/api-design/events/asyncapi.yaml</code>).</li>
+</ul>
+<p>Ngữ cảnh và nhật ký biên soạn: <a href="../docs_context.md">docs_context.md</a>. Quy ước của bộ này: <a href="README.md">README.md</a>. Nguồn sơ đồ: <code>figures/</code> (<a href="figures/README.md">hướng dẫn</a>).</p>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

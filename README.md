@@ -99,7 +99,7 @@ node docs/ui-design/tools/serve.mjs
 
 ## Trạng thái
 
-Repo hiện chứa tài liệu sản phẩm, thiết kế và công cụ dựng tài liệu. Mã ứng dụng chưa có.
+Repo hiện chứa tài liệu sản phẩm, thiết kế, công cụ dựng tài liệu và scaffold monorepo: 13 service khởi động được và trả `/health`, chưa có logic nghiệp vụ. Kế hoạch triển khai ở [docs/tickets](docs/tickets/index.html) (đề xuất, chờ PO duyệt).
 
 | Tài liệu | Trạng thái |
 | --- | --- |
@@ -108,12 +108,17 @@ Repo hiện chứa tài liệu sản phẩm, thiết kế và công cụ dựng 
 | [Kiến trúc](docs/architecture/README.md) | v0.2. Đã chốt hướng; ADR-17, ADR-19–ADR-23 chờ xác nhận |
 | [API](docs/api-design/README.md) | OpenAPI 3.1 mức MVP, hợp đồng nội bộ và sự kiện AsyncAPI |
 
-Kiến trúc dự kiến là monorepo FE + BE: NestJS cho các service hệ thống, Python cho agent core và knowledge. Chi tiết ở [docs/architecture](docs/architecture/README.md).
+Monorepo FE + BE: React + Vite cho web, NestJS cho các service hệ thống, Python cho agent core và knowledge; pnpm + Nx và uv. Chi tiết ở [docs/architecture](docs/architecture/README.md).
 
 ## Cấu trúc repo
 
 | Đường dẫn | Nội dung |
 | --- | --- |
+| `apps/` | 13 service: `web`, `gateway`, `identity`, `workspace`, `planning`, `orchestration`, `library`, `research`, `manuscript`, `audit`, `sandbox-runner` (TypeScript), `agent-core`, `knowledge` (Python). Mỗi service có README ghi phạm vi sở hữu |
+| `libs/` | Dùng chung: `ts/platform`, `ts/contracts` (type sinh từ `docs/api-design`), `ts/testing`, `py/sires_common` |
+| `e2e/`, `eval/` | Kiểm thử end-to-end (Playwright); eval harness |
+| `infra/` | Compose cục bộ, Dockerfile, Helm chart chung, Terraform |
+| `docs/tickets/` | Kế hoạch triển khai: luồng service, ranh giới mã nguồn, giai đoạn PH-01–PH-08 |
 | `docs/overview/` | PRD: 21 section, backlog, sơ đồ Mermaid |
 | `docs/architecture/` | Thiết kế kiến trúc: 12 section, sơ đồ, sổ ADR |
 | `docs/api-design/` | OpenAPI (`openapi.yaml`, `paths/`, `components/`), API nội bộ (`internal/`), sự kiện (`events/`) |
@@ -123,6 +128,28 @@ Kiến trúc dự kiến là monorepo FE + BE: NestJS cho các service hệ th�
 | `assets/screenshots/` | Ảnh minh họa cho README |
 
 Trang vào tài liệu: [docs/index.html](docs/index.html). Tài liệu là HTML tĩnh, mở trực tiếp bằng trình duyệt, không cần cài đặt.
+
+## Phát triển
+
+Cần Node 22+ và pnpm 10 (`corepack enable`); với service Python cần uv và Python 3.12; môi trường cục bộ cần Docker.
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm local:up
+```
+
+```bash
+pnpm nx run-many -t build typecheck lint test
+```
+
+```bash
+pnpm --filter @sires/web dev
+```
+
+Mỗi pull request chỉ chạm một luồng (một service hoặc một khu vực dùng chung); quy tắc ở [docs/tickets mục 1](docs/tickets/sections/01-tracks-and-boundaries.html#s-1-4). Kiểm tra trước khi mở PR: `git diff --name-only origin/main...HEAD | node scripts/development/check-tracks.mjs --stdin`.
 
 ## Đóng góp
 

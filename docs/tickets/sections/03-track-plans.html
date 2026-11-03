@@ -1,0 +1,189 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kế hoạch triển khai SIRes — kế hoạch chung của từng luồng service và luồng dùng chung qua tám giai đoạn.">
+<title>3. Track Plans | SIRes Delivery Plan</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 03/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Delivery Plan · Section 3</p><h1>3. Track Plans</h1>
+<p class="meta">Trạng thái: Đề xuất — chờ PO duyệt · Cơ sở: kiến trúc <a href="../../architecture/sections/03-system-context-and-containers.html#s-3-2">3.2</a>, <a href="../../architecture/sections/04-runtime-flows.html">4</a>; <code>docs/api-design/internal/*.yaml</code> (<code>x-callers</code>), <code>docs/api-design/events/asyncapi.yaml</code>; <a href="02-phases-and-gates.html">mục 2</a></p>
+<div class="note"><p>Mỗi luồng có: phạm vi, luồng nó gọi (phải có stub cho tới khi lát hội tụ), luồng gọi nó (phải giữ hợp đồng ổn định), việc chung theo giai đoạn và trọng tâm kiểm thử. Đây là mức kế hoạch: <strong>chưa phải ticket</strong>, chưa ước lượng, chưa gán người. “Xây” = viết logic theo hợp đồng và test với stub; “Hội tụ” = chạy cùng luồng khác trên staging để qua cổng.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-3-1">3.1. Luồng dùng chung: platform, contracts, infra</a></li>
+<li><a href="#s-3-2">3.2. web</a></li>
+<li><a href="#s-3-3">3.3. gateway</a></li>
+<li><a href="#s-3-4">3.4. identity</a></li>
+<li><a href="#s-3-5">3.5. workspace</a></li>
+<li><a href="#s-3-6">3.6. planning</a></li>
+<li><a href="#s-3-7">3.7. orchestration</a></li>
+<li><a href="#s-3-8">3.8. agent-core</a></li>
+<li><a href="#s-3-9">3.9. library</a></li>
+<li><a href="#s-3-10">3.10. knowledge</a></li>
+<li><a href="#s-3-11">3.11. research</a></li>
+<li><a href="#s-3-12">3.12. manuscript</a></li>
+<li><a href="#s-3-13">3.13. sandbox-runner</a></li>
+<li><a href="#s-3-14">3.14. audit</a></li>
+<li><a href="#s-3-15">3.15. eval, e2e</a></li>
+</ul></details>
+
+<h2 id="s-3-1">3.1. Luồng dùng chung: platform, contracts, infra</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Giai đoạn</th><th><code>platform</code></th><th><code>contracts</code></th><th><code>infra</code></th></tr></thead>
+<tbody>
+<tr><td>PH-01</td><td>Thư viện nền TS và Python (1.3); fake dùng chung; Testcontainers; service mẫu cho SPK-10</td><td>Sinh type TS, client Python từ OpenAPI công khai, nội bộ, AsyncAPI; kiểm tra lệch spec</td><td>CI đầy đủ (11.3), remote cache, Dockerfile chung, Helm chart chung, Terraform; staging khi có AQ-12</td></tr>
+<tr><td>PH-02</td><td>Hỗ trợ luồng hội tụ; bổ sung theo yêu cầu (tương thích ngược, 1.4.5)</td><td>Sinh lại sau mỗi PR hợp đồng</td><td>Pipeline merge → staging, migration theo service, smoke; secret manager, KMS staging</td></tr>
+<tr><td>PH-03–PH-05</td><td>Lan traceparent qua HTTP và message; metric outbox → broker → SSE</td><td>Như trên; phiên bản mới cho đổi phá vỡ</td><td>RabbitMQ quorum, dead-letter; KEDA cho agent-core; dashboard vận hành</td></tr>
+<tr><td>PH-06</td><td>—</td><td>—</td><td>Node pool sandbox (gVisor RuntimeClass, NetworkPolicy deny-all); môi trường eval tách production; job eval trong CI</td></tr>
+<tr><td>PH-07</td><td>Sửa lỗi; rà logger che dữ liệu cho REL-07</td><td>Đóng băng hợp đồng trừ sửa lỗi</td><td>Cảnh báo đầy đủ, diễn tập PITR, môi trường load test, runbook</td></tr>
+<tr><td>PH-08</td><td>—</td><td>—</td><td>Production (11.2), CDN + WAF, egress NAT, deploy có phê duyệt, rollback</td></tr>
+</tbody></table></div>
+<p>Kiểm thử trọng tâm: một giao dịch ghi đủ trạng thái + audit + outbox; inbox chống trùng và lệch thứ tự; RLS; logger không ghi API key; CI dưới 10 phút cho PR một service.</p>
+
+<h2 id="s-3-2">3.2. web</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>SPA song ngữ, chỉ gọi <code>gateway</code>; khu vực theo <a href="01-tracks-and-boundaries.html#s-1-5">1.5</a>; thiết kế theo <code>docs/ui-design/design.md</code> (DEC-18, DEC-51, DEC-52).</td></tr>
+<tr><th>Gọi</th><td><code>gateway</code> (OpenAPI công khai, SSE <code>/events</code>).</td></tr>
+<tr><th>Bị gọi</th><td>—</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 shell, mock theo OpenAPI · PH-02 hội tụ settings, Projects, khung Dashboard · PH-03 hội tụ project (Overview, Chat), monitoring, PendingActions, Notifications · PH-04 hội tụ planning, tab Thảo luận · PH-05 hội tụ library · PH-06 hội tụ research, manuscript · PH-07 rà song ngữ, a11y, trạng thái, mobile · PH-08 build tĩnh lên CDN.</td></tr>
+<tr><th>Kiểm thử</th><td>Vitest + Testing Library theo khu vực; axe-core; <code>sires-ui-review</code> (<code>check-ui.mjs</code>); E2E ở luồng <code>e2e</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-3">3.3. gateway</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>BFF duy nhất ra Internet: OIDC RP với eTroy (PKCE), phiên server-side 12 giờ không hoạt động (ADR-27), CSRF, rate limit, định tuyến <code>/api/v1/*</code>, SSE, tìm kiếm toàn cục. Không có logic nghiệp vụ.</td></tr>
+<tr><th>Gọi</th><td>Mọi service có API công khai; nội bộ: identity, workspace, planning, library, research, agent-core.</td></tr>
+<tr><th>Bị gọi</th><td><code>web</code>. Nghe sự kiện để đẩy SSE và stream <code>chat.delta</code>.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 SPK-02, phiên, CSRF · PH-02 hội tụ F-01–F-03 · PH-03 hội tụ stream chat, SSE trạng thái workflow · PH-04–PH-06 thêm route và sự kiện theo hợp đồng của lát · PH-07 rate limit, tải SSE (HPA theo số kết nối) · PH-08 client production eTroy OIDC.</td></tr>
+<tr><th>Kiểm thử</th><td>FakeOidcProvider; hết phiên; đăng xuất RP-initiated; CSRF; không lộ sự tồn tại tài nguyên của tài khoản khác.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-4">3.4. identity</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Account (gồm Account.status, DEC-57), Profile, Preferences, VerificationThresholds, ProviderConnection (envelope encryption), AgentModelAssignment theo instance và sameModelWarning, danh mục capability.</td></tr>
+<tr><th>Gọi</th><td><code>agent-core</code> (kiểm tra kết nối provider).</td></tr>
+<tr><th>Bị gọi</th><td>gateway, agent-core, knowledge, orchestration, planning, research.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration, KMS cục bộ, envelope · PH-02 hội tụ Settings, Provider Connections · PH-03 giao ProviderSecretEnvelope cho Agent Run · PH-04 capability cho readiness, Agent Models cho Analysis Agent A, B · PH-05–PH-06 cấu hình embedding, Ngưỡng kiểm chứng · PH-07 xóa tài khoản, xoay KEK.</td></tr>
+<tr><th>Kiểm thử</th><td>Key không xuất hiện ở log, phản hồi, sự kiện; chỉ agent-core và knowledge giải mã được (3.6.7); ràng buộc duy nhất (accountId, agent, instance).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-5">3.5. workspace</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification; vòng đời project (lưu trữ, xóa mềm 30 ngày).</td></tr>
+<tr><th>Gọi</th><td>Không gọi nội bộ; nghe sự kiện của service khác cho PendingAction, Notification.</td></tr>
+<tr><th>Bị gọi</th><td>gateway, agent-core, orchestration, planning.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration · PH-02 hội tụ project và vòng đời · PH-03 hội tụ Conversation, Message, PendingAction, Notification · PH-04 Research Context cho phiên thảo luận · PH-05–PH-06 Pending Actions từ reference và Change Proposal · PH-07 purge project.</td></tr>
+<tr><th>Kiểm thử</th><td>Sự kiện <code>project.lifecycle_changed.*</code> tới mọi consumer; cách ly project.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-6">3.6. planning</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, readiness check, TaskReview, phân tích ảnh hưởng; bảng chuyển trạng thái Task T-01–T-19 (PRD 9.8).</td></tr>
+<tr><th>Gọi</th><td>identity, workspace, orchestration, library, research.</td></tr>
+<tr><th>Bị gọi</th><td>gateway, agent-core, orchestration.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration, state machine · PH-02–PH-03 xây với stub · PH-04 hội tụ WF-01–WF-03 · PH-05–PH-06 phân tích ảnh hưởng khi reference bị thu hồi hoặc đầu ra thay đổi · PH-07 sửa lỗi.</td></tr>
+<tr><th>Kiểm thử</th><td>Mọi chuyển trạng thái ngoài bảng bị từ chối; dependency có chu trình bị chặn; Plan đã duyệt là baseline có phiên bản.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-7">3.7. orchestration</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Workflow engine và module con <a href="01-tracks-and-boundaries.html#s-1-6">1.6</a>: Workflow, WorkflowStep, AgentRun (bản ghi), Checkpoint, InteractiveAgentPrompt, ContextItem, Deliberation, DeliberationEntry, ContextSnapshot, usage; phát lệnh <code>agent.run</code>.</td></tr>
+<tr><th>Gọi</th><td>identity, workspace, planning, library, research, manuscript, agent-core.</td></tr>
+<tr><th>Bị gọi</th><td>agent-core (10/11 endpoint nội bộ), library, planning; gateway qua API công khai.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration, SPK-08 cùng agent-core · PH-02 xây engine với stub agent-core · PH-03 hội tụ engine, prompt, recovery; SPK-09 bản đầu · PH-04 hội tụ StepPlan, bước song song, saga, deliberation; SPK-11 · PH-05–PH-06 bước của WF-04, WF-05, WF-07 · PH-07 SPK-09 đầy đủ, đối soát đầu ra không gắn bước (TR-02).</td></tr>
+<tr><th>Kiểm thử</th><td>Khóa hàng workflow ở mọi chuyển trạng thái; sweeper và kết quả Agent Run đua nhau (TR-01); message trùng; khôi phục ở mọi bước (KPI-03).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-8">3.8. agent-core</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Thực thi Agent Run: Orchestrator và tám Specialist Agent (Analysis Agent chạy instance A, B), registry, prompt template, Context Assembler, Model Gateway ba provider, tool, kiểm tra kết nối provider. Chỉ service này và knowledge import SDK provider.</td></tr>
+<tr><th>Gọi</th><td>identity, workspace, planning, orchestration, library, research, manuscript, knowledge; Claude, OpenAI, Gemini.</td></tr>
+<tr><th>Bị gọi</th><td>gateway, identity, orchestration (lệnh <code>agent.run</code>).</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 SPK-01 (chọn framework trong Agent Run), SPK-08 · PH-02 hội tụ kiểm tra kết nối · PH-03 hội tụ Model Gateway, registry, Context Assembler, Orchestrator · PH-04 hội tụ lập Plan, Analysis Agent A, B · PH-05 hội tụ Discovery, Reference Processing · PH-06 hội tụ Evidence Retrieval, Synthesis, Writing, Verification, Diagram · PH-07 REL-06 với từng provider.</td></tr>
+<tr><th>Kiểm thử</th><td>Structured output cùng schema ở ba provider; ánh xạ lỗi provider chuẩn (8.6); thử lại trong Agent Run tối đa 3 lần (17.1); không agent nào thực hiện được APR; eval harness cho thay đổi NFR-EVAL-004.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-9">3.9. library</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>DiscoveredResult, Reference, phê duyệt reference theo lô, ProjectReferenceSelection, source adapter (Scholar trung gian, OpenAlex, Semantic Scholar), DOI, BibTeX, RIS, tải PDF.</td></tr>
+<tr><th>Gọi</th><td>orchestration; Crossref, DataCite, dịch vụ Scholar trung gian, OpenAlex, Semantic Scholar.</td></tr>
+<tr><th>Bị gọi</th><td>gateway, agent-core, knowledge, manuscript, orchestration, planning, research.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 SPK-03, parser BibTeX/RIS · PH-02–PH-03 xây adapter và luồng duyệt với stub · PH-04 hội tụ endpoint readiness · PH-05 hội tụ WF-04 · PH-06 phục vụ bibliography và cổng citation · PH-07 rate limit với nguồn thật.</td></tr>
+<tr><th>Kiểm thử</th><td>Kiểm trùng và chuẩn hóa; nguồn không khả dụng thì đề nghị nhập thủ công (INT-SCHOLAR-006); sự kiện thu hồi reference.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-10">3.10. knowledge</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>SourceDocument, Chunk, vector: trích xuất PDF (pypdfium2 + pdfplumber, ADR-15), chunking, embedding bằng key của người dùng (OpenAI, Gemini), pgvector, truy xuất lai; nhận lệnh <code>knowledge.index</code>.</td></tr>
+<tr><th>Gọi</th><td>identity, library; API embedding của provider.</td></tr>
+<tr><th>Bị gọi</th><td>agent-core, research.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 SPK-04, SPK-05 · PH-02–PH-04 xây pipeline với tài liệu mẫu · PH-05 hội tụ index · PH-06 hội tụ truy xuất cho evidence, eval · PH-07 hiệu năng p95, ước tính token trước khi index lại (TR-07).</td></tr>
+<tr><th>Kiểm thử</th><td>PDF đa ngành; PDF không có lớp văn bản bị từ chối rõ ràng; truy xuất có lọc theo project; vector tách theo embedding model.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-11">3.11. research</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion (gồm sơ đồ), registry đầu ra; gửi job render sơ đồ tới sandbox.</td></tr>
+<tr><th>Gọi</th><td>identity, library, knowledge; <code>sandbox-runner</code> qua lệnh.</td></tr>
+<tr><th>Bị gọi</th><td>gateway, agent-core, audit, manuscript, orchestration, planning.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration · PH-02–PH-05 xây entity, kiểm tra tất định, Verification với Ngưỡng kiểm chứng, với stub · PH-06 hội tụ WF-05 S1–S4, WF-07 · PH-07 đo KPI-01, REL-10.</td></tr>
+<tr><th>Kiểm thử</th><td>Provenance trên mọi đầu ra; artifact draft/accepted; ngưỡng mặc định 85%/95%.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-12">3.12. manuscript</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Manuscript (một mỗi project), ManuscriptFile, ManuscriptRevision (tree, DEC-57), ChangeProposal (chấp nhận/từ chối nguyên khối), BibliographyEntry, Build; cổng citation; template Default/Blank; gửi <code>sandbox.build</code>.</td></tr>
+<tr><th>Gọi</th><td>library, research; <code>sandbox-runner</code> qua lệnh.</td></tr>
+<tr><th>Bị gọi</th><td>agent-core, audit, orchestration, sandbox-runner.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration · PH-02–PH-05 xây revision, Change Proposal, bibliography với stub · PH-06 hội tụ WF-05 S5+, build PDF · PH-07 đo KPI-02 = 100%.</td></tr>
+<tr><th>Kiểm thử</th><td>Citation không phân giải chặn chấp nhận; proposal outdated khi revision đổi; build lỗi trả log dễ hiểu.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-13">3.13. sandbox-runner</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Controller NestJS và image <code>sandbox/latex</code> (TeX Live cố định, latexmk, pdfLaTeX/XeLaTeX + natbib), <code>sandbox/mermaid</code> (mermaid-cli + Chromium); gVisor, không mạng, 120 s / 2 GB.</td></tr>
+<tr><th>Gọi</th><td>manuscript (đọc file build qua API nội bộ).</td></tr>
+<tr><th>Bị gọi</th><td>manuscript, research qua <code>sandbox.build</code>.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 SPK-06, SPK-07 · PH-02–PH-05 dựng image, pool, cache build · PH-06 hội tụ trên node pool sandbox · PH-07 thời gian chờ và tỷ lệ lỗi build (NFR-PERF-007), kịch bản lạm dụng sandbox.</td></tr>
+<tr><th>Kiểm thử</th><td>Không truy cập mạng từ sandbox; quá giờ, quá bộ nhớ bị dừng; tài liệu độc hại không thoát sandbox.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-14">3.14. audit</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th>Phạm vi</th><td>Kho Audit Event chỉ ghi thêm, truy vấn, export JSON/CSV; KPI hằng giờ vào <code>kpi_snapshot</code> (kiến trúc 11.4).</td></tr>
+<tr><th>Gọi</th><td>research, manuscript (dữ liệu KPI); nghe sự kiện của mọi service.</td></tr>
+<tr><th>Bị gọi</th><td>gateway qua API công khai.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration · PH-02 hội tụ nhận Audit Event của identity, workspace · PH-03–PH-05 thêm loại sự kiện theo lát · PH-06 KPI, export · PH-07 retention (NFR-RET-008), báo cáo KPI cho nghiệm thu.</td></tr>
+<tr><th>Kiểm thử</th><td>Không sửa, không xóa được Audit Event; mọi hành động có tác động lâu dài có actor.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-3-15">3.15. eval, e2e</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Giai đoạn</th><th><code>eval</code></th><th><code>e2e</code></th></tr></thead>
+<tbody>
+<tr><td>PH-01</td><td>Định dạng bộ dữ liệu nghiệm thu, khung báo cáo</td><td>Khung Playwright, dữ liệu mẫu 16.4</td></tr>
+<tr><td>PH-02–PH-05</td><td>Nạp tài liệu mẫu qua pipeline knowledge thật khi PH-05 hội tụ</td><td>Smoke và kịch bản TS của từng lát chạy trên staging sau mỗi merge</td></tr>
+<tr><td>PH-06</td><td>Harness gọi module agent-core, knowledge; Eval Trace; baseline đầu tiên; cổng hồi quy 2 điểm phần trăm trong CI</td><td>Kịch bản WF-05, WF-07</td></tr>
+<tr><td>PH-07</td><td>Đo REL-03, REL-10 với provider thật</td><td>Toàn bộ kịch bản TS ở PRD 19, k6, kiểm thử bảo mật tự động</td></tr>
+<tr><td>PH-08</td><td>—</td><td>Smoke production, synthetic check</td></tr>
+</tbody></table></div>
+<p>Môi trường eval không kết nối database production (NFR-EVAL-001). Kịch bản ngoài 19.10 và phép đo KPI dùng provider giả lập (OQ-095).</p>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-phases-and-gates.html">← Mục 2</a><a href="../index.html">Mục lục kế hoạch</a><a rel="next" href="04-dependencies-risks-and-questions.html">Mục 4 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Delivery Plan · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
