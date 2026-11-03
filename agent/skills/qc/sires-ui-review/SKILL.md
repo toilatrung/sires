@@ -20,7 +20,7 @@ Mục tiêu: trả lời “màn hình đã triển khai có đúng thiết kế
 Chạy trên các file đã thay đổi (hoặc thư mục UI):
 
 ```
-node agent/skills/sires-ui-review/scripts/check-ui.mjs <file-hoặc-thư-mục> [...]
+node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs <file-hoặc-thư-mục> [...]
 ```
 
 Script báo `error` cho màu ngoài token, bo góc ngoài 8/6/4px, gradient, blur, font khác Montserrat/JetBrains Mono, màu palette Tailwind, emoji, chuỗi giống API key; báo `warn` cho bóng, bo tròn hoàn toàn, chữ hoa giãn chữ, và chuyển động sai luật (animate width/height/top/left, ease-in, spinner xoay, nảy, nghiêng, shimmer, phóng to khi hover, file có animation mà không có đường reduced-motion). Đối chiếu từng `warn` với ngữ cảnh (avatar, menu nổi là hợp lệ). Script chỉ đọc giá trị trên từng dòng; giá trị đến từ biến hoặc theme thì kiểm tra file theme.
@@ -33,7 +33,7 @@ Khi có trình duyệt (built-in browser, Playwright, Chrome):
 2. Chụp cả hai; đặt cạnh nhau. So từng vùng theo thứ tự: khung (top bar, rail, cột, panel phải) → thứ tự khối → component → trạng thái và nhãn → chữ → khoảng cách và kích thước.
 3. Dùng `getComputedStyle` để đo khi mắt không chắc: màu nền/viền/chữ, `border-radius`, `font-family`, cỡ chữ, chiều cao điều khiển.
 4. Kiểm tra các biến thể mà màn tham chiếu có (trống, đang tải, đang chạy, lỗi, khôi phục, archived, outdated, citation lỗi…). Trạng thái thiếu là lỗi.
-5. Chuyển động: kích hoạt từng hiệu ứng (hover, bấm, mở dialog, tooltip, `<details>`, chip đang chạy, thanh tiến độ, skeleton), xem cả khung giữa animation (DevTools Animations ở 10%), đo `animation-duration`, `transition` bằng `getComputedStyle` và so với design.md §2.4. Bật reduced motion (`emulateMedia({ reducedMotion: 'reduce' })`): không còn dịch chuyển, vòng lặp đứng yên, mờ dần vẫn còn. Skill `agent/skills/vendor/animate-ui` (`references/review.md`, `rules.md`) giúp tìm animation giật hoặc chậm; luật cuối cùng vẫn là design.md.
+5. Chuyển động: kích hoạt từng hiệu ứng (hover, bấm, mở dialog, tooltip, `<details>`, chip đang chạy, thanh tiến độ, skeleton), xem cả khung giữa animation (DevTools Animations ở 10%), đo `animation-duration`, `transition` bằng `getComputedStyle` và so với design.md §2.4. Bật reduced motion (`emulateMedia({ reducedMotion: 'reduce' })`): không còn dịch chuyển, vòng lặp đứng yên, mờ dần vẫn còn. Skill `agent/skills/ui-design/vendor/animate-ui` (`references/review.md`, `rules.md`) giúp tìm animation giật hoặc chậm; luật cuối cùng vẫn là design.md.
 
 Không có trình duyệt: so DOM/JSX với HTML tham chiếu (cấu trúc, chữ, thuộc tính style) và ghi rõ “chưa kiểm tra trực quan”.
 
@@ -72,4 +72,4 @@ Cuối báo cáo: những gì đã kiểm tra (màn, biến thể, khổ màn h�
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../../LICENSES.md).

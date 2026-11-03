@@ -118,7 +118,7 @@ Kiến trúc dự kiến là monorepo FE + BE: NestJS cho các service hệ th�
 | `docs/architecture/` | Thiết kế kiến trúc: 12 section, sơ đồ, sổ ADR |
 | `docs/api-design/` | OpenAPI (`openapi.yaml`, `paths/`, `components/`), API nội bộ (`internal/`), sự kiện (`events/`) |
 | `docs/ui-design/` | Thiết kế giao diện: nguồn `source/`, trang tĩnh `pages/`, quy tắc `design.md` |
-| `agent/skills/` | Skill cho agent: dựng UI và review UI theo thiết kế đã duyệt |
+| `agent/skills/` | Skill cho agent, chia theo vai trò `po/`, `dev/`, `ui-design/`, `qc/`: dựng và giữ tài liệu, viết và đọc spec ticket, dựng, prototype và review UI |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html`) |
 | `assets/screenshots/` | Ảnh minh họa cho README |
 

@@ -7,7 +7,7 @@ description: Set up or extend a static UI prototype folder (ui-design) with the 
 
 Skill này hướng dẫn dựng một thư mục prototype giao diện có cùng **cấu trúc và quy trình** với `docs/ui-design` của SIRes. Nó không quy định phong cách. Màu, font, bo góc, khoảng cách, chuyển động là việc của người quyết định thiết kế (PO hoặc designer) và được ghi vào `design.md` của thư mục mới. Đừng chép token Cream của SIRes sang dự án khác trừ khi được yêu cầu rõ.
 
-Đường dẫn tính từ gốc repo. Skill nằm ở `agent/skills/ui-prototype-skill/`.
+Đường dẫn tính từ gốc repo. Skill nằm ở `agent/skills/ui-design/ui-prototype-skill/`.
 
 ## 1. Kết quả cần có
 
@@ -40,7 +40,7 @@ Chi tiết vai trò từng file và quy ước đặt tên: [references/structur
 2. Sinh khung từ template:
 
    ```
-   node agent/skills/ui-prototype-skill/scripts/scaffold.mjs <thư-mục-đích> --title "<Tên bộ thiết kế>" [--port 5178] [--lang vi] [--force]
+   node agent/skills/ui-design/ui-prototype-skill/scripts/scaffold.mjs <thư-mục-đích> --title "<Tên bộ thiết kế>" [--port 5178] [--lang vi] [--force]
    ```
 
    Script chép `templates/ui-design/`, thay placeholder `__UI_TITLE__`, `__UI_PORT__`, `__UI_LANG__`, trỏ lại liên kết `LICENSES.md` trong footer tới file `LICENSES.md` gần nhất phía trên thư mục đích, và từ chối ghi vào thư mục đã có file trừ khi có `--force`. Nó không chạy render. Template mang ghi chú giấy phép của repo SIRes (quy tắc `add-license.mjs`); khi dùng cho dự án khác, thay bằng ghi chú của dự án đó và đặt `banner` trong `ui.config.json` nếu muốn trang sinh ra có chú thích bản quyền.
@@ -87,4 +87,4 @@ Nếu không chạy được script (môi trường khác), tạo thủ công đ
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../../LICENSES.md).

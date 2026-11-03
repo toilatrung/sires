@@ -17,7 +17,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | `assets/sires-logo.svg` | Logo |
 | `assets/motion.css` | Chuyển động dùng chung (design.md 2.4, DEC-51; tác vụ chạy lâu 2.4.1, DEC-52). Nguồn chuẩn duy nhất: `render.mjs` chép nguyên văn vào khối `<style data-sires-motion>` trong helmet của mọi `source/*.dc.html` (để canvas hiển thị đúng chuyển động) và gắn một lần bằng `<link>` vào mọi trang trong `pages/` (khối chép bị bỏ khi dựng, không trùng) |
 
-Skill cho agent (gốc repo): `agent/skills/sires-ui-executor` (dựng UI theo thiết kế) và `agent/skills/sires-ui-review` (đối chiếu UI đã triển khai với thiết kế, kèm `scripts/check-ui.mjs`). Skill bên thứ ba `agent/skills/vendor/animate-ui` (Animate UI, giấy phép MIT + Commons Clause trong thư mục đó) là nguồn token chuyển động.
+Skill cho agent (gốc repo): `agent/skills/dev/sires-ui-executor` (dựng UI theo thiết kế) và `agent/skills/qc/sires-ui-review` (đối chiếu UI đã triển khai với thiết kế, kèm `scripts/check-ui.mjs`). Skill bên thứ ba `agent/skills/ui-design/vendor/animate-ui` (Animate UI, giấy phép MIT + Commons Clause trong thư mục đó) là nguồn token chuyển động.
 
 Phong cách: **Cream** (typeui.sh/design-skills/cream), thay cho phong cách phẳng kiểu Overleaf của DEC-18 theo yêu cầu 31/10/2026. Nền kem #F6F2EE, thẻ #FCF9F5, ô nhập #E5DED5, viền #DBD3C7; Montserrat cho mọi chữ, JetBrains Mono cho LaTeX/mã; brand #0277DD (nền nút, viền), #025FAC (chữ, liên kết); bo góc chặt (thẻ 8px, nút và ô nhập 6px, nhãn 4px) thay cho bo 24px/viên thuốc của Cream gốc; không đổ bóng. Quy ước trạng thái: nét đứt = đề xuất, nét liền = đã chốt, nền xanh nhạt + biểu tượng = cần bạn xử lý. Bản DEC-18 trước khi đổi được lưu trong lịch sử phiên bản của canvas (phiên bản 14).
 
