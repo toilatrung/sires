@@ -32,6 +32,8 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | [overview/](overview/index.html) | **PRD** (Product Requirements Document) v1.0, 21 section | PO duyệt 31/10/2026 (PC-01, DEC-44–DEC-46) |
 | [api-design/](api-design/README.md) | Đặc tả API: OpenAPI 3.1 (public, nội bộ) và AsyncAPI (sự kiện) | Assumption — bản đề xuất của biên soạn |
 | [architecture/](architecture/README.md) | Thiết kế kiến trúc hệ thống MVP | v0.2; một số ADR chờ xác nhận |
+| [database/](database/README.md) | Thiết kế cơ sở dữ liệu MVP: database theo service, bảng, ràng buộc, RLS, retention, DDL tham chiếu | PO duyệt 03/11/2026 (v0.1, DEC-57) |
+| [tickets/](tickets/index.html) | Kế hoạch triển khai chung: luồng service và ranh giới mã nguồn, giai đoạn PH-01–PH-08 từ bắt đầu code tới deploy production | Đề xuất — chờ PO duyệt (v0.1, 03/11/2026) |
 | [ui-design/](ui-design/README.md) | Bộ thiết kế giao diện (Cream) và [design.md](ui-design/design.md) | PO duyệt 31/10/2026 (DEC-18) |
 
 ### `overview/` — PRD
@@ -45,9 +47,9 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | `figures/` | Nguồn sơ đồ Mermaid `FIG-0NN-*.mmd`; [hướng dẫn](overview/figures/README.md) |
 | `assets/` | `styles.css` dùng chung cho mọi bộ tài liệu HTML; logo ở `assets/brand/` |
 
-### `api-design/`, `architecture/`, `ui-design/`
+### `api-design/`, `architecture/`, `database/`, `tickets/`, `ui-design/`
 
-Mỗi thư mục có README riêng mô tả cấu trúc chi tiết, quy ước và cách dựng lại file sinh tự động. Ba bộ này bám PRD: `api-design/paths/NN-slug.yaml` và `architecture/sections/NN-slug.html` dùng cùng cách đánh số theo mục; hình kiến trúc dùng mã `FIG-1NN`.
+Mỗi thư mục có README riêng mô tả cấu trúc chi tiết, quy ước và cách dựng lại file sinh tự động. Ba bộ này bám PRD: `api-design/paths/NN-slug.yaml` và `architecture/sections/NN-slug.html` dùng cùng cách đánh số theo mục; hình kiến trúc dùng mã `FIG-1NN`. `database/` chia section theo service sở hữu dữ liệu (kiến trúc 3.3), hình dùng mã `FIG-2NN`, DDL tham chiếu ở `database/ddl/`. `tickets/` (kế hoạch triển khai) chia section theo luồng và giai đoạn, hình dùng mã `FIG-3NN`.
 
 ## Quy ước chung
 

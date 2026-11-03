@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — audit và bảng nền tảng.">
+<title>9. audit and platform tables | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 9</p><h1>9. audit and platform tables</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/14-shared-context-and-orchestration-architecture.html">14.8</a> (CTX-AUDIT-001/002), 16.8–16.9 (NFR-RET-008, NFR-KPI-001), 18.4; kiến trúc <a href="../../architecture/sections/06-data-architecture.html#s-6-4">6.4</a> (ADR-19, ADR-23), 5.2, 5.8 · DDL: <a href="../ddl/audit.sql"><code>audit.sql</code></a>, <a href="../ddl/00-common.sql"><code>00-common.sql</code></a>, <a href="../ddl/agent-core.sql"><code>agent-core.sql</code></a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-9-1">9.1. sires_audit</a></li>
+<li><a href="#s-9-2">9.2. Outbox</a></li>
+<li><a href="#s-9-3">9.3. Inbox và idempotency key</a></li>
+<li><a href="#s-9-4">9.4. Khóa job và bảng chuyển trạng thái</a></li>
+<li><a href="#s-9-5">9.5. sires_agent_core</a></li>
+</ul></details>
+
+<h2 id="s-9-1">9.1. sires_audit</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>audit_event</code></td><td>AuditEvent</td><td>PK <code>id</code> = id dòng outbox ở service nguồn → consumer idempotent bằng <code>INSERT … ON CONFLICT (id) DO NOTHING</code>; <code>source_service</code>; <code>actor</code> ActorRef NOT NULL (CHECK) + cột sinh <code>actor_type</code>; <code>action</code>, <code>object_type</code>, <code>object_id</code>, <code>object_version</code>, <code>from_state</code>, <code>to_state</code>, <code>apr</code>; <code>summary</code> ≤ 2.000 ký tự; <code>correlation_id</code> = trace id; <code>at</code> (thời điểm ở nguồn), <code>received_at</code>. Chỉ ghi thêm: trigger chặn UPDATE, không vai trò nào có UPDATE, chỉ <code>_purge</code> có DELETE.</td><td>(account_id, project_id, at DESC); (account_id, object_type, object_id, at DESC); (account_id, at DESC)</td></tr>
+<tr><td><code>kpi_snapshot</code></td><td>— (NFR-KPI-001)</td><td>KPI-01–KPI-04 theo tài khoản/project và kỳ; <code>value</code>, <code>numerator</code>, <code>denominator</code>, <code>details</code>; UQ NULLS NOT DISTINCT (account, project, kpi, kỳ) để tính lại idempotent.</td><td>UQ</td></tr>
+<tr><td><code>audit_export</code></td><td>— (CTX-AUDIT-002)</td><td>Yêu cầu export theo project, JSON|CSV; <code>object_key</code> gói export, <code>expires_at</code> 7 ngày (kiến trúc 6.6).</td><td>PK</td></tr>
+</tbody></table></div>
+<p>Audit Event không chứa giá trị API key, nội dung tài liệu hay toàn văn prompt (NFR-OBS-002): <code>summary</code> do service nguồn soạn từ mẫu cố định, không chép nội dung người dùng. Export theo luồng (cursor trên <code>audit_event_project_idx</code>) để không giữ toàn bộ trong bộ nhớ.</p>
+
+<h2 id="s-9-2">9.2. Outbox</h2>
+<p>Có ở mọi database (agent-core có bảng do <code>00-common.sql</code> tạo nhưng không dùng, vì không phát sự kiện domain). Một bảng cho ba loại message: sự kiện domain (<code>event</code>), Audit Event (<code>audit</code>, routing key <code>audit.recorded</code>), lệnh (<code>command</code>: <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Cột</th><th>Ý nghĩa</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>UUIDv7 = id message trên RabbitMQ (ổn định khi gửi lại); với audit = id của Audit Event</td></tr>
+<tr><td><code>kind</code>, <code>routing_key</code></td><td>Loại và routing key (theo AsyncAPI)</td></tr>
+<tr><td><code>aggregate_type</code>, <code>aggregate_id</code>, <code>aggregate_version</code></td><td>Để consumer bỏ bản cũ đến sau bản mới (<code>row_version</code> của entity)</td></tr>
+<tr><td><code>payload</code>, <code>traceparent</code></td><td>Envelope AsyncAPI; ngữ cảnh trace W3C</td></tr>
+<tr><td><code>created_at</code>, <code>published_at</code></td><td>Relay đọc <code>WHERE published_at IS NULL ORDER BY created_at</code> (partial index), publish có confirm, đặt <code>published_at</code>; dòng đã publish giữ 24 giờ rồi xóa</td></tr>
+</tbody></table></div>
+<p>Relay chạy bằng vai trò <code>_system</code> với khóa leader trong <code>job_lock</code>; đọc theo lô <code>FOR UPDATE SKIP LOCKED</code>. Vai trò <code>_app</code> chỉ có INSERT trên outbox nên request của người dùng không đọc được sự kiện của tài khoản khác.</p>
+
+<h2 id="s-9-3">9.3. Inbox và idempotency key</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Khóa</th><th>Quy tắc</th></tr></thead>
+<tbody>
+<tr><td><code>inbox</code></td><td>PK (consumer, event_id)</td><td>Consumer INSERT trong cùng giao dịch với tác dụng; trùng khóa → bỏ qua message. Giữ 7 ngày (lớn hơn thời gian giao lại tối đa của broker).</td></tr>
+<tr><td><code>idempotency_key</code></td><td>PK (account_id, key)</td><td>Lệnh có tác động của người dùng (DATA-IDEMP-001). <code>request_hash</code> khác với lần đầu → 422; cùng → trả <code>response_status</code>, <code>response_body</code> đã lưu. <code>expires_at</code> = 24 giờ; job dọn hằng giờ. RLS áp dụng.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-9-4">9.4. Khóa job và bảng chuyển trạng thái</h2>
+<ul>
+<li><code>job_lock(name, owner, lease_until)</code>: một pod giữ lease cho mỗi job (relay, sweeper 10 s, phát bước đợi lượt, purge, dọn retention). Lấy lease bằng <code>INSERT … ON CONFLICT (name) DO UPDATE … WHERE job_lock.lease_until &lt; now()</code>; không dùng advisory lock cấp phiên vì pooler ở chế độ transaction.</li>
+<li><code>state_transition(machine, from_state, to_state, code)</code>: dữ liệu tham chiếu nạp bởi migration, vai trò ứng dụng chỉ đọc (<a href="10-integrity-state-and-versioning.html#s-10-2">10.2</a>).</li>
+</ul>
+
+<h2 id="s-9-5">9.5. sires_agent_core</h2>
+<p>Chỉ dữ liệu kỹ thuật; mất dữ liệu này không ảnh hưởng nghiệp vụ (kiến trúc 6.1). Không có outbox.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Vai trò</th><th>Cột và ràng buộc chính</th></tr></thead>
+<tbody>
+<tr><td><code>provider_slot</code></td><td>Semaphore theo Provider Connection: giới hạn lời gọi song song lên key của người dùng (5.12, TR-10)</td><td>PK (provider_connection_id, slot); <code>holder_agent_run_id</code> và <code>lease_until</code> cùng có hoặc cùng NULL. Lấy slot: <code>UPDATE … SET holder = :run, lease_until = now() + interval '2 min' WHERE … AND (holder IS NULL OR lease_until &lt; now())</code>; gia hạn cùng nhịp heartbeat.</td></tr>
+<tr><td><code>model_catalog_cache</code></td><td>Cache danh mục model theo connection (INT-PROVIDER-002)</td><td><code>models</code> [{id, capabilities}], <code>expires_at</code>.</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="08-research-and-manuscript.html">← Mục 8</a><a href="../index.html">Mục lục database</a><a rel="next" href="10-integrity-state-and-versioning.html">Mục 10 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

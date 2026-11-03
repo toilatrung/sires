@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kế hoạch triển khai SIRes mức MVP: từ khi có scaffold monorepo tới deploy production, chia theo luồng service để các nhóm không sửa mã nguồn của nhau.">
+<title>Kế hoạch triển khai | SIRes</title>
+<link rel="icon" href="../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../overview/assets/styles.css?v=3">
+<style>
+.lane-legend{display:flex;flex-wrap:wrap;gap:.4rem 1rem;font-family:"Segoe UI",Arial,sans-serif;font-size:.8rem;color:var(--muted)}
+.lane-legend span{display:inline-flex;align-items:center;gap:.35rem}.lane-legend i{display:inline-block;width:1rem;height:.8rem;border:1px solid var(--line)}
+table.swimlane{font-family:"Segoe UI",Arial,sans-serif;font-size:.74rem;border-collapse:separate;border-spacing:3px;min-width:44rem}
+table.swimlane th,table.swimlane td{border:1px solid transparent;padding:.35rem .4rem;vertical-align:middle;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+table.swimlane thead th{background:none;font-weight:600}table.swimlane thead span{display:block;font-weight:400;color:var(--muted)}
+table.swimlane tbody th{background:none;text-align:left;white-space:nowrap}table.swimlane tr.lane-group th{color:var(--muted);font-weight:400;padding-top:.8rem}
+.st-K{background:#fff;border:1px dashed #99aab5!important;color:var(--muted)}.st-X{background:#e6eef3;color:#244f68}
+.st-H{background:#244f68;color:#fff;font-weight:600}.st-D{background:#fff;border-color:var(--line)!important;color:var(--muted)}
+.st-O{background:#f6ecd9;color:#6b4a12}.st-T{background:#f6ecd9;border-color:#b8893a!important;color:#6b4a12;font-weight:600}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 03/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Delivery Plan</p>
+<h1>SIRes — Kế hoạch triển khai (MVP)</h1>
+<p class="meta">Suy ra từ <a href="../overview/index.html">PRD SIRes v1.0</a> (2.4, 6, 19.14), <a href="../architecture/index.html">Architecture 0.2</a> (3, 4, 11, 12), <a href="../api-design/index.html">API design</a>, <a href="../database/index.html">Database 0.1</a> (DEC-57) · Khởi tạo: 03/11/2026 theo yêu cầu PO · Phiên bản 0.1</p>
+<div class="note"><p><strong>Đề xuất — chờ PO duyệt.</strong> Kế hoạch chung từ khi monorepo đã có scaffold và cấu trúc đầy đủ, qua bắt đầu code, tới deploy production. Chia theo <strong>luồng service</strong> để mỗi nhóm code trong thư mục của mình, không sửa mã nguồn của nhóm khác. Chưa chia việc cụ thể, chưa ước lượng, chưa gắn ngày, chưa phân công người. PRD không còn kế hoạch theo milestone (DEC-49); tài liệu này là kế hoạch triển khai riêng đó.</p></div>
+
+<h2 id="summary">Tóm tắt cách chia</h2>
+<ul>
+<li><strong>Luồng</strong> = một service ở <code>apps/&lt;service&gt;</code> (13 luồng) hoặc một khu vực dùng chung (<code>platform</code>, <code>contracts</code>, <code>infra</code>, <code>eval</code>, <code>e2e</code>). Luồng sở hữu thư mục, database và hợp đồng của mình (<a href="sections/01-tracks-and-boundaries.html">mục 1</a>).</li>
+<li><strong>Giao tiếp giữa luồng chỉ qua hợp đồng</strong> ở <code>docs/api-design</code>. Hợp đồng merge trước, luồng gọi viết stub theo type sinh ra và code tiếp, không chờ luồng kia (quy tắc <a href="sections/01-tracks-and-boundaries.html#rule-1-4-3">1.4.3</a>).</li>
+<li><strong>Tám giai đoạn PH-01–PH-08.</strong> Mọi luồng code liên tục từ PH-01; mỗi giai đoạn từ PH-02 đến PH-06 có một <strong>lát hội tụ</strong> chạy chung trên staging theo luồng hoạt động F-NN, rồi ổn định, nghiệm thu REL-01–REL-10 và deploy (<a href="sections/02-phases-and-gates.html">mục 2</a>).</li>
+<li>Staging chạy liên tục từ PH-02, nên deploy production ở PH-08 dùng lại cùng pipeline, Terraform và Helm chart.</li>
+</ul>
+
+<h2 id="phases">Giai đoạn</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Giai đoạn</th><th>Lát hội tụ · Workflow</th><th>Cổng ra</th></tr></thead>
+<tbody>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-01">PH-01</a></td><td>Nền tảng chung, spike, hợp đồng baseline</td><td>Thư viện platform, sinh type, CI, migration từng service</td><td>Service mẫu đạt; baseline hợp đồng; spike báo cáo</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-02">PH-02</a></td><td>Lát 1 — Truy cập, lệnh ghi, realtime</td><td>F-01–F-03 · Sign-in, Settings, Project</td><td>Đăng nhập, Settings, project trên staging</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-03">PH-03</a></td><td>Lát 2 — Chat, workflow engine, Agent Run</td><td>F-04, F-07, F-08, F-12 · Chat, WF-06</td><td>Chat qua ba provider; khôi phục workflow</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-04">PH-04</a></td><td>Lát 3 — Plan, Task, phiên thảo luận</td><td>F-05, F-06, F-13 · WF-01–WF-03</td><td>Plan duyệt, Task qua readiness, phiên thảo luận</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-05">PH-05</a></td><td>Lát 4 — Discovery, Trusted Library, index</td><td>F-09 · WF-04</td><td>Reference vào library, PDF index, truy xuất p95 ≤ 3 s</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-06">PH-06</a></td><td>Lát 5 — Evidence, kiểm chứng, bản thảo, sơ đồ</td><td>F-10, F-11 · WF-05, WF-07</td><td>PDF bản thảo; sơ đồ; baseline eval</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-07">PH-07</a></td><td>Ổn định và nghiệm thu</td><td>Toàn hệ thống</td><td>REL-01–REL-10; PO ký chấp nhận</td></tr>
+<tr><td><a href="sections/02-phases-and-gates.html#ph-08">PH-08</a></td><td>Triển khai production</td><td>—</td><td>Production chạy; PO xác nhận go-live</td></tr>
+</tbody></table></div>
+
+<h2 id="matrix">Sơ đồ làn: luồng × giai đoạn</h2>
+<p>Mỗi hàng là một luồng, mỗi cột là một giai đoạn. Đọc theo cột: ô <strong>Hội tụ</strong> là các luồng phải chạy chung trên staging để qua cổng của giai đoạn đó; hội tụ đi lần lượt từ PH-02 đến PH-06. Đọc theo hàng: mọi luồng code liên tục từ PH-01, ô “Xây” là lúc luồng viết logic theo hợp đồng với stub mà không chờ luồng khác. Bấm tên luồng để xem kế hoạch chi tiết ở <a href="sections/03-track-plans.html">mục 3</a>.</p>
+<p class="lane-legend"><span><i class="st-K"></i>Khung, spike</span><span><i class="st-X"></i>Xây với stub</span><span><i class="st-H"></i>Hội tụ trên staging</span><span><i class="st-D"></i>Duy trì, hỗ trợ</span><span><i class="st-O"></i>Ổn định, nghiệm thu</span><span><i class="st-T"></i>Triển khai, trực</span></p>
+<div class="table-wrap"><table class="swimlane">
+<thead><tr><th scope="col">Luồng</th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-01">PH-01</a><span>Nền tảng</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-02">PH-02</a><span>Lát 1</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-03">PH-03</a><span>Lát 2</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-04">PH-04</a><span>Lát 3</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-05">PH-05</a><span>Lát 4</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-06">PH-06</a><span>Lát 5</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-07">PH-07</a><span>Ổn định</span></th><th scope="col"><a href="sections/02-phases-and-gates.html#ph-08">PH-08</a><span>Deploy</span></th></tr></thead>
+<tbody>
+<tr class="lane-group"><th colspan="9" scope="colgroup">Dùng chung — đường găng</th></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-1"><code>platform</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Thư viện nền</td><td class="st-D" title="PH-02 · Duy trì, hỗ trợ">Hỗ trợ</td><td class="st-D" title="PH-03 · Duy trì, hỗ trợ">Trace, metric</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Hỗ trợ</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Hỗ trợ</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Hỗ trợ</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Che dữ liệu</td><td class="st-E"></td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-1"><code>contracts</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Baseline</td><td class="st-D" title="PH-02 · Duy trì, hỗ trợ">Sinh lại</td><td class="st-D" title="PH-03 · Duy trì, hỗ trợ">Sinh lại</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Sinh lại</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Sinh lại</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Sinh lại</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Đóng băng</td><td class="st-E"></td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-1"><code>infra</code></a></th><td class="st-K" title="PH-01 · Khung, spike">CI, Terraform</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Staging</td><td class="st-D" title="PH-03 · Duy trì, hỗ trợ">Broker, KEDA</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Duy trì</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Sandbox pool, eval</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Cảnh báo, PITR</td><td class="st-T" title="PH-08 · Triển khai, trực">Production</td></tr>
+<tr class="lane-group"><th colspan="9" scope="colgroup">Lát 1 — hội tụ sớm nhất</th></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-2"><code>web</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Shell, mock</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Settings, projects</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Chat, monitoring</td><td class="st-H" title="PH-04 · Hội tụ trên staging">Planning</td><td class="st-H" title="PH-05 · Hội tụ trên staging">Library</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Research, manuscript</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Song ngữ, a11y</td><td class="st-T" title="PH-08 · Triển khai, trực">CDN</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-3"><code>gateway</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-02</td><td class="st-H" title="PH-02 · Hội tụ trên staging">F-01–F-03</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Stream chat</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Duy trì</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Rate limit, SSE</td><td class="st-T" title="PH-08 · Triển khai, trực">Client production</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-4"><code>identity</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Envelope</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Settings</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Secret cho Agent Run</td><td class="st-H" title="PH-04 · Hội tụ trên staging">Capability</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Duy trì</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Xoay KEK</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-5"><code>workspace</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Project</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Chat, pending</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Duy trì</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Purge</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-14"><code>audit</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Audit Event</td><td class="st-D" title="PH-03 · Duy trì, hỗ trợ">Thêm sự kiện</td><td class="st-D" title="PH-04 · Duy trì, hỗ trợ">Thêm sự kiện</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Thêm sự kiện</td><td class="st-H" title="PH-06 · Hội tụ trên staging">KPI, export</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Retention</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr class="lane-group"><th colspan="9" scope="colgroup">Lõi agent</th></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-7"><code>orchestration</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-08</td><td class="st-X" title="PH-02 · Xây với stub">Engine</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Engine, SPK-09</td><td class="st-H" title="PH-04 · Hội tụ trên staging">StepPlan, thảo luận</td><td class="st-H" title="PH-05 · Hội tụ trên staging">WF-04</td><td class="st-H" title="PH-06 · Hội tụ trên staging">WF-05, WF-07</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">SPK-09 đầy đủ</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-8"><code>agent-core</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-01, SPK-08</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Kiểm tra kết nối</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Orchestrator</td><td class="st-H" title="PH-04 · Hội tụ trên staging">Analysis A, B</td><td class="st-H" title="PH-05 · Hội tụ trên staging">Discovery</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Evidence … Diagram</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">REL-06</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr class="lane-group"><th colspan="9" scope="colgroup">Xây lâu, hội tụ sau</th></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-6"><code>planning</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-X" title="PH-02 · Xây với stub">Xây</td><td class="st-X" title="PH-03 · Xây với stub">Xây</td><td class="st-H" title="PH-04 · Hội tụ trên staging">WF-01–WF-03</td><td class="st-D" title="PH-05 · Duy trì, hỗ trợ">Duy trì</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Ảnh hưởng</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Sửa lỗi</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-9"><code>library</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-03</td><td class="st-X" title="PH-02 · Xây với stub">Xây</td><td class="st-X" title="PH-03 · Xây với stub">Xây</td><td class="st-H" title="PH-04 · Hội tụ trên staging">Readiness</td><td class="st-H" title="PH-05 · Hội tụ trên staging">WF-04</td><td class="st-D" title="PH-06 · Duy trì, hỗ trợ">Duy trì</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Rate limit</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-10"><code>knowledge</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-04, SPK-05</td><td class="st-X" title="PH-02 · Xây với stub">Xây</td><td class="st-X" title="PH-03 · Xây với stub">Xây</td><td class="st-X" title="PH-04 · Xây với stub">Xây</td><td class="st-H" title="PH-05 · Hội tụ trên staging">Index</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Truy xuất</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Hiệu năng</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-11"><code>research</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-X" title="PH-02 · Xây với stub">Xây</td><td class="st-X" title="PH-03 · Xây với stub">Xây</td><td class="st-X" title="PH-04 · Xây với stub">Xây</td><td class="st-X" title="PH-05 · Xây với stub">Xây</td><td class="st-H" title="PH-06 · Hội tụ trên staging">WF-05, WF-07</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">KPI-01, REL-10</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-12"><code>manuscript</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-X" title="PH-02 · Xây với stub">Xây</td><td class="st-X" title="PH-03 · Xây với stub">Xây</td><td class="st-X" title="PH-04 · Xây với stub">Xây</td><td class="st-X" title="PH-05 · Xây với stub">Xây</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Build PDF</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">KPI-02</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-13"><code>sandbox-runner</code></a></th><td class="st-K" title="PH-01 · Khung, spike">SPK-06, SPK-07</td><td class="st-X" title="PH-02 · Xây với stub">Image</td><td class="st-X" title="PH-03 · Xây với stub">Pool</td><td class="st-X" title="PH-04 · Xây với stub">Xây</td><td class="st-X" title="PH-05 · Xây với stub">Xây</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Sandbox</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Lạm dụng, hiệu năng</td><td class="st-T" title="PH-08 · Triển khai, trực">Trực</td></tr>
+<tr class="lane-group"><th colspan="9" scope="colgroup">Kiểm thử và đánh giá</th></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-15"><code>eval</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Định dạng dữ liệu</td><td class="st-E"></td><td class="st-E"></td><td class="st-E"></td><td class="st-X" title="PH-05 · Xây với stub">Nạp tài liệu</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Baseline, cổng</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">REL-03, REL-10</td><td class="st-E"></td></tr>
+<tr><th scope="row"><a href="sections/03-track-plans.html#s-3-15"><code>e2e</code></a></th><td class="st-K" title="PH-01 · Khung, spike">Khung</td><td class="st-H" title="PH-02 · Hội tụ trên staging">Smoke lát 1</td><td class="st-H" title="PH-03 · Hội tụ trên staging">Kịch bản lát 2</td><td class="st-H" title="PH-04 · Hội tụ trên staging">Kịch bản lát 3</td><td class="st-H" title="PH-05 · Hội tụ trên staging">Kịch bản lát 4</td><td class="st-H" title="PH-06 · Hội tụ trên staging">Kịch bản lát 5</td><td class="st-O" title="PH-07 · Ổn định, nghiệm thu">Toàn bộ TS, k6</td><td class="st-T" title="PH-08 · Triển khai, trực">Smoke production</td></tr>
+</tbody></table></div>
+<p class="status">FIG-301 — Sơ đồ làn luồng × giai đoạn. Nguồn: bảng HTML này (không có file .mmd); khi đổi giai đoạn hoặc luồng, sửa mục 2, 3 trước rồi sửa bảng.</p>
+<div class="note"><p><strong>Phụ thuộc giữa các lát.</strong> Lát sau dùng thứ lát trước đã chạy thật: lát 1 (đăng nhập, lệnh ghi) cho mọi lát; lát 2 (engine, Agent Run) cho mọi bước agent; lát 4 (reference đã index) cho lát 5. Lát 4 chỉ phụ thuộc một phần vào lát 3: F-09 cần <code>library</code>, <code>knowledge</code>, <code>agent-core</code>, <code>orchestration</code> (đã hội tụ ở lát 2), nên nhập DOI, BibTeX, PDF, duyệt reference và index không cần <code>planning</code>; chỉ Discovery Agent chạy trong một Task mới cần lát 3. Kế hoạch hiện xếp PH-04 và PH-05 nối tiếp; có cho chồng lên nhau không là <a href="sections/04-dependencies-risks-and-questions.html#oq-106">OQ-106</a>.</p></div>
+
+<h2 id="contents">Mục lục</h2>
+<nav aria-label="Mục lục kế hoạch triển khai"><ol class="contents">
+<li><a href="sections/01-tracks-and-boundaries.html">Tracks and Source Boundaries</a><span class="status">Điểm bắt đầu, 13 luồng service, luồng dùng chung, quy tắc ranh giới 1.4.1–1.4.12, khu vực web, module con · kiến trúc 3</span></li>
+<li><a href="sections/02-phases-and-gates.html">Phases and Gates</a><span class="status">PH-01–PH-08, lát hội tụ, spike, điều kiện ngoài, cổng ra · kiến trúc 4, 11; PRD 19.14</span></li>
+<li><a href="sections/03-track-plans.html">Track Plans</a><span class="status">Phạm vi, luồng gọi và bị gọi, việc theo giai đoạn, trọng tâm kiểm thử của từng luồng · api-design x-callers, AsyncAPI</span></li>
+<li><a href="sections/04-dependencies-risks-and-questions.html">Dependencies, Risks and Questions</a><span class="status">Phụ thuộc ngoài luồng code, DLR-01–DLR-08, OQ-103–OQ-106 · kiến trúc 12</span></li>
+</ol></nav>
+
+<h2 id="next">Bước tiếp theo</h2>
+<ul>
+<li>PO duyệt kế hoạch, trả lời OQ-103 trước khi bắt đầu PH-01; OQ-106 trước PH-04; OQ-104, OQ-105 trước PH-07.</li>
+<li>PO phân công người cho từng luồng và điền CODEOWNERS theo thư mục (ngoài tài liệu này).</li>
+<li>Sau khi duyệt: chia việc thành ticket <code>TK-NNN</code> theo luồng và giai đoạn (<a href="README.md">README</a>).</li>
+</ul>
+<p>Ngữ cảnh và nhật ký biên soạn: <a href="../docs_context.md">docs_context.md</a>. Quy ước của bộ này: <a href="README.md">README.md</a>.</p>
+</main>
+<footer>AI Research Assistant (SIRes) · Delivery Plan · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

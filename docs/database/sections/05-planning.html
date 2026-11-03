@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — planning.">
+<title>5. planning | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 5</p><h1>5. planning</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/05-core-domain-model.html">5.2–5.3</a>, <a href="../../overview/sections/09-research-plan-and-task-management.html">9</a> (TASK-STATE-001, T-01–T-19), <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-2">18.2</a>, 18.5 · DDL: <a href="../ddl/planning.sql"><code>planning.sql</code></a> · ERD: <a href="../figures/FIG-203-planning-erd.mmd">FIG-203</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-5-1">5.1. Bảng</a></li>
+<li><a href="#s-5-2">5.2. Plan Version: bản nháp, duyệt, baseline</a></li>
+<li><a href="#s-5-3">5.3. Task qua các Plan Version</a></li>
+<li><a href="#s-5-4">5.4. Ràng buộc 18.5 và kiểm tra cấu trúc</a></li>
+<li><a href="#s-5-5">5.5. Truy vấn chính</a></li>
+</ul></details>
+
+<h2 id="s-5-1">5.1. Bảng</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>research_plan</code></td><td>ResearchPlan</td><td>UQ <code>project_id</code> (một mỗi project); <code>baseline_version_id</code> FK ghép deferrable sang <code>plan_version</code>.</td><td>UQ</td></tr>
+<tr><td><code>plan_version</code></td><td>PlanVersion</td><td><code>status</code> Draft|Proposed|Approved|Superseded|Rejected; goals, methods, deliverables, milestones, risks jsonb; <code>assumption_item_ids</code> (ref ContextItem); <code>context_version_id</code> (ref workspace); <code>based_on_version_id</code>; <code>change_class</code> material|minor; <code>approval</code> bắt buộc khi Approved/Superseded; <code>rejection_reason</code> bắt buộc khi Rejected; <code>provenance</code> bắt buộc khi do agent tạo; <code>deliberation</code> (DEC-50); <code>deleted_at</code> chỉ cho Draft.</td><td>UQ (plan_id, version_number); PUQ Approved; PUQ Draft/Proposed chưa xóa</td></tr>
+<tr><td><code>phase</code></td><td>Phase</td><td>Thuộc một Plan Version; UQ (plan_version_id, order) deferrable để đổi thứ tự trong một giao dịch.</td><td>UQ</td></tr>
+<tr><td><code>task</code></td><td>Task</td><td><code>stable_key</code> T-NNN UQ trong project; <code>status</code> 10 giá trị TaskStatus; <code>current_definition_id</code> FK deferrable; <code>needs_review</code> + <code>needs_review_reasons</code> nhất quán (CHECK); <code>active_workflow_id</code> (bản sao, nguồn sự thật ở orchestration) chỉ có khi Queued/In Progress/Waiting for User; <code>search_tsv</code>; <code>deleted_at</code> cho T-17.</td><td>UQ (project_id, stable_key); PUQ active_workflow_id; (account_id, project_id, status); partial needs_review; GIN</td></tr>
+<tr><td><code>task_definition</code></td><td>TaskDefinition</td><td>Bất biến; UQ (task_id, plan_version_id); <code>execution_label</code> 2 nhãn đã chốt; <code>expected_outputs</code>, <code>acceptance_criteria</code> mỗi thứ ≥ 1 phần tử (CHECK); <code>required_inputs</code>, <code>checklist</code>, <code>proposed_agent</code>; FK (plan_version_id, phase_id) bảo đảm phase cùng version.</td><td>UQ; (plan_version_id)</td></tr>
+<tr><td><code>task_dependency</code></td><td>TaskDependency</td><td>PK (plan_version_id, task_id, depends_on_task_id); CHECK không tự phụ thuộc; FK hai đầu sang <code>task_definition (task_id, plan_version_id)</code> → cả hai Task thuộc cùng version.</td><td>(plan_version_id, depends_on_task_id)</td></tr>
+<tr><td><code>readiness_result</code></td><td>ReadinessResult</td><td>Chỉ ghi thêm; <code>checks</code> [{code RC-01…RC-09, passed, detail, suggestedAction}]; <code>semantic_check_agent_run_id</code> (ref).</td><td>(task_id, at DESC)</td></tr>
+<tr><td><code>task_review</code></td><td>TaskReview</td><td>Chỉ ghi thêm; <code>outcome</code> accepted|returned|blocked|cancelled; <code>reason_code</code> bắt buộc khi returned/blocked (KPI-04); <code>approval</code> bắt buộc khi accepted (APR-03).</td><td>(task_id, created_at DESC); (account_id, project_id, outcome, reason_code)</td></tr>
+<tr><td><code>task_input_ref</code></td><td>— (truy vấn ngược)</td><td>Đầu vào có phiên bản của Task (reference, artifact_version, evidence, context_item, research_context_version) để lan truyền needs review (9.11, 10.8).</td><td>(account_id, input_type, input_id)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5-2">5.2. Plan Version: bản nháp, duyệt, baseline</h2>
+<ul>
+<li><strong>Bất biến khi ≠ Draft:</strong> trigger <code>plan_version_frozen</code> chỉ cho đổi <code>status</code>, <code>approval</code>, <code>rejection_reason</code> khi bản không còn Draft (DATA-STATE-002-AC01).</li>
+<li><strong>Duyệt (APR-01) trong một giao dịch:</strong> bản cũ <code>Approved → Superseded</code> trước, rồi bản mới <code>Proposed → Approved</code> kèm <code>approval</code>, cập nhật <code>research_plan.baseline_version_id</code>, ghi Audit Event và <code>plan_version.status_changed</code> vào outbox. Partial unique “một Approved” bảo đảm không bao giờ có hai baseline (DATA-STATE-001-AC02); thứ tự ngược lại bị từ chối.</li>
+<li><strong>Rút lại để sửa:</strong> bản Proposed → Rejected (<code>rejection_reason = 'withdrawn'</code>) rồi tạo Draft mới sao chép nội dung, cùng giao dịch — partial unique “một Draft/Proposed” cho phép vì bản cũ đã Rejected.</li>
+<li><strong>Hủy bản nháp:</strong> đặt <code>deleted_at</code> (chỉ được với Draft, CHECK).</li>
+<li><strong>Tạo version mới từ baseline:</strong> sao chép phase và TaskDefinition sang version mới với id mới; Task giữ nguyên id và <code>stable_key</code>.</li>
+</ul>
+
+<h2 id="s-5-3">5.3. Task qua các Plan Version</h2>
+<p>Task là danh tính ổn định (để workflow, review, audit và needs review không đứt khi plan đổi); nội dung theo version nằm ở TaskDefinition. Khi version mới được duyệt: Task có định nghĩa trong version mới đổi <code>current_definition_id</code>; Task không còn trong baseline mới → Cancelled (T-18); Task chỉ từng ở Draft bị bỏ → đặt <code>deleted_at</code> (T-17).</p>
+<p>Tạo Task mới: chèn <code>task_definition</code> trước rồi <code>task</code> trong cùng giao dịch (FK hai chiều deferrable) để trigger <code>task_tsv</code> đọc được tiêu đề.</p>
+<p>Bảng chuyển trạng thái nạp đủ T-01–T-19 kèm mã (<code>app.state_transition.code</code>). T-17 không phải chuyển trạng thái (Task bị bỏ) nên không có dòng; Cancelled là trạng thái cuối, Completed chỉ thoát qua T-19.</p>
+
+<h2 id="s-5-4">5.4. Ràng buộc 18.5 và kiểm tra cấu trúc</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Quy tắc 18.5</th><th>Thực thi</th></tr></thead>
+<tbody>
+<tr><td>Một ResearchPlan mỗi project</td><td>UQ <code>research_plan.project_id</code></td></tr>
+<tr><td>Tối đa một Plan Version Approved; tối đa một Draft hoặc Proposed</td><td>PUQ <code>plan_version_one_approved_uq</code>, <code>plan_version_one_open_uq</code></td></tr>
+<tr><td>Đồ thị phụ thuộc không chu trình; mọi phụ thuộc cùng version</td><td>FK sang <code>task_definition (task_id, plan_version_id)</code>; hàm <code>app.plan_version_cycles(id)</code> trả các Task nằm trên chu trình, gọi khi trình duyệt (DATA-VALID-001-AC01)</td></tr>
+<tr><td>Mỗi TaskDefinition có objective, ≥ 1 expectedOutput, ≥ 1 acceptance criterion, executionLabel hợp lệ</td><td>NOT NULL + CHECK độ dài mảng + CHECK nhãn. Điều kiện “ít nhất một expectedOutput <em>bắt buộc</em>” kiểm ở ứng dụng</td></tr>
+<tr><td>Mỗi Task thuộc một Phase cùng version</td><td>FK (plan_version_id, phase_id) → <code>phase (plan_version_id, id)</code></td></tr>
+<tr><td>Mỗi Task tối đa một Workflow chưa kết thúc</td><td>Nguồn sự thật: PUQ ở orchestration (<a href="06-orchestration.html#s-6-1">6.1</a>); ở planning: PUQ <code>active_workflow_id</code> + CHECK trạng thái</td></tr>
+<tr><td>reasonCode bắt buộc khi trả lại hoặc chặn</td><td>CHECK <code>task_review_reason_ck</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-5-5">5.5. Truy vấn chính</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Màn hình / API</th><th>Truy vấn</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td>Task board (NFR-PERF-001, 200 Task/version)</td><td><code>task t JOIN task_definition d ON d.id = t.current_definition_id WHERE t.account_id AND t.project_id AND t.deleted_at IS NULL</code></td><td><code>task_board_idx</code>, PK definition</td></tr>
+<tr><td>Readiness: Task phụ thuộc chưa Completed</td><td><code>task_dependency WHERE plan_version_id AND task_id</code> join <code>task.status</code></td><td>PK dependency</td></tr>
+<tr><td>Lan truyền needs review khi đầu vào đổi</td><td><code>task_input_ref WHERE account_id AND input_type AND input_id</code>; Task phụ thuộc Completed qua <code>task_dependency_reverse_idx</code> (T-19)</td><td><code>task_input_ref_reverse_idx</code></td></tr>
+<tr><td>So sánh hai Plan Version</td><td>Hai tập <code>task_definition</code> theo <code>plan_version_id</code>, ghép theo <code>task_id</code></td><td><code>task_definition_version_idx</code></td></tr>
+<tr><td>KPI-04 (tỷ lệ trả lại theo lý do)</td><td><code>task_review GROUP BY outcome, reason_code</code></td><td><code>task_review_kpi_idx</code></td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="04-identity-gateway-workspace.html">← Mục 4</a><a href="../index.html">Mục lục database</a><a rel="next" href="06-orchestration.html">Mục 6 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — quyết định, rủi ro và câu hỏi mở.">
+<title>13. Decisions, Risks and Open Issues | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 13</p><h1>13. Decisions, Risks and Open Issues</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · DBD-01–DBD-13 Accepted (DEC-57) · Cơ sở: kiến trúc <a href="../../architecture/sections/12-decisions-risks-and-open-issues.html">12</a>; PRD <a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html">20</a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-13-1">13.1. Sổ quyết định thiết kế (DBD)</a></li>
+<li><a href="#s-13-2">13.2. Rủi ro dữ liệu (DR)</a></li>
+<li><a href="#s-13-3">13.3. Câu hỏi kỹ thuật (DBQ)</a></li>
+<li><a href="#s-13-4">13.4. Truy vết requirement → bảng</a></li>
+</ul></details>
+
+<h2 id="s-13-1">13.1. Sổ quyết định thiết kế (DBD)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Quyết định</th><th>Phương án đã cân nhắc</th><th>Hệ quả</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td id="dbd-01">DBD-01</td><td>Mỗi database có schema <code>app</code> (nghiệp vụ + nền tảng), <code>replica</code> (bản sao chỉ đọc), <code>vec</code> (vector, chỉ knowledge); bảng <code>snake_case</code> số ít theo entity PRD.</td><td>Một schema <code>public</code>; schema theo module.</td><td>Quyền theo schema rõ (<code>_app</code> chỉ đọc <code>replica</code>); tên bảng tra được từ tên entity.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-02">DBD-02</td><td>DDL tham chiếu trong <code>docs/database/ddl/</code> là chuẩn thiết kế; migration thật phải sinh ra cùng schema, CI so sánh.</td><td>Chỉ mô tả bằng văn bản; migration là nguồn duy nhất.</td><td>Thiết kế chạy được và kiểm được trước khi có code; phải giữ đồng bộ hai nơi (DR-05).</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-03">DBD-03</td><td>Trạng thái lưu <code>text</code> + CHECK đúng chuỗi PRD; bảng <code>app.state_transition</code> + trigger từ chối chuyển ngoài bảng; trigger bất biến với danh sách cột được đổi; <code>row_version</code> tăng đúng 1.</td><td>Kiểu ENUM của PostgreSQL; chỉ kiểm ở ứng dụng.</td><td>Lớp bảo vệ thứ hai cho DATA-STATE-001, 18.3, DATA-CONC-001; thêm giá trị không khóa bảng lâu. Có chi phí trigger nhỏ mỗi UPDATE. Để giữ NFR-MAINT-003 (state machine ở một nơi duy nhất), bảng <code>state_transition</code> phải sinh từ khai báo state machine của module domain, không viết tay; nếu NFR-MAINT-003 được hiểu là cấm mọi lần kiểm thứ hai thì bỏ trigger, giữ CHECK giá trị (DBQ-09).</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-04">DBD-04</td><td>ActorRef, ApprovalRecord, Provenance và cấu trúc biến đổi theo agent lưu jsonb với hàm CHECK hình dạng tối thiểu; tách bảng khi phần tử đổi độc lập (deliberation_participant) hoặc cần truy vấn ngược (provenance_input, task_input_ref).</td><td>Chuẩn hóa toàn bộ thành bảng; jsonb không kiểm.</td><td>Ghi/đọc khớp API không chuyển đổi; ràng buộc tối thiểu ở database, đầy đủ ở ứng dụng.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-05">DBD-05</td><td>Khóa ngoại ghép <code>(account_id, project_id, id)</code> trong cùng database; tham chiếu sang database khác là id logic, không FK.</td><td>FK đơn theo id; không FK.</td><td>Database tự bảo đảm OWN-01–OWN-03 trong phạm vi service; bảng cha cần UQ ghép thêm.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-06">DBD-06</td><td>Bốn vai trò mỗi service: <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code> (RLS), <code>_system</code> (BYPASSRLS, consumer/job), <code>_purge</code> (BYPASSRLS, DELETE); RLS FORCE trên mọi bảng có <code>account_id</code>.</td><td>Một vai trò mỗi service (ADR-22 bản đầu); policy cho phép “system” qua biến phiên.</td><td>Request người dùng không bao giờ vượt RLS; job quét nhiều tài khoản có vai trò riêng, quyền tối thiểu. Cần dịch vụ managed cho phép BYPASSRLS (DBQ-01).</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-07">DBD-07</td><td>Thêm <code>account.status</code> (Active | Locked | Deletion Requested) và <code>deletion_requested_at</code> để hiện thực NFR-RET-004 (“khóa tài khoản, vô hiệu key ngay”).</td><td>Suy ra từ sự kiện; cờ boolean.</td><td>Bổ sung trường vào PRD 18.1 (Account.status, deletionRequestedAt; DEC-57); không hiển thị thành trạng thái sản phẩm. PO xác nhận 03/11/2026.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-08">DBD-08</td><td>Bản sao chỉ đọc trong schema <code>replica</code> (project_state, reference_state, project_reference_scope, account_embedding), cập nhật bởi consumer cùng giao dịch với inbox, có <code>source_version</code>.</td><td>Luôn gọi API đồng bộ; đọc chéo database.</td><td>Kiểm tra cục bộ khi ghi (Evidence, BibliographyEntry, phạm vi truy xuất) không phụ thuộc service khác đang chạy; nhất quán cuối cùng (DR-02).</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-09">DBD-09</td><td>ManuscriptRevision lưu thêm <code>tree</code> (bản chụp path → sha256 của cả cây file) bên cạnh <code>changes</code>.</td><td>Dựng cây bằng cách cộng dồn changes; bảng con revision_file.</td><td>Bổ sung trường vào PRD 18.1 (ManuscriptRevision.tree; DEC-57); build, so sánh, export đọc một dòng thay vì tới 2.000 revision. PO xác nhận 03/11/2026.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-10">DBD-10</td><td>Usage: cột sinh <code>input_tokens</code>, <code>output_tokens</code> trên agent_run; sổ <code>usage_ledger</code> ở orchestration gộp Agent Run và embedding; knowledge giữ <code>embedding_usage</code> và báo về.</td><td>Mỗi service tự tổng hợp; tính lúc truy vấn từ jsonb.</td><td>NFR-USAGE-002 tổng hợp trên một bảng, sai lệch 0; cần kênh báo usage embedding (DBQ-03).</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-11">DBD-11</td><td>Tìm kiếm: cấu hình <code>app.sires_simple</code> (simple + unaccent), cột <code>search_tsv</code> cập nhật bằng trigger, pg_trgm cho tiêu đề/tác giả.</td><td>Cột sinh (không được vì unaccent không IMMUTABLE); máy tìm kiếm riêng.</td><td>Đủ cho OQ-031 và NFR-PERF-002; không cần thêm hạ tầng.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-12">DBD-12</td><td>Không partition, không materialized view, không cụm vector riêng ở MVP.</td><td>Partition audit_event theo tháng ngay từ đầu.</td><td>Schema đơn giản; điều kiện xem lại ở 12.6 và ADR-05.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+<tr><td id="dbd-13">DBD-13</td><td>Xóa mềm chỉ ở entity PRD yêu cầu (ResearchProject, PlanVersion Draft, Task Draft bị bỏ, ManuscriptFile); xóa vật lý qua purge (<code>_purge</code>) hoặc thao tác người dùng có quyền DELETE giới hạn; UUIDv7 do ứng dụng sinh.</td><td>Xóa mềm mọi bảng.</td><td>Không phình bảng bằng dòng chết; giữ OWN-05.</td><td>Accepted (03/11/2026, DEC-57)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-2">13.2. Rủi ro dữ liệu (DR)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Rủi ro</th><th>Khả năng · Tác động</th><th>Giảm thiểu</th></tr></thead>
+<tbody>
+<tr><td id="dr-01">DR-01</td><td>Bảng chuyển trạng thái ở database lệch với state machine trong module domain.</td><td>Trung bình · Trung bình</td><td>Sinh cả hai từ một khai báo (libs/ts/platform); test so khớp trong CI.</td></tr>
+<tr><td id="dr-02">DR-02</td><td>Bản sao chỉ đọc trễ hoặc lệch: Evidence tạo vài giây sau khi Reference bị thu hồi.</td><td>Thấp · Trung bình</td><td>Consumer cập nhật Evidence → Stale khi sự kiện đến; đối soát định kỳ; thao tác quan trọng (chấp nhận Change Proposal) kiểm lại qua API.</td></tr>
+<tr><td id="dr-03">DR-03</td><td>Rò dữ liệu giữa tài khoản do pooler/biến phiên cấu hình sai hoặc dùng nhầm vai trò <code>_system</code> cho request người dùng.</td><td>Thấp · Cao</td><td>Chỉ <code>SET LOCAL</code>; pooler transaction mode; secret của <code>_system</code> chỉ cấp cho worker; test cách ly 11.4 trong CI.</td></tr>
+<tr><td id="dr-04">DR-04</td><td>Dịch vụ managed của nhà cloud (AQ-12) không hỗ trợ BYPASSRLS, pgvector ≥ 0.8 hoặc unaccent.</td><td>Trung bình · Trung bình</td><td>Kiểm khi chọn nhà cloud (DBQ-01); phương án thay thế cho BYPASSRLS ở DBQ-01.</td></tr>
+<tr><td id="dr-05">DR-05</td><td>DDL tham chiếu và migration thật lệch nhau.</td><td>Cao · Thấp</td><td>CI diff schema (12.4); sửa DDL và section cùng lượt.</td></tr>
+<tr><td id="dr-06">DR-06</td><td>jsonb nhận dữ liệu lệch phiên bản schema khi agent đổi output.</td><td>Trung bình · Trung bình</td><td><code>*_schema_version</code>; validate ở ứng dụng; cổng hồi quy eval khi đổi định nghĩa agent (NFR-EVAL-004).</td></tr>
+</tbody></table></div>
+
+<h2 id="s-13-3">13.3. Câu hỏi kỹ thuật (DBQ)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Câu hỏi</th><th>Ảnh hưởng</th></tr></thead>
+<tbody>
+<tr><td id="dbq-01">DBQ-01</td><td>Dịch vụ PostgreSQL managed chọn ở AQ-12 có cho tạo vai trò BYPASSRLS và các extension vector ≥ 0.8, pg_trgm, unaccent, pgcrypto không? Nếu không có BYPASSRLS: thay bằng policy thứ hai <code>USING (current_setting('app.scope', true) = 'system')</code> chỉ cấp cho vai trò <code>_system</code>/<code>_purge</code>.</td><td>DBD-06, 11.1; AQ-12</td></tr>
+<tr><td id="dbq-02">DBQ-02</td><td>Pooler dùng gì (PgBouncer tự vận hành hay pooler của dịch vụ managed), chế độ transaction, hạn mức kết nối theo vai trò?</td><td>3.3, DR-03</td></tr>
+<tr><td id="dbq-03">DBQ-03</td><td>knowledge báo usage embedding cho orchestration bằng sự kiện mới (ví dụ <code>usage.recorded</code>) hay API nội bộ? Cần bổ sung AsyncAPI hoặc OpenAPI nội bộ.</td><td>DBD-10, NFR-USAGE-002; api-design</td></tr>
+<tr><td id="dbq-04">DBQ-04</td><td>Bổ sung <code>aggregateVersion</code> vào envelope sự kiện (kiến trúc 6.4 có, AsyncAPI chưa) và <code>metadataVersion</code> vào <code>reference.status_changed</code>? Cho tới khi có, <code>source_version</code> dùng epoch millisecond của <code>occurredAt</code>.</td><td>3.5, DBD-08; api-design</td></tr>
+<tr><td id="dbq-05">DBQ-05</td><td>Danh mục embedding model hỗ trợ ở MVP (slug, số chiều) và có dùng <code>halfvec</code> không (SPK-04)?</td><td>7.5, dung lượng 12.6</td></tr>
+<tr><td id="dbq-06">DBQ-06</td><td>Có cần index GIN trên <code>change_proposal.claim_ids</code>/<code>evidence_ids</code> cho lan truyền needs review, hay tách bảng liên kết?</td><td>10.4</td></tr>
+<tr><td id="dbq-07">DBQ-07</td><td>Khóa mã hóa debug transcript: KEK riêng trong KMS hay dùng chung KEK của provider key?</td><td>11.3, NFR-RET-009</td></tr>
+<tr><td id="dbq-08">DBQ-08</td><td>gateway có cần lưu refresh token của eTroy OIDC không (SPK-02, TR-05); nếu có, khóa mã hóa nào?</td><td>4.2, 11.3</td></tr>
+<tr><td id="dbq-09">DBQ-09</td><td>NFR-MAINT-003 yêu cầu state machine “hiện thực ở một nơi duy nhất và là nguồn duy nhất kiểm tra chuyển trạng thái”. Trigger <code>tg_state_transition</code> đọc bảng sinh từ cùng khai báo của module domain có được coi là đạt yêu cầu này không, hay phải bỏ trigger? Đề xuất: giữ, với điều kiện bảng được sinh tự động (DR-01). <strong>Đã đóng 03/11/2026 (PO, DEC-57):</strong> giữ trigger; bảng sinh tự động từ khai báo domain.</td><td>DBD-03, 10.2; NFR-MAINT-003</td></tr>
+</tbody></table></div>
+<p>Không có câu hỏi mới cần PO quyết định (OQ). PO duyệt bộ tài liệu theo đề xuất ngày 03/11/2026 (DEC-57): DBD-01–DBD-13 Accepted, hai trường DBD-07, DBD-09 đã thêm vào PRD 18.1, DBQ-09 đóng theo đề xuất. DBQ-01–DBQ-08 vẫn chờ Tech lead.</p>
+
+<h2 id="s-13-4">13.4. Truy vết requirement → bảng</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Requirement</th><th>Bảng / đối tượng</th><th>Mục</th></tr></thead>
+<tbody>
+<tr><td>DATA-PERSIST-001</td><td><code>app.outbox</code> mọi database</td><td><a href="09-audit-and-platform.html#s-9-2">9.2</a></td></tr>
+<tr><td>DATA-PERSIST-002</td><td><code>orchestration.checkpoint</code></td><td><a href="06-orchestration.html#s-6-3">6.3</a></td></tr>
+<tr><td>DATA-IDEMP-001</td><td><code>app.idempotency_key</code>, <code>workflow_idem_uq</code></td><td><a href="09-audit-and-platform.html#s-9-3">9.3</a></td></tr>
+<tr><td>DATA-IDEMP-002</td><td><code>workflow_one_active_per_task_uq</code>, <code>task_active_workflow_uq</code></td><td><a href="06-orchestration.html#s-6-1">6.1</a></td></tr>
+<tr><td>DATA-IDEMP-003, CTX-CONSISTENCY-002</td><td><code>agent_run.discarded</code>, <code>agent_run_final</code></td><td><a href="06-orchestration.html#s-6-2">6.2</a></td></tr>
+<tr><td>DATA-IDEMP-004</td><td><code>agent_run.attempts</code>, <code>workflow_step.attempt_count</code></td><td><a href="06-orchestration.html#s-6-2">6.2</a></td></tr>
+<tr><td>DATA-IDEMP-005</td><td><code>indexing_job_natural_uq</code>, <code>build_idem_uq</code>, <code>bibliography_entry_reference_uq</code></td><td><a href="10-integrity-state-and-versioning.html#s-10-1">10.1</a></td></tr>
+<tr><td>DATA-CONC-001</td><td><code>row_version</code>, <code>app.tg_row_version</code></td><td><a href="02-schema-conventions.html#s-2-3">2.3</a></td></tr>
+<tr><td>DATA-STATE-001, DATA-STATE-002</td><td><code>app.state_transition</code>, <code>tg_state_transition</code>, <code>tg_plan_version_frozen</code>, <code>tg_project_writable</code></td><td><a href="10-integrity-state-and-versioning.html#s-10-2">10.2</a></td></tr>
+<tr><td>DATA-PROV-001</td><td>Cột <code>provenance</code>, <code>app.is_provenance</code>, <code>provenance_input</code></td><td><a href="10-integrity-state-and-versioning.html#s-10-4">10.4</a></td></tr>
+<tr><td>DATA-AUDIT-001, CTX-AUDIT-001</td><td>outbox kind audit → <code>audit.audit_event</code></td><td><a href="09-audit-and-platform.html#s-9-1">9.1</a></td></tr>
+<tr><td>DATA-VALID-001</td><td>UQ/PUQ/FK ghép, <code>plan_version_cycles</code>, trigger phạm vi</td><td><a href="10-integrity-state-and-versioning.html#s-10-1">10.1</a></td></tr>
+<tr><td>DATA-STORE-001</td><td>Cột <code>*_ref</code>, <code>content_hash</code>; vector ở <code>vec.*</code></td><td><a href="02-schema-conventions.html#s-2-2">2.2</a></td></tr>
+<tr><td>NFR-ISOL-001</td><td>RLS mọi bảng có <code>account_id</code></td><td><a href="11-security-and-tenancy.html#s-11-1">11.1</a></td></tr>
+<tr><td>NFR-SECRETS-001–003</td><td><code>identity.provider_secret</code></td><td><a href="11-security-and-tenancy.html#s-11-3">11.3</a></td></tr>
+<tr><td>NFR-RET-002, NFR-RET-003, NFR-RET-004, NFR-RET-008, NFR-RET-009</td><td><code>research_project</code> (xóa mềm), <code>project_purge</code>, vai trò <code>_purge</code>, <code>agent_run_debug_transcript</code></td><td><a href="12-operations-retention-and-capacity.html#s-12-1">12.1</a></td></tr>
+<tr><td>NFR-BACKUP-001</td><td>PITR, snapshot 35 ngày</td><td><a href="12-operations-retention-and-capacity.html#s-12-3">12.3</a></td></tr>
+<tr><td>NFR-PERF-001, -002, -006; NFR-SCALE-001, -002</td><td>Index ghép, GIN, HNSW</td><td><a href="12-operations-retention-and-capacity.html#s-12-6">12.6</a></td></tr>
+<tr><td>NFR-USAGE-001, -002, -005</td><td><code>agent_run.usage</code>, <code>usage_ledger</code>, <code>deliberation.usage_total</code></td><td><a href="06-orchestration.html#s-6-5">6.5</a></td></tr>
+<tr><td>NFR-OBS-006</td><td><code>agent_run.agent_definition_version</code>, <code>prompt_template_version</code>, <code>retrieval_config_version</code></td><td><a href="06-orchestration.html#s-6-2">6.2</a></td></tr>
+<tr><td>NFR-KPI-001</td><td><code>audit.kpi_snapshot</code>, <code>task_review_kpi_idx</code></td><td><a href="09-audit-and-platform.html#s-9-1">9.1</a></td></tr>
+<tr><td>INT-OIDC-002, INT-OIDC-003</td><td><code>account_auth_identity_uq</code>, <code>gateway.session</code></td><td><a href="04-identity-gateway-workspace.html">4</a></td></tr>
+<tr><td>INT-VECTOR-001–003</td><td><code>replica.project_reference_scope</code>, <code>vec.emb_*</code>, <code>source_document.needs_reindex</code></td><td><a href="07-library-and-knowledge.html#s-7-5">7.5</a></td></tr>
+<tr><td>ORCH-DELIB-001–005, CTX-BOARD-001–003, CTX-SNAPSHOT-001</td><td><code>deliberation</code>, <code>deliberation_participant</code>, <code>deliberation_entry</code>, <code>context_snapshot</code></td><td><a href="06-orchestration.html#s-6-4">6.4</a></td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="12-operations-retention-and-capacity.html">← Mục 12</a><a href="../index.html">Mục lục database</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — identity, gateway, workspace.">
+<title>4. identity, gateway, workspace | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 4</p><h1>4. identity, gateway, workspace</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-1">18.1</a> (Account/Profile, VerificationThresholds, ProviderConnection, AgentModelAssignment, ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification), 5.1, 17 (INT-OIDC); kiến trúc 3.2, 10.2–10.3 · DDL: <a href="../ddl/identity.sql"><code>identity.sql</code></a>, <a href="../ddl/gateway.sql"><code>gateway.sql</code></a>, <a href="../ddl/workspace.sql"><code>workspace.sql</code></a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-4-1">4.1. sires_identity</a></li>
+<li><a href="#s-4-2">4.2. sires_gateway</a></li>
+<li><a href="#s-4-3">4.3. sires_workspace</a></li>
+<li><a href="#s-4-4">4.4. Truy vấn chính</a></li>
+</ul></details>
+
+<h2 id="s-4-1">4.1. sires_identity</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>account</code></td><td>Account / Profile</td><td><code>auth_issuer</code>, <code>auth_subject</code> UQ toàn hệ thống (OQ-073); không có cột mật khẩu; <code>status</code> Active | Locked | Deletion Requested (DBD-07); profile và preferences (<code>ui_language</code> vi|en, <code>timezone</code>, <code>debug_mode</code>, <code>include_research_field_in_context</code> mặc định false); <code>google_scholar_profile_url</code> CHECK https (ASM-14); <code>embedding_provider_connection_id</code> + <code>embedding_model</code> (DEC-31) cùng NULL hoặc cùng có giá trị. <code>account_id</code> sinh từ <code>id</code>.</td><td>UQ (issuer, subject)</td></tr>
+<tr><td><code>verification_thresholds</code></td><td>VerificationThresholds</td><td>PK = <code>account_id</code> (một bộ mỗi tài khoản); <code>values</code> jsonb theo khóa ngưỡng do hệ thống định nghĩa; <code>is_default</code>. Mỗi lần đổi ghi Audit Event qua outbox; VerificationResult ghi bản chụp (OQ-092).</td><td>PK</td></tr>
+<tr><td><code>provider_connection</code></td><td>ProviderConnection</td><td><code>name</code> UQ trong tài khoản; <code>provider</code> anthropic|openai|google; <code>base_url</code> CHECK https (NFR-TRANSIT-001); <code>key_hint</code> ≤ 4 ký tự; <code>test_status</code> theo state machine; <code>available_models</code> jsonb. Không chứa key.</td><td>UQ (account_id, name), UQ (account_id, id)</td></tr>
+<tr><td><code>provider_secret</code></td><td>— (secretRef của ProviderConnection)</td><td>1–1 với connection; <code>ciphertext</code>, <code>nonce</code> 12 byte, <code>wrapped_dek</code>, <code>kek_version</code> (kiến trúc 10.3). Không vai trò nào có UPDATE; <code>_app</code> không có SELECT.</td><td>PK connection_id</td></tr>
+<tr><td><code>agent_model_assignment</code></td><td>AgentModelAssignment</td><td><code>agent</code> ∈ default + 9 khóa registry; <code>instance</code> A|B khi và chỉ khi analysis; UQ NULLS NOT DISTINCT (account_id, agent, instance) (DEC-50); FK ghép sang <code>provider_connection</code> cùng tài khoản; <code>capability_warnings</code>.</td><td>UQ; (account_id, provider_connection_id)</td></tr>
+<tr><td>view <code>analysis_same_model</code></td><td>sameModelWarning (chỉ đọc)</td><td>Tính provider + model hiệu lực của analysis/A và analysis/B, kể cả khi cùng thừa kế <code>default</code>; <code>security_invoker</code> để RLS áp dụng.</td><td>—</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Đăng nhập lần đầu:</strong> gateway gọi identity; identity sinh <code>id</code>, <code>SET LOCAL app.account_id</code> bằng chính id đó rồi INSERT (RLS WITH CHECK đạt). Tra tài khoản theo (issuer, subject) trước khi có tenant context dùng hàm <code>app.find_account_by_identity</code> (SECURITY DEFINER, chỉ trả id và status).</li>
+<li><strong>Xóa Provider Connection</strong> xóa luôn <code>provider_secret</code> (ON DELETE CASCADE). Điều kiện “không agent nào đang dùng trong Agent Run đang chạy” (18.2) kiểm qua API của orchestration trước khi xóa.</li>
+<li><strong>Yêu cầu xóa tài khoản</strong> (NFR-RET-004): trong một giao dịch, <code>status → Deletion Requested</code>, xóa mọi <code>provider_secret</code> của tài khoản, ghi outbox <code>account.deletion_requested</code>.</li>
+</ul>
+
+<h2 id="s-4-2">4.2. sires_gateway</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Vai trò</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>session</code></td><td>Phiên server-side (ADR-09, ADR-27)</td><td><code>sid_hash</code> = sha256 của session id (không lưu id rõ), UQ; <code>csrf_token_hash</code>; <code>last_seen_at</code> chỉ cập nhật khi có thao tác do người dùng thực hiện (SSE, polling, refresh chạy nền không tính — ADR-27); <code>idle_expires_at</code> = thao tác cuối + 12 giờ (INT-OIDC-003-AC02); <code>absolute_expires_at</code>; <code>oidc_sid</code> cho back-channel logout khi có (ETR-07); <code>refresh_token_enc</code> mã hóa lớp ứng dụng (DBQ-08); <code>revoked_at</code> + <code>revoke_reason</code>.</td><td>UQ sid_hash; partial (account_id), (idle_expires_at) WHERE revoked_at IS NULL</td></tr>
+<tr><td><code>sse_event_log</code></td><td>Phát lại SSE theo Last-Event-ID 24 giờ (ADR-07)</td><td><code>seq</code> identity = Last-Event-ID; <code>event_id</code> UQ (dedupe message RabbitMQ); <code>account_id</code>, <code>project_id</code>, <code>event_type</code>, <code>payload</code>.</td><td>(account_id, seq), (created_at)</td></tr>
+</tbody></table></div>
+<p>Tra phiên theo cookie trước khi có tenant context dùng <code>app.find_session(sid_hash)</code> (SECURITY DEFINER). Đăng xuất, khóa tài khoản, yêu cầu xóa tài khoản: đặt <code>revoked_at</code> cho mọi phiên của tài khoản.</p>
+
+<h2 id="s-4-3">4.3. sires_workspace</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Bảng</th><th>Entity PRD</th><th>Cột và ràng buộc chính</th><th>Index</th></tr></thead>
+<tbody>
+<tr><td><code>research_project</code></td><td>ResearchProject</td><td><code>status</code> Active|Archived; xóa mềm: <code>deleted_at</code>, <code>purge_after</code> = deleted_at + 30 ngày, <code>status_before_deletion</code> — CHECK ba cột cùng NULL hoặc cùng có (OQ-030, OQ-078); <code>current_context_version_id</code> FK ghép deferrable; <code>search_tsv</code> (tên, mô tả); <code>last_activity_at</code>. View <code>research_project_live</code> lọc đã xóa.</td><td>(account_id, status, last_activity_at DESC) WHERE deleted_at IS NULL; (purge_after) WHERE deleted; GIN search_tsv</td></tr>
+<tr><td><code>research_context_version</code></td><td>ResearchContextVersion</td><td>Bất biến (trigger + thu UPDATE); UQ (project_id, version_number); <code>confirmed_by</code> phải là researcher; <code>output_type</code> article|thesis|report|other.</td><td>UQ</td></tr>
+<tr><td><code>conversation</code></td><td>Conversation</td><td><code>scope</code> global|project; <code>project_id</code> có khi và chỉ khi scope project.</td><td>(account_id, project_id)</td></tr>
+<tr><td><code>message</code></td><td>Message</td><td>Chỉ ghi thêm; <code>content</code> 1–20.000 ký tự (API); <code>sender</code> ActorRef; <code>deliberation</code> (DeliberationLabel, DEC-50); <code>project_id</code> sao từ conversation để purge theo project.</td><td>(conversation_id, created_at)</td></tr>
+<tr><td><code>pending_action</code></td><td>PendingAction</td><td><code>kind</code> 7 giá trị của 4.4/API; <code>status</code> Open|Resolved|Expired; <code>deep_link</code>. Một PendingAction Open cho mỗi (kind, đối tượng).</td><td>PUQ (account_id, kind, object_type, object_id) WHERE Open; (account_id, status, created_at DESC)</td></tr>
+<tr><td><code>notification</code></td><td>Notification</td><td><code>kind</code> blocked_task|failure|completion|impact_warning|provider_issue (API); Unread → Read.</td><td>(account_id, created_at DESC) WHERE Unread</td></tr>
+<tr><td><code>project_purge</code></td><td>— (theo dõi purge, kiến trúc 6.8)</td><td><code>expected</code>: service phải xác nhận <code>data.purged</code>; <code>confirmed</code>; <code>completed_at</code>.</td><td>PK project_id</td></tr>
+</tbody></table></div>
+<p>workspace là nơi duy nhất ghi vòng đời project; các service khác nhận qua <code>replica.project_state</code>. Lưu trữ project khi còn Workflow hoạt động bị chặn ở module domain (gọi orchestration); database không thấy được điều kiện này.</p>
+
+<h2 id="s-4-4">4.4. Truy vấn chính</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Màn hình / API</th><th>Truy vấn</th><th>Index dùng</th></tr></thead>
+<tbody>
+<tr><td>Dashboard: pending action, thông báo chưa đọc</td><td><code>pending_action WHERE account_id AND status='Open' ORDER BY created_at DESC</code>; đếm notification Unread</td><td><code>pending_action_list_idx</code>, <code>notification_unread_idx</code></td></tr>
+<tr><td>Danh sách project</td><td><code>research_project WHERE account_id AND deleted_at IS NULL AND status=? ORDER BY last_activity_at DESC</code></td><td><code>research_project_list_idx</code></td></tr>
+<tr><td>Project đã xóa (khôi phục trong 30 ngày)</td><td><code>WHERE account_id AND deleted_at IS NOT NULL AND purge_after &gt; now()</code></td><td><code>research_project_deleted_idx</code></td></tr>
+<tr><td>Tìm kiếm toàn cục, phần workspace</td><td><code>search_tsv @@ websearch_to_tsquery('app.sires_simple', :q)</code></td><td>GIN</td></tr>
+<tr><td>Gán model: cảnh báo cùng model</td><td><code>analysis_same_model WHERE account_id</code></td><td>UQ của assignment</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="03-topology-and-ownership.html">← Mục 3</a><a href="../index.html">Mục lục database</a><a rel="next" href="05-planning.html">Mục 5 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

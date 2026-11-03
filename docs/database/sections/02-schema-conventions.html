@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — quy ước schema.">
+<title>2. Schema Conventions | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 2</p><h1>2. Schema Conventions</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-1">18.1</a>, 18.4; kiến trúc <a href="../../architecture/sections/06-data-architecture.html#s-6-2">6.2</a>; DBD-01–DBD-04, DBD-11 · DDL: <a href="../ddl/00-common.sql"><code>00-common.sql</code></a></p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-2-1">2.1. Đặt tên</a></li>
+<li><a href="#s-2-2">2.2. Ánh xạ kiểu dữ liệu</a></li>
+<li><a href="#s-2-3">2.3. Cột chung</a></li>
+<li><a href="#s-2-4">2.4. Giá trị có cấu trúc (jsonb)</a></li>
+<li><a href="#s-2-5">2.5. Trạng thái và enum</a></li>
+<li><a href="#s-2-6">2.6. Khóa, ràng buộc và index</a></li>
+<li><a href="#s-2-7">2.7. Hàm và trigger dùng chung</a></li>
+</ul></details>
+
+<h2 id="s-2-1">2.1. Đặt tên</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Đối tượng</th><th>Quy ước</th><th>Ví dụ</th></tr></thead>
+<tbody>
+<tr><td>Database</td><td><code>sires_&lt;service&gt;</code>, gạch ngang đổi thành gạch dưới</td><td><code>sires_planning</code>, <code>sires_agent_core</code></td></tr>
+<tr><td>Schema</td><td><code>app</code> nghiệp vụ + nền tảng; <code>replica</code> bản sao chỉ đọc; <code>vec</code> vector (knowledge)</td><td><code>app.task</code>, <code>replica.project_state</code></td></tr>
+<tr><td>Bảng</td><td><code>snake_case</code>, số ít, theo tên entity PRD</td><td><code>plan_version</code>, <code>interactive_agent_prompt</code></td></tr>
+<tr><td>Cột</td><td><code>snake_case</code> của trường PRD/API; tham chiếu kết thúc <code>_id</code></td><td><code>currentDefinitionId</code> → <code>current_definition_id</code></td></tr>
+<tr><td>Ràng buộc</td><td><code>&lt;bảng&gt;_&lt;ý nghĩa&gt;_{uq,ck,fk}</code></td><td><code>plan_version_approval_ck</code></td></tr>
+<tr><td>Index</td><td><code>&lt;bảng&gt;_&lt;ý nghĩa&gt;_{idx,uq}</code></td><td><code>workflow_one_active_per_task_uq</code></td></tr>
+<tr><td>Trigger</td><td><code>&lt;bảng&gt;_&lt;tác dụng&gt;</code></td><td><code>task_state</code>, <code>agent_run_final</code></td></tr>
+<tr><td>Vai trò</td><td><code>sires_&lt;service&gt;_{owner,app,system,purge}</code></td><td><code>sires_audit_system</code></td></tr>
+</tbody></table></div>
+<p>Cột tên trùng từ khóa SQL (<code>order</code>) đặt trong nháy kép trong DDL; ORM ánh xạ tên thuộc tính <code>order</code>.</p>
+
+<h2 id="s-2-2">2.2. Ánh xạ kiểu dữ liệu</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Kiểu PRD 18.1</th><th>PostgreSQL</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>id, ref</td><td><code>uuid</code></td><td>UUIDv7 do ứng dụng sinh (libs/ts/platform, sires_common); <code>app.uuid_v7()</code> là mặc định dự phòng, thay bằng <code>uuidv7()</code> khi lên PostgreSQL 18</td></tr>
+<tr><td>Mã hiển thị</td><td><code>text</code> + CHECK định dạng</td><td><code>task.stable_key</code> ~ <code>^T-[0-9]{3,}$</code>, duy nhất trong project</td></tr>
+<tr><td>timestamp</td><td><code>timestamptz</code></td><td>Lưu UTC; client hiển thị theo <code>account.timezone</code></td></tr>
+<tr><td>integer, bool</td><td><code>integer</code>/<code>smallint</code>, <code>boolean</code></td><td><code>smallint</code> cho bộ đếm nhỏ có trần (attempts, round)</td></tr>
+<tr><td>enum, trạng thái</td><td><code>text</code> + CHECK</td><td>Không dùng kiểu ENUM của PostgreSQL: thêm giá trị = sửa CHECK trong migration, không khóa bảng lâu (DBD-03)</td></tr>
+<tr><td>Danh sách id</td><td><code>uuid[]</code></td><td>Khi không cần FK và truy vấn ngược (<code>change_proposal.claim_ids</code>); cần truy vấn ngược thì dùng bảng liên kết</td></tr>
+<tr><td>Danh sách chuỗi</td><td><code>text[]</code></td><td><code>keywords</code>, <code>write_set</code>, <code>unresolved_keys</code></td></tr>
+<tr><td>Đối tượng có cấu trúc</td><td><code>jsonb</code></td><td>Mục 2.4</td></tr>
+<tr><td>Băm, ciphertext</td><td><code>bytea</code></td><td><code>content_hash</code> = sha256 32 byte; khóa object storage giữ dạng hex trong <code>text</code></td></tr>
+<tr><td>File</td><td><code>text</code> (khóa object storage)</td><td>Theo kiến trúc 6.6; không lưu blob trong PostgreSQL (ADR-06)</td></tr>
+<tr><td>Vector</td><td><code>vector(D)</code></td><td>pgvector ≥ 0.8; bảng theo embedding model (<a href="07-library-and-knowledge.html#s-7-5">7.5</a>)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2-3">2.3. Cột chung</h2>
+<p>Hiện thực bảng “Trường chung” của PRD 18.1. Các mục 4–9 không nhắc lại những cột này.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Cột</th><th>Kiểu</th><th>Có ở</th><th>Quy tắc</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>uuid PK</td><td>mọi entity</td><td>Không mang ý nghĩa; API dùng nguyên giá trị</td></tr>
+<tr><td><code>account_id</code></td><td>uuid NOT NULL</td><td>mọi bảng dữ liệu người dùng</td><td>Cột đầu của index ghép; khóa RLS (OWN-03). Bảng <code>account</code> có <code>account_id</code> sinh từ <code>id</code></td></tr>
+<tr><td><code>project_id</code></td><td>uuid NOT NULL</td><td>entity cấp project</td><td>Có cả ở bảng con (step, agent run, evidence…) để purge theo project và lọc không cần join</td></tr>
+<tr><td><code>created_at</code>, <code>created_by</code></td><td>timestamptz, jsonb ActorRef NOT NULL</td><td>mọi entity</td><td>Actor bắt buộc (OQ-004), CHECK <code>app.is_actor_ref</code></td></tr>
+<tr><td><code>updated_at</code>, <code>updated_by</code></td><td>timestamptz, jsonb</td><td>entity sửa được</td><td><code>updated_at</code> do trigger <code>tg_row_version</code> đặt</td></tr>
+<tr><td><code>row_version</code></td><td>integer NOT NULL DEFAULT 1</td><td>entity sửa được</td><td>ETag của API; ghi bằng <code>WHERE row_version = :v</code>, 0 dòng → 412; trigger bảo đảm tăng đúng 1 (DATA-CONC-001)</td></tr>
+<tr><td><code>deleted_at</code></td><td>timestamptz</td><td>chỉ ResearchProject, PlanVersion Draft, Task Draft (T-17), ManuscriptFile</td><td>Xóa mềm theo PRD (DBD-13); truy vấn mặc định lọc qua view hoặc điều kiện <code>deleted_at IS NULL</code></td></tr>
+</tbody></table></div>
+<p>Entity bất biến (ResearchContextVersion, TaskDefinition, ManuscriptRevision, Checkpoint, ReadinessResult, TaskReview, VerificationResult, Message…) không có <code>updated_*</code> và <code>row_version</code>.</p>
+
+<h2 id="s-2-4">2.4. Giá trị có cấu trúc (jsonb)</h2>
+<p>Dùng <code>jsonb</code> cho cấu trúc PRD đặt trong một entity và không cần ràng buộc quan hệ: ActorRef, ApprovalRecord, Provenance, contextManifest, structuredOutput, diff, nội dung entry thảo luận, checks của readiness. Ba cấu trúc dùng khắp nơi có hàm kiểm tra trong <code>00-common.sql</code> (DBD-04):</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Cấu trúc</th><th>Hàm CHECK</th><th>Điều kiện tối thiểu</th></tr></thead>
+<tbody>
+<tr><td>ActorRef</td><td><code>app.is_actor_ref(jsonb)</code></td><td><code>type</code> ∈ researcher/agent/system; researcher có <code>accountId</code>; agent có <code>agent</code> trong 9 khóa registry và <code>agentRunId</code>, có <code>instance</code> A/B khi và chỉ khi là analysis; system có <code>component</code></td></tr>
+<tr><td>ApprovalRecord</td><td><code>app.is_approval_record(jsonb)</code></td><td><code>approvedBy.type = researcher</code>; <code>decision</code> hợp lệ; <code>apr</code> APR-01–APR-10; có <code>decidedAt</code>, <code>objectType</code>, <code>objectId</code>, <code>objectVersion</code></td></tr>
+<tr><td>Provenance</td><td><code>app.is_provenance(jsonb)</code></td><td><code>createdBy</code> là ActorRef; <code>inputs</code> là mảng <code>{type, id, version}</code></td></tr>
+<tr><td>Tham chiếu có phiên bản</td><td><code>app.is_versioned_refs(jsonb)</code></td><td>Mảng phần tử có <code>type</code>, <code>id</code>, <code>version</code> (inputRefs, outputRefs, entities)</td></tr>
+</tbody></table></div>
+<ul>
+<li>Database chỉ kiểm tra hình dạng tối thiểu; schema đầy đủ (Pydantic/Zod sinh từ OpenAPI) kiểm ở ứng dụng.</li>
+<li>Nội dung biến đổi theo agent (structured output, nội dung entry) có cột <code>*_schema_version</code> để đọc đúng bản cũ.</li>
+<li>Tên khóa trong jsonb giữ camelCase như API, để ghi và đọc không phải chuyển đổi.</li>
+<li>Khi cần lọc hoặc gộp theo một trường trong jsonb, dùng cột <code>GENERATED ... STORED</code> (ví dụ <code>agent_run.input_tokens</code>, <code>reference.title</code>) thay vì index biểu thức rải rác.</li>
+</ul>
+
+<h2 id="s-2-5">2.5. Trạng thái và enum</h2>
+<ul>
+<li>Lưu đúng chuỗi PRD 18.2/API, kể cả khoảng trắng và hoa thường: <code>'Waiting for User'</code>, <code>'Not Assessed'</code>, <code>'draft'</code> (DeliberationEntry viết thường như API).</li>
+<li>Mỗi cột trạng thái có CHECK liệt kê giá trị và một trigger <code>tg_state_transition('&lt;machine&gt;')</code> đối chiếu <code>app.state_transition</code> (<a href="10-integrity-state-and-versioning.html#s-10-2">10.2</a>).</li>
+<li>Entity có hai trục trạng thái dùng hai cột và hai machine: Reference (<code>approval_status</code>, <code>indexing_status</code>), Claim (<code>approval_status</code>, <code>support_status</code>).</li>
+<li>Cờ không phải trạng thái giữ dạng boolean kèm lý do: <code>needs_review</code> + <code>needs_review_reasons</code> (5.3, 9.11), có CHECK hai cột nhất quán.</li>
+</ul>
+
+<h2 id="s-2-6">2.6. Khóa, ràng buộc và index</h2>
+<ul>
+<li><strong>Khóa ngoại ghép theo tenant (DBD-05):</strong> bảng cha có <code>UNIQUE (account_id, project_id, id)</code>; bảng con tham chiếu <code>(account_id, project_id, &lt;parent&gt;_id)</code>. Nhờ vậy database tự bảo đảm OWN-01–OWN-03 (“mọi ref cùng accountId; ref cấp project cùng projectId”) trong phạm vi một database.</li>
+<li><strong>Vòng tham chiếu</strong> (project ↔ context version hiện hành, task ↔ definition hiện hành, manuscript ↔ revision hiện hành, workflow ↔ step/checkpoint hiện hành) dùng FK <code>DEFERRABLE INITIALLY DEFERRED</code>; ghi cả hai trong một giao dịch.</li>
+<li><strong>“Tối đa một”</strong> của 18.5 dùng partial unique index (<a href="10-integrity-state-and-versioning.html#s-10-1">10.1</a>).</li>
+<li><strong>Không FK sang database khác.</strong> Cột ref chỉ là uuid; tính đúng do service gọi API của service sở hữu khi ghi, hoặc do bản sao chỉ đọc (<a href="03-topology-and-ownership.html#s-3-5">3.5</a>).</li>
+<li><strong>Index:</strong> index ghép bắt đầu bằng <code>account_id</code> cho truy vấn danh sách; index partial cho tập nhỏ đang hoạt động (<code>status = 'Running'</code>, <code>status = 'Open'</code>, <code>needs_review</code>); GIN cho <code>tsvector</code>, <code>pg_trgm</code>, jsonb tra cứu. Không tạo index cho cột chỉ ghi.</li>
+</ul>
+
+<h2 id="s-2-7">2.7. Hàm và trigger dùng chung</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Đối tượng (00-common.sql)</th><th>Tác dụng</th></tr></thead>
+<tbody>
+<tr><td><code>app.uuid_v7()</code></td><td>Sinh UUIDv7 (dự phòng)</td></tr>
+<tr><td><code>app.current_account_id()</code></td><td>Đọc <code>app.account_id</code> của giao dịch; thiếu → NULL → RLS không khớp dòng nào</td></tr>
+<tr><td><code>app.tg_row_version()</code></td><td>Trigger BEFORE UPDATE: <code>row_version</code> +1, đặt <code>updated_at</code></td></tr>
+<tr><td><code>app.tg_immutable(cột…)</code></td><td>Chặn UPDATE trừ các cột liệt kê. Cột <code>GENERATED</code> là NULL trong trigger BEFORE nên bảng có cột sinh tự động phải liệt kê cột đó hoặc dùng trigger riêng</td></tr>
+<tr><td><code>app.state_transition</code>, <code>app.tg_state_transition(machine[, cột])</code></td><td>Từ chối chuyển trạng thái không có trong bảng (DATA-STATE-001)</td></tr>
+<tr><td><code>app.create_replica_project_state()</code>, <code>app.tg_project_writable()</code></td><td>Bản sao vòng đời project; chặn vai trò <code>_app</code> ghi khi project Archived hoặc đã xóa mềm (18.2 › Quyền theo trạng thái)</td></tr>
+<tr><td>Text search <code>app.sires_simple</code></td><td>simple + unaccent cho tiếng Việt không dấu và tiếng Anh (DBD-11)</td></tr>
+<tr><td><code>app.enable_tenant_rls()</code>, <code>app.grant_standard(svc, bảng_xóa)</code></td><td>Bật RLS + FORCE cho mọi bảng có <code>account_id</code>; cấp quyền chuẩn bốn vai trò (<a href="11-security-and-tenancy.html#s-11-2">11.2</a>)</td></tr>
+</tbody></table></div>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="01-overview.html">← Mục 1</a><a href="../index.html">Mục lục database</a><a rel="next" href="03-topology-and-ownership.html">Mục 3 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

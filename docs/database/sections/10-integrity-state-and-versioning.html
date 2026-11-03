@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — toàn vẹn, trạng thái và phiên bản.">
+<title>10. Integrity, State and Versioning | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 10</p><h1>10. Integrity, State and Versioning</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-2">18.2</a>, <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-3">18.3</a>, <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-4">18.4</a>, <a href="../../overview/sections/18-data-and-state-specifications.html#s-18-5">18.5</a>, 5.10 (OWN-01–OWN-06); kiến trúc 6.5; DBD-03–DBD-05</p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-10-1">10.1. Ràng buộc 18.5 và idempotency 18.4</a></li>
+<li><a href="#s-10-2">10.2. State machine ở database</a></li>
+<li><a href="#s-10-3">10.3. Bất biến và phiên bản</a></li>
+<li><a href="#s-10-4">10.4. Provenance và needs review</a></li>
+<li><a href="#s-10-5">10.5. Những gì database không kiểm</a></li>
+</ul></details>
+
+<h2 id="s-10-1">10.1. Ràng buộc 18.5 và idempotency 18.4</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Quy tắc PRD</th><th>Đối tượng database</th><th>Database</th></tr></thead>
+<tbody>
+<tr><td>Một ResearchPlan mỗi project; tối đa một Manuscript mỗi project</td><td>UQ <code>research_plan.project_id</code>, UQ <code>manuscript.project_id</code></td><td>planning, manuscript</td></tr>
+<tr><td>Tối đa một PlanVersion Approved; tối đa một Draft/Proposed</td><td>PUQ <code>plan_version_one_approved_uq</code>, <code>plan_version_one_open_uq</code></td><td>planning</td></tr>
+<tr><td>Mỗi Task tối đa một Workflow chưa kết thúc (DATA-IDEMP-002)</td><td>PUQ <code>workflow_one_active_per_task_uq</code></td><td>orchestration</td></tr>
+<tr><td>Mỗi Artifact tối đa một version Accepted</td><td>PUQ <code>artifact_version_one_accepted_uq</code></td><td>research</td></tr>
+<tr><td>Mỗi Reference tối đa một SourceDocument</td><td>UQ <code>source_document.reference_id</code></td><td>knowledge</td></tr>
+<tr><td>bibtexKey duy nhất trong tài khoản; DOI trùng chỉ cảnh báo</td><td>UQ (account_id, bibtex_key); index thường (account_id, doi)</td><td>library</td></tr>
+<tr><td>ProjectReferenceSelection Active duy nhất theo (project, reference)</td><td>UQ (project_id, reference_id) — một dòng, đổi trạng thái</td><td>library</td></tr>
+<tr><td>ManuscriptFile Active duy nhất theo (manuscript, path); BibliographyEntry duy nhất theo (manuscript, bibtexKey)</td><td>PUQ <code>manuscript_file_path_uq</code>; UQ <code>bibliography_entry_key_uq</code></td><td>manuscript</td></tr>
+<tr><td>ProviderConnection.name duy nhất trong tài khoản; AgentModelAssignment duy nhất theo (account, agent, instance)</td><td>UQ; UQ NULLS NOT DISTINCT</td><td>identity</td></tr>
+<tr><td>Prompt có tối đa một response</td><td>CHECK <code>prompt_response_ck</code> + trigger chặn sửa sau khi rời Open</td><td>orchestration</td></tr>
+<tr><td>Account.authIdentity duy nhất toàn hệ thống</td><td>UQ (auth_issuer, auth_subject)</td><td>identity</td></tr>
+<tr><td>OWN-01–OWN-03: mọi ref cùng tài khoản; ref cấp project cùng project</td><td>FK ghép (account_id, project_id, id) trong cùng database; RLS WITH CHECK</td><td>mọi database</td></tr>
+<tr><td>Evidence chỉ tham chiếu Reference Trusted và được chọn Active</td><td>Trigger <code>evidence_scope</code> trên bản sao</td><td>research</td></tr>
+<tr><td>BibliographyEntry chỉ tham chiếu Reference Trusted</td><td>Trigger <code>bibliography_entry_trusted</code> trên bản sao</td><td>manuscript</td></tr>
+<tr><td>AgentModelAssignment chỉ tham chiếu ProviderConnection cùng tài khoản</td><td>FK ghép (account_id, provider_connection_id)</td><td>identity</td></tr>
+<tr><td>Không chu trình phụ thuộc; phụ thuộc cùng version</td><td>FK sang (task_id, plan_version_id); hàm <code>plan_version_cycles</code></td><td>planning</td></tr>
+<tr><td>DATA-IDEMP-001 lệnh người dùng có idempotency key</td><td><code>app.idempotency_key</code>; <code>workflow</code> UQ (account_id, idempotency_key)</td><td>mọi database</td></tr>
+<tr><td>DATA-IDEMP-005 khóa tự nhiên của thao tác nền</td><td><code>indexing_job</code> UQ (reference, hash, model, kind); <code>build</code> UQ (revision, config_hash); <code>bibliography_entry</code> UQ (manuscript, reference)</td><td>knowledge, manuscript</td></tr>
+<tr><td>DATA-CONC-001 optimistic concurrency</td><td><code>row_version</code> + <code>tg_row_version</code></td><td>mọi entity sửa được</td></tr>
+</tbody></table></div>
+
+<h2 id="s-10-2">10.2. State machine ở database</h2>
+<p>Module domain của service sở hữu là nơi thực thi state machine chính (kiến trúc 3.3): kiểm điều kiện (readiness, quyền theo trạng thái, APR), chọn đích (T-10 về Ready hay Blocked), ghi Audit Event. Database là lớp thứ hai (DBD-03): mỗi database có bảng <code>app.state_transition</code> nạp đúng các cặp (từ, đến) của PRD 18.2 cho entity mà nó sở hữu, và trigger <code>BEFORE UPDATE OF status</code> từ chối mọi chuyển không có trong bảng (DATA-STATE-001-AC01).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Machine</th><th>Bảng.cột</th><th>Số chuyển</th><th>Nguồn</th></tr></thead>
+<tbody>
+<tr><td><code>task</code></td><td>task.status</td><td>28 (T-01–T-19 tách theo cặp, T-17 không phải chuyển)</td><td>9.8 TASK-STATE-001</td></tr>
+<tr><td><code>plan_version</code></td><td>plan_version.status</td><td>4</td><td>18.2 Plan Version</td></tr>
+<tr><td><code>workflow</code>, <code>workflow_step</code>, <code>agent_run</code></td><td>status</td><td>16, 11, 5</td><td>18.2 (gồm Waiting for User → Paused, DEC-53)</td></tr>
+<tr><td><code>prompt</code>, <code>context_item</code>, <code>deliberation</code>, <code>deliberation_entry</code></td><td>status</td><td>3, 2, 3, 3</td><td>18.2</td></tr>
+<tr><td><code>research_project</code>, <code>pending_action</code>, <code>notification</code></td><td>status</td><td>2, 3, 1</td><td>18.2; Notification Unread → Read</td></tr>
+<tr><td><code>discovered_result</code>, <code>reference_approval</code>, <code>reference_indexing</code>, <code>project_reference_selection</code></td><td>status, approval_status, indexing_status</td><td>4, 4, 8, 2</td><td>18.2</td></tr>
+<tr><td><code>indexing_job</code></td><td>indexing_job.status</td><td>7</td><td>Kỹ thuật (kiến trúc 7.1, 5.6)</td></tr>
+<tr><td><code>evidence</code>, <code>claim_approval</code>, <code>artifact_version</code></td><td>status, approval_status</td><td>3, 3, 3</td><td>18.2</td></tr>
+<tr><td><code>change_proposal</code>, <code>build</code>, <code>manuscript_file</code></td><td>status</td><td>3, 4, 1</td><td>18.2</td></tr>
+<tr><td><code>provider_connection</code>, <code>account</code></td><td>test_status, status</td><td>6, 4</td><td>18.2 (sửa key/base URL → Untested); account: DBD-07</td></tr>
+</tbody></table></div>
+<ul>
+<li>Xóa mềm và khôi phục project không đổi <code>status</code> (cột riêng <code>deleted_at</code>, <code>status_before_deletion</code>) nên không qua bảng chuyển trạng thái; CHECK <code>research_project_deletion_ck</code> giữ ba cột nhất quán.</li>
+<li>Claim — trục SupportStatus không có bảng chuyển: mọi giá trị đổi được bởi lần kiểm chứng mới hoặc Researcher điều chỉnh có lý do (18.2).</li>
+<li>NFR-MAINT-003: state machine hiện thực ở một nơi duy nhất. Nơi đó là khai báo state machine trong module domain của service; bảng <code>state_transition</code> là bản <em>sinh tự động</em> từ khai báo đó bởi migration, không viết tay (DR-01). Cách hiểu này PO đã chốt 03/11/2026 (DBQ-09, DEC-57).</li>
+<li>Quyền theo trạng thái (18.2 › Quyền theo trạng thái) phần lớn ở ứng dụng; database chỉ chặn được phần không phụ thuộc người gọi: bản ghi bất biến, ghi khi project không Active (<code>tg_project_writable</code>), sửa Plan Version không còn Draft.</li>
+</ul>
+
+<h2 id="s-10-3">10.3. Bất biến và phiên bản</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Entity (18.3)</th><th>Cơ chế</th><th>Cột được đổi</th></tr></thead>
+<tbody>
+<tr><td>ResearchContextVersion, TaskDefinition, ManuscriptRevision, Checkpoint, ReadinessResult, TaskReview, VerificationResult, Message, ClaimRevision, reference_metadata_version, usage_ledger</td><td><code>tg_immutable()</code> + thu quyền UPDATE</td><td>không</td></tr>
+<tr><td>PlanVersion</td><td><code>tg_plan_version_frozen</code> khi status ≠ Draft</td><td>status, approval, rejection_reason</td></tr>
+<tr><td>AgentRun</td><td><code>tg_agent_run_final</code> sau trạng thái cuối; debug transcript tách bảng</td><td>discarded</td></tr>
+<tr><td>ArtifactVersion</td><td><code>tg_immutable('status','review','approval')</code>; sửa = version mới</td><td>status, review, approval</td></tr>
+<tr><td>Evidence</td><td><code>tg_immutable('status','status_reason')</code></td><td>status, status_reason</td></tr>
+<tr><td>ChangeProposal</td><td><code>tg_immutable(…)</code></td><td>status, approval, citation_check_*, needs_review</td></tr>
+<tr><td>ContextItem</td><td>Chỉ ghi thêm</td><td>status, superseded_by_id</td></tr>
+<tr><td>DeliberationEntry</td><td>Nội dung bất biến</td><td>status, visible_from, needs_review</td></tr>
+<tr><td>ContextSnapshot</td><td>Bất biến; outdated không chuyển ngược</td><td>outdated, changed_entities</td></tr>
+<tr><td>InteractiveAgentPrompt</td><td>Bất biến sau khi rời Open</td><td>— (sau Open)</td></tr>
+<tr><td>Reference metadata</td><td>Bảng version + <code>metadata_version</code> trên reference</td><td>—</td></tr>
+<tr><td>AuditEvent</td><td>Trigger + quyền: không UPDATE, DELETE chỉ <code>_purge</code></td><td>không</td></tr>
+</tbody></table></div>
+<p>Phê duyệt gắn với <code>objectVersion</code> trong ApprovalRecord; đối tượng đổi sau khi duyệt thì phê duyệt không áp dụng cho bản mới (3.4) — ứng dụng so <code>approval.objectVersion</code> với <code>row_version</code>/<code>version_number</code> hiện tại.</p>
+
+<h2 id="s-10-4">10.4. Provenance và needs review</h2>
+<ul>
+<li><strong>Lưu:</strong> cột <code>provenance</code> jsonb (CHECK <code>app.is_provenance</code>) trên ArtifactVersion, ChangeProposal (NOT NULL), Evidence, Claim, DiscoveredResult, PlanVersion (bắt buộc khi <code>created_by.type = 'agent'</code>, CHECK). DeliberationEntry dùng <code>author</code> + <code>source_refs</code>; AgentRun dùng <code>context_manifest</code>.</li>
+<li><strong>Truy vấn ngược:</strong> bảng liên kết <code>provenance_input</code> (research), <code>task_input_ref</code> (planning) ghi cùng giao dịch với đầu ra, index theo <code>(account_id, input_type, input_id)</code>. Change Proposal tra ngược qua <code>claim_ids</code>, <code>evidence_ids</code>, <code>artifact_version_ids</code> (GIN khi cần, DBQ-06).</li>
+<li><strong>Lan truyền:</strong> consumer nhận sự kiện thay đổi đầu vào (thu hồi, metadata mới, version mới, Stale) tìm bản ghi phụ thuộc qua bảng liên kết, đặt <code>needs_review</code> + lý do, ghi outbox — trong một giao dịch với inbox.</li>
+<li><strong>Không xóa vật lý</strong> entity còn được provenance, ApprovalRecord hoặc AuditEvent tham chiếu (OWN-05): vai trò <code>_app</code> không có DELETE trên các bảng đó; xóa chỉ xảy ra khi purge cả project/tài khoản.</li>
+</ul>
+
+<h2 id="s-10-5">10.5. Những gì database không kiểm</h2>
+<p>Ghi rõ để không ai tưởng database đã chặn:</p>
+<ul>
+<li>Tham chiếu sang database khác (ref) có tồn tại, đúng tài khoản — kiểm qua API nội bộ hoặc bản sao (<a href="03-topology-and-ownership.html#s-3-5">3.5</a>).</li>
+<li>Điều kiện của chuyển trạng thái (RC-01–RC-09, “không có Workflow hoạt động” khi lưu trữ project, citation check của Build) — module domain.</li>
+<li>Schema đầy đủ của jsonb (structured output theo agent, nội dung entry theo type) — Pydantic/Zod ở ứng dụng.</li>
+<li>Quote của Evidence là chuỗi con của văn bản chunk (kiến trúc 7.5) — knowledge và research kiểm trước khi ghi, vì chunk_text ở database khác.</li>
+<li>Actor là chủ tài khoản (OWN-06) — token nội bộ và RLS bảo đảm tài khoản; MVP không có thành viên project.</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="09-audit-and-platform.html">← Mục 9</a><a href="../index.html">Mục lục database</a><a rel="next" href="11-security-and-tenancy.html">Mục 11 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

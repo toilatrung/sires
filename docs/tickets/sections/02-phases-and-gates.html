@@ -1,0 +1,150 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Kế hoạch triển khai SIRes — tám giai đoạn PH-01–PH-08 từ bắt đầu code tới deploy production, lát hội tụ và cổng ra của từng giai đoạn.">
+<title>2. Phases and Gates | SIRes Delivery Plan</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 03/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Delivery Plan · Section 2</p><h1>2. Phases and Gates</h1>
+<p class="meta">Trạng thái: Đề xuất — chờ PO duyệt · Cơ sở: kiến trúc <a href="../../architecture/sections/04-runtime-flows.html">4</a> (F-01–F-13), <a href="../../architecture/sections/11-deployment-and-operations.html">11</a>, <a href="../../architecture/sections/12-decisions-risks-and-open-issues.html">12</a> (SPK, TR, AQ-12, ETR-07); PRD <a href="../../overview/sections/06-end-to-end-product-workflow.html">6</a> (WF-01–WF-07), <a href="../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#s-19-14">19.14</a> (REL-01–REL-10)</p>
+<div class="note"><p><strong>Cách đọc.</strong> Mọi luồng code liên tục từ PH-01. Giai đoạn không quy định “service nào mới được bắt đầu”, mà quy định <strong>lát nào phải hội tụ</strong> (chạy cùng nhau trên staging) ở cuối giai đoạn. Luồng chưa tới lát của mình thì xây trong cô lập: viết logic theo hợp đồng, test với stub và Testcontainers (quy tắc 1.4.3, 1.4.4). Giai đoạn không gắn ngày; thời lượng chốt khi chia việc.</p></div>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-2-0">2.0. Tổng quan giai đoạn</a></li>
+<li><a href="#ph-01">PH-01. Nền tảng chung, spike và hợp đồng baseline</a></li>
+<li><a href="#ph-02">PH-02. Lát 1 — Truy cập, lệnh ghi và realtime</a></li>
+<li><a href="#ph-03">PH-03. Lát 2 — Chat, workflow engine và Agent Run</a></li>
+<li><a href="#ph-04">PH-04. Lát 3 — Plan, Task và phiên thảo luận</a></li>
+<li><a href="#ph-05">PH-05. Lát 4 — Discovery, Trusted Library và index tài liệu</a></li>
+<li><a href="#ph-06">PH-06. Lát 5 — Evidence, kiểm chứng, bản thảo và sơ đồ</a></li>
+<li><a href="#ph-07">PH-07. Ổn định và nghiệm thu phát hành</a></li>
+<li><a href="#ph-08">PH-08. Triển khai production</a></li>
+<li><a href="#s-2-9">2.9. Quy tắc chung cho mọi cổng</a></li>
+</ul></details>
+
+<h2 id="s-2-0">2.0. Tổng quan giai đoạn</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Giai đoạn</th><th>Luồng hội tụ</th><th>Luồng hoạt động · Workflow</th><th>Spike</th><th>Cổng ra (tóm tắt)</th></tr></thead>
+<tbody>
+<tr><td><a href="#ph-01">PH-01</a> Nền tảng</td><td>platform, contracts, infra; mỗi service dựng migration</td><td>—</td><td>SPK-01–SPK-08, SPK-10</td><td>Service mẫu ghi trạng thái + audit + outbox; hợp đồng baseline; CI &lt; 10 phút</td></tr>
+<tr><td><a href="#ph-02">PH-02</a> Lát 1</td><td>web, gateway, identity, workspace, audit, agent-core (kiểm tra kết nối)</td><td>F-01, F-02, F-03 · Sign-in, Settings, Project</td><td>—</td><td>Đăng nhập, Settings, project chạy trên staging</td></tr>
+<tr><td><a href="#ph-03">PH-03</a> Lát 2</td><td>orchestration, agent-core, workspace, gateway, audit, web</td><td>F-04, F-07, F-08, F-12 · Chat, WF-06 cơ bản</td><td>SPK-09 (bản đầu)</td><td>Chat với Orchestrator qua ba provider; workflow khôi phục được</td></tr>
+<tr><td><a href="#ph-04">PH-04</a> Lát 3</td><td>planning, orchestration, agent-core, identity, library (API readiness), web</td><td>F-05, F-06, F-13 · WF-01, WF-02, WF-03</td><td>SPK-11</td><td>Plan được duyệt, Task chạy qua readiness; phiên thảo luận</td></tr>
+<tr><td><a href="#ph-05">PH-05</a> Lát 4</td><td>library, knowledge, agent-core, orchestration, web</td><td>F-09 · WF-04</td><td>—</td><td>Reference vào Trusted Library, PDF được index, truy xuất đạt p95</td></tr>
+<tr><td><a href="#ph-06">PH-06</a> Lát 5</td><td>research, manuscript, sandbox-runner, knowledge, agent-core, audit, eval, web</td><td>F-10, F-11 · WF-05, WF-07</td><td>—</td><td>Evidence → bản thảo PDF; sơ đồ; baseline eval đầu tiên</td></tr>
+<tr><td><a href="#ph-07">PH-07</a> Ổn định</td><td>mọi luồng, chỉ sửa lỗi và hoàn thiện</td><td>F-01–F-13 · WF-01–WF-07</td><td>SPK-09 (đầy đủ)</td><td>REL-01–REL-10 đạt; PO ký chấp nhận phát hành</td></tr>
+<tr><td><a href="#ph-08">PH-08</a> Deploy</td><td>infra, e2e; mọi luồng trực</td><td>—</td><td>—</td><td>Production chạy, smoke đạt, cảnh báo và runbook sẵn sàng</td></tr>
+</tbody></table></div>
+<p>Thứ tự lát theo phụ thuộc dữ liệu của luồng F ở kiến trúc 4: không có đăng nhập và lệnh ghi chuẩn thì không lát nào chạy được trên staging; mọi bước agent cần engine và Agent Run (F-07); Task cần Plan (F-05) trước khi thực thi (F-06); evidence cần reference đã index (F-09) trước F-10, F-11. Sơ đồ làn luồng × giai đoạn (FIG-301) ở <a href="../index.html#matrix">trang mục lục</a>, chi tiết từng luồng ở <a href="03-track-plans.html">mục 3</a>.</p>
+
+<h2 id="ph-01">PH-01. Nền tảng chung, spike và hợp đồng baseline</h2>
+<p><strong>Mục tiêu:</strong> sau giai đoạn này mọi luồng viết được logic nghiệp vụ trong thư mục của mình mà không phải chờ hay sửa mã của luồng khác.</p>
+<ul>
+<li><strong>platform:</strong> thư viện TS và Python cho tenancy (RLS), transaction, outbox + relay, inbox, idempotency, audit-emit, problem+json, OpenTelemetry, logger che dữ liệu, service-auth guard, UUIDv7; <code>libs/ts/testing</code> với Testcontainers (PostgreSQL 16 + pgvector, RabbitMQ), FakeOidcProvider, fake broker, Model Gateway giả lập có hành vi xác định (OQ-095: kịch bản ngoài 19.10 dùng provider giả lập).</li>
+<li><strong>contracts:</strong> sinh type TS và client Python từ OpenAPI công khai, nội bộ và AsyncAPI; kiểm tra code lệch spec trong CI (ADR-14).</li>
+<li><strong>infra:</strong> bổ sung CI: contract test (Schemathesis), kiểm tra payload theo AsyncAPI, redocly lint khi sửa spec, quét phụ thuộc và secret, build image; Nx remote cache; module Terraform; dựng staging khi có trả lời AQ-12.</li>
+<li><strong>Mỗi luồng service:</strong> migration database của mình từ <code>docs/database/ddl</code>, chạy trên PostgreSQL 16 + pgvector, đưa test hành vi DDL vào CI; cấu hình, service token, khung module (1.6); README ghi entity sở hữu và bản sao chỉ đọc.</li>
+<li><strong>web:</strong> shell (routing theo IA PRD 4, token Cream, i18n vi/en, client API, client SSE, trạng thái loading/empty/error dùng chung), mock theo OpenAPI cho các khu vực.</li>
+<li><strong>Spike do luồng sở hữu chạy:</strong> SPK-01, SPK-08 (agent-core, SPK-08 cùng orchestration), SPK-02 (gateway), SPK-03 (library), SPK-04, SPK-05 (knowledge), SPK-06, SPK-07 (sandbox-runner), SPK-10 (platform, infra). SPK-09 cần engine nên chạy ở PH-03; SPK-11 cần phiên thảo luận nên chạy ở PH-04.</li>
+</ul>
+<p><strong>Cổng ra PH-01:</strong></p>
+<ol>
+<li>Một service mẫu dùng thư viện platform: ghi trạng thái + Audit Event + outbox trong một giao dịch; consumer xử lý sự kiện đến trùng đúng một lần; RLS chặn đọc chéo tài khoản. Có test cho cả ba.</li>
+<li>Pull request chạm một service NestJS chạy CI dưới 10 phút (SPK-10, kiến trúc 11.3).</li>
+<li>Hợp đồng baseline: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; người duyệt theo OQ-103 duyệt baseline.</li>
+<li>Báo cáo SPK-01–SPK-08, SPK-10. Giả định nào bị bác bỏ thì ADR, OQ hoặc AQ tương ứng được cập nhật trước khi vào PH-02.</li>
+<li>AQ-12 (nhà cloud, vùng dữ liệu) có trả lời. Nếu chưa, PH-02 không có staging và cổng PH-02 không kiểm được.</li>
+</ol>
+
+<h2 id="ph-02">PH-02. Lát 1 — Truy cập, lệnh ghi và realtime</h2>
+<p><strong>Hội tụ:</strong> <code>web</code> (shell, settings, global: Projects, khung Dashboard), <code>gateway</code>, <code>identity</code>, <code>workspace</code>, <code>audit</code>, <code>agent-core</code> (chỉ endpoint kiểm tra kết nối provider). Luồng F-01 (đăng nhập eTroy OIDC), F-02 (lệnh ghi chuẩn), F-03 (realtime qua SSE).</p>
+<ul>
+<li>Requirement trọng tâm: INT-OIDC-001–004, NFR-AUTH, NFR-SECRETS-001–003 (envelope encryption API key), AGENT-PROVIDER, WS-*, PROJ-* (tạo, lưu trữ, xóa mềm 30 ngày), mục 15.12.</li>
+<li>Staging chạy lần đầu: merge vào <code>main</code> tự deploy service thay đổi, chạy migration của service đó, smoke Playwright (kiến trúc 11.3). Từ đây staging cập nhật liên tục để lần deploy production không phải lần đầu.</li>
+<li>Điều kiện ngoài: eTroy OIDC môi trường thử và client SIRes đã đăng ký (SPK-02); xác nhận RP-initiated logout chấp nhận <code>post_logout_redirect_uri</code> của SIRes (ETR-07, cần trước khi tích hợp đăng nhập); AQ-12.</li>
+</ul>
+<p><strong>Cổng ra PH-02:</strong> TS-12-07 (đăng nhập, đăng xuất) đạt trên staging; phiên hết hạn sau 12 giờ không hoạt động (INT-OIDC-003-AC02); tạo, lưu trữ, xóa mềm project; lưu và kiểm tra Provider Connection, key không xuất hiện trong log hay phản hồi (một phần REL-07); sự kiện từ outbox tới web qua SSE; tài khoản B không đọc được project của A (một phần REL-05, TS-12-01).</p>
+
+<h2 id="ph-03">PH-03. Lát 2 — Chat, workflow engine và Agent Run</h2>
+<p><strong>Hội tụ:</strong> <code>orchestration</code> (module engine, prompts, usage), <code>agent-core</code> (Model Gateway ba provider, registry, Context Assembler, Orchestrator), <code>workspace</code> (Conversation, Message, PendingAction, Notification), <code>identity</code> (giao ProviderSecretEnvelope cho Agent Run), <code>gateway</code> (stream <code>chat.delta</code>, SSE trạng thái workflow), <code>audit</code>, <code>web</code> (project: Overview, Chat; monitoring: Activity, Workflow, AgentList; global: PendingActions, Notifications). Luồng F-04, F-07, F-08, F-12.</p>
+<ul>
+<li>Engine: bước tuần tự, checkpoint, heartbeat 30 s / 2 phút, sweeper, Recovery decision, Waiting for User ↔ Paused (DEC-53), thử lại hai lớp (8.5, 17.1).</li>
+<li>Prompt và phê duyệt: chỉ Researcher thực hiện APR-01–APR-10; agent gửi lệnh “approve” bị từ chối và ghi Audit Event.</li>
+<li>SPK-09 bản đầu: dừng orchestration, agent-core, consumer, RabbitMQ ở từng bước; đo khôi phục (TR-01 cần làm sớm).</li>
+</ul>
+<p><strong>Cổng ra PH-03:</strong> chat với Orchestrator có stream; Agent Run chạy được với từng provider Claude, OpenAI, Gemini (staging dùng key của đội, DEC-40); TS-02-05 và TS-05-05 đạt (một phần REL-04); workflow tiếp tục đúng sau khi dừng agent-core giữa bước; usage ghi theo Agent Run.</p>
+
+<h2 id="ph-04">PH-04. Lát 3 — Plan, Task và phiên thảo luận</h2>
+<p><strong>Hội tụ:</strong> <code>planning</code> (Research Plan, Plan Version, Phase, Task, TaskDefinition, dependency, readiness, TaskReview, phân tích ảnh hưởng), <code>orchestration</code> (StepPlan, bước song song, saga áp dụng đầu ra, module deliberation), <code>agent-core</code> (Orchestrator lập Plan, Analysis Agent A, B), <code>identity</code> (danh mục capability cho readiness), <code>library</code> (endpoint nội bộ phục vụ readiness: reference đã chọn của project), <code>web</code> (planning; tab Thảo luận ở monitoring; thẻ đề xuất thảo luận ở Chat). Luồng F-05, F-06, F-13; WF-01, WF-02, WF-03.</p>
+<ul>
+<li>Phiên thảo luận theo DEC-47, DEC-48: đúng 2 Analysis Agent, Vòng 1 ẩn lập trường, Vòng 2 phản biện chéo, Orchestrator tổng hợp giữ bất đồng; Deliberation Board chỉ ghi thêm; Context Snapshot; nhãn deliberated/skipped.</li>
+<li>SPK-11: chi phí, độ trễ, tải ghi của một phiên (3 bên, 2 vòng) với ba provider (TR-10).</li>
+<li><code>library</code> chỉ cần hội tụ phần readiness ở lát này; Discovery và nhập reference hội tụ ở PH-05.</li>
+</ul>
+<p><strong>Cổng ra PH-04:</strong> kịch bản TS của WF-01, WF-02, WF-03 ở PRD 19 đạt với provider giả lập; Plan Version Proposed → Approved chỉ bằng thao tác của Researcher; Task bị chặn khi readiness thiếu đầu vào; một phiên thảo luận hai vòng chạy hết và được khôi phục sau gián đoạn.</p>
+
+<h2 id="ph-05">PH-05. Lát 4 — Discovery, Trusted Library và index tài liệu</h2>
+<p><strong>Hội tụ:</strong> <code>library</code> (adapter Scholar trung gian, OpenAlex, Semantic Scholar có rate limiter; DOI qua Crossref, DataCite; BibTeX, RIS; tải PDF; duyệt reference theo lô; ProjectReferenceSelection), <code>knowledge</code> (trích xuất PDF, chunk, embedding bằng key của người dùng, pgvector, truy xuất lai), <code>agent-core</code> (Discovery, Reference Processing), <code>orchestration</code> (bước của WF-04), <code>web</code> (library: Discover, Library, Reference). Luồng F-09; WF-04.</p>
+<ul>
+<li>Điều kiện ngoài: hợp đồng với dịch vụ trung gian Google Scholar (DEC-19), chọn theo kết quả SPK-03. Chưa có hợp đồng thì lát chạy với nguồn dự phòng OpenAlex, Semantic Scholar và nhập thủ công.</li>
+<li>Phụ thuộc: lát này cần lát 2; chỉ Discovery Agent chạy trong một Task mới cần lát 3. Kế hoạch hiện xếp sau PH-04; có cho chồng hai giai đoạn không là <a href="04-dependencies-risks-and-questions.html#oq-106">OQ-106</a>.</li>
+</ul>
+<p><strong>Cổng ra PH-05:</strong> kịch bản WF-04 đạt; PDF có lớp văn bản ≤ 50 MB được index; truy xuất có lọc trên 500 reference đạt p95 ≤ 3 s (NFR-PERF-006, SPK-04); reference bị thu hồi phát sự kiện tới các service có bản sao.</p>
+
+<h2 id="ph-06">PH-06. Lát 5 — Evidence, kiểm chứng, bản thảo và sơ đồ</h2>
+<p><strong>Hội tụ:</strong> <code>research</code> (Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion, registry đầu ra), <code>knowledge</code> (truy xuất cho evidence), <code>manuscript</code> (Manuscript, ManuscriptFile, ManuscriptRevision, ChangeProposal, BibliographyEntry, Build, cổng citation), <code>sandbox-runner</code> (image TeX Live, mermaid-cli, gVisor không mạng, pool), <code>agent-core</code> (Evidence Retrieval, Synthesis, Writing, Verification, Diagram), <code>audit</code> (KPI định kỳ, export JSON/CSV), <code>eval</code> (harness, baseline, cổng hồi quy trong CI), <code>infra</code> (node pool sandbox), <code>web</code> (research, manuscript). Luồng F-10, F-11; WF-05, WF-07.</p>
+<ul>
+<li>Điều kiện ngoài: <strong>bộ dữ liệu nghiệm thu</strong> (5 đề tài, 3 lĩnh vực, khoảng 30 reference và 100 claim mỗi đề tài; nhãn chuyên gia; nhãn evidence cho 1 đề tài) do PO chuẩn bị, QA đưa vào (19.14, DEC-45). Cần có khi bắt đầu PH-06 để chạy baseline eval; bắt buộc trước PH-07.</li>
+<li>Từ giai đoạn này, thay đổi thuộc danh sách NFR-EVAL-004 chạy eval harness và bị chặn khi vượt dung sai 2 điểm phần trăm (DEC-45).</li>
+</ul>
+<p><strong>Cổng ra PH-06:</strong> kịch bản WF-05, WF-07 đạt; bản thảo compile thành PDF trong sandbox; Change Proposal có citation lỗi bị chặn ở cổng citation; baseline eval đầu tiên được duyệt và lưu ở <code>eval/baselines</code>; KPI-01, KPI-02 đo được trên bộ dữ liệu nghiệm thu.</p>
+
+<h2 id="ph-07">PH-07. Ổn định và nghiệm thu phát hành</h2>
+<p>Mọi luồng chỉ sửa lỗi, hoàn thiện requirement còn lại và tăng độ bền; không thêm tính năng ngoài PRD. Phạm vi P1 cần xong trước phát hành là <a href="04-dependencies-risks-and-questions.html#oq-104">OQ-104</a>.</p>
+<ul>
+<li>SPK-09 đầy đủ: fault injection ở mọi bước, đo KPI-03 ≥ 99%.</li>
+<li>Kiểm thử tải k6 trên dữ liệu mẫu 16.4: 100 tài khoản đồng thời, mỗi tài khoản ≥ 3 workflow (NFR-SCALE-003).</li>
+<li>Bảo mật: review nội bộ và quét tự động (AQ-04); kịch bản 19.12 cho REL-04, REL-05; rà API key cho REL-07 (TS-10-07).</li>
+<li>Giao diện: rà toàn bộ màn ở hai ngôn ngữ (REL-08), trạng thái và khả năng tiếp cận (TS-13-06), skill <code>sires-ui-review</code>.</li>
+<li>Vận hành: purge, retention, export; diễn tập khôi phục PITR theo từng database; cảnh báo đầy đủ (kiến trúc 11.4); runbook (11.6).</li>
+<li>Nghiệm thu: REL-01 trên staging; REL-02 do PO thực hiện đề tài mẫu qua ít nhất hai phiên; REL-03, REL-06, REL-10 với provider thật trên bộ dữ liệu nghiệm thu (đội phát triển chịu chi phí, OQ-095); REL-09 danh sách lỗi.</li>
+</ul>
+<p><strong>Cổng ra PH-07:</strong> báo cáo REL-01–REL-10 đạt; PO ký chấp nhận phát hành (19.14).</p>
+
+<h2 id="ph-08">PH-08. Triển khai production</h2>
+<ul>
+<li>Dựng production bằng cùng module Terraform và Helm chart đã dùng cho staging (kiến trúc 11.2): Kubernetes managed nhiều zone, PostgreSQL HA có PITR, RabbitMQ 3 node quorum, object storage, KMS, secret manager, CDN + WAF, egress NAT cố định.</li>
+<li>Đăng ký client production với eTroy OIDC, kiểm tra RP-initiated logout (ETR-07).</li>
+<li>Thứ tự lần deploy đầu: hạ tầng → migration của từng database → service backend → <code>gateway</code> → <code>web</code> lên CDN. Production cần phê duyệt thủ công, rolling update từng service, rollback bằng image trước (11.3).</li>
+<li>Smoke test production (đăng nhập, tạo project, chat); synthetic check uptime; cảnh báo bật; lịch trực và kênh báo sự cố.</li>
+<li>Theo dõi sau phát hành: thời lượng và tiêu chí kết thúc chốt khi chia việc.</li>
+<li>Phát hành rộng (nếu khác phát hành đầu, <a href="04-dependencies-risks-and-questions.html#oq-105">OQ-105</a>) cần thêm: một lần kiểm thử xâm nhập độc lập (AQ-04) và back-channel logout của eTroy One (ETR-07).</li>
+</ul>
+<p><strong>Cổng ra PH-08:</strong> production chạy với người dùng thật; smoke đạt; observability và cảnh báo hoạt động; runbook sẵn sàng; PO xác nhận go-live.</p>
+
+<h2 id="s-2-9">2.9. Quy tắc chung cho mọi cổng</h2>
+<ul>
+<li>Cổng kiểm trên staging (PH-02 trở đi), không kiểm trên máy cá nhân.</li>
+<li>Requirement được tính xong theo Definition of Done ở PRD 19.14: AC có test và đạt, code truy vết về requirement ID, chuyển trạng thái đúng bảng mục 18, kiểm tra quyền có test cả trường hợp bị từ chối, Audit Event có actor, giao diện đủ loading/empty/error và song ngữ.</li>
+<li>Luồng chưa đạt cổng không chặn luồng khác tiếp tục xây trong cô lập; chỉ chặn việc kiểm cổng của giai đoạn sau có dùng lát đó.</li>
+<li>Kết quả mỗi cổng ghi vào nhật ký <code>docs/docs_context.md</code> khi PO xác nhận.</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="01-tracks-and-boundaries.html">← Mục 1</a><a href="../index.html">Mục lục kế hoạch</a><a rel="next" href="03-track-plans.html">Mục 3 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Delivery Plan · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

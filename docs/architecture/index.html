@@ -34,14 +34,14 @@
 <tr><td>Hợp đồng giữa service</td><td>OpenAPI công khai (đã có) + OpenAPI nội bộ theo service + AsyncAPI cho sự kiện; token nội bộ ký bằng KMS cho gọi service-to-service.</td><td>ADR-14, ADR-20</td></tr>
 <tr><td>Messaging</td><td>RabbitMQ managed: sự kiện qua topic exchange, lệnh qua queue <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>; outbox ở mỗi service, inbox idempotent ở consumer.</td><td>ADR-19</td></tr>
 <tr><td>Workflow dài, checkpoint, khôi phục</td><td>Engine tự xây trong orchestration; trạng thái ở database của nó; agent-core thực thi từng Agent Run; heartbeat 30 s, sweeper 10 s chuyển Interrupted trong ≤ 2 phút; đầu ra ghi vào service sở hữu theo saga idempotent.</td><td>ADR-03</td></tr>
-<tr><td>Lưu trữ</td><td>Một cụm PostgreSQL 16+ managed, một database mỗi service, RLS theo tài khoản; object storage S3 theo prefix service.</td><td>ADR-04, ADR-06, ADR-22</td></tr>
+<tr><td>Lưu trữ</td><td>Một cụm PostgreSQL 16+ managed riêng của SIRes, một database mỗi service, truy cập qua adapter, RLS theo tài khoản; object storage S3 theo prefix service.</td><td>ADR-04, ADR-06, ADR-22, ADR-28</td></tr>
 <tr><td>Vector database (RAG)</td><td>pgvector trong database knowledge; truy xuất lai vector + full-text; phạm vi do System tính.</td><td>ADR-05</td></tr>
 <tr><td>Audit</td><td>Audit Event ghi vào outbox cùng giao dịch ở service nguồn; service audit lưu chỉ ghi thêm, truy vấn, export, tính KPI.</td><td>ADR-23</td></tr>
 <tr><td>Realtime</td><td>Outbox → RabbitMQ → gateway → SSE <code>GET /events</code>, phát lại 24 giờ.</td><td>ADR-07</td></tr>
 <tr><td>Gọi model</td><td>Model Gateway trong agent-core trên SDK chính thức ba provider; framework agent chỉ dùng trong ranh giới một Agent Run.</td><td>ADR-08</td></tr>
 <tr><td>Xác thực, bí mật</td><td>gateway là BFF và OIDC RP của eTroy; API key mã hóa envelope bằng KMS, chỉ agent-core và knowledge giải mã.</td><td>ADR-09, ADR-10</td></tr>
 <tr><td>Build LaTeX, render sơ đồ</td><td>Sandbox gVisor không mạng, pool sẵn sàng; controller NestJS.</td><td>ADR-11</td></tr>
-<tr><td>Monorepo, CI</td><td>pnpm + Nx (affected, remote cache) cho TS; uv cho Python; thư viện platform dùng chung.</td><td>ADR-16, ADR-21</td></tr>
+<tr><td>Monorepo, CI</td><td>Repo GitHub private; pnpm + Nx (affected, remote cache) cho TS; uv cho Python; thư viện platform dùng chung; CI/CD bằng GitHub Actions trên GitHub-hosted runner.</td><td>ADR-16, ADR-21</td></tr>
 <tr><td>Triển khai, quan sát</td><td>Kubernetes managed, Terraform, Helm chart chung; OpenTelemetry qua HTTP và RabbitMQ.</td><td>ADR-12, ADR-13</td></tr>
 </tbody>
 </table>
@@ -60,12 +60,14 @@
 <li><a href="sections/09-sandbox-latex-and-diagrams.html">Sandbox: LaTeX and Diagrams</a><span class="status">Build và render cô lập · PRD 12, 13, 17.4–17.5</span></li>
 <li><a href="sections/10-security-architecture.html">Security Architecture</a><span class="status">Xác thực, token nội bộ, bí mật, cách ly · PRD 3, 16.1</span></li>
 <li><a href="sections/11-deployment-and-operations.html">Deployment and Operations</a><span class="status">Topology, CI affected, observability, eval · PRD 16, 20</span></li>
-<li><a href="sections/12-decisions-risks-and-open-issues.html">Decisions, Risks and Open Issues</a><span class="status">Sổ ADR-01–23, spike, rủi ro, câu hỏi mở · PRD 20</span></li>
+<li><a href="sections/12-decisions-risks-and-open-issues.html">Decisions, Risks and Open Issues</a><span class="status">Sổ ADR-01–27, spike, rủi ro, câu hỏi mở, yêu cầu gửi eTroy One (ETR) · PRD 20</span></li>
 </ol></nav>
 
 <h2 id="next">Bước tiếp theo</h2>
 <ul>
-<li>Chốt ADR-17 và ADR-19–ADR-23, đặc biệt danh sách service và phân công nhóm sở hữu service (AQ-08); cập nhật ASM-11 và DEC-27 trong PRD 20.</li>
+<li>Chọn nhà cloud và vùng dữ liệu cho MVP (AQ-12); SIRes tự vận hành hạ tầng (ADR-28).</li>
+<li>Gửi <a href="sections/12-decisions-risks-and-open-issues.html#etr-07">ETR-07</a> (client SIRes, RP-initiated logout, back-channel logout) cho eTroy OIDC.</li>
+<li>Lập <code>docs/jira</code>: giới thiệu dự án, đội ngũ, phân công nhóm sở hữu service (AQ-08), kế hoạch triển khai chi tiết.</li>
 <li>Rà <a href="../api-design/index.html#internal">hợp đồng nội bộ và sự kiện</a> (đã tạo 31/10/2026) cùng nhóm sở hữu từng service; dựng khung service mẫu theo hợp đồng (SPK-10).</li>
 <li>Chạy SPK-01, SPK-02, SPK-10 trước khi bắt đầu triển khai (<a href="sections/12-decisions-risks-and-open-issues.html#s-12-2">bảng spike</a>); khởi tạo monorepo theo <a href="sections/03-system-context-and-containers.html#s-3-4">3.4</a>.</li>
 </ul>

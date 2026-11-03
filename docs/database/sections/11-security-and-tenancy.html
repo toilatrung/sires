@@ -1,0 +1,91 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Thiết kế cơ sở dữ liệu SIRes — bảo mật và cách ly tenant.">
+<title>11. Security and Tenancy | SIRes Database</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Database</a><span>0.1 · 02/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Database Design · Section 11</p><h1>11. Security and Tenancy</h1>
+<p class="meta">Trạng thái: Đã duyệt — PO 03/11/2026 (DEC-57) · Cơ sở: PRD <a href="../../overview/sections/16-non-functional-requirements.html">16.1</a> (NFR-ISOL-001, NFR-SECRETS-001–003, NFR-PRIV-001, NFR-OBS-002), 19.12; kiến trúc <a href="../../architecture/sections/06-data-architecture.html#s-6-3">6.3</a>, <a href="../../architecture/sections/10-security-architecture.html">10</a> (ADR-10); DBD-06</p>
+<details class="local-toc"><summary>Nội dung trong mục</summary><ul>
+<li><a href="#s-11-1">11.1. Row-Level Security</a></li>
+<li><a href="#s-11-2">11.2. Vai trò và quyền theo bảng</a></li>
+<li><a href="#s-11-3">11.3. Dữ liệu nhạy cảm</a></li>
+<li><a href="#s-11-4">11.4. Kiểm thử cách ly</a></li>
+</ul></details>
+
+<h2 id="s-11-1">11.1. Row-Level Security</h2>
+<p>Lớp thứ hai của cách ly (lớp thứ nhất là repository có <code>TenantContext</code>, kiến trúc 6.3). <code>app.enable_tenant_rls()</code> chạy cuối mỗi file DDL, bật cho <em>mọi</em> bảng có cột <code>account_id</code> trong <code>app</code>, <code>replica</code>, <code>vec</code>:</p>
+<pre>ALTER TABLE app.&lt;t&gt; ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app.&lt;t&gt; FORCE ROW LEVEL SECURITY;          -- áp cả với owner
+CREATE POLICY tenant_isolation ON app.&lt;t&gt;
+  USING (account_id = app.current_account_id())
+  WITH CHECK (account_id = app.current_account_id());  -- không ghi được dòng cho tài khoản khác</pre>
+<ul>
+<li><code>app.current_account_id()</code> đọc <code>SET LOCAL app.account_id</code>; thiếu biến → NULL → 0 dòng (an toàn mặc định).</li>
+<li>Không bật RLS: <code>outbox</code>, <code>inbox</code>, <code>job_lock</code>, <code>state_transition</code> (vai trò <code>_app</code> không đọc được ba bảng đầu; bảng cuối là dữ liệu tham chiếu), <code>embedding_model_catalog</code> (toàn hệ thống).</li>
+<li>Truy cập trước khi có tenant context (đăng nhập, tra phiên): hàm <code>SECURITY DEFINER</code> trả tối thiểu cột — <code>app.find_account_by_identity</code>, <code>app.find_session</code>; <code>search_path</code> cố định.</li>
+<li>View dùng <code>security_invoker = true</code> để RLS của bảng gốc áp dụng (<code>analysis_same_model</code>, <code>research_project_live</code>).</li>
+<li>Cách ly project trong cùng tài khoản (CTX-ISOLATION-001) ở lớp ứng dụng và Context Assembler; truy vấn vector luôn lọc theo phạm vi project (<a href="07-library-and-knowledge.html#s-7-5">7.5</a>).</li>
+</ul>
+
+<h2 id="s-11-2">11.2. Vai trò và quyền theo bảng</h2>
+<p><code>app.grant_standard(svc, bảng_được_xóa)</code> cấp quyền chuẩn; mỗi file DDL thu thêm quyền cho bảng bất biến hoặc nhạy cảm.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Đối tượng</th><th><code>_app</code></th><th><code>_system</code> (BYPASSRLS)</th><th><code>_purge</code> (BYPASSRLS)</th></tr></thead>
+<tbody>
+<tr><td>Bảng nghiệp vụ <code>app.*</code></td><td>SELECT, INSERT, UPDATE</td><td>SELECT, INSERT, UPDATE</td><td>SELECT, DELETE</td></tr>
+<tr><td>Bảng bất biến (context version, definition, revision, checkpoint, review, verification, message…)</td><td>SELECT, INSERT</td><td>SELECT, INSERT</td><td>SELECT, DELETE</td></tr>
+<tr><td>Bảng được xóa theo thao tác người dùng (provider_connection, provider_secret, agent_model_assignment, session, task_dependency, task_input_ref, reference, reference_metadata_version, claim_evidence_link, provenance_input, bibliography_entry, source_document, chunk, chunk_text, vec.*)</td><td>+ DELETE</td><td>như cột trái</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>outbox</code></td><td>INSERT</td><td>SELECT, INSERT, UPDATE, DELETE</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>inbox</code>, <code>job_lock</code></td><td>—</td><td>SELECT, INSERT, UPDATE, DELETE</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>idempotency_key</code></td><td>SELECT, INSERT, UPDATE, DELETE</td><td>như cột trái</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>replica.*</code></td><td>SELECT</td><td>SELECT, INSERT, UPDATE, DELETE</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>state_transition</code>, <code>embedding_model_catalog</code></td><td>SELECT</td><td>SELECT</td><td>SELECT</td></tr>
+<tr><td><code>identity.provider_secret</code></td><td>INSERT, DELETE (không SELECT)</td><td>SELECT, INSERT (API nội bộ trả ciphertext cho agent-core, knowledge)</td><td>SELECT, DELETE</td></tr>
+<tr><td><code>audit.audit_event</code></td><td>SELECT (truy vấn, export)</td><td>SELECT, INSERT (consumer)</td><td>SELECT, DELETE (purge)</td></tr>
+</tbody></table></div>
+<p>Không vai trò nào có TRUNCATE, quyền DDL hay <code>UPDATE</code> trên bảng chỉ ghi thêm. Vai trò owner chỉ dùng cho migration; ứng dụng không bao giờ kết nối bằng owner.</p>
+
+<h2 id="s-11-3">11.3. Dữ liệu nhạy cảm</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Dữ liệu</th><th>Ở đâu</th><th>Bảo vệ</th></tr></thead>
+<tbody>
+<tr><td>API key của người dùng</td><td><code>identity.provider_secret</code></td><td>Envelope AES-256-GCM, AAD = accountId|connectionId, DEK bọc bằng KEK trong KMS; database chỉ thấy ciphertext; <code>_app</code> không SELECT; không UPDATE (đổi key = xóa + thêm); không có trong backup dạng rõ (NFR-SECRETS-001–002)</td></tr>
+<tr><td>Toàn văn prompt/phản hồi khi debug</td><td>Object storage; con trỏ ở <code>agent_run_debug_transcript</code></td><td>Mã hóa lớp ứng dụng, 30 ngày (NFR-RET-009); khóa: DBQ-07</td></tr>
+<tr><td>Refresh token eTroy OIDC</td><td><code>gateway.session.refresh_token_enc</code></td><td>Mã hóa lớp ứng dụng (DBQ-08); xóa khi phiên bị thu hồi</td></tr>
+<tr><td>Session id, CSRF token</td><td><code>gateway.session</code></td><td>Chỉ lưu sha256</td></tr>
+<tr><td>Email, tên, đơn vị, lĩnh vực</td><td><code>identity.account</code></td><td>RLS; <code>research_field</code> chỉ vào context agent khi người dùng bật (NFR-PRIV-001)</td></tr>
+<tr><td>Nội dung nghiên cứu, bản thảo</td><td>research, manuscript, knowledge, object storage</td><td>RLS + mã hóa lưu trữ của dịch vụ managed và object storage</td></tr>
+<tr><td>Audit Event</td><td><code>audit.audit_event</code></td><td>Không chứa key, nội dung tài liệu, toàn văn prompt (NFR-OBS-002); <code>summary</code> theo mẫu</td></tr>
+</tbody></table></div>
+<p>Log của database (slow query, lỗi) có thể chứa giá trị tham số: bật <code>log_parameter_max_length_on_error = 0</code> và không log câu lệnh đầy đủ ở production, để giá trị jsonb và văn bản không rơi vào kho log.</p>
+
+<h2 id="s-11-4">11.4. Kiểm thử cách ly</h2>
+<p>Bổ sung cho bộ test 19.12 (endpoint đọc với id của tài khoản khác → 404):</p>
+<ul>
+<li>Mỗi database: đăng nhập bằng <code>_app</code>, đặt <code>app.account_id</code> của tài khoản B, đếm mọi bảng có <code>account_id</code> chứa dữ liệu của A → 0 dòng; bỏ <code>app.account_id</code> → 0 dòng.</li>
+<li>INSERT/UPDATE dòng mang <code>account_id</code> của tài khoản khác → lỗi policy.</li>
+<li>Kiểm tự động mọi bảng mới đều có RLS: truy vấn <code>pg_class.relrowsecurity</code> cho mọi bảng có cột <code>account_id</code> trong CI.</li>
+<li>Kết quả chạy thử trên DDL tham chiếu: <a href="12-operations-retention-and-capacity.html#s-12-4">12.4</a>.</li>
+</ul>
+
+<nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="10-integrity-state-and-versioning.html">← Mục 10</a><a href="../index.html">Mục lục database</a><a rel="next" href="12-operations-retention-and-capacity.html">Mục 12 →</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Database Design · 0.1. · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

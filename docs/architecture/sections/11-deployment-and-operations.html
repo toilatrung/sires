@@ -20,7 +20,7 @@
 <main id="main-content">
 <p class="eyebrow">Architecture Design · Section 11</p><h1>11. Deployment and Operations</h1>
 <p class="meta">Trạng thái: bản 0.2 — ADR-12, ADR-13 Accepted; topology cập nhật cho nhiều service · Cơ sở: PRD <a href="../../overview/sections/16-non-functional-requirements.html">16</a>; DEC-27, DEC-36, DEC-40; ADR-12, ADR-13</p>
-<div class="note"><p>Cloud do đội phát triển vận hành (DEC-27); nhà cung cấp và vùng dữ liệu chưa chọn. Thiết kế dưới đây chỉ dùng khái niệm có ở mọi nhà cloud lớn (Kubernetes managed, PostgreSQL managed, object storage, KMS, secret manager, load balancer) để quyết định nhà cung cấp không làm đổi kiến trúc.</p></div>
+<div class="note"><p>Cloud do đội phát triển vận hành (DEC-27); nhà cung cấp và vùng dữ liệu chưa chọn (AQ-12). Ở MVP SIRes giữ database riêng và tự vận hành toàn bộ hạ tầng; eTroy One chỉ cung cấp eTroy OIDC (ADR-28). Thiết kế dưới đây chỉ dùng khái niệm có ở mọi nhà cloud lớn (Kubernetes managed, PostgreSQL managed, object storage, KMS, secret manager, load balancer) để quyết định nhà cung cấp không làm đổi kiến trúc.</p></div>
 <details class="local-toc"><summary>Nội dung trong mục</summary><ul>
 <li><a href="#s-11-1">11.1. Môi trường</a></li>
 <li><a href="#s-11-2">11.2. Topology production</a></li>
@@ -62,6 +62,7 @@
 </ul>
 
 <h2 id="s-11-3">11.3. CI/CD và phát hành</h2>
+<p>Repo GitHub private; CI/CD chạy bằng GitHub Actions trên GitHub-hosted runner (AQ-02, ADR-28).</p>
 <ol>
 <li><strong>Mỗi pull request:</strong> <code>nx affected</code> chỉ chạy cho project có thay đổi hoặc phụ thuộc vào thay đổi: lint (ESLint/ruff), type check (<code>tsc --noEmit</code>/mypy), unit test (Vitest/pytest), integration test với Testcontainers, contract test (Schemathesis cho OpenAPI nội bộ của service bị ảnh hưởng, kiểm tra payload theo AsyncAPI); <code>redocly lint</code> nếu sửa spec; quét phụ thuộc và secret; build image của service bị ảnh hưởng. Nx remote cache bỏ qua bước đã có kết quả. Mục tiêu: pull request chạm một service NestJS xong CI dưới 10 phút (đo ở SPK-10).</li>
 <li><strong>Thay đổi thuộc danh sách NFR-EVAL-004</strong> (prompt template, định nghĩa agent, RetrievalConfig, logic Verification, adapter): job eval harness chạy trên môi trường eval, đính báo cáo so với baseline vào pull request; vượt dung sai (OQ-097) thì chặn merge vào nhánh phát hành.</li>

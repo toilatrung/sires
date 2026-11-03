@@ -42,6 +42,7 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 - **Hình:** `FIG-1NN` — dải 100 trở lên dành cho kiến trúc, tránh trùng FIG-001–033 của PRD.
 - **Spike:** `SPK-NN`, mỗi spike kiểm chứng một hoặc nhiều giả định ASM-NN của PRD 20.2.
 - **Câu hỏi mở:** câu hỏi kỹ thuật `AQ-NN` (Tech lead trả lời); câu hỏi cần PO quyết định cấp mã `OQ-NNN` tiếp theo trong PRD (từ OQ-098).
+- **Yêu cầu gửi eTroy One:** `ETR-NN` (mục 12.5) — năng lực hạ tầng hoặc eTroy OIDC mà SIRes cần eTroy One phát triển; không tái sử dụng mã.
 - **Truy vết:** mỗi phương án ghi requirement PRD mà nó phục vụ (ví dụ `CTX-RECOVERY-001`, `NFR-SECRETS-001`).
 - **Ngôn ngữ:** nội dung tiếng Việt; tên thành phần, công nghệ, mã, trường dữ liệu tiếng Anh.
 
