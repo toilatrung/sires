@@ -10,8 +10,11 @@ members = ["apps/agent-core", "apps/knowledge", "libs/py/sires_common", "eval"]
 dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6", "mypy>=1.11"]
 
 [tool.ruff]
-line-length = 110
+# The license header (scripts/docs/add-license.mjs) has a 111-character line.
+line-length = 120
 target-version = "py312"
+# Ruff runs from each project's folder but reads this file; list the source roots so workspace packages sort as first-party.
+src = ["apps/agent-core/src", "apps/knowledge/src", "libs/py/sires_common/src", "eval/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
