@@ -4,7 +4,15 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — sửa lỗi rà soát theo yêu cầu PO (01/11/2026)
+### Thay đổi gần nhất — hợp đồng cho RC-05 theo yêu cầu PO (05/11/2026)
+
+Readiness cần biết reference khai báo đã được chọn cho project và đã `Indexed` (RC-05, TASK-READINESS-001), nhưng `planning` chưa có đường đọc và chưa nhận sự kiện tương ứng. Thay đổi tương thích ngược, không đổi schema; là **Assumption** như phần còn lại của bộ này.
+
+- `getReferenceSelectionInternal`: thêm `planning` vào `x-callers`.
+- `project_reference.changed`, `reference.indexing_status_changed`: thêm `planning` vào `x-consumers` và `operations`; khi nhận thì tính lại RC-01–RC-08 của Task khai báo reference đó (trigger (b) của TASK-READINESS-001).
+- Với `reference.indexing_status_changed`, `planning` lấy trạng thái từ `toState` của sự kiện, không đọc lại `library`, vì `library` nghe cùng sự kiện đó và không có thứ tự với `planning`.
+
+### Sửa lỗi rà soát theo yêu cầu PO (01/11/2026)
 
 - DEC-53 (PO chốt 01/11/2026): `POST /workflows/{workflowId}/pause` nhận cả `Waiting for User` → `Paused`; trạng thái khác trả `409 invalid_transition`. Việc quay lại `Waiting for User` khi tiếp tục mà prompt chặn còn Open là Assumption, chờ PO xác nhận.
 - Provenance (18.3) có ở PlanVersion, Evidence, ChangeProposal, DiscoveredResult; `provenance.deliberation` cho Plan tham chiếu Deliberation Record hoặc mang nhãn `skipped` (ORCH-PLAN-001, ORCH-DELIB-001).

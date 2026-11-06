@@ -133,7 +133,7 @@ paths:
       tags: [Reference lookup]
       operationId: lookupReferences
       summary: Trạng thái và metadata của nhiều reference
-      description: Dùng cho readiness (reference bắt buộc đã Trusted), context lớp 4 và bản sao chỉ đọc. Reference khác tài khoản không được trả.
+      description: Dùng cho readiness (RC-05, reference khai báo đã Trusted và `indexingStatus` khi Task cần evidence), context lớp 4 và bản sao chỉ đọc. Reference khác tài khoản không được trả.
       x-callers: [planning, agent-core, research, manuscript, knowledge]
       x-requirements: [TASK-READINESS-001, LIB-LIBRARY-001]
       requestBody:
@@ -171,9 +171,9 @@ paths:
       tags: [Reference lookup]
       operationId: getReferenceSelectionInternal
       summary: Reference đang được chọn (Active) cho project
-      description: knowledge dùng để dựng lại phạm vi truy xuất khi khởi tạo hoặc đối soát (INT-VECTOR-001, OQ-053); sau đó cập nhật theo sự kiện.
-      x-callers: [knowledge, agent-core, manuscript]
-      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001]
+      description: knowledge dùng để dựng lại phạm vi truy xuất khi khởi tạo hoặc đối soát (INT-VECTOR-001, OQ-053); sau đó cập nhật theo sự kiện. planning dùng cho RC-05 (reference khai báo đã được chọn cho project); trạng thái index lấy từ `lookupReferences`.
+      x-callers: [knowledge, agent-core, manuscript, planning]
+      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001, TASK-READINESS-001]
       parameters:
         - $ref: ../components/parameters.yaml#/ProjectId
       responses:

@@ -113,7 +113,7 @@
 <p class="status">WF-02, WF-03, TASK-READINESS, TASK-TRIGGER, CTX-CONSISTENCY-001, T-05/T-06</p>
 <ol>
 <li>Researcher bấm kích hoạt (<code>POST …/tasks/{taskId}/activate</code>, APR-02, có <code>Idempotency-Key</code>) → planning.</li>
-<li>planning chạy phần xác định của readiness (RC-01–RC-09, ≤ 2 s): dữ liệu của mình + REST song song tới identity (Agent Model Assignment, Provider Connection Valid), library (reference bắt buộc đã Trusted), research (artifact đầu vào Accepted). Không đạt → trả kết quả kiểm tra.</li>
+<li>planning chạy phần xác định của readiness (RC-01–RC-09, ≤ 2 s): dữ liệu của mình + REST song song tới identity (Agent Model Assignment, Provider Connection Valid), library (RC-05: reference khai báo đã được chọn cho project, đã Trusted, <code>Indexed</code> khi Task cần evidence), research (artifact đầu vào Accepted). Không đạt → trả kết quả kiểm tra.</li>
 <li><strong>[TX:planning]</strong> khóa hàng Task; Task → Queued (T-05); evt:<code>task.activated</code> (kèm <code>activationId</code>).</li>
 <li>orchestration nhận sự kiện: <strong>[TX:orchestration]</strong> tạo Workflow <code>task_execution</code> (ràng buộc duy nhất “một workflow hoạt động mỗi Task” chặn trùng) và bước <code>plan_next</code>; evt:<code>workflow.created</code> → planning ghi <code>Task.activeWorkflowId</code>.</li>
 <li>Bước đầu bắt đầu chạy → evt:<code>workflow.status_changed.running</code> → planning chuyển Task → In Progress (T-06). Hệ thống chạm giới hạn tải → Task giữ Queued và hiển thị vị trí chờ.</li>
@@ -153,7 +153,7 @@
 <li>Dịch vụ không trả kết quả: library trả lý do; web đề nghị nhập thủ công DOI / BibTeX/RIS / PDF (library xử lý).</li>
 <li>Reference Processing Agent chuẩn hóa metadata, phát hiện trùng; library ghi Reference Pending Approval; orchestration mở prompt duyệt theo lô (tối đa 50), mục trùng tách riêng.</li>
 <li>Duyệt (APR-04) → <strong>[TX:library]</strong> mỗi Reference một ApprovalRecord → Trusted, sinh <code>bibtexKey</code>; evt:<code>reference.status_changed.trusted</code>.</li>
-<li>knowledge nhận sự kiện (có file hoặc nội dung truy cập mở) → cmd:<code>knowledge.index</code> nội bộ → trích xuất, chunk, embedding (key OpenAI/Gemini của người dùng) → <strong>[TX:knowledge]</strong> SourceDocument, Chunk, vector; evt:<code>reference.indexing_status_changed.indexed</code> → library cập nhật <code>indexingStatus</code>. Chi tiết ở <a href="07-rag-and-document-pipeline.html">mục 7</a>.</li>
+<li>knowledge nhận sự kiện (có file hoặc nội dung truy cập mở) → cmd:<code>knowledge.index</code> nội bộ → trích xuất, chunk, embedding (key OpenAI/Gemini của người dùng) → <strong>[TX:knowledge]</strong> SourceDocument, Chunk, vector; evt:<code>reference.indexing_status_changed.indexed</code> → library cập nhật <code>indexingStatus</code>; planning tính lại readiness của Task khai báo reference này (RC-05). Chi tiết ở <a href="07-rag-and-document-pipeline.html">mục 7</a>.</li>
 </ol>
 
 <h2 id="f-10">F-10. Evidence, synthesis và kiểm chứng</h2>
