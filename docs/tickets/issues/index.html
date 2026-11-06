@@ -1,0 +1,1137 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Danh sách ticket PID của SIRes và cấu trúc hồ sơ một ticket.">
+<title>Danh sách ticket | SIRes Delivery Plan</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>Ticket</span></header>
+<main id="main-content">
+<p class="eyebrow">Kế hoạch triển khai · Ticket</p><h1>Danh sách ticket</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Danh sách</a></li>
+<li><a href="#s-2">2. Tài liệu trong từng PID</a></li>
+<li><a href="#s-3">3. Cấu trúc một PID</a></li>
+<li><a href="#s-4">4. Luồng một ticket</a></li></ul></details>
+
+<p>Mỗi thư mục <code>PID-NNNNN/</code> là một ticket: PO định nghĩa và làm rõ ở đây; Dev đọc, làm và ghi kết quả vào <code>agent/execution/PID-NNNNN/</code>; QC độc lập ghi báo cáo vào cùng thư mục. Mọi thay đổi trong thư mục này theo R-01–R-07. PO đăng ký task ở <a href="taskboard.html">Taskboard</a> trước khi giao cho Dev.</p>
+<h2 id="s-1">1. Danh sách</h2>
+<p>Mục 1 và mục 2 sinh từ <code>PID-*/</code> và <code>agent/execution/PID-*/report.md</code>; thêm hoặc xóa ticket thì chạy lại, không sửa tay:</p>
+<pre><code>node scripts/docs/update-index.mjs</code></pre>
+<!-- PID-LIST:START -->
+<div class="table-wrap"><table><thead><tr><th scope="col">Mã</th><th scope="col">Ticket</th><th scope="col">Luồng</th><th scope="col">Giai đoạn</th><th scope="col">Hồ sơ</th><th scope="col">Kết quả thực thi</th></tr></thead><tbody>
+<tr><td>PID-00001</td><td><a href="PID-00001/index.html">PID-00001 — Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00002</td><td><a href="PID-00002/index.html">PID-00002 — Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00003</td><td><a href="PID-00003/index.html">PID-00003 — Thư viện nền TS: service-auth guard và token nội bộ</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00004</td><td><a href="PID-00004/index.html">PID-00004 — Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00005</td><td><a href="PID-00005/index.html">PID-00005 — Thư viện nền Python sires_common: tương đương thư viện TS</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00006</td><td><a href="PID-00006/index.html">PID-00006 — Service mẫu và SPK-10: chứng minh thư viện nền, đo thời gian CI</a></td><td>platform</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00007</td><td><a href="PID-00007/index.html">PID-00007 — Sinh type TS từ AsyncAPI và client Python từ hợp đồng</a></td><td>contracts</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00008</td><td><a href="PID-00008/index.html">PID-00008 — Kiểm tra code lệch spec và baseline hợp đồng</a></td><td>contracts</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00009</td><td><a href="PID-00009/index.html">PID-00009 — CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache</a></td><td>infra</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00010</td><td><a href="PID-00010/index.html">PID-00010 — Dockerfile chung và Helm chart chung</a></td><td>infra</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00011</td><td><a href="PID-00011/index.html">PID-00011 — Module Terraform trung lập nhà cloud</a></td><td>infra</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00012</td><td><a href="PID-00012/index.html">PID-00012 — Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</a></td><td>web/shell</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00013</td><td><a href="PID-00013/index.html">PID-00013 — Mock theo OpenAPI cho các khu vực</a></td><td>web/shell</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00014</td><td><a href="PID-00014/index.html">PID-00014 — Gateway: migration, phiên server-side, CSRF</a></td><td>gateway</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00015</td><td><a href="PID-00015/index.html">PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC</a></td><td>gateway</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00016</td><td><a href="PID-00016/index.html">PID-00016 — Identity: migration, KMS cục bộ, envelope encryption</a></td><td>identity</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00017</td><td><a href="PID-00017/index.html">PID-00017 — Workspace: migration và khung module</a></td><td>workspace</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00018</td><td><a href="PID-00018/index.html">PID-00018 — Audit: migration và khung module</a></td><td>audit</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00019</td><td><a href="PID-00019/index.html">PID-00019 — Orchestration: migration và khung module con</a></td><td>orchestration</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00020</td><td><a href="PID-00020/index.html">PID-00020 — Agent-core: migration Alembic và khung module</a></td><td>agent-core</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00021</td><td><a href="PID-00021/index.html">PID-00021 — SPK-01: ba adapter provider và chọn framework trong Agent Run</a></td><td>agent-core</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00022</td><td><a href="PID-00022/index.html">PID-00022 — SPK-08: kích thước context và độ trễ đọc context qua API nội bộ</a></td><td>agent-core</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00023</td><td><a href="PID-00023/index.html">PID-00023 — Planning: migration và state machine Task T-01–T-19</a></td><td>planning</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00024</td><td><a href="PID-00024/index.html">PID-00024 — Library: migration và parser BibTeX, RIS</a></td><td>library</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00025</td><td><a href="PID-00025/index.html">PID-00025 — SPK-03: nguồn miễn phí, so dịch vụ trung gian qua tài liệu, chọn thư viện parser</a></td><td>library</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00026</td><td><a href="PID-00026/index.html">PID-00026 — Knowledge: migration Alembic và khung module</a></td><td>knowledge</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00027</td><td><a href="PID-00027/index.html">PID-00027 — SPK-04: pgvector, truy xuất có lọc 500 reference</a></td><td>knowledge</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00028</td><td><a href="PID-00028/index.html">PID-00028 — SPK-05: trích xuất PDF đa ngành</a></td><td>knowledge</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00029</td><td><a href="PID-00029/index.html">PID-00029 — Research: migration và khung module</a></td><td>research</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00030</td><td><a href="PID-00030/index.html">PID-00030 — Manuscript: migration và khung module</a></td><td>manuscript</td><td>PH-01</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00031</td><td><a href="PID-00031/index.html">PID-00031 — SPK-06: sandbox LaTeX dưới gVisor</a></td><td>sandbox-runner</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00032</td><td><a href="PID-00032/index.html">PID-00032 — SPK-07: mermaid-cli + Chromium dưới gVisor không mạng</a></td><td>sandbox-runner</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00033</td><td><a href="PID-00033/index.html">PID-00033 — Eval: mẫu CSV bộ dữ liệu nghiệm thu, trình kiểm và khung báo cáo</a></td><td>eval</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00034</td><td><a href="PID-00034/index.html">PID-00034 — E2E: khung Playwright và dữ liệu mẫu 16.4</a></td><td>e2e</td><td>PH-01</td><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td><td>Chưa làm</td></tr>
+<tr><td>PID-00035</td><td><a href="PID-00035/index.html">PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS</a></td><td>infra</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00036</td><td><a href="PID-00036/index.html">PID-00036 — Khu vực settings: SignIn, Profile, Provider Connections, Agent Models, Preferences</a></td><td>web/settings</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00037</td><td><a href="PID-00037/index.html">PID-00037 — Khu vực global: Projects và khung Dashboard</a></td><td>web/global</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00038</td><td><a href="PID-00038/index.html">PID-00038 — Đăng nhập eTroy OIDC: RP, PKCE, phiên, đăng xuất</a></td><td>gateway</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00039</td><td><a href="PID-00039/index.html">PID-00039 — Định tuyến /api/v1, lệnh ghi chuẩn, token actor</a></td><td>gateway</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00040</td><td><a href="PID-00040/index.html">PID-00040 — Realtime: SSE /events, fan-out sự kiện theo tài khoản</a></td><td>gateway</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00041</td><td><a href="PID-00041/index.html">PID-00041 — Account, Profile, Preferences, Ngưỡng kiểm chứng</a></td><td>identity</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00042</td><td><a href="PID-00042/index.html">PID-00042 — Provider Connection: lưu key mã hóa, kiểm tra kết nối, danh mục model</a></td><td>identity</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00043</td><td><a href="PID-00043/index.html">PID-00043 — Agent Models: gán model cho từng agent</a></td><td>identity</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00044</td><td><a href="PID-00044/index.html">PID-00044 — Project và vòng đời: tạo, lưu trữ, xóa mềm 30 ngày, Research Context</a></td><td>workspace</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00045</td><td><a href="PID-00045/index.html">PID-00045 — Kho Audit Event: nhận sự kiện, truy vấn</a></td><td>audit</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00046</td><td><a href="PID-00046/index.html">PID-00046 — Engine: Workflow, Step, Checkpoint, heartbeat, sweeper, Recovery decision</a></td><td>orchestration</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00047</td><td><a href="PID-00047/index.html">PID-00047 — Agent Run: phát lệnh agent.run, start, heartbeat, kết quả, thất bại</a></td><td>orchestration</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00048</td><td><a href="PID-00048/index.html">PID-00048 — Kiểm tra kết nối provider và danh mục agent</a></td><td>agent-core</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00049</td><td><a href="PID-00049/index.html">PID-00049 — Plan và Plan Version: nháp, trình, duyệt, so sánh</a></td><td>planning</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00050</td><td><a href="PID-00050/index.html">PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite</a></td><td>library</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00051</td><td><a href="PID-00051/index.html">PID-00051 — Pipeline: trích xuất PDF và chunking</a></td><td>knowledge</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00052</td><td><a href="PID-00052/index.html">PID-00052 — Evidence: entity, truy xuất, loại trừ, ghi theo lô từ agent</a></td><td>research</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00053</td><td><a href="PID-00053/index.html">PID-00053 — Manuscript, file, revision dạng cây, template Default và Blank</a></td><td>manuscript</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00054</td><td><a href="PID-00054/index.html">PID-00054 — Image sandbox: TeX Live cố định, mermaid-cli + Chromium</a></td><td>sandbox-runner</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00055</td><td><a href="PID-00055/index.html">PID-00055 — Smoke lát 1 và kiểm cổng PH-02</a></td><td>e2e</td><td>PH-02</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00056</td><td><a href="PID-00056/index.html">PID-00056 — Lan traceparent qua HTTP và message; metric outbox → broker → SSE</a></td><td>platform</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00057</td><td><a href="PID-00057/index.html">PID-00057 — RabbitMQ quorum, dead-letter, KEDA cho agent-core, dashboard vận hành</a></td><td>infra</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00058</td><td><a href="PID-00058/index.html">PID-00058 — Khu vực project: Overview và Project AI Chat</a></td><td>web/project</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00059</td><td><a href="PID-00059/index.html">PID-00059 — Khu vực monitoring: Activity, Workflow, AgentList, History</a></td><td>web/monitoring</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00060</td><td><a href="PID-00060/index.html">PID-00060 — Khu vực global: Pending Actions, Notifications, Global Assistant, màn điện thoại</a></td><td>web/global</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00061</td><td><a href="PID-00061/index.html">PID-00061 — Stream chat.delta và SSE trạng thái workflow</a></td><td>gateway</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00062</td><td><a href="PID-00062/index.html">PID-00062 — Giao ProviderSecretEnvelope cho Agent Run, báo lỗi provider</a></td><td>identity</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00063</td><td><a href="PID-00063/index.html">PID-00063 — Conversation và Message: chat project, active task, tin nhắn của Orchestrator</a></td><td>workspace</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00064</td><td><a href="PID-00064/index.html">PID-00064 — Pending Actions, Notifications, Dashboard từ sự kiện của mọi luồng</a></td><td>workspace</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00065</td><td><a href="PID-00065/index.html">PID-00065 — Prompt và phê duyệt: InteractiveAgentPrompt, APR-01–APR-10</a></td><td>orchestration</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00066</td><td><a href="PID-00066/index.html">PID-00066 — Shared Context: ContextItem, đọc cho lắp ráp context</a></td><td>orchestration</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00067</td><td><a href="PID-00067/index.html">PID-00067 — Usage: ghi usage theo Agent Run và tổng hợp</a></td><td>orchestration</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00068</td><td><a href="PID-00068/index.html">PID-00068 — Lượt chat: nhận message.posted, tạo workflow chat, gọi Orchestrator</a></td><td>orchestration</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00069</td><td><a href="PID-00069/index.html">PID-00069 — Gián đoạn và khôi phục; SPK-09 bản đầu</a></td><td>orchestration</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00070</td><td><a href="PID-00070/index.html">PID-00070 — Model Gateway ba provider: adapter, structured output, stream, usage, ánh xạ lỗi</a></td><td>agent-core</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00071</td><td><a href="PID-00071/index.html">PID-00071 — Agent registry và prompt template</a></td><td>agent-core</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00072</td><td><a href="PID-00072/index.html">PID-00072 — Context Assembler: lắp, cắt gọn, context manifest</a></td><td>agent-core</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00073</td><td><a href="PID-00073/index.html">PID-00073 — Orchestrator chat và worker agent.run</a></td><td>agent-core</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00074</td><td><a href="PID-00074/index.html">PID-00074 — Task: kích hoạt, thủ công, checklist, chuyển trạng thái theo workflow</a></td><td>planning</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00075</td><td><a href="PID-00075/index.html">PID-00075 — Readiness RC-01–RC-08 và tự tính lại</a></td><td>planning</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00076</td><td><a href="PID-00076/index.html">PID-00076 — Reference: nhập, duyệt theo lô, metadata, thu hồi, gộp</a></td><td>library</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00077</td><td><a href="PID-00077/index.html">PID-00077 — Pipeline: embedding bằng key người dùng, tách vector theo model</a></td><td>knowledge</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00078</td><td><a href="PID-00078/index.html">PID-00078 — Claim: liên kết evidence, trạng thái, nghiệm thu, ghi theo lô từ agent</a></td><td>research</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00079</td><td><a href="PID-00079/index.html">PID-00079 — Change Proposal: chấp nhận nguyên khối, outdated, chèn sơ đồ</a></td><td>manuscript</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00080</td><td><a href="PID-00080/index.html">PID-00080 — Controller NestJS và pool sandbox</a></td><td>sandbox-runner</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00081</td><td><a href="PID-00081/index.html">PID-00081 — Kịch bản lát 2 và kiểm cổng PH-03</a></td><td>e2e</td><td>PH-03</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00082</td><td><a href="PID-00082/index.html">PID-00082 — Khu vực planning: Plan, so sánh version, TaskReview, GlobalTasks</a></td><td>web/planning</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00083</td><td><a href="PID-00083/index.html">PID-00083 — Tab Thảo luận trong chi tiết workflow</a></td><td>web/monitoring</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00084</td><td><a href="PID-00084/index.html">PID-00084 — Thẻ đề xuất thảo luận trong Chat</a></td><td>web/project</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00085</td><td><a href="PID-00085/index.html">PID-00085 — getAgentSetup, instance A và B của Analysis Agent, sameModelWarning</a></td><td>identity</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00086</td><td><a href="PID-00086/index.html">PID-00086 — StepPlan, bước song song, saga áp dụng đầu ra; nối Plan và Task</a></td><td>orchestration</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00087</td><td><a href="PID-00087/index.html">PID-00087 — Phiên thảo luận: Deliberation, Board, Context Snapshot</a></td><td>orchestration</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00088</td><td><a href="PID-00088/index.html">PID-00088 — SPK-11: chi phí, độ trễ, tải ghi của một phiên thảo luận</a></td><td>orchestration</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00089</td><td><a href="PID-00089/index.html">PID-00089 — Orchestrator lập Plan và đánh giá readiness ngữ nghĩa RC-09</a></td><td>agent-core</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00090</td><td><a href="PID-00090/index.html">PID-00090 — Analysis Agent A, B: lập trường, phản biện, ghi board</a></td><td>agent-core</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00091</td><td><a href="PID-00091/index.html">PID-00091 — Hội tụ WF-01–WF-03: TaskReview, mở lại Task, phân tích ảnh hưởng</a></td><td>planning</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00092</td><td><a href="PID-00092/index.html">PID-00092 — Selection của project và endpoint nội bộ cho readiness</a></td><td>library</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00093</td><td><a href="PID-00093/index.html">PID-00093 — Truy xuất lai, đọc chunk, kiểm tra quote</a></td><td>knowledge</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00094</td><td><a href="PID-00094/index.html">PID-00094 — Verification: kiểm tra tất định, Ngưỡng kiểm chứng, kiểm citation</a></td><td>research</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00095</td><td><a href="PID-00095/index.html">PID-00095 — Bibliography và cổng citation</a></td><td>manuscript</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00096</td><td><a href="PID-00096/index.html">PID-00096 — Nhận sandbox.build, trả sandbox.reply, đọc file build</a></td><td>sandbox-runner</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00097</td><td><a href="PID-00097/index.html">PID-00097 — Kịch bản lát 3 và kiểm cổng PH-04</a></td><td>e2e</td><td>PH-04</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00098</td><td><a href="PID-00098/index.html">PID-00098 — Khu vực library: Discover, Library, Reference</a></td><td>web/library</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00099</td><td><a href="PID-00099/index.html">PID-00099 — Cấu hình embedding của tài khoản</a></td><td>identity</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00100</td><td><a href="PID-00100/index.html">PID-00100 — Bước của WF-04: Discovery, Reference Processing, đề xuất reference</a></td><td>orchestration</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00101</td><td><a href="PID-00101/index.html">PID-00101 — Discovery Agent và tool search_sources</a></td><td>agent-core</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00102</td><td><a href="PID-00102/index.html">PID-00102 — Reference Processing Agent</a></td><td>agent-core</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00103</td><td><a href="PID-00103/index.html">PID-00103 — Kiểm RC-05 với sự kiện index thật; ảnh hưởng khi reference bị thu hồi</a></td><td>planning</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00104</td><td><a href="PID-00104/index.html">PID-00104 — Hội tụ WF-04: tài liệu PDF, thử lại index, nhận trạng thái index</a></td><td>library</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00105</td><td><a href="PID-00105/index.html">PID-00105 — Hội tụ index: nhận lệnh, job indexing, phát trạng thái, index lại</a></td><td>knowledge</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00106</td><td><a href="PID-00106/index.html">PID-00106 — Artifact, ArtifactVersion, registry đầu ra</a></td><td>research</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00107</td><td><a href="PID-00107/index.html">PID-00107 — Sơ đồ: kiểu, kiểm nguồn Mermaid, render qua sandbox</a></td><td>research</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00108</td><td><a href="PID-00108/index.html">PID-00108 — Build: gửi sandbox.build, nhận kết quả, log dễ hiểu, export</a></td><td>manuscript</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00109</td><td><a href="PID-00109/index.html">PID-00109 — Cache build và thời gian chờ</a></td><td>sandbox-runner</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00110</td><td><a href="PID-00110/index.html">PID-00110 — Nạp tài liệu mẫu qua pipeline knowledge thật</a></td><td>eval</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00111</td><td><a href="PID-00111/index.html">PID-00111 — Kịch bản lát 4 và kiểm cổng PH-05</a></td><td>e2e</td><td>PH-05</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00112</td><td><a href="PID-00112/index.html">PID-00112 — Node pool sandbox: gVisor RuntimeClass, NetworkPolicy deny-all</a></td><td>infra</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00113</td><td><a href="PID-00113/index.html">PID-00113 — Môi trường eval tách production và job eval trong CI</a></td><td>infra</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00114</td><td><a href="PID-00114/index.html">PID-00114 — Khu vực research: Evidence Inspector, Artifacts</a></td><td>web/research</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00115</td><td><a href="PID-00115/index.html">PID-00115 — Khu vực manuscript: editor, diff, build</a></td><td>web/manuscript</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00116</td><td><a href="PID-00116/index.html">PID-00116 — Tìm kiếm toàn cục</a></td><td>gateway</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00117</td><td><a href="PID-00117/index.html">PID-00117 — KPI định kỳ và export JSON, CSV</a></td><td>audit</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00118</td><td><a href="PID-00118/index.html">PID-00118 — Bước của WF-05 và WF-07: áp dụng evidence, claim, artifact, Change Proposal</a></td><td>orchestration</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00119</td><td><a href="PID-00119/index.html">PID-00119 — Evidence Retrieval Agent</a></td><td>agent-core</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00120</td><td><a href="PID-00120/index.html">PID-00120 — Synthesis Agent</a></td><td>agent-core</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00121</td><td><a href="PID-00121/index.html">PID-00121 — Writing Agent</a></td><td>agent-core</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00122</td><td><a href="PID-00122/index.html">PID-00122 — Verification Agent</a></td><td>agent-core</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00123</td><td><a href="PID-00123/index.html">PID-00123 — Diagram Agent</a></td><td>agent-core</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00124</td><td><a href="PID-00124/index.html">PID-00124 — Ảnh hưởng khi đầu ra thay đổi, Research Context đổi, thảo luận rút lại</a></td><td>planning</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00125</td><td><a href="PID-00125/index.html">PID-00125 — Hội tụ truy xuất cho evidence và eval</a></td><td>knowledge</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00126</td><td><a href="PID-00126/index.html">PID-00126 — Hội tụ WF-05 S1–S4 và WF-07</a></td><td>research</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00127</td><td><a href="PID-00127/index.html">PID-00127 — Hội tụ WF-05 S5+ và build PDF</a></td><td>manuscript</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00128</td><td><a href="PID-00128/index.html">PID-00128 — Hội tụ trên node pool sandbox</a></td><td>sandbox-runner</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00129</td><td><a href="PID-00129/index.html">PID-00129 — Harness, Eval Trace, baseline đầu tiên, cổng hồi quy</a></td><td>eval</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00130</td><td><a href="PID-00130/index.html">PID-00130 — Kịch bản lát 5 và kiểm cổng PH-06</a></td><td>e2e</td><td>PH-06</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00131</td><td><a href="PID-00131/index.html">PID-00131 — Rà logger che dữ liệu cho REL-07</a></td><td>platform</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00132</td><td><a href="PID-00132/index.html">PID-00132 — Đóng băng hợp đồng trừ sửa lỗi</a></td><td>contracts</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00133</td><td><a href="PID-00133/index.html">PID-00133 — Cảnh báo đầy đủ, diễn tập PITR, runbook</a></td><td>infra</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00134</td><td><a href="PID-00134/index.html">PID-00134 — Môi trường load test</a></td><td>infra</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00135</td><td><a href="PID-00135/index.html">PID-00135 — Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn</a></td><td>web/shell</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00136</td><td><a href="PID-00136/index.html">PID-00136 — Rate limit và tải SSE</a></td><td>gateway</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00137</td><td><a href="PID-00137/index.html">PID-00137 — Xoay KEK và xóa tài khoản</a></td><td>identity</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00138</td><td><a href="PID-00138/index.html">PID-00138 — Purge project sau 30 ngày</a></td><td>workspace</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00139</td><td><a href="PID-00139/index.html">PID-00139 — Retention và báo cáo KPI cho nghiệm thu</a></td><td>audit</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00140</td><td><a href="PID-00140/index.html">PID-00140 — SPK-09 đầy đủ: fault injection, KPI-03, đối soát đầu ra (TR-02)</a></td><td>orchestration</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00141</td><td><a href="PID-00141/index.html">PID-00141 — REL-06: bảy workflow với từng provider</a></td><td>agent-core</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00142</td><td><a href="PID-00142/index.html">PID-00142 — Sửa lỗi và dọn dữ liệu của planning</a></td><td>planning</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00143</td><td><a href="PID-00143/index.html">PID-00143 — Rate limit với nguồn thật và dọn dữ liệu</a></td><td>library</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00144</td><td><a href="PID-00144/index.html">PID-00144 — Hiệu năng p95 và ước tính token trước khi index lại (TR-07)</a></td><td>knowledge</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00145</td><td><a href="PID-00145/index.html">PID-00145 — Đo KPI-01 và phục vụ REL-10</a></td><td>research</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00146</td><td><a href="PID-00146/index.html">PID-00146 — Đo KPI-02 = 100%</a></td><td>manuscript</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00147</td><td><a href="PID-00147/index.html">PID-00147 — Thời gian chờ, tỷ lệ lỗi build, kịch bản lạm dụng sandbox</a></td><td>sandbox-runner</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00148</td><td><a href="PID-00148/index.html">PID-00148 — Đo REL-03, REL-10 với provider thật</a></td><td>eval</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00149</td><td><a href="PID-00149/index.html">PID-00149 — Toàn bộ kịch bản TS ở PRD 19</a></td><td>e2e</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00150</td><td><a href="PID-00150/index.html">PID-00150 — Kiểm thử tải k6</a></td><td>e2e</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00151</td><td><a href="PID-00151/index.html">PID-00151 — Kiểm thử bảo mật tự động: 19.12, REL-04, REL-05, REL-07</a></td><td>e2e</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00152</td><td><a href="PID-00152/index.html">PID-00152 — Báo cáo nghiệm thu REL-01–REL-10 và kiểm cổng PH-07</a></td><td>e2e</td><td>PH-07</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00153</td><td><a href="PID-00153/index.html">PID-00153 — Production: Kubernetes, PostgreSQL HA, RabbitMQ 3 node, CDN + WAF, egress NAT, deploy có phê duyệt</a></td><td>infra</td><td>PH-08</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00154</td><td><a href="PID-00154/index.html">PID-00154 — Lịch trực, kênh báo sự cố, synthetic check</a></td><td>infra</td><td>PH-08</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00155</td><td><a href="PID-00155/index.html">PID-00155 — Build tĩnh web lên CDN</a></td><td>web/shell</td><td>PH-08</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00156</td><td><a href="PID-00156/index.html">PID-00156 — Client production eTroy OIDC, kiểm RP-initiated logout</a></td><td>gateway</td><td>PH-08</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+<tr><td>PID-00157</td><td><a href="PID-00157/index.html">PID-00157 — Smoke production và kiểm cổng PH-08</a></td><td>e2e</td><td>PH-08</td><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td><td>Chưa làm</td></tr>
+</tbody></table></div>
+<!-- PID-LIST:END -->
+<h2 id="s-2">2. Tài liệu trong từng PID</h2>
+<p>Mọi file HTML trong mỗi thư mục <code>PID-NNNNN/</code> và tiêu đề của file.</p>
+<!-- PID-FILES:START -->
+<h3 id="pid-00001">PID-00001</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00001/index.html">PID-00001/index.html</a></td><td>PID-00001 — Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td></tr>
+<tr><td><a href="PID-00001/specs/acceptance.html">PID-00001/specs/acceptance.html</a></td><td>PID-00001 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00001/specs/brief.html">PID-00001/specs/brief.html</a></td><td>PID-00001 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00001/specs/index.html">PID-00001/specs/index.html</a></td><td>PID-00001 — Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td></tr>
+<tr><td><a href="PID-00001/specs/scope.html">PID-00001/specs/scope.html</a></td><td>PID-00001 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00001/specs/slices/S01-tenancy.html">PID-00001/specs/slices/S01-tenancy.html</a></td><td>S01 — Tenancy, giao dịch, UUIDv7, kiểm phiên bản</td></tr>
+<tr><td><a href="PID-00001/specs/slices/S02-problem-json.html">PID-00001/specs/slices/S02-problem-json.html</a></td><td>S02 — Bộ lọc lỗi problem+json</td></tr>
+<tr><td><a href="PID-00001/specs/slices/S03-logging.html">PID-00001/specs/slices/S03-logging.html</a></td><td>S03 — Logger che dữ liệu</td></tr>
+<tr><td><a href="PID-00001/specs/slices/S04-telemetry.html">PID-00001/specs/slices/S04-telemetry.html</a></td><td>S04 — OpenTelemetry cho HTTP</td></tr>
+<tr><td><a href="PID-00001/designs/notes.html">PID-00001/designs/notes.html</a></td><td>PID-00001 — Ghi chú thiết kế</td></tr>
+<tr><td><a href="PID-00001/others/issues.html">PID-00001/others/issues.html</a></td><td>PID-00001 — Vấn đề chưa chốt · Phiếu trả lời</td></tr>
+</tbody></table></div>
+<h3 id="pid-00002">PID-00002</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00002/index.html">PID-00002/index.html</a></td><td>PID-00002 — Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</td></tr>
+<tr><td><a href="PID-00002/specs/index.html">PID-00002/specs/index.html</a></td><td>PID-00002 — Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</td></tr>
+</tbody></table></div>
+<h3 id="pid-00003">PID-00003</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00003/index.html">PID-00003/index.html</a></td><td>PID-00003 — Thư viện nền TS: service-auth guard và token nội bộ</td></tr>
+<tr><td><a href="PID-00003/specs/index.html">PID-00003/specs/index.html</a></td><td>PID-00003 — Thư viện nền TS: service-auth guard và token nội bộ</td></tr>
+</tbody></table></div>
+<h3 id="pid-00004">PID-00004</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00004/index.html">PID-00004/index.html</a></td><td>PID-00004 — Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</td></tr>
+<tr><td><a href="PID-00004/specs/acceptance.html">PID-00004/specs/acceptance.html</a></td><td>PID-00004 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00004/specs/brief.html">PID-00004/specs/brief.html</a></td><td>PID-00004 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00004/specs/index.html">PID-00004/specs/index.html</a></td><td>PID-00004 — Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</td></tr>
+<tr><td><a href="PID-00004/specs/scope.html">PID-00004/specs/scope.html</a></td><td>PID-00004 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00004/specs/slices/S01-containers.html">PID-00004/specs/slices/S01-containers.html</a></td><td>S01 — Container helper</td></tr>
+<tr><td><a href="PID-00004/specs/slices/S02-fake-oidc.html">PID-00004/specs/slices/S02-fake-oidc.html</a></td><td>S02 — FakeOidcProvider</td></tr>
+<tr><td><a href="PID-00004/specs/slices/S03-fakes.html">PID-00004/specs/slices/S03-fakes.html</a></td><td>S03 — Fake broker, FakeSourceAdapter, LocalKms</td></tr>
+<tr><td><a href="PID-00004/designs/notes.html">PID-00004/designs/notes.html</a></td><td>PID-00004 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00005">PID-00005</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00005/index.html">PID-00005/index.html</a></td><td>PID-00005 — Thư viện nền Python sires_common: tương đương thư viện TS</td></tr>
+<tr><td><a href="PID-00005/specs/acceptance.html">PID-00005/specs/acceptance.html</a></td><td>PID-00005 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00005/specs/brief.html">PID-00005/specs/brief.html</a></td><td>PID-00005 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00005/specs/index.html">PID-00005/specs/index.html</a></td><td>PID-00005 — Thư viện nền Python sires_common: tương đương thư viện TS</td></tr>
+<tr><td><a href="PID-00005/specs/scope.html">PID-00005/specs/scope.html</a></td><td>PID-00005 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00005/specs/slices/S01-core.html">PID-00005/specs/slices/S01-core.html</a></td><td>S01 — Tenancy, lỗi, log, trace</td></tr>
+<tr><td><a href="PID-00005/specs/slices/S02-messaging.html">PID-00005/specs/slices/S02-messaging.html</a></td><td>S02 — Outbox, inbox, audit-emit</td></tr>
+<tr><td><a href="PID-00005/specs/slices/S03-service-auth.html">PID-00005/specs/slices/S03-service-auth.html</a></td><td>S03 — Service-auth guard</td></tr>
+<tr><td><a href="PID-00005/specs/slices/S04-fakes.html">PID-00005/specs/slices/S04-fakes.html</a></td><td>S04 — ModelGateway, fake và fixture</td></tr>
+<tr><td><a href="PID-00005/designs/notes.html">PID-00005/designs/notes.html</a></td><td>PID-00005 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00006">PID-00006</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00006/index.html">PID-00006/index.html</a></td><td>PID-00006 — Service mẫu và SPK-10: chứng minh thư viện nền, đo thời gian CI</td></tr>
+<tr><td><a href="PID-00006/specs/index.html">PID-00006/specs/index.html</a></td><td>PID-00006 — Service mẫu và SPK-10: chứng minh thư viện nền, đo thời gian CI</td></tr>
+</tbody></table></div>
+<h3 id="pid-00007">PID-00007</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00007/index.html">PID-00007/index.html</a></td><td>PID-00007 — Sinh type TS từ AsyncAPI và client Python từ hợp đồng</td></tr>
+<tr><td><a href="PID-00007/specs/acceptance.html">PID-00007/specs/acceptance.html</a></td><td>PID-00007 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00007/specs/brief.html">PID-00007/specs/brief.html</a></td><td>PID-00007 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00007/specs/index.html">PID-00007/specs/index.html</a></td><td>PID-00007 — Sinh type TS từ AsyncAPI và client Python từ hợp đồng</td></tr>
+<tr><td><a href="PID-00007/specs/scope.html">PID-00007/specs/scope.html</a></td><td>PID-00007 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00007/specs/slices/S01-asyncapi-ts.html">PID-00007/specs/slices/S01-asyncapi-ts.html</a></td><td>S01 — Type TS từ AsyncAPI</td></tr>
+<tr><td><a href="PID-00007/specs/slices/S02-python-client.html">PID-00007/specs/slices/S02-python-client.html</a></td><td>S02 — Client và mô hình Python</td></tr>
+<tr><td><a href="PID-00007/designs/notes.html">PID-00007/designs/notes.html</a></td><td>PID-00007 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00008">PID-00008</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00008/index.html">PID-00008/index.html</a></td><td>PID-00008 — Kiểm tra code lệch spec và baseline hợp đồng</td></tr>
+<tr><td><a href="PID-00008/specs/index.html">PID-00008/specs/index.html</a></td><td>PID-00008 — Kiểm tra code lệch spec và baseline hợp đồng</td></tr>
+</tbody></table></div>
+<h3 id="pid-00009">PID-00009</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00009/index.html">PID-00009/index.html</a></td><td>PID-00009 — CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache</td></tr>
+<tr><td><a href="PID-00009/specs/index.html">PID-00009/specs/index.html</a></td><td>PID-00009 — CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache</td></tr>
+</tbody></table></div>
+<h3 id="pid-00010">PID-00010</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00010/index.html">PID-00010/index.html</a></td><td>PID-00010 — Dockerfile chung và Helm chart chung</td></tr>
+<tr><td><a href="PID-00010/specs/acceptance.html">PID-00010/specs/acceptance.html</a></td><td>PID-00010 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00010/specs/brief.html">PID-00010/specs/brief.html</a></td><td>PID-00010 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00010/specs/index.html">PID-00010/specs/index.html</a></td><td>PID-00010 — Dockerfile chung và Helm chart chung</td></tr>
+<tr><td><a href="PID-00010/specs/scope.html">PID-00010/specs/scope.html</a></td><td>PID-00010 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00010/specs/slices/S01-dockerfile.html">PID-00010/specs/slices/S01-dockerfile.html</a></td><td>S01 — Rà Dockerfile</td></tr>
+<tr><td><a href="PID-00010/specs/slices/S02-chart.html">PID-00010/specs/slices/S02-chart.html</a></td><td>S02 — Bổ sung chart và Job migration</td></tr>
+<tr><td><a href="PID-00010/specs/slices/S03-check-charts.html">PID-00010/specs/slices/S03-check-charts.html</a></td><td>S03 — Script kiểm chart</td></tr>
+<tr><td><a href="PID-00010/designs/notes.html">PID-00010/designs/notes.html</a></td><td>PID-00010 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00011">PID-00011</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00011/index.html">PID-00011/index.html</a></td><td>PID-00011 — Module Terraform trung lập nhà cloud</td></tr>
+<tr><td><a href="PID-00011/specs/acceptance.html">PID-00011/specs/acceptance.html</a></td><td>PID-00011 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00011/specs/brief.html">PID-00011/specs/brief.html</a></td><td>PID-00011 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00011/specs/index.html">PID-00011/specs/index.html</a></td><td>PID-00011 — Module Terraform trung lập nhà cloud</td></tr>
+<tr><td><a href="PID-00011/specs/scope.html">PID-00011/specs/scope.html</a></td><td>PID-00011 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00011/specs/slices/S01-modules.html">PID-00011/specs/slices/S01-modules.html</a></td><td>S01 — Giao diện module</td></tr>
+<tr><td><a href="PID-00011/specs/slices/S02-envs.html">PID-00011/specs/slices/S02-envs.html</a></td><td>S02 — Môi trường staging, production</td></tr>
+<tr><td><a href="PID-00011/designs/notes.html">PID-00011/designs/notes.html</a></td><td>PID-00011 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00012">PID-00012</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00012/index.html">PID-00012/index.html</a></td><td>PID-00012 — Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</td></tr>
+<tr><td><a href="PID-00012/specs/index.html">PID-00012/specs/index.html</a></td><td>PID-00012 — Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</td></tr>
+<tr><td><a href="PID-00012/designs/notes.html">PID-00012/designs/notes.html</a></td><td>PID-00012 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00013">PID-00013</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00013/index.html">PID-00013/index.html</a></td><td>PID-00013 — Mock theo OpenAPI cho các khu vực</td></tr>
+<tr><td><a href="PID-00013/specs/index.html">PID-00013/specs/index.html</a></td><td>PID-00013 — Mock theo OpenAPI cho các khu vực</td></tr>
+<tr><td><a href="PID-00013/designs/notes.html">PID-00013/designs/notes.html</a></td><td>PID-00013 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00014">PID-00014</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00014/index.html">PID-00014/index.html</a></td><td>PID-00014 — Gateway: migration, phiên server-side, CSRF</td></tr>
+<tr><td><a href="PID-00014/specs/index.html">PID-00014/specs/index.html</a></td><td>PID-00014 — Gateway: migration, phiên server-side, CSRF</td></tr>
+</tbody></table></div>
+<h3 id="pid-00015">PID-00015</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00015/index.html">PID-00015/index.html</a></td><td>PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC</td></tr>
+<tr><td><a href="PID-00015/specs/acceptance.html">PID-00015/specs/acceptance.html</a></td><td>PID-00015 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00015/specs/brief.html">PID-00015/specs/brief.html</a></td><td>PID-00015 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00015/specs/index.html">PID-00015/specs/index.html</a></td><td>PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC</td></tr>
+<tr><td><a href="PID-00015/specs/scope.html">PID-00015/specs/scope.html</a></td><td>PID-00015 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00015/specs/slices/S01-stub-flow.html">PID-00015/specs/slices/S01-stub-flow.html</a></td><td>S01 — Luồng openid-client trên stub</td></tr>
+<tr><td><a href="PID-00015/specs/slices/S02-compare-report.html">PID-00015/specs/slices/S02-compare-report.html</a></td><td>S02 — Đối chiếu và báo cáo</td></tr>
+<tr><td><a href="PID-00015/designs/notes.html">PID-00015/designs/notes.html</a></td><td>PID-00015 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00016">PID-00016</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00016/index.html">PID-00016/index.html</a></td><td>PID-00016 — Identity: migration, KMS cục bộ, envelope encryption</td></tr>
+<tr><td><a href="PID-00016/specs/index.html">PID-00016/specs/index.html</a></td><td>PID-00016 — Identity: migration, KMS cục bộ, envelope encryption</td></tr>
+</tbody></table></div>
+<h3 id="pid-00017">PID-00017</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00017/index.html">PID-00017/index.html</a></td><td>PID-00017 — Workspace: migration và khung module</td></tr>
+<tr><td><a href="PID-00017/specs/index.html">PID-00017/specs/index.html</a></td><td>PID-00017 — Workspace: migration và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00018">PID-00018</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00018/index.html">PID-00018/index.html</a></td><td>PID-00018 — Audit: migration và khung module</td></tr>
+<tr><td><a href="PID-00018/specs/index.html">PID-00018/specs/index.html</a></td><td>PID-00018 — Audit: migration và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00019">PID-00019</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00019/index.html">PID-00019/index.html</a></td><td>PID-00019 — Orchestration: migration và khung module con</td></tr>
+<tr><td><a href="PID-00019/specs/index.html">PID-00019/specs/index.html</a></td><td>PID-00019 — Orchestration: migration và khung module con</td></tr>
+</tbody></table></div>
+<h3 id="pid-00020">PID-00020</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00020/index.html">PID-00020/index.html</a></td><td>PID-00020 — Agent-core: migration Alembic và khung module</td></tr>
+<tr><td><a href="PID-00020/specs/index.html">PID-00020/specs/index.html</a></td><td>PID-00020 — Agent-core: migration Alembic và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00021">PID-00021</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00021/index.html">PID-00021/index.html</a></td><td>PID-00021 — SPK-01: ba adapter provider và chọn framework trong Agent Run</td></tr>
+<tr><td><a href="PID-00021/specs/acceptance.html">PID-00021/specs/acceptance.html</a></td><td>PID-00021 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00021/specs/brief.html">PID-00021/specs/brief.html</a></td><td>PID-00021 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00021/specs/index.html">PID-00021/specs/index.html</a></td><td>PID-00021 — SPK-01: ba adapter provider và chọn framework trong Agent Run</td></tr>
+<tr><td><a href="PID-00021/specs/scope.html">PID-00021/specs/scope.html</a></td><td>PID-00021 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00021/specs/slices/S01-capabilities.html">PID-00021/specs/slices/S01-capabilities.html</a></td><td>S01 — Năng lực ba provider</td></tr>
+<tr><td><a href="PID-00021/specs/slices/S02-base-url-errors.html">PID-00021/specs/slices/S02-base-url-errors.html</a></td><td>S02 — Base URL và ánh xạ lỗi</td></tr>
+<tr><td><a href="PID-00021/specs/slices/S03-framework-report.html">PID-00021/specs/slices/S03-framework-report.html</a></td><td>S03 — Đề xuất framework và báo cáo</td></tr>
+<tr><td><a href="PID-00021/designs/notes.html">PID-00021/designs/notes.html</a></td><td>PID-00021 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00022">PID-00022</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00022/index.html">PID-00022/index.html</a></td><td>PID-00022 — SPK-08: kích thước context và độ trễ đọc context qua API nội bộ</td></tr>
+<tr><td><a href="PID-00022/specs/acceptance.html">PID-00022/specs/acceptance.html</a></td><td>PID-00022 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00022/specs/brief.html">PID-00022/specs/brief.html</a></td><td>PID-00022 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00022/specs/index.html">PID-00022/specs/index.html</a></td><td>PID-00022 — SPK-08: kích thước context và độ trễ đọc context qua API nội bộ</td></tr>
+<tr><td><a href="PID-00022/specs/scope.html">PID-00022/specs/scope.html</a></td><td>PID-00022 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00022/specs/slices/S01-context-size.html">PID-00022/specs/slices/S01-context-size.html</a></td><td>S01 — Kích thước context</td></tr>
+<tr><td><a href="PID-00022/specs/slices/S02-read-latency.html">PID-00022/specs/slices/S02-read-latency.html</a></td><td>S02 — Độ trễ đọc context</td></tr>
+<tr><td><a href="PID-00022/specs/slices/S03-report.html">PID-00022/specs/slices/S03-report.html</a></td><td>S03 — Báo cáo</td></tr>
+<tr><td><a href="PID-00022/designs/notes.html">PID-00022/designs/notes.html</a></td><td>PID-00022 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00023">PID-00023</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00023/index.html">PID-00023/index.html</a></td><td>PID-00023 — Planning: migration và state machine Task T-01–T-19</td></tr>
+<tr><td><a href="PID-00023/specs/index.html">PID-00023/specs/index.html</a></td><td>PID-00023 — Planning: migration và state machine Task T-01–T-19</td></tr>
+</tbody></table></div>
+<h3 id="pid-00024">PID-00024</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00024/index.html">PID-00024/index.html</a></td><td>PID-00024 — Library: migration và parser BibTeX, RIS</td></tr>
+<tr><td><a href="PID-00024/specs/index.html">PID-00024/specs/index.html</a></td><td>PID-00024 — Library: migration và parser BibTeX, RIS</td></tr>
+</tbody></table></div>
+<h3 id="pid-00025">PID-00025</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00025/index.html">PID-00025/index.html</a></td><td>PID-00025 — SPK-03: nguồn miễn phí, so dịch vụ trung gian qua tài liệu, chọn thư viện parser</td></tr>
+<tr><td><a href="PID-00025/specs/acceptance.html">PID-00025/specs/acceptance.html</a></td><td>PID-00025 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00025/specs/brief.html">PID-00025/specs/brief.html</a></td><td>PID-00025 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00025/specs/index.html">PID-00025/specs/index.html</a></td><td>PID-00025 — SPK-03: nguồn miễn phí, so dịch vụ trung gian qua tài liệu, chọn thư viện parser</td></tr>
+<tr><td><a href="PID-00025/specs/scope.html">PID-00025/specs/scope.html</a></td><td>PID-00025 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00025/specs/slices/S01-free-sources.html">PID-00025/specs/slices/S01-free-sources.html</a></td><td>S01 — Đo nguồn miễn phí</td></tr>
+<tr><td><a href="PID-00025/specs/slices/S02-intermediaries.html">PID-00025/specs/slices/S02-intermediaries.html</a></td><td>S02 — So dịch vụ trung gian qua tài liệu</td></tr>
+<tr><td><a href="PID-00025/specs/slices/S03-parser-report.html">PID-00025/specs/slices/S03-parser-report.html</a></td><td>S03 — Chọn parser và báo cáo</td></tr>
+<tr><td><a href="PID-00025/designs/notes.html">PID-00025/designs/notes.html</a></td><td>PID-00025 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00026">PID-00026</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00026/index.html">PID-00026/index.html</a></td><td>PID-00026 — Knowledge: migration Alembic và khung module</td></tr>
+<tr><td><a href="PID-00026/specs/index.html">PID-00026/specs/index.html</a></td><td>PID-00026 — Knowledge: migration Alembic và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00027">PID-00027</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00027/index.html">PID-00027/index.html</a></td><td>PID-00027 — SPK-04: pgvector, truy xuất có lọc 500 reference</td></tr>
+<tr><td><a href="PID-00027/specs/acceptance.html">PID-00027/specs/acceptance.html</a></td><td>PID-00027 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00027/specs/brief.html">PID-00027/specs/brief.html</a></td><td>PID-00027 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00027/specs/index.html">PID-00027/specs/index.html</a></td><td>PID-00027 — SPK-04: pgvector, truy xuất có lọc 500 reference</td></tr>
+<tr><td><a href="PID-00027/specs/scope.html">PID-00027/specs/scope.html</a></td><td>PID-00027 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00027/specs/slices/S01-dataset.html">PID-00027/specs/slices/S01-dataset.html</a></td><td>S01 — Sinh dữ liệu đo</td></tr>
+<tr><td><a href="PID-00027/specs/slices/S02-measure.html">PID-00027/specs/slices/S02-measure.html</a></td><td>S02 — Đo và kiểm cách ly</td></tr>
+<tr><td><a href="PID-00027/specs/slices/S03-report.html">PID-00027/specs/slices/S03-report.html</a></td><td>S03 — Đề xuất và báo cáo</td></tr>
+<tr><td><a href="PID-00027/designs/notes.html">PID-00027/designs/notes.html</a></td><td>PID-00027 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00028">PID-00028</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00028/index.html">PID-00028/index.html</a></td><td>PID-00028 — SPK-05: trích xuất PDF đa ngành</td></tr>
+<tr><td><a href="PID-00028/specs/acceptance.html">PID-00028/specs/acceptance.html</a></td><td>PID-00028 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00028/specs/brief.html">PID-00028/specs/brief.html</a></td><td>PID-00028 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00028/specs/index.html">PID-00028/specs/index.html</a></td><td>PID-00028 — SPK-05: trích xuất PDF đa ngành</td></tr>
+<tr><td><a href="PID-00028/specs/scope.html">PID-00028/specs/scope.html</a></td><td>PID-00028 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00028/specs/slices/S01-sample-set.html">PID-00028/specs/slices/S01-sample-set.html</a></td><td>S01 — Lập bộ mẫu</td></tr>
+<tr><td><a href="PID-00028/specs/slices/S02-extract.html">PID-00028/specs/slices/S02-extract.html</a></td><td>S02 — Trích xuất và đề xuất N</td></tr>
+<tr><td><a href="PID-00028/specs/slices/S03-report.html">PID-00028/specs/slices/S03-report.html</a></td><td>S03 — Báo cáo</td></tr>
+<tr><td><a href="PID-00028/designs/notes.html">PID-00028/designs/notes.html</a></td><td>PID-00028 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00029">PID-00029</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00029/index.html">PID-00029/index.html</a></td><td>PID-00029 — Research: migration và khung module</td></tr>
+<tr><td><a href="PID-00029/specs/index.html">PID-00029/specs/index.html</a></td><td>PID-00029 — Research: migration và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00030">PID-00030</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00030/index.html">PID-00030/index.html</a></td><td>PID-00030 — Manuscript: migration và khung module</td></tr>
+<tr><td><a href="PID-00030/specs/index.html">PID-00030/specs/index.html</a></td><td>PID-00030 — Manuscript: migration và khung module</td></tr>
+</tbody></table></div>
+<h3 id="pid-00031">PID-00031</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00031/index.html">PID-00031/index.html</a></td><td>PID-00031 — SPK-06: sandbox LaTeX dưới gVisor</td></tr>
+<tr><td><a href="PID-00031/specs/acceptance.html">PID-00031/specs/acceptance.html</a></td><td>PID-00031 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00031/specs/brief.html">PID-00031/specs/brief.html</a></td><td>PID-00031 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00031/specs/index.html">PID-00031/specs/index.html</a></td><td>PID-00031 — SPK-06: sandbox LaTeX dưới gVisor</td></tr>
+<tr><td><a href="PID-00031/specs/scope.html">PID-00031/specs/scope.html</a></td><td>PID-00031 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00031/specs/slices/S01-container.html">PID-00031/specs/slices/S01-container.html</a></td><td>S01 — Container gVisor thử</td></tr>
+<tr><td><a href="PID-00031/specs/slices/S02-measure-attack.html">PID-00031/specs/slices/S02-measure-attack.html</a></td><td>S02 — Đo và thử tấn công</td></tr>
+<tr><td><a href="PID-00031/specs/slices/S03-report.html">PID-00031/specs/slices/S03-report.html</a></td><td>S03 — Báo cáo</td></tr>
+<tr><td><a href="PID-00031/designs/notes.html">PID-00031/designs/notes.html</a></td><td>PID-00031 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00032">PID-00032</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00032/index.html">PID-00032/index.html</a></td><td>PID-00032 — SPK-07: mermaid-cli + Chromium dưới gVisor không mạng</td></tr>
+<tr><td><a href="PID-00032/specs/acceptance.html">PID-00032/specs/acceptance.html</a></td><td>PID-00032 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00032/specs/brief.html">PID-00032/specs/brief.html</a></td><td>PID-00032 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00032/specs/index.html">PID-00032/specs/index.html</a></td><td>PID-00032 — SPK-07: mermaid-cli + Chromium dưới gVisor không mạng</td></tr>
+<tr><td><a href="PID-00032/specs/scope.html">PID-00032/specs/scope.html</a></td><td>PID-00032 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00032/specs/slices/S01-container.html">PID-00032/specs/slices/S01-container.html</a></td><td>S01 — Container gVisor thử</td></tr>
+<tr><td><a href="PID-00032/specs/slices/S02-render.html">PID-00032/specs/slices/S02-render.html</a></td><td>S02 — Render và kịch bản lỗi</td></tr>
+<tr><td><a href="PID-00032/specs/slices/S03-report.html">PID-00032/specs/slices/S03-report.html</a></td><td>S03 — Báo cáo</td></tr>
+<tr><td><a href="PID-00032/designs/notes.html">PID-00032/designs/notes.html</a></td><td>PID-00032 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00033">PID-00033</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00033/index.html">PID-00033/index.html</a></td><td>PID-00033 — Eval: mẫu CSV bộ dữ liệu nghiệm thu, trình kiểm và khung báo cáo</td></tr>
+<tr><td><a href="PID-00033/specs/acceptance.html">PID-00033/specs/acceptance.html</a></td><td>PID-00033 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00033/specs/brief.html">PID-00033/specs/brief.html</a></td><td>PID-00033 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00033/specs/index.html">PID-00033/specs/index.html</a></td><td>PID-00033 — Eval: mẫu CSV bộ dữ liệu nghiệm thu, trình kiểm và khung báo cáo</td></tr>
+<tr><td><a href="PID-00033/specs/scope.html">PID-00033/specs/scope.html</a></td><td>PID-00033 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00033/specs/slices/S01-csv-template.html">PID-00033/specs/slices/S01-csv-template.html</a></td><td>S01 — Mẫu CSV và đề tài mẫu</td></tr>
+<tr><td><a href="PID-00033/specs/slices/S02-validator.html">PID-00033/specs/slices/S02-validator.html</a></td><td>S02 — Trình kiểm và bộ chuyển đổi</td></tr>
+<tr><td><a href="PID-00033/specs/slices/S03-report-guide.html">PID-00033/specs/slices/S03-report-guide.html</a></td><td>S03 — Khung báo cáo và hướng dẫn</td></tr>
+<tr><td><a href="PID-00033/designs/notes.html">PID-00033/designs/notes.html</a></td><td>PID-00033 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00034">PID-00034</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00034/index.html">PID-00034/index.html</a></td><td>PID-00034 — E2E: khung Playwright và dữ liệu mẫu 16.4</td></tr>
+<tr><td><a href="PID-00034/specs/acceptance.html">PID-00034/specs/acceptance.html</a></td><td>PID-00034 — Tiêu chí nghiệm thu → test</td></tr>
+<tr><td><a href="PID-00034/specs/brief.html">PID-00034/specs/brief.html</a></td><td>PID-00034 — Tóm tắt nghiệp vụ (đã làm rõ)</td></tr>
+<tr><td><a href="PID-00034/specs/index.html">PID-00034/specs/index.html</a></td><td>PID-00034 — E2E: khung Playwright và dữ liệu mẫu 16.4</td></tr>
+<tr><td><a href="PID-00034/specs/scope.html">PID-00034/specs/scope.html</a></td><td>PID-00034 — Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><a href="PID-00034/specs/slices/S01-playwright.html">PID-00034/specs/slices/S01-playwright.html</a></td><td>S01 — Cấu hình Playwright</td></tr>
+<tr><td><a href="PID-00034/specs/slices/S02-fixtures.html">PID-00034/specs/slices/S02-fixtures.html</a></td><td>S02 — Dữ liệu chuẩn và bộ nạp</td></tr>
+<tr><td><a href="PID-00034/designs/notes.html">PID-00034/designs/notes.html</a></td><td>PID-00034 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00035">PID-00035</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00035/index.html">PID-00035/index.html</a></td><td>PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS</td></tr>
+<tr><td><a href="PID-00035/specs/index.html">PID-00035/specs/index.html</a></td><td>PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS</td></tr>
+</tbody></table></div>
+<h3 id="pid-00036">PID-00036</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00036/index.html">PID-00036/index.html</a></td><td>PID-00036 — Khu vực settings: SignIn, Profile, Provider Connections, Agent Models, Preferences</td></tr>
+<tr><td><a href="PID-00036/specs/index.html">PID-00036/specs/index.html</a></td><td>PID-00036 — Khu vực settings: SignIn, Profile, Provider Connections, Agent Models, Preferences</td></tr>
+<tr><td><a href="PID-00036/designs/notes.html">PID-00036/designs/notes.html</a></td><td>PID-00036 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00037">PID-00037</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00037/index.html">PID-00037/index.html</a></td><td>PID-00037 — Khu vực global: Projects và khung Dashboard</td></tr>
+<tr><td><a href="PID-00037/specs/index.html">PID-00037/specs/index.html</a></td><td>PID-00037 — Khu vực global: Projects và khung Dashboard</td></tr>
+<tr><td><a href="PID-00037/designs/notes.html">PID-00037/designs/notes.html</a></td><td>PID-00037 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00038">PID-00038</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00038/index.html">PID-00038/index.html</a></td><td>PID-00038 — Đăng nhập eTroy OIDC: RP, PKCE, phiên, đăng xuất</td></tr>
+<tr><td><a href="PID-00038/specs/index.html">PID-00038/specs/index.html</a></td><td>PID-00038 — Đăng nhập eTroy OIDC: RP, PKCE, phiên, đăng xuất</td></tr>
+</tbody></table></div>
+<h3 id="pid-00039">PID-00039</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00039/index.html">PID-00039/index.html</a></td><td>PID-00039 — Định tuyến /api/v1, lệnh ghi chuẩn, token actor</td></tr>
+<tr><td><a href="PID-00039/specs/index.html">PID-00039/specs/index.html</a></td><td>PID-00039 — Định tuyến /api/v1, lệnh ghi chuẩn, token actor</td></tr>
+</tbody></table></div>
+<h3 id="pid-00040">PID-00040</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00040/index.html">PID-00040/index.html</a></td><td>PID-00040 — Realtime: SSE /events, fan-out sự kiện theo tài khoản</td></tr>
+<tr><td><a href="PID-00040/specs/index.html">PID-00040/specs/index.html</a></td><td>PID-00040 — Realtime: SSE /events, fan-out sự kiện theo tài khoản</td></tr>
+</tbody></table></div>
+<h3 id="pid-00041">PID-00041</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00041/index.html">PID-00041/index.html</a></td><td>PID-00041 — Account, Profile, Preferences, Ngưỡng kiểm chứng</td></tr>
+<tr><td><a href="PID-00041/specs/index.html">PID-00041/specs/index.html</a></td><td>PID-00041 — Account, Profile, Preferences, Ngưỡng kiểm chứng</td></tr>
+</tbody></table></div>
+<h3 id="pid-00042">PID-00042</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00042/index.html">PID-00042/index.html</a></td><td>PID-00042 — Provider Connection: lưu key mã hóa, kiểm tra kết nối, danh mục model</td></tr>
+<tr><td><a href="PID-00042/specs/index.html">PID-00042/specs/index.html</a></td><td>PID-00042 — Provider Connection: lưu key mã hóa, kiểm tra kết nối, danh mục model</td></tr>
+</tbody></table></div>
+<h3 id="pid-00043">PID-00043</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00043/index.html">PID-00043/index.html</a></td><td>PID-00043 — Agent Models: gán model cho từng agent</td></tr>
+<tr><td><a href="PID-00043/specs/index.html">PID-00043/specs/index.html</a></td><td>PID-00043 — Agent Models: gán model cho từng agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00044">PID-00044</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00044/index.html">PID-00044/index.html</a></td><td>PID-00044 — Project và vòng đời: tạo, lưu trữ, xóa mềm 30 ngày, Research Context</td></tr>
+<tr><td><a href="PID-00044/specs/index.html">PID-00044/specs/index.html</a></td><td>PID-00044 — Project và vòng đời: tạo, lưu trữ, xóa mềm 30 ngày, Research Context</td></tr>
+</tbody></table></div>
+<h3 id="pid-00045">PID-00045</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00045/index.html">PID-00045/index.html</a></td><td>PID-00045 — Kho Audit Event: nhận sự kiện, truy vấn</td></tr>
+<tr><td><a href="PID-00045/specs/index.html">PID-00045/specs/index.html</a></td><td>PID-00045 — Kho Audit Event: nhận sự kiện, truy vấn</td></tr>
+</tbody></table></div>
+<h3 id="pid-00046">PID-00046</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00046/index.html">PID-00046/index.html</a></td><td>PID-00046 — Engine: Workflow, Step, Checkpoint, heartbeat, sweeper, Recovery decision</td></tr>
+<tr><td><a href="PID-00046/specs/index.html">PID-00046/specs/index.html</a></td><td>PID-00046 — Engine: Workflow, Step, Checkpoint, heartbeat, sweeper, Recovery decision</td></tr>
+</tbody></table></div>
+<h3 id="pid-00047">PID-00047</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00047/index.html">PID-00047/index.html</a></td><td>PID-00047 — Agent Run: phát lệnh agent.run, start, heartbeat, kết quả, thất bại</td></tr>
+<tr><td><a href="PID-00047/specs/index.html">PID-00047/specs/index.html</a></td><td>PID-00047 — Agent Run: phát lệnh agent.run, start, heartbeat, kết quả, thất bại</td></tr>
+</tbody></table></div>
+<h3 id="pid-00048">PID-00048</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00048/index.html">PID-00048/index.html</a></td><td>PID-00048 — Kiểm tra kết nối provider và danh mục agent</td></tr>
+<tr><td><a href="PID-00048/specs/index.html">PID-00048/specs/index.html</a></td><td>PID-00048 — Kiểm tra kết nối provider và danh mục agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00049">PID-00049</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00049/index.html">PID-00049/index.html</a></td><td>PID-00049 — Plan và Plan Version: nháp, trình, duyệt, so sánh</td></tr>
+<tr><td><a href="PID-00049/specs/index.html">PID-00049/specs/index.html</a></td><td>PID-00049 — Plan và Plan Version: nháp, trình, duyệt, so sánh</td></tr>
+</tbody></table></div>
+<h3 id="pid-00050">PID-00050</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00050/index.html">PID-00050/index.html</a></td><td>PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite</td></tr>
+<tr><td><a href="PID-00050/specs/index.html">PID-00050/specs/index.html</a></td><td>PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite</td></tr>
+</tbody></table></div>
+<h3 id="pid-00051">PID-00051</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00051/index.html">PID-00051/index.html</a></td><td>PID-00051 — Pipeline: trích xuất PDF và chunking</td></tr>
+<tr><td><a href="PID-00051/specs/index.html">PID-00051/specs/index.html</a></td><td>PID-00051 — Pipeline: trích xuất PDF và chunking</td></tr>
+</tbody></table></div>
+<h3 id="pid-00052">PID-00052</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00052/index.html">PID-00052/index.html</a></td><td>PID-00052 — Evidence: entity, truy xuất, loại trừ, ghi theo lô từ agent</td></tr>
+<tr><td><a href="PID-00052/specs/index.html">PID-00052/specs/index.html</a></td><td>PID-00052 — Evidence: entity, truy xuất, loại trừ, ghi theo lô từ agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00053">PID-00053</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00053/index.html">PID-00053/index.html</a></td><td>PID-00053 — Manuscript, file, revision dạng cây, template Default và Blank</td></tr>
+<tr><td><a href="PID-00053/specs/index.html">PID-00053/specs/index.html</a></td><td>PID-00053 — Manuscript, file, revision dạng cây, template Default và Blank</td></tr>
+</tbody></table></div>
+<h3 id="pid-00054">PID-00054</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00054/index.html">PID-00054/index.html</a></td><td>PID-00054 — Image sandbox: TeX Live cố định, mermaid-cli + Chromium</td></tr>
+<tr><td><a href="PID-00054/specs/index.html">PID-00054/specs/index.html</a></td><td>PID-00054 — Image sandbox: TeX Live cố định, mermaid-cli + Chromium</td></tr>
+</tbody></table></div>
+<h3 id="pid-00055">PID-00055</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00055/index.html">PID-00055/index.html</a></td><td>PID-00055 — Smoke lát 1 và kiểm cổng PH-02</td></tr>
+<tr><td><a href="PID-00055/specs/index.html">PID-00055/specs/index.html</a></td><td>PID-00055 — Smoke lát 1 và kiểm cổng PH-02</td></tr>
+</tbody></table></div>
+<h3 id="pid-00056">PID-00056</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00056/index.html">PID-00056/index.html</a></td><td>PID-00056 — Lan traceparent qua HTTP và message; metric outbox → broker → SSE</td></tr>
+<tr><td><a href="PID-00056/specs/index.html">PID-00056/specs/index.html</a></td><td>PID-00056 — Lan traceparent qua HTTP và message; metric outbox → broker → SSE</td></tr>
+</tbody></table></div>
+<h3 id="pid-00057">PID-00057</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00057/index.html">PID-00057/index.html</a></td><td>PID-00057 — RabbitMQ quorum, dead-letter, KEDA cho agent-core, dashboard vận hành</td></tr>
+<tr><td><a href="PID-00057/specs/index.html">PID-00057/specs/index.html</a></td><td>PID-00057 — RabbitMQ quorum, dead-letter, KEDA cho agent-core, dashboard vận hành</td></tr>
+</tbody></table></div>
+<h3 id="pid-00058">PID-00058</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00058/index.html">PID-00058/index.html</a></td><td>PID-00058 — Khu vực project: Overview và Project AI Chat</td></tr>
+<tr><td><a href="PID-00058/specs/index.html">PID-00058/specs/index.html</a></td><td>PID-00058 — Khu vực project: Overview và Project AI Chat</td></tr>
+<tr><td><a href="PID-00058/designs/notes.html">PID-00058/designs/notes.html</a></td><td>PID-00058 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00059">PID-00059</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00059/index.html">PID-00059/index.html</a></td><td>PID-00059 — Khu vực monitoring: Activity, Workflow, AgentList, History</td></tr>
+<tr><td><a href="PID-00059/specs/index.html">PID-00059/specs/index.html</a></td><td>PID-00059 — Khu vực monitoring: Activity, Workflow, AgentList, History</td></tr>
+<tr><td><a href="PID-00059/designs/notes.html">PID-00059/designs/notes.html</a></td><td>PID-00059 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00060">PID-00060</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00060/index.html">PID-00060/index.html</a></td><td>PID-00060 — Khu vực global: Pending Actions, Notifications, Global Assistant, màn điện thoại</td></tr>
+<tr><td><a href="PID-00060/specs/index.html">PID-00060/specs/index.html</a></td><td>PID-00060 — Khu vực global: Pending Actions, Notifications, Global Assistant, màn điện thoại</td></tr>
+<tr><td><a href="PID-00060/designs/notes.html">PID-00060/designs/notes.html</a></td><td>PID-00060 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00061">PID-00061</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00061/index.html">PID-00061/index.html</a></td><td>PID-00061 — Stream chat.delta và SSE trạng thái workflow</td></tr>
+<tr><td><a href="PID-00061/specs/index.html">PID-00061/specs/index.html</a></td><td>PID-00061 — Stream chat.delta và SSE trạng thái workflow</td></tr>
+</tbody></table></div>
+<h3 id="pid-00062">PID-00062</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00062/index.html">PID-00062/index.html</a></td><td>PID-00062 — Giao ProviderSecretEnvelope cho Agent Run, báo lỗi provider</td></tr>
+<tr><td><a href="PID-00062/specs/index.html">PID-00062/specs/index.html</a></td><td>PID-00062 — Giao ProviderSecretEnvelope cho Agent Run, báo lỗi provider</td></tr>
+</tbody></table></div>
+<h3 id="pid-00063">PID-00063</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00063/index.html">PID-00063/index.html</a></td><td>PID-00063 — Conversation và Message: chat project, active task, tin nhắn của Orchestrator</td></tr>
+<tr><td><a href="PID-00063/specs/index.html">PID-00063/specs/index.html</a></td><td>PID-00063 — Conversation và Message: chat project, active task, tin nhắn của Orchestrator</td></tr>
+</tbody></table></div>
+<h3 id="pid-00064">PID-00064</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00064/index.html">PID-00064/index.html</a></td><td>PID-00064 — Pending Actions, Notifications, Dashboard từ sự kiện của mọi luồng</td></tr>
+<tr><td><a href="PID-00064/specs/index.html">PID-00064/specs/index.html</a></td><td>PID-00064 — Pending Actions, Notifications, Dashboard từ sự kiện của mọi luồng</td></tr>
+</tbody></table></div>
+<h3 id="pid-00065">PID-00065</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00065/index.html">PID-00065/index.html</a></td><td>PID-00065 — Prompt và phê duyệt: InteractiveAgentPrompt, APR-01–APR-10</td></tr>
+<tr><td><a href="PID-00065/specs/index.html">PID-00065/specs/index.html</a></td><td>PID-00065 — Prompt và phê duyệt: InteractiveAgentPrompt, APR-01–APR-10</td></tr>
+</tbody></table></div>
+<h3 id="pid-00066">PID-00066</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00066/index.html">PID-00066/index.html</a></td><td>PID-00066 — Shared Context: ContextItem, đọc cho lắp ráp context</td></tr>
+<tr><td><a href="PID-00066/specs/index.html">PID-00066/specs/index.html</a></td><td>PID-00066 — Shared Context: ContextItem, đọc cho lắp ráp context</td></tr>
+</tbody></table></div>
+<h3 id="pid-00067">PID-00067</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00067/index.html">PID-00067/index.html</a></td><td>PID-00067 — Usage: ghi usage theo Agent Run và tổng hợp</td></tr>
+<tr><td><a href="PID-00067/specs/index.html">PID-00067/specs/index.html</a></td><td>PID-00067 — Usage: ghi usage theo Agent Run và tổng hợp</td></tr>
+</tbody></table></div>
+<h3 id="pid-00068">PID-00068</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00068/index.html">PID-00068/index.html</a></td><td>PID-00068 — Lượt chat: nhận message.posted, tạo workflow chat, gọi Orchestrator</td></tr>
+<tr><td><a href="PID-00068/specs/index.html">PID-00068/specs/index.html</a></td><td>PID-00068 — Lượt chat: nhận message.posted, tạo workflow chat, gọi Orchestrator</td></tr>
+</tbody></table></div>
+<h3 id="pid-00069">PID-00069</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00069/index.html">PID-00069/index.html</a></td><td>PID-00069 — Gián đoạn và khôi phục; SPK-09 bản đầu</td></tr>
+<tr><td><a href="PID-00069/specs/index.html">PID-00069/specs/index.html</a></td><td>PID-00069 — Gián đoạn và khôi phục; SPK-09 bản đầu</td></tr>
+</tbody></table></div>
+<h3 id="pid-00070">PID-00070</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00070/index.html">PID-00070/index.html</a></td><td>PID-00070 — Model Gateway ba provider: adapter, structured output, stream, usage, ánh xạ lỗi</td></tr>
+<tr><td><a href="PID-00070/specs/index.html">PID-00070/specs/index.html</a></td><td>PID-00070 — Model Gateway ba provider: adapter, structured output, stream, usage, ánh xạ lỗi</td></tr>
+</tbody></table></div>
+<h3 id="pid-00071">PID-00071</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00071/index.html">PID-00071/index.html</a></td><td>PID-00071 — Agent registry và prompt template</td></tr>
+<tr><td><a href="PID-00071/specs/index.html">PID-00071/specs/index.html</a></td><td>PID-00071 — Agent registry và prompt template</td></tr>
+</tbody></table></div>
+<h3 id="pid-00072">PID-00072</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00072/index.html">PID-00072/index.html</a></td><td>PID-00072 — Context Assembler: lắp, cắt gọn, context manifest</td></tr>
+<tr><td><a href="PID-00072/specs/index.html">PID-00072/specs/index.html</a></td><td>PID-00072 — Context Assembler: lắp, cắt gọn, context manifest</td></tr>
+</tbody></table></div>
+<h3 id="pid-00073">PID-00073</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00073/index.html">PID-00073/index.html</a></td><td>PID-00073 — Orchestrator chat và worker agent.run</td></tr>
+<tr><td><a href="PID-00073/specs/index.html">PID-00073/specs/index.html</a></td><td>PID-00073 — Orchestrator chat và worker agent.run</td></tr>
+</tbody></table></div>
+<h3 id="pid-00074">PID-00074</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00074/index.html">PID-00074/index.html</a></td><td>PID-00074 — Task: kích hoạt, thủ công, checklist, chuyển trạng thái theo workflow</td></tr>
+<tr><td><a href="PID-00074/specs/index.html">PID-00074/specs/index.html</a></td><td>PID-00074 — Task: kích hoạt, thủ công, checklist, chuyển trạng thái theo workflow</td></tr>
+</tbody></table></div>
+<h3 id="pid-00075">PID-00075</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00075/index.html">PID-00075/index.html</a></td><td>PID-00075 — Readiness RC-01–RC-08 và tự tính lại</td></tr>
+<tr><td><a href="PID-00075/specs/index.html">PID-00075/specs/index.html</a></td><td>PID-00075 — Readiness RC-01–RC-08 và tự tính lại</td></tr>
+</tbody></table></div>
+<h3 id="pid-00076">PID-00076</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00076/index.html">PID-00076/index.html</a></td><td>PID-00076 — Reference: nhập, duyệt theo lô, metadata, thu hồi, gộp</td></tr>
+<tr><td><a href="PID-00076/specs/index.html">PID-00076/specs/index.html</a></td><td>PID-00076 — Reference: nhập, duyệt theo lô, metadata, thu hồi, gộp</td></tr>
+</tbody></table></div>
+<h3 id="pid-00077">PID-00077</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00077/index.html">PID-00077/index.html</a></td><td>PID-00077 — Pipeline: embedding bằng key người dùng, tách vector theo model</td></tr>
+<tr><td><a href="PID-00077/specs/index.html">PID-00077/specs/index.html</a></td><td>PID-00077 — Pipeline: embedding bằng key người dùng, tách vector theo model</td></tr>
+</tbody></table></div>
+<h3 id="pid-00078">PID-00078</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00078/index.html">PID-00078/index.html</a></td><td>PID-00078 — Claim: liên kết evidence, trạng thái, nghiệm thu, ghi theo lô từ agent</td></tr>
+<tr><td><a href="PID-00078/specs/index.html">PID-00078/specs/index.html</a></td><td>PID-00078 — Claim: liên kết evidence, trạng thái, nghiệm thu, ghi theo lô từ agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00079">PID-00079</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00079/index.html">PID-00079/index.html</a></td><td>PID-00079 — Change Proposal: chấp nhận nguyên khối, outdated, chèn sơ đồ</td></tr>
+<tr><td><a href="PID-00079/specs/index.html">PID-00079/specs/index.html</a></td><td>PID-00079 — Change Proposal: chấp nhận nguyên khối, outdated, chèn sơ đồ</td></tr>
+</tbody></table></div>
+<h3 id="pid-00080">PID-00080</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00080/index.html">PID-00080/index.html</a></td><td>PID-00080 — Controller NestJS và pool sandbox</td></tr>
+<tr><td><a href="PID-00080/specs/index.html">PID-00080/specs/index.html</a></td><td>PID-00080 — Controller NestJS và pool sandbox</td></tr>
+</tbody></table></div>
+<h3 id="pid-00081">PID-00081</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00081/index.html">PID-00081/index.html</a></td><td>PID-00081 — Kịch bản lát 2 và kiểm cổng PH-03</td></tr>
+<tr><td><a href="PID-00081/specs/index.html">PID-00081/specs/index.html</a></td><td>PID-00081 — Kịch bản lát 2 và kiểm cổng PH-03</td></tr>
+</tbody></table></div>
+<h3 id="pid-00082">PID-00082</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00082/index.html">PID-00082/index.html</a></td><td>PID-00082 — Khu vực planning: Plan, so sánh version, TaskReview, GlobalTasks</td></tr>
+<tr><td><a href="PID-00082/specs/index.html">PID-00082/specs/index.html</a></td><td>PID-00082 — Khu vực planning: Plan, so sánh version, TaskReview, GlobalTasks</td></tr>
+<tr><td><a href="PID-00082/designs/notes.html">PID-00082/designs/notes.html</a></td><td>PID-00082 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00083">PID-00083</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00083/index.html">PID-00083/index.html</a></td><td>PID-00083 — Tab Thảo luận trong chi tiết workflow</td></tr>
+<tr><td><a href="PID-00083/specs/index.html">PID-00083/specs/index.html</a></td><td>PID-00083 — Tab Thảo luận trong chi tiết workflow</td></tr>
+<tr><td><a href="PID-00083/designs/notes.html">PID-00083/designs/notes.html</a></td><td>PID-00083 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00084">PID-00084</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00084/index.html">PID-00084/index.html</a></td><td>PID-00084 — Thẻ đề xuất thảo luận trong Chat</td></tr>
+<tr><td><a href="PID-00084/specs/index.html">PID-00084/specs/index.html</a></td><td>PID-00084 — Thẻ đề xuất thảo luận trong Chat</td></tr>
+<tr><td><a href="PID-00084/designs/notes.html">PID-00084/designs/notes.html</a></td><td>PID-00084 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00085">PID-00085</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00085/index.html">PID-00085/index.html</a></td><td>PID-00085 — getAgentSetup, instance A và B của Analysis Agent, sameModelWarning</td></tr>
+<tr><td><a href="PID-00085/specs/index.html">PID-00085/specs/index.html</a></td><td>PID-00085 — getAgentSetup, instance A và B của Analysis Agent, sameModelWarning</td></tr>
+</tbody></table></div>
+<h3 id="pid-00086">PID-00086</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00086/index.html">PID-00086/index.html</a></td><td>PID-00086 — StepPlan, bước song song, saga áp dụng đầu ra; nối Plan và Task</td></tr>
+<tr><td><a href="PID-00086/specs/index.html">PID-00086/specs/index.html</a></td><td>PID-00086 — StepPlan, bước song song, saga áp dụng đầu ra; nối Plan và Task</td></tr>
+</tbody></table></div>
+<h3 id="pid-00087">PID-00087</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00087/index.html">PID-00087/index.html</a></td><td>PID-00087 — Phiên thảo luận: Deliberation, Board, Context Snapshot</td></tr>
+<tr><td><a href="PID-00087/specs/index.html">PID-00087/specs/index.html</a></td><td>PID-00087 — Phiên thảo luận: Deliberation, Board, Context Snapshot</td></tr>
+</tbody></table></div>
+<h3 id="pid-00088">PID-00088</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00088/index.html">PID-00088/index.html</a></td><td>PID-00088 — SPK-11: chi phí, độ trễ, tải ghi của một phiên thảo luận</td></tr>
+<tr><td><a href="PID-00088/specs/index.html">PID-00088/specs/index.html</a></td><td>PID-00088 — SPK-11: chi phí, độ trễ, tải ghi của một phiên thảo luận</td></tr>
+</tbody></table></div>
+<h3 id="pid-00089">PID-00089</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00089/index.html">PID-00089/index.html</a></td><td>PID-00089 — Orchestrator lập Plan và đánh giá readiness ngữ nghĩa RC-09</td></tr>
+<tr><td><a href="PID-00089/specs/index.html">PID-00089/specs/index.html</a></td><td>PID-00089 — Orchestrator lập Plan và đánh giá readiness ngữ nghĩa RC-09</td></tr>
+</tbody></table></div>
+<h3 id="pid-00090">PID-00090</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00090/index.html">PID-00090/index.html</a></td><td>PID-00090 — Analysis Agent A, B: lập trường, phản biện, ghi board</td></tr>
+<tr><td><a href="PID-00090/specs/index.html">PID-00090/specs/index.html</a></td><td>PID-00090 — Analysis Agent A, B: lập trường, phản biện, ghi board</td></tr>
+</tbody></table></div>
+<h3 id="pid-00091">PID-00091</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00091/index.html">PID-00091/index.html</a></td><td>PID-00091 — Hội tụ WF-01–WF-03: TaskReview, mở lại Task, phân tích ảnh hưởng</td></tr>
+<tr><td><a href="PID-00091/specs/index.html">PID-00091/specs/index.html</a></td><td>PID-00091 — Hội tụ WF-01–WF-03: TaskReview, mở lại Task, phân tích ảnh hưởng</td></tr>
+</tbody></table></div>
+<h3 id="pid-00092">PID-00092</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00092/index.html">PID-00092/index.html</a></td><td>PID-00092 — Selection của project và endpoint nội bộ cho readiness</td></tr>
+<tr><td><a href="PID-00092/specs/index.html">PID-00092/specs/index.html</a></td><td>PID-00092 — Selection của project và endpoint nội bộ cho readiness</td></tr>
+</tbody></table></div>
+<h3 id="pid-00093">PID-00093</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00093/index.html">PID-00093/index.html</a></td><td>PID-00093 — Truy xuất lai, đọc chunk, kiểm tra quote</td></tr>
+<tr><td><a href="PID-00093/specs/index.html">PID-00093/specs/index.html</a></td><td>PID-00093 — Truy xuất lai, đọc chunk, kiểm tra quote</td></tr>
+</tbody></table></div>
+<h3 id="pid-00094">PID-00094</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00094/index.html">PID-00094/index.html</a></td><td>PID-00094 — Verification: kiểm tra tất định, Ngưỡng kiểm chứng, kiểm citation</td></tr>
+<tr><td><a href="PID-00094/specs/index.html">PID-00094/specs/index.html</a></td><td>PID-00094 — Verification: kiểm tra tất định, Ngưỡng kiểm chứng, kiểm citation</td></tr>
+</tbody></table></div>
+<h3 id="pid-00095">PID-00095</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00095/index.html">PID-00095/index.html</a></td><td>PID-00095 — Bibliography và cổng citation</td></tr>
+<tr><td><a href="PID-00095/specs/index.html">PID-00095/specs/index.html</a></td><td>PID-00095 — Bibliography và cổng citation</td></tr>
+</tbody></table></div>
+<h3 id="pid-00096">PID-00096</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00096/index.html">PID-00096/index.html</a></td><td>PID-00096 — Nhận sandbox.build, trả sandbox.reply, đọc file build</td></tr>
+<tr><td><a href="PID-00096/specs/index.html">PID-00096/specs/index.html</a></td><td>PID-00096 — Nhận sandbox.build, trả sandbox.reply, đọc file build</td></tr>
+</tbody></table></div>
+<h3 id="pid-00097">PID-00097</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00097/index.html">PID-00097/index.html</a></td><td>PID-00097 — Kịch bản lát 3 và kiểm cổng PH-04</td></tr>
+<tr><td><a href="PID-00097/specs/index.html">PID-00097/specs/index.html</a></td><td>PID-00097 — Kịch bản lát 3 và kiểm cổng PH-04</td></tr>
+</tbody></table></div>
+<h3 id="pid-00098">PID-00098</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00098/index.html">PID-00098/index.html</a></td><td>PID-00098 — Khu vực library: Discover, Library, Reference</td></tr>
+<tr><td><a href="PID-00098/specs/index.html">PID-00098/specs/index.html</a></td><td>PID-00098 — Khu vực library: Discover, Library, Reference</td></tr>
+<tr><td><a href="PID-00098/designs/notes.html">PID-00098/designs/notes.html</a></td><td>PID-00098 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00099">PID-00099</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00099/index.html">PID-00099/index.html</a></td><td>PID-00099 — Cấu hình embedding của tài khoản</td></tr>
+<tr><td><a href="PID-00099/specs/index.html">PID-00099/specs/index.html</a></td><td>PID-00099 — Cấu hình embedding của tài khoản</td></tr>
+</tbody></table></div>
+<h3 id="pid-00100">PID-00100</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00100/index.html">PID-00100/index.html</a></td><td>PID-00100 — Bước của WF-04: Discovery, Reference Processing, đề xuất reference</td></tr>
+<tr><td><a href="PID-00100/specs/index.html">PID-00100/specs/index.html</a></td><td>PID-00100 — Bước của WF-04: Discovery, Reference Processing, đề xuất reference</td></tr>
+</tbody></table></div>
+<h3 id="pid-00101">PID-00101</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00101/index.html">PID-00101/index.html</a></td><td>PID-00101 — Discovery Agent và tool search_sources</td></tr>
+<tr><td><a href="PID-00101/specs/index.html">PID-00101/specs/index.html</a></td><td>PID-00101 — Discovery Agent và tool search_sources</td></tr>
+</tbody></table></div>
+<h3 id="pid-00102">PID-00102</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00102/index.html">PID-00102/index.html</a></td><td>PID-00102 — Reference Processing Agent</td></tr>
+<tr><td><a href="PID-00102/specs/index.html">PID-00102/specs/index.html</a></td><td>PID-00102 — Reference Processing Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00103">PID-00103</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00103/index.html">PID-00103/index.html</a></td><td>PID-00103 — Kiểm RC-05 với sự kiện index thật; ảnh hưởng khi reference bị thu hồi</td></tr>
+<tr><td><a href="PID-00103/specs/index.html">PID-00103/specs/index.html</a></td><td>PID-00103 — Kiểm RC-05 với sự kiện index thật; ảnh hưởng khi reference bị thu hồi</td></tr>
+</tbody></table></div>
+<h3 id="pid-00104">PID-00104</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00104/index.html">PID-00104/index.html</a></td><td>PID-00104 — Hội tụ WF-04: tài liệu PDF, thử lại index, nhận trạng thái index</td></tr>
+<tr><td><a href="PID-00104/specs/index.html">PID-00104/specs/index.html</a></td><td>PID-00104 — Hội tụ WF-04: tài liệu PDF, thử lại index, nhận trạng thái index</td></tr>
+</tbody></table></div>
+<h3 id="pid-00105">PID-00105</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00105/index.html">PID-00105/index.html</a></td><td>PID-00105 — Hội tụ index: nhận lệnh, job indexing, phát trạng thái, index lại</td></tr>
+<tr><td><a href="PID-00105/specs/index.html">PID-00105/specs/index.html</a></td><td>PID-00105 — Hội tụ index: nhận lệnh, job indexing, phát trạng thái, index lại</td></tr>
+</tbody></table></div>
+<h3 id="pid-00106">PID-00106</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00106/index.html">PID-00106/index.html</a></td><td>PID-00106 — Artifact, ArtifactVersion, registry đầu ra</td></tr>
+<tr><td><a href="PID-00106/specs/index.html">PID-00106/specs/index.html</a></td><td>PID-00106 — Artifact, ArtifactVersion, registry đầu ra</td></tr>
+</tbody></table></div>
+<h3 id="pid-00107">PID-00107</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00107/index.html">PID-00107/index.html</a></td><td>PID-00107 — Sơ đồ: kiểu, kiểm nguồn Mermaid, render qua sandbox</td></tr>
+<tr><td><a href="PID-00107/specs/index.html">PID-00107/specs/index.html</a></td><td>PID-00107 — Sơ đồ: kiểu, kiểm nguồn Mermaid, render qua sandbox</td></tr>
+</tbody></table></div>
+<h3 id="pid-00108">PID-00108</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00108/index.html">PID-00108/index.html</a></td><td>PID-00108 — Build: gửi sandbox.build, nhận kết quả, log dễ hiểu, export</td></tr>
+<tr><td><a href="PID-00108/specs/index.html">PID-00108/specs/index.html</a></td><td>PID-00108 — Build: gửi sandbox.build, nhận kết quả, log dễ hiểu, export</td></tr>
+</tbody></table></div>
+<h3 id="pid-00109">PID-00109</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00109/index.html">PID-00109/index.html</a></td><td>PID-00109 — Cache build và thời gian chờ</td></tr>
+<tr><td><a href="PID-00109/specs/index.html">PID-00109/specs/index.html</a></td><td>PID-00109 — Cache build và thời gian chờ</td></tr>
+</tbody></table></div>
+<h3 id="pid-00110">PID-00110</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00110/index.html">PID-00110/index.html</a></td><td>PID-00110 — Nạp tài liệu mẫu qua pipeline knowledge thật</td></tr>
+<tr><td><a href="PID-00110/specs/index.html">PID-00110/specs/index.html</a></td><td>PID-00110 — Nạp tài liệu mẫu qua pipeline knowledge thật</td></tr>
+</tbody></table></div>
+<h3 id="pid-00111">PID-00111</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00111/index.html">PID-00111/index.html</a></td><td>PID-00111 — Kịch bản lát 4 và kiểm cổng PH-05</td></tr>
+<tr><td><a href="PID-00111/specs/index.html">PID-00111/specs/index.html</a></td><td>PID-00111 — Kịch bản lát 4 và kiểm cổng PH-05</td></tr>
+</tbody></table></div>
+<h3 id="pid-00112">PID-00112</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00112/index.html">PID-00112/index.html</a></td><td>PID-00112 — Node pool sandbox: gVisor RuntimeClass, NetworkPolicy deny-all</td></tr>
+<tr><td><a href="PID-00112/specs/index.html">PID-00112/specs/index.html</a></td><td>PID-00112 — Node pool sandbox: gVisor RuntimeClass, NetworkPolicy deny-all</td></tr>
+</tbody></table></div>
+<h3 id="pid-00113">PID-00113</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00113/index.html">PID-00113/index.html</a></td><td>PID-00113 — Môi trường eval tách production và job eval trong CI</td></tr>
+<tr><td><a href="PID-00113/specs/index.html">PID-00113/specs/index.html</a></td><td>PID-00113 — Môi trường eval tách production và job eval trong CI</td></tr>
+</tbody></table></div>
+<h3 id="pid-00114">PID-00114</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00114/index.html">PID-00114/index.html</a></td><td>PID-00114 — Khu vực research: Evidence Inspector, Artifacts</td></tr>
+<tr><td><a href="PID-00114/specs/index.html">PID-00114/specs/index.html</a></td><td>PID-00114 — Khu vực research: Evidence Inspector, Artifacts</td></tr>
+<tr><td><a href="PID-00114/designs/notes.html">PID-00114/designs/notes.html</a></td><td>PID-00114 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00115">PID-00115</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00115/index.html">PID-00115/index.html</a></td><td>PID-00115 — Khu vực manuscript: editor, diff, build</td></tr>
+<tr><td><a href="PID-00115/specs/index.html">PID-00115/specs/index.html</a></td><td>PID-00115 — Khu vực manuscript: editor, diff, build</td></tr>
+<tr><td><a href="PID-00115/designs/notes.html">PID-00115/designs/notes.html</a></td><td>PID-00115 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00116">PID-00116</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00116/index.html">PID-00116/index.html</a></td><td>PID-00116 — Tìm kiếm toàn cục</td></tr>
+<tr><td><a href="PID-00116/specs/index.html">PID-00116/specs/index.html</a></td><td>PID-00116 — Tìm kiếm toàn cục</td></tr>
+</tbody></table></div>
+<h3 id="pid-00117">PID-00117</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00117/index.html">PID-00117/index.html</a></td><td>PID-00117 — KPI định kỳ và export JSON, CSV</td></tr>
+<tr><td><a href="PID-00117/specs/index.html">PID-00117/specs/index.html</a></td><td>PID-00117 — KPI định kỳ và export JSON, CSV</td></tr>
+</tbody></table></div>
+<h3 id="pid-00118">PID-00118</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00118/index.html">PID-00118/index.html</a></td><td>PID-00118 — Bước của WF-05 và WF-07: áp dụng evidence, claim, artifact, Change Proposal</td></tr>
+<tr><td><a href="PID-00118/specs/index.html">PID-00118/specs/index.html</a></td><td>PID-00118 — Bước của WF-05 và WF-07: áp dụng evidence, claim, artifact, Change Proposal</td></tr>
+</tbody></table></div>
+<h3 id="pid-00119">PID-00119</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00119/index.html">PID-00119/index.html</a></td><td>PID-00119 — Evidence Retrieval Agent</td></tr>
+<tr><td><a href="PID-00119/specs/index.html">PID-00119/specs/index.html</a></td><td>PID-00119 — Evidence Retrieval Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00120">PID-00120</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00120/index.html">PID-00120/index.html</a></td><td>PID-00120 — Synthesis Agent</td></tr>
+<tr><td><a href="PID-00120/specs/index.html">PID-00120/specs/index.html</a></td><td>PID-00120 — Synthesis Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00121">PID-00121</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00121/index.html">PID-00121/index.html</a></td><td>PID-00121 — Writing Agent</td></tr>
+<tr><td><a href="PID-00121/specs/index.html">PID-00121/specs/index.html</a></td><td>PID-00121 — Writing Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00122">PID-00122</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00122/index.html">PID-00122/index.html</a></td><td>PID-00122 — Verification Agent</td></tr>
+<tr><td><a href="PID-00122/specs/index.html">PID-00122/specs/index.html</a></td><td>PID-00122 — Verification Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00123">PID-00123</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00123/index.html">PID-00123/index.html</a></td><td>PID-00123 — Diagram Agent</td></tr>
+<tr><td><a href="PID-00123/specs/index.html">PID-00123/specs/index.html</a></td><td>PID-00123 — Diagram Agent</td></tr>
+</tbody></table></div>
+<h3 id="pid-00124">PID-00124</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00124/index.html">PID-00124/index.html</a></td><td>PID-00124 — Ảnh hưởng khi đầu ra thay đổi, Research Context đổi, thảo luận rút lại</td></tr>
+<tr><td><a href="PID-00124/specs/index.html">PID-00124/specs/index.html</a></td><td>PID-00124 — Ảnh hưởng khi đầu ra thay đổi, Research Context đổi, thảo luận rút lại</td></tr>
+</tbody></table></div>
+<h3 id="pid-00125">PID-00125</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00125/index.html">PID-00125/index.html</a></td><td>PID-00125 — Hội tụ truy xuất cho evidence và eval</td></tr>
+<tr><td><a href="PID-00125/specs/index.html">PID-00125/specs/index.html</a></td><td>PID-00125 — Hội tụ truy xuất cho evidence và eval</td></tr>
+</tbody></table></div>
+<h3 id="pid-00126">PID-00126</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00126/index.html">PID-00126/index.html</a></td><td>PID-00126 — Hội tụ WF-05 S1–S4 và WF-07</td></tr>
+<tr><td><a href="PID-00126/specs/index.html">PID-00126/specs/index.html</a></td><td>PID-00126 — Hội tụ WF-05 S1–S4 và WF-07</td></tr>
+</tbody></table></div>
+<h3 id="pid-00127">PID-00127</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00127/index.html">PID-00127/index.html</a></td><td>PID-00127 — Hội tụ WF-05 S5+ và build PDF</td></tr>
+<tr><td><a href="PID-00127/specs/index.html">PID-00127/specs/index.html</a></td><td>PID-00127 — Hội tụ WF-05 S5+ và build PDF</td></tr>
+</tbody></table></div>
+<h3 id="pid-00128">PID-00128</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00128/index.html">PID-00128/index.html</a></td><td>PID-00128 — Hội tụ trên node pool sandbox</td></tr>
+<tr><td><a href="PID-00128/specs/index.html">PID-00128/specs/index.html</a></td><td>PID-00128 — Hội tụ trên node pool sandbox</td></tr>
+</tbody></table></div>
+<h3 id="pid-00129">PID-00129</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00129/index.html">PID-00129/index.html</a></td><td>PID-00129 — Harness, Eval Trace, baseline đầu tiên, cổng hồi quy</td></tr>
+<tr><td><a href="PID-00129/specs/index.html">PID-00129/specs/index.html</a></td><td>PID-00129 — Harness, Eval Trace, baseline đầu tiên, cổng hồi quy</td></tr>
+</tbody></table></div>
+<h3 id="pid-00130">PID-00130</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00130/index.html">PID-00130/index.html</a></td><td>PID-00130 — Kịch bản lát 5 và kiểm cổng PH-06</td></tr>
+<tr><td><a href="PID-00130/specs/index.html">PID-00130/specs/index.html</a></td><td>PID-00130 — Kịch bản lát 5 và kiểm cổng PH-06</td></tr>
+</tbody></table></div>
+<h3 id="pid-00131">PID-00131</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00131/index.html">PID-00131/index.html</a></td><td>PID-00131 — Rà logger che dữ liệu cho REL-07</td></tr>
+<tr><td><a href="PID-00131/specs/index.html">PID-00131/specs/index.html</a></td><td>PID-00131 — Rà logger che dữ liệu cho REL-07</td></tr>
+</tbody></table></div>
+<h3 id="pid-00132">PID-00132</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00132/index.html">PID-00132/index.html</a></td><td>PID-00132 — Đóng băng hợp đồng trừ sửa lỗi</td></tr>
+<tr><td><a href="PID-00132/specs/index.html">PID-00132/specs/index.html</a></td><td>PID-00132 — Đóng băng hợp đồng trừ sửa lỗi</td></tr>
+</tbody></table></div>
+<h3 id="pid-00133">PID-00133</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00133/index.html">PID-00133/index.html</a></td><td>PID-00133 — Cảnh báo đầy đủ, diễn tập PITR, runbook</td></tr>
+<tr><td><a href="PID-00133/specs/index.html">PID-00133/specs/index.html</a></td><td>PID-00133 — Cảnh báo đầy đủ, diễn tập PITR, runbook</td></tr>
+</tbody></table></div>
+<h3 id="pid-00134">PID-00134</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00134/index.html">PID-00134/index.html</a></td><td>PID-00134 — Môi trường load test</td></tr>
+<tr><td><a href="PID-00134/specs/index.html">PID-00134/specs/index.html</a></td><td>PID-00134 — Môi trường load test</td></tr>
+</tbody></table></div>
+<h3 id="pid-00135">PID-00135</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00135/index.html">PID-00135/index.html</a></td><td>PID-00135 — Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn</td></tr>
+<tr><td><a href="PID-00135/specs/index.html">PID-00135/specs/index.html</a></td><td>PID-00135 — Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn</td></tr>
+<tr><td><a href="PID-00135/designs/notes.html">PID-00135/designs/notes.html</a></td><td>PID-00135 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00136">PID-00136</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00136/index.html">PID-00136/index.html</a></td><td>PID-00136 — Rate limit và tải SSE</td></tr>
+<tr><td><a href="PID-00136/specs/index.html">PID-00136/specs/index.html</a></td><td>PID-00136 — Rate limit và tải SSE</td></tr>
+</tbody></table></div>
+<h3 id="pid-00137">PID-00137</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00137/index.html">PID-00137/index.html</a></td><td>PID-00137 — Xoay KEK và xóa tài khoản</td></tr>
+<tr><td><a href="PID-00137/specs/index.html">PID-00137/specs/index.html</a></td><td>PID-00137 — Xoay KEK và xóa tài khoản</td></tr>
+</tbody></table></div>
+<h3 id="pid-00138">PID-00138</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00138/index.html">PID-00138/index.html</a></td><td>PID-00138 — Purge project sau 30 ngày</td></tr>
+<tr><td><a href="PID-00138/specs/index.html">PID-00138/specs/index.html</a></td><td>PID-00138 — Purge project sau 30 ngày</td></tr>
+</tbody></table></div>
+<h3 id="pid-00139">PID-00139</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00139/index.html">PID-00139/index.html</a></td><td>PID-00139 — Retention và báo cáo KPI cho nghiệm thu</td></tr>
+<tr><td><a href="PID-00139/specs/index.html">PID-00139/specs/index.html</a></td><td>PID-00139 — Retention và báo cáo KPI cho nghiệm thu</td></tr>
+</tbody></table></div>
+<h3 id="pid-00140">PID-00140</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00140/index.html">PID-00140/index.html</a></td><td>PID-00140 — SPK-09 đầy đủ: fault injection, KPI-03, đối soát đầu ra (TR-02)</td></tr>
+<tr><td><a href="PID-00140/specs/index.html">PID-00140/specs/index.html</a></td><td>PID-00140 — SPK-09 đầy đủ: fault injection, KPI-03, đối soát đầu ra (TR-02)</td></tr>
+</tbody></table></div>
+<h3 id="pid-00141">PID-00141</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00141/index.html">PID-00141/index.html</a></td><td>PID-00141 — REL-06: bảy workflow với từng provider</td></tr>
+<tr><td><a href="PID-00141/specs/index.html">PID-00141/specs/index.html</a></td><td>PID-00141 — REL-06: bảy workflow với từng provider</td></tr>
+</tbody></table></div>
+<h3 id="pid-00142">PID-00142</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00142/index.html">PID-00142/index.html</a></td><td>PID-00142 — Sửa lỗi và dọn dữ liệu của planning</td></tr>
+<tr><td><a href="PID-00142/specs/index.html">PID-00142/specs/index.html</a></td><td>PID-00142 — Sửa lỗi và dọn dữ liệu của planning</td></tr>
+</tbody></table></div>
+<h3 id="pid-00143">PID-00143</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00143/index.html">PID-00143/index.html</a></td><td>PID-00143 — Rate limit với nguồn thật và dọn dữ liệu</td></tr>
+<tr><td><a href="PID-00143/specs/index.html">PID-00143/specs/index.html</a></td><td>PID-00143 — Rate limit với nguồn thật và dọn dữ liệu</td></tr>
+</tbody></table></div>
+<h3 id="pid-00144">PID-00144</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00144/index.html">PID-00144/index.html</a></td><td>PID-00144 — Hiệu năng p95 và ước tính token trước khi index lại (TR-07)</td></tr>
+<tr><td><a href="PID-00144/specs/index.html">PID-00144/specs/index.html</a></td><td>PID-00144 — Hiệu năng p95 và ước tính token trước khi index lại (TR-07)</td></tr>
+</tbody></table></div>
+<h3 id="pid-00145">PID-00145</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00145/index.html">PID-00145/index.html</a></td><td>PID-00145 — Đo KPI-01 và phục vụ REL-10</td></tr>
+<tr><td><a href="PID-00145/specs/index.html">PID-00145/specs/index.html</a></td><td>PID-00145 — Đo KPI-01 và phục vụ REL-10</td></tr>
+</tbody></table></div>
+<h3 id="pid-00146">PID-00146</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00146/index.html">PID-00146/index.html</a></td><td>PID-00146 — Đo KPI-02 = 100%</td></tr>
+<tr><td><a href="PID-00146/specs/index.html">PID-00146/specs/index.html</a></td><td>PID-00146 — Đo KPI-02 = 100%</td></tr>
+</tbody></table></div>
+<h3 id="pid-00147">PID-00147</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00147/index.html">PID-00147/index.html</a></td><td>PID-00147 — Thời gian chờ, tỷ lệ lỗi build, kịch bản lạm dụng sandbox</td></tr>
+<tr><td><a href="PID-00147/specs/index.html">PID-00147/specs/index.html</a></td><td>PID-00147 — Thời gian chờ, tỷ lệ lỗi build, kịch bản lạm dụng sandbox</td></tr>
+</tbody></table></div>
+<h3 id="pid-00148">PID-00148</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00148/index.html">PID-00148/index.html</a></td><td>PID-00148 — Đo REL-03, REL-10 với provider thật</td></tr>
+<tr><td><a href="PID-00148/specs/index.html">PID-00148/specs/index.html</a></td><td>PID-00148 — Đo REL-03, REL-10 với provider thật</td></tr>
+</tbody></table></div>
+<h3 id="pid-00149">PID-00149</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00149/index.html">PID-00149/index.html</a></td><td>PID-00149 — Toàn bộ kịch bản TS ở PRD 19</td></tr>
+<tr><td><a href="PID-00149/specs/index.html">PID-00149/specs/index.html</a></td><td>PID-00149 — Toàn bộ kịch bản TS ở PRD 19</td></tr>
+</tbody></table></div>
+<h3 id="pid-00150">PID-00150</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00150/index.html">PID-00150/index.html</a></td><td>PID-00150 — Kiểm thử tải k6</td></tr>
+<tr><td><a href="PID-00150/specs/index.html">PID-00150/specs/index.html</a></td><td>PID-00150 — Kiểm thử tải k6</td></tr>
+</tbody></table></div>
+<h3 id="pid-00151">PID-00151</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00151/index.html">PID-00151/index.html</a></td><td>PID-00151 — Kiểm thử bảo mật tự động: 19.12, REL-04, REL-05, REL-07</td></tr>
+<tr><td><a href="PID-00151/specs/index.html">PID-00151/specs/index.html</a></td><td>PID-00151 — Kiểm thử bảo mật tự động: 19.12, REL-04, REL-05, REL-07</td></tr>
+</tbody></table></div>
+<h3 id="pid-00152">PID-00152</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00152/index.html">PID-00152/index.html</a></td><td>PID-00152 — Báo cáo nghiệm thu REL-01–REL-10 và kiểm cổng PH-07</td></tr>
+<tr><td><a href="PID-00152/specs/index.html">PID-00152/specs/index.html</a></td><td>PID-00152 — Báo cáo nghiệm thu REL-01–REL-10 và kiểm cổng PH-07</td></tr>
+</tbody></table></div>
+<h3 id="pid-00153">PID-00153</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00153/index.html">PID-00153/index.html</a></td><td>PID-00153 — Production: Kubernetes, PostgreSQL HA, RabbitMQ 3 node, CDN + WAF, egress NAT, deploy có phê duyệt</td></tr>
+<tr><td><a href="PID-00153/specs/index.html">PID-00153/specs/index.html</a></td><td>PID-00153 — Production: Kubernetes, PostgreSQL HA, RabbitMQ 3 node, CDN + WAF, egress NAT, deploy có phê duyệt</td></tr>
+</tbody></table></div>
+<h3 id="pid-00154">PID-00154</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00154/index.html">PID-00154/index.html</a></td><td>PID-00154 — Lịch trực, kênh báo sự cố, synthetic check</td></tr>
+<tr><td><a href="PID-00154/specs/index.html">PID-00154/specs/index.html</a></td><td>PID-00154 — Lịch trực, kênh báo sự cố, synthetic check</td></tr>
+</tbody></table></div>
+<h3 id="pid-00155">PID-00155</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00155/index.html">PID-00155/index.html</a></td><td>PID-00155 — Build tĩnh web lên CDN</td></tr>
+<tr><td><a href="PID-00155/specs/index.html">PID-00155/specs/index.html</a></td><td>PID-00155 — Build tĩnh web lên CDN</td></tr>
+<tr><td><a href="PID-00155/designs/notes.html">PID-00155/designs/notes.html</a></td><td>PID-00155 — Ghi chú thiết kế</td></tr>
+</tbody></table></div>
+<h3 id="pid-00156">PID-00156</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00156/index.html">PID-00156/index.html</a></td><td>PID-00156 — Client production eTroy OIDC, kiểm RP-initiated logout</td></tr>
+<tr><td><a href="PID-00156/specs/index.html">PID-00156/specs/index.html</a></td><td>PID-00156 — Client production eTroy OIDC, kiểm RP-initiated logout</td></tr>
+</tbody></table></div>
+<h3 id="pid-00157">PID-00157</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Tiêu đề</th></tr></thead><tbody>
+<tr><td><a href="PID-00157/index.html">PID-00157/index.html</a></td><td>PID-00157 — Smoke production và kiểm cổng PH-08</td></tr>
+<tr><td><a href="PID-00157/specs/index.html">PID-00157/specs/index.html</a></td><td>PID-00157 — Smoke production và kiểm cổng PH-08</td></tr>
+</tbody></table></div>
+<!-- PID-FILES:END -->
+<h2 id="s-3">3. Cấu trúc một PID</h2>
+<pre><code>docs/tickets/issues/PID-NNNNN/       PO sở hữu
+  index.html                         tài liệu chính: ticket, AC, cổng sẵn sàng, Làm rõ, bảng slice, điểm dừng
+  specs/index.html                   spec kỹ thuật 7 mục (spec-docs-skill)
+  specs/brief.html                   tóm tắt nghiệp vụ đã làm rõ (spec-clarify-skill)
+  specs/scope.html                   phạm vi, ngoài phạm vi, edge case
+  specs/acceptance.html              AC → test → slice
+  specs/slices/S01-&lt;slug&gt;.html       lát dọc theo thứ tự phụ thuộc
+  designs/notes.html                 điều thiết kế đã chốt khi làm rõ
+  designs/&lt;Tên-màn&gt;.html             sketch khi ticket có màn hình
+  others/index.html                  tài liệu kèm
+  others/issues.html                 phiếu vấn đề chưa chốt
+
+agent/execution/PID-NNNNN/           Dev và QC ghi
+  report.md                          trạng thái công việc, kết quả
+  implement.md                       luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao
+  self-qc.md                         kết quả Self-QC của Dev
+  qc-report.md                       báo cáo của QC độc lập
+  checklists/&lt;domain&gt;.md             checklist chất lượng yêu cầu của QC
+  &lt;tài liệu đi kèm&gt;                  nếu có; liệt kê ở report.md</code></pre>
+<h2 id="s-4">4. Luồng một ticket</h2>
+<ol><li><strong>PO:</strong> đăng ký task ở <a href="taskboard.html">Taskboard</a>; spec-docs-skill viết spec, spec-clarify-skill làm rõ và chia slice, đặt trạng thái <code>Sẵn sàng</code>.</li>
+<li><strong>QC:</strong> spec-analyze-skill, spec-checklist-skill rà ticket và spec trước khi giao Dev; ghi <code>qc-report.md</code>.</li>
+<li><strong>Dev:</strong> spec-execution-skill làm từng slice, tự kiểm, ghi <code>report.md</code>, <code>implement.md</code>, <code>self-qc.md</code>.</li>
+<li><strong>QC:</strong> spec-converge-skill đối chiếu mã với AC, ghi <code>qc-report.md</code>; PO nghiệm thu.</li></ol>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Kế hoạch triển khai</a><a href="taskboard.html">Taskboard</a><a href="../README.md">Quy ước ticket</a></nav>
+</main>
+<footer>SIRes · Danh sách ticket · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

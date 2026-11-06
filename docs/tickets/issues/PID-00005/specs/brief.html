@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00005.">
+<title>PID-00005 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00005</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00005</p><h1>PID-00005 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<p>Bản tóm tắt đã gộp câu trả lời ở mục Làm rõ của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Thư viện dùng chung cho <code>agent-core</code> và <code>knowledge</code>, theo cùng hợp đồng với thư viện TS: RLS, giao dịch, outbox, inbox, token nội bộ, lỗi, log. Có thêm FakeModelGateway để test agent không cần gọi provider.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Log bằng structlog, trace bằng OpenTelemetry; che dữ liệu như bản TS — kiến trúc 2.4, 10.3</li>
+<li>Consumer dùng aio-pika, ack thủ công — kiến trúc 2.4</li>
+<li>Vỏ sự kiện theo <code>EventEnvelope</code> — <code>internal/schemas.yaml</code></li>
+<li>FakeModelGateway trả kịch bản ghi sẵn theo (agent, bước), tiêm lỗi theo mã chuẩn, đếm attempts — kiến trúc 8.9</li>
+<li><code>agent-core</code> và <code>knowledge</code> cùng dùng interface <code>ModelGateway</code> (embedding qua thư viện dùng chung), nên interface đặt ở thư viện; adapter thật ở <code>agent-core</code> — kiến trúc 2.4, 8.1</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>libs/py/sires_common/src/sires_common/tenancy.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/errors.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/telemetry.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/messaging.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/service_auth.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/model_gateway.py</code> — tạo mới</li>
+<li><code>libs/py/sires_common/src/sires_common/testing/</code> — tạo mới</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>libs/py/sires_common/src/sires_common/tenancy.py</code>: Tenancy, giao dịch, UUIDv7 → S01</li>
+<li>O2 <code>libs/py/sires_common/src/sires_common/errors.py</code>: Lỗi problem+json → S01</li>
+<li>O3 <code>libs/py/sires_common/src/sires_common/telemetry.py</code>: Logger che dữ liệu, OpenTelemetry → S01</li>
+<li>O4 <code>libs/py/sires_common/src/sires_common/messaging.py</code>: Outbox, inbox, audit-emit → S02</li>
+<li>O5 <code>libs/py/sires_common/src/sires_common/service_auth.py</code>: Service token → S03</li>
+<li>O6 <code>libs/py/sires_common/src/sires_common/model_gateway.py</code>: Interface <code>ModelGateway</code> → S04</li>
+<li>O7 <code>libs/py/sires_common/src/sires_common/testing/</code>: FakeModelGateway, LocalKms, fixture pytest → S04</li>
+<li>O8 <code>libs/py/sires_common/tests/test_tenancy.py</code>: Test theo Tiêu chí nghiệm thu → S01</li>
+<li>O9 <code>libs/py/sires_common/tests/test_logging.py</code>: Test theo Tiêu chí nghiệm thu → S01</li>
+<li>O10 <code>libs/py/sires_common/tests/test_messaging.py</code>: Test theo Tiêu chí nghiệm thu → S02</li>
+<li>O11 <code>libs/py/sires_common/tests/test_service_auth.py</code>: Test theo Tiêu chí nghiệm thu → S03</li>
+<li>O12 <code>libs/py/sires_common/tests/test_fake_gateway.py</code>: Test theo Tiêu chí nghiệm thu → S04</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<p>Không có thuật ngữ mới.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00005</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00005 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

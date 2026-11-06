@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00101: Discovery Agent và tool search_sources.">
+<title>PID-00101 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00101</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00101</p><h1>PID-00101 — Discovery Agent và tool search_sources</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00101</a> · Luồng: <code>agent-core</code> · Giai đoạn: PH-05 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Agent tìm tài liệu theo đề tài; chỉ đề xuất, không tự đưa vào Trusted Library.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>agent-core</code> · PH-05</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Discovery</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00101-AC01</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/06-end-to-end-product-workflow.html#wf-04">WF-04</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Duyệt reference: chỉ Researcher (APR-04)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-8">Kế hoạch luồng agent-core</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-05">Giai đoạn PH-05, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Requirement: <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#disc-scholar-001">DISC-SCHOLAR-001</a>, <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#disc-scholar-002">DISC-SCHOLAR-002</a></li>
+<li>Kịch bản: <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-06-01">TS-06-01</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-06-06">TS-06-06</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-06-09">TS-06-09</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/agent-core/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/agent-core/src/agent_core/main.py</code></td><td>Nơi gắn module mới</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>API thư viện nền</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<h4>Operation gọi (dùng stub tới khi hội tụ)</h4><div class="table-wrap"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">operationId</th><th scope="col">File</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td><code>POST</code></td><td><code>/internal/source-searches</code></td><td><code>searchSourcesTool</code></td><td><code>docs/api-design/internal/library.yaml</code></td><td>Tìm qua source adapter và lưu DiscoveredResult New</td></tr>
+</tbody></table></div>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00073/index.html">PID-00073</a> Orchestrator chat và worker agent.run</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td>Hợp đồng của <code>library</code></td><td>Có sẵn trong <code>docs/api-design/internal/</code></td><td>Không; dùng stub</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>uv sync --all-packages
+pnpm local:up
+pnpm nx run agent-core:dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Module</td><td><code>apps/agent-core/src/agent_core/agents/discovery/</code> (tạo mới)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Stub</td><td><code>apps/agent-core/tests/stubs/</code> (tạo mới)</td><td>Stub phía gọi cho library, theo type sinh từ hợp đồng</td><td>Test tích hợp dùng stub</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/agent-core/tests/test_discovery.py</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Triển khai</td><td><code>apps/agent-core/deploy/values.yaml</code> (có sẵn)</td><td>Giá trị deploy staging của luồng</td><td><code>helm template</code>, smoke trên staging</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Agent <code>discovery</code>, tool gọi <code>searchSourcesTool</code></li>
+<li>Chuẩn hóa kết quả, nêu lý do chọn</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Gọi model qua Model Gateway; prompt theo registry. Thay đổi prompt, định nghĩa agent thuộc NFR-EVAL-004. Agent không thực hiện được APR.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Không có kết quả</td><td>Báo rõ, không tự mở rộng phạm vi ngoài yêu cầu</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Agent <code>discovery</code>, tool gọi <code>searchSourcesTool</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run agent-core:test</li>
+<li id="b2"><strong>B2</strong> Chuẩn hóa kết quả, nêu lý do chọn — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run agent-core:test</li>
+<li id="b3"><strong>B3</strong> Gọi luồng khác bằng client sinh từ hợp đồng; stub nằm trong thư mục test của luồng này — Kết quả: Không import mã service khác — Kiểm tra: Lint <code>@nx/enforce-module-boundaries</code></li>
+<li id="b4"><strong>B4</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run agent-core:test</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run agent-core:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00101-AC01</td><td><code>apps/agent-core/tests/test_discovery.py</code></td><td>Given nguồn trả lỗi giới hạn, When agent chạy, Then báo rõ và đề nghị nhập do người dùng hỗ trợ.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>agent-core</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00101</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00101 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

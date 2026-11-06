@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00004.">
+<title>PID-00004 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00004</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00004</p><h1>PID-00004 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<p>Bản tóm tắt đã gộp câu trả lời ở mục Làm rõ của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Thư viện test cho các service NestJS: container PostgreSQL, RabbitMQ, MinIO; fake OIDC phát ID token ký bằng khóa test; fake broker; fake nguồn học thuật; KMS cục bộ.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>FakeSourceAdapter, FakeOidcProvider (ID token ký bằng khóa test), MinIO, LocalKms, RabbitMQ trong Testcontainers đặt ở <code>libs/ts/testing</code> và <code>sires_common</code> — kiến trúc 8.9</li>
+<li>FakeModelGateway là Python; service TypeScript dùng chế độ fake của <code>agent-core</code> — kiến trúc 8.9; kế hoạch mục 1.3 ghi chung, kiến trúc là chuẩn về cách hiện thực</li>
+<li>FakeOidcProvider bám luồng thật: authorization code + PKCE, <code>/token</code>, refresh token xoay vòng, claim <code>sub</code>, họ tên, email — ASM-13; repo công khai <code>toilatrung/eTroy_OIDC</code></li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>libs/ts/testing/package.json</code> — có</li>
+<li><code>libs/ts/testing/src/containers/</code> — tạo mới</li>
+<li><code>libs/ts/testing/src/fakes/oidc.fake.ts</code> — tạo mới</li>
+<li><code>libs/ts/testing/src/fakes/broker.fake.ts</code> — tạo mới</li>
+<li><code>libs/ts/testing/src/fakes/source-adapter.fake.ts</code> — tạo mới</li>
+<li><code>libs/ts/testing/src/fakes/local-kms.ts</code> — tạo mới</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>libs/ts/testing/package.json</code>: Thêm script <code>test</code> và phụ thuộc → S01</li>
+<li>O2 <code>libs/ts/testing/src/containers/</code>: Testcontainers → S01</li>
+<li>O3 <code>libs/ts/testing/src/fakes/oidc.fake.ts</code>: FakeOidcProvider → S02</li>
+<li>O4 <code>libs/ts/testing/src/fakes/broker.fake.ts</code>: Fake broker → S03</li>
+<li>O5 <code>libs/ts/testing/src/fakes/source-adapter.fake.ts</code>: FakeSourceAdapter → S03</li>
+<li>O6 <code>libs/ts/testing/src/fakes/local-kms.ts</code>: LocalKms → S03</li>
+<li>O7 <code>libs/ts/testing/src/containers/containers.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S01</li>
+<li>O8 <code>libs/ts/testing/src/fakes/oidc.fake.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S02</li>
+<li>O9 <code>libs/ts/testing/src/fakes/broker.fake.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S03</li>
+<li>O10 <code>libs/ts/testing/src/fakes/source-kms.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<p>Không có thuật ngữ mới.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00004</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00004 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

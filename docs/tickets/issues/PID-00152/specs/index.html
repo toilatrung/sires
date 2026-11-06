@@ -1,0 +1,135 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00152: Báo cáo nghiệm thu REL-01–REL-10 và kiểm cổng PH-07.">
+<title>PID-00152 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00152</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00152</p><h1>PID-00152 — Báo cáo nghiệm thu REL-01–REL-10 và kiểm cổng PH-07</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00152</a> · Luồng: <code>e2e</code> · Giai đoạn: PH-07 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>PO ký chấp nhận phát hành dựa trên báo cáo này.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>e2e</code> · PH-07</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Ổn định, nghiệm thu · Toàn bộ TS, k6</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00152-AC01</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-01">REL-01</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-02">REL-02</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-03">REL-03</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-04">REL-04</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-05">REL-05</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-06">REL-06</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-07">REL-07</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-08">REL-08</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-09">REL-09</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-10">REL-10</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Ký chấp nhận: PO</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-15">Kế hoạch luồng e2e</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-07">Giai đoạn PH-07, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>e2e/playwright.config.ts</code></td><td>Cấu hình Playwright</td></tr>
+<tr><td><code>e2e/tests/smoke.spec.ts</code></td><td>Smoke hiện có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00131/index.html">PID-00131</a> Rà logger che dữ liệu cho REL-07</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00132/index.html">PID-00132</a> Đóng băng hợp đồng trừ sửa lỗi</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00133/index.html">PID-00133</a> Cảnh báo đầy đủ, diễn tập PITR, runbook</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00135/index.html">PID-00135</a> Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00136/index.html">PID-00136</a> Rate limit và tải SSE</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00137/index.html">PID-00137</a> Xoay KEK và xóa tài khoản</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00138/index.html">PID-00138</a> Purge project sau 30 ngày</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00139/index.html">PID-00139</a> Retention và báo cáo KPI cho nghiệm thu</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00140/index.html">PID-00140</a> SPK-09 đầy đủ: fault injection, KPI-03, đối soát đầu ra (TR-02)</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00141/index.html">PID-00141</a> REL-06: bảy workflow với từng provider</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00142/index.html">PID-00142</a> Sửa lỗi và dọn dữ liệu của planning</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00143/index.html">PID-00143</a> Rate limit với nguồn thật và dọn dữ liệu</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00144/index.html">PID-00144</a> Hiệu năng p95 và ước tính token trước khi index lại (TR-07)</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00145/index.html">PID-00145</a> Đo KPI-01 và phục vụ REL-10</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00146/index.html">PID-00146</a> Đo KPI-02 = 100%</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00147/index.html">PID-00147</a> Thời gian chờ, tỷ lệ lỗi build, kịch bản lạm dụng sandbox</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00148/index.html">PID-00148</a> Đo REL-03, REL-10 với provider thật</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00149/index.html">PID-00149</a> Toàn bộ kịch bản TS ở PRD 19</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00150/index.html">PID-00150</a> Kiểm thử tải k6</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00151/index.html">PID-00151</a> Kiểm thử bảo mật tự động: 19.12, REL-04, REL-05, REL-07</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#oq-104">OQ-104</a> Phạm vi requirement của phát hành đầu</td><td>Chờ PO</td><td>Có với phạm vi nghiệm thu</td></tr>
+<tr><td><a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#oq-105">OQ-105</a> Phát hành đầu nội bộ hay rộng</td><td>Chờ PO</td><td>Có với hình thức phát hành</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/e2e e2e</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Kịch bản</td><td><code>e2e/reports/</code> (tạo mới)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Tổng hợp REL-01–REL-10 và KPI-01–KPI-04</li>
+<li>Danh sách lỗi REL-09</li>
+<li>Hỗ trợ PO chạy REL-02 qua ít nhất hai phiên</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Một REL không đạt</td><td>Báo rõ để PO quyết định, không ghi đạt</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc kịch bản trong Gồm ở PRD 19 — Kết quả: Danh sách bước và số liệu kiểm — Kiểm tra: Mỗi kịch bản có file test</li>
+<li id="b2"><strong>B2</strong> Tổng hợp REL-01–REL-10 và KPI-01–KPI-04 — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b3"><strong>B3</strong> Danh sách lỗi REL-09 — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b4"><strong>B4</strong> Hỗ trợ PO chạy REL-02 qua ít nhất hai phiên — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b5"><strong>B5</strong> Ghi kết quả từng điều kiện của cổng PH-07 — Kết quả: Báo cáo trong <code>agent/execution/PID-00152/report.md</code> — Kiểm tra: PO đọc và xác nhận cổng</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm --filter @sires/e2e e2e
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00152-AC01</td><td><code>e2e/reports/rel.md</code></td><td>Given các PID PH-07 đã xong, When tổng hợp, Then báo cáo có kết quả và bằng chứng cho từng REL-01–REL-10.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>e2e</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00152</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00152 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
