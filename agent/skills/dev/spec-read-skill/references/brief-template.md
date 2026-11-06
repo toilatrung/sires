@@ -3,7 +3,7 @@
 Trình bày trong phiên trước khi làm. Ngắn gọn; mỗi dòng dẫn nguồn (mã hoặc đường dẫn kèm anchor).
 
 ```
-## TK-NNN — <tên> · Tóm tắt nghiệp vụ
+## PID-NNNNN — <tên> · Tóm tắt nghiệp vụ
 
 Nguồn: ticket <đường dẫn> · spec <đường dẫn | chưa có> · luồng <service> · giai đoạn PH-NN · đọc lúc <dd/mm/yyyy>
 
@@ -17,7 +17,7 @@ Nguồn: ticket <đường dẫn> · spec <đường dẫn | chưa có> · luồ
 
 ### Tiêu chí nghiệm thu
 | AC | Kiểm bằng | Ghi chú |
-| TK-NNN-AC01 | <file test › tên> | |
+| PID-NNNNN-AC01 | <file test › tên> | |
 
 ### Input đã kiểm
 - <đường dẫn, hợp đồng, bảng DDL> — có / thiếu

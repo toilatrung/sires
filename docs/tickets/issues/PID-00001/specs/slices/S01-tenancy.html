@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của PID-00001: Tenancy, giao dịch, UUIDv7, kiểm phiên bản.">
+<title>PID-00001 — S01 Tenancy, giao dịch, UUIDv7, kiểm phiên bản | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00001</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00001</p><h1>S01 — Tenancy, giao dịch, UUIDv7, kiểm phiên bản</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00001-AC01, PID-00001-AC02, PID-00001-AC03</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O5, O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thêm Drizzle, node-postgres, <code>testcontainers</code> vào <code>libs/ts/platform/package.json</code></li>
+<li>Viết helper giao dịch có <code>SET LOCAL app.account_id</code> trong <code>libs/ts/platform/src/tenancy/</code></li>
+<li>Viết sinh UUIDv7 và helper kiểm <code>If-Match</code></li>
+<li>Test dùng <code>testcontainers</code> trực tiếp với image PostgreSQL 16 + pgvector, tạo bảng có RLS bằng <code>app.enable_tenant_rls()</code> hoặc policy tương đương, đăng nhập bằng vai trò không có BYPASSRLS</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › không đọc được dữ liệu tài khoản khác</code> (PID-00001-AC01)</li>
+<li><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › thiếu account_id trả 0 dòng</code> (PID-00001-AC02)</li>
+<li><code>libs/ts/platform/src/tenancy/concurrency.spec.ts › lệch phiên bản trả 412</code> (PID-00001-AC03)</li>
+<li><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › không lẫn giữa hai giao dịch</code> (EC01)</li>
+<li><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › rollback khi lỗi</code> (EC02)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Ba AC của slice đạt trên PostgreSQL thật</li>
+<li>Helper xuất qua <code>libs/ts/platform/src/index.ts</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00001</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00001 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

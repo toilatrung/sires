@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Danh sách ticket PID của SIRes và cấu trúc hồ sơ một ticket.">
+<title>Danh sách ticket | SIRes Delivery Plan</title>
+<link rel="icon" href="../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../index.html"><img src="../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>Ticket</span></header>
+<main id="main-content">
+<p class="eyebrow">Kế hoạch triển khai · Ticket</p><h1>Danh sách ticket</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Danh sách</a></li>
+<li><a href="#s-2">2. Tài liệu trong từng PID</a></li>
+<li><a href="#s-3">3. Cấu trúc một PID</a></li>
+<li><a href="#s-4">4. Luồng một ticket</a></li></ul></details>
+
+<p>Mỗi thư mục <code>PID-NNNNN/</code> là một ticket: PO định nghĩa và làm rõ ở đây; Dev đọc, làm và ghi kết quả vào <code>agent/execution/PID-NNNNN/</code>; QC độc lập ghi báo cáo vào cùng thư mục. Mọi thay đổi trong thư mục này theo R-01–R-07. PO đăng ký task ở <a href="taskboard.html">Taskboard</a> trước khi giao cho Dev.</p>
+<h2 id="s-1">1. Danh sách</h2>
+<p>Mục 1 và mục 2 sinh từ <code>PID-*/</code> và <code>agent/execution/PID-*/report.md</code>; thêm hoặc xóa ticket thì chạy lại, không sửa tay:</p>
+<pre><code>node scripts/docs/update-index.mjs</code></pre>
+<!-- PID-LIST:START -->
+<div class="table-wrap"><table><thead><tr><th scope="col">Mã</th><th scope="col">Ticket</th><th scope="col">Luồng</th><th scope="col">Giai đoạn</th><th scope="col">Hồ sơ</th><th scope="col">Kết quả thực thi</th></tr></thead><tbody>
+<tr><td colspan="6">Chưa có ticket nào.</td></tr>
+</tbody></table></div>
+<!-- PID-LIST:END -->
+<h2 id="s-2">2. Tài liệu trong từng PID</h2>
+<p>Mọi file HTML trong mỗi thư mục <code>PID-NNNNN/</code> và tiêu đề của file.</p>
+<!-- PID-FILES:START -->
+<p>Chưa có ticket nào.</p>
+<!-- PID-FILES:END -->
+<h2 id="s-3">3. Cấu trúc một PID</h2>
+<pre><code>docs/tickets/issues/PID-NNNNN/       PO sở hữu
+  index.html                         tài liệu chính: ticket, AC, cổng sẵn sàng, Làm rõ, bảng slice, điểm dừng
+  specs/index.html                   spec kỹ thuật 7 mục (spec-docs-skill)
+  specs/brief.html                   tóm tắt nghiệp vụ đã làm rõ (spec-clarify-skill)
+  specs/scope.html                   phạm vi, ngoài phạm vi, edge case
+  specs/acceptance.html              AC → test → slice
+  specs/slices/S01-&lt;slug&gt;.html       lát dọc theo thứ tự phụ thuộc
+  designs/notes.html                 điều thiết kế đã chốt khi làm rõ
+  designs/&lt;Tên-màn&gt;.html             sketch khi ticket có màn hình
+  others/index.html                  tài liệu kèm
+  others/issues.html                 phiếu vấn đề chưa chốt
+
+agent/execution/PID-NNNNN/           Dev và QC ghi
+  report.md                          trạng thái công việc, kết quả
+  implement.md                       luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao
+  self-qc.md                         kết quả Self-QC của Dev
+  qc-report.md                       báo cáo của QC độc lập
+  checklists/&lt;domain&gt;.md             checklist chất lượng yêu cầu của QC
+  &lt;tài liệu đi kèm&gt;                  nếu có; liệt kê ở report.md</code></pre>
+<h2 id="s-4">4. Luồng một ticket</h2>
+<ol><li><strong>PO:</strong> đăng ký task ở <a href="taskboard.html">Taskboard</a>; spec-docs-skill viết spec, spec-clarify-skill làm rõ và chia slice, đặt trạng thái <code>Sẵn sàng</code>.</li>
+<li><strong>QC:</strong> spec-analyze-skill, spec-checklist-skill rà ticket và spec trước khi giao Dev; ghi <code>qc-report.md</code>.</li>
+<li><strong>Dev:</strong> spec-execution-skill làm từng slice, tự kiểm, ghi <code>report.md</code>, <code>implement.md</code>, <code>self-qc.md</code>.</li>
+<li><strong>QC:</strong> spec-converge-skill đối chiếu mã với AC, ghi <code>qc-report.md</code>; PO nghiệm thu.</li></ol>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Kế hoạch triển khai</a><a href="taskboard.html">Taskboard</a><a href="../README.md">Quy ước ticket</a></nav>
+</main>
+<footer>SIRes · Danh sách ticket · © 2026 eTroy · <a href="../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

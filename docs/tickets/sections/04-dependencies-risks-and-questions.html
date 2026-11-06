@@ -32,9 +32,11 @@
 <thead><tr><th>Việc</th><th>Bên quyết định hoặc cung cấp</th><th>Cần trước</th><th>Nguồn</th></tr></thead>
 <tbody>
 <tr><td>Trả lời cách duyệt thay đổi hợp đồng khi code song song</td><td>PO</td><td>Bắt đầu PH-01</td><td><a href="#oq-103">OQ-103</a></td></tr>
+<tr><td>Chốt nơi ghi trạng thái thực hiện của ticket (đã chốt 05/11/2026)</td><td>PO</td><td>Chia ticket PH-01</td><td><a href="#oq-107">OQ-107</a></td></tr>
 <tr><td>Phân công người cho từng luồng, điền CODEOWNERS theo thư mục</td><td>PO</td><td>Bắt đầu PH-01</td><td>AQ-08; quy tắc 1.4.12 (ngoài kế hoạch này)</td></tr>
 <tr><td>Trả lời DBQ-01–DBQ-08, nhất là DBQ-01 (vai trò BYPASSRLS, extension trên PostgreSQL managed)</td><td>Tech lead</td><td>Cổng PH-01</td><td>database 13</td></tr>
 <tr><td>Sửa <code>docs/api-design</code> theo DBQ-03 (sự kiện usage embedding), DBQ-04 (<code>aggregateVersion</code>, <code>metadataVersion</code>)</td><td>PR hợp đồng, người duyệt theo OQ-103</td><td>Cổng PH-01 (baseline)</td><td>docs_context, bước tiếp theo 5</td></tr>
+<tr><td>Sửa <code>docs/api-design</code> hai chỗ thiếu phát hiện khi lập PID: <code>provider_connection.changed</code> chưa có <code>planning</code> trong <code>x-consumers</code> nên RC-08 không tự tính lại; <code>retrieveEvidence</code> của <code>knowledge</code> chưa có <code>research</code> trong <code>x-callers</code> nên <code>retrieveEvidence</code> công khai nhận <code>403</code></td><td>PR hợp đồng, người duyệt theo OQ-103</td><td>Trước khi làm PID-00075, PID-00052</td><td><a href="../issues/PID-00075/index.html#sua-o-nguon">PID-00075</a>, <a href="../issues/PID-00052/index.html#sua-o-nguon">PID-00052</a></td></tr>
 <tr><td>Chọn nhà cloud và vùng dữ liệu cho MVP</td><td>PO</td><td>PH-02 (staging)</td><td>AQ-12, DEC-56</td></tr>
 <tr><td>Môi trường thử eTroy OIDC, đăng ký client SIRes; xác nhận RP-initiated logout nhận <code>post_logout_redirect_uri</code></td><td>eTroy One</td><td>PH-02 (tích hợp đăng nhập)</td><td>SPK-02, ETR-07</td></tr>
 <tr><td>Provider Connection của đội (Claude, OpenAI, Gemini) cho staging và eval</td><td>Đội phát triển chịu chi phí</td><td>PH-03</td><td>DEC-40, OQ-095</td></tr>
@@ -62,7 +64,7 @@
 </tbody></table></div>
 
 <h2 id="s-4-3">4.3. Câu hỏi cần PO quyết định</h2>
-<p>Mã OQ tiếp dải của PRD (docs_context). Chưa có câu nào được chốt; kế hoạch giữ các phương án, không tự chọn.</p>
+<p>Mã OQ tiếp dải của PRD (docs_context). OQ-107 đã đóng ngày 05/11/2026; các câu còn lại chưa chốt, kế hoạch giữ các phương án, không tự chọn.</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Mã</th><th>Câu hỏi</th><th>Phương án</th><th>Cần trả lời trước</th></tr></thead>
 <tbody>
@@ -70,6 +72,7 @@
 <tr><td id="oq-104">OQ-104</td><td>Phát hành đầu cần xong những requirement nào? PRD 2.4 định nghĩa P1 là không bắt buộc cho bản dùng được đầu tiên; REL-01–REL-10 không nhắc P1.</td><td>(a) Mọi requirement trừ P2 (268). (b) Mọi P0 (176) cộng các P1 mà REL hoặc kịch bản nghiệm thu cần; P1 còn lại làm sau phát hành đầu. Biên soạn đề xuất (b).</td><td>PH-07</td></tr>
 <tr><td id="oq-105">OQ-105</td><td>Lần deploy production đầu là phát hành nội bộ (giới hạn người dùng) hay phát hành rộng?</td><td>(a) Nội bộ trước: không cần kiểm thử xâm nhập độc lập (AQ-04); phát hành rộng là một bước sau. (b) Phát hành rộng ngay: cần kiểm thử xâm nhập độc lập và back-channel logout (ETR-07) trước PH-08.</td><td>Bắt đầu PH-07 (để kịp lên lịch kiểm thử xâm nhập)</td></tr>
 <tr><td id="oq-106">OQ-106</td><td>Có cho PH-04 (lát 3) và PH-05 (lát 4) chồng lên nhau không? Lát 4 chỉ phụ thuộc một phần vào lát 3: nhập DOI, BibTeX, PDF, duyệt reference và index chỉ cần lát 2 (F-09); Discovery Agent chạy trong một Task mới cần lát 3.</td><td>(a) Giữ nối tiếp như hiện tại: ít tải đồng thời lên <code>agent-core</code>, <code>orchestration</code>. (b) Chồng hai giai đoạn: hội tụ nhập reference và index song song với Plan, Task, rồi ghép Discovery trong Task sau; rút ngắn tổng thời gian nhưng <code>agent-core</code>, <code>orchestration</code> gánh hai lát cùng lúc (Analysis Agent A, B và Discovery), chỉ nên chọn khi hai luồng này đủ người.</td><td>Bắt đầu PH-04</td></tr>
+<tr><td id="oq-107">OQ-107</td><td>Trạng thái thực hiện của ticket (<a href="../README.md">README</a>, “Theo dõi ticket”) ghi ở đâu? Theo R-01, R-03 chỉ PO được ghi <code>docs/</code>, nên nếu ghi trong tài liệu chính của ticket thì người làm không tự chuyển trạng thái được.</td><td>(a) Mỗi <code>PID-NNNNN</code> có một GitHub Issue trong GitHub Project, với trường Luồng, Giai đoạn, Trạng thái; người làm tự chuyển. Nội dung ticket vẫn ở <code>docs/tickets/issues/</code>, sửa nội dung vẫn cần PO. (b) Ghi trong tài liệu chính của ticket và một bảng tổng ở <code>docs/tickets</code>: một nguồn duy nhất, nhưng mỗi lần chuyển trạng thái là một pull request cần PO review. (c) Như (b), PO cho người làm tự sửa riêng dòng trạng thái: cần sửa R-01, R-03; CODEOWNERS không phân biệt được theo dòng nên chỉ có hiệu lực theo thỏa thuận. Biên soạn đề xuất (a).<br><strong>Đã đóng — PO chốt 05/11/2026, không theo (a), (b), (c):</strong> trạng thái thực hiện ghi ở <code>agent/execution/PID-NNNNN/report.md</code> trên nhánh của ticket. <code>spec-execution-skill</code> commit và push riêng file này khi đặt hoặc đổi trạng thái. PO chạy <code>node scripts/docs/update-index.mjs</code> thì <a href="../issues/taskboard.html">taskboard</a> đọc bản mới nhất từ bản checkout và mọi nhánh <code>origin/*</code>. Không dùng GitHub Project; không sửa R-01, R-03 vì Dev không ghi <code>docs/</code>.</td><td>Đã đóng 05/11/2026</td></tr>
 </tbody></table></div>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="03-track-plans.html">← Mục 3</a><a href="../index.html">Mục lục kế hoạch</a></nav>

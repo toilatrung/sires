@@ -1,0 +1,43 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00027.">
+<title>PID-00027 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00027</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00027</p><h1>PID-00027 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<p>Bản tóm tắt đã gộp câu trả lời ở mục Làm rõ của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Đo truy xuất có lọc trên pgvector ở quy mô MVP để chọn cấu hình index và ngưỡng chuyển giữa quét chính xác và HNSW, trước khi viết truy xuất thật.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Truy xuất ≤ 3 giây p95 cho project 500 reference, không tính embedding truy vấn — NFR-PERF-006</li>
+<li>Phạm vi nhỏ quét chính xác; phạm vi lớn HNSW <code>hnsw.iterative_scan</code>, pgvector ≥ 0.8; ngưỡng do SPK-04 đo — kiến trúc 7.4</li>
+<li>Truy xuất lai: vector cộng full-text top 50, gộp bằng Reciprocal Rank Fusion — kiến trúc 7.4</li>
+<li>Mỗi embedding model một bảng; bảng mẫu <code>vec.emb_openai_text_embedding_3_small</code> 1536 chiều — <code>docs/database/ddl/knowledge.sql</code></li>
+<li>5.000 reference mỗi tài khoản, 2.000 Source Document — NFR-SCALE-002</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Không phụ thuộc PID hay hợp đồng nào khác; bắt đầu được ngay.</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/knowledge/spikes/spk_04/</code>: Mã phục vụ phép đo, không vào build sản phẩm → S01</li>
+<li>O2 <code>agent/execution/PID-00027/report.md</code>: Kết quả, số đo, kết luận từng giả định, đề xuất cho PO → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<p>Không có thuật ngữ mới.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00027</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00027 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

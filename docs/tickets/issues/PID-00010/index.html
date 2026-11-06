@@ -1,0 +1,115 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ticket PID-00010: Dockerfile chung và Helm chart chung.">
+<title>PID-00010 — Dockerfile chung và Helm chart chung | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00010</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00010</p><h1>PID-00010 — Dockerfile chung và Helm chart chung</h1>
+<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
+<li><a href="#s-1">1. Ticket</a></li>
+<li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
+<li><a href="#s-3">3. Phụ thuộc</a></li>
+<li><a href="#s-4">4. Cổng sẵn sàng</a></li>
+<li><a href="#s-5">5. Làm rõ</a></li>
+<li><a href="#s-6">6. Slice</a></li>
+<li><a href="#s-7">7. Điểm dừng</a></li>
+<li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
+
+<p>Trang vào của ticket. Đọc file này trước, rồi <code>specs/</code>. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00010/report.md</code>, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Luồng</th><td>infra</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike: CI, Terraform</td></tr>
+<tr><th scope="row">Đợt song song</th><td>Đ1</td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td>Không</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
+<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — đã làm rõ, chờ PO xác nhận</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Tài liệu trong hồ sơ</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-dockerfile.html">S01</a></td><td>Rà Dockerfile</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-chart.html">S02</a></td><td>Bổ sung chart và Job migration</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-check-charts.html">S03</a></td><td>Script kiểm chart</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt khi làm rõ</td></tr>
+</tbody></table></div>
+
+
+<h2 id="s-1">1. Ticket</h2>
+<ul><li><strong>Mục đích:</strong> Staging và production dùng cùng chart, nên chart phải có sớm để lần deploy production không phải lần đầu.</li>
+<li><strong>Gồm:</strong> Rà Dockerfile Node, Python: build được mọi service, chạy non-root, không có dependency dev; Chart: tài nguyên, securityContext, ServiceAccount, biến môi trường từ Secret, chiến lược rolling update; Job migration theo service, lệnh lấy từ values, tắt được với service không có database; Script kiểm render chart với mọi <code>apps/&lt;service&gt;/deploy/values.yaml</code>.</li>
+<li><strong>Không gồm:</strong> Giá trị riêng từng service: luồng service tự giữ (quy tắc 1.4.8); KEDA (<a href="../PID-00057/index.html">PID-00057</a>); Áp dụng lên cụm thật (<a href="../PID-00035/index.html">PID-00035</a>); Lệnh migration của từng service: luồng service tự viết.</li></ul>
+<h3 id="dau-vao">Đầu vào</h3>
+<ul><li><strong>PID phải xong trước:</strong> không có</li></ul>
+<h3 id="dau-ra">Đầu ra</h3>
+<ul><li>Tệp: <code>infra/docker/node/Dockerfile</code> — Rà và sửa</li>
+<li>Tệp: <code>infra/docker/python/Dockerfile</code> — Rà và sửa</li>
+<li>Tệp: <code>infra/helm/sires-service/templates/deployment.yaml</code> — Bổ sung</li>
+<li>Tệp: <code>infra/helm/sires-service/templates/migration-job.yaml</code> — Job migration</li>
+<li>Tệp: <code>infra/helm/sires-service/values.yaml</code> — Giá trị mặc định mới</li>
+<li>Tệp: <code>scripts/development/check-charts.mjs</code> — Kiểm render chart</li></ul>
+
+<h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
+<ul><li><strong>PID-00010-AC01</strong> Given image một service NestJS và <code>agent-core</code> vừa build, When chạy, Then <code>GET /health</code> trả 200 và tiến trình không chạy bằng root.</li>
+<li><strong>PID-00010-AC02</strong> Given values của service có database, When <code>helm template</code>, Then có Job migration chạy trước Deployment; <code>sandbox-runner</code> thì không có.</li>
+<li><strong>PID-00010-AC03</strong> Given mọi <code>apps/&lt;service&gt;/deploy/values.yaml</code>, When chạy script, Then <code>helm lint</code>, <code>helm template</code> đều đạt và có probe <code>/health</code>, resources, securityContext.</li></ul>
+
+<h2 id="s-3">3. Phụ thuộc</h2>
+<ul><li>PID phải xong trước: không có; bắt đầu được ngay.</li>
+<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<li>PID chờ PID này: <a href="../PID-00035/index.html">PID-00035</a>, <a href="../PID-00054/index.html">PID-00054</a>.</li></ul>
+
+<h2 id="s-4">4. Cổng sẵn sàng</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
+<tr><td>Chờ PO xác nhận</td><td>Có</td><td>Đạt</td><td>Không có</td><td>Theo H1; Dev kiểm bằng spec mục 2.5</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Làm rõ</h2>
+<h3 id="phien-1">Phiên 06/11/2026</h3>
+<ul><li>H1: Dev chạy các PID đợt Đ1 ở đâu? → Đ: Linux hoặc WSL2 có Docker của từng Dev; SPK-06, SPK-07 chạy trên máy Linux thật hoặc GitHub Actions ubuntu cài runsc. · Ảnh hưởng: cổng Môi trường; spec mục 2.5</li></ul>
+<h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
+<ul><li>Không có.</li></ul>
+<h3 id="con-mo">Còn mở</h3>
+<ul><li>Không có.</li></ul>
+
+<h2 id="s-6">6. Slice</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-dockerfile.html">S01</a></td><td>Rà Dockerfile</td><td>PID-00010-AC01</td><td>—</td></tr>
+<tr><td><a href="specs/slices/S02-chart.html">S02</a></td><td>Bổ sung chart và Job migration</td><td>PID-00010-AC02</td><td>—</td></tr>
+<tr><td><a href="specs/slices/S03-check-charts.html">S03</a></td><td>Script kiểm chart</td><td>PID-00010-AC03</td><td>S02</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Điểm dừng</h2>
+<ul><li>Không được sửa: thư mục ngoài luồng <code>infra</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<li>Gặp điều spec không nói tới mà đổi hành vi → dừng, ghi trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
+<li>Cần sửa luồng khác → dừng, đề xuất PID cho luồng đó (quy tắc 1.4).</li></ul>
+
+<h2 id="s-8">8. Kiểm tra hoàn thành</h2>
+<ul><li>Lệnh: <code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
+<li>Bảng AC → test: <a href="specs/index.html#s-6">spec mục 6</a>.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00010 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

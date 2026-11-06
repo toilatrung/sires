@@ -1,0 +1,36 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu và test của PID-00005.">
+<title>PID-00005 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00005</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00005</p><h1>PID-00005 — Tiêu chí nghiệm thu → test</h1>
+<p>Mỗi AC có ít nhất một test hoặc một mục kiểm trong báo cáo. Không tự đặt số khi PO chưa chốt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00005-AC01</td><td>Given tài khoản A và B, When B truy vấn qua helper, Then không thấy dữ liệu của A; thiếu <code>app.account_id</code> thì 0 dòng.</td><td><code>libs/py/sires_common/tests/test_tenancy.py › test_rls</code></td><td>S01</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00005-AC02</td><td>Given API key trong log, When structlog ghi, Then giá trị bị che; lỗi không khai báo trả <code>internal_error</code>.</td><td><code>libs/py/sires_common/tests/test_logging.py › test_redaction</code></td><td>S01</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00005-AC03</td><td>Given sự kiện do thư viện phát, When kiểm theo JSON Schema <code>EventEnvelope</code>, Then đạt; giao dịch rollback thì không có dòng outbox.</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_envelope_and_rollback</code></td><td>S02</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00005-AC04</td><td>Given sự kiện trùng hoặc <code>aggregate.version</code> cũ, When consumer nhận, Then tác động đúng một lần, bản cũ bị bỏ.</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_inbox</code></td><td>S02</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00005-AC05</td><td>Given token hết hạn, sai chữ ký hoặc service ngoài <code>x-callers</code>, When gọi, Then <code>401</code> hoặc <code>403 caller_not_allowed</code>.</td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_guard</code></td><td>S03</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00005-AC06</td><td>Given cùng kịch bản (agent, bước), When gọi FakeModelGateway hai lần, Then kết quả giống nhau; tiêm <code>rate_limited</code> thì đếm đúng attempts.</td><td><code>libs/py/sires_common/tests/test_fake_gateway.py › test_deterministic</code></td><td>S04</td><td>Ticket, spec</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00005</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tiêu chí nghiệm thu PID-00005 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00063: Conversation và Message: chat project, active task, tin nhắn của Orchestrator.">
+<title>PID-00063 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00063</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00063</p><h1>PID-00063 — Conversation và Message: chat project, active task, tin nhắn của Orchestrator</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00063</a> · Luồng: <code>workspace</code> · Giai đoạn: PH-03 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Lưu hội thoại và phát <code>message.posted</code> để <code>orchestration</code> khởi động lượt chat (F-04).</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>workspace</code> · PH-03</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Chat, pending</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00063-AC01</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/04-runtime-flows.html#f-04">F-04</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Stream (<a href="../../PID-00061/index.html">PID-00061</a>); Lượt chat (<a href="../../PID-00068/index.html">PID-00068</a>)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-5">Kế hoạch luồng workspace</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-03">Giai đoạn PH-03, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Requirement: <a href="../../../../overview/sections/07-workspace-and-project.html#proj-chat-002">PROJ-CHAT-002</a>, <a href="../../../../overview/sections/07-workspace-and-project.html#ws-chat-001">WS-CHAT-001</a>, <a href="../../../../overview/sections/07-workspace-and-project.html#proj-chat-001">PROJ-CHAT-001</a>, <a href="../../../../overview/sections/09-research-plan-and-task-management.html#task-progress-001">TASK-PROGRESS-001</a>, <a href="../../../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html#orch-intent-001">ORCH-INTENT-001</a>, <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-assembly-001">CTX-ASSEMBLY-001</a>, <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-registry-001">CTX-REGISTRY-001</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/workspace/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/workspace/src/app.module.ts</code></td><td>Nơi gắn module mới</td></tr>
+<tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API thư viện nền</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<h4>Operation hiện thực</h4><div class="table-wrap"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">operationId</th><th scope="col">File</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td><code>PUT</code></td><td><code>/projects/{projectId}/active-task</code></td><td><code>setActiveTask</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Đặt hoặc bỏ active task của Project AI Chat</td></tr>
+<tr><td><code>GET</code></td><td><code>/conversations</code></td><td><code>listConversations</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Hội thoại Global AI Assistant và Project AI Chat</td></tr>
+<tr><td><code>POST</code></td><td><code>/conversations</code></td><td><code>createConversation</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Tạo hội thoại</td></tr>
+<tr><td><code>GET</code></td><td><code>/conversations/{conversationId}/messages</code></td><td><code>listMessages</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Lịch sử tin nhắn (bền vững qua nhiều phiên)</td></tr>
+<tr><td><code>POST</code></td><td><code>/conversations/{conversationId}/messages</code></td><td><code>sendMessage</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Gửi tin nhắn tới Orchestrator</td></tr>
+<tr><td><code>GET</code></td><td><code>/internal/conversations/{conversationId}/recent-messages</code></td><td><code>getRecentMessages</code></td><td><code>docs/api-design/internal/workspace.yaml</code></td><td>Tối đa 20 tin gần nhất cho lớp 7 của Orchestrator</td></tr>
+<tr><td><code>POST</code></td><td><code>/internal/conversations/{conversationId}/agent-messages</code></td><td><code>postAgentMessage</code></td><td><code>docs/api-design/internal/workspace.yaml</code></td><td>Ghi câu trả lời của Orchestrator vào hội thoại</td></tr>
+</tbody></table></div>
+<h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td>Phát</td><td><code>message.posted</code></td><td>orchestration, gateway</td><td>Tin nhắn mới được lưu — của Researcher (orchestration tạo lượt chat, F-04) hoặc của Orchestrator</td></tr>
+</tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00044/index.html">PID-00044</a> Project và vòng đời: tạo, lưu trữ, xóa mềm 30 ngày, Research Context</td><td>Chưa làm</td><td>Có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/workspace dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Module</td><td><code>apps/workspace/src/conversations/</code> (tạo mới)</td><td>Hiện thực 7 operation theo hợp đồng</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Sự kiện</td><td><code>apps/workspace/src/conversations/</code> (tạo mới)</td><td>Phát qua outbox: 1</td><td>Test trùng và lệch thứ tự</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/workspace/src/conversations/conversations.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Triển khai</td><td><code>apps/workspace/deploy/values.yaml</code> (có sẵn)</td><td>Giá trị deploy staging của luồng</td><td><code>helm template</code>, smoke trên staging</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Hiện thực đúng 7 operation ở mục 2.3. Lỗi theo <code>components/responses.yaml</code>; lệnh ghi có <code>Idempotency-Key</code>; cập nhật dùng <code>If-Match</code>.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Phát qua outbox trong cùng giao dịch. Nghe qua inbox idempotent; bỏ bản cũ theo <code>aggregate.version</code>.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Conversation, Message, active task</li>
+<li><code>getRecentMessages</code>, <code>postAgentMessage</code></li>
+<li>Phát <code>message.posted</code></li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Project Archived</td><td>Từ chối gửi</td></tr>
+<tr><td>Active task thuộc project khác</td><td>Từ chối</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Conversation, Message, active task — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/workspace:test</li>
+<li id="b2"><strong>B2</strong> <code>getRecentMessages</code>, <code>postAgentMessage</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/workspace:test</li>
+<li id="b3"><strong>B3</strong> Phát <code>message.posted</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/workspace:test</li>
+<li id="b4"><strong>B4</strong> Controller và service theo hợp đồng cho 7 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>
+<li id="b5"><strong>B5</strong> Ghi sự kiện qua outbox trong cùng giao dịch — Kết quả: Không có trạng thái mà thiếu sự kiện — Kiểm tra: Test rollback</li>
+<li id="b6"><strong>B6</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/workspace:test</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/workspace:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00063-AC01</td><td><code>apps/workspace/src/conversations/conversations.spec.ts</code></td><td>Given gửi tin nhắn cùng <code>Idempotency-Key</code> hai lần, When xử lý, Then một Message, một <code>message.posted</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>workspace</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00063</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00063 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
