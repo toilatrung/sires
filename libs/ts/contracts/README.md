@@ -7,7 +7,7 @@ import type { PublicApi, OrchestrationInternal } from '@sires/contracts';
 type Project = PublicApi.components['schemas']['ResearchProject'];
 ```
 
-Đổi hợp đồng: PR sửa `docs/api-design` (cần duyệt theo R-01 và OQ-103), rồi sinh lại. AsyncAPI và client Python thêm ở PH-01 ([docs/tickets mục 2](../../../docs/tickets/sections/02-phases-and-gates.html#ph-01)).
+Đổi hợp đồng: Dev báo PO, PO sửa `docs/api-design` và tạo PR (OQ-103, skill `contract-updating-skill`); merge xong Dev pull về rồi sinh lại. AsyncAPI và client Python thêm ở PH-01 ([docs/tickets mục 2](../../../docs/tickets/sections/02-phases-and-gates.html#ph-01)).
 
 ---
 
