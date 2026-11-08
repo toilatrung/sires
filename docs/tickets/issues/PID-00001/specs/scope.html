@@ -22,24 +22,24 @@
 <p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên thì ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm.</p>
 <h2 id="pham-vi">Phạm vi</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
-<tr><td>P1</td><td>Tenancy: helper chạy hàm trong giao dịch có <code>SET LOCAL app.account_id</code>, dùng Drizzle + node-postgres</td><td>ticket mục 1</td><td>S01</td></tr>
-<tr><td>P2</td><td>Sinh UUIDv7; helper kiểm <code>rowVersion</code> theo <code>If-Match</code>, lệch trả <code>412</code></td><td>ticket mục 1</td><td>S01</td></tr>
-<tr><td>P3</td><td>Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ <code>components/responses.yaml</code></td><td>ticket mục 1</td><td>S02</td></tr>
-<tr><td>P4</td><td>Logger pino: che dữ liệu nhạy cảm, băm <code>accountId</code>, gắn mã tương quan</td><td>ticket mục 1</td><td>S03</td></tr>
-<tr><td>P5</td><td>Khởi tạo OpenTelemetry cho HTTP, xuất qua <code>index.ts</code></td><td>ticket mục 1</td><td>S04</td></tr>
+<tr><td>P1</td><td>Tenancy: helper chạy hàm trong giao dịch có <code>SET LOCAL app.account_id</code>, dùng Drizzle + node-postgres</td><td>ticket mục 1; H2</td><td>S01</td></tr>
+<tr><td>P2</td><td>Sinh UUIDv7; helper kiểm <code>rowVersion</code> theo <code>If-Match</code>, lệch trả <code>412</code></td><td>ticket mục 1; H2</td><td>S01</td></tr>
+<tr><td>P3</td><td>Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ <code>components/responses.yaml</code>; kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>), lỗi schema trả <code>validation_failed</code> kèm <code>errors[].field</code>, <code>errors[].code</code></td><td>ticket mục 1; H2</td><td>S02</td></tr>
+<tr><td>P4</td><td>Logger pino: che dữ liệu nhạy cảm, băm <code>accountId</code>, gắn mã tương quan</td><td>ticket mục 1; H2</td><td>S03</td></tr>
+<tr><td>P5</td><td>Khởi tạo OpenTelemetry cho HTTP, xuất qua <code>index.ts</code></td><td>ticket mục 1; H2</td><td>S04</td></tr>
 </tbody></table></div>
 <h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
 <tr><td>N1</td><td>Outbox, inbox, idempotency, audit-emit (<a href="../../PID-00002/index.html">PID-00002</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00002/index.html">PID-00002</a></td></tr>
 <tr><td>N2</td><td>Service token nội bộ (<a href="../../PID-00003/index.html">PID-00003</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00003/index.html">PID-00003</a></td></tr>
 <tr><td>N3</td><td>Thư viện Python (<a href="../../PID-00005/index.html">PID-00005</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00005/index.html">PID-00005</a></td></tr>
-<tr><td>N4</td><td>Thư viện kiểm tra đầu vào: class-validator hay Zod, xem phiếu I1</td><td>Ticket mục “Không gồm”</td><td>—</td></tr>
+<tr><td>N4</td><td>Schema Zod của từng API: luồng service tự viết</td><td>Ticket mục “Không gồm”</td><td>—</td></tr>
 </tbody></table></div>
 <h2 id="edge-case">Edge case</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
 <tr><td>EC01</td><td>Hai giao dịch của hai tài khoản chạy song song trên cùng pool</td><td>Không lẫn <code>app.account_id</code>, vì <code>SET LOCAL</code> hết hiệu lực khi kết thúc giao dịch</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › không lẫn giữa hai giao dịch</code></td><td>S01</td></tr>
 <tr><td>EC02</td><td>Hàm trong giao dịch ném lỗi</td><td>Rollback và ném lại lỗi gốc</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › rollback khi lỗi</code></td><td>S01</td></tr>
-<tr><td>EC03</td><td>Lỗi kiểm tra đầu vào chưa có thư viện</td><td>Bộ lọc nhận lỗi chuẩn và trả <code>validation_failed</code>, không phụ thuộc thư viện nào</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/errors/errors.spec.ts › validation_failed</code></td><td>S02</td></tr>
+<tr><td>EC03</td><td>Body có nhiều trường sai cùng lúc</td><td>Trả tất cả lỗi trong <code>errors</code>, không dừng ở lỗi đầu tiên</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/errors/validation.spec.ts › nhiều trường sai</code></td><td>S02</td></tr>
 <tr><td>EC04</td><td>Key nằm trong object lồng nhau hoặc chuỗi thông báo lỗi</td><td>Vẫn bị che</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/logging/logger.spec.ts › che trong object lồng</code></td><td>S03</td></tr>
 <tr><td>EC05</td><td>Không cấu hình nơi nhận trace</td><td>Service vẫn chạy, không lỗi</td><td>Spec mục 4.7</td><td><code>libs/ts/platform/src/telemetry/telemetry.spec.ts › chạy khi không có exporter</code></td><td>S04</td></tr>
 </tbody></table></div>

@@ -4,7 +4,14 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — hợp đồng cho RC-05 theo yêu cầu PO (05/11/2026)
+### Thay đổi gần nhất — hợp đồng cho RC-08 và tìm evidence, PO chốt 08/11/2026
+
+Hai chỗ thiếu phát hiện khi lập ticket. Tương thích ngược, không đổi schema; là **Assumption** như phần còn lại của bộ này.
+
+- `provider_connection.changed`: thêm `planning` vào `x-consumers` và `operations`, để Task tự tính lại RC-08 khi kết nối đổi trạng thái (trigger (b) của TASK-READINESS-001).
+- `retrieveEvidence` nội bộ của `knowledge`: thêm `research` vào `x-callers`, để API công khai cùng tên chạy được khi Researcher tự tìm evidence (EVID-RETRIEVAL-001).
+
+### Hợp đồng cho RC-05 theo yêu cầu PO (05/11/2026)
 
 Readiness cần biết reference khai báo đã được chọn cho project và đã `Indexed` (RC-05, TASK-READINESS-001), nhưng `planning` chưa có đường đọc và chưa nhận sự kiện tương ứng. Thay đổi tương thích ngược, không đổi schema; là **Assumption** như phần còn lại của bộ này.
 

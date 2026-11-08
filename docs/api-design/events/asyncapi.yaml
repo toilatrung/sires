@@ -333,7 +333,7 @@ operations:
   planningConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
-    title: planning chuyển trạng thái Task theo workflow; gắn needs review; tính lại readiness theo RC-05
+    title: planning chuyển trạng thái Task theo workflow; gắn needs review; tính lại readiness theo RC-05, RC-08
     messages:
       - $ref: '#/channels/events/messages/accountDeletionRequested'
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
@@ -344,6 +344,7 @@ operations:
       - $ref: '#/channels/events/messages/referenceStatusChanged'
       - $ref: '#/channels/events/messages/projectReferenceChanged'
       - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+      - $ref: '#/channels/events/messages/providerConnectionChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
       - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   orchestrationConsumes:
@@ -516,9 +517,13 @@ components:
     providerConnectionChanged:
       name: provider_connection.changed
       title: Provider Connection tạo, sửa, xóa key hoặc đổi trạng thái kiểm tra
+      description: |
+        planning: tính lại RC-01–RC-08 của các Task `Ready`, `Blocked` trong tài khoản (RC-08, TASK-READINESS-001), đọc lại
+        `getAgentSetup`. identity phát sau khi giao dịch commit nên đọc lại luôn thấy trạng thái mới; `reportProviderIssue`
+        làm đổi trạng thái kết nối cũng phát sự kiện này với `change = test_status_changed`.
       x-producer: identity
-      x-consumers: [gateway]
-      x-requirements: [AGENT-PROVIDER-001, NFR-SECRETS-003]
+      x-consumers: [gateway, planning]
+      x-requirements: [AGENT-PROVIDER-001, NFR-SECRETS-003, TASK-READINESS-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:

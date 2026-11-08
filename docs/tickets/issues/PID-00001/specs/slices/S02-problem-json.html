@@ -25,22 +25,24 @@
 
 <p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
 <div class="table-wrap"><table><tbody>
-<tr><th scope="row">AC</th><td>PID-00001-AC04, NFR-OBS-005-AC01</td></tr>
-<tr><th scope="row">Output spec</th><td>O2, O7</td></tr>
+<tr><th scope="row">AC</th><td>PID-00001-AC04, PID-00001-AC07, NFR-OBS-005-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O7, O10</td></tr>
 <tr><th scope="row">Bước spec</th><td>B3</td></tr>
 <tr><th scope="row">Edge case</th><td>EC03 (từ <code>specs/scope.html</code>)</td></tr>
 <tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
 <ol><li>Viết exception filter cho adapter Fastify</li>
-<li>Lấy danh mục mã từ <code>docs/api-design/components/responses.yaml</code> qua type sinh của <code>@sires/contracts</code>, không chép tay</li></ol>
+<li>Lấy danh mục mã từ <code>docs/api-design/components/responses.yaml</code> qua type sinh của <code>@sires/contracts</code>, không chép tay</li>
+<li>Thêm <code>zod</code>, <code>nestjs-zod</code> qua pnpm catalog; cấu hình pipe kiểm tra đầu vào, xuất qua <code>libs/ts/platform/src/index.ts</code></li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
 <li><code>libs/ts/platform/src/errors/errors.spec.ts › problem json và lỗi không khai báo</code> (PID-00001-AC04)</li>
+<li><code>libs/ts/platform/src/errors/validation.spec.ts › lỗi schema Zod</code> (PID-00001-AC07)</li>
 <li><code>libs/ts/platform/src/errors/errors.spec.ts</code> (NFR-OBS-005-AC01)</li>
-<li><code>libs/ts/platform/src/errors/errors.spec.ts › validation_failed</code> (EC03)</li></ul>
+<li><code>libs/ts/platform/src/errors/validation.spec.ts › nhiều trường sai</code> (EC03)</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Lỗi đã khai báo và lỗi không khai báo đều đúng định dạng</li></ul>
+<ul><li>Lỗi đã khai báo, lỗi không khai báo và lỗi schema Zod đều đúng định dạng</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00001</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Slice PID-00001 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>

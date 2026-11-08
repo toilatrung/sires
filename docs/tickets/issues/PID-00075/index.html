@@ -50,16 +50,16 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Task chỉ chạy khi đủ điều kiện và phải chỉ rõ lý do chặn. Phần xác định phải ≤ 2 s (NFR-PERF-004).</li>
-<li><strong>Gồm:</strong> RC-01–RC-08 không gọi model, song song REST tới <code>identity</code>, <code>library</code>, <code>research</code>; RC-05: đã chọn (<code>getReferenceSelectionInternal</code>), Trusted và Indexed (<code>lookupReferences</code>); Tự tính lại theo sự kiện; <code>recordSemanticReadiness</code> cho RC-09.</li>
+<li><strong>Gồm:</strong> RC-01–RC-08 không gọi model, song song REST tới <code>identity</code>, <code>library</code>, <code>research</code>; RC-05: đã chọn (<code>getReferenceSelectionInternal</code>), Trusted và Indexed (<code>lookupReferences</code>); Tự tính lại theo sự kiện; <code>recordSemanticReadiness</code> cho RC-09; RC-08 tự tính lại khi nhận <code>provider_connection.changed</code>, đọc lại <code>getAgentSetup</code>.</li>
 <li><strong>Không gồm:</strong> RC-09 chạy thế nào (<a href="../PID-00089/index.html">PID-00089</a>, <a href="../PID-00086/index.html">PID-00086</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00002/index.html">PID-00002</a>, <a href="../PID-00003/index.html">PID-00003</a>, <a href="../PID-00004/index.html">PID-00004</a>, <a href="../PID-00007/index.html">PID-00007</a>, <a href="../PID-00023/index.html">PID-00023</a></li>
 <li><strong>Hợp đồng:</strong> 3 operation hiện thực, 5 operation gọi (<a href="specs/index.html#s-2-3">spec mục 2.3</a>)</li>
-<li><strong>Sự kiện:</strong> phát 0, nghe 4</li></ul>
+<li><strong>Sự kiện:</strong> phát 0, nghe 5</li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Module: <code>apps/planning/src/readiness/</code> — Hiện thực 3 operation theo hợp đồng</li>
 <li>Stub: <code>apps/planning/test/stubs/</code> — Stub phía gọi cho identity, library, research, workspace, theo type sinh từ hợp đồng</li>
-<li>Sự kiện: <code>apps/planning/src/readiness/</code> — Consumer qua inbox: 4</li>
+<li>Sự kiện: <code>apps/planning/src/readiness/</code> — Consumer qua inbox: 5</li>
 <li>Test: <code>apps/planning/src/readiness/readiness.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
@@ -67,6 +67,7 @@
 <li><strong>PID-00075-AC02</strong> Given reference khai báo chưa được chọn, When kiểm, Then không đạt RC-05 kèm hành động gợi ý.</li>
 <li><strong>PID-00075-AC03</strong> Given Task Blocked vì reference chưa Indexed, When nhận <code>reference.indexing_status_changed</code> Indexed, Then tự tính lại và Task về Ready.</li>
 <li><strong>PID-00075-AC04</strong> Given dữ liệu mẫu, When chạy RC-01–RC-08, Then ≤ 2 s.</li>
+<li><strong>PID-00075-AC05</strong> Given Task Ready dùng kết nối vừa chuyển Invalid, When nhận <code>provider_connection.changed</code>, Then Task về Blocked với lý do RC-08; kết nối Valid trở lại thì Task về Ready.</li>
 <li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-perf-004">NFR-PERF-004</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-task-004">UX-TASK-004</a> (AC01); <a href="../../../overview/sections/09-research-plan-and-task-management.html#task-readiness-001">TASK-READINESS-001</a> (AC01, AC02, AC03, AC04, AC05); <a href="../../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html#orch-readiness-001">ORCH-READINESS-001</a> (AC01).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
@@ -83,7 +84,7 @@
 <h2 id="s-5">5. Làm rõ</h2>
 <p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00075</code> khi chuẩn bị giao Dev.</p>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Trigger (b) của TASK-READINESS-001 gồm “kết nối đổi trạng thái”, nhưng <code>provider_connection.changed</code> chưa có <code>planning</code> trong <code>x-consumers</code>, nên RC-08 chưa tự tính lại được: cần PO sửa hợp đồng.</li></ul>
+<ul><li>Không có.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
 <ul><li>Không có.</li></ul>
 

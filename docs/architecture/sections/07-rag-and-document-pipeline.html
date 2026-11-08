@@ -69,7 +69,7 @@
 <h2 id="s-7-4">7.4. Truy xuất</h2>
 <p>Tool <code>retrieve_evidence(query, k, filters)</code> của Evidence Retrieval Agent và Verification Agent; NFR-PERF-006: ≤ 3 giây cho project 500 reference (không tính embedding truy vấn).</p>
 <ol>
-<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001, OQ-053): <code>account_id</code> và <code>project_id</code> lấy từ token nội bộ của Agent Run + <code>reference_id IN</code> (Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng model hiện hành). knowledge tính phạm vi từ bản sao chỉ đọc nhận qua sự kiện của library (<code>reference.status_changed.*</code>, <code>project_reference.changed.*</code>), không nhận từ model; tool không có tham số để mở rộng.</li>
+<li><strong>Phạm vi bắt buộc</strong> (INT-VECTOR-001, OQ-053): <code>account_id</code> và <code>project_id</code> lấy từ token nội bộ của lời gọi (Agent Run, hoặc <code>research</code> khi phục vụ Researcher tự tìm evidence) + <code>reference_id IN</code> (Project Reference Selection Active ∩ Reference Trusted ∩ Indexed bằng model hiện hành). knowledge tính phạm vi từ bản sao chỉ đọc nhận qua sự kiện của library (<code>reference.status_changed.*</code>, <code>project_reference.changed.*</code>), không nhận từ model; tool không có tham số để mở rộng.</li>
 <li><strong>Nhánh vector:</strong> embedding truy vấn bằng model của tài khoản; top 50 theo cosine.
   <ul>
   <li>Phạm vi nhỏ (≤ ~50.000 chunk, gồm cả trần 500 reference × ~100 chunk): quét chính xác trên tập đã lọc bằng index <code>(account_id, reference_id)</code> — chính xác 100%, đủ nhanh.</li>

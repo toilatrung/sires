@@ -43,7 +43,7 @@
 <ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-4">Kế hoạch luồng identity</a></li>
 <li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-03">Giai đoạn PH-03, cổng ra</a></li>
 <li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
-<li>Requirement: <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-003">NFR-SECRETS-003</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a>, <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-001">INT-PROVIDER-001</a>, <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-004">INT-PROVIDER-004</a></li>
+<li>Requirement: <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-003">NFR-SECRETS-003</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a>, <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-001">INT-PROVIDER-001</a>, <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-004">INT-PROVIDER-004</a>, <a href="../../../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html#agent-provider-001">AGENT-PROVIDER-001</a>, <a href="../../../../overview/sections/09-research-plan-and-task-management.html#task-readiness-001">TASK-READINESS-001</a></li>
 <li>Kịch bản: <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-10-07">TS-10-07</a></li></ul>
 <h3 id="s-2-2">2.2. Mã nguồn</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
@@ -58,6 +58,7 @@
 </tbody></table></div>
 <h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
 <tr><td>Phát</td><td><code>provider_connection.issue_reported</code></td><td>workspace, gateway</td><td>Lỗi cố định của provider (auth_failed, quota_exceeded…) — tạo Notification Provider issue</td></tr>
+<tr><td>Phát</td><td><code>provider_connection.changed</code></td><td>gateway, planning</td><td>Provider Connection tạo, sửa, xóa key hoặc đổi trạng thái kiểm tra</td></tr>
 </tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
@@ -71,7 +72,7 @@ pnpm --filter @sires/identity dev</pre>
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
 <tr><td id="o1">O1</td><td>Module</td><td><code>apps/identity/src/providers/</code> (tạo mới)</td><td>Hiện thực 2 operation theo hợp đồng</td><td>Test ở dòng dưới</td></tr>
-<tr><td id="o2">O2</td><td>Sự kiện</td><td><code>apps/identity/src/providers/</code> (tạo mới)</td><td>Phát qua outbox: 1</td><td>Test trùng và lệch thứ tự</td></tr>
+<tr><td id="o2">O2</td><td>Sự kiện</td><td><code>apps/identity/src/providers/</code> (tạo mới)</td><td>Phát qua outbox: 2</td><td>Test trùng và lệch thứ tự</td></tr>
 <tr><td id="o3">O3</td><td>Test</td><td><code>apps/identity/src/providers/envelope-api.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 <tr><td id="o4">O4</td><td>Triển khai</td><td><code>apps/identity/deploy/values.yaml</code> (có sẵn)</td><td>Giá trị deploy staging của luồng</td><td><code>helm template</code>, smoke trên staging</td></tr>
 </tbody></table></div>
@@ -85,7 +86,7 @@ pnpm --filter @sires/identity dev</pre>
 <p>Phát qua outbox trong cùng giao dịch. Nghe qua inbox idempotent; bỏ bản cũ theo <code>aggregate.version</code>.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li><code>getProviderSecretEnvelope</code> chỉ trả envelope mã hóa</li>
-<li><code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code></li></ul>
+<li><code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code> và <code>provider_connection.changed</code> với <code>change = test_status_changed</code></li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -98,7 +99,7 @@ pnpm --filter @sires/identity dev</pre>
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> <code>getProviderSecretEnvelope</code> chỉ trả envelope mã hóa — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
-<li id="b2"><strong>B2</strong> <code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b2"><strong>B2</strong> <code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code> và <code>provider_connection.changed</code> với <code>change = test_status_changed</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
 <li id="b3"><strong>B3</strong> Controller và service theo hợp đồng cho 2 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>
 <li id="b4"><strong>B4</strong> Ghi sự kiện qua outbox trong cùng giao dịch — Kết quả: Không có trạng thái mà thiếu sự kiện — Kiểm tra: Test rollback</li>
 <li id="b5"><strong>B5</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/identity:test</li>

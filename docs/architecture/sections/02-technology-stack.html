@@ -76,7 +76,7 @@
 <tr><td>Framework</td><td>NestJS (adapter Fastify), Node.js 22 LTS</td><td>Module, DI, guard, interceptor dùng chung qua <code>libs/ts/platform</code>.</td></tr>
 <tr><td>Biên dịch</td><td>SWC (builder của Nest CLI / Nx); <code>tsc --noEmit</code> chạy riêng cho type check, song song và có cache Nx</td><td>Build mỗi service vài giây; type check chỉ chạy cho project bị ảnh hưởng.</td></tr>
 <tr><td>Swagger</td><td><code>@nestjs/swagger</code> sinh spec từ controller; CI so spec sinh ra với spec trong <code>docs/api-design</code> (phải tương đương)</td><td>Spec trong docs là nguồn; spec sinh ra dùng để phát hiện lệch.</td></tr>
-<tr><td>Kiểm tra đầu vào</td><td><code>class-validator</code> + <code>class-transformer</code> (DTO của Nest) hoặc Zod (<code>nestjs-zod</code>) — chọn một khi khởi tạo repo</td><td>Lỗi trả <code>application/problem+json</code>.</td></tr>
+<tr><td>Kiểm tra đầu vào</td><td>Zod (<code>nestjs-zod</code>), PO chốt 08/11/2026</td><td>Lỗi trả <code>application/problem+json</code>.</td></tr>
 <tr><td>Truy cập DB, migration</td><td>Drizzle ORM + <code>node-postgres</code>; migration bằng drizzle-kit (SQL được review)</td><td>Kiểm soát giao dịch và <code>SET LOCAL app.account_id</code> cho RLS dễ hơn Prisma; schema TS gọn.</td></tr>
 <tr><td>Messaging</td><td><code>@golevelup/nestjs-rabbitmq</code> (hoặc transport RMQ của <code>@nestjs/microservices</code>) với ack thủ công</td><td>Outbox relay và inbox ở <code>libs/ts/platform</code>.</td></tr>
 <tr><td>Job định kỳ</td><td><code>@nestjs/schedule</code> + khóa leader trong PostgreSQL</td><td>Sweeper, purge, KPI.</td></tr>

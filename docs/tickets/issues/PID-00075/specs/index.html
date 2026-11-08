@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td>Task chỉ chạy khi đủ điều kiện và phải chỉ rõ lý do chặn. Phần xác định phải ≤ 2 s (NFR-PERF-004).</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>planning</code> · PH-03</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Xây với stub · Xây</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00075-AC01, PID-00075-AC02, PID-00075-AC03, PID-00075-AC04</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00075-AC01, PID-00075-AC02, PID-00075-AC03, PID-00075-AC04, PID-00075-AC05</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/06-end-to-end-product-workflow.html#wf-02">WF-02</a>, <a href="../../../../architecture/sections/04-runtime-flows.html#f-06">F-06</a></td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>RC-09 chạy thế nào (<a href="../../PID-00089/index.html">PID-00089</a>, <a href="../../PID-00086/index.html">PID-00086</a>)</td></tr>
 </tbody></table></div>
@@ -69,6 +69,7 @@
 <tr><td>Nghe</td><td><code>project_reference.changed</code></td><td>library</td><td>Reference được chọn hoặc bỏ chọn cho project — knowledge cập nhật phạm vi truy xuất</td></tr>
 <tr><td>Nghe</td><td><code>reference.indexing_status_changed</code></td><td>knowledge</td><td>Indexing Queued, Indexing, Indexed, Failed, Unavailable, cần index lại</td></tr>
 <tr><td>Nghe</td><td><code>research.object_status_changed</code></td><td>research</td><td>Evidence, Claim, Artifact Version đổi trạng thái (Accepted, Rejected, Stale, needs review)</td></tr>
+<tr><td>Nghe</td><td><code>provider_connection.changed</code></td><td>identity</td><td>Provider Connection tạo, sửa, xóa key hoặc đổi trạng thái kiểm tra</td></tr>
 </tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
@@ -91,7 +92,7 @@ pnpm --filter @sires/planning dev</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
 <tr><td id="o1">O1</td><td>Module</td><td><code>apps/planning/src/readiness/</code> (tạo mới)</td><td>Hiện thực 3 operation theo hợp đồng</td><td>Test ở dòng dưới</td></tr>
 <tr><td id="o2">O2</td><td>Stub</td><td><code>apps/planning/test/stubs/</code> (tạo mới)</td><td>Stub phía gọi cho identity, library, research, workspace, theo type sinh từ hợp đồng</td><td>Test tích hợp dùng stub</td></tr>
-<tr><td id="o3">O3</td><td>Sự kiện</td><td><code>apps/planning/src/readiness/</code> (tạo mới)</td><td>Consumer qua inbox: 4</td><td>Test trùng và lệch thứ tự</td></tr>
+<tr><td id="o3">O3</td><td>Sự kiện</td><td><code>apps/planning/src/readiness/</code> (tạo mới)</td><td>Consumer qua inbox: 5</td><td>Test trùng và lệch thứ tự</td></tr>
 <tr><td id="o4">O4</td><td>Test</td><td><code>apps/planning/src/readiness/readiness.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 </tbody></table></div>
 
@@ -107,6 +108,7 @@ pnpm --filter @sires/planning dev</pre>
 <li>RC-05: đã chọn (<code>getReferenceSelectionInternal</code>), Trusted và Indexed (<code>lookupReferences</code>)</li>
 <li>Tự tính lại theo sự kiện</li>
 <li><code>recordSemanticReadiness</code> cho RC-09</li>
+<li>RC-08 tự tính lại khi nhận <code>provider_connection.changed</code>, đọc lại <code>getAgentSetup</code></li>
 <li>Với <code>reference.indexing_status_changed</code>, lấy trạng thái index của reference đó từ <code>toState</code> của sự kiện, không đọc lại <code>lookupReferences</code>, vì <code>library</code> nghe cùng sự kiện và không có thứ tự với <code>planning</code>.</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
@@ -124,10 +126,11 @@ pnpm --filter @sires/planning dev</pre>
 <li id="b2"><strong>B2</strong> RC-05: đã chọn (<code>getReferenceSelectionInternal</code>), Trusted và Indexed (<code>lookupReferences</code>) — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/planning:test</li>
 <li id="b3"><strong>B3</strong> Tự tính lại theo sự kiện — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/planning:test</li>
 <li id="b4"><strong>B4</strong> <code>recordSemanticReadiness</code> cho RC-09 — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/planning:test</li>
-<li id="b5"><strong>B5</strong> Controller và service theo hợp đồng cho 3 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>
-<li id="b6"><strong>B6</strong> Viết consumer qua inbox, xử lý trùng và lệch thứ tự — Kết quả: Sự kiện xử lý đúng một lần — Kiểm tra: Test gửi lặp</li>
-<li id="b7"><strong>B7</strong> Gọi luồng khác bằng client sinh từ hợp đồng; stub nằm trong thư mục test của luồng này — Kết quả: Không import mã service khác — Kiểm tra: Lint <code>@nx/enforce-module-boundaries</code></li>
-<li id="b8"><strong>B8</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/planning:test</li>
+<li id="b5"><strong>B5</strong> RC-08 tự tính lại khi nhận <code>provider_connection.changed</code>, đọc lại <code>getAgentSetup</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/planning:test</li>
+<li id="b6"><strong>B6</strong> Controller và service theo hợp đồng cho 3 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>
+<li id="b7"><strong>B7</strong> Viết consumer qua inbox, xử lý trùng và lệch thứ tự — Kết quả: Sự kiện xử lý đúng một lần — Kiểm tra: Test gửi lặp</li>
+<li id="b8"><strong>B8</strong> Gọi luồng khác bằng client sinh từ hợp đồng; stub nằm trong thư mục test của luồng này — Kết quả: Không import mã service khác — Kiểm tra: Lint <code>@nx/enforce-module-boundaries</code></li>
+<li id="b9"><strong>B9</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/planning:test</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -140,12 +143,13 @@ node scripts/docs/add-license.mjs --check</pre>
 <tr><td>PID-00075-AC02</td><td><code>apps/planning/src/readiness/readiness.spec.ts</code></td><td>Given reference khai báo chưa được chọn, When kiểm, Then không đạt RC-05 kèm hành động gợi ý.</td></tr>
 <tr><td>PID-00075-AC03</td><td><code>apps/planning/src/readiness/readiness.spec.ts</code></td><td>Given Task Blocked vì reference chưa Indexed, When nhận <code>reference.indexing_status_changed</code> Indexed, Then tự tính lại và Task về Ready.</td></tr>
 <tr><td>PID-00075-AC04</td><td><code>apps/planning/src/readiness/readiness.spec.ts</code></td><td>Given dữ liệu mẫu, When chạy RC-01–RC-08, Then ≤ 2 s.</td></tr>
+<tr><td>PID-00075-AC05</td><td><code>apps/planning/src/readiness/readiness.spec.ts</code></td><td>Given Task Ready dùng kết nối vừa chuyển Invalid, When nhận <code>provider_connection.changed</code>, Then Task về Blocked với lý do RC-08; kết nối Valid trở lại thì Task về Ready.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
 <ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>planning</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
 <li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
-<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Trigger (b) của TASK-READINESS-001 gồm “kết nối đổi trạng thái”, nhưng <code>provider_connection.changed</code> chưa có <code>planning</code> trong <code>x-consumers</code>, nên RC-08 chưa tự tính lại được: cần PO sửa hợp đồng.</li></ul>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00075</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
 </main>
 <footer>SIRes · Spec kỹ thuật PID-00075 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

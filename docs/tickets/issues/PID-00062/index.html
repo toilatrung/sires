@@ -50,21 +50,21 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Agent Run cần key của người dùng mà không để lộ. Chỉ <code>agent-core</code> và <code>knowledge</code> giải mã được (3.6.7).</li>
-<li><strong>Gồm:</strong> <code>getProviderSecretEnvelope</code> chỉ trả envelope mã hóa; <code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code>.</li>
+<li><strong>Gồm:</strong> <code>getProviderSecretEnvelope</code> chỉ trả envelope mã hóa; <code>reportProviderIssue</code> đổi trạng thái kết nối, phát <code>provider_connection.issue_reported</code> và <code>provider_connection.changed</code> với <code>change = test_status_changed</code>.</li>
 <li><strong>Không gồm:</strong> Xoay KEK (<a href="../PID-00137/index.html">PID-00137</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00042/index.html">PID-00042</a></li>
 <li><strong>Hợp đồng:</strong> 2 operation hiện thực, 0 operation gọi (<a href="specs/index.html#s-2-3">spec mục 2.3</a>)</li>
-<li><strong>Sự kiện:</strong> phát 1, nghe 0</li></ul>
+<li><strong>Sự kiện:</strong> phát 2, nghe 0</li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Module: <code>apps/identity/src/providers/</code> — Hiện thực 2 operation theo hợp đồng</li>
-<li>Sự kiện: <code>apps/identity/src/providers/</code> — Phát qua outbox: 1</li>
+<li>Sự kiện: <code>apps/identity/src/providers/</code> — Phát qua outbox: 2</li>
 <li>Test: <code>apps/identity/src/providers/envelope-api.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
 <li>Triển khai: <code>apps/identity/deploy/values.yaml</code> — Giá trị deploy staging của luồng</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00062-AC01</strong> Given service ngoài <code>x-callers</code>, When xin envelope, Then <code>403</code>; phản hồi không bao giờ có key dạng rõ.</li>
-<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-003">NFR-SECRETS-003</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a> (AC01); <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-001">INT-PROVIDER-001</a> (AC01); <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-004">INT-PROVIDER-004</a> (AC01).</li></ul>
+<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-003">NFR-SECRETS-003</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a> (AC01); <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-001">INT-PROVIDER-001</a> (AC01); <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-provider-004">INT-PROVIDER-004</a> (AC01); <a href="../../../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html#agent-provider-001">AGENT-PROVIDER-001</a> (AC01, AC02); <a href="../../../overview/sections/09-research-plan-and-task-management.html#task-readiness-001">TASK-READINESS-001</a> (AC01, AC02, AC03, AC04, AC05).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00042/index.html">PID-00042</a> Provider Connection: lưu key mã hóa, kiểm tra kết nối, danh mục model.</li>
