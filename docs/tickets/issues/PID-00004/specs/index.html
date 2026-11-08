@@ -1,0 +1,139 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00004: Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms.">
+<title>PID-00004 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00004</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00004</p><h1>PID-00004 — Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</h1>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 08/11/2026 · Ticket: <a href="../index.html">PID-00004</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Các luồng xây song song với stub cần fake dùng chung có hành vi xác định, để test không phụ thuộc dịch vụ ngoài (quy tắc 1.4.4). FakeOidcProvider cũng là stub OIDC mà PO chọn cho SPK-02.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>platform</code> · PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · Thư viện nền</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00004-AC01, PID-00004-AC02, PID-00004-AC03, PID-00004-AC04, PID-00004-AC05</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-095">OQ-095</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-13">ASM-13</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>FakeModelGateway và mô hình Python (<a href="../../PID-00005/index.html">PID-00005</a>); Chế độ fake của <code>agent-core</code> cho service TypeScript (<a href="../../PID-00070/index.html">PID-00070</a>); Stub service gọi service: mỗi luồng tự viết ở thư mục test của mình</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-1">Kế hoạch luồng platform</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API hiện có, đổi tương thích ngược</td></tr>
+<tr><td><code>libs/ts/testing/src/index.ts</code></td><td>Thư viện test hiện có</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>Thư viện Python hiện có</td></tr>
+<tr><td><code>libs/ts/testing/package.json</code></td><td>Đọc trước khi sửa</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td>Không có điều kiện riêng</td><td>Làm được ngay</td><td>Không</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<p>Chạy trên Linux hoặc WSL2 có Docker (H1).</p>
+<pre>pnpm install
+uv sync --all-packages
+pnpm local:up</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Tệp</td><td><code>libs/ts/testing/package.json</code> (có sẵn)</td><td>Thêm script <code>test</code> và phụ thuộc</td><td><code>pnpm nx run @sires/testing:test</code></td></tr>
+<tr><td id="o2">O2</td><td>Tệp</td><td><code>libs/ts/testing/src/containers/</code> (tạo mới)</td><td>Testcontainers</td><td>Test khởi động container</td></tr>
+<tr><td id="o3">O3</td><td>Tệp</td><td><code>libs/ts/testing/src/fakes/oidc.fake.ts</code> (tạo mới)</td><td>FakeOidcProvider</td><td>Test với openid-client</td></tr>
+<tr><td id="o4">O4</td><td>Tệp</td><td><code>libs/ts/testing/src/fakes/broker.fake.ts</code> (tạo mới)</td><td>Fake broker</td><td>Test đơn vị</td></tr>
+<tr><td id="o5">O5</td><td>Tệp</td><td><code>libs/ts/testing/src/fakes/source-adapter.fake.ts</code> (tạo mới)</td><td>FakeSourceAdapter</td><td>Test đơn vị</td></tr>
+<tr><td id="o6">O6</td><td>Tệp</td><td><code>libs/ts/testing/src/fakes/local-kms.ts</code> (tạo mới)</td><td>LocalKms</td><td>Test đơn vị</td></tr>
+<tr><td id="o7">O7</td><td>Test</td><td><code>libs/ts/testing/src/containers/containers.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o8">O8</td><td>Test</td><td><code>libs/ts/testing/src/fakes/oidc.fake.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o9">O9</td><td>Test</td><td><code>libs/ts/testing/src/fakes/broker.fake.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o10">O10</td><td>Test</td><td><code>libs/ts/testing/src/fakes/source-kms.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Container helper cho PostgreSQL 16 + pgvector, RabbitMQ, MinIO</li>
+<li>FakeOidcProvider: discovery, authorization code + PKCE, ID token ký bằng khóa test, refresh xoay vòng, RP-initiated logout, chế độ không khả dụng</li>
+<li>Fake broker: gửi, nhận <code>EventEnvelope</code>, tiêm trùng và lệch thứ tự</li>
+<li>FakeSourceAdapter theo kịch bản, tiêm lỗi</li>
+<li>LocalKms: mã hóa, giải mã bằng khóa cục bộ</li>
+<li>FakeSourceAdapter, FakeOidcProvider (ID token ký bằng khóa test), MinIO, LocalKms, RabbitMQ trong Testcontainers đặt ở <code>libs/ts/testing</code> và <code>sires_common</code> (kiến trúc 8.9)</li>
+<li>FakeModelGateway là Python; service TypeScript dùng chế độ fake của <code>agent-core</code> (kiến trúc 8.9; kế hoạch mục 1.3 ghi chung, kiến trúc là chuẩn về cách hiện thực)</li>
+<li>FakeOidcProvider bám luồng thật: authorization code + PKCE, <code>/token</code>, refresh token xoay vòng, claim <code>sub</code>, họ tên, email (ASM-13; repo công khai <code>toilatrung/eTroy_OIDC</code>)</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Máy không có Docker</td><td>Test báo rõ cần Docker, không báo đạt giả</td></tr>
+<tr><td>Hai bộ test chạy song song</td><td>Mỗi bộ có cổng ngẫu nhiên, không đụng nhau</td></tr>
+<tr><td>OIDC ở chế độ không khả dụng</td><td>Discovery và đăng nhập lỗi, để test được INT-OIDC-004</td></tr>
+<tr><td>Logout với <code>post_logout_redirect_uri</code> không khai báo</td><td>Từ chối</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Container helper cho PostgreSQL 16 + pgvector, RabbitMQ, MinIO — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b2"><strong>B2</strong> FakeOidcProvider: discovery, authorization code + PKCE, ID token ký bằng khóa test, refresh xoay vòng, RP-initiated logout, chế độ không khả dụng — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b3"><strong>B3</strong> Fake broker: gửi, nhận <code>EventEnvelope</code>, tiêm trùng và lệch thứ tự — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b4"><strong>B4</strong> FakeSourceAdapter theo kịch bản, tiêm lỗi — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b5"><strong>B5</strong> LocalKms: mã hóa, giải mã bằng khóa cục bộ — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/platform:test
+pnpm nx run sires-common:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00004-AC01</td><td><code>libs/ts/testing/src/containers/containers.spec.ts › khởi động và dọn container</code></td><td>Given container helper, When khởi động, Then có PostgreSQL 16 với extension <code>vector</code> ≥ 0.8, RabbitMQ, MinIO dùng được; xong thì được dọn.</td></tr>
+<tr><td>PID-00004-AC02</td><td><code>libs/ts/testing/src/fakes/oidc.fake.spec.ts › luồng authorization code</code></td><td>Given FakeOidcProvider, When client dùng openid-client chạy discovery và authorization code + PKCE, Then nhận ID token kiểm được chữ ký, có <code>sub</code>, họ tên, email.</td></tr>
+<tr><td>PID-00004-AC03</td><td><code>libs/ts/testing/src/fakes/oidc.fake.spec.ts › refresh xoay vòng và PKCE sai</code></td><td>Given refresh token đã dùng, When dùng lại, Then bị từ chối; <code>code_verifier</code> sai cũng bị từ chối.</td></tr>
+<tr><td>PID-00004-AC04</td><td><code>libs/ts/testing/src/fakes/broker.fake.spec.ts › tiêm trùng và lệch thứ tự</code></td><td>Given fake broker bật tiêm trùng và lệch thứ tự, When gửi <code>EventEnvelope</code>, Then consumer nhận đúng theo kịch bản, lặp lại cho kết quả như nhau.</td></tr>
+<tr><td>PID-00004-AC05</td><td><code>libs/ts/testing/src/fakes/source-kms.spec.ts › nguồn giả lập và KMS cục bộ</code></td><td>Given FakeSourceAdapter kịch bản <code>rate_limited</code>, When gọi, Then trả lỗi đó; LocalKms giải mã đúng bản đã mã hóa.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>platform</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00004</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00004 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -43,7 +43,7 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Giai đoạn</th><th><code>platform</code></th><th><code>contracts</code></th><th><code>infra</code></th></tr></thead>
 <tbody>
-<tr><td>PH-01</td><td>Thư viện nền TS và Python (1.3); fake dùng chung; Testcontainers; service mẫu cho SPK-10</td><td>Sinh type TS, client Python từ OpenAPI công khai, nội bộ, AsyncAPI; kiểm tra lệch spec</td><td>CI đầy đủ (11.3), remote cache, Dockerfile chung, Helm chart chung, Terraform; staging khi có AQ-12</td></tr>
+<tr><td>PH-01</td><td>Thư viện nền TS và Python (1.3); fake dùng chung; Testcontainers; service mẫu cho SPK-10</td><td>Sinh type TS từ OpenAPI công khai, nội bộ, AsyncAPI; client Python từ OpenAPI nội bộ, mô hình message từ AsyncAPI; kiểm tra lệch spec</td><td>CI đầy đủ (11.3), remote cache, Dockerfile chung, Helm chart chung, Terraform; staging khi có AQ-12</td></tr>
 <tr><td>PH-02</td><td>Hỗ trợ luồng hội tụ; bổ sung theo yêu cầu (tương thích ngược, 1.4.5)</td><td>Sinh lại sau mỗi PR hợp đồng</td><td>Pipeline merge → staging, migration theo service, smoke; secret manager, KMS staging</td></tr>
 <tr><td>PH-03–PH-05</td><td>Lan traceparent qua HTTP và message; metric outbox → broker → SSE</td><td>Như trên; phiên bản mới cho đổi phá vỡ</td><td>RabbitMQ quorum, dead-letter; KEDA cho agent-core; dashboard vận hành</td></tr>
 <tr><td>PH-06</td><td>—</td><td>—</td><td>Node pool sandbox (gVisor RuntimeClass, NetworkPolicy deny-all); môi trường eval tách production; job eval trong CI</td></tr>
@@ -93,8 +93,8 @@
 <tr><th>Phạm vi</th><td>ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, readiness check, TaskReview, phân tích ảnh hưởng; bảng chuyển trạng thái Task T-01–T-19 (PRD 9.8).</td></tr>
 <tr><th>Gọi</th><td>identity, workspace, orchestration, library, research.</td></tr>
 <tr><th>Bị gọi</th><td>gateway, agent-core, orchestration.</td></tr>
-<tr><th>Theo giai đoạn</th><td>PH-01 migration, state machine · PH-02–PH-03 xây với stub · PH-04 hội tụ WF-01–WF-03 · PH-05–PH-06 phân tích ảnh hưởng khi reference bị thu hồi hoặc đầu ra thay đổi · PH-07 sửa lỗi.</td></tr>
-<tr><th>Kiểm thử</th><td>Mọi chuyển trạng thái ngoài bảng bị từ chối; dependency có chu trình bị chặn; Plan đã duyệt là baseline có phiên bản.</td></tr>
+<tr><th>Theo giai đoạn</th><td>PH-01 migration, state machine · PH-02–PH-03 xây với stub · PH-04 hội tụ WF-01–WF-03 · PH-05 kiểm RC-05 với sự kiện index thật từ <code>knowledge</code> · PH-05–PH-06 phân tích ảnh hưởng khi reference bị thu hồi hoặc đầu ra thay đổi · PH-07 sửa lỗi.</td></tr>
+<tr><th>Kiểm thử</th><td>Mọi chuyển trạng thái ngoài bảng bị từ chối; dependency có chu trình bị chặn; Plan đã duyệt là baseline có phiên bản; Task bị chặn bởi RC-05 tự tính lại khi selection hoặc trạng thái index đổi (PH-04 dùng sự kiện giả lập vì <code>knowledge</code> hội tụ ở PH-05).</td></tr>
 </tbody></table></div>
 
 <h2 id="s-3-7">3.7. orchestration</h2>

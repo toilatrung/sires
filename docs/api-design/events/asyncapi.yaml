@@ -333,7 +333,7 @@ operations:
   planningConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
-    title: planning chuyển trạng thái Task theo workflow; gắn needs review
+    title: planning chuyển trạng thái Task theo workflow; gắn needs review; tính lại readiness theo RC-05, RC-08
     messages:
       - $ref: '#/channels/events/messages/accountDeletionRequested'
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
@@ -342,6 +342,9 @@ operations:
       - $ref: '#/channels/events/messages/workflowCreated'
       - $ref: '#/channels/events/messages/workflowStatusChanged'
       - $ref: '#/channels/events/messages/referenceStatusChanged'
+      - $ref: '#/channels/events/messages/projectReferenceChanged'
+      - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+      - $ref: '#/channels/events/messages/providerConnectionChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
       - $ref: '#/channels/events/messages/deliberationEntryRetracted'
   orchestrationConsumes:
@@ -514,9 +517,13 @@ components:
     providerConnectionChanged:
       name: provider_connection.changed
       title: Provider Connection tạo, sửa, xóa key hoặc đổi trạng thái kiểm tra
+      description: |
+        planning: tính lại RC-01–RC-08 của các Task `Ready`, `Blocked` trong tài khoản (RC-08, TASK-READINESS-001), đọc lại
+        `getAgentSetup`. identity phát sau khi giao dịch commit nên đọc lại luôn thấy trạng thái mới; `reportProviderIssue`
+        làm đổi trạng thái kết nối cũng phát sự kiện này với `change = test_status_changed`.
       x-producer: identity
-      x-consumers: [gateway]
-      x-requirements: [AGENT-PROVIDER-001, NFR-SECRETS-003]
+      x-consumers: [gateway, planning]
+      x-requirements: [AGENT-PROVIDER-001, NFR-SECRETS-003, TASK-READINESS-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:
@@ -1169,9 +1176,10 @@ components:
       description: |
         orchestration: selection của project nằm trong Context Snapshot của phiên đang Running đổi thì đánh dấu snapshot
         lỗi thời (CTX-SNAPSHOT-001).
+        planning: tính lại RC-01–RC-08 của các Task khai báo reference này trong project (RC-05, TASK-READINESS-001).
       x-producer: library
-      x-consumers: [knowledge, research, gateway, orchestration]
-      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001, CTX-SNAPSHOT-001]
+      x-consumers: [knowledge, research, gateway, orchestration, planning]
+      x-requirements: [LIB-PROJECT-001, INT-VECTOR-001, CTX-SNAPSHOT-001, TASK-READINESS-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:
@@ -1190,9 +1198,13 @@ components:
     referenceIndexingStatusChanged:
       name: reference.indexing_status_changed
       title: Indexing Queued, Indexing, Indexed, Failed, Unavailable, cần index lại
+      description: |
+        planning: tính lại RC-01–RC-08 của các Task khai báo reference này (RC-05, TASK-READINESS-001). library cũng nghe
+        sự kiện này và không có thứ tự với planning, nên khi tính lại planning lấy trạng thái index của reference này từ
+        `toState` của sự kiện, không đọc lại `lookupReferences`; `aggregate.version` dùng để bỏ bản cũ.
       x-producer: knowledge
-      x-consumers: [library, gateway]
-      x-requirements: [EVID-INDEX-001, INT-DOC-002]
+      x-consumers: [library, gateway, planning]
+      x-requirements: [EVID-INDEX-001, INT-DOC-002, TASK-READINESS-001]
       traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
       payload:
         allOf:

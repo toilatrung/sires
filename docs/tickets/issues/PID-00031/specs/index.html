@@ -1,0 +1,130 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00031: SPK-06: sandbox LaTeX dưới gVisor.">
+<title>PID-00031 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00031</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00031</p><h1>PID-00031 — SPK-06: sandbox LaTeX dưới gVisor</h1>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 08/11/2026 · Ticket: <a href="../index.html">PID-00031</a> · Luồng: <code>sandbox-runner</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Kiểm chứng ASM-07, NFR-PERF-007 và ADR-11: build LaTeX cô lập, không mạng, trong giới hạn 120 s / 2 GB.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>sandbox-runner</code> · PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · SPK-06, SPK-07</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00031-AC01, PID-00031-AC02, PID-00031-AC03, PID-00031-AC04, NFR-SANDBOX-001-AC01</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">SPK-06</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-07">ASM-07</a>, <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-11">ADR-11</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Image thật (<a href="../../PID-00054/index.html">PID-00054</a>); Node pool gVisor (<a href="../../PID-00112/index.html">PID-00112</a>); Đo thời gian chờ Queued → Running của NFR-PERF-007: cần pool (<a href="../../PID-00080/index.html">PID-00080</a>)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-13">Kế hoạch luồng sandbox-runner</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Requirement: <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-sandbox-001">NFR-SANDBOX-001</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/sandbox-runner/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/sandbox-runner/src/app.module.ts</code></td><td>Nơi gắn module mới</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td>Không có điều kiện riêng</td><td>Làm được ngay</td><td>Không</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<p>Chạy trên máy Linux thật hoặc GitHub Actions ubuntu cài runsc (H1); WSL2 chỉ dùng được nếu chạy được runsc.</p>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/sandbox-runner dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Mã thử</td><td><code>apps/sandbox-runner/spikes/spk-06/</code> (tạo mới)</td><td>Mã phục vụ phép đo, không vào build sản phẩm</td><td>Chạy lại được theo hướng dẫn trong báo cáo</td></tr>
+<tr><td id="o2">O2</td><td>Báo cáo</td><td><code>agent/execution/PID-00031/report.md</code> (tạo mới)</td><td>Kết quả, số đo, kết luận từng giả định, đề xuất cho PO</td><td>Có đủ mục theo Tiêu chí nghiệm thu</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Dựng container thử: TeX Live cố định, latexmk, chạy bằng runsc, không mạng, non-root, read-only rootfs</li>
+<li>Đo thời gian, bộ nhớ của bài báo mẫu và luận văn mẫu, cả pdfLaTeX và XeLaTeX tiếng Việt</li>
+<li>Thử tấn công: lệnh shell, đọc file ngoài workspace, gọi mạng, vòng lặp vô hạn, ăn bộ nhớ</li>
+<li>Báo cáo số đo, kết quả tấn công, kết luận ASM-07, đề xuất cho image thật</li>
+<li>Container gVisor, không mạng, non-root, read-only rootfs; giới hạn 120 s, 2 GB, đĩa 500 MB (kiến trúc 9; ADR-11)</li>
+<li><code>latexmk -pdf</code> hoặc <code>-xelatex</code>, <code>-interaction=nonstopmode -halt-on-error -file-line-error -no-shell-escape</code> (kiến trúc 9)</li>
+<li>Đo template Default và luận văn mẫu (ASM-07)</li>
+<li>Build vượt giới hạn: Failed với <code>timeout</code> hoặc <code>memory_limit</code> (kiến trúc 9)</li>
+<li>Đọc <code>/etc/passwd</code> qua <code>\input</code> phải thất bại (NFR-SANDBOX-001-AC01)</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>runsc không chạy được trên máy</td><td>Dùng GitHub Actions ubuntu; vẫn không được thì ghi chưa kiểm, không kết luận ASM-07</td></tr>
+<tr><td>Thiếu package khi build</td><td>Thêm vào danh sách đề xuất, không tải khi chạy</td></tr>
+<tr><td>Font tiếng Việt lỗi với XeLaTeX</td><td>Ghi font thử và đề xuất font cho image</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc giả định cần kiểm: SPK-06, ASM-07, ADR-11 — Kết quả: Danh sách câu hỏi và cách đo — Kiểm tra: Mỗi giả định có phép đo tương ứng</li>
+<li id="b2"><strong>B2</strong> Dựng container thử: TeX Live cố định, latexmk, chạy bằng runsc, không mạng, non-root, read-only rootfs — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b3"><strong>B3</strong> Đo thời gian, bộ nhớ của bài báo mẫu và luận văn mẫu, cả pdfLaTeX và XeLaTeX tiếng Việt — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b4"><strong>B4</strong> Thử tấn công: lệnh shell, đọc file ngoài workspace, gọi mạng, vòng lặp vô hạn, ăn bộ nhớ — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b5"><strong>B5</strong> Báo cáo số đo, kết quả tấn công, kết luận ASM-07, đề xuất cho image thật — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b6"><strong>B6</strong> Viết báo cáo: kết quả, số đo, kết luận từng giả định, đề xuất — Kết quả: <code>agent/execution/PID-00031/report.md</code> — Kiểm tra: Đủ nội dung theo Tiêu chí nghiệm thu</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/sandbox-runner:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00031-AC01</td><td><code>apps/sandbox-runner/spikes/spk-06/attack.sh › chạy tay</code></td><td>Given file gọi lệnh shell hoặc <code>\input{/etc/passwd}</code>, When build dưới runsc, Then lệnh không chạy, file ngoài workspace không đọc được.</td></tr>
+<tr><td>PID-00031-AC02</td><td><code>apps/sandbox-runner/spikes/spk-06/attack.sh › chạy tay</code></td><td>Given vòng lặp vô hạn hoặc ăn bộ nhớ, When build, Then dừng ở 120 s hoặc 2 GB với mã <code>timeout</code>, <code>memory_limit</code>.</td></tr>
+<tr><td>PID-00031-AC03</td><td><code>apps/sandbox-runner/spikes/spk-06/measure.sh › chạy tay</code></td><td>Given bài báo mẫu và luận văn mẫu, When build, Then báo cáo ghi thời gian, bộ nhớ theo từng trình biên dịch, so với chạy không có gVisor.</td></tr>
+<tr><td>PID-00031-AC04</td><td>Báo cáo trong <code>agent/execution/PID-00031/</code></td><td>Given báo cáo, When đọc, Then có kết luận ASM-07 và danh sách package đề xuất.</td></tr>
+<tr><td>NFR-SANDBOX-001-AC01</td><td><code>apps/sandbox-runner/spikes/spk-06/attack.sh</code></td><td>Đo ở mức spike; kiểm chính thức ở <a href="../../PID-00128/index.html">PID-00128</a>.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>sandbox-runner</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00031</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00031 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

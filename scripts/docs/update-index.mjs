@@ -5,6 +5,8 @@
 
 // Sync docs/index.html with the folders under docs/: add an entry for each new folder,
 // drop entries whose folder was deleted, keep hand-edited entries untouched.
+// Also syncs the ticket pages in docs/tickets/issues/ (see update-tickets.mjs) and the PID summary
+// in docs/tickets/index.html (see update-pid-summary.mjs).
 // Usage: node scripts/docs/update-index.mjs [--check]
 //   --check  report changes and exit 1 if the index is out of date, without writing.
 //
@@ -14,6 +16,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { syncTickets } from './update-tickets.mjs';
+import { syncPidSummary } from './update-pid-summary.mjs';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DOCS = path.join(REPO, 'docs');
@@ -25,6 +29,9 @@ const ENTRY_RE = /<li data-folder="([^"]+)">[\s\S]*?<\/li>\n?/g;
 const IGNORE = new Set(['node_modules', 'assets', 'dist']);
 
 const check = process.argv.includes('--check');
+// Tổng hợp PID ghi cả dòng đợt trong hồ sơ, nên chạy trước khi dựng bảng ticket.
+const summaryStale = syncPidSummary({ check });
+const ticketsStale = syncTickets({ check }) || summaryStale;
 
 const escapeHtml = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -124,7 +131,7 @@ for (const w of warnings) console.warn(`! ${w}`);
 
 if (!added.length && !removed.length) {
   console.log('docs/index.html đã khớp với các thư mục trong docs/.');
-  process.exit(0);
+  process.exit(ticketsStale ? 1 : 0);
 }
 if (check) {
   console.log('docs/index.html chưa cập nhật; chạy lại không kèm --check để ghi.');

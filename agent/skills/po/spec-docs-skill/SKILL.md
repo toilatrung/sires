@@ -1,11 +1,11 @@
 ---
 name: spec-docs-skill
-description: Write the detailed technical specification ("spec-docs") for one SIRes ticket — docs/tickets/issues/TK-NNN/spec-docs/index.html in seven parts: scope and basis, Input (docs, code paths, contracts, data, preconditions, environment), Output (files, migrations, endpoints, events, screens, tests mapped to acceptance criteria, docs to update), technical design, ordered steps, done-checks, limits and stop points — precise enough that a coding agent can implement the ticket inside its own track without guessing. Use when asked to "viết spec-docs", write or update the technical spec of a ticket (TK-NNN), or turn an approved ticket into an implementation plan for an agent. Not for scaffolding or editing the PRD, backlog or other docs sets (scaffold-docs-skill) and not for reading a spec before coding (spec-read-skill).
+description: Write the detailed technical specification ("spec-docs") for one SIRes ticket — docs/tickets/issues/PID-NNNNN/specs/index.html in seven parts: scope and basis, Input (docs, code paths, contracts, data, preconditions, environment), Output (files, migrations, endpoints, events, screens, tests mapped to acceptance criteria, docs to update), technical design, ordered steps, done-checks, limits and stop points — precise enough that a coding agent can implement the ticket inside its own track without guessing. Use when asked to "viết spec-docs", write or update the technical spec of a ticket (PID-NNNNN), or turn an approved ticket into an implementation plan for an agent. Not for scaffolding or editing the PRD, backlog or other docs sets (scaffold-docs-skill) not for clarifying a ticket and slicing it (spec-clarify-skill), and not for implementing it (spec-execution-skill).
 ---
 
 # Spec docs — viết tài liệu kỹ thuật chi tiết của một ticket
 
-Đầu ra của skill là `docs/tickets/issues/TK-NNN/spec-docs/index.html` (và các phần tách riêng `NN-slug.html` nếu dài). Người đọc chính là **coding agent** sẽ làm ticket theo [spec-read-skill](../../dev/spec-read-skill/SKILL.md); người duyệt là PO.
+Đầu ra của skill là `docs/tickets/issues/PID-NNNNN/specs/index.html` (và các phần tách riêng `NN-slug.html` nếu dài). Người đọc chính là **coding agent** sẽ làm ticket theo [spec-execution-skill](../../dev/spec-execution-skill/SKILL.md); người duyệt là PO. Sau spec, PO chạy [spec-clarify-skill](../spec-clarify-skill/SKILL.md) để làm rõ và chia slice.
 
 Tiêu chuẩn duy nhất: **agent đọc spec là làm được, không phải đoán.** Mọi đường dẫn tồn tại hoặc ghi rõ “tạo mới”; mọi Output kiểm được; mọi AC của ticket có test; điều chưa rõ thành câu hỏi, không thành giả định ngầm.
 
@@ -16,14 +16,16 @@ Tiêu chuẩn duy nhất: **agent đọc spec là làm được, không phải �
 
 ## Thư mục ticket
 
-PO chốt ngày 03/11/2026 (khi đưa skill vào SIRes); `docs/tickets/README.md` chưa ghi phần này.
+Theo PO ngày 05/11/2026; quy ước ghi ở `docs/tickets/README.md`.
 
 ```
-docs/tickets/issues/TK-NNN/
-  TK-NNN-slug.html      tài liệu chính: một luồng, một giai đoạn PH-NN, requirement, AC TK-NNN-ACNN
-  spec-docs/
+docs/tickets/issues/PID-NNNNN/
+  index.html            tài liệu chính: một luồng, một giai đoạn PH-NN, requirement, AC PID-NNNNN-ACNN
+  specs/
     index.html          spec kỹ thuật (skill này)
     NN-slug.html        phần tách riêng nếu dài (tùy chọn)
+    brief.html, scope.html, acceptance.html, slices/   hồ sơ đã làm rõ (spec-clarify-skill)
+  designs/              ghi chú thiết kế, sketch (spec-clarify-skill)
   others/               tài liệu đi kèm (ảnh, dữ liệu mẫu, biên bản)
 ```
 
@@ -42,16 +44,16 @@ Thư mục còn trống giữ bằng `.gitkeep`; xóa `.gitkeep` khi thêm file.
 
 ## Quy trình
 
-1. **Đọc căn cứ.** `docs/tickets/README.md`, [docs/tickets mục 1](../../../../docs/tickets/sections/01-tracks-and-boundaries.html) (luồng, quy tắc 1.4) và phần luồng của ticket ở mục 3 → tài liệu chính `TK-NNN-slug.html` → requirement, DEC, ASM, OQ, ADR, F-NN, WF-NN mà ticket liên kết (tìm theo mã: `node agent/skills/dev/spec-read-skill/scripts/locate.mjs <MÃ>`). Ghi lại các AC phải phủ: `TK-NNN-ACNN` của ticket và AC của requirement (`CODE-NNN-ACNN`).
+1. **Đọc căn cứ.** `docs/tickets/README.md`, [docs/tickets mục 1](../../../../docs/tickets/sections/01-tracks-and-boundaries.html) (luồng, quy tắc 1.4) và phần luồng của ticket ở mục 3 → tài liệu chính `PID-NNNNN/index.html` → requirement, DEC, ASM, OQ, ADR, F-NN, WF-NN mà ticket liên kết (tìm theo mã: `node agent/skills/dev/spec-read-skill/scripts/locate.mjs <MÃ>`). Ghi lại các AC phải phủ: `PID-NNNNN-ACNN` của ticket và AC của requirement (`CODE-NNN-ACNN`).
 2. **Đọc hiện trạng.** `apps/<service>/README.md` (phạm vi sở hữu, database, cổng, hợp đồng, ranh giới); hợp đồng: `docs/api-design/paths/NN-*.yaml`, `internal/<service>.yaml` (`x-callers`), `events/asyncapi.yaml`; DDL `docs/database/ddl/<service>.sql` và section database của service; kiến trúc mục 3–6 phần liên quan; giao diện: `docs/ui-design/design.md` và trang trong `docs/ui-design/pages/`; mã nguồn và test hiện có trong `apps/<service>/`, `libs/`. Ghi đúng đường dẫn đã thấy.
-3. **Chép khung** `assets/spec-index.template.html` vào `spec-docs/index.html`; xóa `.gitkeep` của thư mục. Thay `TK-NNN`, tên, luồng, giai đoạn, đường dẫn ticket, ngày.
+3. **Chép khung** `assets/spec-index.template.html` vào `specs/index.html`; xóa `.gitkeep` của thư mục. Thay `PID-NNNNN`, tên, luồng, giai đoạn, đường dẫn ticket, ngày.
 4. **Điền theo thứ tự 1 → 7** (xem “Nội dung từng mục”).
 5. **Kiểm tra** bằng [references/checklist.md](references/checklist.md), rồi:
    ```
    node agent/skills/po/scaffold-docs-skill/scripts/check-docs.mjs docs/tickets --skip docs/ui-design/pages --skip docs/api-design/dist
    node scripts/docs/add-license.mjs --check
    ```
-6. **Ghi vết** (R-05): nhật ký `docs/docs_context.md`; trạng thái spec trong tài liệu chính (hàng “Tài liệu kèm”) nếu PO yêu cầu; câu hỏi đề xuất chuyển cho người biên soạn cấp mã.
+6. **Ghi vết** (R-05): nhật ký `docs/docs_context.md`; liên kết spec trong tài liệu chính (mục “Tài liệu trong hồ sơ”) nếu PO yêu cầu; câu hỏi đề xuất chuyển cho người biên soạn cấp mã.
 
 ## Nội dung từng mục
 
@@ -67,7 +69,7 @@ Thư mục còn trống giữ bằng `.gitkeep`; xóa `.gitkeep` khi thêm file.
 
 ## Quy ước trình bày
 
-- HTML tĩnh theo mẫu trang của `docs/tickets` (ghi chú giấy phép đầu file, logo, footer). Liên kết tương đối từ `spec-docs/`: stylesheet `../../../../overview/assets/styles.css`, PRD `../../../../overview/…`, ticket `../TK-NNN-slug.html`, danh sách kế hoạch `../../../index.html`, mã nguồn `../../../../../apps/…`.
+- HTML tĩnh theo mẫu trang của `docs/tickets` (ghi chú giấy phép đầu file, logo, footer). Liên kết tương đối từ `specs/`: stylesheet `../../../../overview/assets/styles.css`, PRD `../../../../overview/…`, ticket `../index.html`, danh sách kế hoạch `../../../index.html`, mã nguồn `../../../../../apps/…`.
 - Anchor đề mục `s-N`, `s-N-M`; dòng Output `id="o1"`, bước `id="b1"`.
 - Trạng thái hai trục ở dòng `meta` đầu trang: biên soạn (Khung / Đang viết / Chờ duyệt / Đã duyệt) và xác nhận (Đề xuất — chờ PO duyệt / Confirmed kèm ngày, căn cứ).
 - Tiếng Việt; giữ tên trạng thái, tên bảng, route, kiểu dữ liệu trong `<code>`. Câu ngắn: ai làm, cái gì, ở đâu. Dùng `phải` / `không được` / `nên` / `có thể` như quy ước PRD 1.6.

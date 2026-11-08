@@ -5,7 +5,8 @@
 
 // Tìm nơi định nghĩa và nơi nhắc tới một mã trong docs/.
 // Usage: node agent/skills/dev/spec-read-skill/scripts/locate.mjs <MÃ> [<MÃ> ...] [--root <repo>] [--refs]
-//   TK-NNN           → thư mục ticket (docs/tickets/**/TK-NNN/), tài liệu chính, spec-docs/index.html, others/
+//   PID-NNNNN        → thư mục ticket (docs/tickets/**/PID-NNNNN/), tài liệu chính index.html, specs/, designs/, others/,
+//                      kết quả agent/execution/PID-NNNNN/
 //   mã khác          → file#anchor có id="<mã viết thường>" hoặc id="req-<mã viết thường>" (nơi định nghĩa);
 //                      AC (…-ACNN) còn tìm dòng <strong>MÃ</strong> trong danh sách AC
 //   --refs           → thêm các file có nhắc tới mã (tối đa 20)
@@ -33,7 +34,7 @@ const ticketDirs = new Map();
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (GENERATED.has(p)) continue;
-      if (/^TK-\d{3}$/.test(e.name)) ticketDirs.set(e.name, p);
+      if (/^PID-[A-Za-z0-9]+$/.test(e.name)) ticketDirs.set(e.name.toUpperCase(), p);
       walk(p);
     } else if (/\.(html|md|ya?ml|sql|mmd)$/.test(e.name)) files.push(p);
   }
@@ -45,17 +46,22 @@ let missing = 0;
 for (const raw of codes) {
   const code = raw.toUpperCase();
   console.log(`\n${code}`);
-  const tk = code.match(/^(TK-\d{3})(?:-AC\d{2})?$/);
+  const tk = code.match(/^(PID-[A-Z0-9]+?)(?:-AC\d{2})?$/);
   if (tk) {
     const dir = ticketDirs.get(tk[1]);
     if (!dir) { console.log('  không tìm thấy thư mục ticket dưới docs/tickets/'); missing++; continue; }
-    const main = fs.readdirSync(dir).find((f) => new RegExp(`^${tk[1]}-.+\\.html$`).test(f));
-    const spec = path.join(dir, 'spec-docs', 'index.html');
-    console.log(`  ticket : ${main ? rel(path.join(dir, main)) : `(thiếu tài liệu chính trong ${rel(dir)})`}`);
-    console.log(`  spec   : ${fs.existsSync(spec) ? rel(spec) : '(chưa có spec-docs/index.html)'}`);
-    const others = path.join(dir, 'others');
-    const extra = fs.existsSync(others) ? fs.readdirSync(others).filter((f) => f !== '.gitkeep') : [];
-    if (extra.length) console.log(`  others : ${extra.join(', ')}`);
+    const main = path.join(dir, 'index.html');
+    const spec = path.join(dir, 'specs', 'index.html');
+    const nonEmpty = (p) => fs.existsSync(p) && fs.statSync(p).size > 0;
+    console.log(`  ticket : ${nonEmpty(main) ? rel(main) : `(thiếu tài liệu chính ${rel(main)})`}`);
+    console.log(`  spec   : ${nonEmpty(spec) ? rel(spec) : `(chưa có ${rel(spec)})`}`);
+    for (const sub of ['specs', 'designs', 'others']) {
+      const d = path.join(dir, sub);
+      const extra = fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f !== '.gitkeep' && f !== 'index.html') : [];
+      if (extra.length) console.log(`  ${sub.padEnd(7)}: ${extra.join(', ')}`);
+    }
+    const out = path.join(ROOT, 'agent', 'execution', tk[1]);
+    if (fs.existsSync(out)) console.log(`  kết quả: ${rel(out)}/ (${fs.readdirSync(out).join(', ')})`);
     if (!code.includes('-AC')) continue;
   }
   const id = code.toLowerCase();

@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00135: Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn.">
+<title>PID-00135 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00135</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00135</p><h1>PID-00135 — Rà song ngữ, a11y, trạng thái, điện thoại trên mọi màn</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00135</a> · Luồng: <code>web/shell</code> · Giai đoạn: PH-07 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>REL-08 và TS-13-06 kiểm toàn bộ màn ở hai ngôn ngữ, ba trạng thái và bàn phím.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>web/shell</code> · PH-07</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Ổn định, nghiệm thu · Song ngữ, a11y</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00135-AC01</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-08">REL-08</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Tính năng mới</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-2">Kế hoạch luồng web</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-07">Giai đoạn PH-07, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li><a href="../../../../ui-design/design.md">Thiết kế: design.md</a></li>
+<li><a href="../designs/notes.html">Ghi chú thiết kế của PID này</a></li>
+<li>Requirement: <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-a11y-001">UX-A11Y-001</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-a11y-002">UX-A11Y-002</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-a11y-003">UX-A11Y-003</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-i18n-001">UX-I18N-001</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-resp-001">UX-RESP-001</a></li>
+<li>Kịch bản: <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-13-06">TS-13-06</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/web/src/main.tsx</code></td><td>Điểm vào ứng dụng</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00130/index.html">PID-00130</a> Kịch bản lát 5 và kiểm cổng PH-06</td><td>Chưa làm</td><td>Có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm --filter @sires/web dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Màn hình</td><td><code>apps/web/src/shell/</code> (có sẵn)</td><td>Màn: theo Gồm; i18n, trạng thái loading, empty, error</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Test</td><td><code>apps/web/src/shell/a11y.test.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Rà mọi màn ở vi, en</li>
+<li>axe-core, bàn phím, tương phản</li>
+<li>Chạy <code>sires-ui-review</code> và <code>check-ui.mjs</code></li>
+<li>Sửa lỗi dùng chung ở shell; lỗi của khu vực tách PID theo khu vực</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Theo <a href="../designs/notes.html">designs/notes.html</a>. Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Lỗi chỉ thuộc một khu vực</td><td>PO cấp PID mới cho khu vực đó</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc <code>docs/ui-design/design.md</code>, màn tham chiếu, <code>designs/notes.html</code> — Kết quả: Danh sách màn và trạng thái — Kiểm tra: Khớp mục 4.5</li>
+<li id="b2"><strong>B2</strong> Dựng theo skill sires-ui-executor: Rà mọi màn ở vi, en — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
+<li id="b3"><strong>B3</strong> Dựng theo skill sires-ui-executor: axe-core, bàn phím, tương phản — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
+<li id="b4"><strong>B4</strong> Dựng theo skill sires-ui-executor: Chạy <code>sires-ui-review</code> và <code>check-ui.mjs</code> — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
+<li id="b5"><strong>B5</strong> Dựng theo skill sires-ui-executor: Sửa lỗi dùng chung ở shell; lỗi của khu vực tách PID theo khu vực — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
+<li id="b6"><strong>B6</strong> Chuỗi vi/en theo namespace khu vực; trạng thái loading, empty, error — Kết quả: Không còn chuỗi cứng — Kiểm tra: Đổi ngôn ngữ trên preview</li>
+<li id="b7"><strong>B7</strong> Viết test Vitest, chạy <code>check-ui.mjs</code> — Kết quả: Test đạt — Kiểm tra: pnpm nx run @sires/web:test</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/web:test
+node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00135-AC01</td><td><code>apps/web/src/shell/a11y.test.tsx</code></td><td>Given mọi màn chính, When rà loading, empty, error ở hai ngôn ngữ, Then đạt; lỗi còn lại vào danh sách REL-09.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>web/shell</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00135</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00135 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

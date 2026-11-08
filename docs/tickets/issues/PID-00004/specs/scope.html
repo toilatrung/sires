@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi, edge case của PID-00004.">
+<title>PID-00004 — Phạm vi | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00004</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00004</p><h1>PID-00004 — Phạm vi, ngoài phạm vi, edge case</h1>
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên thì ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Container helper cho PostgreSQL 16 + pgvector, RabbitMQ, MinIO</td><td>ticket mục 1</td><td>S01</td></tr>
+<tr><td>P2</td><td>FakeOidcProvider: discovery, authorization code + PKCE, ID token ký bằng khóa test, refresh xoay vòng, RP-initiated logout, chế độ không khả dụng</td><td>ticket mục 1</td><td>S02</td></tr>
+<tr><td>P3</td><td>Fake broker: gửi, nhận <code>EventEnvelope</code>, tiêm trùng và lệch thứ tự</td><td>ticket mục 1</td><td>S03</td></tr>
+<tr><td>P4</td><td>FakeSourceAdapter theo kịch bản, tiêm lỗi</td><td>ticket mục 1</td><td>S03</td></tr>
+<tr><td>P5</td><td>LocalKms: mã hóa, giải mã bằng khóa cục bộ</td><td>ticket mục 1</td><td>S03</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>FakeModelGateway và mô hình Python (<a href="../../PID-00005/index.html">PID-00005</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00005/index.html">PID-00005</a></td></tr>
+<tr><td>N2</td><td>Chế độ fake của <code>agent-core</code> cho service TypeScript (<a href="../../PID-00070/index.html">PID-00070</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00070/index.html">PID-00070</a></td></tr>
+<tr><td>N3</td><td>Stub service gọi service: mỗi luồng tự viết ở thư mục test của mình</td><td>Ticket mục “Không gồm”</td><td>—</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Máy không có Docker</td><td>Test báo rõ cần Docker, không báo đạt giả</td><td>Spec mục 4.7</td><td>Thao tác tay</td><td>S01</td></tr>
+<tr><td>EC02</td><td>Hai bộ test chạy song song</td><td>Mỗi bộ có cổng ngẫu nhiên, không đụng nhau</td><td>Spec mục 4.7</td><td><code>libs/ts/testing/src/containers/containers.spec.ts › cổng ngẫu nhiên</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>OIDC ở chế độ không khả dụng</td><td>Discovery và đăng nhập lỗi, để test được INT-OIDC-004</td><td>Spec mục 4.7</td><td><code>libs/ts/testing/src/fakes/oidc.fake.spec.ts › không khả dụng</code></td><td>S02</td></tr>
+<tr><td>EC04</td><td>Logout với <code>post_logout_redirect_uri</code> không khai báo</td><td>Từ chối</td><td>Spec mục 4.7</td><td><code>libs/ts/testing/src/fakes/oidc.fake.spec.ts › logout sai uri</code></td><td>S02</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00004</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Phạm vi PID-00004 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

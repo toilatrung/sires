@@ -1,0 +1,139 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00041: Account, Profile, Preferences, Ngưỡng kiểm chứng.">
+<title>PID-00041 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00041</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00041</p><h1>PID-00041 — Account, Profile, Preferences, Ngưỡng kiểm chứng</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00041</a> · Luồng: <code>identity</code> · Giai đoạn: PH-02 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Hội tụ Settings ở lát 1 và cung cấp <code>resolveAccount</code> cho đăng nhập.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>identity</code> · PH-02</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Settings</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00041-AC01, PID-00041-AC02</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/04-runtime-flows.html#f-01">F-01</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Provider Connection (<a href="../../PID-00042/index.html">PID-00042</a>)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-4">Kế hoạch luồng identity</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-02">Giai đoạn PH-02, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Requirement: <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-002">INT-OIDC-002</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-i18n-001">UX-I18N-001</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-settings-001">UX-SETTINGS-001</a>, <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-assembly-001">CTX-ASSEMBLY-001</a>, <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-registry-002">CTX-REGISTRY-002</a>, <a href="../../../../overview/sections/11-evidence-rag-and-research-synthesis.html#req-claim-support-001">CLAIM-SUPPORT-001</a>, <a href="../../../../overview/sections/11-evidence-rag-and-research-synthesis.html#req-claim-citation-001">CLAIM-CITATION-001</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-auth-001">NFR-AUTH-001</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-priv-001">NFR-PRIV-001</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/identity/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/identity/src/app.module.ts</code></td><td>Nơi gắn module mới</td></tr>
+<tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API thư viện nền</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<h4>Operation hiện thực</h4><div class="table-wrap"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">operationId</th><th scope="col">File</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td><code>GET</code></td><td><code>/me</code></td><td><code>getMe</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Tài khoản, Profile và Preferences</td></tr>
+<tr><td><code>PATCH</code></td><td><code>/me/profile</code></td><td><code>updateProfile</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Sửa thông tin cá nhân (APR-09)</td></tr>
+<tr><td><code>PATCH</code></td><td><code>/me/preferences</code></td><td><code>updatePreferences</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug</td></tr>
+<tr><td><code>GET</code></td><td><code>/me/verification-thresholds</code></td><td><code>getVerificationThresholds</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Xem Ngưỡng kiểm chứng</td></tr>
+<tr><td><code>PUT</code></td><td><code>/me/verification-thresholds</code></td><td><code>updateVerificationThresholds</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Sửa Ngưỡng kiểm chứng (APR-09)</td></tr>
+<tr><td><code>POST</code></td><td><code>/me/verification-thresholds/reset</code></td><td><code>resetVerificationThresholds</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td>Khôi phục Ngưỡng kiểm chứng mặc định</td></tr>
+<tr><td><code>POST</code></td><td><code>/internal/accounts/resolve</code></td><td><code>resolveAccount</code></td><td><code>docs/api-design/internal/identity.yaml</code></td><td>Tìm hoặc tạo tài khoản SIRes theo (issuer, sub) sau khi đăng nhập</td></tr>
+<tr><td><code>GET</code></td><td><code>/internal/accounts/{accountId}/agent-preferences</code></td><td><code>getAgentPreferences</code></td><td><code>docs/api-design/internal/identity.yaml</code></td><td>Tùy chọn tài khoản ảnh hưởng tới Agent Run</td></tr>
+<tr><td><code>GET</code></td><td><code>/internal/accounts/{accountId}/verification-thresholds</code></td><td><code>getVerificationThresholdsInternal</code></td><td><code>docs/api-design/internal/identity.yaml</code></td><td>Ngưỡng kiểm chứng hiện hành để Verification Agent chụp lại</td></tr>
+</tbody></table></div>
+<h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td>Phát</td><td><code>account.created</code></td><td>audit</td><td>Tài khoản SIRes được tạo lần đầu từ eTroy OIDC</td></tr>
+</tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00002/index.html">PID-00002</a> Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00003/index.html">PID-00003</a> Thư viện nền TS: service-auth guard và token nội bộ</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00004/index.html">PID-00004</a> Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00007/index.html">PID-00007</a> Sinh type TS từ AsyncAPI và client Python từ hợp đồng</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00016/index.html">PID-00016</a> Identity: migration, KMS cục bộ, envelope encryption</td><td>Chưa làm</td><td>Có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/identity dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Module</td><td><code>apps/identity/src/settings/</code> (tạo mới)</td><td>Hiện thực 9 operation theo hợp đồng</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Sự kiện</td><td><code>apps/identity/src/settings/</code> (tạo mới)</td><td>Phát qua outbox: 1</td><td>Test trùng và lệch thứ tự</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/identity/src/settings/settings.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Triển khai</td><td><code>apps/identity/deploy/values.yaml</code> (có sẵn)</td><td>Giá trị deploy staging của luồng</td><td><code>helm template</code>, smoke trên staging</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Hiện thực đúng 9 operation ở mục 2.3. Lỗi theo <code>components/responses.yaml</code>; lệnh ghi có <code>Idempotency-Key</code>; cập nhật dùng <code>If-Match</code>.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Phát qua outbox trong cùng giao dịch. Nghe qua inbox idempotent; bỏ bản cũ theo <code>aggregate.version</code>.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li><code>resolveAccount</code> tạo tài khoản lần đầu</li>
+<li>Profile, Preferences, Ngưỡng kiểm chứng (mặc định 85%/95%)</li>
+<li>Phát <code>account.created</code></li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Hai lần đăng nhập đầu chạy đồng thời</td><td>Ràng buộc duy nhất, không tạo trùng</td></tr>
+<tr><td>Ngưỡng ngoài miền giá trị</td><td>Từ chối theo <code>components/responses.yaml</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> <code>resolveAccount</code> tạo tài khoản lần đầu — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b2"><strong>B2</strong> Profile, Preferences, Ngưỡng kiểm chứng (mặc định 85%/95%) — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b3"><strong>B3</strong> Phát <code>account.created</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b4"><strong>B4</strong> Controller và service theo hợp đồng cho 9 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>
+<li id="b5"><strong>B5</strong> Ghi sự kiện qua outbox trong cùng giao dịch — Kết quả: Không có trạng thái mà thiếu sự kiện — Kiểm tra: Test rollback</li>
+<li id="b6"><strong>B6</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/identity:test</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/identity:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00041-AC01</td><td><code>apps/identity/src/settings/settings.spec.ts</code></td><td>Given định danh eTroy mới, When gọi <code>resolveAccount</code> hai lần, Then chỉ có một tài khoản.</td></tr>
+<tr><td>PID-00041-AC02</td><td><code>apps/identity/src/settings/settings.spec.ts</code></td><td>Given đặt lại ngưỡng, When đọc, Then về mặc định 85%/95%.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>identity</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00041</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00041 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

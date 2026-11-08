@@ -5,7 +5,7 @@ description: Set up and maintain a product-spec documentation tree the way the S
 
 # Scaffold docs — dựng và giữ bộ tài liệu đặc tả theo mẫu SIRes
 
-Tên cũ: `spec-docs-skill` (đổi 03/11/2026). Skill cùng bộ: [spec-docs-skill](../spec-docs-skill/SKILL.md) viết tài liệu kỹ thuật chi tiết của từng ticket `TK-NNN`; [spec-read-skill](../../dev/spec-read-skill/SKILL.md) đọc tài liệu và xác định nghiệp vụ trước khi agent làm.
+Tên cũ: `spec-docs-skill` (đổi 03/11/2026). Skill cùng bộ: [spec-docs-skill](../spec-docs-skill/SKILL.md) viết tài liệu kỹ thuật chi tiết của từng ticket `PID-NNNNN`; [spec-read-skill](../../dev/spec-read-skill/SKILL.md) đọc tài liệu và xác định nghiệp vụ trước khi agent làm.
 
 Skill này làm hai việc:
 

@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00097: Kịch bản lát 3 và kiểm cổng PH-04.">
+<title>PID-00097 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00097</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00097</p><h1>PID-00097 — Kịch bản lát 3 và kiểm cổng PH-04</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00097</a> · Luồng: <code>e2e</code> · Giai đoạn: PH-04 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Chứng minh Plan, Task, phiên thảo luận chạy chung trên staging với provider giả lập, để PO xác nhận cổng PH-04.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>e2e</code> · PH-04</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Kịch bản lát 3</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00097-AC01, PID-00097-AC02, PID-00097-AC03, PID-00097-AC04</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/04-runtime-flows.html#f-05">F-05</a>, <a href="../../../../architecture/sections/04-runtime-flows.html#f-06">F-06</a>, <a href="../../../../architecture/sections/04-runtime-flows.html#f-13">F-13</a>, <a href="../../../../overview/sections/06-end-to-end-product-workflow.html#wf-01">WF-01</a>, <a href="../../../../overview/sections/06-end-to-end-product-workflow.html#wf-02">WF-02</a>, <a href="../../../../overview/sections/06-end-to-end-product-workflow.html#wf-03">WF-03</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Kiểm RC-05 với sự kiện index thật (<a href="../../PID-00103/index.html">PID-00103</a>)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-15">Kế hoạch luồng e2e</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-04">Giai đoạn PH-04, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Kịch bản: <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-01-02">TS-01-02</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-01-03">TS-01-03</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-01-05">TS-01-05</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-01">TS-02-01</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-02">TS-02-02</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-03">TS-02-03</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-04">TS-02-04</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-06">TS-02-06</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-07">TS-02-07</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-08">TS-02-08</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-02-09">TS-02-09</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-01">TS-03-01</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-02">TS-03-02</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-03">TS-03-03</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-04">TS-03-04</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-05">TS-03-05</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-03-06">TS-03-06</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-04-01">TS-04-01</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-04-02">TS-04-02</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-04-03">TS-04-03</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-04-04">TS-04-04</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-11-06">TS-11-06</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-11-07">TS-11-07</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-11-08">TS-11-08</a>, <a href="../../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#ts-12-02">TS-12-02</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>e2e/playwright.config.ts</code></td><td>Cấu hình Playwright</td></tr>
+<tr><td><code>e2e/tests/smoke.spec.ts</code></td><td>Smoke hiện có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00081/index.html">PID-00081</a> Kịch bản lát 2 và kiểm cổng PH-03</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00082/index.html">PID-00082</a> Khu vực planning: Plan, so sánh version, TaskReview, GlobalTasks</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00083/index.html">PID-00083</a> Tab Thảo luận trong chi tiết workflow</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00084/index.html">PID-00084</a> Thẻ đề xuất thảo luận trong Chat</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00085/index.html">PID-00085</a> getAgentSetup, instance A và B của Analysis Agent, sameModelWarning</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00086/index.html">PID-00086</a> StepPlan, bước song song, saga áp dụng đầu ra; nối Plan và Task</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00087/index.html">PID-00087</a> Phiên thảo luận: Deliberation, Board, Context Snapshot</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00088/index.html">PID-00088</a> SPK-11: chi phí, độ trễ, tải ghi của một phiên thảo luận</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00089/index.html">PID-00089</a> Orchestrator lập Plan và đánh giá readiness ngữ nghĩa RC-09</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00090/index.html">PID-00090</a> Analysis Agent A, B: lập trường, phản biện, ghi board</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00091/index.html">PID-00091</a> Hội tụ WF-01–WF-03: TaskReview, mở lại Task, phân tích ảnh hưởng</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00092/index.html">PID-00092</a> Selection của project và endpoint nội bộ cho readiness</td><td>Chưa làm</td><td>Có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/e2e e2e</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Kịch bản</td><td><code>e2e/tests/slice-3/</code> (tạo mới)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Test</td><td><code>e2e/tests/slice-3/workflows.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>e2e/tests/slice-3/approval.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Test</td><td><code>e2e/tests/slice-3/readiness.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o5">O5</td><td>Test</td><td><code>e2e/tests/slice-3/deliberation.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Kịch bản TS của WF-01, WF-02, WF-03</li>
+<li>Báo cáo từng điều kiện của cổng PH-04</li>
+<li>Sự kiện index giả lập cho RC-05, vì <code>knowledge</code> hội tụ ở PH-05</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Staging thiếu reference đã index</td><td>Dùng sự kiện giả lập, ghi rõ trong báo cáo</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc kịch bản TS-01-02, TS-01-03, TS-01-05, TS-02-01… ở PRD 19 — Kết quả: Danh sách bước và số liệu kiểm — Kiểm tra: Mỗi kịch bản có file test</li>
+<li id="b2"><strong>B2</strong> Kịch bản TS của WF-01, WF-02, WF-03 — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b3"><strong>B3</strong> Báo cáo từng điều kiện của cổng PH-04 — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b4"><strong>B4</strong> Sự kiện index giả lập cho RC-05, vì <code>knowledge</code> hội tụ ở PH-05 — Kết quả: Chạy được — Kiểm tra: pnpm --filter @sires/e2e e2e</li>
+<li id="b5"><strong>B5</strong> Ghi kết quả từng điều kiện của cổng PH-04 — Kết quả: Báo cáo trong <code>agent/execution/PID-00097/report.md</code> — Kiểm tra: PO đọc và xác nhận cổng</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm --filter @sires/e2e e2e
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00097-AC01</td><td><code>e2e/tests/slice-3/workflows.spec.ts</code></td><td>Given provider giả lập, When chạy kịch bản WF-01–WF-03, Then đạt.</td></tr>
+<tr><td>PID-00097-AC02</td><td><code>e2e/tests/slice-3/approval.spec.ts</code></td><td>Given Plan Version Proposed, When kiểm, Then chỉ thao tác của Researcher chuyển được sang Approved.</td></tr>
+<tr><td>PID-00097-AC03</td><td><code>e2e/tests/slice-3/readiness.spec.ts</code></td><td>Given readiness thiếu đầu vào, When kích hoạt, Then Task bị chặn.</td></tr>
+<tr><td>PID-00097-AC04</td><td><code>e2e/tests/slice-3/deliberation.spec.ts</code></td><td>Given phiên hai vòng, When gián đoạn giữa chừng, Then chạy hết sau khôi phục.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>e2e</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00097</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00097 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

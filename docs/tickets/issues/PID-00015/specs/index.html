@@ -1,0 +1,123 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00015: SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC.">
+<title>PID-00015 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00015</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00015</p><h1>PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC</h1>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 08/11/2026 · Ticket: <a href="../index.html">PID-00015</a> · Luồng: <code>gateway</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Xác định cách dùng openid-client cho đăng nhập trước khi làm thật. Theo PO, trước mắt chạy trên stub OIDC, nên spike chưa kết luận ASM-13; nó để lại danh sách điểm phải kiểm lại khi nối eTroy OIDC thật.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>gateway</code> · PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · SPK-02</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00015-AC01, PID-00015-AC02</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">SPK-02</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-13">ASM-13</a>, <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-09">ADR-09</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Nối eTroy OIDC thật và kết luận ASM-13 (<a href="../../PID-00038/index.html">PID-00038</a>, cổng PH-02); Luồng đăng nhập thật trong service (<a href="../../PID-00038/index.html">PID-00038</a>); Gửi ETR-07 cho eTroy One: PO</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-3">Kế hoạch luồng gateway</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/gateway/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/gateway/src/app.module.ts</code></td><td>Nơi gắn module mới</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00004/index.html">PID-00004</a> Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms</td><td>Chưa làm</td><td>Có</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<p>Chạy trên Linux hoặc WSL2 có Docker (H1).</p>
+<pre>pnpm install
+pnpm local:up
+pnpm --filter @sires/gateway dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Mã thử</td><td><code>apps/gateway/spikes/spk-02/</code> (tạo mới)</td><td>Mã phục vụ phép đo, không vào build sản phẩm</td><td>Chạy lại được theo hướng dẫn trong báo cáo</td></tr>
+<tr><td id="o2">O2</td><td>Báo cáo</td><td><code>agent/execution/PID-00015/report.md</code> (tạo mới)</td><td>Kết quả, số đo, kết luận từng giả định, đề xuất cho PO</td><td>Có đủ mục theo Tiêu chí nghiệm thu</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Chạy openid-client với FakeOidcProvider: discovery, authorization code + PKCE, đọc claim, refresh, hết hạn token, RP-initiated logout, OIDC không khả dụng</li>
+<li>Đối chiếu tài liệu của repo <code>eTroy_OIDC</code>: endpoint, scope, claim, hạn token, logout; ghi điểm khác stub</li>
+<li>Báo cáo: phần đã kiểm trên stub, ASM-13 chưa kết luận, danh sách điểm kiểm lại cho <a href="../../PID-00038/index.html">PID-00038</a></li>
+<li>Luồng authorization code + PKCE bằng openid-client, phiên server-side (ADR-09, ADR-27)</li>
+<li>Liên kết tài khoản theo <code>sub</code>, lấy họ tên, email từ claim (ASM-13)</li>
+<li>Chỉ đọc repo công khai <code>toilatrung/eTroy_OIDC</code>, không chạy và không sửa (H2)</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model trực tiếp.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Stub khác tài liệu của eTroy_OIDC</td><td>Ghi vào danh sách kiểm lại; đề xuất sửa stub cho <a href="../../PID-00004/index.html">PID-00004</a>, không tự sửa luồng khác</td></tr>
+<tr><td>OIDC không khả dụng</td><td>Đăng nhập mới lỗi rõ ràng; ghi cách xử lý cho INT-OIDC-004</td></tr>
+<tr><td>Token hết hạn giữa chừng</td><td>Refresh; refresh lỗi thì phải đăng nhập lại</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc giả định cần kiểm: SPK-02, ASM-13, ADR-09 — Kết quả: Danh sách câu hỏi và cách đo — Kiểm tra: Mỗi giả định có phép đo tương ứng</li>
+<li id="b2"><strong>B2</strong> Chạy openid-client với FakeOidcProvider: discovery, authorization code + PKCE, đọc claim, refresh, hết hạn token, RP-initiated logout, OIDC không khả dụng — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b3"><strong>B3</strong> Đối chiếu tài liệu của repo <code>eTroy_OIDC</code>: endpoint, scope, claim, hạn token, logout; ghi điểm khác stub — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b4"><strong>B4</strong> Báo cáo: phần đã kiểm trên stub, ASM-13 chưa kết luận, danh sách điểm kiểm lại cho <a href="../../PID-00038/index.html">PID-00038</a> — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b5"><strong>B5</strong> Viết báo cáo: kết quả, số đo, kết luận từng giả định, đề xuất — Kết quả: <code>agent/execution/PID-00015/report.md</code> — Kiểm tra: Đủ nội dung theo Tiêu chí nghiệm thu</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm --filter @sires/gateway exec vitest run --dir spikes/spk-02
+pnpm nx run @sires/gateway:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00015-AC01</td><td><code>apps/gateway/spikes/spk-02/flow.spec.ts › luồng đầy đủ trên stub</code></td><td>Given FakeOidcProvider, When openid-client chạy discovery, authorization code + PKCE, refresh, logout, Then từng bước đạt và ghi được cách dùng.</td></tr>
+<tr><td>PID-00015-AC02</td><td>Báo cáo trong <code>agent/execution/PID-00015/</code></td><td>Given báo cáo, When đọc, Then ghi rõ ASM-13 chưa kết luận và có danh sách điểm phải kiểm lại khi nối OIDC thật.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>gateway</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Kết quả SPK-02 ở kiến trúc 12.2 chỉ ghi được phần trên stub; ASM-13 vẫn mở tới khi nối OIDC thật.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00015</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00015 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

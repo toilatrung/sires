@@ -1,0 +1,134 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00021: SPK-01: ba adapter provider và chọn framework trong Agent Run.">
+<title>PID-00021 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00021</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00021</p><h1>PID-00021 — SPK-01: ba adapter provider và chọn framework trong Agent Run</h1>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 08/11/2026 · Ticket: <a href="../index.html">PID-00021</a> · Luồng: <code>agent-core</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Kiểm chứng ASM-02, ASM-03, ASM-10 trước khi viết Model Gateway: tool calling, structured output cùng schema, streaming, usage, base URL tùy chỉnh, ánh xạ lỗi.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>agent-core</code> · PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · SPK-01, SPK-08</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00021-AC01, PID-00021-AC02, PID-00021-AC03, PID-00021-AC04, PID-00021-AC05</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">SPK-01</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-02">ASM-02</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-03">ASM-03</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-10">ASM-10</a>, <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-08">ADR-08</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Model Gateway thật (<a href="../../PID-00070/index.html">PID-00070</a>); Chạy trong CI: spike cần key thật</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-8">Kế hoạch luồng agent-core</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/agent-core/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/agent-core/src/agent_core/main.py</code></td><td>Nơi gắn module mới</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a> Key Claude, OpenAI, Gemini của đội</td><td>Chờ PO, cấp khi Dev cần</td><td>Không chặn trước; Dev báo PO khi tới bước cần key. Test dùng Model Gateway giả lập</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<p>Chạy trên Linux hoặc WSL2 có Docker (H1).</p>
+<pre>uv sync --all-packages
+pnpm local:up
+pnpm nx run agent-core:dev</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Mã thử</td><td><code>apps/agent-core/spikes/spk-01/</code> (tạo mới)</td><td>Mã phục vụ phép đo, không vào build sản phẩm</td><td>Chạy lại được theo hướng dẫn trong báo cáo</td></tr>
+<tr><td id="o2">O2</td><td>Báo cáo</td><td><code>agent/execution/PID-00021/report.md</code> (tạo mới)</td><td>Kết quả, số đo, kết luận từng giả định, đề xuất cho PO</td><td>Có đủ mục theo Tiêu chí nghiệm thu</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng mới.</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Báo PO để nhận key; giữ key trong biến môi trường cục bộ</li>
+<li>Với mỗi provider: tool calling, structured output cùng một schema, streaming, usage</li>
+<li>Base URL tùy chỉnh qua proxy cục bộ chuyển tiếp tới endpoint chính thức</li>
+<li>Gây lỗi có chủ đích: key sai, vượt giới hạn, hết giờ; ánh xạ sang mã chuẩn 8.6</li>
+<li>So Pydantic AI và LangGraph không bật checkpointer, đề xuất một</li>
+<li>Báo cáo kết luận từng ASM, đề xuất framework, chi phí đã tiêu</li>
+<li>Dùng SDK chính thức của ba provider (kiến trúc 2.4; ADR-08)</li>
+<li>Framework chỉ dùng bên trong một Agent Run, không bật checkpointer; ứng viên Pydantic AI, LangGraph (kiến trúc 2.4)</li>
+<li>Base URL tùy chỉnh kiểm với endpoint chính thức và một endpoint tùy chỉnh mỗi provider (ASM-03)</li>
+<li>Key không được vào repo, log hay báo cáo (NFR-OBS-002; AGENT.md)</li>
+<li>PO cấp key khi Dev cần (H2)</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Gọi model qua Model Gateway; prompt theo registry. Thay đổi prompt, định nghĩa agent thuộc NFR-EVAL-004. Agent không thực hiện được APR.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Chưa có key của một provider</td><td>Slice S01 ghi <code>Bị chặn — chờ key</code> trong <code>report.md</code>, làm provider còn lại, chưa kết luận ASM cho provider đó</td></tr>
+<tr><td>Provider không hỗ trợ một năng lực</td><td>Ghi rõ và đề xuất cách xử lý trong adapter</td></tr>
+<tr><td>Không gây được lỗi vượt giới hạn</td><td>Ghi chưa kiểm được; dùng tài liệu chính thức cho mã lỗi</td></tr>
+<tr><td>Key lọt vào log hay báo cáo</td><td>Không được xảy ra: tìm chuỗi key trong log và báo cáo trước khi nộp</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Đọc giả định cần kiểm: SPK-01, ASM-02, ASM-03, ASM-10, ADR-08 — Kết quả: Danh sách câu hỏi và cách đo — Kiểm tra: Mỗi giả định có phép đo tương ứng</li>
+<li id="b2"><strong>B2</strong> Báo PO để nhận key; giữ key trong biến môi trường cục bộ — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b3"><strong>B3</strong> Với mỗi provider: tool calling, structured output cùng một schema, streaming, usage — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b4"><strong>B4</strong> Base URL tùy chỉnh qua proxy cục bộ chuyển tiếp tới endpoint chính thức — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b5"><strong>B5</strong> Gây lỗi có chủ đích: key sai, vượt giới hạn, hết giờ; ánh xạ sang mã chuẩn 8.6 — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b6"><strong>B6</strong> So Pydantic AI và LangGraph không bật checkpointer, đề xuất một — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b7"><strong>B7</strong> Báo cáo kết luận từng ASM, đề xuất framework, chi phí đã tiêu — Kết quả: Số đo hoặc kết quả ghi lại được — Kiểm tra: Chạy lại được</li>
+<li id="b8"><strong>B8</strong> Viết báo cáo: kết quả, số đo, kết luận từng giả định, đề xuất — Kết quả: <code>agent/execution/PID-00021/report.md</code> — Kiểm tra: Đủ nội dung theo Tiêu chí nghiệm thu</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run agent-core:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00021-AC01</td><td><code>apps/agent-core/spikes/spk-01/capabilities.py › chạy tay</code></td><td>Given key của ba provider, When chạy cùng một schema structured output và tool calling, Then báo cáo ghi đạt hay không theo provider và kết luận ASM-02.</td></tr>
+<tr><td>PID-00021-AC02</td><td><code>apps/agent-core/spikes/spk-01/capabilities.py › chạy tay</code></td><td>Given mỗi provider, When đọc phản hồi, Then báo cáo ghi trường usage đọc được và kết luận ASM-10.</td></tr>
+<tr><td>PID-00021-AC03</td><td><code>apps/agent-core/spikes/spk-01/base_url.py › chạy tay</code></td><td>Given endpoint chính thức và proxy tùy chỉnh, When gọi qua mỗi đường, Then kết quả tương đương; báo cáo kết luận ASM-03.</td></tr>
+<tr><td>PID-00021-AC04</td><td><code>apps/agent-core/spikes/spk-01/errors.py › chạy tay</code></td><td>Given key sai, vượt giới hạn, hết giờ, When gọi, Then báo cáo có bảng ánh xạ lỗi của từng provider sang mã chuẩn 8.6.</td></tr>
+<tr><td>PID-00021-AC05</td><td>Báo cáo trong <code>agent/execution/PID-00021/</code></td><td>Given hai framework, When thử trên cùng một vòng tool calling, Then báo cáo đề xuất một kèm lý do và chi phí đã tiêu.</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>agent-core</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Framework được chọn và kết luận ASM cần PO ghi vào kiến trúc 12.2.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00021</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00021 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

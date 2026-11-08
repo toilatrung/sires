@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ticket PID-00142: Sửa lỗi và dọn dữ liệu của planning.">
+<title>PID-00142 — Sửa lỗi và dọn dữ liệu của planning | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00142</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00142</p><h1>PID-00142 — Sửa lỗi và dọn dữ liệu của planning</h1>
+<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
+<li><a href="#s-1">1. Ticket</a></li>
+<li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
+<li><a href="#s-3">3. Phụ thuộc</a></li>
+<li><a href="#s-4">4. Cổng sẵn sàng</a></li>
+<li><a href="#s-5">5. Làm rõ</a></li>
+<li><a href="#s-6">6. Slice</a></li>
+<li><a href="#s-7">7. Điểm dừng</a></li>
+<li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
+
+<p>Trang vào của ticket. Đọc file này trước, rồi <code>specs/</code>. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00142/report.md</code>, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Luồng</th><td>planning</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-07</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Ổn định, nghiệm thu: Sửa lỗi</td></tr>
+<tr><th scope="row">Đợt song song</th><td>Đ10</td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00130/index.html">PID-00130</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
+<tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Tài liệu trong hồ sơ</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
+</tbody></table></div>
+<p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
+
+<h2 id="s-1">1. Ticket</h2>
+<ul><li><strong>Mục đích:</strong> Ô “Sửa lỗi” của <code>planning</code> ở PH-07; kèm việc dọn dữ liệu khi purge.</li>
+<li><strong>Gồm:</strong> Sửa lỗi REL-09 thuộc <code>planning</code>; Nghe <code>project.purge_due</code>, <code>account.deletion_requested</code>.</li>
+<li><strong>Không gồm:</strong> Tính năng mới ngoài PRD.</li></ul>
+<h3 id="dau-vao">Đầu vào</h3>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00130/index.html">PID-00130</a></li>
+<li><strong>Sự kiện:</strong> phát 0, nghe 2</li></ul>
+<h3 id="dau-ra">Đầu ra</h3>
+<ul><li>Module: <code>apps/planning/src/purge/</code> — Hiện thực phần Gồm</li>
+<li>Sự kiện: <code>apps/planning/src/purge/</code> — Consumer qua inbox: 2</li>
+<li>Test: <code>apps/planning/src/purge/purge.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li></ul>
+
+<h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
+<ul><li><strong>PID-00142-AC01</strong> Given <code>project.purge_due</code>, When xử lý, Then dữ liệu project bị xóa và phát <code>data.purged</code>.</li></ul>
+
+<h2 id="s-3">3. Phụ thuộc</h2>
+<ul><li>PID phải xong trước: <a href="../PID-00130/index.html">PID-00130</a> Kịch bản lát 5 và kiểm cổng PH-06.</li>
+<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<li>PID chờ PID này: <a href="../PID-00152/index.html">PID-00152</a>.</li></ul>
+
+<h2 id="s-4">4. Cổng sẵn sàng</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
+<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 1 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Làm rõ</h2>
+<p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00142</code> khi chuẩn bị giao Dev.</p>
+<h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
+<ul><li>Không có.</li></ul>
+<h3 id="con-mo">Còn mở</h3>
+<ul><li>Không có.</li></ul>
+
+<h2 id="s-6">6. Slice</h2>
+<p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>
+
+<h2 id="s-7">7. Điểm dừng</h2>
+<ul><li>Không được sửa: thư mục ngoài luồng <code>planning</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<li>Gặp điều spec không nói tới mà đổi hành vi → dừng, ghi trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
+<li>Cần sửa luồng khác → dừng, đề xuất PID cho luồng đó (quy tắc 1.4).</li></ul>
+
+<h2 id="s-8">8. Kiểm tra hoàn thành</h2>
+<ul><li>Lệnh: <code>pnpm nx run @sires/planning:test</code>; <code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
+<li>Bảng AC → test: <a href="specs/index.html#s-6">spec mục 6</a>.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00142 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu và test của PID-00001.">
+<title>PID-00001 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00001</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00001</p><h1>PID-00001 — Tiêu chí nghiệm thu → test</h1>
+<p>Mỗi AC có ít nhất một test hoặc một mục kiểm trong báo cáo. Không tự đặt số khi PO chưa chốt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00001-AC01</td><td>Given tài khoản A và B cùng có dữ liệu trong bảng có RLS, When B truy vấn qua helper tenancy, Then không thấy dòng nào của A.</td><td><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › không đọc được dữ liệu tài khoản khác</code></td><td>S01</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC02</td><td>Given truy vấn không qua helper nên thiếu <code>app.account_id</code>, When chạy bằng vai trò <code>_app</code>, Then trả 0 dòng.</td><td><code>libs/ts/platform/src/tenancy/tenancy.spec.ts › thiếu account_id trả 0 dòng</code></td><td>S01</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC03</td><td>Given <code>If-Match</code> lệch <code>rowVersion</code>, When cập nhật, Then trả <code>412</code>, dữ liệu không đổi.</td><td><code>libs/ts/platform/src/tenancy/concurrency.spec.ts › lệch phiên bản trả 412</code></td><td>S01</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC04</td><td>Given lỗi có mã đã khai báo, When trả về, Then là problem+json đúng <code>code</code>; lỗi không khai báo trả <code>internal_error</code>, không lộ stack trace.</td><td><code>libs/ts/platform/src/errors/errors.spec.ts › problem json và lỗi không khai báo</code></td><td>S02</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC05</td><td>Given log chứa key đúng tiền tố ba provider, chuỗi entropy cao, trường <code>api_key</code>, <code>authorization</code>, When ghi, Then giá trị bị che và <code>accountId</code> đã băm.</td><td><code>libs/ts/platform/src/logging/logger.spec.ts › che dữ liệu nhạy cảm</code></td><td>S03</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC06</td><td>Given một yêu cầu HTTP, When xử lý, Then có span và log cùng mã yêu cầu.</td><td><code>libs/ts/platform/src/telemetry/telemetry.spec.ts › span và log cùng mã yêu cầu</code></td><td>S04</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00001-AC07</td><td>Given body sai schema Zod, When vào controller, Then trả <code>400</code> problem+json <code>validation_failed</code>, <code>errors</code> nêu đúng trường và mã lỗi.</td><td><code>libs/ts/platform/src/errors/validation.spec.ts › lỗi schema Zod</code></td><td>S02</td><td>Ticket, spec</td></tr>
+<tr><td>NFR-OBS-002-AC01</td><td>Phần thư viện: quét log bằng chuỗi mẫu không còn giá trị nhạy cảm. Quét toàn hệ thống ở PID <a href="../../PID-00151/index.html">PID-00151</a>.</td><td><code>libs/ts/platform/src/logging/logger.spec.ts</code></td><td>S03</td><td>PRD</td></tr>
+<tr><td>NFR-OBS-005-AC01</td><td>Phần thư viện: lỗi trả về có mã thuộc danh mục. Từng service kiểm phần của mình.</td><td><code>libs/ts/platform/src/errors/errors.spec.ts</code></td><td>S02</td><td>PRD</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00001</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tiêu chí nghiệm thu PID-00001 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

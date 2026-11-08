@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ticket PID-00015: SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC.">
+<title>PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00015</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00015</p><h1>PID-00015 — SPK-02: luồng OIDC với openid-client trên stub, lập danh sách kiểm lại khi nối eTroy OIDC</h1>
+<p class="meta">Xác nhận: PO duyệt 08/11/2026 · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
+<li><a href="#s-1">1. Ticket</a></li>
+<li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
+<li><a href="#s-3">3. Phụ thuộc</a></li>
+<li><a href="#s-4">4. Cổng sẵn sàng</a></li>
+<li><a href="#s-5">5. Làm rõ</a></li>
+<li><a href="#s-6">6. Slice</a></li>
+<li><a href="#s-7">7. Điểm dừng</a></li>
+<li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
+
+<p>Trang vào của ticket. Đọc file này trước, rồi <code>specs/</code>. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00015/report.md</code>, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Luồng</th><td>gateway</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-01</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike: SPK-02</td></tr>
+<tr><th scope="row">Đợt song song</th><td>Đ2</td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00004/index.html">PID-00004</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">SPK-02</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-13">ASM-13</a>, <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-09">ADR-09</a></td></tr>
+<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Tài liệu trong hồ sơ</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-stub-flow.html">S01</a></td><td>Luồng openid-client trên stub</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-compare-report.html">S02</a></td><td>Đối chiếu và báo cáo</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt khi làm rõ</td></tr>
+</tbody></table></div>
+
+
+<h2 id="s-1">1. Ticket</h2>
+<ul><li><strong>Mục đích:</strong> Xác định cách dùng openid-client cho đăng nhập trước khi làm thật. Theo PO, trước mắt chạy trên stub OIDC, nên spike chưa kết luận ASM-13; nó để lại danh sách điểm phải kiểm lại khi nối eTroy OIDC thật.</li>
+<li><strong>Gồm:</strong> Chạy openid-client với FakeOidcProvider: discovery, authorization code + PKCE, đọc claim, refresh, hết hạn token, RP-initiated logout, OIDC không khả dụng; Đối chiếu tài liệu của repo <code>eTroy_OIDC</code>: endpoint, scope, claim, hạn token, logout; ghi điểm khác stub; Báo cáo: phần đã kiểm trên stub, ASM-13 chưa kết luận, danh sách điểm kiểm lại cho <a href="../PID-00038/index.html">PID-00038</a>.</li>
+<li><strong>Không gồm:</strong> Nối eTroy OIDC thật và kết luận ASM-13 (<a href="../PID-00038/index.html">PID-00038</a>, cổng PH-02); Luồng đăng nhập thật trong service (<a href="../PID-00038/index.html">PID-00038</a>); Gửi ETR-07 cho eTroy One: PO.</li></ul>
+<h3 id="dau-vao">Đầu vào</h3>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00004/index.html">PID-00004</a></li></ul>
+<h3 id="dau-ra">Đầu ra</h3>
+<ul><li>Mã thử: <code>apps/gateway/spikes/spk-02/</code> — Mã phục vụ phép đo, không vào build sản phẩm</li>
+<li>Báo cáo: <code>agent/execution/PID-00015/report.md</code> — Kết quả, số đo, kết luận từng giả định, đề xuất cho PO</li></ul>
+
+<h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
+<ul><li><strong>PID-00015-AC01</strong> Given FakeOidcProvider, When openid-client chạy discovery, authorization code + PKCE, refresh, logout, Then từng bước đạt và ghi được cách dùng.</li>
+<li><strong>PID-00015-AC02</strong> Given báo cáo, When đọc, Then ghi rõ ASM-13 chưa kết luận và có danh sách điểm phải kiểm lại khi nối OIDC thật.</li></ul>
+
+<h2 id="s-3">3. Phụ thuộc</h2>
+<ul><li>PID phải xong trước: <a href="../PID-00004/index.html">PID-00004</a> Thư viện test: Testcontainers, FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms.</li>
+<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<li>PID chờ PID này: <a href="../PID-00038/index.html">PID-00038</a>.</li></ul>
+
+<h2 id="s-4">4. Cổng sẵn sàng</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
+<tr><td>Đạt: PO xác nhận 08/11/2026</td><td>Có</td><td>Chưa: 1 PID</td><td>Không có</td><td>Theo H1; Dev kiểm bằng spec mục 2.5</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Làm rõ</h2>
+<h3 id="phien-1">Phiên 06/11/2026</h3>
+<ul><li>H1: Dev chạy các PID đợt Đ1 ở đâu? → Đ: Linux hoặc WSL2 có Docker của từng Dev; SPK-06, SPK-07 chạy trên máy Linux thật hoặc GitHub Actions ubuntu cài runsc. · Ảnh hưởng: cổng Môi trường; spec mục 2.5</li>
+<li>H2: SPK-02 kiểm chứng eTroy OIDC trên môi trường nào? → Đ: Trước mắt viết một stub OIDC để test, sau đó nối với OIDC thật sau. · Ảnh hưởng: PID dùng FakeOidcProvider của <a href="../PID-00004/index.html">PID-00004</a>; ASM-13 chưa kết luận; nối OIDC thật chuyển sang <a href="../PID-00038/index.html">PID-00038</a></li></ul>
+<h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
+<ul><li>Kết quả SPK-02 ở kiến trúc 12.2 chỉ ghi được phần trên stub; ASM-13 vẫn mở tới khi nối OIDC thật.</li></ul>
+<h3 id="con-mo">Còn mở</h3>
+<ul><li>Không có.</li></ul>
+
+<h2 id="s-6">6. Slice</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-stub-flow.html">S01</a></td><td>Luồng openid-client trên stub</td><td>PID-00015-AC01</td><td><a href="../PID-00004/index.html">PID-00004</a> xong slice FakeOidcProvider</td></tr>
+<tr><td><a href="specs/slices/S02-compare-report.html">S02</a></td><td>Đối chiếu và báo cáo</td><td>PID-00015-AC02</td><td>S01</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Điểm dừng</h2>
+<ul><li>Không được sửa: thư mục ngoài luồng <code>gateway</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<li>Gặp điều spec không nói tới mà đổi hành vi → dừng, ghi trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
+<li>Cần sửa luồng khác → dừng, đề xuất PID cho luồng đó (quy tắc 1.4).</li></ul>
+
+<h2 id="s-8">8. Kiểm tra hoàn thành</h2>
+<ul><li>Lệnh: <code>pnpm --filter @sires/gateway exec vitest run --dir spikes/spk-02</code>; <code>pnpm nx run @sires/gateway:test</code>; <code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
+<li>Bảng AC → test: <a href="specs/index.html#s-6">spec mục 6</a>.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00015 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
