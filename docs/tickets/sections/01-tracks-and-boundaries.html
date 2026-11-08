@@ -76,14 +76,14 @@
 <tr><td id="trk-eval"><code>eval</code></td><td><code>eval/</code></td><td>Eval harness (NFR-EVAL-001–004), bộ dữ liệu nghiệm thu dạng máy đọc, baseline, báo cáo (kiến trúc 11.7).</td></tr>
 <tr><td id="trk-e2e"><code>e2e</code></td><td><code>e2e/</code></td><td>Playwright theo kịch bản TS của PRD 19, kiểm thử tải k6, kiểm thử bảo mật tự động, smoke cho staging và production.</td></tr>
 </tbody></table></div>
-<p><strong>Khu vực PO giữ</strong> (R-01–R-07): toàn bộ <code>docs/</code>, gồm hợp đồng <code>docs/api-design</code> và DDL tham chiếu <code>docs/database/ddl</code>. Thay đổi hợp đồng trong lúc code đi qua PR riêng có PO review (CODEOWNERS). Cách duyệt khi 13 luồng code song song là <a href="04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>.</p>
+<p><strong>Khu vực PO giữ</strong> (R-01–R-07): toàn bộ <code>docs/</code>, gồm hợp đồng <code>docs/api-design</code> và DDL tham chiếu <code>docs/database/ddl</code>. Thay đổi hợp đồng trong lúc code: Dev báo PO, PO cập nhật và tạo PR riêng, Dev pull về (<a href="04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>, skill <code>agent/skills/po/contract-updating-skill</code>).</p>
 
 <h2 id="s-1-4">1.4. Quy tắc ranh giới mã nguồn</h2>
 <p>Các quy tắc dưới bổ sung quy tắc cho người viết service ở kiến trúc 3.6; trích dẫn theo số, ví dụ “quy tắc 1.4.3”.</p>
 <ol>
 <li id="rule-1-4-1"><strong>Một PR chạm một luồng.</strong> Ngoại lệ: PR hợp đồng (sửa <code>docs/api-design</code> rồi sinh lại <code>libs/ts/contracts</code>) và PR của luồng dùng chung. CI báo khi PR chạm nhiều luồng (<code>scripts/development/check-tracks.mjs</code>).</li>
 <li id="rule-1-4-2"><strong>Không import mã của service khác.</strong> Service chỉ phụ thuộc <code>libs/</code> và type sinh từ hợp đồng; không đọc database của service khác (kiến trúc 3.5).</li>
-<li id="rule-1-4-3"><strong>Hợp đồng trước, code sau</strong> (ADR-14, kiến trúc 3.6.1). Cần endpoint hay sự kiện mới của luồng khác thì mở yêu cầu hợp đồng; khi hợp đồng đã merge, luồng gọi viết stub theo type sinh ra và code tiếp, không chờ luồng kia hiện thực xong.</li>
+<li id="rule-1-4-3"><strong>Hợp đồng trước, code sau</strong> (ADR-14, kiến trúc 3.6.1). Cần endpoint hay sự kiện mới của luồng khác thì báo PO để cập nhật hợp đồng (OQ-103); khi hợp đồng đã merge, luồng gọi viết stub theo type sinh ra và code tiếp, không chờ luồng kia hiện thực xong.</li>
 <li id="rule-1-4-4"><strong>Stub nằm ở phía gọi.</strong> Mỗi luồng tự viết stub cho service mình gọi, trong thư mục test của mình. Fake dùng chung (OIDC, broker, Model Gateway giả lập) do luồng <code>platform</code> giữ.</li>
 <li id="rule-1-4-5"><strong>Thư viện dùng chung chỉ đổi tương thích ngược.</strong> Đổi phá vỡ thì thêm API mới, đánh dấu API cũ deprecated; từng luồng tự chuyển trong thư mục của mình. Luồng <code>platform</code> không sửa mã service.</li>
 <li id="rule-1-4-6"><strong>Migration trong thư mục service</strong>, chỉ chạm database của service, theo thứ tự expand → migrate → contract (kiến trúc 6.10). DDL tham chiếu ở <code>docs/database/ddl</code> là chuẩn (DEC-57); lệch thì ghi DBQ, không tự đổi schema.</li>

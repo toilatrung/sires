@@ -7,6 +7,7 @@ Skill chia theo vai trò. Đường dẫn trong lệnh tính từ gốc repo. Th
 | `po/` | [scaffold-docs-skill](po/scaffold-docs-skill/SKILL.md) | Dựng khung, biên soạn và kiểm tra `docs/` (PRD, backlog, mã ID, R-01–R-07). Tên cũ `spec-docs-skill`, đổi 03/11/2026 |
 | `po/` | [spec-docs-skill](po/spec-docs-skill/SKILL.md) | Viết tài liệu kỹ thuật chi tiết của một ticket: `docs/tickets/issues/PID-NNNNN/specs/index.html` (phạm vi, Input, Output, thiết kế, các bước, kiểm tra, giới hạn) |
 | `po/` | [spec-clarify-skill](po/spec-clarify-skill/SKILL.md) | PO làm rõ ticket trước khi giao Dev: rà chỗ mơ hồ, trả lời tối đa 5 câu (mỗi câu có đề xuất), điền hồ sơ `docs/tickets/issues/PID-NNNNN/` (`specs/` gồm phạm vi, edge case, AC → test, slice; `designs/`; `others/`); vấn đề chưa chốt thành phiếu `others/issues.html`; đặt trạng thái `Sẵn sàng` |
+| `po/` | [contract-updating-skill](po/contract-updating-skill/SKILL.md) | Khi Dev báo thiếu hoặc sai hợp đồng: kiểm yêu cầu, trình PO chốt, sửa `docs/api-design`, cập nhật ticket bị ảnh hưởng, tạo PR hợp đồng, báo Dev pull về (OQ-103) |
 | `dev/` | [spec-execution-skill](dev/spec-execution-skill/SKILL.md) | Skill duy nhất Dev cần để làm ticket: `spec-execution-skill PID-NNNNN`. Đọc hồ sơ, kiểm đủ tối thiểu (`scripts/check-pid.mjs`), làm từng slice, ghi `agent/execution/PID-NNNNN/` (`report.md`, `implement.md`, `self-qc.md`, tài liệu đi kèm) |
 | `dev/` | [spec-read-skill](dev/spec-read-skill/SKILL.md) | Khi chỉ cần đọc, ước lượng hay trả lời “nghiệp vụ của X là gì”: đọc chuỗi tài liệu, xác định nghiệp vụ, kiểm 5 cổng sẵn sàng; `scripts/locate.mjs` tìm mã ra file và anchor |
 | `dev/` | [sires-ui-executor](dev/sires-ui-executor/SKILL.md) | Dựng hoặc sửa giao diện SIRes theo `docs/ui-design/design.md` |
@@ -23,6 +24,7 @@ Skill chia theo vai trò. Đường dẫn trong lệnh tính từ gốc repo. Th
 PO   scaffold-docs (PRD, nguồn) → đăng ký task (taskboard) → spec-docs (specs/index.html) → spec-clarify (làm rõ, chia slice, đặt Sẵn sàng)
 QC   spec-analyze · spec-checklist (trước khi giao Dev, nếu cần)
 Dev  spec-execution PID-NNNNN (làm, Self-QC)
+PO   contract-updating (khi Dev báo thiếu hợp đồng; Dev pull main rồi làm tiếp)
 QC   spec-converge PID-NNNNN → Dev làm tiếp hoặc PO nghiệm thu
 ```
 
