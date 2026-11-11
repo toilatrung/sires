@@ -2,6 +2,15 @@
 
 Mỗi thư mục `PID-NNNNN/` là kết quả của đúng một ticket trong `docs/tickets/issues/PID-NNNNN/`. `PID-Template/` là khung mẫu, không phải ticket: không ghi kết quả vào đó, các script bỏ qua nó.
 
+## Taskboard
+
+[taskboard.html](taskboard.html) cho biết task nào đã đăng ký, đang chạy (kèm slice xong, nhánh, PR, ngày cập nhật lấy từ `report.md`), chưa chạy, xong hoặc hủy. Trang chuyển từ `docs/tickets/issues/` sang đây ngày 11/11/2026 theo yêu cầu PO.
+
+- **Sổ đăng ký** `task-registry` ở cuối mã nguồn trang: chỉ PO ghi; Dev và QC không sửa trang.
+- **Dựng lại:** PO chạy `node scripts/docs/update-index.mjs`. Lệnh fetch `origin`, đọc `report.md` mới nhất của mỗi PID trong bản checkout và mọi nhánh `origin/*`, rồi ghi cả trang trong `docs/`, nên chỉ PO chạy.
+- **Dev** chỉ commit và push `report.md` khi đặt hoặc đổi dòng `**Trạng thái:**` (spec-execution-skill), không commit `taskboard.html` trên nhánh của ticket, để các nhánh không xung đột ở file sinh tự động.
+- Cột tiến độ đọc các dòng `**Nhánh:**`, `**PR:**`, `**Cập nhật:**` ở đầu `report.md` và dòng `- Slice: n/m xong` ở mục 1; đổi các dòng này trong `PID-Template/report.md` thì sửa `scripts/docs/update-tickets.mjs` cùng lúc.
+
 | File | Ai ghi | Khi nào | Nội dung |
 | --- | --- | --- | --- |
 | `report.md` | Dev | Bắt đầu làm, cập nhật theo từng slice; commit và push khi đặt hoặc đổi dòng `**Trạng thái:**` | Trạng thái công việc, kết quả |

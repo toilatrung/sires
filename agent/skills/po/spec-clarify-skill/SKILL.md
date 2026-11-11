@@ -24,7 +24,6 @@ Vị trí trong luồng: [spec-docs-skill](../spec-docs-skill/SKILL.md) (spec k�
 ```
 docs/tickets/issues/
   index.html                      file chỉ dẫn: danh sách ticket, file và tiêu đề từng PID, định nghĩa cấu trúc (update-index.mjs)
-  taskboard.html                  task đã đăng ký, đang chạy, chưa chạy; PO đăng ký ở khối task-registry
   PID-NNNNN/
     index.html                    tài liệu chính: ticket, AC, phụ thuộc, cổng sẵn sàng, Làm rõ (H/Đ), bảng slice, điểm dừng, kiểm tra, trạng thái
     specs/index.html              spec kỹ thuật 7 mục (spec-docs-skill; skill này không viết lại)
@@ -53,7 +52,7 @@ Mọi tài liệu là **HTML** theo khung mẫu (ghi chú giấy phép đầu fi
 - **Chưa chốt không có nghĩa là dừng phân tích.** PO chưa trả lời, bảo dừng hỏi, đã hết 5 câu, hay cổng sẵn sàng chưa đạt → vẫn đọc hết, quét hết, lập đủ hồ sơ; mỗi vấn đề còn mở thành một phiếu `I<n>`. Không tự chọn thay PO: hồ sơ lập theo phương án an toàn nhất (gạt phần đó ra “Ngoài phạm vi” hoặc ghi slice “chặn bởi I<n>”) và nói rõ ở phiếu.
 - **Phiếu trả lời không phải câu trả lời.** Phiếu chỉ có giá trị khi có người trả lời và ngày; đề xuất hay lựa chọn mặc định không bao giờ được coi là câu trả lời.
 - **Không gắn số khi PO chưa chốt.** AC còn ngưỡng theo OQ thì slice đó ghi “chặn bởi …”.
-- **Đăng ký trước khi giao Dev.** PID chưa có dòng trong sổ đăng ký của `docs/tickets/issues/taskboard.html` thì giữ `Chưa sẵn sàng — chưa đăng ký`; chỉ PO đăng ký.
+- **Đăng ký trước khi giao Dev.** PID chưa có dòng trong sổ đăng ký của `agent/execution/taskboard.html` thì giữ `Chưa sẵn sàng — chưa đăng ký`; chỉ PO đăng ký.
 - **`Sẵn sàng` do PO xác nhận** (R-04). Chỉ đặt trạng thái `Sẵn sàng` khi PO đồng ý rõ trong phiên; trước đó giữ `Chưa sẵn sàng — …` và “Đề xuất — chờ PO duyệt”.
 
 ## Quy trình
@@ -88,7 +87,7 @@ Mọi tài liệu là **HTML** theo khung mẫu (ghi chú giấy phép đầu fi
    - `others/index.html`: tài liệu kèm nếu có.
    - `others/issues.html` — khi còn vấn đề chưa chốt: chép khung, mỗi vấn đề một phiếu `I<n>` gồm câu hỏi tự hiểu được, nhóm, vì sao quan trọng, nguồn (trích hai đoạn nếu mâu thuẫn), ảnh hưởng (AC/EC/slice), có chặn không, bảng phương án A/B/… kèm hệ quả cho mã/dữ liệu/test, **đề xuất** và hồ sơ đang lập theo cách nào, form trả lời, dòng “Câu trả lời đã ghi” để trống. Không có vấn đề mở → không tạo file.
    - `index.html`: tài liệu trong hồ sơ (liên kết tới mọi file vừa tạo, mỗi slice, mỗi sketch), cổng sẵn sàng sau khi làm rõ, mục 5 “Còn mở” (mỗi phiếu một dòng, liên kết `others/issues.html#iN` và slice bị chặn), bảng slice, điểm dừng (spec mục 7), lệnh kiểm tra (spec mục 6), trạng thái.
-   - Chạy `node scripts/docs/update-index.mjs` để ticket hiện trong `docs/tickets/issues/index.html` và `taskboard.html`.
+   - Chạy `node scripts/docs/update-index.mjs` để ticket hiện trong `docs/tickets/issues/index.html` và `agent/execution/taskboard.html`.
 6. **Tự kiểm:** mọi AC có trong `acceptance.html` và có slice; mọi EC có xử lý và slice; mọi slice có lệnh kiểm; mọi đường dẫn mã có thật hoặc ghi “tạo mới”; không câu nào mâu thuẫn nguồn. Rồi chạy:
    ```
    node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-NNNNN

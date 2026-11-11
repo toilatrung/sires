@@ -124,7 +124,7 @@ Monorepo FE + BE: React + Vite cho web, NestJS cho các service hệ thống, Py
 | `docs/api-design/` | OpenAPI (`openapi.yaml`, `paths/`, `components/`), API nội bộ (`internal/`), sự kiện (`events/`) |
 | `docs/ui-design/` | Thiết kế giao diện: nguồn `source/`, trang tĩnh `pages/`, quy tắc `design.md` |
 | `agent/skills/` | Skill cho agent, chia theo vai trò `po/`, `dev/`, `ui-design/`, `qc/`: dựng và giữ tài liệu, viết và đọc spec ticket, dựng, prototype và review UI |
-| `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `taskboard.html`; `update-index.mjs` gọi file này) |
+| `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `agent/execution/taskboard.html`; `update-index.mjs` gọi file này) |
 | `assets/screenshots/` | Ảnh minh họa cho README |
 
 Trang vào tài liệu: [docs/index.html](docs/index.html). Tài liệu là HTML tĩnh, mở trực tiếp bằng trình duyệt, không cần cài đặt.

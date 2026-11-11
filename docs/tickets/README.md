@@ -15,7 +15,7 @@ Trạng thái: **Đề xuất — chờ PO duyệt** (phiên bản 0.1, 03/11/20
 | `sections/04-dependencies-risks-and-questions.html` | Phụ thuộc ngoài luồng code, rủi ro DLR-NN, câu hỏi OQ |
 | `issues/PID-NNNNN/` | Một ticket: trang vào `index.html`; `specs/` (spec kỹ thuật cho agent, thêm `brief`, `scope`, `acceptance`, `slices/` khi làm rõ); `designs/` (thiết kế đi kèm nếu có); `others/` (tài liệu khác nếu có) |
 | `issues/index.html` | File chỉ dẫn: bảng ticket, file HTML và tiêu đề trong từng `PID-NNNNN/`. Sinh bằng `node scripts/docs/update-index.mjs` khi thêm hoặc xóa ticket |
-| [issues/taskboard.html](issues/taskboard.html) | Task đã đăng ký, đang chạy, chưa chạy. PO đăng ký task ở đây trước khi giao cho Dev; chưa hiển thị tiến độ |
+| [../../agent/execution/taskboard.html](../../agent/execution/taskboard.html) | Task đã đăng ký, đang chạy kèm tiến độ (slice, nhánh, PR, ngày cập nhật từ `report.md`), chưa chạy. PO đăng ký task ở đây trước khi giao cho Dev. Chuyển từ `issues/` ngày 11/11/2026 |
 
 Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/assets/brand/`, như các bộ khác.
 
@@ -27,12 +27,12 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 - **Rủi ro triển khai:** `DLR-NN` (mục 4.2). Rủi ro kỹ thuật vẫn là `TR-NN` (architecture 12.3) và `DR-NN` (database 13).
 - **Hình:** `FIG-3NN` (dải 300 dành cho kế hoạch, tránh trùng `FIG-0NN` của PRD, `FIG-1NN` của architecture, `FIG-2NN` của database). FIG-301 là sơ đồ làn ở `index.html`, dựng bằng bảng HTML nên không có file `.mmd`. FIG-302 (sơ đồ làn có PID) và FIG-303 (đợt song song) sinh tự động trong cùng trang.
 - **Câu hỏi:** câu hỏi cần PO quyết định cấp mã `OQ-NNN` tiếp dải của PRD (lấy mã từ `docs/docs_context.md`); câu hỏi kỹ thuật dùng `AQ-NN` của architecture.
-- **Ticket:** Problem ID `PID-NNNNN`, cấp theo thứ tự từ `PID-00001`; mã tiếp theo ở [taskboard](issues/taskboard.html). Mỗi ticket thuộc đúng một luồng và một giai đoạn, ghi requirement ID và hợp đồng liên quan. Tiêu chí nghiệm thu có mã `PID-NNNNN-ACNN`. PO viết spec bằng `agent/skills/po/spec-docs-skill`, làm rõ bằng `agent/skills/po/spec-clarify-skill`; Dev làm bằng `agent/skills/dev/spec-execution-skill`, kết quả ở `agent/execution/PID-NNNNN/`.
+- **Ticket:** Problem ID `PID-NNNNN`, cấp theo thứ tự từ `PID-00001`; mã tiếp theo ở [taskboard](../../agent/execution/taskboard.html). Mỗi ticket thuộc đúng một luồng và một giai đoạn, ghi requirement ID và hợp đồng liên quan. Tiêu chí nghiệm thu có mã `PID-NNNNN-ACNN`. PO viết spec bằng `agent/skills/po/spec-docs-skill`, làm rõ bằng `agent/skills/po/spec-clarify-skill`; Dev làm bằng `agent/skills/dev/spec-execution-skill`, kết quả ở `agent/execution/PID-NNNNN/`.
 - Mã của tài liệu khác giữ nguyên: requirement, `REL-NN`, `TS-NN-MM`, `WF-NN`, `F-NN`, `SPK-NN`, `ADR-NN`, `ETR-NN`, `DBQ-NN`. Mã không tái sử dụng.
 
 ## Theo dõi ticket
 
-**Đề xuất — chờ PO duyệt**, cùng trạng thái với kế hoạch này. Riêng nơi ghi trạng thái thực hiện đã chốt ở [OQ-107](sections/04-dependencies-risks-and-questions.html#oq-107) (PO 05/11/2026): `agent/execution/PID-NNNNN/report.md` trên nhánh của ticket, Dev commit và push khi đặt hoặc đổi trạng thái, [taskboard](issues/taskboard.html) đọc từ đó.
+**Đề xuất — chờ PO duyệt**, cùng trạng thái với kế hoạch này. Riêng nơi ghi trạng thái thực hiện đã chốt ở [OQ-107](sections/04-dependencies-risks-and-questions.html#oq-107) (PO 05/11/2026): `agent/execution/PID-NNNNN/report.md` trên nhánh của ticket, Dev commit và push khi đặt hoặc đổi trạng thái, [taskboard](../../agent/execution/taskboard.html) đọc từ đó.
 
 FIG-301 là kế hoạch tĩnh: ô trên sơ đồ không đổi khi ticket xong. Tiến độ đọc theo ba mức:
 
@@ -50,7 +50,7 @@ FIG-301 là kế hoạch tĩnh: ô trên sơ đồ không đổi khi ticket xong
 | `Sẵn sàng` | `issues/PID-NNNNN/index.html` | PO đã làm rõ và duyệt; Dev chạy được `spec-execution-skill` | PO |
 | `Đang làm`, `Bị chặn — …` | `agent/execution/PID-NNNNN/report.md` | Dev đang làm trên nhánh, hoặc đang dừng và ghi rõ mã chặn | Dev |
 | `Xong — chờ QC` | `agent/execution/PID-NNNNN/report.md` | Mọi slice xong, Self-QC đạt | Dev |
-| Đã hủy | `cancelled` trong sổ của `issues/taskboard.html` | Không làm nữa; mã không tái sử dụng | PO |
+| Đã hủy | `cancelled` trong sổ của `agent/execution/taskboard.html` | Không làm nữa; mã không tái sử dụng | PO |
 
 ## Xếp song song
 
@@ -59,7 +59,7 @@ FIG-301 là kế hoạch tĩnh: ô trên sơ đồ không đổi khi ticket xong
 - **Đợt** tính từ dòng “Phụ thuộc PID” của từng hồ sơ: đợt = 1 + đợt lớn nhất của các PID phụ thuộc. Các PID cùng đợt chạy song song được. Kết quả ở [danh sách PID](index.html#pids).
 - **Luồng gọi nhau không phải chờ nhau:** dùng stub hoặc mock theo hợp đồng (quy tắc 1.4.3, 1.4.4). Phụ thuộc chỉ ghi khi cần mã đã merge: thư viện nền, type sinh, kết quả spike, PID trước trong cùng luồng.
 - **Chỉ PID kiểm cổng chờ các luồng khác.** Chuỗi cổng: PH-02 → PH-03 → (PH-04, PH-05 song song) → PH-06 → PH-07 → PH-08. PH-04 và PH-05 song song khi `agent-core`, `orchestration` đủ người ([OQ-106](sections/04-dependencies-risks-and-questions.html#oq-106), PO chốt 08/11/2026). Thiếu người thì nối tiếp: thêm PID kiểm cổng PH-04 vào phụ thuộc của PID kiểm cổng PH-05.
-- **Thêm hoặc đổi PID:** sửa hồ sơ, thêm dòng vào sổ của [taskboard](issues/taskboard.html), rồi chạy `node scripts/docs/update-index.mjs`. Lệnh báo lỗi khi phụ thuộc trỏ tới PID không có hoặc có chu trình.
+- **Thêm hoặc đổi PID:** sửa hồ sơ, thêm dòng vào sổ của [taskboard](../../agent/execution/taskboard.html), rồi chạy `node scripts/docs/update-index.mjs`. Lệnh báo lỗi khi phụ thuộc trỏ tới PID không có hoặc có chu trình.
 
 ## Thứ tự ưu tiên khi mâu thuẫn
 

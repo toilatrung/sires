@@ -3,15 +3,16 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
-// Đồng bộ hai trang ở docs/tickets/issues/ khi thêm hoặc xóa thư mục PID-NNNNN:
-//   index.html      file chỉ dẫn: file HTML và tiêu đề của từng PID (vùng PID-FILES);
-//                   bảng ticket (vùng PID-LIST) do update-issues.mjs của spec-clarify-skill sinh.
-//   taskboard.html  task đã đăng ký, đang chạy, chưa chạy (vùng TASKBOARD), từ sổ task-registry
-//                   trong chính trang đó và agent/execution/PID-NNNNN/report.md, đọc từ bản checkout
-//                   và mọi nhánh origin/* (chạy git fetch --prune origin trước; xem latestReports).
+// Đồng bộ hai trang khi thêm hoặc xóa thư mục PID-NNNNN hay đăng ký task:
+//   docs/tickets/issues/index.html  file chỉ dẫn: file HTML và tiêu đề của từng PID (vùng PID-FILES);
+//       bảng ticket (vùng PID-LIST) do update-issues.mjs của spec-clarify-skill sinh.
+//   agent/execution/taskboard.html  task đã đăng ký, đang chạy (kèm tiến độ), chưa chạy (vùng TASKBOARD),
+//       từ sổ task-registry trong chính trang đó và agent/execution/PID-NNNNN/report.md, đọc từ bản checkout
+//       và mọi nhánh origin/* (chạy git fetch --prune origin trước; xem latestReports).
+//       Trang chuyển từ docs/tickets/issues/ sang agent/execution/ ngày 11/11/2026 theo yêu cầu PO.
 // update-index.mjs gọi file này; chạy riêng: node scripts/docs/update-tickets.mjs [--check] [--root <gốc kho>]
 //   --check: không ghi, thoát 1 khi thư mục PID hoặc sổ đăng ký lệch với trang. Không kiểm trạng thái
-//            chạy: report.md do Dev ghi, còn trang nằm trong docs/ chỉ PO cập nhật (R-01, R-03).
+//            chạy: report.md do Dev ghi trên nhánh, còn taskboard chỉ PO dựng lại.
 // Sổ đăng ký sai định dạng hoặc trang thiếu dấu mốc: thoát 2.
 
 import { execFileSync } from 'node:child_process';
@@ -27,6 +28,8 @@ const FOLDER_ORDER = ['specs', 'designs', 'others'];
 const TEMPLATE_DIR = 'PID-Template'; // khung mẫu ở agent/execution, không phải ticket
 const FILES = { start: '<!-- PID-FILES:START -->', end: '<!-- PID-FILES:END -->' };
 const BOARD = { start: '<!-- TASKBOARD:START -->', end: '<!-- TASKBOARD:END -->' };
+const BOARD_FILE = 'agent/execution/taskboard.html';
+const ISSUES = '../../docs/tickets/issues'; // từ agent/execution/ tới hồ sơ ticket
 const REGISTRY_RE = /<script type="application\/json" id="task-registry">([\s\S]*?)<\/script>/;
 const REPORT_RE = new RegExp(`^agent/execution/((?!${TEMPLATE_DIR}/)PID-[A-Za-z0-9]+)/report\\.md$`);
 const DATE_RE = /^\d{2}\/\d{2}\/\d{4}$/;
@@ -137,7 +140,7 @@ const statusOf = (md) => {
 
 // Bản report.md mới nhất của mỗi PID. Dev làm trên nhánh riêng nên report.md chỉ tới main khi pull request
 // merge; vì vậy đọc cả bản checkout và mọi nhánh origin/*, lấy bản có commit mới nhất. File chưa commit trên
-// máy đang chạy lệnh được ưu tiên. Trả về Map id → { status, branch } (branch rỗng khi là bản trên đĩa).
+// máy đang chạy lệnh được ưu tiên. Trả về Map id → { status, branch, md } (branch rỗng khi là bản trên đĩa).
 export function latestReports(root) {
   const execDir = join(root, 'agent', 'execution');
   const best = new Map();
@@ -164,18 +167,36 @@ export function latestReports(root) {
 
   const reports = new Map();
   for (const [id, { ref }] of best) {
-    reports.set(id, ref
-      ? { status: statusOf(git(root, ['show', `${ref}:agent/execution/${id}/report.md`])), branch: ref.replace('refs/remotes/origin/', '') }
-      : { status: statusOf(read(join(execDir, id, 'report.md'))), branch: '' });
+    const md = ref ? norm(git(root, ['show', `${ref}:agent/execution/${id}/report.md`])) : read(join(execDir, id, 'report.md'));
+    reports.set(id, { status: statusOf(md), branch: ref ? ref.replace('refs/remotes/origin/', '') : '', md });
   }
   return reports;
 }
 
 // Bản trên đĩa thì liên kết tới file; bản trên nhánh khác không có file để liên kết nên ghi tên nhánh.
-export function reportCell(id, report) {
+// execDir: đường dẫn tương đối từ trang gọi tới agent/execution/ (mặc định: từ docs/tickets/issues/).
+export function reportCell(id, report, execDir = '../../../agent/execution/') {
   return report.branch
     ? `${esc(report.status)} · nhánh <code>${esc(report.branch)}</code>`
-    : `<a href="../../../agent/execution/${id}/report.md">${esc(report.status)}</a>`;
+    : `<a href="${execDir}${id}/report.md">${esc(report.status)}</a>`;
+}
+
+// Tiến độ đọc từ report.md theo khung agent/execution/PID-Template/report.md; chỗ còn để mẫu thì ghi “—”.
+const field = (md, re) => {
+  const m = md.match(re);
+  const v = m ? m[1].trim() : '';
+  return v && !isDraft(v) ? v : '';
+};
+function progressOf(report) {
+  const md = report.md ?? '';
+  const pr = field(md, /\*\*PR:\*\*\s*(.+)$/m);
+  const link = pr.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/);
+  return {
+    slices: field(md, /^- Slice:\s*(\d+\/\d+)/m) || '—',
+    branch: report.branch || field(md, /\*\*Nhánh:\*\*\s*`([^`]+)`/) || '',
+    pr: link ? `<a href="${esc(link[2])}">${esc(link[1])}</a>` : esc(pr || '—'),
+    updated: field(md, /\*\*Cập nhật:\*\*\s*(\d{2}\/\d{2}\/\d{4})/) || '—',
+  };
 }
 
 function validTrack(root, track) {
@@ -187,14 +208,14 @@ function validTrack(root, track) {
 
 function readRegistry(root, boardHtml) {
   const m = boardHtml.match(REGISTRY_RE);
-  if (!m) fail('docs/tickets/issues/taskboard.html: thiếu khối task-registry.');
+  if (!m) fail(`${BOARD_FILE}: thiếu khối task-registry.`);
   let tasks;
   try {
     tasks = JSON.parse(m[1]);
   } catch (e) {
-    fail(`docs/tickets/issues/taskboard.html: task-registry không phải JSON hợp lệ: ${e.message}`);
+    fail(`${BOARD_FILE}: task-registry không phải JSON hợp lệ: ${e.message}`);
   }
-  if (!Array.isArray(tasks)) fail('docs/tickets/issues/taskboard.html: task-registry phải là một mảng.');
+  if (!Array.isArray(tasks)) fail(`${BOARD_FILE}: task-registry phải là một mảng.`);
 
   const seen = new Set();
   const errors = [];
@@ -209,7 +230,7 @@ function readRegistry(root, boardHtml) {
     if (!DATE_RE.test(t?.registered ?? '')) errors.push(`${where}: registered phải có dạng dd/mm/yyyy`);
     if (t?.cancelled && !DATE_RE.test(t.cancelled)) errors.push(`${where}: cancelled phải có dạng dd/mm/yyyy`);
   });
-  if (errors.length) fail(`docs/tickets/issues/taskboard.html: sổ đăng ký sai:\n  ${errors.join('\n  ')}`);
+  if (errors.length) fail(`${BOARD_FILE}: sổ đăng ký sai:\n  ${errors.join('\n  ')}`);
   return [...tasks].sort((a, b) => byId(a.id, b.id));
 }
 
@@ -217,10 +238,10 @@ function runState(task, reports) {
   if (task.cancelled) return { kind: 'ended', label: `Đã hủy ${esc(task.cancelled)}` };
   const report = reports.get(task.id);
   if (!report) return { kind: 'pending', label: 'Chưa chạy' };
-  const cell = reportCell(task.id, report);
+  const cell = reportCell(task.id, report, '');
   return FINISHED_RE.test(report.status.normalize('NFC'))
     ? { kind: 'ended', label: cell }
-    : { kind: 'running', label: 'Đang chạy', link: cell };
+    : { kind: 'running', label: 'Đang chạy', link: cell, progress: progressOf(report) };
 }
 
 function dossier(base, id) {
@@ -242,16 +263,16 @@ function renderBoard(base, tasks, folders, reports) {
   const pending = views.filter((t) => t.run.kind === 'pending');
   const ended = views.filter((t) => t.run.kind === 'ended');
 
-  const idCell = (id) => (read(join(base, id, 'index.html')).trim() ? `<a href="${id}/index.html">${id}</a>` : id);
+  const idCell = (id) => (read(join(base, id, 'index.html')).trim() ? `<a href="${ISSUES}/${id}/index.html">${id}</a>` : id);
   const common = (t) => `<td>${idCell(t.id)}</td><td>${esc(t.title)}</td><td><code>${esc(t.track)}</code></td><td>${t.phase}</td>`;
   const who = (t) => (t.assignee ? esc(t.assignee) : '—');
 
   const stray = all.filter((id) => !registered.has(id)).sort(byId).map((id) => {
     const found = [];
-    if (folders.includes(id)) found.push(`có <a href="index.html#${id.toLowerCase()}">thư mục hồ sơ</a>`);
+    if (folders.includes(id)) found.push(`có <a href="${ISSUES}/index.html#${id.toLowerCase()}">thư mục hồ sơ</a>`);
     if (reports.has(id)) {
       const { branch } = reports.get(id);
-      found.push(branch ? `có report.md trên nhánh <code>${esc(branch)}</code>` : `có <a href="../../../agent/execution/${id}/report.md">report.md</a>`);
+      found.push(branch ? `có report.md trên nhánh <code>${esc(branch)}</code>` : `có <a href="${id}/report.md">report.md</a>`);
     }
     return `<tr><td>${id}</td><td>${found.join(', ')}</td><td>Đăng ký trước khi giao Dev, hoặc xóa thư mục nếu không dùng</td></tr>`;
   });
@@ -266,8 +287,13 @@ function renderBoard(base, tasks, folders, reports) {
       views.map((t) => `<tr data-pid="${t.id}">${common(t)}<td>${esc(t.registered)}</td><td>${who(t)}</td><td>${t.run.label}</td></tr>`),
       'Chưa có task nào được đăng ký.'),
     '<h2 id="running">Task đang chạy</h2>',
-    table(['Mã', 'Task', 'Luồng', 'Giai đoạn', 'Giao cho', 'Trạng thái'],
-      running.map((t) => `<tr>${common(t)}<td>${who(t)}</td><td>${t.run.link}</td></tr>`),
+    '<p>Tiến độ lấy từ bản <code>report.md</code> mới nhất: dòng <code>Slice</code> ở mục 1; <code>Nhánh</code>, <code>PR</code>, <code>Cập nhật</code> ở đầu file. Chỗ Dev chưa điền ghi “—”.</p>',
+    table(['Mã', 'Task', 'Luồng', 'Giai đoạn', 'Giao cho', 'Trạng thái', 'Slice xong', 'Nhánh', 'PR', 'Cập nhật'],
+      running.map((t) => {
+        const p = t.run.progress;
+        const branch = p.branch ? `<code>${esc(p.branch)}</code>` : '—';
+        return `<tr>${common(t)}<td>${who(t)}</td><td>${t.run.link}</td><td>${esc(p.slices)}</td><td>${branch}</td><td>${p.pr}</td><td>${esc(p.updated)}</td></tr>`;
+      }),
       'Không có task nào đang chạy.'),
     '<h2 id="not-started">Task chưa chạy</h2>',
     table(['Mã', 'Task', 'Luồng', 'Giai đoạn', 'Giao cho', 'Hồ sơ'],
@@ -290,7 +316,7 @@ export function syncTickets({ root = REPO, check = false } = {}) {
   const base = join(root, 'docs', 'tickets', 'issues');
   if (!existsSync(base)) return false;
   const indexPath = join(base, 'index.html');
-  const boardPath = join(base, 'taskboard.html');
+  const boardPath = join(root, ...BOARD_FILE.split('/'));
   const boardHtml = read(boardPath);
   const tasks = readRegistry(root, boardHtml);
   const ids = pidDirs(base);
@@ -310,10 +336,10 @@ export function syncTickets({ root = REPO, check = false } = {}) {
     const shown = region(boardHtml, BOARD);
     const shownIds = [...(shown ?? '').matchAll(/<tr data-pid="([^"]+)">/g)].map((m) => m[1]).join();
     if (shown === null || shownIds !== tasks.map((t) => t.id).join()) {
-      console.log(`docs/tickets/issues/taskboard.html: bảng lệch với sổ đăng ký; chạy ${COMMAND}.`);
+      console.log(`${BOARD_FILE}: bảng lệch với sổ đăng ký; chạy ${COMMAND}.`);
       stale = true;
     }
-    if (!stale) console.log(`docs/tickets/issues: khớp (${ids.length} thư mục PID, ${tasks.length} task đã đăng ký).`);
+    if (!stale) console.log(`docs/tickets/issues: khớp (${ids.length} thư mục PID); ${BOARD_FILE}: khớp (${tasks.length} task đã đăng ký).`);
     return stale;
   }
 
@@ -337,10 +363,10 @@ export function syncTickets({ root = REPO, check = false } = {}) {
   if (nextIndex !== index) writeFileSync(indexPath, nextIndex);
 
   const nextBoard = setRegion(boardHtml, BOARD, renderBoard(base, tasks, ids, latestReports(root)));
-  if (nextBoard === null) fail(`docs/tickets/issues/taskboard.html: thiếu dấu mốc ${BOARD.start} / ${BOARD.end}; không ghi đè.`);
+  if (nextBoard === null) fail(`${BOARD_FILE}: thiếu dấu mốc ${BOARD.start} / ${BOARD.end}; không ghi đè.`);
   if (nextBoard !== boardHtml) writeFileSync(boardPath, nextBoard);
 
-  console.log(`docs/tickets/issues: ${ids.length} thư mục PID, ${tasks.length} task đã đăng ký.`);
+  console.log(`docs/tickets/issues: ${ids.length} thư mục PID; ${BOARD_FILE}: ${tasks.length} task đã đăng ký.`);
   return false;
 }
 
