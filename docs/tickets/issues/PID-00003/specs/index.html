@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
 <main id="main-content">
 <p class="eyebrow">Spec kỹ thuật · PID-00003</p><h1>PID-00003 — Thư viện nền TS: service-auth guard và token nội bộ</h1>
-<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00003</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 11/11/2026 · Ticket: <a href="../index.html">PID-00003</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Làm rõ 11/11/2026 (H1–H4) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
 <li><a href="#s-3">3. Output</a></li>
@@ -30,10 +30,10 @@
 
 <h2 id="s-1">1. Phạm vi và căn cứ</h2>
 <div class="table-wrap"><table><tbody>
-<tr><th scope="row">Mục đích</th><td>API nội bộ chỉ nhận JWT ký bằng KMS, hạn ≤ 5 phút, và chỉ cho service trong <code>x-callers</code> gọi. Mọi service dùng chung guard này.</td></tr>
+<tr><th scope="row">Mục đích</th><td>API nội bộ chỉ nhận JWT ký bằng khóa riêng của từng service (ES256, khóa trong KMS), hạn ≤ 5 phút, và chỉ cho service trong <code>x-callers</code> gọi. Mọi service dùng chung guard này.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>platform</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · Thư viện nền</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00003-AC01, PID-00003-AC02</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00003-AC01 – PID-00003-AC08</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-20">ADR-20</a></td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Khóa KMS của staging và production (<a href="../../PID-00035/index.html">PID-00035</a>, <a href="../../PID-00153/index.html">PID-00153</a>)</td></tr>
 </tbody></table></div>
@@ -52,7 +52,10 @@
 <tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>Thư viện Python hiện có</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<p>Không dùng hợp đồng hay bảng riêng.</p>
+<ul><li>Claims của token: <code>docs/api-design/internal/schemas.yaml#/ServiceTokenClaims</code>, <code>#/ServiceName</code>; actor: <code>components/schemas/common.yaml#/ActorRef</code>.</li>
+<li>Mã lỗi: <code>docs/api-design/internal/responses.yaml#/InvalidServiceToken</code> (<code>401 invalid_service_token</code>), <code>#/CallerNotAllowed</code> (<code>403 caller_not_allowed</code>).</li>
+<li>Danh sách service được gọi: <code>x-callers</code> của từng operation trong <code>docs/api-design/internal/&lt;service&gt;.yaml</code>; endpoint phê duyệt: <code>x-apr</code> trong API công khai.</li>
+<li>Không có bảng.</li></ul>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td><td>Chưa làm</td><td>Có</td></tr>
@@ -78,7 +81,15 @@ pnpm local:up</pre>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Guard kiểm JWT theo <code>internal/schemas.yaml#/ServiceTokenClaims</code></li>
 <li>Kiểm <code>x-callers</code>, trả <code>403 caller_not_allowed</code></li>
-<li>Client phát token cho lời gọi đi</li></ul>
+<li>Client phát token cho lời gọi đi</li>
+<li>Mỗi service một cặp khóa ES256, <code>kid</code> = tên service, khóa riêng trong KMS; bên nhận kiểm chữ ký bằng khóa công khai theo <code>kid</code> (H1)</li>
+<li>Service ký lời gọi đi với <code>sub</code> = chính nó; bên nhận yêu cầu <code>sub</code> = service ký, trừ token Agent Run (H1)</li>
+<li>Token <code>act.type = agent</code> do orchestration phát cho Agent Run: <code>sub</code> = <code>agent-core</code>, bắt buộc <code>agentScope</code> và <code>agentRunId</code>; chỉ nhận khi orchestration ký (H1)</li>
+<li>Endpoint <code>x-apr</code> chỉ nhận <code>act.type = researcher</code> do gateway ký; orchestration chỉ chuyển tiếp nguyên token của gateway trong request trả lời prompt, F-08 (H1)</li>
+<li>Hạn token ≤ 5 phút (<code>ServiceTokenClaims</code>)</li>
+<li>Mọi trường hợp không đạt luật người ký trả <code>401 invalid_service_token</code> (H4)</li>
+<li>Route <code>x-apr</code> nhận token Researcher do gateway ký có <code>aud</code> là service này hoặc orchestration; route khác giữ <code>aud</code> chặt (H2)</li>
+<li>Token <code>act.type = agent</code> có <code>aud</code> là mảng các service Agent Run được đọc, bên nhận kiểm “<code>aud</code> chứa service này”; orchestration làm mới token qua phản hồi <code>heartbeatAgentRun</code> (H3)</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -88,6 +99,7 @@ pnpm local:up</pre>
 <tr><td>Token của Agent Run không có <code>agentScope</code></td><td>Từ chối</td></tr>
 <tr><td>Token actor Researcher không do gateway phát</td><td>Từ chối</td></tr>
 </tbody></table></div>
+<p>Đủ edge case, mã lỗi và slice: <a href="scope.html#edge-case">scope.html</a>.</p>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
@@ -105,7 +117,14 @@ node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00003-AC01</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code></td><td>Given token hết hạn hoặc sai chữ ký, When gọi endpoint nội bộ, Then trả <code>401</code>.</td></tr>
 <tr><td>PID-00003-AC02</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code></td><td>Given service không có trong <code>x-callers</code>, When gọi, Then trả <code>403 caller_not_allowed</code>.</td></tr>
+<tr><td>PID-00003-AC03</td><td><code>libs/ts/platform/src/service-auth/token.spec.ts</code></td><td>Given token có <code>sub</code> khác service sở hữu khóa ký, When gọi, Then trả <code>401 invalid_service_token</code>.</td></tr>
+<tr><td>PID-00003-AC04</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code></td><td>Given token <code>act.type = agent</code>, When không do orchestration ký hoặc thiếu <code>agentScope</code>, <code>agentRunId</code>, Then trả <code>401 invalid_service_token</code>; do orchestration ký đủ trường thì qua.</td></tr>
+<tr><td>PID-00003-AC05</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code></td><td>Given endpoint <code>x-apr</code>, When token không phải <code>act.type = researcher</code> do gateway ký, Then trả <code>401 invalid_service_token</code>.</td></tr>
+<tr><td>PID-00003-AC06</td><td><code>libs/ts/platform/src/service-auth/client.spec.ts</code></td><td>Given client phát token cho lời gọi đi, When service nhận kiểm bằng guard, Then qua với <code>sub</code> = service gọi, <code>aud</code> = service nhận, hạn ≤ 5 phút.</td></tr>
+<tr><td>PID-00003-AC07</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code></td><td>Given token Researcher do gateway ký có <code>aud</code> = orchestration, When chuyển tiếp tới route <code>x-apr</code>, Then qua; tới route khác thì <code>401 invalid_service_token</code>.</td></tr>
+<tr><td>PID-00003-AC08</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts</code>, <code>token.spec.ts</code></td><td>Given token agent do orchestration ký có <code>aud</code> mảng, When service trong mảng kiểm, Then qua; service ngoài mảng thì <code>401 invalid_service_token</code>; token phát ra có hạn ≤ 5 phút.</td></tr>
 </tbody></table></div>
+<p>Chi tiết Given–When–Then đã làm rõ và slice: <a href="acceptance.html">acceptance.html</a>.</p>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
 <ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>platform</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>

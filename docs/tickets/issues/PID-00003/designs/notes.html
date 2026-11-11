@@ -1,0 +1,43 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ghi chú thiết kế PID-00003.">
+<title>PID-00003 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00003</p><h1>PID-00003 — Ghi chú thiết kế</h1>
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Mục không có gì thì ghi “Không có”.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<p>Không có.</p>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<ul><li><strong>Khóa (H1):</strong> mỗi service một cặp khóa ES256, <code>kid</code> = tên service theo <code>ServiceName</code>. Ở staging và production khóa riêng nằm trong KMS (cấp ở PID-00035, PID-00153); thư viện chỉ định nghĩa interface ký và bản cục bộ.</li>
+<li><strong>Bộ khóa công khai:</strong> mỗi môi trường một bộ ánh xạ <code>kid</code> → khóa công khai, service nạp từ cấu hình hoặc secret khi khởi động. Gặp <code>kid</code> lạ thì từ chối (EC03), không tự tải thêm khóa từ mạng. Đây là mặc định an toàn; đổi cách phân phối khóa (ví dụ endpoint JWKS) phải qua PO.</li>
+<li><strong>Cục bộ:</strong> test sinh khóa trong bộ nhớ. Khi chạy nhiều service cùng lúc bằng <code>pnpm local:up</code>, mọi service cần chung một bộ khóa dev; cách sinh do Dev chọn, không dùng ở staging hay production. Nếu cần file trong <code>infra/local</code> thì đề xuất PID cho luồng infra (N10).</li>
+<li><strong>Người ký và <code>sub</code> (H1):</strong> <code>sub</code> phải bằng <code>kid</code>. Ngoại lệ duy nhất là token Agent Run: <code>kid</code> = orchestration, <code>sub</code> = <code>agent-core</code>, <code>act.type = agent</code>.</li>
+<li><strong><code>aud</code> (H2, H3):</strong> mặc định phải bằng service này. Hai ngoại lệ: route <code>x-apr</code> nhận thêm <code>aud</code> = orchestration cho token Researcher do gateway ký (token chuyển tiếp khi trả lời prompt); token Agent Run có <code>aud</code> là mảng và phải chứa service này. Mảng ở token khác bị từ chối, để chỉ token do orchestration phát cho Agent Run mới dùng được ở nhiều service.</li>
+<li><strong><code>iss</code>:</strong> một giá trị chung cho mọi service, lấy theo ví dụ của schema (<code>sires-internal</code>); bên nhận kiểm đúng giá trị này.</li>
+<li><strong><code>x-callers</code>, <code>x-apr</code>:</strong> service khai theo route; sinh tự động từ hợp đồng thuộc luồng contracts (N2). Route không khai <code>x-callers</code> thì từ chối tất cả (EC09).</li>
+<li><strong>Mã lỗi:</strong> mọi lỗi kiểm token, kể cả không đạt luật người ký, trả <code>401 invalid_service_token</code>; chỉ <code>sub</code> ngoài <code>x-callers</code> trả <code>403 caller_not_allowed</code>. Theo H4 (PO chốt 11/11/2026, từ phiếu <a href="../others/issues.html#i3">I3</a>).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có.</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00003</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ghi chú thiết kế PID-00003 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

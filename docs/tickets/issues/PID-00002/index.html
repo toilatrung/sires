@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00002</p><h1>PID-00002 — Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</h1>
-<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: PO duyệt 11/11/2026 · Soạn 05/11/2026 · Làm rõ 11/11/2026 theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -38,58 +38,88 @@
 <tr><th scope="row">Đợt song song</th><td>Đ2</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00001/index.html">PID-00001</a></td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-19">ADR-19</a>, <a href="../../../architecture/sections/04-runtime-flows.html#f-02">F-02</a></td></tr>
-<tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
-<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
+<tr><th scope="row">Làm rõ</th><td>11/11/2026 · spec-clarify-skill</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
 </tbody></table></div>
 
 <h2 id="files">Tài liệu trong hồ sơ</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
 <tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-outbox-relay.html">S01</a></td><td>Outbox trong giao dịch và relay</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-inbox-replica.html">S02</a></td><td>Consumer có inbox và helper replica</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-idempotency.html">S03</a></td><td>Middleware Idempotency-Key</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S04-audit-emit.html">S04</a></td><td>audit-emit qua outbox</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S05-cleanup-jobs.html">S05</a></td><td>Job dọn theo retention và metric outbox</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt khi làm rõ</td></tr>
+<tr><td><code>others/</code></td><td><a href="others/issues.html">issues.html</a></td><td>Phiếu vấn đề I1, I2 (đã chuyển vào H4, H3)</td></tr>
 </tbody></table></div>
-<p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
+
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Cổng PH-01 yêu cầu ghi trạng thái, Audit Event và outbox trong một giao dịch, và consumer xử lý sự kiện đến trùng đúng một lần. Mọi luồng dùng chung phần này.</li>
-<li><strong>Gồm:</strong> Ghi outbox trong giao dịch, relay phát lên RabbitMQ; Inbox idempotent, bỏ sự kiện có <code>aggregate.version</code> cũ; Middleware <code>Idempotency-Key</code> dùng bảng <code>app.idempotency_key</code>; <code>audit-emit</code> phát <code>audit.recorded</code> qua outbox.</li>
-<li><strong>Không gồm:</strong> Topology RabbitMQ của staging (<a href="../PID-00057/index.html">PID-00057</a>); Kho Audit Event (<a href="../PID-00045/index.html">PID-00045</a>).</li></ul>
+<li><strong>Gồm:</strong> Ghi outbox trong giao dịch (sự kiện và Audit Event bắt buộc <code>aggregate</code> theo H2), relay phát lên RabbitMQ; Inbox idempotent theo (<code>consumer</code>, <code>event_id</code>); helper bảng <code>replica.*</code> bỏ sự kiện có <code>aggregate.version</code> cũ (H1); Middleware <code>Idempotency-Key</code> dùng bảng <code>app.idempotency_key</code>; <code>audit-emit</code> phát <code>audit.recorded</code> qua outbox; job dọn <code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code> theo retention (database 12.2).</li>
+<li><strong>Không gồm:</strong> Topology RabbitMQ của staging (<a href="../PID-00057/index.html">PID-00057</a>); Kho Audit Event (<a href="../PID-00045/index.html">PID-00045</a>); thư viện Python (<a href="../PID-00005/index.html">PID-00005</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00001/index.html">PID-00001</a></li>
-<li><strong>Sự kiện:</strong> phát 1, nghe 0</li>
-<li><strong>Bảng:</strong> 4 bảng trong DDL tham chiếu</li></ul>
+<li><strong>Sự kiện:</strong> phát <code>audit.recorded</code>; relay phát mọi dòng outbox của service dùng thư viện; consumer chung nghe sự kiện mà service đăng ký</li>
+<li><strong>Bảng:</strong> 4 bảng trong DDL tham chiếu (<code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code>) và bảng <code>replica.*</code> của service gọi</li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Tệp: <code>libs/ts/platform/src/outbox/</code> — Outbox và relay</li>
-<li>Tệp: <code>libs/ts/platform/src/inbox/</code> — Inbox idempotent</li>
+<li>Tệp: <code>libs/ts/platform/src/inbox/</code> — Inbox idempotent, helper replica</li>
 <li>Tệp: <code>libs/ts/platform/src/idempotency/</code> — Idempotency-Key</li>
 <li>Tệp: <code>libs/ts/platform/src/audit/</code> — audit-emit</li>
-<li>Sự kiện: <code>apps/platform/src/</code> — Phát qua outbox: 1</li>
+<li>Tệp: <code>libs/ts/platform/src/jobs/</code> — Lease, job dọn, metric tuổi outbox</li>
+<li>Sự kiện: <code>audit.recorded</code> ghi vào outbox của service gọi — Phát qua outbox: 1 (sửa 11/11/2026: không có <code>apps/platform</code>)</li>
 <li>Test: <code>libs/ts/platform/src/outbox/outbox.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
-<li>Test: <code>libs/ts/platform/src/inbox/inbox.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li></ul>
+<li>Test: <code>libs/ts/platform/src/inbox/inbox.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
+<li>Test: <code>libs/ts/platform/src/idempotency/idempotency.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
+<li>Test: <code>libs/ts/platform/src/audit/audit.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
+<li>Test: <code>libs/ts/platform/src/jobs/jobs.spec.ts</code> — Test lease và job dọn</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00002-AC01</strong> Given một lệnh ghi lỗi giữa giao dịch, When giao dịch rollback, Then không có dòng outbox và không có Audit Event.</li>
 <li><strong>PID-00002-AC02</strong> Given cùng một sự kiện đến hai lần, When consumer xử lý, Then tác động chỉ áp dụng một lần.</li>
-<li><strong>PID-00002-AC03</strong> Given sự kiện có <code>aggregate.version</code> nhỏ hơn bản đã xử lý, When đến, Then bị bỏ qua.</li>
-<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-persist-001">DATA-PERSIST-001</a> (AC01); <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-idemp-005">DATA-IDEMP-005</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-dur-001">NFR-DUR-001</a> (AC01); <a href="../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-audit-001">CTX-AUDIT-001</a> (AC01, AC02, AC03, AC04, AC05); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-ret-008">NFR-RET-008</a> (AC01).</li></ul>
+<li><strong>PID-00002-AC03</strong> Given bảng replica đã áp sự kiện có <code>aggregate.version</code> lớn hơn, When bản có <code>aggregate.version</code> nhỏ hơn hoặc bằng đến, Then helper replica bỏ qua, không ghi đè (sửa theo H1; inbox không so phiên bản).</li>
+<li><strong>PID-00002-AC04</strong> Given lệnh với <code>Idempotency-Key</code> đã thành công, When gửi lại cùng khóa và cùng nội dung trong 24 giờ, Then trả kết quả lần đầu, handler không chạy lần hai.</li>
+<li><strong>PID-00002-AC05</strong> Given khóa đã dùng, When gửi lại với nội dung khác, Then trả <code>422 idempotency_key_reused</code>, dữ liệu không đổi.</li>
+<li><strong>PID-00002-AC06</strong> Given dòng outbox đã commit, When relay chạy, Then message được publish có confirm với <code>message_id</code> = id dòng; relay dừng trước khi đánh dấu thì lần sau publish lại cùng <code>message_id</code>.</li>
+<li>AC04–AC06 thêm khi làm rõ 11/11/2026 để mỗi mục “Gồm” có AC kiểm được; số liệu từ kiến trúc 5.8, 6.4 và database 9.2, 9.3.</li>
+<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-persist-001">DATA-PERSIST-001</a> (AC01); <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-idemp-005">DATA-IDEMP-005</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-dur-001">NFR-DUR-001</a> (AC01); <a href="../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-audit-001">CTX-AUDIT-001</a> (AC01, AC02, AC03, AC04, AC05); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-ret-008">NFR-RET-008</a> (AC01). Phần thư viện của từng AC ở <a href="specs/acceptance.html">acceptance.html</a>.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry.</li>
-<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<li>Hợp đồng theo H2, H3, H4: PO sửa ở <code>docs/api-design</code> trên cùng nhánh <code>contracts/dbq-03-04-pid-00002-00003</code>; S01–S04 dùng hợp đồng sau khi nhánh vào <code>main</code>.</li>
+<li>OQ, AQ, DBQ đang chặn: không có. DBQ-04 đã chốt (H2). DBQ-01 (BYPASSRLS trên PostgreSQL managed) còn mở nhưng không chặn PH-01, xem <a href="designs/notes.html">ghi chú thiết kế</a>.</li>
 <li>PID chờ PID này: <a href="../PID-00006/index.html">PID-00006</a>, <a href="../PID-00038/index.html">PID-00038</a>, <a href="../PID-00039/index.html">PID-00039</a>, <a href="../PID-00040/index.html">PID-00040</a>, <a href="../PID-00041/index.html">PID-00041</a>, <a href="../PID-00042/index.html">PID-00042</a>, <a href="../PID-00043/index.html">PID-00043</a>, <a href="../PID-00044/index.html">PID-00044</a>, <a href="../PID-00045/index.html">PID-00045</a>, <a href="../PID-00046/index.html">PID-00046</a>, <a href="../PID-00047/index.html">PID-00047</a>, <a href="../PID-00049/index.html">PID-00049</a>, <a href="../PID-00050/index.html">PID-00050</a>, <a href="../PID-00052/index.html">PID-00052</a>, <a href="../PID-00053/index.html">PID-00053</a>, <a href="../PID-00056/index.html">PID-00056</a>, <a href="../PID-00074/index.html">PID-00074</a>, <a href="../PID-00075/index.html">PID-00075</a>, <a href="../PID-00076/index.html">PID-00076</a>, <a href="../PID-00080/index.html">PID-00080</a>, <a href="../PID-00106/index.html">PID-00106</a>.</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 1 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+<tr><td>Đạt: PO xác nhận 11/11/2026</td><td>Có, đã sửa theo H1–H4</td><td>Chờ PID-00001 (Sẵn sàng, chưa làm); hợp đồng theo H2–H4 vào <code>main</code> cùng PR của nhánh <code>contracts/dbq-03-04-pid-00002-00003</code></td><td>Không có (I1, I2 đã chuyển vào H4, H3)</td><td>Linux hoặc WSL2 có Docker, như PID-00001 H1; Dev kiểm bằng spec mục 2.5</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
-<p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00002</code> khi chuẩn bị giao Dev.</p>
+<h3 id="phien-1">Phiên 11/11/2026</h3>
+<ul><li>H1: Bỏ sự kiện có <code>aggregate.version</code> cũ (AC03) làm ở inbox hay ở đâu, khi bảng <code>app.inbox</code> trong DDL không có cột phiên bản? → Đ: Không ở inbox; inbox chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>) đúng DDL. Thư viện thêm helper upsert bảng <code>replica.*</code>, chỉ ghi khi <code>aggregate.version</code> lớn hơn <code>source_version</code>; AC03 kiểm bằng một bảng replica mẫu trong test; không đổi DDL. · Ảnh hưởng: ticket mục 1, PID-00002-AC03, P3, P4, S02, EC09; spec 4.1, 4.3, 4.4, B2</li>
+<li>H2 (DBQ-04, PO chốt): Envelope sự kiện có <code>aggregate</code> tùy chọn, <code>reference.status_changed</code> chưa có <code>metadataVersion</code>; sửa hợp đồng thế nào? → Đ: <code>EventEnvelope.aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} thành bắt buộc, <code>version</code> = <code>row_version</code> của entity sau thay đổi; <code>reference.status_changed</code> thêm <code>metadataVersion</code>; <code>source_version</code> ở bảng replica dùng <code>aggregate.version</code> thay epoch millisecond. Với thư viện: API ghi outbox bắt buộc <code>aggregate</code> cho <code>event</code> và <code>audit</code>. · Ảnh hưởng: P1, P4, P6, EC05, EC08, S01, S02, S04 (mở phiếu I2); spec 2.3, 4.3</li></ul>
+<h3 id="phien-2">Phiên 11/11/2026 — trả lời phiếu</h3>
+<ul><li>H3 (từ I2): <code>aggregate</code> của <code>audit.recorded</code> là entity nào? → Đ: A — chính Audit Event: <code>type</code> = <code>audit_event</code>, <code>id</code> = id Audit Event (= id sự kiện, = id dòng outbox), <code>version</code> = 1. PO trong phiên, 11/11/2026. PO ghi quy ước này vào <code>EventEnvelope.aggregate</code>, mô tả message <code>auditRecorded</code> và sửa ví dụ F-02 ở kiến trúc 6.4 (dòng outbox <code>audit</code> có cột <code>aggregate_*</code>). · Ảnh hưởng: P6, S04 (gỡ chặn), CTX-AUDIT-001-AC01; spec 2.4, 4.3, 4.4</li>
+<li>H4 (từ I1): Thiếu header <code>Idempotency-Key</code> ở operation bắt buộc trả mã gì? → Đ: Không theo đề xuất của phiếu; trả <code>400</code> problem+json, <code>code</code> = <code>validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code> (theo bản nháp IETF về header <code>Idempotency-Key</code>). <code>PreconditionRequired</code> (428) chỉ còn cho trường hợp thiếu <code>If-Match</code>, thuộc PID-00001. PO trong phiên, 11/11/2026. PO sửa <code>components/responses.yaml</code> và khai báo <code>400</code> ở mọi operation có <code>IdempotencyKey</code> còn thiếu. · Ảnh hưởng: P5, EC14, S03; spec 4.2</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Không có.</li></ul>
+<ul><li><code>docs/api-design</code> theo H2, H3, H4 (<code>EventEnvelope.aggregate</code> bắt buộc và quy ước cho <code>audit.recorded</code>, <code>metadataVersion</code> ở <code>reference.status_changed</code>, <code>400</code> khi thiếu <code>Idempotency-Key</code>) và ví dụ F-02 ở kiến trúc 6.4 — PO đang sửa trên cùng nhánh bằng contract-updating-skill.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có.</li></ul>
+<ul><li>Không có. Phiếu I1, I2 đã chuyển vào H4, H3 (<a href="others/issues.html">others/issues.html</a>).</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
-<p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-outbox-relay.html">S01</a></td><td>Outbox trong giao dịch và relay</td><td>PID-00002-AC06</td><td>PID-00001; hợp đồng H2</td></tr>
+<tr><td><a href="specs/slices/S02-inbox-replica.html">S02</a></td><td>Consumer có inbox và helper replica</td><td>PID-00002-AC02, PID-00002-AC03, DATA-IDEMP-005-AC01</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S03-idempotency.html">S03</a></td><td>Middleware Idempotency-Key</td><td>PID-00002-AC04, PID-00002-AC05</td><td>PID-00001</td></tr>
+<tr><td><a href="specs/slices/S04-audit-emit.html">S04</a></td><td>audit-emit qua outbox</td><td>PID-00002-AC01, DATA-PERSIST-001-AC01, NFR-DUR-001-AC01, CTX-AUDIT-001-AC01–AC04</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S05-cleanup-jobs.html">S05</a></td><td>Job dọn theo retention và metric outbox</td><td>CTX-AUDIT-001-AC05, NFR-RET-008-AC01</td><td>S01</td></tr>
+</tbody></table></div>
 
 <h2 id="s-7">7. Điểm dừng</h2>
 <ul><li>Không được sửa: thư mục ngoài luồng <code>platform</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>

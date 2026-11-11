@@ -1,0 +1,72 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi, edge case của PID-00002.">
+<title>PID-00002 — Phạm vi | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>PID-00002 — Phạm vi, ngoài phạm vi, edge case</h1>
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên thì ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>API ghi outbox trong giao dịch của helper tenancy (PID-00001) cho ba loại <code>event</code>, <code>audit</code>, <code>command</code>; <code>event</code> và <code>audit</code> bắt buộc <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>}; payload theo <code>EventEnvelope</code>; <code>id</code> UUIDv7; ghi <code>traceparent</code> hiện hành; tính routing key theo quy tắc AsyncAPI (đoạn con trạng thái đích)</td><td>ticket mục 1; H2; database 9.2; AsyncAPI</td><td>S01</td></tr>
+<tr><td>P2</td><td>Relay: vai trò <code>_system</code>, lease trong <code>app.job_lock</code>, lô <code>FOR UPDATE SKIP LOCKED</code> theo <code>created_at</code>, publish bền có publisher confirm, header <code>message_id</code> và <code>traceparent</code>; <code>event</code>, <code>audit</code> tới exchange <code>sires.events</code>; <code>command</code> tới queue cùng tên routing key; đặt <code>published_at</code> sau confirm</td><td>ticket mục 1; kiến trúc 6.4; database 9.2, 9.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>Consumer chung: khai báo queue <code>&lt;service&gt;.events</code> và binding theo handler đăng ký (tham số queue đọc từ cấu hình để PID-00057 đặt quorum, dead-letter), kiểm vỏ sự kiện, INSERT <code>app.inbox</code> cùng giao dịch <code>_system</code> với handler, ack sau commit</td><td>ticket mục 1; H1; database 9.3; AsyncAPI kênh <code>events</code></td><td>S02</td></tr>
+<tr><td>P4</td><td>Helper replica: upsert bảng <code>replica.*</code> chỉ khi <code>aggregate.version</code> lớn hơn <code>source_version</code>, trả về đã áp hay bỏ qua</td><td>H1; H2; database 3.5</td><td>S02</td></tr>
+<tr><td>P5</td><td>Middleware <code>Idempotency-Key</code>: ghi khóa trong cùng giao dịch của lệnh, trả lại status và body lần đầu, <code>422 idempotency_key_reused</code> khi khác nội dung, <code>400 validation_failed</code> khi thiếu header, giữ 24 giờ</td><td>ticket mục 1; kiến trúc 5.8; database 9.3; <code>components/parameters.yaml</code>; H4</td><td>S03</td></tr>
+<tr><td>P6</td><td><code>audit-emit</code>: tạo Audit Event theo schema <code>AuditEvent</code>, ghi dòng outbox <code>audit</code> với routing key <code>audit.recorded</code>, <code>id</code> = id Audit Event, <code>correlationId</code> = trace id, <code>aggregate</code> = {<code>audit_event</code>, id Audit Event, 1}; kiểm actor; che chuỗi giống key</td><td>ticket mục 1; ADR-23; CTX-AUDIT-001; H3</td><td>S04</td></tr>
+<tr><td>P7</td><td>Job dọn dưới lease: outbox đã publish quá 24 giờ và <code>idempotency_key</code> quá <code>expires_at</code> (hằng giờ), inbox quá 7 ngày (hằng ngày)</td><td>kiến trúc 6.4, 5.8; database 9.3, 12.2</td><td>S05</td></tr>
+<tr><td>P8</td><td>Metric tuổi dòng outbox chưa publish cũ nhất qua OpenTelemetry, để dựng cảnh báo “outbox chưa publish &gt; 30 s”</td><td>kiến trúc 11.4</td><td>S05</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Topology RabbitMQ của staging: quorum queue, dead-letter, giới hạn số lần giao lại</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00057/index.html">PID-00057</a></td></tr>
+<tr><td>N2</td><td>Kho Audit Event: nhận <code>audit.recorded</code>, truy vấn, chỉ ghi thêm, export</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00045/index.html">PID-00045</a> và luồng <code>audit</code></td></tr>
+<tr><td>N3</td><td>Thư viện Python tương đương</td><td>Khác luồng ngôn ngữ</td><td><a href="../../PID-00005/index.html">PID-00005</a></td></tr>
+<tr><td>N4</td><td>Service token và xác thực lời gọi nội bộ</td><td>Ticket riêng</td><td><a href="../../PID-00003/index.html">PID-00003</a></td></tr>
+<tr><td>N5</td><td>Migration tạo bảng <code>app.*</code> và <code>replica.*</code> trong database của từng service</td><td>Migration nằm trong thư mục service (quy tắc 1.4.6)</td><td>PID khung của từng service</td></tr>
+<tr><td>N6</td><td>Khóa tự nhiên của thao tác nền: indexing, build, BibliographyEntry (DATA-IDEMP-005)</td><td>Thuộc service sở hữu dữ liệu</td><td>knowledge, manuscript</td></tr>
+<tr><td>N7</td><td>Cảnh báo và dashboard dựa trên metric của P8</td><td>Thuộc vận hành</td><td><a href="../../PID-00057/index.html">PID-00057</a></td></tr>
+<tr><td>N8</td><td>Chọn <code>aggregate</code> cụ thể cho từng sự kiện</td><td>Producer điền theo hợp đồng của message</td><td>Luồng phát sự kiện</td></tr>
+<tr><td>N9</td><td>Fake broker cho test của luồng khác</td><td>Thuộc thư viện test</td><td><a href="../../PID-00004/index.html">PID-00004</a></td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Relay dừng sau khi publish nhưng trước khi đặt <code>published_at</code></td><td>Lần chạy sau publish lại cùng <code>message_id</code>; consumer bỏ trùng qua inbox</td><td>Spec mục 4.7; kiến trúc 6.4</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › phát lại sau khi relay dừng</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Hai pod cùng chạy relay</td><td>Chỉ pod giữ lease publish; lease quá <code>lease_until</code> thì pod khác nhận; không dùng advisory lock</td><td>Database 9.4</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › chỉ một relay giữ lease</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Broker không xác nhận hoặc mất kết nối giữa lô</td><td>Không đặt <code>published_at</code> cho dòng chưa có confirm; lô sau thử lại; không mất dòng nào</td><td>Kiến trúc 6.4</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › broker không xác nhận</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Sự kiện đổi trạng thái có trạng thái đích nhiều từ, ví dụ <code>Waiting for User</code></td><td>Routing key <code>workflow.status_changed.waiting_for_user</code></td><td>AsyncAPI <code>info.description</code></td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › routing key trạng thái đích</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Ghi <code>event</code> hoặc <code>audit</code> thiếu <code>aggregate</code> hay thiếu một trong <code>type</code>, <code>id</code>, <code>version</code></td><td>Ném lỗi trước khi INSERT, giao dịch rollback; <code>command</code> không bắt buộc <code>aggregate</code></td><td>H2</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › thiếu aggregate</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Dòng <code>command</code>, ví dụ <code>agent.run</code></td><td>Publish bền tới queue cùng tên qua default exchange, không qua <code>sires.events</code></td><td>Database 9.2; AsyncAPI kênh <code>agentRun</code></td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › lệnh tới queue</code></td><td>S01</td></tr>
+<tr><td>EC07</td><td>Handler của consumer ném lỗi</td><td>Rollback, không có dòng inbox, nack để broker giao lại; lần giao lại xử lý như mới; dead-letter theo cấu hình queue (N1)</td><td>Database 9.3; kiến trúc 2 (dead-letter mỗi consumer)</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts › handler lỗi rồi giao lại</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Message không đúng vỏ sự kiện (thiếu trường bắt buộc, gồm <code>aggregate</code>)</td><td>Không chạy handler; nack không requeue để vào dead-letter; log có <code>message_id</code>, không log payload</td><td>H2; NFR-OBS-002</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts › vỏ sự kiện sai</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>Sự kiện có <code>aggregate.version</code> bằng bản đã áp</td><td>Helper replica bỏ qua, không ghi đè</td><td>H1</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts › cùng version</code></td><td>S02</td></tr>
+<tr><td>EC10</td><td>Hai request đồng thời cùng <code>Idempotency-Key</code>, cùng nội dung</td><td>Request sau chờ khóa chính tới khi request đầu commit, rồi nhận cùng status và body; handler chạy một lần</td><td>Kiến trúc 6.4 (F-02); DDL khóa chính (<code>account_id</code>, <code>key</code>)</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › hai request đồng thời</code></td><td>S03</td></tr>
+<tr><td>EC11</td><td>Request đầu lỗi và rollback</td><td>Khóa không được lưu; gửi lại cùng khóa chạy như lần đầu</td><td>Kiến trúc 6.4 (F-02)</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › lần đầu lỗi</code></td><td>S03</td></tr>
+<tr><td>EC12</td><td>Cùng khóa nhưng operation khác</td><td><code>422 idempotency_key_reused</code></td><td>Database 9.3 (khóa chính theo tài khoản, cột <code>operation</code>)</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › khác operation</code></td><td>S03</td></tr>
+<tr><td>EC13</td><td>Khóa đã quá <code>expires_at</code> nhưng job dọn chưa chạy</td><td>Coi như khóa mới</td><td>Kiến trúc 5.8 (giữ 24 giờ)</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › khóa hết hạn</code></td><td>S03</td></tr>
+<tr><td>EC14</td><td>Thiếu header <code>Idempotency-Key</code> ở operation bắt buộc</td><td><code>400</code> problem+json <code>validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code>; không chạy handler</td><td>H4 (từ I1); <code>components/parameters.yaml</code>, <code>components/responses.yaml</code></td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › thiếu header</code></td><td>S03</td></tr>
+<tr><td>EC15</td><td>Header dài dưới 8 hoặc quá 128 ký tự</td><td><code>400 validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code> (bộ lọc của PID-00001)</td><td><code>components/parameters.yaml</code></td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › độ dài khóa</code></td><td>S03</td></tr>
+<tr><td>EC16</td><td>Audit Event thiếu actor, actor agent thiếu tên agent hoặc <code>agentRunId</code>, actor Researcher thiếu <code>accountId</code>, actor System thiếu thành phần</td><td>Ném lỗi trước khi INSERT, giao dịch rollback</td><td>CTX-AUDIT-001 (Business Rules); <code>ActorRef</code></td><td><code>libs/ts/platform/src/audit/audit.spec.ts › actor không hợp lệ</code></td><td>S04</td></tr>
+<tr><td>EC17</td><td><code>summary</code> của Audit Event chứa chuỗi giống key</td><td>Bị che bằng bộ che của PID-00001 trước khi ghi</td><td>AsyncAPI <code>audit.recorded</code>; NFR-OBS-002</td><td><code>libs/ts/platform/src/audit/audit.spec.ts › che key trong summary</code></td><td>S04</td></tr>
+<tr><td>EC18</td><td>Job dọn gặp dòng outbox chưa publish đã cũ</td><td>Không xóa; chỉ xóa dòng có <code>published_at</code> quá 24 giờ; hai pod không chạy cùng một job</td><td>Database 9.2, 12.2</td><td><code>libs/ts/platform/src/jobs/jobs.spec.ts › không xóa dòng chưa publish</code></td><td>S05</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00002</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Phạm vi PID-00002 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

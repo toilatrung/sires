@@ -23,23 +23,28 @@
 <li><a href="#kiem">Kiểm</a></li>
 <li><a href="#xong-khi">Xong khi</a></li></ul></details>
 
-<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sửa ngày 11/11/2026 theo H2, H4; cùng luật với bản TS ở <a href="../../../PID-00003/index.html">PID-00003</a>.</p>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">AC</th><td>PID-00005-AC05</td></tr>
 <tr><th scope="row">Output spec</th><td>O5, O11</td></tr>
 <tr><th scope="row">Bước spec</th><td>B3</td></tr>
-<tr><th scope="row">Edge case</th><td>EC02 (từ <code>specs/scope.html</code>)</td></tr>
-<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC06, EC07 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01. Mã từ chối theo <a href="../../../PID-00003/others/issues.html#i3">PID-00003 I3</a>, PO chốt 11/11/2026: <code>401 invalid_service_token</code>; <code>ServiceTokenClaims.aud</code> nhận mảng (sửa cùng nhánh <code>contracts/dbq-03-04-pid-00002-00003</code>)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Viết guard FastAPI kiểm JWT theo <code>ServiceTokenClaims</code> và <code>x-callers</code></li>
-<li>Viết client phát token cho lời gọi đi</li></ol>
+<ol><li>Viết phần khóa: ký ES256 bằng khóa riêng của service mình, <code>kid</code> = tên service; tra khóa công khai theo <code>kid</code> từ bộ khóa của môi trường nạp khi khởi động; test sinh khóa trong bộ nhớ. Không gọi KMS thật</li>
+<li>Viết guard FastAPI kiểm JWT theo <code>ServiceTokenClaims</code>: chữ ký theo <code>kid</code>; <code>sub</code> = <code>kid</code>, trừ token <code>act.type = agent</code> phải do orchestration ký, <code>sub</code> = <code>agent-core</code>, có <code>agentRunId</code> và <code>agentScope</code>; <code>iss</code>; <code>aud</code> = service này, riêng token <code>act.type = agent</code> có <code>aud</code> là mảng và phải chứa service này (H4), token khác có <code>aud</code> mảng bị từ chối; <code>exp</code> còn hạn và ≤ 5 phút. Lỗi → <code>401 invalid_service_token</code>; <code>sub</code> ngoài <code>x-callers</code> khai theo route → <code>403 caller_not_allowed</code></li>
+<li>Viết client phát token cho lời gọi đi: <code>sub</code> = service mình, <code>aud</code> = service đích, <code>act</code> lấy từ request đang xử lý; job và consumer dùng <code>act.type = system</code>. agent-core gọi service khác trong Agent Run bằng token orchestration đã cấp, không tự phát token agent; thay token khi phản hồi heartbeat trả token mới là việc của worker (<a href="../../../PID-00073/index.html">PID-00073</a>)</li>
+<li>Không làm luật route <code>x-apr</code>: không service Python nào có endpoint <code>x-apr</code></li></ol>
 <h2 id="kiem">Kiểm</h2>
-<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<ul><li><code>pnpm nx run sires-common:test</code> → đạt</li>
 <li><code>libs/py/sires_common/tests/test_service_auth.py › test_guard</code> (PID-00005-AC05)</li>
-<li><code>libs/py/sires_common/tests/test_service_auth.py › test_agent_scope</code> (EC02)</li></ul>
+<li><code>libs/py/sires_common/tests/test_service_auth.py › test_signer_rules</code> (PID-00005-AC05, phần người ký)</li>
+<li><code>libs/py/sires_common/tests/test_service_auth.py › test_agent_scope</code> (EC02)</li>
+<li><code>libs/py/sires_common/tests/test_service_auth.py › test_unknown_kid</code> (EC06)</li>
+<li><code>libs/py/sires_common/tests/test_service_auth.py › test_aud_array</code> (PID-00005-AC05, phần <code>aud</code> mảng; EC07)</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Hai mã từ chối đúng hợp đồng</li></ul>
+<ul><li>Hai mã từ chối đúng hợp đồng; token theo đúng <code>ServiceTokenClaims</code>, ES256 và <code>kid</code> như H2, để bản TS (PID-00003) và bản Python kiểm được token của nhau khi dùng chung bộ khóa. Không chờ PID-00003 để xong slice này</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00005</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Slice PID-00005 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>

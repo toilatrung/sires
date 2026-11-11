@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi, edge case của PID-00003.">
+<title>PID-00003 — Phạm vi | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00003</p><h1>PID-00003 — Phạm vi, ngoài phạm vi, edge case</h1>
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên thì ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Khóa ký ES256 theo service: interface ký và lấy khóa công khai theo <code>kid</code> (= tên service); bản cục bộ cho test và môi trường dev; nạp bộ khóa công khai của một môi trường từ cấu hình hoặc secret khi khởi động</td><td>H1; ADR-20</td><td>S01</td></tr>
+<tr><td>P2</td><td>Phát token theo <code>ServiceTokenClaims</code>: đủ <code>iss</code>, <code>sub</code> = service mình, <code>aud</code> = service nhận, <code>exp</code> ≤ 5 phút, <code>act</code>; tùy chọn <code>accountId</code>, <code>projectId</code>; hàm phát token Agent Run (<code>act.type = agent</code>, <code>sub</code> = <code>agent-core</code>, <code>agentRunId</code>, <code>agentScope</code>, <code>aud</code> là mảng service được đọc, hạn ≤ 5 phút) để orchestration dùng khi start và khi làm mới</td><td>ticket mục 1; H1; H3</td><td>S01</td></tr>
+<tr><td>P3</td><td>Kiểm token: chữ ký theo <code>kid</code>, <code>sub</code> = service ký (trừ token Agent Run), <code>iss</code>, <code>aud</code> = service này (ngoại lệ ở P5), <code>exp</code>, claims đúng schema → lỗi trả <code>401 invalid_service_token</code></td><td>ticket mục 1; H1; <code>internal/responses.yaml</code></td><td>S01</td></tr>
+<tr><td>P4</td><td>Guard NestJS: đọc <code>Authorization: Bearer</code>, kiểm token (P3), so <code>sub</code> với danh sách <code>x-callers</code> khai theo route → <code>403 caller_not_allowed</code>; gắn actor, <code>accountId</code>, <code>projectId</code>, <code>agentRunId</code>, <code>agentScope</code> vào ngữ cảnh request cho helper tenancy của PID-00001</td><td>ticket mục 1; kiến trúc 4 (F-02), 6</td><td>S02</td></tr>
+<tr><td>P5</td><td>Luật actor theo người ký: <code>act.type = agent</code> chỉ nhận khi orchestration ký, <code>sub</code> = <code>agent-core</code>, có <code>agentScope</code> và <code>agentRunId</code>, <code>aud</code> là mảng chứa service này; route đánh dấu <code>x-apr</code> chỉ nhận <code>act.type = researcher</code> do gateway ký, <code>aud</code> là service này hoặc orchestration (token chuyển tiếp nguyên vẹn, F-08); route khác giữ <code>aud</code> chặt; token không phải agent có <code>aud</code> mảng bị từ chối</td><td>H1; H2; H3; spec mục 4.7</td><td>S03</td></tr>
+<tr><td>P6</td><td>Client lời gọi đi: gắn token cho request HTTP tới service khác; <code>act</code>, <code>accountId</code>, <code>projectId</code> lấy từ request đang xử lý, job và consumer không có request đầu vào dùng <code>act.type = system</code> kèm <code>component</code></td><td>ticket mục 1; H1; <code>ActorRef</code></td><td>S04</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Khóa KMS của staging và production; adapter gọi KMS thật để ký</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00035/index.html">PID-00035</a>, <a href="../../PID-00153/index.html">PID-00153</a></td></tr>
+<tr><td>N2</td><td>Sinh danh sách <code>x-callers</code> và cờ <code>x-apr</code> từ hợp đồng: guard nhận danh sách theo route, không đọc spec</td><td>Thuộc luồng contracts; PID này không phụ thuộc contracts</td><td><a href="../../PID-00007/index.html">PID-00007</a>, <a href="../../PID-00008/index.html">PID-00008</a></td></tr>
+<tr><td>N3</td><td>Bản Python của guard và client</td><td>Thư viện riêng</td><td><a href="../../PID-00005/index.html">PID-00005</a> S03</td></tr>
+<tr><td>N4</td><td>Gọi endpoint phê duyệt của service sở hữu đối tượng bằng nguyên token gateway khi Researcher trả lời prompt</td><td>Việc của orchestration; thư viện chỉ nhận token đó ở route <code>x-apr</code> (P5, H2)</td><td><a href="../../PID-00065/index.html">PID-00065</a></td></tr>
+<tr><td>N5</td><td>Chọn danh sách service cho <code>aud</code> của token Agent Run, trả token mới trong phản hồi <code>heartbeatAgentRun</code>; agent-core thay token mới cho các lời gọi sau</td><td>Việc của orchestration và worker agent-core; thư viện chỉ phát và kiểm token <code>aud</code> mảng (P2, P5, H3)</td><td><a href="../../PID-00047/index.html">PID-00047</a>, <a href="../../PID-00073/index.html">PID-00073</a></td></tr>
+<tr><td>N6</td><td>Kiểm <code>agentScope.read</code>, <code>agentScope.taskIds</code> trên dữ liệu trả về</td><td>API đọc của từng service tự kiểm (kiến trúc 10.4); thư viện chỉ đưa <code>agentScope</code> vào ngữ cảnh request</td><td>Luồng service sở hữu dữ liệu</td></tr>
+<tr><td>N7</td><td>Đổi phiên đăng nhập thành token actor Researcher</td><td>Việc của gateway, dùng client của PID này</td><td><a href="../../PID-00039/index.html">PID-00039</a></td></tr>
+<tr><td>N8</td><td>Ghi Audit Event khi agent gọi lệnh phê duyệt bị từ chối</td><td>Service sở hữu đối tượng ghi (cổng PH-03)</td><td><a href="../../PID-00065/index.html">PID-00065</a> và luồng sở hữu đối tượng</td></tr>
+<tr><td>N9</td><td>mTLS, NetworkPolicy giữa service</td><td>Lớp mạng (kiến trúc 10.4)</td><td>Luồng infra</td></tr>
+<tr><td>N10</td><td>File bộ khóa dùng chung cho mọi service khi chạy cục bộ trong <code>infra/local</code></td><td>Thư mục của luồng infra (quy tắc 1.4); thư viện chỉ nạp bộ khóa từ cấu hình</td><td>Đề xuất PID riêng cho luồng infra nếu Dev cần</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Token của Agent Run không có <code>agentScope</code> (hoặc thiếu <code>agentRunId</code>)</td><td>Từ chối: <code>401 invalid_service_token</code></td><td>Spec mục 4.7; H1; <code>ActorRef</code>; H4</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › token agent thiếu agentScope</code></td><td>S03</td></tr>
+<tr><td>EC02</td><td>Endpoint <code>x-apr</code> nhận token <code>act.type = researcher</code> không do gateway ký</td><td>Từ chối: <code>401 invalid_service_token</code></td><td>Spec mục 4.7; H1; H4</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › researcher không do gateway ký ở x-apr</code></td><td>S03</td></tr>
+<tr><td>EC03</td><td><code>kid</code> không có trong bộ khóa công khai</td><td><code>401 invalid_service_token</code></td><td>H1; <code>InvalidServiceToken</code> (sai chữ ký)</td><td><code>libs/ts/platform/src/service-auth/token.spec.ts › kid lạ</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td><code>exp</code> xa hơn 5 phút tính từ lúc nhận</td><td><code>401 invalid_service_token</code>; độ lệch đồng hồ cho phép do Dev chọn, ghi <code>report.md</code></td><td><code>ServiceTokenClaims</code> (hạn ≤ 5 phút)</td><td><code>libs/ts/platform/src/service-auth/token.spec.ts › hạn quá 5 phút</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Thiếu header <code>Authorization</code> hoặc không phải <code>Bearer</code></td><td><code>401 invalid_service_token</code></td><td><code>InvalidServiceToken</code> (thiếu token)</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › thiếu token</code></td><td>S02</td></tr>
+<tr><td>EC06</td><td><code>aud</code> không phải service đang nhận</td><td><code>401 invalid_service_token</code></td><td><code>InvalidServiceToken</code></td><td><code>libs/ts/platform/src/service-auth/token.spec.ts › aud sai</code></td><td>S01</td></tr>
+<tr><td>EC07</td><td>Orchestration chuyển tiếp token của gateway (<code>act.type = researcher</code>, <code>aud</code> = orchestration) tới endpoint của service khác</td><td>Route <code>x-apr</code>: qua. Route không có <code>x-apr</code>: <code>401 invalid_service_token</code> (<code>aud</code> chặt)</td><td>H2; F-08</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › token chuyển tiếp aud orchestration</code></td><td>S03</td></tr>
+<tr><td>EC08</td><td>Token có <code>aud</code> là mảng</td><td>Token <code>act.type = agent</code> do orchestration ký: qua khi mảng chứa service này, không chứa thì <code>401</code>. Token khác có <code>aud</code> mảng: <code>401 invalid_service_token</code></td><td>H3; <code>ServiceTokenClaims</code></td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › aud mảng</code></td><td>S03</td></tr>
+<tr><td>EC11</td><td>Route <code>x-apr</code> nhận token có <code>aud</code> = orchestration nhưng không do gateway ký hoặc không phải <code>act.type = researcher</code></td><td><code>401 invalid_service_token</code>; chỉ token gateway mới được nới <code>aud</code></td><td>H2; H4</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › aud orchestration không do gateway ký</code></td><td>S03</td></tr>
+<tr><td>EC09</td><td>Route nội bộ chưa khai danh sách <code>x-callers</code></td><td>Từ chối mọi lời gọi: <code>403 caller_not_allowed</code>, không mặc định cho qua</td><td>Kiến trúc 10.4: không endpoint nội bộ nào tin mạng nội bộ</td><td><code>libs/ts/platform/src/service-auth/guard.spec.ts › route thiếu x-callers</code></td><td>S02</td></tr>
+<tr><td>EC10</td><td>Job hoặc consumer (không có request đầu vào) gọi service khác</td><td>Client phát token <code>act.type = system</code> kèm <code>component</code>; <code>sub</code> = service mình</td><td><code>ActorRef</code>; kiến trúc 10.4 (Actor)</td><td><code>libs/ts/platform/src/service-auth/client.spec.ts › lời gọi từ job</code></td><td>S04</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00003</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Phạm vi PID-00003 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

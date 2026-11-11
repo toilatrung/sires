@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00003</p><h1>PID-00003 — Thư viện nền TS: service-auth guard và token nội bộ</h1>
-<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: PO duyệt 11/11/2026 · Soạn 05/11/2026 · Làm rõ 11/11/2026 theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -38,30 +38,45 @@
 <tr><th scope="row">Đợt song song</th><td>Đ2</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00001/index.html">PID-00001</a></td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-20">ADR-20</a></td></tr>
-<tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
-<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
+<tr><th scope="row">Làm rõ</th><td>11/11/2026 · spec-clarify-skill</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
 </tbody></table></div>
 
 <h2 id="files">Tài liệu trong hồ sơ</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
 <tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-tokens.html">S01</a></td><td>Khóa ký, phát và kiểm token</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-guard.html">S02</a></td><td>Guard NestJS và x-callers</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-actor-rules.html">S03</a></td><td>Luật actor theo người ký</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S04-client.html">S04</a></td><td>Client cho lời gọi đi</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt khi làm rõ</td></tr>
+<tr><td><code>others/</code></td><td><a href="others/issues.html">issues.html</a></td><td>Phiếu vấn đề I1–I3, đã trả lời (H2–H4)</td></tr>
 </tbody></table></div>
-<p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
 
 <h2 id="s-1">1. Ticket</h2>
-<ul><li><strong>Mục đích:</strong> API nội bộ chỉ nhận JWT ký bằng KMS, hạn ≤ 5 phút, và chỉ cho service trong <code>x-callers</code> gọi. Mọi service dùng chung guard này.</li>
-<li><strong>Gồm:</strong> Guard kiểm JWT theo <code>internal/schemas.yaml#/ServiceTokenClaims</code>; Kiểm <code>x-callers</code>, trả <code>403 caller_not_allowed</code>; Client phát token cho lời gọi đi.</li>
-<li><strong>Không gồm:</strong> Khóa KMS của staging và production (<a href="../PID-00035/index.html">PID-00035</a>, <a href="../PID-00153/index.html">PID-00153</a>).</li></ul>
+<ul><li><strong>Mục đích:</strong> API nội bộ chỉ nhận JWT ký bằng khóa riêng của từng service (ES256, khóa trong KMS), hạn ≤ 5 phút, và chỉ cho service trong <code>x-callers</code> gọi. Mọi service dùng chung guard này.</li>
+<li><strong>Gồm:</strong> Khóa ký ES256 theo service (<code>kid</code> = tên service), phát và kiểm token; Guard kiểm JWT theo <code>internal/schemas.yaml#/ServiceTokenClaims</code>; Kiểm <code>x-callers</code>, trả <code>403 caller_not_allowed</code>; Luật actor theo người ký (token agent do orchestration ký, <code>aud</code> mảng; route <code>x-apr</code> chỉ nhận Researcher do gateway ký, kể cả token chuyển tiếp qua orchestration); Client phát token cho lời gọi đi.</li>
+<li><strong>Không gồm:</strong> Khóa KMS của staging và production (<a href="../PID-00035/index.html">PID-00035</a>, <a href="../PID-00153/index.html">PID-00153</a>); Sinh <code>x-callers</code> từ hợp đồng (<a href="../PID-00007/index.html">PID-00007</a>, <a href="../PID-00008/index.html">PID-00008</a>); Bản Python (<a href="../PID-00005/index.html">PID-00005</a>); Chuyển tiếp token khi trả lời prompt (<a href="../PID-00065/index.html">PID-00065</a>); Chọn <code>aud</code> và làm mới token Agent Run (<a href="../PID-00047/index.html">PID-00047</a>, <a href="../PID-00073/index.html">PID-00073</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00001/index.html">PID-00001</a></li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
-<ul><li>Tệp: <code>libs/ts/platform/src/service-auth/</code> — Guard và client token</li>
-<li>Test: <code>libs/ts/platform/src/service-auth/guard.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li></ul>
+<ul><li>Tệp: <code>libs/ts/platform/src/service-auth/</code> — Khóa ký, phát và kiểm token, guard, client token</li>
+<li>Test: <code>libs/ts/platform/src/service-auth/guard.spec.ts</code> — Test theo Tiêu chí nghiệm thu</li>
+<li>Test: <code>libs/ts/platform/src/service-auth/token.spec.ts</code>, <code>client.spec.ts</code> — Test theo Tiêu chí nghiệm thu (thuộc O1)</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00003-AC01</strong> Given token hết hạn hoặc sai chữ ký, When gọi endpoint nội bộ, Then trả <code>401</code>.</li>
 <li><strong>PID-00003-AC02</strong> Given service không có trong <code>x-callers</code>, When gọi, Then trả <code>403 caller_not_allowed</code>.</li>
-<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-authz-001">NFR-AUTHZ-001</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-transit-001">NFR-TRANSIT-001</a> (AC01).</li></ul>
+<li><strong>PID-00003-AC03</strong> Given token có <code>sub</code> khác service sở hữu khóa ký, When gọi, Then trả <code>401 invalid_service_token</code>. (H1)</li>
+<li><strong>PID-00003-AC04</strong> Given token <code>act.type = agent</code>, When không do orchestration ký hoặc thiếu <code>agentScope</code>, <code>agentRunId</code>, Then trả <code>401 invalid_service_token</code>; do orchestration ký đủ trường thì qua. (H1; H4)</li>
+<li><strong>PID-00003-AC05</strong> Given route <code>x-apr</code>, When token không phải <code>act.type = researcher</code> do gateway ký, Then trả <code>401 invalid_service_token</code>. (H1; H4)</li>
+<li><strong>PID-00003-AC06</strong> Given client phát token cho lời gọi đi, When service nhận kiểm bằng guard, Then qua với <code>sub</code> = service gọi, <code>aud</code> = service nhận, hạn ≤ 5 phút. (H1)</li>
+<li><strong>PID-00003-AC07</strong> Given token Researcher do gateway ký có <code>aud</code> = orchestration, When orchestration chuyển tiếp nguyên token tới route <code>x-apr</code>, Then qua; tới route không có <code>x-apr</code> thì trả <code>401 invalid_service_token</code>. (H2)</li>
+<li><strong>PID-00003-AC08</strong> Given token <code>act.type = agent</code> do orchestration ký có <code>aud</code> là mảng, When service trong mảng kiểm, Then qua; service ngoài mảng thì trả <code>401 invalid_service_token</code>; token Agent Run phát ra có hạn ≤ 5 phút. (H3)</li>
+<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-authz-001">NFR-AUTHZ-001</a> (AC01, phần thư viện: agent không qua được route <code>x-apr</code>); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-transit-001">NFR-TRANSIT-001</a> (AC01 không có hành vi kiểm được trong thư viện; kiểm ở <a href="../PID-00048/index.html">PID-00048</a>, <a href="../PID-00153/index.html">PID-00153</a>).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry.</li>
@@ -70,18 +85,27 @@
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 1 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+<tr><td>Đạt: PO xác nhận 11/11/2026</td><td>Có</td><td>Chờ PID-00001 (Sẵn sàng, chưa xong)</td><td>Không có</td><td>Node theo <code>.nvmrc</code>; test đơn vị, không cần container; Dev kiểm bằng spec mục 2.5</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
-<p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00003</code> khi chuẩn bị giao Dev.</p>
+<h3 id="phien-1">Phiên 11/11/2026 (PO trong phiên)</h3>
+<ul><li>H1: Token nội bộ giữa các service được ký thế nào? → Đ: Mỗi service một cặp khóa ES256, <code>kid</code> = tên service, khóa trong KMS (test: khóa trong bộ nhớ). Service ký lời gọi đi với <code>sub</code> = chính nó; bên nhận kiểm chữ ký bằng khóa công khai theo <code>kid</code> và yêu cầu <code>sub</code> = service ký. Ngoại lệ: token <code>act.type = agent</code> do orchestration phát cho Agent Run (<code>sub</code> = <code>agent-core</code>, bắt buộc <code>agentScope</code>) chỉ nhận khi orchestration ký; <code>act.type = researcher</code> ở endpoint <code>x-apr</code> chỉ nhận khi gateway ký, orchestration chỉ chuyển tiếp nguyên token của gateway trong request trả lời prompt (F-08). Hạn ≤ 5 phút. · Ảnh hưởng: P1–P6, S01–S04, PID-00003-AC03–AC06, EC01–EC10; spec mục 1, 2.3, 4.4, 6</li>
+<li>H2 (từ I1): Endpoint <code>x-apr</code> nhận token gateway do orchestration chuyển tiếp thế nào? → Đ: A — route có <code>x-apr</code> nhận token <code>act.type = researcher</code> do gateway ký (<code>kid</code> = gateway) có <code>aud</code> là service này hoặc orchestration; orchestration chuyển tiếp nguyên token (F-08); route khác giữ <code>aud</code> chặt. PO trong phiên, 11/11/2026. · Ảnh hưởng: P5, N4, S03, PID-00003-AC07, EC07, EC11; mô tả <code>ServiceTokenClaims</code> (PO sửa cùng nhánh); PID-00065</li>
+<li>H3 (từ I2): Token Agent Run cho nhiều service và Agent Run dài hơn 5 phút? → Đ: A — token <code>act.type = agent</code> có <code>aud</code> là mảng các service Agent Run được đọc (<code>ServiceTokenClaims.aud</code> là <code>ServiceName</code> hoặc mảng), bên nhận kiểm “<code>aud</code> chứa service này”; hạn vẫn ≤ 5 phút; orchestration trả <code>serviceToken</code> mới trong phản hồi <code>heartbeatAgentRun</code>, agent-core thay token. PO trong phiên, 11/11/2026. · Ảnh hưởng: P2, P5, N5, S01, S03, PID-00003-AC08, EC08; <code>ServiceTokenClaims</code>, <code>AgentRunWorkOrder</code>, <code>heartbeatAgentRun</code> (PO sửa cùng nhánh); PID-00047, PID-00073</li>
+<li>H4 (từ I3): Token không đạt luật người ký trả mã lỗi nào? → Đ: A — <code>401 invalid_service_token</code> cho mọi trường hợp không đạt luật người ký (<code>sub</code> khác service ký, token agent không do orchestration ký, route <code>x-apr</code> nhận token không phải Researcher do gateway ký). Token không phải agent có <code>aud</code> mảng cũng bị từ chối với mã này (suy ra từ H3, PO không phản đối). PO trong phiên, 11/11/2026. · Ảnh hưởng: S03, PID-00003-AC04, AC05, AC07, AC08, EC01, EC02, EC08, EC11; mô tả <code>internal/responses.yaml#/InvalidServiceToken</code> (PO sửa cùng nhánh)</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Không có.</li></ul>
+<ul><li>Không còn. Kiến trúc 10.4, ghi chú ADR-20, <code>ServiceTokenClaims</code> (kể cả <code>aud</code> mảng và câu về <code>x-apr</code>), mô tả <code>AgentRunWorkOrder.serviceToken</code> và <code>serviceToken</code> tùy chọn trong phản hồi <code>heartbeatAgentRun</code>, mô tả <code>InvalidServiceToken</code> được PO sửa theo H1–H4 trên cùng nhánh <code>contracts/dbq-03-04-pid-00002-00003</code>.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
 <ul><li>Không có.</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
-<p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-tokens.html">S01</a></td><td>Khóa ký, phát và kiểm token</td><td>PID-00003-AC01, PID-00003-AC03, PID-00003-AC08 (phát token)</td><td>PID-00001</td></tr>
+<tr><td><a href="specs/slices/S02-guard.html">S02</a></td><td>Guard NestJS và x-callers</td><td>PID-00003-AC02</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S03-actor-rules.html">S03</a></td><td>Luật actor theo người ký, ngoại lệ <code>aud</code></td><td>PID-00003-AC04, PID-00003-AC05, PID-00003-AC07, PID-00003-AC08, NFR-AUTHZ-001-AC01</td><td>S01, S02</td></tr>
+<tr><td><a href="specs/slices/S04-client.html">S04</a></td><td>Client cho lời gọi đi</td><td>PID-00003-AC06</td><td>S01</td></tr>
+</tbody></table></div>
 
 <h2 id="s-7">7. Điểm dừng</h2>
 <ul><li>Không được sửa: thư mục ngoài luồng <code>platform</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00003.">
+<title>PID-00003 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00003</p><h1>PID-00003 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<p>Bản tóm tắt đã gộp câu trả lời ở mục Làm rõ của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Thư viện xác thực giữa các service NestJS: mỗi service ký token nội bộ bằng khóa riêng cho lời gọi đi, và mọi endpoint nội bộ kiểm token trước khi làm gì khác — chữ ký, người ký, hạn, service nhận, danh sách service được gọi, luật actor. Không có endpoint nội bộ nào tin mạng nội bộ. Người dùng là các luồng service; chưa có người dùng cuối.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Mỗi service một cặp khóa ES256, <code>kid</code> = tên service (<code>ServiceName</code>), khóa riêng trong KMS; test dùng khóa sinh trong bộ nhớ — H1; ADR-20</li>
+<li>Service ký lời gọi đi với <code>sub</code> = chính nó, <code>aud</code> = service nhận; bên nhận kiểm chữ ký bằng khóa công khai theo <code>kid</code> và yêu cầu <code>sub</code> = service ký — H1</li>
+<li>Ngoại lệ duy nhất: token <code>act.type = agent</code> do orchestration phát cho Agent Run có <code>sub</code> = <code>agent-core</code>, bắt buộc <code>agentScope</code> và <code>agentRunId</code>, chỉ nhận khi orchestration ký — H1; <code>ServiceTokenClaims</code>; <code>ActorRef</code></li>
+<li>Endpoint <code>x-apr</code> chỉ nhận <code>act.type = researcher</code> do gateway ký; orchestration chỉ chuyển tiếp nguyên token của gateway trong request trả lời prompt (F-08) — H1; kiến trúc 10.4</li>
+<li>Route <code>x-apr</code> nhận token gateway có <code>aud</code> là service này hoặc orchestration (token chuyển tiếp); route khác giữ <code>aud</code> = service này — H2</li>
+<li>Token Agent Run có <code>aud</code> là mảng các service Agent Run được đọc, bên nhận kiểm “<code>aud</code> chứa service này”; hạn vẫn ≤ 5 phút, orchestration trả token mới trong phản hồi <code>heartbeatAgentRun</code> và agent-core thay token. Token không phải agent có <code>aud</code> mảng bị từ chối — H3; <code>ServiceTokenClaims</code></li>
+<li>Hạn token ≤ 5 phút; thiếu token, sai chữ ký, hết hạn, <code>aud</code> không phải service này → <code>401 invalid_service_token</code> — <code>ServiceTokenClaims</code>; <code>internal/responses.yaml</code></li>
+<li><code>sub</code> không có trong <code>x-callers</code> của operation → <code>403 caller_not_allowed</code>; truy cập entity ngoài phạm vi vẫn trả <code>404</code> như API công khai, không dùng mã này — <code>internal/responses.yaml#/CallerNotAllowed</code></li>
+<li>Token không đạt luật người ký (H1) trả <code>401 invalid_service_token</code> — H4; <code>internal/responses.yaml#/InvalidServiceToken</code></li>
+<li>Thư viện chỉ đổi tương thích ngược — quy tắc 1.4.5</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>libs/ts/platform/src/service-auth/</code> — tạo mới</li>
+<li><code>libs/ts/platform/src/index.ts</code> — có từ scaffold; PID-00001 thêm API nền, PID này chỉ thêm export</li>
+<li><code>docs/api-design/internal/schemas.yaml#/ServiceTokenClaims</code>, <code>internal/responses.yaml</code> — có</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>libs/ts/platform/src/service-auth/</code>: khóa ký, phát và kiểm token, guard, client lời gọi đi; gồm <code>token.spec.ts</code>, <code>client.spec.ts</code> → S01, S02, S03, S04</li>
+<li>O2 <code>libs/ts/platform/src/service-auth/guard.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S02, S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><strong>Service ký</strong>: service sở hữu khóa riêng đã ký token, xác định bằng <code>kid</code>.</li>
+<li><strong>Bộ khóa công khai</strong>: ánh xạ <code>kid</code> → khóa công khai của mọi service trong một môi trường, bên nhận dùng để kiểm chữ ký.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00003</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00003 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
