@@ -50,12 +50,12 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Eval dùng provider thật và không được chạm database production (NFR-EVAL-001). Cổng hồi quy chạy trong CI.</li>
-<li><strong>Gồm:</strong> Môi trường eval riêng; Job CI chạy harness khi thay đổi thuộc NFR-EVAL-004.</li>
+<li><strong>Gồm:</strong> Môi trường eval trên Home Lab: namespace và database tách khỏi staging (OQ-109); Job CI chạy harness khi thay đổi thuộc NFR-EVAL-004.</li>
 <li><strong>Không gồm:</strong> Harness (<a href="../PID-00129/index.html">PID-00129</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00035/index.html">PID-00035</a>, <a href="../PID-00009/index.html">PID-00009</a></li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
-<ul><li>Tệp: <code>infra/terraform/envs/eval/</code> — Môi trường eval</li>
+<ul><li>Tệp: <code>infra/homelab/eval/</code> — Môi trường eval trên Home Lab</li>
 <li>Tệp: <code>.github/workflows/eval.yml</code> — Job eval</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
@@ -63,7 +63,7 @@
 <li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-eval-001">NFR-EVAL-001</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-eval-004">NFR-EVAL-004</a> (AC01).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
-<ul><li>PID phải xong trước: <a href="../PID-00035/index.html">PID-00035</a> Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS; <a href="../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache.</li>
+<ul><li>PID phải xong trước: <a href="../PID-00035/index.html">PID-00035</a> Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS; <a href="../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache.</li>
 <li>OQ, AQ, DBQ đang chặn: không có.</li>
 <li>PID chờ PID này: <a href="../PID-00129/index.html">PID-00129</a>.</li></ul>
 

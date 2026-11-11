@@ -20,7 +20,7 @@
 <main id="main-content">
 <p class="eyebrow">Architecture Design · Section 11</p><h1>11. Deployment and Operations</h1>
 <p class="meta">Trạng thái: bản 0.2 — ADR-12, ADR-13 Accepted; topology cập nhật cho nhiều service · Cơ sở: PRD <a href="../../overview/sections/16-non-functional-requirements.html">16</a>; DEC-27, DEC-36, DEC-40; ADR-12, ADR-13</p>
-<div class="note"><p>Cloud do đội phát triển vận hành (DEC-27); nhà cung cấp và vùng dữ liệu chưa chọn (AQ-12). Ở MVP SIRes giữ database riêng và tự vận hành toàn bộ hạ tầng; eTroy One chỉ cung cấp eTroy OIDC (ADR-28). Thiết kế dưới đây chỉ dùng khái niệm có ở mọi nhà cloud lớn (Kubernetes managed, PostgreSQL managed, object storage, KMS, secret manager, load balancer) để quyết định nhà cung cấp không làm đổi kiến trúc.</p></div>
+<div class="note"><p>Cloud do đội phát triển vận hành (DEC-27); nhà cung cấp và vùng dữ liệu chưa chọn (AQ-12). Ở MVP SIRes giữ database riêng và tự vận hành toàn bộ hạ tầng; eTroy One chỉ cung cấp eTroy OIDC (ADR-28). Thiết kế dưới đây chỉ dùng khái niệm có ở mọi nhà cloud lớn (Kubernetes managed, PostgreSQL managed, object storage, KMS, secret manager, load balancer) để quyết định nhà cung cấp không làm đổi kiến trúc. <strong>PO 08/11/2026:</strong> AQ-12 tạm chưa chốt, staging tạm chạy trên Home Lab (tickets OQ-108, OQ-109); topology 11.2 áp dụng cho production.</p></div>
 <details class="local-toc"><summary>Nội dung trong mục</summary><ul>
 <li><a href="#s-11-1">11.1. Môi trường</a></li>
 <li><a href="#s-11-2">11.2. Topology production</a></li>
@@ -37,7 +37,7 @@
 <tbody>
 <tr><td>local</td><td>Phát triển: <code>docker compose</code> (PostgreSQL+pgvector, RabbitMQ, MinIO, sandbox); service đang sửa chạy bằng <code>nx serve</code>/<code>uv run</code>, service khác chạy bằng image đã build</td><td>Fake/recorded gateway; tùy chọn key cá nhân</td><td>FakeOidcProvider</td><td>Seed mẫu</td></tr>
 <tr><td>ci</td><td>Test tự động</td><td>Fake gateway</td><td>FakeOidcProvider</td><td>Testcontainers</td></tr>
-<tr><td>staging</td><td>Tích hợp, demo, kiểm thử chấp nhận</td><td>Thật, key của đội phát triển (DEC-40)</td><td>eTroy OIDC môi trường thử (SPK-02)</td><td>Bộ dữ liệu nghiệm thu DEC-39, dữ liệu mẫu 16.4</td></tr>
+<tr><td>staging</td><td>Tích hợp, demo, kiểm thử chấp nhận. Tạm chạy trên Home Lab cho tới khi AQ-12 có trả lời</td><td>Thật, key của đội phát triển (DEC-40)</td><td>eTroy OIDC môi trường thử (SPK-02)</td><td>Bộ dữ liệu nghiệm thu DEC-39, dữ liệu mẫu 16.4</td></tr>
 <tr><td>eval</td><td>Eval harness (NFR-EVAL-001), tách biệt production</td><td>Thật, key của đội phát triển</td><td>Không cần</td><td>Chỉ bộ dữ liệu nghiệm thu</td></tr>
 <tr><td>production</td><td>Người dùng thật</td><td>Key của người dùng</td><td>eTroy OIDC</td><td>Dữ liệu người dùng</td></tr>
 </tbody></table></div>
@@ -66,7 +66,7 @@
 <ol>
 <li><strong>Mỗi pull request:</strong> <code>nx affected</code> chỉ chạy cho project có thay đổi hoặc phụ thuộc vào thay đổi: lint (ESLint/ruff), type check (<code>tsc --noEmit</code>/mypy), unit test (Vitest/pytest), integration test với Testcontainers, contract test (Schemathesis cho OpenAPI nội bộ của service bị ảnh hưởng, kiểm tra payload theo AsyncAPI); <code>redocly lint</code> nếu sửa spec; quét phụ thuộc và secret; build image của service bị ảnh hưởng. Nx remote cache bỏ qua bước đã có kết quả. Mục tiêu: pull request chạm một service NestJS xong CI dưới 10 phút (đo ở SPK-10).</li>
 <li><strong>Thay đổi thuộc danh sách NFR-EVAL-004</strong> (prompt template, định nghĩa agent, RetrievalConfig, logic Verification, adapter): job eval harness chạy trên môi trường eval, đính báo cáo so với baseline vào pull request; vượt dung sai (OQ-097) thì chặn merge vào nhánh phát hành.</li>
-<li><strong>Merge vào main:</strong> deploy staging tự động các service thay đổi (mỗi service phát hành độc lập), chạy migration của service đó, smoke test E2E (Playwright) trên WF chính.</li>
+<li><strong>Merge vào main:</strong> deploy staging tự động các service thay đổi (mỗi service phát hành độc lập), chạy migration của service đó, smoke test E2E (Playwright) trên WF chính. Staging trên Home Lab (tickets OQ-108): GitHub-hosted runner build và đẩy image, Argo CD trong cụm kéo về, nên runner không cần vào mạng Home Lab.</li>
 <li><strong>Production:</strong> phê duyệt thủ công; rolling update từng service; migration tương thích ngược chạy trước khi đổi code (6.10); hợp đồng nội bộ/sự kiện tương thích ngược để service phát hành lệch thời điểm (quy tắc 3.6.6); rollback bằng image trước.</li>
 <li>Bảo trì có downtime được báo trước trong ứng dụng (NFR-AVAIL-001) qua banner cấu hình.</li>
 </ol>

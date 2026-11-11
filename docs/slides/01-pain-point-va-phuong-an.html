@@ -1,0 +1,409 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Pain point của researcher và phương án multi-agent; vì sao SIRes chọn context engineering thay vì fine-tuning.">
+<title>Pain point và phương án | SIRes</title>
+<link rel="icon" href="../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@400;500;600&display=swap">
+<style>
+:root{--ground:#F6F2EE;--surface:#FCF9F5;--control:#E5DED5;--canvas:#EFEAE3;--line:#DBD3C7;--ink:#1C1B18;--muted:#4D4A44;--brand:#0277DD;--brand-ink:#025FAC;--brand-tint:#EAF4FE;--brand-line:#80B9EE;--warn:#9A3412;--sans:Montserrat,"Segoe UI",Arial,sans-serif;--mono:"JetBrains Mono",Consolas,"Courier New",monospace}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:24px;line-height:1.4;font-variant-numeric:tabular-nums;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3,p,ol,ul,dl,dd,figure{margin:0;padding:0}
+ol,ul{list-style:none}
+a{color:var(--brand-ink)}
+b{font-weight:600}
+.id{font-family:var(--mono);font-size:.84em;font-weight:500;white-space:nowrap}
+.mu{color:var(--muted)}
+
+.deck{position:fixed;inset:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.stage{position:relative;flex:none;width:1600px;height:900px;background:var(--ground);transform:scale(var(--s,1))}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:44px 64px 0;opacity:0;visibility:hidden;transition:opacity .2s cubic-bezier(.25,.1,.25,1),visibility 0s linear .2s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .2s cubic-bezier(.25,.1,.25,1)}
+.stage.still .slide{transition:none}
+h2{font-size:44px;font-weight:600;line-height:1.2;letter-spacing:-.01em;max-width:1440px;text-wrap:balance}
+.body{flex:1;min-height:0;margin-top:26px;display:flex;flex-direction:column;gap:22px;padding-bottom:20px}
+.grow{flex:1;min-height:0}
+.foot{flex:none;height:62px;display:flex;align-items:center;justify-content:space-between;gap:40px;border-top:1px solid var(--line);font-size:17px;line-height:1.3;color:var(--muted)}
+.src{max-width:1340px}
+.pg{flex:none;font-weight:500}
+
+.cover{padding:68px 96px 56px;justify-content:space-between}
+.cover .logo svg{display:block;height:92px;width:auto}
+.cover h1{font-size:72px;font-weight:600;line-height:1.14;letter-spacing:-.015em;max-width:1300px}
+.cover .sub{margin-top:26px;font-size:32px;line-height:1.35;color:var(--muted);max-width:1200px;text-wrap:balance}
+.cover .meta{display:flex;flex-wrap:wrap;gap:12px 48px;padding-top:22px;border-top:1px solid var(--line);font-size:22px;color:var(--muted)}
+.cover .meta .end{margin-left:auto}
+
+.two{display:grid;grid-template-columns:var(--a,1fr) var(--b,1fr);gap:var(--g,48px);min-height:0}
+.lead{font-size:30px;font-weight:500;line-height:1.36;max-width:1380px}
+.strip{padding:18px 26px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:25px;line-height:1.36}
+
+.rs{display:flex;flex-direction:column;gap:18px}
+.rs li{display:grid;grid-template-columns:46px 1fr;font-size:24px;line-height:1.34}
+.rs .k{font-weight:600;color:var(--brand-ink)}
+.rs span.t{display:block;color:var(--muted)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);flex:1;min-height:0;align-items:center}
+.stat{padding:0 44px;border-left:1px solid var(--line)}
+.stat:first-child{padding-left:0;border-left:0}
+.num{font-size:136px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.stat.hot .num{color:var(--brand-ink)}
+.lab{margin-top:20px;font-size:29px;font-weight:500;line-height:1.28}
+.cmp{margin-top:12px;font-size:22px;line-height:1.34;color:var(--muted)}
+
+.tb{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:2px 26px}
+table{width:100%;border-collapse:collapse;font-size:23px;line-height:1.32}
+th{padding:11px 22px 10px 0;font-size:19px;font-weight:600;color:var(--muted);text-align:left;vertical-align:bottom}
+td{padding:13px 22px 13px 0;border-top:1px solid var(--line);vertical-align:top}
+th:last-child,td:last-child{padding-right:0}
+td b{display:block}
+td .id.bk{display:block;margin:2px 0;color:var(--brand-ink)}
+.tb.fill{flex:1;min-height:0}
+.tb.fill table{height:100%}
+.tb.fill td{vertical-align:middle}
+.t-sm table{font-size:21px;line-height:1.28}
+.t-sm td{padding:9px 20px 9px 0}
+.t-md table{font-size:24px}
+.t-lg table{font-size:26px;line-height:1.3}
+.t-lg th,.t-md th{font-size:20px}
+td.we{color:var(--muted)}
+td.us{font-weight:500}
+
+.cards{display:grid;gap:20px}
+.c2{grid-template-columns:repeat(2,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.card{display:flex;flex-direction:column;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px 28px}
+.card.ok{border:1.5px solid var(--ink)}
+.card.dr{background:var(--ground);border:1.5px dashed var(--muted)}
+.card h3{font-size:30px;font-weight:600;line-height:1.22}
+.card p{margin-top:12px;font-size:25px;line-height:1.36}
+.card p.c{margin-top:auto;padding-top:12px;font-size:19px;color:var(--brand-ink);font-family:var(--mono);font-weight:500}
+.card ul.b{margin-top:14px;display:flex;flex-direction:column;gap:14px;font-size:24px;line-height:1.32}
+.card ul.b li{padding-left:20px;position:relative}
+.card ul.b li::before{content:"";position:absolute;left:0;top:.55em;width:8px;height:2px;background:var(--muted)}
+
+.chip{display:inline-block;margin-top:12px;padding:3px 12px;border:1.5px solid var(--ink);border-radius:4px;font-size:19px;font-weight:500}
+.chip.dr{border:1.5px dashed var(--muted);color:var(--muted)}
+
+.tl{margin-top:20px;display:flex;flex-direction:column;gap:18px}
+.tl div{display:grid;grid-template-columns:150px 1fr;gap:12px;font-size:24px;line-height:1.32}
+.tl dt{font-weight:600}
+
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}
+.st{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+.st:not(:last-child)::after{content:"";position:absolute;right:-24px;top:42px;width:18px;height:2px;background:var(--muted)}
+.st:not(:last-child)::before{content:"";position:absolute;right:-25px;top:37px;border-left:9px solid var(--muted);border-top:6px solid transparent;border-bottom:6px solid transparent}
+.st h3{font-size:38px;font-weight:600;line-height:1.1}
+.st .d0{margin-top:10px;font-size:24px;line-height:1.3;color:var(--muted);min-height:64px}
+.st ul{margin-top:16px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:18px;font-size:24px;line-height:1.3}
+
+.rail{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 32px}
+.step{position:relative;display:flex;align-items:center;gap:16px;min-height:128px;padding:14px 22px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:26px;line-height:1.24;font-weight:500}
+.step .n{flex:none;font-size:26px;font-weight:600;color:var(--muted)}
+.step.nd{background:var(--brand-tint);border:1.5px solid var(--brand-line);color:var(--brand-ink)}
+.step.nd .n{color:var(--brand-ink)}
+.step:not(:nth-child(4n))::after{content:"";position:absolute;right:-27px;top:50%;width:18px;height:2px;background:var(--muted)}
+.step:not(:nth-child(4n))::before{content:"";position:absolute;right:-28px;top:calc(50% - 5px);border-left:8px solid var(--muted);border-top:6px solid transparent;border-bottom:6px solid transparent}
+
+.lg{display:flex;flex-wrap:wrap;align-items:center;gap:10px 36px;font-size:19px;color:var(--muted)}
+.lg span{display:inline-flex;align-items:center;gap:10px}
+.lg i{display:inline-block;width:36px;height:20px;border-radius:4px;background:var(--surface);border:1.5px solid var(--muted)}
+.lg i.dr{background:var(--ground);border-style:dashed}
+.lg i.nd{background:var(--brand-tint);border-color:var(--brand-line)}
+.lg i.ok{border-color:var(--ink)}
+
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+.mini h3{font-size:26px;font-weight:600}
+.mini p{margin-top:4px;font-size:24px;line-height:1.32;color:var(--muted)}
+
+.def{display:flex;flex-direction:column;gap:30px}
+.def h3{font-size:24px;font-weight:600;color:var(--muted)}
+.def p{margin-top:3px;font-size:var(--fs,28px);line-height:1.32}
+.def p.cap{font-size:20px;color:var(--muted)}
+
+.code{padding:24px 26px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.code .ln{display:grid;grid-template-columns:1fr 128px;gap:18px;align-items:baseline;padding:18px 0;border-top:1px solid var(--line)}
+.code .ln:first-of-type{border-top:0}
+.code .ln code{font-family:var(--mono);font-size:23px;line-height:1.36}
+.code .ln span{font-size:19px;font-weight:600;color:var(--brand-ink);text-align:right}
+
+.win{border:1.5px solid var(--ink);border-radius:8px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:10px}
+.win .r{display:grid;grid-template-columns:276px 1fr;gap:18px;align-items:center;padding:16px 20px;border:1px solid var(--line);border-radius:6px;font-size:23px;line-height:1.28}
+.win .r b{font-size:24px}
+.win .r.p{background:var(--brand-tint);border:1.5px solid var(--brand-line)}
+.win .r span{color:var(--muted)}
+.cap{font-size:19px;line-height:1.3;color:var(--muted)}
+
+.d{display:block;width:100%;height:auto;overflow:visible}
+.d text{font-family:var(--sans);font-size:20px;fill:var(--ink)}
+.d .t{font-weight:600}
+.d .big{font-size:26px;font-weight:600}
+.d .t2{font-size:22px;font-weight:600}
+.d .j{font-size:24px;font-weight:600}
+.d .j.bl{fill:var(--brand-ink)}
+.d .s{font-size:17px;fill:var(--muted)}
+.d .s2{font-size:18px;fill:var(--muted)}
+.d .id{font-family:var(--mono);font-size:17px;font-weight:500;fill:var(--brand-ink)}
+.d .n{font-family:var(--mono);font-size:16px;fill:var(--muted)}
+.d .l{font-size:17px;fill:var(--muted);paint-order:stroke;stroke:var(--ground);stroke-width:7px;stroke-linejoin:round}
+.d .bl{fill:var(--brand-ink)}
+.d .b{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.d .ok{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.d .dr{fill:var(--ground);stroke:var(--muted);stroke-width:1.5;stroke-dasharray:7 5}
+.d .nd{fill:var(--brand-tint);stroke:var(--brand-line);stroke-width:1.5}
+.d .fr{fill:none;stroke:var(--line);stroke-width:1.5}
+.d .sv{fill:var(--canvas);stroke:var(--line);stroke-width:1}
+.d .w{fill:none;stroke:var(--muted);stroke-width:2}
+.d .dw{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5}
+.d .ln0{stroke:var(--line);stroke-width:1}
+.d .ic circle{fill:none;stroke:var(--brand-ink);stroke-width:2}
+.d .ic path{fill:none;stroke:var(--brand-ink);stroke-width:2;stroke-linecap:round}
+.d .ic .dot{fill:var(--brand-ink);stroke:none}
+
+.bar{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--brand);transform-origin:left;transform:scaleX(var(--p,0));transition:transform .2s cubic-bezier(.25,.1,.25,1)}
+.stage.still .bar{transition:none}
+.ctl{position:fixed;right:20px;bottom:20px;display:flex;align-items:center;gap:6px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(28,27,24,.10);opacity:0;transition:opacity .2s cubic-bezier(.25,.1,.25,1)}
+.ctl.show,.ctl:focus-within{opacity:1}
+.ctl button{display:grid;place-items:center;width:40px;height:40px;padding:0;background:none;border:0;border-radius:6px;color:var(--ink);cursor:pointer}
+.ctl button:hover{background:var(--control)}
+.ctl button:active{transform:scale(.97)}
+.ctl button:focus-visible{outline:2px solid var(--brand-line);outline-offset:1px}
+.ctl svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ctl output{min-width:64px;text-align:center;font-size:15px;font-weight:500}
+
+@media (prefers-reduced-motion:reduce){.bar,.ctl button{transition:none}.ctl button:active{transform:none}}
+@page{size:1600px 900px;margin:0}
+@media print{
+  html,body{height:auto;background:none}
+  .deck{position:static;display:block;overflow:visible}
+  .stage{width:1600px;height:auto;transform:none;background:none}
+  .slide{position:relative;inset:auto;width:1600px;height:900px;opacity:1;visibility:visible;background:var(--ground);break-after:page}
+  .slide:last-of-type{break-after:auto}
+  .bar,.ctl{display:none}
+}
+
+.lad{display:flex;gap:8px;font-size:20px;font-weight:600;line-height:1.2}
+.lad li{padding:6px 16px;border:1.5px dashed var(--muted);border-radius:4px;color:var(--muted)}
+.lad li.on{border:1.5px solid var(--ink);color:var(--ink);background:var(--surface)}
+.lad li.cur{border:1.5px solid var(--ink);color:#fff;background:var(--ink)}
+.ex{display:flex;flex-direction:column;gap:10px}
+.ex h3{font-size:21px;font-weight:600;color:var(--muted)}
+.ex .inp{padding:16px 20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-family:var(--mono);font-size:23px;line-height:1.42}
+.ex .out{padding:14px 20px;background:#fff;border:1px solid var(--line);border-radius:8px;font-family:'Times New Roman',Times,serif;font-size:31px;line-height:1.3}
+.ex mark{padding:0 3px;background:#CFE6FC;color:inherit}
+.ex .win{padding:10px;gap:6px}
+.ex .win .r{grid-template-columns:248px 1fr;padding:11px 14px;font-size:21px}
+.ex .win .r b{font-size:22px}
+.vd{align-self:flex-start;padding:6px 14px;border:1.5px dashed var(--warn);border-radius:4px;color:var(--warn);font-size:23px;font-weight:500;line-height:1.28}
+.vd.ok{border:1.5px solid var(--ink);color:var(--ink)}
+.axis{display:flex;align-items:center;gap:16px;font-size:20px;font-weight:500;color:var(--muted)}
+.axis i{position:relative;flex:1;height:2px;background:var(--muted)}
+.axis i::before,.axis i::after{content:"";position:absolute;top:-5px;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.axis i::before{left:-1px;border-right:9px solid var(--muted)}
+.axis i::after{right:-1px;border-left:9px solid var(--muted)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
+.hd .chip{margin-top:0;white-space:nowrap}
+.m table{font-size:21px;line-height:1.26}
+.m td{padding:7px 16px 7px 0}
+.v{display:inline-block;padding:1px 10px;border-radius:4px;font-size:19px;font-weight:600}
+.v.y{border:1.5px solid var(--ink)}
+.v.p{border:1.5px dashed var(--muted);color:var(--muted)}
+.v.n{padding-left:0;color:var(--muted);font-weight:500}
+.nt{display:block;margin-top:2px;color:var(--muted);font-size:20px;line-height:1.22}
+</style>
+</head>
+<body>
+<main class="deck"><div class="stage" id="stage">
+<section class="slide cover on" aria-label="Bìa">
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 128" role="img" aria-label="SIRES"><path d="M14 94 L64 80 L114 94 L64 108 Z" fill="#2A5A76"/><path d="M14 94 L64 108 V114 L14 100 Z" fill="#15303F"/><path d="M64 74 L114 60 V100 L64 114 Z" fill="#1E4258"/><path d="M14 60 L64 46 L114 60 L64 74 Z" fill="#2A5A76"/><path d="M14 26 L64 40 V80 L14 66 Z" fill="#15303F"/><path d="M64 40 L114 26 V32 L64 46 Z" fill="#1E4258"/><path d="M14 26 L64 12 L114 26 L64 40 Z" fill="#2A5A76"/><path d="M64 26 L108 27 V40" fill="none" stroke="#E0A43A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="64" cy="26" r="3.5" fill="#E0A43A"/><rect x="104.5" y="38.5" width="7" height="4.5" rx="1.5" fill="#C98B22"/><path d="M108 41 L103.5 55 Q108 57.5 112.5 55 Z" fill="#E0A43A"/><text x="140" y="84" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="58" font-weight="700" letter-spacing="4" fill="#244F68">SIRES</text><rect x="142" y="94" width="40" height="4" rx="2" fill="#E0A43A"/></svg></div>
+  <div>
+    <h1>Pain point của researcher và phương án multi-agent</h1>
+    <p class="sub">Vì sao SIRes chọn multi-agent và context engineering thay vì fine-tuning</p>
+  </div>
+  <div class="meta"><span>SIRes · Nền tảng eTroy</span><span>Product Owner: Trịnh Quang Trung</span><span>11/2026</span><span class="end">Bộ 1/3 · © 2026 eTroy · Non-commercial license</span></div>
+</section>
+
+<section class="slide" aria-label="Bối cảnh">
+  <h2>AI đã vào nghiên cứu, nhưng niềm tin đang giảm</h2>
+  <div class="body">
+    <div class="stats">
+      <div class="stat"><p class="num">84%</p><p class="lab">nhà nghiên cứu đã dùng AI trong năm 2025</p><p class="cmp">Năm 2024: 57%</p></div>
+      <div class="stat hot"><p class="num">64%</p><p class="lab">lo ngại sai sót và hallucination</p><p class="cmp">Năm 2024: 51%</p></div>
+      <div class="stat"><p class="num">100</p><p class="lab">citation giả được xác nhận trong các bài đã nhận ở NeurIPS 2025</p><p class="cmp">Nằm trong hơn 50 bài</p></div>
+    </div>
+    <p class="strip">80% dùng công cụ phổ thông như ChatGPT, chỉ 25% dùng AI research assistant: researcher đang tự ghép nhiều công cụ rời nhau.</p>
+  </div>
+  <div class="foot"><p class="src">Nguồn: <a href="https://newsroom.wiley.com/press-releases/press-release-details/2025/AI-Adoption-Jumps-to-84-Among-Researchers-as-Expectations-Undergo-Significant-Reality-Check/default.aspx">Wiley ExplanAItions 2025</a> (2.430 nhà nghiên cứu, khảo sát 08/2025). <a href="https://gptzero.me/news/neurips/">GPTZero, 01/2026</a> (quét 4.841/5.290 bài; đơn vị này bán công cụ kiểm tra citation).</p><span class="pg">2 / 7</span></div>
+</section>
+
+<section class="slide" aria-label="Pain point">
+  <h2>Năm pain point, và năng lực mà chatbot còn thiếu</h2>
+  <div class="body">
+    <div class="tb fill t-lg">
+      <table>
+        <colgroup><col style="width:27%"><col style="width:39%"><col style="width:34%"></colgroup>
+        <thead><tr><th>Pain point</th><th>Điều xảy ra với researcher</th><th>Năng lực còn thiếu</th></tr></thead>
+        <tbody>
+          <tr><td><span class="id bk">PRB-01</span><b>Công cụ phân mảnh</b></td><td class="we">Tìm kiếm, quản lý tài liệu, ghi chú, chatbot, LaTeX tách rời; ngữ cảnh phải chép tay</td><td class="us">Một workspace nối project, nguồn, evidence, bản thảo</td></tr>
+          <tr><td><span class="id bk">PRB-02</span><b>Mất ngữ cảnh giữa các phiên</b></td><td class="we">Đề tài kéo dài nhiều tuần, chat quên quyết định và tiến độ</td><td class="us">Bộ nhớ bền vững, checkpoint, khôi phục</td></tr>
+          <tr><td><span class="id bk">PRB-03</span><b>Claim, citation không căn cứ</b></td><td class="we">Citation không tồn tại làm ảnh hưởng tính liêm chính khoa học</td><td class="us">Nguồn đã duyệt, claim gắn evidence, kiểm tra citation</td></tr>
+          <tr><td><span class="id bk">PRB-04</span><b>Mất quyền kiểm soát</b></td><td class="we">Công cụ tự động đưa ra quyết định quan trọng thay người làm nghiên cứu</td><td class="us">Điểm duyệt bắt buộc, người dùng chọn từng Task</td></tr>
+          <tr><td><span class="id bk">PRB-05</span><b>Kết quả cũ mất hiệu lực</b></td><td class="we">Đổi phương pháp hay tài liệu, phần đã làm không còn đúng mà không ai biết</td><td class="us">Dependency graph, readiness check, phân tích ảnh hưởng</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Nguồn: PRD SIRes v1.0, mục 1.2. Đây là nhận định sản phẩm đã được PO duyệt, không phải kết quả khảo sát người dùng.</p><span class="pg">3 / 7</span></div>
+</section>
+
+<section class="slide" aria-label="Phương án multi-agent">
+  <h2>Phương án: nhiều agent chuyên trách, dùng chung context có kiểm soát</h2>
+  <div class="body">
+    <div class="two grow" style="--a:1.14fr;--b:1fr;--g:56px">
+      <ol class="rs">
+        <li><span class="k">1</span><div><b>Mỗi việc cần đầu vào và công cụ riêng</b><span class="t">Tìm tài liệu, truy xuất, viết, kiểm chứng không dùng chung một bộ công cụ.</span></div></li>
+        <li><span class="k">2</span><div><b>Phân quyền theo vai</b><span class="t">System chặn được hành động ngoài vai, kể cả khi model yêu cầu.</span></div></li>
+        <li><span class="k">3</span><div><b>Tách bên viết và bên kiểm</b><span class="t">Verification không sửa nội dung nó đang kiểm chứng.</span></div></li>
+        <li><span class="k">4</span><div><b>Nhiều góc nhìn độc lập</b><span class="t">Với vấn đề cần phán đoán, một agent dễ bỏ sót phương án hoặc rủi ro.</span></div></li>
+        <li><span class="k">5</span><div><b>Mỗi vai một model phù hợp</b><span class="t">Gán provider theo agent; phần độc lập chạy song song.</span></div></li>
+      </ol>
+      <div>
+        <figure><svg class="d" viewBox="0 0 640 534" role="img" aria-label="Researcher làm việc với Orchestrator; Orchestrator giao bước cho các agent chuyên trách; các agent nhận context theo phạm vi từ System và trả đề xuất có cấu trúc cho System ghi."><defs><marker id="ar-roles" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="#4D4A44"/></marker></defs><rect x="150" y="0" width="340" height="72" rx="8" class="nd"/><text x="320" y="31.5" text-anchor="middle" class="t bl">Researcher</text><text x="320" y="54.2" text-anchor="middle" class="s">duyệt, chọn, trả lời prompt</text><g class="ic" transform="translate(178,36)"><circle r="9"/><path d="M0-4.5v5"/><circle class="dot" cy="5" r="1.3"/></g><polyline points="320,72 320,130" class="w" marker-end="url(#ar-roles)" marker-start="url(#ar-roles)"/><text x="334" y="107" text-anchor="start" class="l">yêu cầu, phê duyệt</text><rect x="150" y="130" width="340" height="72" rx="8" class="ok"/><text x="320" y="161.5" text-anchor="middle" class="t">Orchestrator</text><text x="320" y="184.2" text-anchor="middle" class="s">điểm vào duy nhất từ chat</text><polyline points="320,202 320,236" class="w"/><polyline points="74,236 566,236" class="w"/><polyline points="74,236 74,272" class="w" marker-end="url(#ar-roles)"/><rect x="0" y="272" width="148" height="64" rx="8" class="dr"/><text x="74" y="310.8" text-anchor="middle" class="t">Evidence</text><polyline points="238,236 238,272" class="w" marker-end="url(#ar-roles)"/><rect x="164" y="272" width="148" height="64" rx="8" class="dr"/><text x="238" y="310.8" text-anchor="middle" class="t">Synthesis</text><polyline points="402,236 402,272" class="w" marker-end="url(#ar-roles)"/><rect x="328" y="272" width="148" height="64" rx="8" class="dr"/><text x="402" y="310.8" text-anchor="middle" class="t">Writing</text><polyline points="566,236 566,272" class="w" marker-end="url(#ar-roles)"/><rect x="492" y="272" width="148" height="64" rx="8" class="dr"/><text x="566" y="310.8" text-anchor="middle" class="t">Verification</text><text x="334" y="228" text-anchor="start" class="l">giao bước</text><text x="320" y="362" text-anchor="middle" class="s">và 4 agent khác: Discovery, Reference Processing, Analysis, Diagram</text><polyline points="210,378 210,436" class="w" marker-end="url(#ar-roles)" marker-start="url(#ar-roles)"/><text x="198" y="413" text-anchor="end" class="l">context theo phạm vi</text><text x="442" y="413" text-anchor="start" class="l">đề xuất có cấu trúc</text><polyline points="430,378 430,436" class="w" marker-end="url(#ar-roles)"/><rect x="0" y="436" width="640" height="96" rx="8" class="ok"/><text x="320" y="478.5" text-anchor="middle" class="t">System và Shared Context Store</text><text x="320" y="502.7" text-anchor="middle" class="s">kiểm tra quyền, ghi trạng thái, checkpoint, audit</text></svg></figure>
+        <div class="lg" style="margin-top:14px"><span><i class="nd"></i>Cần người quyết định</span><span><i class="dr"></i>Đề xuất</span><span><i class="ok"></i>Đã chốt</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Nguồn: PRD 2.1 (SCOPE-13, SCOPE-14), 8.2, 8.7, AGENT-SCOPE-001; Architecture 1.2 (AD-04), F-10.</p><span class="pg">4 / 7</span></div>
+</section>
+
+<section class="slide" aria-label="Vì sao không fine-tuning">
+  <h2>Vì sao không fine-tuning: yêu cầu của SIRes không học trước được</h2>
+  <div class="body">
+    <div class="tb fill t-md">
+      <table>
+        <colgroup><col style="width:39%"><col style="width:29%"><col style="width:32%"></colgroup>
+        <thead><tr><th>Yêu cầu của SIRes</th><th>Nếu fine-tuning</th><th>Với context engineering</th></tr></thead>
+        <tbody>
+          <tr><td>Tri thức riêng từng tài khoản, thu hồi được <span class="id bk">SCOPE-07</span></td><td class="we">Phải huấn luyện lại, không gỡ được từng fact</td><td class="us">Truy xuất theo reference hiện hành</td></tr>
+          <tr><td>Claim truy vết về nguồn <span class="id bk">KPI-01, KPI-02</span></td><td class="we">Trọng số không chỉ ra nguồn</td><td class="us">Evidence có vị trí, context manifest</td></tr>
+          <tr><td>Cách ly tài khoản và project <span class="id bk">CTX-ISOLATION-001</span></td><td class="we">Model không lọc theo quyền</td><td class="us">Lọc ở tầng System và truy xuất</td></tr>
+          <tr><td>Plan và quyết định qua nhiều phiên <span class="id bk">PRB-02</span></td><td class="we">Không học trước được</td><td class="us">Shared Context Store, checkpoint</td></tr>
+          <tr><td>Ba provider, người dùng tự cấp key <span class="id bk">DEC-10, DEC-23</span></td><td class="we">Gắn với một model cụ thể</td><td class="us">Đổi model theo từng agent</td></tr>
+          <tr><td>Đa ngành, eval không đụng dữ liệu người dùng <span class="id bk">OQ-002, NFR-EVAL-001</span></td><td class="we">Thiếu bộ dữ liệu huấn luyện đại diện</td><td class="us">Prompt và retrieval có phiên bản, kiểm bằng eval harness</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Cột yêu cầu theo PRD SIRes v1.0. Lập luận so sánh do đội dự án tổng hợp từ các yêu cầu trên. Rủi ro và rào cản khi triển khai: xem Bộ 3, trang 4, 5.</p><span class="pg">5 / 7</span></div>
+</section>
+
+<section class="slide" aria-label="Context engineering trong SIRes">
+  <h2>SIRes làm context engineering bằng bốn việc</h2>
+  <div class="body">
+    <div class="pipe grow">
+      <div class="st"><h3>Write</h3><p class="d0">Lưu thông tin ngoài cửa sổ context</p><ul><li>Shared Context Store: quyết định, Plan, claim</li><li>Deliberation Board chỉ ghi thêm</li><li>Checkpoint sau mỗi bước</li></ul></div>
+      <div class="st"><h3>Select</h3><p class="d0">Chỉ kéo vào phần liên quan</p><ul><li>RAG trên Trusted Reference đã chọn</li><li>Handoff bằng tham chiếu entity</li><li>Đầu vào chính thức chỉ là bản Accepted</li></ul></div>
+      <div class="st"><h3>Compress</h3><p class="d0">Giữ trong giới hạn token</p><ul><li>7 lớp ưu tiên, lớp 1–3 không cắt</li><li>Tóm tắt cuốn chiếu và 20 tin gần nhất</li><li>Phần bị cắt ghi vào manifest</li></ul></div>
+      <div class="st"><h3>Isolate</h3><p class="d0">Mỗi phần một phạm vi riêng</p><ul><li>Phạm vi đọc theo từng agent</li><li>Cách ly tài khoản, project ở tầng System</li><li>Context Snapshot cho mỗi phiên thảo luận</li></ul></div>
+    </div>
+    <p class="strip">Mỗi Agent Run lưu context manifest: biết chính xác agent đã thấy entity nào, ở phiên bản nào.</p>
+  </div>
+  <div class="foot"><p class="src">Phân loại: <a href="https://www.langchain.com/blog/context-engineering-for-agents">LangChain, 07/2025</a>. Cơ chế: PRD 14.1–14.5, 14.9; Architecture 5.10, 5.13.</p><span class="pg">6 / 7</span></div>
+</section>
+
+<section class="slide" aria-label="Cái giá của multi-agent">
+  <h2>Cái giá của multi-agent và cách xử lý</h2>
+  <div class="body">
+    <div class="tb fill t-md">
+      <table>
+        <colgroup><col style="width:14%"><col style="width:35%"><col style="width:51%"></colgroup>
+        <thead><tr><th>Nhóm</th><th>Phát sinh</th><th>Cách xử lý</th></tr></thead>
+        <tbody>
+          <tr><td><b>Phối hợp</b></td><td class="we">Chuyển giao qua chat mất dữ liệu; lập bước sai hoặc lặp vô hạn; bước song song tranh ghi</td><td>Orchestrator là điểm vào duy nhất từ chat; handoff envelope tham chiếu entity; <span class="id">write_set</span> không giao nhau mới chạy song song; trần 30 bước</td></tr>
+          <tr><td><b>Chất lượng</b></td><td class="we">Agent tự kiểm bài của mình; các bên bám theo nhau tạo đồng thuận giả</td><td>Verification tách riêng; Deliberation ẩn lập trường Vòng 1 ở API; bản tổng hợp không được bỏ sót bất đồng</td></tr>
+          <tr><td><b>Độ bền</b></td><td class="we">Workflow dài bị ngắt; bấm trùng, message giao lại; kết quả đến muộn</td><td>Checkpoint sau mỗi bước; heartbeat 30 s, phát hiện trong 2 phút; Recovery decision do người chọn; idempotency, loại kết quả lỗi thời</td></tr>
+          <tr><td><b>Chi phí</b></td><td class="we">Nhiều Agent Run chạy trên API key của người dùng</td><td>Giới hạn vòng thảo luận và số lần thử lại; usage theo phiên; prompt caching. Chi phí thực tế chưa đo (<span class="id">SPK-11</span> chưa chạy)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Nguồn: PRD 8.3, 8.5, 8.7, 14.6, 14.7; Architecture 5.4–5.9, 5.12, 12.2.</p><span class="pg">7 / 7</span></div>
+</section>
+<div class="bar" aria-hidden="true"></div>
+</div></main>
+<nav class="ctl" id="ctl" aria-label="Điều khiển trình chiếu">
+<button id="prev" type="button" aria-label="Trang trước"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+<output id="out"></output>
+<button id="next" type="button" aria-label="Trang sau"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+<button id="full" type="button" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</nav>
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var slides=[].slice.call(stage.querySelectorAll('.slide'));
+  var ctl=document.getElementById('ctl');
+  var out=document.getElementById('out');
+  var i=0,timer;
+  function fit(){stage.style.setProperty('--s',Math.min(window.innerWidth/1600,window.innerHeight/900));}
+  function fromHash(){var n=parseInt(location.hash.slice(1),10);return n>=1&&n<=slides.length?n-1:0;}
+  function go(n){
+    n=Math.max(0,Math.min(slides.length-1,n));
+    slides[i].classList.remove('on');slides[i].setAttribute('aria-hidden','true');
+    i=n;
+    slides[i].classList.add('on');slides[i].removeAttribute('aria-hidden');
+    stage.style.setProperty('--p',slides.length>1?i/(slides.length-1):1);
+    out.textContent=(i+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(i+1));}catch(e){}
+  }
+  function show(){ctl.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){ctl.classList.remove('show');},2200);}
+  function full(){
+    if(document.fullscreenElement){document.exitFullscreen();}
+    else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen();}
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var k=e.key,h=true;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Enter'){
+      if((k===' '||k==='Enter')&&e.target.closest&&e.target.closest('button,a'))return;
+      go(i+1);
+    }
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'||k==='Backspace')go(i-1);
+    else if(k==='Home')go(0);
+    else if(k==='End')go(slides.length-1);
+    else if(k==='f'||k==='F')full();
+    else h=false;
+    if(h)e.preventDefault();
+  });
+  document.getElementById('prev').addEventListener('click',function(){go(i-1);});
+  document.getElementById('next').addEventListener('click',function(){go(i+1);});
+  document.getElementById('full').addEventListener('click',full);
+  document.addEventListener('mousemove',show);
+  var x0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;show();},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0===null)return;
+    var d=e.changedTouches[0].clientX-x0;x0=null;
+    if(Math.abs(d)>48)go(i+(d<0?1:-1));
+  },{passive:true});
+  window.addEventListener('resize',fit);
+  window.addEventListener('hashchange',function(){go(fromHash());});
+  fit();
+  stage.classList.add('still');
+  slides.forEach(function(s,n){if(n)s.setAttribute('aria-hidden','true');});
+  go(fromHash());
+  requestAnimationFrame(function(){requestAnimationFrame(function(){stage.classList.remove('still');});});
+})();
+</script>
+</body>
+</html>

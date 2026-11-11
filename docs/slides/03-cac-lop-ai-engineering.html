@@ -1,0 +1,469 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Các lớp AI Engineering: đổi model bằng tự train, fine-tuning, hay thiết kế Prompt, Context, Harness quanh model.">
+<title>Các lớp AI Engineering</title>
+<link rel="icon" href="../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Montserrat:wght@400;500;600&display=swap">
+<style>
+:root{--ground:#F6F2EE;--surface:#FCF9F5;--control:#E5DED5;--canvas:#EFEAE3;--line:#DBD3C7;--ink:#1C1B18;--muted:#4D4A44;--brand:#0277DD;--brand-ink:#025FAC;--brand-tint:#EAF4FE;--brand-line:#80B9EE;--warn:#9A3412;--sans:Montserrat,"Segoe UI",Arial,sans-serif;--mono:"JetBrains Mono",Consolas,"Courier New",monospace}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:24px;line-height:1.4;font-variant-numeric:tabular-nums;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+h1,h2,h3,p,ol,ul,dl,dd,figure{margin:0;padding:0}
+ol,ul{list-style:none}
+a{color:var(--brand-ink)}
+b{font-weight:600}
+.id{font-family:var(--mono);font-size:.84em;font-weight:500;white-space:nowrap}
+.mu{color:var(--muted)}
+
+.deck{position:fixed;inset:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.stage{position:relative;flex:none;width:1600px;height:900px;background:var(--ground);transform:scale(var(--s,1))}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:44px 64px 0;opacity:0;visibility:hidden;transition:opacity .2s cubic-bezier(.25,.1,.25,1),visibility 0s linear .2s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .2s cubic-bezier(.25,.1,.25,1)}
+.stage.still .slide{transition:none}
+h2{font-size:44px;font-weight:600;line-height:1.2;letter-spacing:-.01em;max-width:1440px;text-wrap:balance}
+.body{flex:1;min-height:0;margin-top:26px;display:flex;flex-direction:column;gap:22px;padding-bottom:20px}
+.grow{flex:1;min-height:0}
+.foot{flex:none;height:62px;display:flex;align-items:center;justify-content:space-between;gap:40px;border-top:1px solid var(--line);font-size:17px;line-height:1.3;color:var(--muted)}
+.src{max-width:1340px}
+.pg{flex:none;font-weight:500}
+
+.cover{padding:68px 96px 56px;justify-content:space-between}
+.cover .logo svg{display:block;height:92px;width:auto}
+.cover h1{font-size:72px;font-weight:600;line-height:1.14;letter-spacing:-.015em;max-width:1300px}
+.cover .sub{margin-top:26px;font-size:32px;line-height:1.35;color:var(--muted);max-width:1200px;text-wrap:balance}
+.cover .meta{display:flex;flex-wrap:wrap;gap:12px 48px;padding-top:22px;border-top:1px solid var(--line);font-size:22px;color:var(--muted)}
+.cover .meta .end{margin-left:auto}
+
+.two{display:grid;grid-template-columns:var(--a,1fr) var(--b,1fr);gap:var(--g,48px);min-height:0}
+.lead{font-size:30px;font-weight:500;line-height:1.36;max-width:1380px}
+.strip{padding:18px 26px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:25px;line-height:1.36}
+
+.rs{display:flex;flex-direction:column;gap:18px}
+.rs li{display:grid;grid-template-columns:46px 1fr;font-size:24px;line-height:1.34}
+.rs .k{font-weight:600;color:var(--brand-ink)}
+.rs span.t{display:block;color:var(--muted)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);flex:1;min-height:0;align-items:center}
+.stat{padding:0 44px;border-left:1px solid var(--line)}
+.stat:first-child{padding-left:0;border-left:0}
+.num{font-size:136px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.stat.hot .num{color:var(--brand-ink)}
+.lab{margin-top:20px;font-size:29px;font-weight:500;line-height:1.28}
+.cmp{margin-top:12px;font-size:22px;line-height:1.34;color:var(--muted)}
+
+.tb{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:2px 26px}
+table{width:100%;border-collapse:collapse;font-size:23px;line-height:1.32}
+th{padding:11px 22px 10px 0;font-size:19px;font-weight:600;color:var(--muted);text-align:left;vertical-align:bottom}
+td{padding:13px 22px 13px 0;border-top:1px solid var(--line);vertical-align:top}
+th:last-child,td:last-child{padding-right:0}
+td b{display:block}
+td .id.bk{display:block;margin:2px 0;color:var(--brand-ink)}
+.tb.fill{flex:1;min-height:0}
+.tb.fill table{height:100%}
+.tb.fill td{vertical-align:middle}
+.t-sm table{font-size:21px;line-height:1.28}
+.t-sm td{padding:9px 20px 9px 0}
+.t-md table{font-size:24px}
+.t-lg table{font-size:26px;line-height:1.3}
+.t-lg th,.t-md th{font-size:20px}
+td.we{color:var(--muted)}
+td.us{font-weight:500}
+
+.cards{display:grid;gap:20px}
+.c2{grid-template-columns:repeat(2,1fr)}
+.c3{grid-template-columns:repeat(3,1fr)}
+.card{display:flex;flex-direction:column;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px 28px}
+.card.ok{border:1.5px solid var(--ink)}
+.card.dr{background:var(--ground);border:1.5px dashed var(--muted)}
+.card h3{font-size:30px;font-weight:600;line-height:1.22}
+.card p{margin-top:12px;font-size:25px;line-height:1.36}
+.card p.c{margin-top:auto;padding-top:12px;font-size:19px;color:var(--brand-ink);font-family:var(--mono);font-weight:500}
+.card ul.b{margin-top:14px;display:flex;flex-direction:column;gap:14px;font-size:24px;line-height:1.32}
+.card ul.b li{padding-left:20px;position:relative}
+.card ul.b li::before{content:"";position:absolute;left:0;top:.55em;width:8px;height:2px;background:var(--muted)}
+
+.chip{display:inline-block;margin-top:12px;padding:3px 12px;border:1.5px solid var(--ink);border-radius:4px;font-size:19px;font-weight:500}
+.chip.dr{border:1.5px dashed var(--muted);color:var(--muted)}
+
+.tl{margin-top:20px;display:flex;flex-direction:column;gap:18px}
+.tl div{display:grid;grid-template-columns:150px 1fr;gap:12px;font-size:24px;line-height:1.32}
+.tl dt{font-weight:600}
+
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}
+.st{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+.st:not(:last-child)::after{content:"";position:absolute;right:-24px;top:42px;width:18px;height:2px;background:var(--muted)}
+.st:not(:last-child)::before{content:"";position:absolute;right:-25px;top:37px;border-left:9px solid var(--muted);border-top:6px solid transparent;border-bottom:6px solid transparent}
+.st h3{font-size:38px;font-weight:600;line-height:1.1}
+.st .d0{margin-top:10px;font-size:24px;line-height:1.3;color:var(--muted);min-height:64px}
+.st ul{margin-top:16px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:18px;font-size:24px;line-height:1.3}
+
+.rail{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 32px}
+.step{position:relative;display:flex;align-items:center;gap:16px;min-height:128px;padding:14px 22px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:26px;line-height:1.24;font-weight:500}
+.step .n{flex:none;font-size:26px;font-weight:600;color:var(--muted)}
+.step.nd{background:var(--brand-tint);border:1.5px solid var(--brand-line);color:var(--brand-ink)}
+.step.nd .n{color:var(--brand-ink)}
+.step:not(:nth-child(4n))::after{content:"";position:absolute;right:-27px;top:50%;width:18px;height:2px;background:var(--muted)}
+.step:not(:nth-child(4n))::before{content:"";position:absolute;right:-28px;top:calc(50% - 5px);border-left:8px solid var(--muted);border-top:6px solid transparent;border-bottom:6px solid transparent}
+
+.lg{display:flex;flex-wrap:wrap;align-items:center;gap:10px 36px;font-size:19px;color:var(--muted)}
+.lg span{display:inline-flex;align-items:center;gap:10px}
+.lg i{display:inline-block;width:36px;height:20px;border-radius:4px;background:var(--surface);border:1.5px solid var(--muted)}
+.lg i.dr{background:var(--ground);border-style:dashed}
+.lg i.nd{background:var(--brand-tint);border-color:var(--brand-line)}
+.lg i.ok{border-color:var(--ink)}
+
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+.mini h3{font-size:26px;font-weight:600}
+.mini p{margin-top:4px;font-size:24px;line-height:1.32;color:var(--muted)}
+
+.def{display:flex;flex-direction:column;gap:30px}
+.def h3{font-size:24px;font-weight:600;color:var(--muted)}
+.def p{margin-top:3px;font-size:var(--fs,28px);line-height:1.32}
+.def p.cap{font-size:20px;color:var(--muted)}
+
+.code{padding:24px 26px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.code .ln{display:grid;grid-template-columns:1fr 128px;gap:18px;align-items:baseline;padding:18px 0;border-top:1px solid var(--line)}
+.code .ln:first-of-type{border-top:0}
+.code .ln code{font-family:var(--mono);font-size:23px;line-height:1.36}
+.code .ln span{font-size:19px;font-weight:600;color:var(--brand-ink);text-align:right}
+
+.win{border:1.5px solid var(--ink);border-radius:8px;background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:10px}
+.win .r{display:grid;grid-template-columns:276px 1fr;gap:18px;align-items:center;padding:16px 20px;border:1px solid var(--line);border-radius:6px;font-size:23px;line-height:1.28}
+.win .r b{font-size:24px}
+.win .r.p{background:var(--brand-tint);border:1.5px solid var(--brand-line)}
+.win .r span{color:var(--muted)}
+.cap{font-size:19px;line-height:1.3;color:var(--muted)}
+
+.d{display:block;width:100%;height:auto;overflow:visible}
+.d text{font-family:var(--sans);font-size:20px;fill:var(--ink)}
+.d .t{font-weight:600}
+.d .big{font-size:26px;font-weight:600}
+.d .t2{font-size:22px;font-weight:600}
+.d .j{font-size:24px;font-weight:600}
+.d .j.bl{fill:var(--brand-ink)}
+.d .s{font-size:17px;fill:var(--muted)}
+.d .s2{font-size:18px;fill:var(--muted)}
+.d .id{font-family:var(--mono);font-size:17px;font-weight:500;fill:var(--brand-ink)}
+.d .n{font-family:var(--mono);font-size:16px;fill:var(--muted)}
+.d .l{font-size:17px;fill:var(--muted);paint-order:stroke;stroke:var(--ground);stroke-width:7px;stroke-linejoin:round}
+.d .bl{fill:var(--brand-ink)}
+.d .b{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.d .ok{fill:var(--surface);stroke:var(--ink);stroke-width:1.5}
+.d .dr{fill:var(--ground);stroke:var(--muted);stroke-width:1.5;stroke-dasharray:7 5}
+.d .nd{fill:var(--brand-tint);stroke:var(--brand-line);stroke-width:1.5}
+.d .fr{fill:none;stroke:var(--line);stroke-width:1.5}
+.d .sv{fill:var(--canvas);stroke:var(--line);stroke-width:1}
+.d .w{fill:none;stroke:var(--muted);stroke-width:2}
+.d .dw{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5}
+.d .ln0{stroke:var(--line);stroke-width:1}
+.d .ic circle{fill:none;stroke:var(--brand-ink);stroke-width:2}
+.d .ic path{fill:none;stroke:var(--brand-ink);stroke-width:2;stroke-linecap:round}
+.d .ic .dot{fill:var(--brand-ink);stroke:none}
+
+.bar{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--brand);transform-origin:left;transform:scaleX(var(--p,0));transition:transform .2s cubic-bezier(.25,.1,.25,1)}
+.stage.still .bar{transition:none}
+.ctl{position:fixed;right:20px;bottom:20px;display:flex;align-items:center;gap:6px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(28,27,24,.10);opacity:0;transition:opacity .2s cubic-bezier(.25,.1,.25,1)}
+.ctl.show,.ctl:focus-within{opacity:1}
+.ctl button{display:grid;place-items:center;width:40px;height:40px;padding:0;background:none;border:0;border-radius:6px;color:var(--ink);cursor:pointer}
+.ctl button:hover{background:var(--control)}
+.ctl button:active{transform:scale(.97)}
+.ctl button:focus-visible{outline:2px solid var(--brand-line);outline-offset:1px}
+.ctl svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ctl output{min-width:64px;text-align:center;font-size:15px;font-weight:500}
+
+@media (prefers-reduced-motion:reduce){.bar,.ctl button{transition:none}.ctl button:active{transform:none}}
+@page{size:1600px 900px;margin:0}
+@media print{
+  html,body{height:auto;background:none}
+  .deck{position:static;display:block;overflow:visible}
+  .stage{width:1600px;height:auto;transform:none;background:none}
+  .slide{position:relative;inset:auto;width:1600px;height:900px;opacity:1;visibility:visible;background:var(--ground);break-after:page}
+  .slide:last-of-type{break-after:auto}
+  .bar,.ctl{display:none}
+}
+
+.lad{display:flex;gap:8px;font-size:20px;font-weight:600;line-height:1.2}
+.lad li{padding:6px 16px;border:1.5px dashed var(--muted);border-radius:4px;color:var(--muted)}
+.lad li.on{border:1.5px solid var(--ink);color:var(--ink);background:var(--surface)}
+.lad li.cur{border:1.5px solid var(--ink);color:#fff;background:var(--ink)}
+.ex{display:flex;flex-direction:column;gap:10px}
+.ex h3{font-size:21px;font-weight:600;color:var(--muted)}
+.ex .inp{padding:16px 20px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-family:var(--mono);font-size:23px;line-height:1.42}
+.ex .out{padding:14px 20px;background:#fff;border:1px solid var(--line);border-radius:8px;font-family:'Times New Roman',Times,serif;font-size:31px;line-height:1.3}
+.ex mark{padding:0 3px;background:#CFE6FC;color:inherit}
+.ex .win{padding:10px;gap:6px}
+.ex .win .r{grid-template-columns:248px 1fr;padding:11px 14px;font-size:21px}
+.ex .win .r b{font-size:22px}
+.vd{align-self:flex-start;padding:6px 14px;border:1.5px dashed var(--warn);border-radius:4px;color:var(--warn);font-size:23px;font-weight:500;line-height:1.28}
+.vd.ok{border:1.5px solid var(--ink);color:var(--ink)}
+.axis{display:flex;align-items:center;gap:16px;font-size:20px;font-weight:500;color:var(--muted)}
+.axis i{position:relative;flex:1;height:2px;background:var(--muted)}
+.axis i::before,.axis i::after{content:"";position:absolute;top:-5px;border-top:6px solid transparent;border-bottom:6px solid transparent}
+.axis i::before{left:-1px;border-right:9px solid var(--muted)}
+.axis i::after{right:-1px;border-left:9px solid var(--muted)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
+.hd .chip{margin-top:0;white-space:nowrap}
+.m table{font-size:21px;line-height:1.26}
+.m td{padding:7px 16px 7px 0}
+.v{display:inline-block;padding:1px 10px;border-radius:4px;font-size:19px;font-weight:600}
+.v.y{border:1.5px solid var(--ink)}
+.v.p{border:1.5px dashed var(--muted);color:var(--muted)}
+.v.n{padding-left:0;color:var(--muted);font-weight:500}
+.nt{display:block;margin-top:2px;color:var(--muted);font-size:20px;line-height:1.22}
+</style>
+</head>
+<body>
+<main class="deck"><div class="stage" id="stage">
+<section class="slide cover on" aria-label="Bìa">
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 128" role="img" aria-label="SIRES"><path d="M14 94 L64 80 L114 94 L64 108 Z" fill="#2A5A76"/><path d="M14 94 L64 108 V114 L14 100 Z" fill="#15303F"/><path d="M64 74 L114 60 V100 L64 114 Z" fill="#1E4258"/><path d="M14 60 L64 46 L114 60 L64 74 Z" fill="#2A5A76"/><path d="M14 26 L64 40 V80 L14 66 Z" fill="#15303F"/><path d="M64 40 L114 26 V32 L64 46 Z" fill="#1E4258"/><path d="M14 26 L64 12 L114 26 L64 40 Z" fill="#2A5A76"/><path d="M64 26 L108 27 V40" fill="none" stroke="#E0A43A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="64" cy="26" r="3.5" fill="#E0A43A"/><rect x="104.5" y="38.5" width="7" height="4.5" rx="1.5" fill="#C98B22"/><path d="M108 41 L103.5 55 Q108 57.5 112.5 55 Z" fill="#E0A43A"/><text x="140" y="84" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="58" font-weight="700" letter-spacing="4" fill="#244F68">SIRES</text><rect x="142" y="94" width="40" height="4" rx="2" fill="#E0A43A"/></svg></div>
+  <div>
+    <h1>Các lớp AI Engineering</h1>
+    <p class="sub">Muốn AI làm tốt việc nghiên cứu: đổi model, hay thiết kế hệ thống quanh model</p>
+  </div>
+  <div class="meta"><span>Product Owner: Trịnh Quang Trung</span><span>11/2026</span><span class="end">Bộ 3/3 · © 2026 eTroy · Non-commercial license</span></div>
+</section>
+
+<section class="slide" aria-label="Hai hướng can thiệp">
+  <h2>Muốn AI làm tốt việc chuyên môn: đổi model, hay đổi hệ thống quanh model?</h2>
+  <div class="body">
+    <figure><svg class="d" viewBox="0 0 1472 460" role="img" aria-label="Hai hướng làm AI giỏi việc chuyên môn: đổi chính model bằng tự train hoặc fine-tuning, hoặc giữ model và thiết kế Prompt, Context, Harness quanh nó."><defs><marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="#4D4A44"/></marker></defs><text x="0" y="26" text-anchor="start" class="big">A. Đổi chính model</text><text x="620" y="26" text-anchor="start" class="big">B. Đổi hệ thống quanh model</text><rect x="0" y="62" width="260" height="104" rx="8" class="dr"/><text x="130" y="110.3" text-anchor="middle" class="j">Tự train từ đầu</text><text x="130" y="136.2" text-anchor="middle" class="s2">trang 3</text><rect x="0" y="318" width="260" height="104" rx="8" class="dr"/><text x="130" y="366.3" text-anchor="middle" class="j">Fine-tuning</text><text x="130" y="392.2" text-anchor="middle" class="s2">trang 4, 5</text><rect x="330" y="182" width="170" height="124" rx="8" class="ok"/><text x="415" y="253" text-anchor="middle" class="big">Model</text><polyline points="260,114 415,114 415,182" class="w" marker-end="url(#ar-r)"/><text x="338" y="104" text-anchor="middle" class="l">tạo model mới</text><polyline points="260,370 415,370 415,306" class="w" marker-end="url(#ar-r)"/><text x="338" y="396" text-anchor="middle" class="l">chỉnh trọng số</text><rect x="620" y="44" width="852" height="414" rx="8" class="ok"/><text x="646" y="86" text-anchor="start" class="big">Harness Engineering</text><text x="646" y="113" text-anchor="start" class="s2">vòng chạy, công cụ, kiểm tra, khôi phục · trang 8</text><rect x="650" y="130" width="792" height="300" rx="8" class="b"/><text x="676" y="170" text-anchor="start" class="big">Context Engineering</text><text x="676" y="197" text-anchor="start" class="s2">dữ liệu truy xuất, công cụ, lịch sử, ghi chú · trang 7</text><rect x="680" y="216" width="732" height="190" rx="8" class="nd"/><text x="1046" y="306" text-anchor="middle" class="big bl">Prompt Engineering</text><text x="1046" y="336" text-anchor="middle" class="s2">vai trò, chỉ dẫn, ví dụ, định dạng · trang 6</text><polyline points="650,222 500,222" class="w" marker-end="url(#ar-r)"/><text x="560" y="212" text-anchor="middle" class="l">mỗi lượt gọi</text><polyline points="500,272 650,272" class="w" marker-end="url(#ar-r)"/><text x="560" y="298" text-anchor="middle" class="l">kết quả</text></svg></figure>
+    <div class="mini" style="margin-top:auto">
+      <div><h3>Hướng A: đổi trọng số</h3><p>Tự train hoặc fine-tuning, thay đổi chính model.</p></div>
+      <div><h3>Hướng B: giữ model, thiết kế quanh nó</h3><p>Prompt, Context, Harness. Agent = Model + Harness.</p></div>
+      <div><h3>Ví dụ xuyên suốt</h3><p>Viết một đoạn literature review có citation.</p></div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Cách phân lớp này phổ biến nhưng chưa phải chuẩn; ranh giới khác nhau giữa các tác giả. Nguồn: <a href="https://martinfowler.com/articles/harness-engineering.html">Birgitta Böckeler, 04/2026</a>; <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic, 09/2025</a>.</p><span class="pg">2 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Tự train từ đầu">
+  <h2>Tự train từ đầu: quá đắt, và chưa chắc hết citation giả</h2>
+  <div class="body">
+    <div class="stats">
+      <div class="stat"><p class="num" style="font-size:104px">30–191</p><p class="lab">triệu USD để train một model hàng đầu</p><p class="cmp">Ước tính cho GPT-4 và Gemini Ultra, tùy phương pháp, chưa gồm nhân sự. Chi phí tăng khoảng 2,4 lần mỗi năm.</p></div>
+      <div class="stat"><p class="num" style="font-size:104px">31B</p><p class="lab">bản lớn nhất của Gemma 4, model mở của Google</p><p class="cmp">Trọng số miễn phí theo Apache 2.0, nhưng chạy vẫn tốn GPU. Một đội nhỏ tự train khó vượt mức này.</p></div>
+      <div class="stat"><p class="num" style="font-size:104px">3 ngày</p><p class="lab">là thời gian demo Galactica của Meta tồn tại</p><p class="cmp">Train riêng cho khoa học, 11/2022. Bị chỉ ra tạo bài báo không có thật, có khi gắn tên tác giả thật.</p></div>
+    </div>
+    <p class="strip">Tự train không thực tế với một đội nhỏ, và chuyên biệt cho khoa học cũng không tự xóa được citation giả.</p>
+  </div>
+  <div class="foot"><p class="src">Nguồn: <a href="https://virtualizationreview.com/articles/2024/04/16/ai-index.aspx">Stanford AI Index 2024</a> (78–191 triệu USD, tiền tính toán); <a href="https://arxiv.org/html/2405.21015v2">Cottier et al.</a> (30–40 triệu USD, khấu hao lần train cuối); <a href="https://ai.google.dev/gemma/docs/core">Google Gemma</a>; <a href="https://www.theregister.com/2026/04/02/googles_gemma_4_open_weights/">The Register, 04/2026</a>; <a href="https://www.technologyreview.com/2022/11/18/1063487/meta-large-language-model-ai-only-survived-three-days-gpt-3-science/">MIT Technology Review, 11/2022</a>.</p><span class="pg">3 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Fine-tuning dạy được gì">
+  <h2>Fine-tuning chủ yếu dạy model cách làm, không phải nạp kiến thức</h2>
+  <div class="body">
+    <div class="axis"><span>Ít dữ liệu, huấn luyện chưa đủ</span><i></i><span>Dữ liệu quá hẹp, huấn luyện quá mức</span></div>
+    <div class="cards c3">
+      <div class="card dr"><h3>Underfitting</h3><p>Chưa học được hành vi mục tiêu, kết quả gần như model gốc.</p></div>
+      <div class="card ok"><h3>Vùng có lợi</h3><p>Hẹp, và chỉ biết mình đang ở đó nhờ eval trên dữ liệu mới.</p></div>
+      <div class="card dr"><h3>Overfitting</h3><p>Tốt trên dữ liệu huấn luyện, kém trên đề tài mới.</p></div>
+    </div>
+    <div class="two grow" style="--a:.66fr;--b:1.34fr;--g:20px">
+      <div class="card"><h3>Hợp với</h3><ul class="b" style="font-size:26px;gap:20px"><li>Định dạng đầu ra ổn định</li><li>Rút gọn prompt ở quy mô lớn</li><li>Model nhỏ cho tác vụ hẹp</li></ul></div>
+      <div class="card"><h3>Kể cả chỉnh đúng, vẫn có rủi ro</h3><ul class="b" style="font-size:26px;gap:16px">
+        <li><b>Hallucination:</b> dạy kiến thức mới làm model dễ bịa hơn</li>
+        <li><b>Mất năng lực chung:</b> tune nhiều đợt làm giảm kiến thức chuyên ngành, suy luận, đọc hiểu</li>
+        <li><b>Safety:</b> alignment giảm, kể cả với dữ liệu lành tính</li>
+      </ul></div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Trục trên là sơ đồ khái niệm. Nguồn: <a href="https://arxiv.org/abs/2405.05904">Gekhman et al., EMNLP 2024</a>; <a href="https://arxiv.org/abs/2308.08747">Luo et al., 2023</a> (model 1B–7B); <a href="https://arxiv.org/abs/2310.03693">Qi et al., 2023</a>; <a href="https://developers.openai.com/api/docs/guides/model-optimization">OpenAI Model optimization</a>.</p><span class="pg">4 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Fine-tuning khi triển khai">
+  <h2>Khi triển khai: fine-tuning qua API đang thu hẹp, tự host thì cần phần cứng riêng</h2>
+  <div class="body">
+    <div class="cards c3" style="grid-template-columns:1.3fr 1fr .8fr">
+      <div class="card">
+        <div class="hd"><h3>OpenAI</h3><span class="chip">Đang đóng lại</span></div>
+        <dl class="tl" style="margin-top:14px;gap:12px">
+          <div style="font-size:23px"><dt>07/05/2026</dt><dd>Tổ chức chưa từng fine-tune không tạo được job mới</dd></div>
+          <div style="font-size:23px"><dt>06/01/2027</dt><dd>Khách hiện hữu dừng tạo job mới</dd></div>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="hd"><h3>Google Gemini</h3></div>
+        <p style="font-size:23px;margin-top:14px">Từ 05/2025, Gemini API và AI Studio không còn model hỗ trợ fine-tuning. Vẫn có trên Gemini Enterprise Agent Platform.</p>
+      </div>
+      <div class="card dr">
+        <div class="hd"><h3>Claude</h3><span class="chip dr">Chưa kết luận</span></div>
+        <p style="font-size:23px;margin-top:14px">Chưa xác minh được ở nguồn chính thức.</p>
+      </div>
+    </div>
+    <figure><svg class="d" viewBox="0 0 1472 204" role="img" aria-label="Dùng model qua API thì provider lo phần cứng; fine-tune rồi tự host thì phải tự lo GPU để huấn luyện và phục vụ."><defs><marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="#4D4A44"/></marker></defs><text x="0" y="40.8" text-anchor="start" class="t2">Qua API</text><text x="0" y="67.8" text-anchor="start" class="s2">model của provider</text><rect x="220" y="0" width="150" height="92" rx="8" class="b"/><text x="295" y="53.8" text-anchor="middle" class="t2">Ứng dụng</text><rect x="480" y="0" width="240" height="92" rx="8" class="b"/><text x="600" y="53.8" text-anchor="middle" class="t2">API của provider</text><rect x="830" y="0" width="300" height="92" rx="8" class="b"/><text x="980" y="38.8" text-anchor="middle" class="t2">Model do provider</text><text x="980" y="68.8" text-anchor="middle" class="t2">vận hành</text><polyline points="370,46 480,46" class="w" marker-end="url(#ar-h)"/><text x="425" y="36" text-anchor="middle" class="l">gọi</text><polyline points="720,46 830,46" class="w" marker-end="url(#ar-h)"/><text x="775" y="36" text-anchor="middle" class="l">chạy trên</text><text x="1158" y="40.8" text-anchor="start" class="t2">Provider lo phần cứng</text><text x="1158" y="67.8" text-anchor="start" class="s2">không cần GPU riêng</text><text x="0" y="150.8" text-anchor="start" class="t2">Tự host</text><text x="0" y="177.8" text-anchor="start" class="s2">model đã fine-tune</text><rect x="220" y="110" width="150" height="92" rx="8" class="b"/><text x="295" y="163.8" text-anchor="middle" class="t2">Ứng dụng</text><rect x="480" y="110" width="240" height="92" rx="8" class="b"/><text x="600" y="163.8" text-anchor="middle" class="t2">Endpoint tự dựng</text><rect x="830" y="110" width="300" height="92" rx="8" class="dr"/><text x="980" y="148.8" text-anchor="middle" class="t2">Model fine-tune</text><text x="980" y="178.8" text-anchor="middle" class="t2">trên GPU riêng</text><polyline points="370,156 480,156" class="w" marker-end="url(#ar-h)"/><text x="425" y="146" text-anchor="middle" class="l">gọi</text><polyline points="720,156 830,156" class="w" marker-end="url(#ar-h)"/><text x="775" y="146" text-anchor="middle" class="l">chạy trên</text><text x="1158" y="150.8" text-anchor="start" class="t2">Tự lo phần cứng</text><text x="1158" y="177.8" text-anchor="start" class="s2">GPU để huấn luyện và phục vụ</text></svg></figure>
+    <p class="strip" style="font-size:25px">Gemma làm thử được trên GPU miễn phí của Colab, nên huấn luyện model nhỏ không quá nặng. Phần nặng là phục vụ: GPU phải chạy liên tục và đủ cho tải thật.</p>
+  </div>
+  <div class="foot"><p class="src">Có nền tảng quản lý hộ như <a href="https://together.ai/fine-tuning">Together AI</a>, nên tự host không phải đường duy nhất. Nguồn: <a href="https://developers.openai.com/api/docs/deprecations">OpenAI</a>, <a href="https://aistudio.google.com/docs/model-tuning">Google</a>, <a href="https://huggingface.co/blog/gemma-peft">Hugging Face</a>. Kiểm tra 08/11/2026.</p><span class="pg">5 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Prompt Engineering">
+  <h2>Prompt Engineering: dặn model phải làm gì</h2>
+  <div class="body">
+    <ol class="lad"><li class="cur">Prompt</li><li>Context</li><li>Harness</li></ol>
+    <div class="two grow" style="--a:1fr;--b:1.12fr;--g:56px">
+      <div class="def" style="--fs:28px;gap:32px">
+        <div><h3>Làm gì</h3><p>Viết chỉ dẫn: vai trò, nhiệm vụ, ràng buộc, định dạng đầu ra.</p></div>
+        <div><h3>Giải quyết được</h3><p>Đúng việc, đúng định dạng với tác vụ một lượt. Nên thử đầu tiên, trước các cách tốn kém hơn.</p></div>
+        <div><h3>Vẫn còn thiếu</h3><p>Model không có nguồn để đối chiếu, nên "chỉ dùng nguồn thật" vẫn chỉ là lời dặn.</p></div>
+      </div>
+      <div class="ex">
+        <h3>Model nhận được</h3>
+        <div class="inp">Bạn là trợ lý tổng quan tài liệu. Viết một đoạn về tác động của phản hồi tự động tới kết quả học tập. Chỉ dùng nguồn có thật, mỗi nhận định có citation.</div>
+        <h3>Kết quả</h3>
+        <div class="out">Phản hồi tự động giúp cải thiện kết quả học tập <mark>\cite{smith2021}</mark>.</div>
+        <p class="vd">Citation đến từ trí nhớ của model, chưa biết có thật không</p>
+        <p class="strip" style="margin-top:auto;font-size:23px">Nên quản lý prompt có phiên bản, và đo lại bằng eval mỗi khi đổi.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Ví dụ minh họa, citation trong ví dụ là giả định. Nguồn: <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic, 09/2025</a>; <a href="https://developers.openai.com/api/docs/guides/model-optimization">OpenAI Model optimization</a>.</p><span class="pg">6 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Context Engineering">
+  <h2>Context Engineering: đưa đúng dữ liệu vào mỗi lượt gọi</h2>
+  <div class="body">
+    <ol class="lad"><li class="on">Prompt</li><li class="cur">Context</li><li>Harness</li></ol>
+    <div class="two grow" style="--a:1fr;--b:1.12fr;--g:56px">
+      <div class="def" style="--fs:28px;gap:32px">
+        <div><h3>Làm gì</h3><p>Chọn và duy trì những gì model nhìn thấy: nhỏ nhất, nhưng giàu tín hiệu nhất. Prompt chỉ là một phần.</p></div>
+        <div><h3>Giải quyết được</h3><p>Model viết từ evidence thật thay vì từ trí nhớ; tác vụ dài không mất ngữ cảnh.</p></div>
+        <div><h3>Vẫn còn thiếu</h3><p>Chỉ quyết định model thấy gì. Model vẫn có thể gắn sai evidence, và chưa ai kiểm tra.</p></div>
+      </div>
+      <div class="ex">
+        <h3>Model nhận được</h3>
+        <div class="win">
+          <div class="r p"><b>Chỉ dẫn</b><span>như lớp Prompt</span></div>
+          <div class="r"><b>Evidence [E12]</b><span>đoạn trích từ nguồn đã duyệt</span></div>
+          <div class="r"><b>Nhận định đã duyệt</b><span>từ các bước trước</span></div>
+          <div class="r"><b>Quyết định</b><span>của người nghiên cứu, qua các phiên</span></div>
+        </div>
+        <h3>Kết quả</h3>
+        <div class="out">Phản hồi tự động giúp cải thiện kết quả học tập <mark>[E12]</mark>.</div>
+        <p class="vd">Có căn cứ, nhưng chưa ai kiểm tra E12 có hỗ trợ không</p>
+        <p class="strip" style="margin-top:auto;font-size:23px">Kỹ thuật thường dùng: RAG, compaction, ghi chú ngoài cửa sổ context, sub-agent.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Ví dụ minh họa. Nguồn: <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Anthropic: Effective context engineering for AI agents, 09/2025</a>.</p><span class="pg">7 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Harness Engineering">
+  <h2>Harness Engineering: hệ thống chặn, đo và sửa sai quanh model</h2>
+  <div class="body">
+    <ol class="lad"><li class="on">Prompt</li><li class="on">Context</li><li class="cur">Harness</li></ol>
+    <div class="two grow" style="--a:.88fr;--b:1.22fr;--g:52px">
+      <div class="def" style="--fs:26px;gap:26px">
+        <div><h3>Làm gì</h3><p>Mọi thứ quanh agent, trừ chính model. Guides dẫn hướng trước khi hành động, sensors kiểm tra sau đó.</p></div>
+        <div><h3>Giải quyết được</h3><p>Lỗi bị chặn trước khi đến bản thảo; chạy dài không mất kết quả; người giữ quyền duyệt.</p></div>
+        <div><h3>Vẫn còn thiếu</h3><p>Phải xây và đo. Kiểm tra suy luận chậm và kém ổn định hơn kiểm tra tất định.</p></div>
+      </div>
+      <div class="ex">
+        <h3>Đầu ra của model đi qua</h3>
+        <figure><svg class="d" viewBox="0 0 758 330" role="img" aria-label="Guides dẫn hướng trước khi chạy; đề xuất của agent đi qua cổng citation tất định, agent kiểm chứng, rồi người duyệt; citation không tồn tại thì bị chặn."><defs><marker id="ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 1L9 5L0 9z" fill="#4D4A44"/></marker></defs><rect x="0" y="0" width="758" height="54" rx="6" class="b"/><text x="379" y="34" text-anchor="middle">Guides trước khi chạy: schema đầu ra, phạm vi đọc, công cụ</text><polyline points="85,54 85,86" class="w" marker-end="url(#ar-g)"/><rect x="0" y="86" width="170" height="108" rx="8" class="dr"/><text x="85" y="134.8" text-anchor="middle" class="t">Agent viết</text><text x="85" y="159.2" text-anchor="middle" class="s2">đề xuất sửa</text><rect x="196" y="86" width="170" height="108" rx="8" class="ok"/><text x="281" y="134.8" text-anchor="middle" class="t">Cổng citation</text><text x="281" y="159.2" text-anchor="middle" class="s2">sensor tất định</text><rect x="392" y="86" width="170" height="108" rx="8" class="dr"/><text x="477" y="121.8" text-anchor="middle" class="t">Agent</text><text x="477" y="147.8" text-anchor="middle" class="t">kiểm chứng</text><text x="477" y="172.2" text-anchor="middle" class="s2">sensor suy luận</text><rect x="588" y="86" width="170" height="108" rx="8" class="nd"/><text x="673" y="134.8" text-anchor="middle" class="t bl">Người duyệt</text><text x="673" y="159.2" text-anchor="middle" class="s2">trước khi ghi</text><g class="ic" transform="translate(740,176)"><circle r="9"/><path d="M0-4.5v5"/><circle class="dot" cy="5" r="1.3"/></g><polyline points="170,140 196,140" class="w" marker-end="url(#ar-g)"/><polyline points="366,140 392,140" class="w" marker-end="url(#ar-g)"/><polyline points="562,140 588,140" class="w" marker-end="url(#ar-g)"/><polyline points="281,194 281,232" class="w" marker-end="url(#ar-g)"/><rect x="191" y="232" width="180" height="96" rx="8" class="dr"/><text x="281" y="274.0" text-anchor="middle" class="s2">Citation không</text><text x="281" y="299.0" text-anchor="middle" class="s2">tồn tại: chặn</text><polyline points="477,194 477,232" class="w" marker-end="url(#ar-g)"/><rect x="387" y="232" width="180" height="96" rx="8" class="dr"/><text x="477" y="261.5" text-anchor="middle" class="s2">Câu không khớp</text><text x="477" y="286.5" text-anchor="middle" class="s2">nguồn: báo</text><text x="477" y="311.5" text-anchor="middle" class="s2">cho người duyệt</text><polyline points="673,194 673,232" class="w" marker-end="url(#ar-g)"/><rect x="583" y="232" width="180" height="96" rx="8" class="ok"/><text x="673" y="261.5" text-anchor="middle" class="s2">Chấp nhận:</text><text x="673" y="286.5" text-anchor="middle" class="s2">ghi vào</text><text x="673" y="311.5" text-anchor="middle" class="s2">bản thảo</text></svg></figure>
+        <p class="vd ok">Citation giả bị chặn trước khi vào bản thảo</p>
+        <p class="strip" style="margin-top:auto;font-size:23px">Thành phần thường gặp: vòng lặp agent, công cụ có phân quyền, kiểm tra tự động, điểm duyệt của con người.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><p class="src">Nguồn: <a href="https://martinfowler.com/articles/harness-engineering.html">Birgitta Böckeler, 04/2026</a> (ví dụ gốc cho coding agent). Sơ đồ là ví dụ minh họa.</p><span class="pg">8 / 9</span></div>
+</section>
+
+<section class="slide" aria-label="Nếu fine-tuning hoàn hảo">
+  <h2>Nếu fine-tuning hoàn hảo, pain point nào còn lại?</h2>
+  <div class="body">
+    <div class="tb fill m">
+      <table>
+        <colgroup><col style="width:24%"><col style="width:20%"><col style="width:15%"><col style="width:20%"><col style="width:21%"></colgroup>
+        <thead><tr><th>Pain point</th><th>Fine-tuning hoàn hảo</th><th>Prompt</th><th>Context</th><th>Harness</th></tr></thead>
+        <tbody>
+          <tr><td><b>Công cụ phân mảnh</b></td><td><span class="v n">Không</span></td><td><span class="v n">Không</span></td><td><span class="v p">Một phần</span><span class="nt">gom nguồn, evidence</span></td><td><span class="v p">Một phần</span><span class="nt">workflow nối các bước</span></td></tr>
+          <tr><td><b>Mất ngữ cảnh giữa phiên</b></td><td><span class="v n">Không</span><span class="nt">không học trước được</span></td><td><span class="v n">Không</span></td><td><span class="v y">Có</span><span class="nt">bộ nhớ ngoài phiên</span></td><td><span class="v y">Có</span><span class="nt">checkpoint, khôi phục</span></td></tr>
+          <tr><td><b>Claim, citation không căn cứ</b></td><td><span class="v n">Không</span><span class="nt">trọng số không chỉ ra nguồn</span></td><td><span class="v p">Một phần</span><span class="nt">chỉ là lời dặn</span></td><td><span class="v y">Có</span><span class="nt">RAG trên nguồn đã duyệt</span></td><td><span class="v y">Có</span><span class="nt">kiểm chứng, cổng citation</span></td></tr>
+          <tr><td><b>Mất quyền kiểm soát</b></td><td><span class="v n">Không</span></td><td><span class="v n">Không</span></td><td><span class="v n">Không</span></td><td><span class="v y">Có</span><span class="nt">điểm duyệt của người</span></td></tr>
+          <tr><td><b>Kết quả cũ mất hiệu lực</b></td><td><span class="v n">Không</span></td><td><span class="v n">Không</span></td><td><span class="v p">Một phần</span><span class="nt">ghi phiên bản đã dùng</span></td><td><span class="v y">Có</span><span class="nt">phụ thuộc giữa các bước</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="strip" style="font-size:23px">Các pain point này nằm ngoài trọng số của model, nên phải giải ở Context và Harness. Fine-tuning có thể thêm sau, cho đúng những việc nó làm tốt.</p>
+    <p class="cap">Cách này cũng có giới hạn: context dài làm mỗi lượt gọi nặng hơn, và retrieval có thể sót nguồn.</p>
+  </div>
+  <div class="foot"><p class="src">Đánh giá theo từng ô là tổng hợp của nhóm biên soạn, không phải số đo.</p><span class="pg">9 / 9</span></div>
+</section>
+<div class="bar" aria-hidden="true"></div>
+</div></main>
+<nav class="ctl" id="ctl" aria-label="Điều khiển trình chiếu">
+<button id="prev" type="button" aria-label="Trang trước"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+<output id="out"></output>
+<button id="next" type="button" aria-label="Trang sau"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+<button id="full" type="button" aria-label="Toàn màn hình"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</nav>
+<script>
+(function(){
+  var stage=document.getElementById('stage');
+  var slides=[].slice.call(stage.querySelectorAll('.slide'));
+  var ctl=document.getElementById('ctl');
+  var out=document.getElementById('out');
+  var i=0,timer;
+  function fit(){stage.style.setProperty('--s',Math.min(window.innerWidth/1600,window.innerHeight/900));}
+  function fromHash(){var n=parseInt(location.hash.slice(1),10);return n>=1&&n<=slides.length?n-1:0;}
+  function go(n){
+    n=Math.max(0,Math.min(slides.length-1,n));
+    slides[i].classList.remove('on');slides[i].setAttribute('aria-hidden','true');
+    i=n;
+    slides[i].classList.add('on');slides[i].removeAttribute('aria-hidden');
+    stage.style.setProperty('--p',slides.length>1?i/(slides.length-1):1);
+    out.textContent=(i+1)+' / '+slides.length;
+    try{history.replaceState(null,'','#'+(i+1));}catch(e){}
+  }
+  function show(){ctl.classList.add('show');clearTimeout(timer);timer=setTimeout(function(){ctl.classList.remove('show');},2200);}
+  function full(){
+    if(document.fullscreenElement){document.exitFullscreen();}
+    else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen();}
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var k=e.key,h=true;
+    if(k==='ArrowRight'||k==='ArrowDown'||k==='PageDown'||k===' '||k==='Enter'){
+      if((k===' '||k==='Enter')&&e.target.closest&&e.target.closest('button,a'))return;
+      go(i+1);
+    }
+    else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'||k==='Backspace')go(i-1);
+    else if(k==='Home')go(0);
+    else if(k==='End')go(slides.length-1);
+    else if(k==='f'||k==='F')full();
+    else h=false;
+    if(h)e.preventDefault();
+  });
+  document.getElementById('prev').addEventListener('click',function(){go(i-1);});
+  document.getElementById('next').addEventListener('click',function(){go(i+1);});
+  document.getElementById('full').addEventListener('click',full);
+  document.addEventListener('mousemove',show);
+  var x0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;show();},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0===null)return;
+    var d=e.changedTouches[0].clientX-x0;x0=null;
+    if(Math.abs(d)>48)go(i+(d<0?1:-1));
+  },{passive:true});
+  window.addEventListener('resize',fit);
+  window.addEventListener('hashchange',function(){go(fromHash());});
+  fit();
+  stage.classList.add('still');
+  slides.forEach(function(s,n){if(n)s.setAttribute('aria-hidden','true');});
+  go(fromHash());
+  requestAnimationFrame(function(){requestAnimationFrame(function(){stage.classList.remove('still');});});
+})();
+</script>
+</body>
+</html>

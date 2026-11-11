@@ -8,8 +8,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Ticket PID-00035: Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS.">
-<title>PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS | SIRes Delivery Plan</title>
+<meta name="description" content="Ticket PID-00035: Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS.">
+<title>PID-00035 — Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
 </head>
@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00035</span></header>
 <main id="main-content">
-<p class="eyebrow">Ticket · PID-00035</p><h1>PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS</h1>
+<p class="eyebrow">Ticket · PID-00035</p><h1>PID-00035 — Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS</h1>
 <p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
@@ -36,8 +36,8 @@
 <tr><th scope="row">Giai đoạn</th><td>PH-02</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging: Staging</td></tr>
 <tr><th scope="row">Đợt song song</th><td>Đ4</td></tr>
-<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00009/index.html">PID-00009</a>, <a href="../PID-00010/index.html">PID-00010</a>, <a href="../PID-00011/index.html">PID-00011</a></td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-56">DEC-56</a></td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00009/index.html">PID-00009</a>, <a href="../PID-00010/index.html">PID-00010</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>, <a href="../../../tickets/sections/04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-56">DEC-56</a></td></tr>
 <tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
 </tbody></table></div>
@@ -49,27 +49,27 @@
 <p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
 
 <h2 id="s-1">1. Ticket</h2>
-<ul><li><strong>Mục đích:</strong> Cổng từ PH-02 trở đi kiểm trên staging. Staging chạy liên tục từ đây để lần deploy production không phải lần đầu.</li>
-<li><strong>Gồm:</strong> Dựng staging từ module Terraform; Merge vào <code>main</code> tự deploy service thay đổi và chạy migration của service đó; Smoke Playwright sau deploy; Secret manager, KMS staging.</li>
+<ul><li><strong>Mục đích:</strong> Cổng từ PH-02 trở đi kiểm trên staging. AQ-12 chưa trả lời nên staging tạm chạy trên Home Lab (PO 08/11/2026, OQ-108).</li>
+<li><strong>Gồm:</strong> Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao; Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code; Smoke Playwright sau deploy; Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu.</li>
 <li><strong>Không gồm:</strong> Broker quorum, KEDA (<a href="../PID-00057/index.html">PID-00057</a>); Production (<a href="../PID-00153/index.html">PID-00153</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
-<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00009/index.html">PID-00009</a>, <a href="../PID-00010/index.html">PID-00010</a>, <a href="../PID-00011/index.html">PID-00011</a></li>
-<li><strong>Điều kiện ngoài:</strong> <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a></li></ul>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00009/index.html">PID-00009</a>, <a href="../PID-00010/index.html">PID-00010</a></li>
+<li><strong>Điều kiện ngoài:</strong> <a href="../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a></li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
-<ul><li>Tệp: <code>.github/workflows/deploy-staging.yml</code> — Pipeline deploy</li>
-<li>Tệp: <code>infra/terraform/envs/staging/</code> — Môi trường staging</li></ul>
+<ul><li>Tệp: <code>.github/workflows/deploy-staging.yml</code> — Build, đẩy image service thay đổi</li>
+<li>Tệp: <code>infra/homelab/</code> — Cụm Kubernetes một node, Argo CD Application cho từng service</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00035-AC01</strong> Given một merge chạm một service, When pipeline chạy, Then chỉ service đó được deploy, migration của nó chạy, smoke đạt.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
-<ul><li>PID phải xong trước: <a href="../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache; <a href="../PID-00010/index.html">PID-00010</a> Dockerfile chung và Helm chart chung; <a href="../PID-00011/index.html">PID-00011</a> Module Terraform trung lập nhà cloud.</li>
-<li>OQ, AQ, DBQ và điều kiện ngoài: <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a> Chọn nhà cloud và vùng dữ liệu (Có với bước trên staging; trong lúc chờ dùng compose local đầy đủ (DLR-02)).</li>
+<ul><li>PID phải xong trước: <a href="../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache; <a href="../PID-00010/index.html">PID-00010</a> Dockerfile chung và Helm chart chung.</li>
+<li>OQ, AQ, DBQ và điều kiện ngoài: <a href="../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a> URL HTTPS cố định của staging và nơi giữ key thật của đội (Không chặn trước; Dev báo PO khi tới bước cần. URL phải có trước khi gửi ETR-07).</li>
 <li>PID chờ PID này: <a href="../PID-00055/index.html">PID-00055</a>, <a href="../PID-00057/index.html">PID-00057</a>, <a href="../PID-00112/index.html">PID-00112</a>, <a href="../PID-00113/index.html">PID-00113</a>.</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 3 PID</td><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a></td><td>Chưa kiểm</td></tr>
+<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 2 PID</td><td><a href="../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a></td><td>Chưa kiểm</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
@@ -77,7 +77,7 @@
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
 <ul><li>Không có.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>: Chọn nhà cloud và vùng dữ liệu. Có với bước trên staging; trong lúc chờ dùng compose local đầy đủ (DLR-02).</li></ul>
+<ul><li><a href="../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a>: URL HTTPS cố định của staging và nơi giữ key thật của đội. Không chặn trước; Dev báo PO khi tới bước cần. URL phải có trước khi gửi ETR-07.</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
 <p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>

@@ -18,7 +18,7 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 | --- | --- |
 | Yêu cầu sản phẩm, phạm vi, nghiệm thu | [docs/overview/index.html](docs/overview/index.html) (PRD v1.0, 21 section) và [back-log.html](docs/overview/back-log.html) |
 | Kiến trúc, stack, luồng | [docs/architecture/README.md](docs/architecture/README.md) |
-| API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md) |
+| API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md). Thiếu hoặc sai hợp đồng: Dev báo PO, PO cập nhật bằng `agent/skills/po/contract-updating-skill`, Dev pull về (OQ-103) |
 | Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/dev/sires-ui-executor`, `agent/skills/qc/sires-ui-review` |
 | Code một service, ranh giới luồng, giai đoạn | [docs/tickets/index.html](docs/tickets/index.html) (quy tắc 1.4) và `apps/<service>/README.md` |
 | Làm một ticket `PID-NNNNN` | Dev: skill `agent/skills/dev/spec-execution-skill` (đọc `docs/tickets/issues/PID-NNNNN/`, làm, ghi kết quả vào `agent/execution/PID-NNNNN/`). PO chuẩn bị bằng `agent/skills/po/spec-docs-skill`, `agent/skills/po/spec-clarify-skill`. QC độc lập: `agent/skills/qc/spec-converge-skill` |

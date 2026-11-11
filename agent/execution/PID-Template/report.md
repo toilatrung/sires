@@ -40,6 +40,7 @@ Mọi yêu cầu ngoài hồ sơ ghi ở đây **trước khi làm**. Trong ph�
 ## 6. Cần PO và tài liệu đi kèm
 
 - **Đề xuất cho PO:** <thay đổi đề xuất cho ticket, spec, `docs/api-design`, `docs/database`, ticket cho luồng khác; hoặc “không có”>
+- **Yêu cầu hợp đồng:** <loại; `operationId` hoặc message; PID, slice, AC đang cần; đề xuất dạng dữ liệu; hoặc “không có”. PO xử lý bằng `contract-updating-skill`>
 - **Còn mở:** <điều hồ sơ không nói tới mà đổi hành vi; slice bị chặn; hoặc “không có”>
 - **Bước tiếp theo:** <QC chạy `spec-converge-skill PID-NNNNN`; Dev commit, PR khi được yêu cầu>
 - **Tài liệu đi kèm:** <tên file — nội dung — dùng cho slice nào; hoặc “không có”>

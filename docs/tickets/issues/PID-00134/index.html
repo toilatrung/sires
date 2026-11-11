@@ -36,7 +36,7 @@
 <tr><th scope="row">Giai đoạn</th><td>PH-07</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Ổn định, nghiệm thu: Cảnh báo, PITR</td></tr>
 <tr><th scope="row">Đợt song song</th><td>Đ10</td></tr>
-<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00130/index.html">PID-00130</a></td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00130/index.html">PID-00130</a>, <a href="../PID-00011/index.html">PID-00011</a></td></tr>
 <tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
 <tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
@@ -50,10 +50,11 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> k6 cần môi trường cấu hình như production để kết quả có ý nghĩa, không ảnh hưởng staging chung.</li>
-<li><strong>Gồm:</strong> Môi trường load test từ cùng module Terraform; Nạp dữ liệu mẫu 16.4.</li>
+<li><strong>Gồm:</strong> Môi trường load test từ cùng module Terraform; Nạp dữ liệu mẫu 16.4; Diễn tập lại PITR đã làm trên Home Lab (OQ-109).</li>
 <li><strong>Không gồm:</strong> Kịch bản k6 (<a href="../PID-00150/index.html">PID-00150</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
-<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00130/index.html">PID-00130</a></li></ul>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00130/index.html">PID-00130</a>, <a href="../PID-00011/index.html">PID-00011</a></li>
+<li><strong>Điều kiện ngoài:</strong> <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a></li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Tệp: <code>infra/terraform/envs/load/</code> — Môi trường load</li></ul>
 
@@ -61,13 +62,13 @@
 <ul><li><strong>PID-00134-AC01</strong> Given môi trường load, When dựng, Then cấu hình tương đương production và có dữ liệu mẫu 16.4.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
-<ul><li>PID phải xong trước: <a href="../PID-00130/index.html">PID-00130</a> Kịch bản lát 5 và kiểm cổng PH-06.</li>
-<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<ul><li>PID phải xong trước: <a href="../PID-00130/index.html">PID-00130</a> Kịch bản lát 5 và kiểm cổng PH-06; <a href="../PID-00011/index.html">PID-00011</a> Module Terraform trung lập nhà cloud.</li>
+<li>OQ, AQ, DBQ và điều kiện ngoài: <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a> Chọn nhà cloud và vùng dữ liệu (Có với bước dựng môi trường trên cloud; staging tạm chạy trên Home Lab).</li>
 <li>PID chờ PID này: <a href="../PID-00150/index.html">PID-00150</a>.</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 1 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 2 PID</td><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a></td><td>Chưa kiểm</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
@@ -75,7 +76,7 @@
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
 <ul><li>Không có.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có.</li></ul>
+<ul><li><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>: Chọn nhà cloud và vùng dữ liệu. Có với bước dựng môi trường trên cloud; staging tạm chạy trên Home Lab.</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
 <p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>

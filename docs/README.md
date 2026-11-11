@@ -35,6 +35,7 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | [database/](database/README.md) | Thiết kế cơ sở dữ liệu MVP: database theo service, bảng, ràng buộc, RLS, retention, DDL tham chiếu | PO duyệt 03/11/2026 (v0.1, DEC-57) |
 | [tickets/](tickets/index.html) | Kế hoạch triển khai chung: luồng service và ranh giới mã nguồn, giai đoạn PH-01–PH-08 từ bắt đầu code tới deploy production | Đề xuất — chờ PO duyệt (v0.1, 03/11/2026) |
 | [ui-design/](ui-design/README.md) | Bộ thiết kế giao diện (Cream) và [design.md](ui-design/design.md) | PO duyệt 31/10/2026 (DEC-18) |
+| [slides/](slides/index.html) | Ba bộ slide: pain point và phương án multi-agent, giới thiệu SIRes, các lớp AI Engineering | PO chốt outline 08/11/2026 |
 
 ### `overview/` — PRD
 

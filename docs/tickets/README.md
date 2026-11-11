@@ -58,7 +58,7 @@ FIG-301 là kế hoạch tĩnh: ô trên sơ đồ không đổi khi ticket xong
 
 - **Đợt** tính từ dòng “Phụ thuộc PID” của từng hồ sơ: đợt = 1 + đợt lớn nhất của các PID phụ thuộc. Các PID cùng đợt chạy song song được. Kết quả ở [danh sách PID](index.html#pids).
 - **Luồng gọi nhau không phải chờ nhau:** dùng stub hoặc mock theo hợp đồng (quy tắc 1.4.3, 1.4.4). Phụ thuộc chỉ ghi khi cần mã đã merge: thư viện nền, type sinh, kết quả spike, PID trước trong cùng luồng.
-- **Chỉ PID kiểm cổng chờ các luồng khác.** Chuỗi cổng: PH-02 → PH-03 → (PH-04, PH-05 song song) → PH-06 → PH-07 → PH-08. PH-04 và PH-05 song song là cách xếp theo chỉ đạo trên; [OQ-106](sections/04-dependencies-risks-and-questions.html#oq-106) chưa đóng. Nếu PO chọn nối tiếp, thêm PID kiểm cổng PH-04 vào phụ thuộc của PID kiểm cổng PH-05.
+- **Chỉ PID kiểm cổng chờ các luồng khác.** Chuỗi cổng: PH-02 → PH-03 → (PH-04, PH-05 song song) → PH-06 → PH-07 → PH-08. PH-04 và PH-05 song song khi `agent-core`, `orchestration` đủ người ([OQ-106](sections/04-dependencies-risks-and-questions.html#oq-106), PO chốt 08/11/2026). Thiếu người thì nối tiếp: thêm PID kiểm cổng PH-04 vào phụ thuộc của PID kiểm cổng PH-05.
 - **Thêm hoặc đổi PID:** sửa hồ sơ, thêm dòng vào sổ của [taskboard](issues/taskboard.html), rồi chạy `node scripts/docs/update-index.mjs`. Lệnh báo lỗi khi phụ thuộc trỏ tới PID không có hoặc có chu trình.
 
 ## Thứ tự ưu tiên khi mâu thuẫn
