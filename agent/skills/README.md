@@ -31,7 +31,7 @@ QC   spec-converge PID-NNNNN → Dev làm tiếp hoặc PO nghiệm thu
 | Thư mục | Ai ghi | Nội dung |
 | --- | --- | --- |
 | `docs/tickets/issues/index.html` | PO (qua `node scripts/docs/update-index.mjs`) | File chỉ dẫn: danh sách ticket, file HTML và tiêu đề trong từng PID |
-| `docs/tickets/issues/taskboard.html` | PO (sổ đăng ký `task-registry`, rồi `node scripts/docs/update-index.mjs`) | Task đã đăng ký, đang chạy, chưa chạy |
+| `agent/execution/taskboard.html` | PO (sổ đăng ký `task-registry`, rồi `node scripts/docs/update-index.mjs`) | Task đã đăng ký, đang chạy kèm tiến độ từ `report.md`, chưa chạy |
 | `docs/tickets/issues/PID-NNNNN/` | PO (R-01–R-07) | Ticket, `specs/`, `designs/`, `others/` |
 | `agent/execution/PID-NNNNN/` | Dev | `report.md` (trạng thái công việc, kết quả), `implement.md` (luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao), `self-qc.md` (kết quả Self-QC), tài liệu đi kèm |
 | `agent/execution/PID-NNNNN/` | QC độc lập | `qc-report.md`, `checklists/` |

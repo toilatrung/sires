@@ -35,8 +35,9 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | `e2e/`, `eval/`, `infra/` | Playwright; eval harness; compose cục bộ, Dockerfile, Helm, Terraform |
 | `agent/skills/` | Skill cho agent, chia theo vai trò ([agent/skills/README.md](agent/skills/README.md)): `po/` (dựng và giữ `docs/`, viết spec, làm rõ ticket), `dev/` (thực thi ticket, đọc spec, dựng UI), `ui-design/` (prototype UI, Animate UI), `qc/` (rà ticket và spec, đối chiếu mã với AC, review UI) |
 | `agent/execution/PID-NNNNN/` | Kết quả một ticket: `report.md`, `implement.md`, `self-qc.md` và tài liệu đi kèm do Dev ghi; `qc-report.md`, `checklists/` do QC độc lập ghi |
+| `agent/execution/taskboard.html` | Taskboard: task đã đăng ký (sổ `task-registry`, chỉ PO ghi), đang chạy kèm tiến độ, chưa chạy; sinh bằng `node scripts/docs/update-index.mjs`, chỉ PO chạy |
 | `agent/execution/PID-Template/` | Khung mẫu của các file trên; chép sang `PID-NNNNN/` theo [agent/execution/README.md](agent/execution/README.md), không ghi kết quả vào đây |
-| `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `taskboard.html`; `update-index.mjs` gọi file này) |
+| `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `agent/execution/taskboard.html`; `update-index.mjs` gọi file này) |
 | `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1) |
 | `scripts/agent/`, `scripts/deployment/` | Chưa có nội dung |
 | `.github/CODEOWNERS`, `.github/workflows/ci.yml` | PO là code owner của `docs/`; CI pull request (`nx affected`, Python, giấy phép) |

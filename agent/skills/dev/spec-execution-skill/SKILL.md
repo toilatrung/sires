@@ -55,7 +55,7 @@ node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-NNNNN --res
 - **Kết quả thật.** `self-qc.md` chỉ ghi kết quả lệnh đã chạy; không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”.
 - **Không ghi đè lịch sử.** Lần chạy sau (làm tiếp, sửa theo QC) cập nhật trạng thái đầu file và thêm mục `Lần N — dd/mm/yyyy` ở cuối `report.md`, `self-qc.md`; `implement.md` sửa để đúng với mã hiện tại. Không sửa `qc-report.md`, `checklists/`.
 - **Git theo `AGENT.md`:** làm trên nhánh riêng `<luồng>/<mô-tả-ngắn>`; chỉ commit, push, tạo PR khi được yêu cầu (ngoại lệ duy nhất ở quy tắc dưới); stage đúng đường dẫn, không `git add -A`; không thêm dòng ghi công cho agent.
-- **`report.md` luôn lên nhánh** (PO duyệt 05/11/2026). Chạy skill này là yêu cầu commit và push riêng `agent/execution/PID-NNNNN/report.md` mỗi khi đặt hoặc đổi dòng `**Trạng thái:**`, để [taskboard](../../../../docs/tickets/issues/taskboard.html) của PO thấy task đang chạy. Chỉ commit đúng file này, không kèm mã; đổi trạng thái slice thì không cần push. Mã và các file khác vẫn chỉ commit khi được yêu cầu. Push không được → báo trong phiên và làm tiếp; không force-push, không push lên `main`.
+- **`report.md` luôn lên nhánh** (PO duyệt 05/11/2026). Chạy skill này là yêu cầu commit và push riêng `agent/execution/PID-NNNNN/report.md` mỗi khi đặt hoặc đổi dòng `**Trạng thái:**`, để [taskboard](../../../execution/taskboard.html) của PO thấy task đang chạy. Không commit `taskboard.html`: trang do PO dựng lại. Chỉ commit đúng file này, không kèm mã; đổi trạng thái slice thì không cần push. Mã và các file khác vẫn chỉ commit khi được yêu cầu. Push không được → báo trong phiên và làm tiếp; không force-push, không push lên `main`.
 
 ## Quy trình
 
