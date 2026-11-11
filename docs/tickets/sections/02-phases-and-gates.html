@@ -54,7 +54,7 @@
 <ul>
 <li><strong>platform:</strong> thư viện TS và Python cho tenancy (RLS), transaction, outbox + relay, inbox, idempotency, audit-emit, problem+json, OpenTelemetry, logger che dữ liệu, service-auth guard, UUIDv7; <code>libs/ts/testing</code> với Testcontainers (PostgreSQL 16 + pgvector, RabbitMQ, MinIO), FakeOidcProvider, fake broker, FakeSourceAdapter, LocalKms; <code>sires_common</code> với FakeModelGateway có hành vi xác định (kiến trúc 8.9; OQ-095: kịch bản ngoài 19.10 dùng provider giả lập).</li>
 <li><strong>contracts:</strong> sinh type TS từ OpenAPI công khai, nội bộ và AsyncAPI; sinh client Python từ OpenAPI nội bộ và mô hình message từ AsyncAPI (kiến trúc 2.4); kiểm tra code lệch spec trong CI (ADR-14).</li>
-<li><strong>infra:</strong> bổ sung CI: contract test (Schemathesis), kiểm tra payload theo AsyncAPI, redocly lint khi sửa spec, quét phụ thuộc và secret, build image; Nx remote cache; module Terraform; dựng staging khi có trả lời AQ-12.</li>
+<li><strong>infra:</strong> bổ sung CI: contract test (Schemathesis), kiểm tra payload theo AsyncAPI, redocly lint khi sửa spec, quét phụ thuộc và secret, build image; Nx remote cache; module Terraform; staging tạm trên Home Lab theo <a href="04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>, vì AQ-12 chưa có trả lời (PO 08/11/2026).</li>
 <li><strong>Mỗi luồng service:</strong> migration database của mình từ <code>docs/database/ddl</code>, chạy trên PostgreSQL 16 + pgvector, đưa test hành vi DDL vào CI; cấu hình, service token, khung module (1.6); README ghi entity sở hữu và bản sao chỉ đọc.</li>
 <li><strong>web:</strong> shell (routing theo IA PRD 4, token Cream, i18n vi/en, client API, client SSE, trạng thái loading/empty/error dùng chung), mock theo OpenAPI cho các khu vực.</li>
 <li><strong>Spike do luồng sở hữu chạy:</strong> SPK-01, SPK-08 (agent-core, SPK-08 cùng orchestration), SPK-02 (gateway), SPK-03 (library), SPK-04, SPK-05 (knowledge), SPK-06, SPK-07 (sandbox-runner), SPK-10 (platform, infra). SPK-09 cần engine nên chạy ở PH-03; SPK-11 cần phiên thảo luận nên chạy ở PH-04.</li>
@@ -65,7 +65,7 @@
 <li>Pull request chạm một service NestJS chạy CI dưới 10 phút (SPK-10, kiến trúc 11.3).</li>
 <li>Hợp đồng baseline: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; PO duyệt baseline.</li>
 <li>Báo cáo SPK-01–SPK-08, SPK-10. Giả định nào bị bác bỏ thì ADR, OQ hoặc AQ tương ứng được cập nhật trước khi vào PH-02.</li>
-<li>AQ-12 (nhà cloud, vùng dữ liệu) có trả lời. Nếu chưa, PH-02 không có staging và cổng PH-02 không kiểm được.</li>
+<li>Máy Home Lab sẵn sàng để dựng staging ở PH-02 (<a href="04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>). Nếu chưa, PH-02 không có staging và cổng PH-02 không kiểm được.</li>
 </ol>
 
 <h2 id="ph-02">PH-02. Lát 1 — Truy cập, lệnh ghi và realtime</h2>
@@ -73,7 +73,7 @@
 <ul>
 <li>Requirement trọng tâm: INT-OIDC-001–004, NFR-AUTH, NFR-SECRETS-001–003 (envelope encryption API key), AGENT-PROVIDER, WS-*, PROJ-* (tạo, lưu trữ, xóa mềm 30 ngày), mục 15.12.</li>
 <li>Staging chạy lần đầu: merge vào <code>main</code> tự deploy service thay đổi, chạy migration của service đó, smoke Playwright (kiến trúc 11.3). Từ đây staging cập nhật liên tục để lần deploy production không phải lần đầu.</li>
-<li>Điều kiện ngoài: eTroy OIDC môi trường thử và client SIRes đã đăng ký (SPK-02); xác nhận RP-initiated logout chấp nhận <code>post_logout_redirect_uri</code> của SIRes (ETR-07, cần trước khi tích hợp đăng nhập); AQ-12.</li>
+<li>Điều kiện ngoài: eTroy OIDC môi trường thử và client SIRes đã đăng ký (SPK-02); xác nhận RP-initiated logout chấp nhận <code>post_logout_redirect_uri</code> của SIRes (ETR-07, cần trước khi tích hợp đăng nhập; phải có URL HTTPS cố định của staging trước khi gửi, <a href="04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>).</li>
 </ul>
 <p><strong>Cổng ra PH-02:</strong> TS-12-07 (đăng nhập, đăng xuất) đạt trên staging; phiên hết hạn sau 12 giờ không hoạt động (INT-OIDC-003-AC02); tạo, lưu trữ, xóa mềm project; lưu và kiểm tra Provider Connection, key không xuất hiện trong log hay phản hồi (một phần REL-07); sự kiện từ outbox tới web qua SSE; tài khoản B không đọc được project của A (một phần REL-05, TS-12-01).</p>
 
@@ -99,7 +99,7 @@
 <p><strong>Hội tụ:</strong> <code>library</code> (adapter Scholar trung gian, OpenAlex, Semantic Scholar có rate limiter; DOI qua Crossref, DataCite; BibTeX, RIS; tải PDF; duyệt reference theo lô; ProjectReferenceSelection), <code>knowledge</code> (trích xuất PDF, chunk, embedding bằng key của người dùng, pgvector, truy xuất lai), <code>agent-core</code> (Discovery, Reference Processing), <code>orchestration</code> (bước của WF-04), <code>web</code> (library: Discover, Library, Reference). Luồng F-09; WF-04.</p>
 <ul>
 <li>Điều kiện ngoài: hợp đồng với dịch vụ trung gian Google Scholar (DEC-19), chọn theo kết quả SPK-03. Chưa có hợp đồng thì lát chạy với nguồn dự phòng OpenAlex, Semantic Scholar và nhập thủ công.</li>
-<li>Phụ thuộc: lát này cần lát 2; chỉ Discovery Agent chạy trong một Task mới cần lát 3. Kế hoạch hiện xếp sau PH-04; có cho chồng hai giai đoạn không là <a href="04-dependencies-risks-and-questions.html#oq-106">OQ-106</a>.</li>
+<li>Phụ thuộc: lát này cần lát 2; chỉ Discovery Agent chạy trong một Task mới cần lát 3. PO chốt ngày 08/11/2026 (<a href="04-dependencies-risks-and-questions.html#oq-106">OQ-106</a>): chồng PH-04 và PH-05 khi <code>agent-core</code>, <code>orchestration</code> đủ người; thiếu người thì nối tiếp.</li>
 </ul>
 <p><strong>Cổng ra PH-05:</strong> kịch bản WF-04 đạt; PDF có lớp văn bản ≤ 50 MB được index; truy xuất có lọc trên 500 reference đạt p95 ≤ 3 s (NFR-PERF-006, SPK-04); reference bị thu hồi phát sự kiện tới các service có bản sao.</p>
 
@@ -125,7 +125,7 @@
 
 <h2 id="ph-08">PH-08. Triển khai production</h2>
 <ul>
-<li>Dựng production bằng cùng module Terraform và Helm chart đã dùng cho staging (kiến trúc 11.2): Kubernetes managed nhiều zone, PostgreSQL HA có PITR, RabbitMQ 3 node quorum, object storage, KMS, secret manager, CDN + WAF, egress NAT cố định.</li>
+<li>Dựng production bằng module Terraform đã chạy ở môi trường load test (PH-07) và Helm chart chung (kiến trúc 11.2): Kubernetes managed nhiều zone, PostgreSQL HA có PITR, RabbitMQ 3 node quorum, object storage, KMS, secret manager, CDN + WAF, egress NAT cố định.</li>
 <li>Đăng ký client production với eTroy OIDC, kiểm tra RP-initiated logout (ETR-07).</li>
 <li>Thứ tự lần deploy đầu: hạ tầng → migration của từng database → service backend → <code>gateway</code> → <code>web</code> lên CDN. Production cần phê duyệt thủ công, rolling update từng service, rollback bằng image trước (11.3).</li>
 <li>Smoke test production (đăng nhập, tạo project, chat); synthetic check uptime; cảnh báo bật; lịch trực và kênh báo sự cố.</li>
@@ -136,7 +136,7 @@
 
 <h2 id="s-2-9">2.9. Quy tắc chung cho mọi cổng</h2>
 <ul>
-<li>Cổng kiểm trên staging (PH-02 trở đi), không kiểm trên máy cá nhân.</li>
+<li>Cổng kiểm trên staging (PH-02 trở đi), không kiểm trên máy cá nhân. Staging tạm chạy trên Home Lab cho tới khi AQ-12 có trả lời; số đo trên đó được tính cho cổng, ghi kèm cấu hình máy và đo lại trên môi trường load trước PH-08 (<a href="04-dependencies-risks-and-questions.html#oq-109">OQ-109</a>).</li>
 <li>Requirement được tính xong theo Definition of Done ở PRD 19.14: AC có test và đạt, code truy vết về requirement ID, chuyển trạng thái đúng bảng mục 18, kiểm tra quyền có test cả trường hợp bị từ chối, Audit Event có actor, giao diện đủ loading/empty/error và song ngữ.</li>
 <li>Luồng chưa đạt cổng không chặn luồng khác tiếp tục xây trong cô lập; chỉ chặn việc kiểm cổng của giai đoạn sau có dùng lát đó.</li>
 <li>Kết quả mỗi cổng ghi vào nhật ký <code>docs/docs_context.md</code> khi PO xác nhận.</li>

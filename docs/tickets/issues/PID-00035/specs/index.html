@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Spec kỹ thuật PID-00035: Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS.">
+<meta name="description" content="Spec kỹ thuật PID-00035: Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS.">
 <title>PID-00035 — Spec kỹ thuật | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00035</span></header>
 <main id="main-content">
-<p class="eyebrow">Spec kỹ thuật · PID-00035</p><h1>PID-00035 — Staging: pipeline merge → staging, migration theo service, smoke, secret manager, KMS</h1>
+<p class="eyebrow">Spec kỹ thuật · PID-00035</p><h1>PID-00035 — Staging trên Home Lab: Kubernetes, Argo CD, pipeline merge → staging, migration theo service, smoke, secret, KMS</h1>
 <p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00035</a> · Luồng: <code>infra</code> · Giai đoạn: PH-02 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
@@ -30,11 +30,11 @@
 
 <h2 id="s-1">1. Phạm vi và căn cứ</h2>
 <div class="table-wrap"><table><tbody>
-<tr><th scope="row">Mục đích</th><td>Cổng từ PH-02 trở đi kiểm trên staging. Staging chạy liên tục từ đây để lần deploy production không phải lần đầu.</td></tr>
+<tr><th scope="row">Mục đích</th><td>Cổng từ PH-02 trở đi kiểm trên staging. AQ-12 chưa trả lời nên staging tạm chạy trên Home Lab (PO 08/11/2026, OQ-108).</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>infra</code> · PH-02</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Staging</td></tr>
 <tr><th scope="row">AC phủ trong spec</th><td>PID-00035-AC01</td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-56">DEC-56</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>, <a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-56">DEC-56</a></td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Broker quorum, KEDA (<a href="../../PID-00057/index.html">PID-00057</a>); Production (<a href="../../PID-00153/index.html">PID-00153</a>)</td></tr>
 </tbody></table></div>
 
@@ -48,7 +48,6 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>infra/README.md</code></td><td>Cấu trúc hạ tầng</td></tr>
 <tr><td><code>.github/workflows/ci.yml</code></td><td>CI hiện có</td></tr>
-<tr><td><code>infra/terraform/envs/staging/</code></td><td>Đọc trước khi sửa</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
 <p>Không dùng hợp đồng hay bảng riêng.</p>
@@ -56,8 +55,7 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache</td><td>Chưa làm</td><td>Có</td></tr>
 <tr><td><a href="../../PID-00010/index.html">PID-00010</a> Dockerfile chung và Helm chart chung</td><td>Chưa làm</td><td>Có</td></tr>
-<tr><td><a href="../../PID-00011/index.html">PID-00011</a> Module Terraform trung lập nhà cloud</td><td>Chưa làm</td><td>Có</td></tr>
-<tr><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a> Chọn nhà cloud và vùng dữ liệu</td><td>Chờ PO</td><td>Có với bước trên staging; trong lúc chờ dùng compose local đầy đủ (DLR-02)</td></tr>
+<tr><td><a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1">Mục 4.1</a> URL HTTPS cố định của staging và nơi giữ key thật của đội</td><td>Chờ PO, cấp khi Dev yêu cầu</td><td>Không chặn trước; Dev báo PO khi tới bước cần. URL phải có trước khi gửi ETR-07</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
 <pre>pnpm install
@@ -65,8 +63,8 @@ pnpm local:up</pre>
 
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
-<tr><td id="o1">O1</td><td>Tệp</td><td><code>.github/workflows/deploy-staging.yml</code> (tạo mới)</td><td>Pipeline deploy</td><td>Một merge thử</td></tr>
-<tr><td id="o2">O2</td><td>Tệp</td><td><code>infra/terraform/envs/staging/</code> (có sẵn)</td><td>Môi trường staging</td><td><code>terraform plan</code></td></tr>
+<tr><td id="o1">O1</td><td>Tệp</td><td><code>.github/workflows/deploy-staging.yml</code> (tạo mới)</td><td>Build, đẩy image service thay đổi</td><td>Một merge thử</td></tr>
+<tr><td id="o2">O2</td><td>Tệp</td><td><code>infra/homelab/</code> (tạo mới)</td><td>Cụm Kubernetes một node, Argo CD Application cho từng service</td><td>Một lần dựng thử</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
@@ -77,10 +75,10 @@ pnpm local:up</pre>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li>Dựng staging từ module Terraform</li>
-<li>Merge vào <code>main</code> tự deploy service thay đổi và chạy migration của service đó</li>
+<ul><li>Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao</li>
+<li>Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code</li>
 <li>Smoke Playwright sau deploy</li>
-<li>Secret manager, KMS staging</li></ul>
+<li>Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -88,15 +86,17 @@ pnpm local:up</pre>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
 <tr><td>Migration lỗi</td><td>Dừng deploy service đó, service khác không ảnh hưởng</td></tr>
-<tr><td>AQ-12 chưa trả lời</td><td>Tạm hội tụ trên compose local đầy đủ theo DLR-02, không thay cổng</td></tr>
+<tr><td>Home Lab mất điện hoặc mất mạng</td><td>Tạm dừng kiểm cổng, chạy lại khi có lại; không tính là đạt (DLR-09)</td></tr>
+<tr><td>URL staging không truy cập được từ runner của GitHub</td><td>Chạy smoke bằng Job sau đồng bộ trong cụm</td></tr>
+<tr><td>CI cần ghi tag image mới</td><td>Không commit thẳng vào <code>main</code> (ruleset <code>protect-main</code>)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
-<li id="b1"><strong>B1</strong> Dựng staging từ module Terraform — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
-<li id="b2"><strong>B2</strong> Merge vào <code>main</code> tự deploy service thay đổi và chạy migration của service đó — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b1"><strong>B1</strong> Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b2"><strong>B2</strong> Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b3"><strong>B3</strong> Smoke Playwright sau deploy — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
-<li id="b4"><strong>B4</strong> Secret manager, KMS staging — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b4"><strong>B4</strong> Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
