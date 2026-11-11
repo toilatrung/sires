@@ -5386,9 +5386,84 @@ components:
         eTroy OIDC (github.com/toilatrung/eTroy_OIDC) — chỉ dùng giữa backend SIRes (Relying Party) và eTroy;
         client giao diện không giữ token. URL discovery là placeholder, chốt khi tích hợp (ASM-13).
   schemas:
+    ErrorCode:
+      type: string
+      description: |
+        Danh mục mã lỗi của `Problem.code` (NFR-OBS-005, PO chốt 11/11/2026). Danh mục đóng: service chỉ trả mã có ở đây,
+        thêm mã mới phải sửa hợp đồng. Theo HTTP status:
+        400 `validation_failed`; 401 `unauthenticated`, `invalid_service_token`; 403 `forbidden`, `caller_not_allowed`;
+        404 `not_found`; 405 `method_not_allowed`; 409 `invalid_transition`, `action_not_allowed_in_state`,
+        `project_archived`, `active_workflow_exists`, `readiness_failed`, `open_plan_version_exists`,
+        `base_revision_mismatch`, `citation_check_failed`, `connection_in_use`, `duplicate_name`, `restore_window_expired`,
+        `stale_agent_run`; 412 `precondition_failed`; 413 `payload_too_large`; 422 `idempotency_key_reused`,
+        `dependency_cycle`, `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`, `instance_required`,
+        `instance_not_allowed`, `schema_invalid` và các mã của Deliberation Board (`draft_reference`,
+        `change_reason_required`, `entry_immutable`, `synthesis_incomplete`, `problem_type_not_allowed`,
+        `analysis_agent_not_configured`, `deliberation_not_confirmed`, `deliberation_mismatch`); 428
+        `precondition_required`; 500 `internal_error` (lỗi không khai báo, không lộ stack trace); 503 `service_unavailable`.
+        Lỗi của provider dùng `ProviderErrorCode` (8.6) trong payload riêng, không đặt vào `Problem.code`.
+      enum:
+        - validation_failed
+        - unauthenticated
+        - invalid_service_token
+        - forbidden
+        - caller_not_allowed
+        - not_found
+        - method_not_allowed
+        - invalid_transition
+        - action_not_allowed_in_state
+        - project_archived
+        - active_workflow_exists
+        - readiness_failed
+        - open_plan_version_exists
+        - base_revision_mismatch
+        - citation_check_failed
+        - connection_in_use
+        - duplicate_name
+        - restore_window_expired
+        - stale_agent_run
+        - precondition_failed
+        - payload_too_large
+        - idempotency_key_reused
+        - dependency_cycle
+        - reference_not_trusted
+        - pdf_without_text_layer
+        - model_not_available
+        - instance_required
+        - instance_not_allowed
+        - schema_invalid
+        - draft_reference
+        - change_reason_required
+        - entry_immutable
+        - synthesis_incomplete
+        - problem_type_not_allowed
+        - analysis_agent_not_configured
+        - deliberation_not_confirmed
+        - deliberation_mismatch
+        - precondition_required
+        - internal_error
+        - service_unavailable
+    FieldErrorCode:
+      type: string
+      description: |
+        Mã lỗi từng trường trong `Problem.errors[]` khi `code = validation_failed` (PO chốt 11/11/2026). Thư viện nền ánh xạ
+        lỗi của bộ kiểm schema (Zod ở TS, pydantic ở Python) sang bộ mã này, không trả nguyên mã của thư viện.
+        `required` — thiếu trường hoặc header bắt buộc; `invalid_type` — sai kiểu; `invalid_format` — sai định dạng (uuid,
+        date-time, uri, email, pattern); `too_small` — dưới giới hạn (minLength, minimum, minItems); `too_big` — vượt giới
+        hạn (maxLength, maximum, maxItems); `invalid_value` — không thuộc enum hoặc giá trị cho phép; `unrecognized_field` —
+        trường không có trong schema.
+      enum:
+        - required
+        - invalid_type
+        - invalid_format
+        - too_small
+        - too_big
+        - invalid_value
+        - unrecognized_field
     Problem:
       type: object
-      description: RFC 9457 Problem Details với `code` ổn định để client dịch thông báo (UX-I18N).
+      description: |
+        RFC 9457 Problem Details với `code` ổn định để client dịch thông báo (UX-I18N). `code` thuộc danh mục `ErrorCode`.
       required:
         - type
         - title
@@ -5403,12 +5478,7 @@ components:
         status:
           type: integer
         code:
-          type: string
-          examples:
-            - validation_failed
-            - invalid_transition
-            - action_not_allowed_in_state
-            - readiness_failed
+          $ref: '#/components/schemas/ErrorCode'
         detail:
           type: string
         instance:
@@ -5424,7 +5494,7 @@ components:
               field:
                 type: string
               code:
-                type: string
+                $ref: '#/components/schemas/FieldErrorCode'
               message:
                 type: string
         suggestedAction:
@@ -9748,19 +9818,33 @@ components:
           $ref: '#/components/schemas/Timestamp'
   responses:
     ServiceUnavailable:
-      description: Dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) — INT-OIDC-004, 17.
+      description: |
+        `503 service_unavailable`: dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) —
+        INT-OIDC-004, 17.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/service_unavailable
+            title: Dịch vụ tạm không khả dụng
+            status: 503
+            code: service_unavailable
     NoContent:
       description: Thành công, không có nội dung.
     Unauthorized:
-      description: Chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới `GET /auth/login`.
+      description: |
+        `401 unauthenticated`: chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới
+        `GET /auth/login`.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/unauthenticated
+            title: Chưa đăng nhập
+            status: 401
+            code: unauthenticated
     BadRequest:
       description: |
         Dữ liệu không hợp lệ (DATA-VALID-001) — trường bắt buộc thiếu, enum sai, vượt giới hạn; cả thiếu header
@@ -9778,11 +9862,16 @@ components:
               - field: researchQuestion
                 code: required
     PreconditionFailed:
-      description: '`If-Match` không khớp rowVersion hiện hành — tải lại rồi thử lại (DATA-CONC-001).'
+      description: '`412 precondition_failed`: `If-Match` không khớp rowVersion hiện hành — tải lại rồi thử lại (DATA-CONC-001).'
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/precondition_failed
+            title: Dữ liệu đã thay đổi
+            status: 412
+            code: precondition_failed
     Conflict:
       description: |
         Xung đột trạng thái. `code` một trong: `invalid_transition` (DATA-STATE-001), `action_not_allowed_in_state`
@@ -9802,11 +9891,17 @@ components:
             currentState: Ready
     NotFound:
       description: |
-        Không tồn tại, hoặc thuộc tài khoản/project khác (NFR-ISOL, OWN-03) — hai trường hợp không phân biệt.
+        `404 not_found`: không tồn tại, hoặc thuộc tài khoản/project khác (NFR-ISOL, OWN-03) — hai trường hợp không phân
+        biệt. Đường dẫn không có route cũng trả mã này.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/not_found
+            title: Không tìm thấy
+            status: 404
+            code: not_found
     UnprocessableEntity:
       description: |
         Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
@@ -9835,11 +9930,16 @@ components:
           schema:
             $ref: '#/components/schemas/Workflow'
     PayloadTooLarge:
-      description: File vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm.
+      description: '`413 payload_too_large`: file vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm.'
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/payload_too_large
+            title: File vượt giới hạn
+            status: 413
+            code: payload_too_large
   parameters:
     CsrfToken:
       name: X-CSRF-Token
