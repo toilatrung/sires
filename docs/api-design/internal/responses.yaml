@@ -4,7 +4,10 @@
 # Phản hồi dùng chung cho API nội bộ. Lỗi nghiệp vụ dùng lại ../components/responses.yaml.
 
 InvalidServiceToken:
-  description: Thiếu token nội bộ, sai chữ ký, hết hạn hoặc `aud` không phải service này (ADR-20).
+  description: |
+    Thiếu token nội bộ, sai chữ ký, hết hạn hoặc `aud` không phải service này (ADR-20); cả token không đạt luật người ký:
+    `sub` khác `kid`, token `act = agent` không do orchestration ký, token `act = researcher` ở endpoint `x-apr` không do
+    gateway ký (PO 11/11/2026).
   content:
     application/problem+json:
       schema: { $ref: ../components/schemas/common.yaml#/Problem }

@@ -146,7 +146,7 @@ CREATE INDEX emb_openai_text_embedding_3_small_scope_idx ON vec.emb_openai_text_
 CREATE INDEX emb_openai_text_embedding_3_small_hnsw_idx ON vec.emb_openai_text_embedding_3_small
   USING hnsw (embedding vector_cosine_ops);
 
--- Usage của lời gọi embedding (indexing không phải Agent Run, 7.3); báo về orchestration (DBQ-03).
+-- Usage của lời gọi embedding (indexing không phải Agent Run, 7.3); báo về orchestration qua usage.recorded (DBQ-03).
 CREATE TABLE app.embedding_usage (
   id                      uuid PRIMARY KEY DEFAULT app.uuid_v7(),
   account_id              uuid NOT NULL,

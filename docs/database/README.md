@@ -2,7 +2,7 @@
 
 Thiết kế cơ sở dữ liệu của SIRes: schema vật lý trên PostgreSQL cho từng service, ràng buộc, state machine, cách ly tenant, retention, kèm DDL tham chiếu. Suy ra từ PRD v1.0 tại [../overview/index.html](../overview/index.html) (mục 5, 14, 16, 18) và kiến trúc 0.2 tại [../architecture/index.html](../architecture/index.html) (mục 3, 5, 6, 7, 10). Trang vào: [index.html](index.html).
 
-Trạng thái: **phiên bản 0.1, PO duyệt 03/11/2026 (DEC-57)**. Khởi tạo theo yêu cầu PO ngày 02/11/2026. DBD-01–DBD-13 `Accepted`; DBQ-01–DBQ-08 chờ Tech lead.
+Trạng thái: **phiên bản 0.1, PO duyệt 03/11/2026 (DEC-57)**. Khởi tạo theo yêu cầu PO ngày 02/11/2026. DBD-01–DBD-13 `Accepted`; DBQ-03, DBQ-04 PO đóng 11/11/2026; DBQ-01, DBQ-02, DBQ-05–DBQ-08 chờ Tech lead.
 
 ## Cấu trúc thư mục
 

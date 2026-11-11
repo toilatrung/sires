@@ -79,14 +79,14 @@
 <pre><code>BEGIN;                                                         -- database của service planning
   SET LOCAL app.account_id = :account;
   UPDATE task SET status='Queued', row_version=row_version+1 WHERE id=:id AND row_version=:v;   -- 0 dòng → 412
-  INSERT INTO outbox (id, kind, routing_key, payload, traceparent, created_at) VALUES
-    (:e1, 'event', 'task.activated',   {...}),                 -- sự kiện domain
-    (:e2, 'audit', 'audit.recorded',   {actor, action, objectType, objectId, fromState, toState, apr, correlationId});
+  INSERT INTO outbox (id, kind, routing_key, aggregate_type, aggregate_id, aggregate_version, payload, traceparent, created_at) VALUES
+    (:e1, 'event', 'task.activated', 'task',        :id, :v+1, {...}),   -- sự kiện domain; version = row_version mới
+    (:e2, 'audit', 'audit.recorded', 'audit_event', :e2, 1,    {actor, action, objectType, objectId, fromState, toState, apr, correlationId});
   INSERT INTO idempotency_key (...);
 COMMIT;</code></pre>
 <ul>
 <li><strong>Outbox relay</strong> (trong mỗi service, chạy nền với khóa leader): đọc <code>outbox</code> theo thứ tự, publish lên RabbitMQ với <em>publisher confirm</em>, đánh dấu <code>published_at</code>. Ít nhất một lần; mỗi message có id ổn định = id dòng outbox.</li>
-<li><strong>Inbox:</strong> consumer ghi <code>inbox(event_id)</code> trong cùng giao dịch với tác dụng của nó; event id đã có → bỏ qua. Sự kiện mang <code>aggregateVersion</code> để bỏ qua bản cũ đến sau bản mới.</li>
+<li><strong>Inbox:</strong> consumer ghi <code>inbox(event_id)</code> trong cùng giao dịch với tác dụng của nó; event id đã có → bỏ qua. Sự kiện mang <code>aggregate.version</code> (bắt buộc, DBQ-04): bản sao chỉ ghi khi version lớn hơn bản đang có, nên bản cũ đến sau bản mới bị bỏ.</li>
 <li><strong>Audit tập trung (ADR-23):</strong> Audit Event được tạo trong giao dịch của service nguồn (nên không thể có thay đổi mà thiếu audit), rồi service audit tiêu thụ <code>audit.recorded</code> và lưu chỉ ghi thêm, idempotent theo event id. Audit hiển thị trễ vài giây; export JSON/CSV và truy vấn theo project ở audit.</li>
 <li>Audit Event không chứa giá trị API key, nội dung tài liệu hay toàn văn prompt (NFR-OBS-002); <code>correlationId</code> = trace id.</li>
 <li>Bảo vệ chỉ ghi thêm: vai trò của service audit không có UPDATE/DELETE trên <code>audit_event</code>; chỉ vai trò purge được DELETE theo project/tài khoản khi xóa vĩnh viễn (NFR-RET-008).</li>

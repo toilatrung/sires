@@ -75,8 +75,9 @@ paths:
       summary: Heartbeat 30 giây của Agent Run đang chạy
       description: |
         Cập nhật `workflow.heartbeatAt`. Không có heartbeat trong 110 s → sweeper chuyển Interrupted (CTX-RECOVERY-001).
-        Phản hồi mang `cancelRequested` khi Researcher hủy workflow. `409` nghĩa là run đã bị coi là gián đoạn hoặc hủy —
-        agent-core dừng ngay, không gửi kết quả.
+        Phản hồi mang `cancelRequested` khi Researcher hủy workflow, và `serviceToken` mới để agent-core thay token Agent Run
+        sắp hết hạn (hạn ≤ 5 phút, PO 11/11/2026). `409` nghĩa là run đã bị coi là gián đoạn hoặc hủy — agent-core dừng
+        ngay, không gửi kết quả.
       x-callers: [agent-core]
       x-requirements: [CTX-RECOVERY-001, NFR-REC-001, ORCH-FAILURE-001]
       parameters:
@@ -251,6 +252,7 @@ paths:
           content:
             application/json:
               schema: { $ref: ../components/schemas/orchestration.yaml#/InteractiveAgentPrompt }
+        '400': { $ref: responses.yaml#/BadRequest }
         '401': { $ref: responses.yaml#/InvalidServiceToken }
         '403': { $ref: responses.yaml#/CallerNotAllowed }
         '404': { $ref: responses.yaml#/NotFound }
@@ -309,6 +311,7 @@ paths:
                   deliberation: { $ref: ../components/schemas/orchestration.yaml#/Deliberation }
                   contextSnapshot: { $ref: ../components/schemas/orchestration.yaml#/ContextSnapshot }
                   problemBriefEntryId: { $ref: ../components/schemas/common.yaml#/Id }
+        '400': { $ref: responses.yaml#/BadRequest }
         '401': { $ref: responses.yaml#/InvalidServiceToken }
         '403': { $ref: responses.yaml#/CallerNotAllowed }
         '409': { $ref: responses.yaml#/StaleAgentRun }
@@ -402,6 +405,7 @@ paths:
           content:
             application/json:
               schema: { $ref: ../components/schemas/orchestration.yaml#/DeliberationEntry }
+        '400': { $ref: responses.yaml#/BadRequest }
         '401': { $ref: responses.yaml#/InvalidServiceToken }
         '403': { $ref: responses.yaml#/CallerNotAllowed }
         '409': { $ref: responses.yaml#/StaleAgentRun }

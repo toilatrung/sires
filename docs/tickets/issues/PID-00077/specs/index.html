@@ -57,6 +57,10 @@
 <tr><td><code>GET</code></td><td><code>/internal/model-catalog</code></td><td><code>getModelCatalog</code></td><td><code>docs/api-design/internal/identity.yaml</code></td><td>Danh mục capability model do hệ thống duy trì</td></tr>
 <tr><td><code>POST</code></td><td><code>/internal/provider-connections/{connectionId}/issues</code></td><td><code>reportProviderIssue</code></td><td><code>docs/api-design/internal/identity.yaml</code></td><td>Báo lỗi cố định của Provider Connection (auth_failed, quota_exceeded)</td></tr>
 </tbody></table></div>
+<h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td>Phát</td><td><code>usage.recorded</code></td><td>orchestration</td><td>Usage của một lô embedding khi index tài liệu (DBQ-03, thêm 11/11/2026)</td></tr>
+</tbody></table></div>
+<p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>. Ghi dòng <code>app.embedding_usage</code>, dòng outbox <code>usage.recorded</code> và <code>reported_at</code> trong cùng giao dịch; <code>sourceId</code> = id dòng <code>embedding_usage</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00005/index.html">PID-00005</a> Thư viện nền Python sires_common: tương đương thư viện TS</td><td>Chưa làm</td><td>Có</td></tr>
@@ -85,7 +89,7 @@ pnpm nx run knowledge:dev</pre>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Gọi embedding OpenAI, Gemini</li>
-<li>Ghi <code>app.embedding_usage</code></li>
+<li>Ghi <code>app.embedding_usage</code> và phát <code>usage.recorded</code> qua outbox trong cùng giao dịch (DBQ-03)</li>
 <li>Bảng vector theo model</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
@@ -100,7 +104,7 @@ pnpm nx run knowledge:dev</pre>
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> Gọi embedding OpenAI, Gemini — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
-<li id="b2"><strong>B2</strong> Ghi <code>app.embedding_usage</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
+<li id="b2"><strong>B2</strong> Ghi <code>app.embedding_usage</code> và phát <code>usage.recorded</code> qua outbox (DBQ-03) — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
 <li id="b3"><strong>B3</strong> Bảng vector theo model — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
 <li id="b4"><strong>B4</strong> Gọi luồng khác bằng client sinh từ hợp đồng; stub nằm trong thư mục test của luồng này — Kết quả: Không import mã service khác — Kiểm tra: Lint <code>@nx/enforce-module-boundaries</code></li>
 <li id="b5"><strong>B5</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run knowledge:test</li>

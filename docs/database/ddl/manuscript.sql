@@ -13,7 +13,7 @@ CREATE TABLE replica.reference_state (
   reference_id      uuid PRIMARY KEY,
   account_id        uuid NOT NULL,
   approval_status   text NOT NULL,
-  metadata_version  integer,             -- từ reference.metadata_updated; status_changed chưa mang trường này (DBQ-04)
+  metadata_version  integer,             -- từ reference.metadata_updated và reference.status_changed (DBQ-04)
   bibtex_key        text NOT NULL,
   source_version    bigint NOT NULL,
   synced_at         timestamptz NOT NULL DEFAULT now()

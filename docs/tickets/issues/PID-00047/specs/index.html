@@ -65,6 +65,7 @@
 <tr><td>Phát</td><td><code>agent_run.status_changed</code></td><td>gateway</td><td>Agent Run bắt đầu, đổi giai đoạn, kết thúc — nguồn của Agent Activity (OQ-033)</td></tr>
 <tr><td>Phát</td><td><code>agent.run</code></td><td>agent-core</td><td>Chạy một Agent Run</td></tr>
 </tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
+<p><strong>Token Agent Run (thay đổi hợp đồng 11/11/2026, <a href="../../PID-00003/index.html#s-5">PID-00003 H3</a>):</strong> <code>startAgentRun</code> trả <code>AgentRunWorkOrder.serviceToken</code> có <code>act.type = agent</code>, <code>sub</code> = <code>agent-core</code>, <code>agentScope</code>, <code>aud</code> là mảng các service Agent Run được đọc, hạn ≤ 5 phút, ký bằng khóa của orchestration qua thư viện PID-00003. Phản hồi <code>heartbeatAgentRun</code> trả <code>serviceToken</code> mới (trường tùy chọn) trước khi token cũ hết hạn. Nguồn: <code>docs/api-design/internal/schemas.yaml#/ServiceTokenClaims</code>, <code>#/AgentRunWorkOrder</code>; <code>internal/orchestration.yaml</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00002/index.html">PID-00002</a> Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</td><td>Chưa làm</td><td>Có</td></tr>

@@ -14,7 +14,8 @@ info:
       ví dụ `workflow.status_changed.waiting_for_user`, `reference.status_changed.trusted`,
       `project.lifecycle_changed.archived` — consumer bind `workflow.status_changed.*` hoặc đúng trạng thái cần. Mỗi sự kiện được ghi vào bảng
       outbox của service phát trong cùng giao dịch với thay đổi (architecture 6.4), relay publish với publisher confirm.
-      Giao ít nhất một lần; consumer idempotent bằng bảng inbox theo `id`, bỏ qua bản có `aggregate.version` cũ hơn.
+      Giao ít nhất một lần; consumer idempotent bằng bảng inbox theo `id`; bản sao `replica.*` bỏ bản có
+      `aggregate.version` không lớn hơn `source_version` đang có (`aggregate` bắt buộc từ 11/11/2026, DBQ-04).
     - **Lệnh** trên queue riêng (`agent.run`, `knowledge.index`, `sandbox.build`): một consumer nhận, ack thủ công.
       Trạng thái thật nằm ở database của service gửi lệnh; lệnh lỗi thời bị từ chối ở bước bắt tay.
     - **Stream** trên exchange `sires.stream` (không bền): delta chat, mất thì bỏ qua.
@@ -77,6 +78,7 @@ channels:
       referenceDeleted: { $ref: '#/components/messages/referenceDeleted' }
       projectReferenceChanged: { $ref: '#/components/messages/projectReferenceChanged' }
       referenceIndexingStatusChanged: { $ref: '#/components/messages/referenceIndexingStatusChanged' }
+      usageRecorded: { $ref: '#/components/messages/usageRecorded' }
       researchObjectStatusChanged: { $ref: '#/components/messages/researchObjectStatusChanged' }
       manuscriptObjectStatusChanged: { $ref: '#/components/messages/manuscriptObjectStatusChanged' }
       auditRecorded: { $ref: '#/components/messages/auditRecorded' }
@@ -219,6 +221,7 @@ operations:
     title: knowledge phát
     messages:
       - $ref: '#/channels/events/messages/referenceIndexingStatusChanged'
+      - $ref: '#/channels/events/messages/usageRecorded'
       - $ref: '#/channels/events/messages/auditRecorded'
       - $ref: '#/channels/events/messages/dataPurged'
   researchPublishes:
@@ -350,7 +353,7 @@ operations:
   orchestrationConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
-    title: orchestration tạo workflow, đóng/hủy prompt; đánh dấu Context Snapshot lỗi thời (CTX-SNAPSHOT-001)
+    title: orchestration tạo workflow, đóng/hủy prompt; đánh dấu Context Snapshot lỗi thời (CTX-SNAPSHOT-001); ghi usage embedding vào usage_ledger
     messages:
       - $ref: '#/channels/events/messages/accountDeletionRequested'
       - $ref: '#/channels/events/messages/projectLifecycleChanged'
@@ -366,6 +369,7 @@ operations:
       - $ref: '#/channels/events/messages/researchContextVersioned'
       - $ref: '#/channels/events/messages/taskStatusChanged'
       - $ref: '#/channels/events/messages/researchObjectStatusChanged'
+      - $ref: '#/channels/events/messages/usageRecorded'
   libraryConsumes:
     action: receive
     channel: { $ref: '#/channels/events' }
@@ -1126,10 +1130,17 @@ components:
                 allOf:
                   - $ref: '#/components/schemas/StateChange'
                   - type: object
+                    required: [metadataVersion]
                     properties:
                       bibtexKey: { type: string }
                       hasContent: { type: boolean }
                       reason: { type: string }
+                      metadataVersion:
+                        type: integer
+                        minimum: 1
+                        description: |
+                          metadataVersion hiện hành của Reference lúc đổi trạng thái (DBQ-04, PO 11/11/2026). manuscript ghi vào
+                          bản sao trạng thái reference để so với `generatedFromMetadataVersion` của Bibliography Entry.
     referenceMetadataUpdated:
       name: reference.metadata_updated
       title: Researcher sửa metadata (phiên bản mới — DEC-21) — manuscript sinh lại Bibliography Entry
@@ -1220,6 +1231,40 @@ components:
                       referenceId: { $ref: '#/components/schemas/Id' }
                       embeddingModel: { type: string }
                       errorCode: { type: string, enum: [no_text_layer, too_large, too_many_pages, corrupt, no_content, embedding_not_configured, provider_error] }
+    usageRecorded:
+      name: usage.recorded
+      title: Usage của một lô embedding khi index tài liệu (không thuộc Agent Run nào)
+      description: |
+        knowledge ghi dòng `embedding_usage` của một lô embedding, dòng outbox của sự kiện này và `reported_at` của dòng đó
+        trong cùng một giao dịch; `sourceId` = id dòng `embedding_usage`, ổn định khi phát lại. Usage embedding của câu
+        truy vấn trong Agent Run không đi qua đây mà trả về trong `usage` của `retrieveEvidence`, gộp vào usage của Agent Run.
+        orchestration: ghi một dòng `usage_ledger` với `source = embedding`, `source_id = sourceId`; trùng (source,
+        source_id) thì bỏ qua, nên nhận lại sự kiện không cộng hai lần (NFR-USAGE-002, DBD-10). Provider không trả usage
+        → `usage.noData = true`, `unavailable = true`, không ước tính (NFR-USAGE-001).
+        DBQ-03 (PO 11/11/2026). Envelope: `aggregate.type = embedding_usage`, `aggregate.id = sourceId`, `version = 1`.
+      x-producer: knowledge
+      x-consumers: [orchestration]
+      x-requirements: [NFR-USAGE-001, NFR-USAGE-002]
+      traits: [{ $ref: '#/components/messageTraits/envelopeHeaders' }]
+      payload:
+        allOf:
+          - $ref: '#/components/schemas/Envelope'
+          - type: object
+            properties:
+              type: { const: usage.recorded }
+              data:
+                type: object
+                required: [source, sourceId, indexingJobId, providerConnectionId, provider, model, usage, at]
+                properties:
+                  source: { type: string, enum: [embedding] }
+                  sourceId: { $ref: '#/components/schemas/Id' }
+                  indexingJobId: { $ref: '#/components/schemas/Id' }
+                  referenceId: { $ref: '#/components/schemas/Id' }
+                  providerConnectionId: { $ref: '#/components/schemas/Id' }
+                  provider: { $ref: ../components/schemas/common.yaml#/ProviderName }
+                  model: { type: string }
+                  usage: { $ref: ../components/schemas/orchestration.yaml#/AgentRunUsage }
+                  at: { $ref: ../components/schemas/common.yaml#/Timestamp }
 
     # ---------- research ----------
     researchObjectStatusChanged:
@@ -1265,7 +1310,10 @@ components:
     auditRecorded:
       name: audit.recorded
       title: Audit Event tạo trong giao dịch của service nguồn (ADR-23)
-      description: Không bao giờ chứa API key, nội dung tài liệu, toàn văn prompt (NFR-OBS-002).
+      description: |
+        Không bao giờ chứa API key, nội dung tài liệu, toàn văn prompt (NFR-OBS-002).
+        Envelope: `aggregate` là chính Audit Event (`type = audit_event`, `id` = id Audit Event = `id` của sự kiện,
+        `version = 1`), kể cả Audit Event của truy cập bị từ chối; audit nhận idempotent theo `id`, không so phiên bản.
       x-producer: "* (mọi service có entity)"
       x-consumers: [audit]
       x-requirements: [CTX-AUDIT-001, NFR-DUR-001, NFR-RET-008]
