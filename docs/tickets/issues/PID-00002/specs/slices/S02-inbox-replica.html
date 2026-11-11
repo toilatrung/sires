@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của PID-00002: Consumer có inbox và helper replica.">
+<title>PID-00002 — S02 Consumer có inbox và helper replica | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>S02 — Consumer có inbox và helper replica</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00002-AC02, PID-00002-AC03, DATA-IDEMP-005-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O7</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC07, EC08, EC09 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết consumer chung: khai báo queue <code>&lt;service&gt;.events</code> và binding theo routing key của handler đăng ký; tham số queue (quorum, dead-letter) đọc từ cấu hình</li>
+<li>Kiểm vỏ sự kiện theo <code>EventEnvelope</code> (gồm <code>aggregate</code> bắt buộc, H2) trước khi chạy handler</li>
+<li>Trong một giao dịch vai trò <code>_system</code>: <code>INSERT INTO app.inbox … ON CONFLICT DO NOTHING</code>; không chèn được thì bỏ qua message; chèn được thì chạy handler; commit rồi ack; lỗi thì rollback và nack</li>
+<li>Viết helper replica: upsert bảng <code>replica.*</code> với <code>source_version</code> = <code>aggregate.version</code>, chỉ ghi khi giá trị đến lớn hơn giá trị đang có; trả về đã áp hay bỏ qua (H1)</li>
+<li>Test tạo một bảng replica mẫu có cột <code>source_version</code> ngay trong test, không thêm bảng vào DDL</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li><code>libs/ts/platform/src/inbox/inbox.spec.ts › sự kiện trùng chỉ áp một lần</code> (PID-00002-AC02, DATA-IDEMP-005-AC01)</li>
+<li><code>libs/ts/platform/src/inbox/inbox.spec.ts › bản cũ đến sau bị bỏ</code> (PID-00002-AC03)</li>
+<li><code>libs/ts/platform/src/inbox/inbox.spec.ts › handler lỗi rồi giao lại</code> (EC07)</li>
+<li><code>libs/ts/platform/src/inbox/inbox.spec.ts › vỏ sự kiện sai</code> (EC08)</li>
+<li><code>libs/ts/platform/src/inbox/inbox.spec.ts › cùng version</code> (EC09)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Ba AC và ba EC của slice đạt trên PostgreSQL và RabbitMQ thật</li>
+<li>Consumer và helper replica xuất qua <code>libs/ts/platform/src/index.ts</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00002</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00002 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

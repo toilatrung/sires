@@ -377,14 +377,14 @@ CREATE INDEX deliberation_entry_workflow_idx ON app.deliberation_entry (workflow
 CREATE TRIGGER deliberation_entry_append_only BEFORE UPDATE ON app.deliberation_entry
   FOR EACH ROW EXECUTE FUNCTION app.tg_immutable('status','visible_from','needs_review');
 
--- Sổ usage gộp cho NFR-USAGE-002 (DBQ-03): Agent Run (khi kết thúc) + embedding do knowledge báo về.
+-- Sổ usage gộp cho NFR-USAGE-002: Agent Run (khi kết thúc) + embedding do knowledge báo qua usage.recorded (DBQ-03).
 CREATE TABLE app.usage_ledger (
   id                      uuid PRIMARY KEY DEFAULT app.uuid_v7(),
   account_id              uuid NOT NULL,
   project_id              uuid,
   task_id                 uuid,
   source                  text NOT NULL CHECK (source IN ('agent_run','embedding')),
-  source_id               uuid NOT NULL,                 -- agent_run.id hoặc id job indexing
+  source_id               uuid NOT NULL,                 -- agent_run.id hoặc id dòng embedding_usage của knowledge (DBQ-03)
   agent                   text,
   provider_connection_id  uuid NOT NULL,
   provider                text NOT NULL,

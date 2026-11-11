@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của PID-00002: audit-emit qua outbox.">
+<title>PID-00002 — S04 audit-emit qua outbox | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>S04 — audit-emit qua outbox</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00002-AC01, DATA-PERSIST-001-AC01, NFR-DUR-001-AC01, CTX-AUDIT-001-AC01, CTX-AUDIT-001-AC02, CTX-AUDIT-001-AC03, CTX-AUDIT-001-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O4, O5, O9</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC16, EC17 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>audit-emit</code>: nhận actor, <code>action</code>, <code>objectType</code>, <code>objectId</code>, <code>objectVersion</code>, <code>fromState</code>, <code>toState</code>, <code>apr</code>, <code>summary</code>; dựng <code>AuditEvent</code> với <code>id</code> UUIDv7, <code>accountId</code>, <code>projectId</code> từ ngữ cảnh, <code>correlationId</code> = trace id, <code>at</code></li>
+<li>Ghi một dòng outbox <code>audit</code>, routing key <code>audit.recorded</code>, <code>id</code> dòng = <code>id</code> Audit Event, trong cùng giao dịch với thay đổi (dùng API của S01)</li>
+<li>Kiểm actor theo CTX-AUDIT-001: Researcher có <code>accountId</code>; agent có tên agent và <code>agentRunId</code>; System có thành phần</li>
+<li>Che chuỗi giống key trong <code>summary</code> bằng bộ che của PID-00001</li>
+<li>Điền <code>aggregate</code> = {<code>type</code>: <code>audit_event</code>, <code>id</code>: id Audit Event (= id dòng outbox), <code>version</code>: 1} (H3); service gọi không truyền thêm gì</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li><code>libs/ts/platform/src/audit/audit.spec.ts › rollback không để lại outbox và Audit Event</code> (PID-00002-AC01, DATA-PERSIST-001-AC01, NFR-DUR-001-AC01)</li>
+<li><code>libs/ts/platform/src/audit/audit.spec.ts › đủ trường AuditEvent</code> (CTX-AUDIT-001-AC01)</li>
+<li><code>libs/ts/platform/src/audit/audit.spec.ts › aggregate là chính Audit Event</code> (H3, P6)</li>
+<li><code>libs/ts/platform/src/audit/audit.spec.ts › actor không hợp lệ</code> (EC16, CTX-AUDIT-001-AC02)</li>
+<li><code>libs/ts/platform/src/audit/audit.spec.ts › che key trong summary</code> (EC17, CTX-AUDIT-001-AC03)</li></ul>
+<p>CTX-AUDIT-001-AC04: ghi trong <code>report.md</code> danh sách API xuất từ <code>libs/ts/platform/src/audit/</code>, không có hàm sửa hay xóa.</p>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi AC và EC của slice đạt; <code>aggregate</code> điền theo H3</li>
+<li><code>audit-emit</code> xuất qua <code>libs/ts/platform/src/index.ts</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00002</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00002 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

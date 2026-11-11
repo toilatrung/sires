@@ -23,26 +23,29 @@
 <li><a href="#kiem">Kiểm</a></li>
 <li><a href="#xong-khi">Xong khi</a></li></ul></details>
 
-<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sửa ngày 11/11/2026 theo H3.</p>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">AC</th><td>PID-00005-AC03, PID-00005-AC04</td></tr>
 <tr><th scope="row">Output spec</th><td>O4, O10</td></tr>
 <tr><th scope="row">Bước spec</th><td>B2</td></tr>
-<tr><th scope="row">Edge case</th><td>EC01 (từ <code>specs/scope.html</code>)</td></tr>
-<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC04, EC05 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <code>EventEnvelope.aggregate</code> bắt buộc trong <code>internal/schemas.yaml</code> (DBQ-04, sửa cùng nhánh <code>contracts/dbq-03-04-pid-00002-00003</code>)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Viết outbox và relay với aio-pika</li>
-<li>Viết inbox idempotent, bỏ bản cũ theo <code>aggregate.version</code></li>
-<li>Viết <code>Idempotency-Key</code>, audit-emit</li>
+<ol><li>Viết outbox và relay với aio-pika. Hàm ghi outbox bắt buộc nhận <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} và ghi vào các cột <code>aggregate_type</code>, <code>aggregate_id</code>, <code>aggregate_version</code> của <code>app.outbox</code>; thiếu thì báo lỗi ngay, không ghi dòng (EC04)</li>
+<li>Viết inbox: chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>) của <code>app.inbox</code>, ghi trong cùng giao dịch với tác động; inbox không so <code>aggregate.version</code></li>
+<li>Viết helper upsert bảng replica: chỉ ghi khi <code>aggregate.version</code> của sự kiện lớn hơn <code>source_version</code> đang có, rồi đặt <code>source_version</code> = <code>aggregate.version</code>; bằng hoặc nhỏ hơn thì bỏ (EC05)</li>
+<li>Viết <code>Idempotency-Key</code>, audit-emit; Audit Event đi qua outbox với <code>aggregate</code> là đối tượng được audit</li>
 <li>Kiểm payload bằng JSON Schema đọc từ <code>docs/api-design/internal/schemas.yaml</code>, không phụ thuộc thư viện TS</li></ol>
 <h2 id="kiem">Kiểm</h2>
-<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<ul><li><code>pnpm nx run sires-common:test</code> → đạt</li>
 <li><code>libs/py/sires_common/tests/test_messaging.py › test_envelope_and_rollback</code> (PID-00005-AC03)</li>
-<li><code>libs/py/sires_common/tests/test_messaging.py › test_inbox</code> (PID-00005-AC04)</li>
+<li><code>libs/py/sires_common/tests/test_messaging.py › test_inbox</code> (PID-00005-AC04, phần lọc trùng)</li>
+<li><code>libs/py/sires_common/tests/test_messaging.py › test_replica_upsert</code> (PID-00005-AC04, phần phiên bản; EC05) — bảng <code>replica.project_state</code> tạo bằng <code>app.create_replica_project_state()</code> của <code>docs/database/ddl/00-common.sql</code>, hoặc bảng thử có cột <code>source_version</code></li>
+<li><code>libs/py/sires_common/tests/test_messaging.py › test_missing_aggregate</code> (EC04)</li>
 <li><code>libs/py/sires_common/tests/test_messaging.py › test_relay_restart</code> (EC01)</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Sự kiện đúng <code>EventEnvelope</code>, xử lý trùng đúng một lần</li></ul>
+<ul><li>Sự kiện đúng <code>EventEnvelope</code> có <code>aggregate</code>; xử lý trùng đúng một lần; bản replica không bị ghi đè bởi sự kiện cũ</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00005</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Slice PID-00005 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>

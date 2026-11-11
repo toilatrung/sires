@@ -18,11 +18,29 @@ ServiceTokenClaims:
     Nội dung JWT nội bộ (ADR-20) gửi ở header `Authorization: Bearer …`. Ký bằng khóa trong KMS, hạn ≤ 5 phút.
     Chỉ gateway phát token có `act.type = researcher` (từ phiên đăng nhập); token do orchestration cấp cho
     Agent Run luôn có `act.type = agent`. Service nhận tự kiểm tra quyền theo token, không tin service gọi.
+
+    Khóa ký (PO 11/11/2026, architecture 10.4): mỗi service một cặp khóa ES256 trong KMS, header `kid` = tên service ký.
+    Service ký lời gọi đi của chính mình với `sub` = tên mình; bên nhận kiểm chữ ký bằng khóa công khai của `kid` và
+    yêu cầu `sub` = `kid`, trừ hai trường hợp:
+    - `act.type = agent`: orchestration ký cho Agent Run, `sub = agent-core`, bắt buộc có `agentRunId` và `agentScope`;
+      bên nhận chỉ chấp nhận khi `kid = orchestration`.
+    - `act.type = researcher` ở endpoint có `x-apr`: chỉ chấp nhận khi `kid = gateway`; orchestration chỉ chuyển tiếp
+      nguyên token của gateway trong request trả lời prompt (F-08), nên endpoint `x-apr` nhận token đó khi `aud` là
+      chính service này hoặc `orchestration` (PO 11/11/2026). Endpoint khác kiểm `aud` chặt.
+    Hạn ≤ 5 phút áp cho mọi token; token của Agent Run được làm mới qua phản hồi heartbeat (`AgentRunControl.serviceToken`).
   required: [iss, sub, aud, exp, act]
   properties:
     iss: { type: string, examples: [sires-internal] }
     sub: { $ref: '#/ServiceName' }
-    aud: { $ref: '#/ServiceName' }
+    aud:
+      description: |
+        Service nhận. Token `act.type = agent` có `aud` là mảng các service Agent Run được đọc; bên nhận kiểm `aud` chứa
+        tên mình (PO 11/11/2026). Token khác có `aud` một giá trị.
+      oneOf:
+        - { $ref: '#/ServiceName' }
+        - type: array
+          minItems: 1
+          items: { $ref: '#/ServiceName' }
     exp: { type: integer }
     act: { $ref: ../components/schemas/common.yaml#/ActorRef }
     accountId: { $ref: ../components/schemas/common.yaml#/Id }
@@ -172,7 +190,9 @@ AgentRunWorkOrder:
     model: { type: string }
     serviceToken:
       type: string
-      description: JWT nội bộ (ServiceTokenClaims) có act = agent và agentScope; dùng cho mọi lời gọi đọc của Agent Run này.
+      description: |
+        JWT nội bộ (ServiceTokenClaims) có act = agent, agentScope và `aud` là mảng service được đọc; dùng cho mọi lời gọi
+        đọc của Agent Run này. Hạn ≤ 5 phút; agent-core thay bằng token mới trong phản hồi heartbeat.
     debugMode: { type: boolean, description: Chế độ debug của tài khoản tại thời điểm bắt đầu (CTX-REGISTRY-002). }
     responseLanguage: { $ref: ../components/schemas/common.yaml#/Language }
     stream: { type: boolean, description: true với lượt chat của Orchestrator (NFR-PERF-005). }
@@ -183,6 +203,11 @@ AgentRunControl:
   required: [cancelRequested]
   properties:
     cancelRequested: { type: boolean, description: Workflow bị hủy — agent-core hủy lời gọi provider đang chờ (architecture 5.5). }
+    serviceToken:
+      type: string
+      description: |
+        Token Agent Run mới (cùng claims với `AgentRunWorkOrder.serviceToken`, hạn mới ≤ 5 phút); agent-core dùng thay token
+        cũ cho các lời gọi sau. orchestration trả ở mọi heartbeat thành công (PO 11/11/2026).
 
 AgentRunUsage:
   description: |
@@ -362,7 +387,7 @@ EventEnvelope:
   description: |
     Vỏ chung của mọi sự kiện trên exchange `sires.events`. `id` = id dòng outbox của service phát (ổn định, dùng cho
     inbox idempotent và `Last-Event-ID` của SSE). Routing key = `type`.
-  required: [id, type, schemaVersion, producer, occurredAt, accountId, data]
+  required: [id, type, schemaVersion, producer, occurredAt, accountId, aggregate, data]
   properties:
     id: { $ref: ../components/schemas/common.yaml#/Id }
     type: { type: string, examples: [task.activated] }
@@ -374,11 +399,22 @@ EventEnvelope:
     actor: { $ref: ../components/schemas/common.yaml#/ActorRef }
     aggregate:
       type: object
-      description: Entity gốc và phiên bản sau thay đổi; consumer bỏ qua sự kiện có version nhỏ hơn bản đã xử lý.
+      description: |
+        Entity gốc của thay đổi và phiên bản sau thay đổi; bắt buộc ở mọi sự kiện (DBQ-04, PO 11/11/2026). Ghi cùng giá
+        trị vào cột `aggregate_type`, `aggregate_id`, `aggregate_version` của outbox.
+        - `version` = `row_version` của entity sau thay đổi, tăng đơn điệu theo (`type`, `id`). Entity chỉ ghi thêm,
+          không có cột `row_version` trong DDL, dùng `version = 1`.
+        - `audit.recorded`: chính Audit Event — `type = audit_event`, `id` = id Audit Event (bằng `id` của sự kiện),
+          `version = 1`; entity được audit nằm ở `data.objectType`, `data.objectId` (PO 11/11/2026).
+        - `data.purged`: `type = data_purge`, `id` = id project hoặc tài khoản đã xóa, `version = 1`.
+        - `usage.recorded`: `type = embedding_usage`, `id` = `data.sourceId`, `version = 1`.
+        Consumer chỉ so `version` trong cùng (`type`, `id`). Bản sao `replica.*` chỉ ghi khi `version` lớn hơn
+        `source_version` đang có (bản cũ đến sau bị bỏ); inbox chỉ lọc trùng theo `id` của sự kiện.
+      required: [type, id, version]
       properties:
-        type: { type: string }
+        type: { type: string, examples: [task, reference, project] }
         id: { $ref: ../components/schemas/common.yaml#/Id }
-        version: { type: integer }
+        version: { type: integer, minimum: 1 }
     traceparent: { type: string }
     data:
       type: object

@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của PID-00003: Khóa ký, phát và kiểm token.">
+<title>PID-00003 — S01 Khóa ký, phát và kiểm token | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00003</p><h1>S01 — Khóa ký, phát và kiểm token</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00003-AC01, PID-00003-AC03, PID-00003-AC08 (phần phát token)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1</td></tr>
+<tr><th scope="row">Edge case</th><td>EC03, EC04, EC06 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00001 (lỗi problem+json, logger)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Trong <code>libs/ts/platform/src/service-auth/</code>, viết interface ký: ký bằng khóa riêng của service mình (ES256, <code>kid</code> = tên service) và tra khóa công khai theo <code>kid</code>. Bản cục bộ: sinh cặp khóa trong bộ nhớ cho test; nạp bộ khóa công khai của môi trường từ cấu hình hoặc secret khi khởi động. Không gọi KMS thật (N1). Thư viện JWT do Dev chọn, ghi <code>report.md</code></li>
+<li>Viết hàm phát token theo <code>ServiceTokenClaims</code>: <code>iss</code>, <code>sub</code> = service mình, <code>aud</code> = service nhận, <code>exp</code> ≤ 5 phút, <code>act</code>, tùy chọn <code>accountId</code>, <code>projectId</code>; và hàm phát token Agent Run (<code>act.type = agent</code>, <code>sub</code> = <code>agent-core</code>, <code>agentRunId</code>, <code>agentScope</code>, <code>aud</code> là mảng service được đọc, <code>exp</code> ≤ 5 phút) cho orchestration dùng khi start và khi làm mới (H3)</li>
+<li>Viết hàm kiểm token: chữ ký theo <code>kid</code>; <code>sub</code> = <code>kid</code> trừ token Agent Run; <code>iss</code>; <code>aud</code> = service này (hai ngoại lệ thêm ở S03); <code>exp</code> còn hạn và không xa hơn 5 phút; claims đúng schema. Mọi lỗi trả <code>401 invalid_service_token</code> qua bộ lọc problem+json của PID-00001</li>
+<li>Log không ghi token đầy đủ (dùng logger che dữ liệu của PID-00001)</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › hết hạn và sai chữ ký</code> (PID-00003-AC01)</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › sub khác service ký</code> (PID-00003-AC03)</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › kid lạ</code> (EC03)</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › hạn quá 5 phút</code> (EC04)</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › aud sai</code> (EC06)</li>
+<li><code>libs/ts/platform/src/service-auth/token.spec.ts › phát token Agent Run</code> (PID-00003-AC08, phần phát token)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Token do hàm phát tạo ra qua được hàm kiểm của service nhận; mọi trường hợp lỗi trên trả <code>401 invalid_service_token</code></li>
+<li>Hàm phát, hàm kiểm và interface ký xuất qua <code>libs/ts/platform/src/index.ts</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00003</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00003 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

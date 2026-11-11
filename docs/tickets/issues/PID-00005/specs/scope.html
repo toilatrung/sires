@@ -23,8 +23,8 @@
 <h2 id="pham-vi">Phạm vi</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
 <tr><td>P1</td><td>Tenancy, giao dịch, UUIDv7, lỗi problem+json cho FastAPI, logger structlog, OpenTelemetry</td><td>ticket mục 1</td><td>S01</td></tr>
-<tr><td>P2</td><td>Outbox, inbox, idempotency, audit-emit với aio-pika</td><td>ticket mục 1</td><td>S02</td></tr>
-<tr><td>P3</td><td>Service-auth guard và client token</td><td>ticket mục 1</td><td>S03</td></tr>
+<tr><td>P2</td><td>Outbox (ghi bắt buộc <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>}), relay, inbox lọc trùng theo (<code>consumer</code>, <code>event_id</code>), helper upsert bảng replica chỉ ghi khi <code>aggregate.version</code> &gt; <code>source_version</code>, idempotency, audit-emit với aio-pika</td><td>ticket mục 1; H3</td><td>S02</td></tr>
+<tr><td>P3</td><td>Service-auth guard và client token: khóa ES256 theo service (<code>kid</code> = tên service), <code>sub</code> = service ký, token <code>act.type = agent</code> chỉ nhận khi orchestration ký, có <code>agentScope</code>, <code>agentRunId</code> và <code>aud</code> là mảng chứa service này</td><td>ticket mục 1; H2; H4</td><td>S03</td></tr>
 <tr><td>P4</td><td>Interface <code>ModelGateway</code>, FakeModelGateway, LocalKms, fixture pytest cho PostgreSQL, RabbitMQ, MinIO</td><td>ticket mục 1</td><td>S04</td></tr>
 </tbody></table></div>
 <h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
@@ -32,12 +32,19 @@
 <tr><td>N1</td><td>Thư viện TS (<a href="../../PID-00001/index.html">PID-00001</a>, <a href="../../PID-00002/index.html">PID-00002</a>, <a href="../../PID-00003/index.html">PID-00003</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00001/index.html">PID-00001</a>, <a href="../../PID-00002/index.html">PID-00002</a>, <a href="../../PID-00003/index.html">PID-00003</a></td></tr>
 <tr><td>N2</td><td>Adapter provider thật (<a href="../../PID-00070/index.html">PID-00070</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00070/index.html">PID-00070</a></td></tr>
 <tr><td>N3</td><td>Client sinh từ hợp đồng (<a href="../../PID-00007/index.html">PID-00007</a>)</td><td>Ticket mục “Không gồm”</td><td><a href="../../PID-00007/index.html">PID-00007</a></td></tr>
+<tr><td>N4</td><td>Luật route <code>x-apr</code> (chỉ nhận Researcher do gateway ký)</td><td>Không service Python nào có endpoint <code>x-apr</code>; luật ở bản TS</td><td><a href="../../PID-00003/index.html">PID-00003</a> S03</td></tr>
+<tr><td>N5</td><td>Phát token Agent Run <code>aud</code> mảng, làm mới trong phản hồi <code>heartbeatAgentRun</code>, thay token ở worker</td><td>Việc của orchestration và worker agent-core; thư viện chỉ kiểm token <code>aud</code> mảng (P3, H4)</td><td><a href="../../PID-00047/index.html">PID-00047</a>, <a href="../../PID-00073/index.html">PID-00073</a></td></tr>
+<tr><td>N6</td><td>Adapter gọi KMS thật để ký ở staging, production</td><td>Khóa KMS thuộc hạ tầng</td><td><a href="../../PID-00035/index.html">PID-00035</a>, <a href="../../PID-00153/index.html">PID-00153</a></td></tr>
 </tbody></table></div>
 <h2 id="edge-case">Edge case</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
 <tr><td>EC01</td><td>Relay chết giữa chừng</td><td>Dòng chưa phát được phát lại khi khởi động; consumer lọc trùng</td><td>Spec mục 4.7</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_relay_restart</code></td><td>S02</td></tr>
-<tr><td>EC02</td><td>Token của Agent Run không có <code>agentScope</code></td><td>Từ chối</td><td>Spec mục 4.7</td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_agent_scope</code></td><td>S03</td></tr>
+<tr><td>EC02</td><td>Token của Agent Run không có <code>agentScope</code></td><td>Từ chối: <code>401 invalid_service_token</code> (mã theo PID-00003 I3, PO chốt 11/11/2026)</td><td>Spec mục 4.7; H2</td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_agent_scope</code></td><td>S03</td></tr>
 <tr><td>EC03</td><td>Kịch bản fake không có bước đang hỏi</td><td>Báo lỗi rõ tên agent và bước, không trả dữ liệu mặc định</td><td>Spec mục 4.7</td><td><code>libs/py/sires_common/tests/test_fake_gateway.py › test_missing_step</code></td><td>S04</td></tr>
+<tr><td>EC04</td><td>Gọi ghi outbox không có <code>aggregate</code></td><td>Báo lỗi ngay, không ghi dòng outbox</td><td>H3; <code>EventEnvelope</code> (DBQ-04)</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_missing_aggregate</code></td><td>S02</td></tr>
+<tr><td>EC05</td><td>Sự kiện có <code>aggregate.version</code> bằng <code>source_version</code> của bản replica (giao lại sau khi đã áp dụng)</td><td>Không ghi; chỉ ghi khi lớn hơn</td><td>H3</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_replica_upsert</code></td><td>S02</td></tr>
+<tr><td>EC06</td><td><code>kid</code> không có trong bộ khóa công khai</td><td><code>401 invalid_service_token</code></td><td>H2; <code>InvalidServiceToken</code></td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_unknown_kid</code></td><td>S03</td></tr>
+<tr><td>EC07</td><td>Token có <code>aud</code> là mảng</td><td>Token <code>act.type = agent</code> do orchestration ký: qua khi mảng chứa service này, không chứa thì <code>401</code>. Token khác có <code>aud</code> mảng: <code>401 invalid_service_token</code></td><td>H4; <code>ServiceTokenClaims</code></td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_aud_array</code></td><td>S03</td></tr>
 </tbody></table></div>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00005</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>

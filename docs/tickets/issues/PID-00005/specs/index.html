@@ -91,7 +91,9 @@ pnpm local:up</pre>
 <li>Interface <code>ModelGateway</code>, FakeModelGateway, LocalKms, fixture pytest cho PostgreSQL, RabbitMQ, MinIO</li>
 <li>Log bằng structlog, trace bằng OpenTelemetry; che dữ liệu như bản TS (kiến trúc 2.4, 10.3)</li>
 <li>Consumer dùng aio-pika, ack thủ công (kiến trúc 2.4)</li>
-<li>Vỏ sự kiện theo <code>EventEnvelope</code> (<code>internal/schemas.yaml</code>)</li>
+<li>Vỏ sự kiện theo <code>EventEnvelope</code> (<code>internal/schemas.yaml</code>), <code>aggregate</code> bắt buộc (DBQ-04; H3)</li>
+<li>Inbox chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>); bỏ bản cũ bằng helper upsert bảng replica, chỉ ghi khi <code>aggregate.version</code> &gt; <code>source_version</code> (H3)</li>
+<li>Token nội bộ: ES256 theo service, <code>kid</code> = tên service, <code>sub</code> = service ký; token <code>act.type = agent</code> chỉ nhận khi orchestration ký và có <code>agentScope</code>, <code>agentRunId</code> (H2); <code>aud</code> của token agent là mảng, bên nhận kiểm “<code>aud</code> chứa service này” (H4)</li>
 <li>FakeModelGateway trả kịch bản ghi sẵn theo (agent, bước), tiêm lỗi theo mã chuẩn, đếm attempts (kiến trúc 8.9)</li>
 <li><code>agent-core</code> và <code>knowledge</code> cùng dùng interface <code>ModelGateway</code> (embedding qua thư viện dùng chung), nên interface đặt ở thư viện; adapter thật ở <code>agent-core</code> (kiến trúc 2.4, 8.1)</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
@@ -122,9 +124,9 @@ node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00005-AC01</td><td><code>libs/py/sires_common/tests/test_tenancy.py › test_rls</code></td><td>Given tài khoản A và B, When B truy vấn qua helper, Then không thấy dữ liệu của A; thiếu <code>app.account_id</code> thì 0 dòng.</td></tr>
 <tr><td>PID-00005-AC02</td><td><code>libs/py/sires_common/tests/test_logging.py › test_redaction</code></td><td>Given API key trong log, When structlog ghi, Then giá trị bị che; lỗi không khai báo trả <code>internal_error</code>.</td></tr>
-<tr><td>PID-00005-AC03</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_envelope_and_rollback</code></td><td>Given sự kiện do thư viện phát, When kiểm theo JSON Schema <code>EventEnvelope</code>, Then đạt; giao dịch rollback thì không có dòng outbox.</td></tr>
-<tr><td>PID-00005-AC04</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_inbox</code></td><td>Given sự kiện trùng hoặc <code>aggregate.version</code> cũ, When consumer nhận, Then tác động đúng một lần, bản cũ bị bỏ.</td></tr>
-<tr><td>PID-00005-AC05</td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_guard</code></td><td>Given token hết hạn, sai chữ ký hoặc service ngoài <code>x-callers</code>, When gọi, Then <code>401</code> hoặc <code>403 caller_not_allowed</code>.</td></tr>
+<tr><td>PID-00005-AC03</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_envelope_and_rollback</code></td><td>Given sự kiện do thư viện phát, When kiểm theo JSON Schema <code>EventEnvelope</code> (có <code>aggregate</code> bắt buộc), Then đạt; giao dịch rollback thì không có dòng outbox.</td></tr>
+<tr><td>PID-00005-AC04</td><td><code>libs/py/sires_common/tests/test_messaging.py › test_inbox</code>, <code>› test_replica_upsert</code></td><td>Given cùng <code>event id</code> đến hai lần, When consumer xử lý trong giao dịch có inbox, Then tác động đúng một lần; helper upsert replica không ghi sự kiện có <code>aggregate.version</code> không lớn hơn <code>source_version</code> (H3).</td></tr>
+<tr><td>PID-00005-AC05</td><td><code>libs/py/sires_common/tests/test_service_auth.py › test_guard</code>, <code>› test_signer_rules</code></td><td>Given token hết hạn, sai chữ ký, <code>sub</code> khác service ký, hoặc token agent không do orchestration ký hay có <code>aud</code> mảng không chứa service này, When gọi, Then <code>401 invalid_service_token</code>; service ngoài <code>x-callers</code> thì <code>403 caller_not_allowed</code> (H2, H4).</td></tr>
 <tr><td>PID-00005-AC06</td><td><code>libs/py/sires_common/tests/test_fake_gateway.py › test_deterministic</code></td><td>Given cùng kịch bản (agent, bước), When gọi FakeModelGateway hai lần, Then kết quả giống nhau; tiêm <code>rate_limited</code> thì đếm đúng attempts.</td></tr>
 </tbody></table></div>
 

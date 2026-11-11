@@ -233,7 +233,7 @@ BEGIN
     status          text NOT NULL CHECK (status IN ('Active','Archived')),
     deleted_at      timestamptz,
     purge_after     timestamptz,
-    source_version  bigint NOT NULL,     -- aggregateVersion của sự kiện; bản cũ đến sau bị bỏ
+    source_version  bigint NOT NULL,     -- aggregate.version của sự kiện (DBQ-04); bản cũ đến sau bị bỏ
     synced_at       timestamptz NOT NULL DEFAULT now()
   );
 END $$;

@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
 <main id="main-content">
 <p class="eyebrow">Spec kỹ thuật · PID-00002</p><h1>PID-00002 — Thư viện nền TS: outbox + relay, inbox, idempotency, audit-emit</h1>
-<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00002</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 11/11/2026 · Ticket: <a href="../index.html">PID-00002</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Làm rõ 11/11/2026 (H1–H4) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
 <li><a href="#s-3">3. Output</a></li>
@@ -33,9 +33,9 @@
 <tr><th scope="row">Mục đích</th><td>Cổng PH-01 yêu cầu ghi trạng thái, Audit Event và outbox trong một giao dịch, và consumer xử lý sự kiện đến trùng đúng một lần. Mọi luồng dùng chung phần này.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>platform</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · Thư viện nền</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00002-AC01, PID-00002-AC02, PID-00002-AC03</td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-19">ADR-19</a>, <a href="../../../../architecture/sections/04-runtime-flows.html#f-02">F-02</a></td></tr>
-<tr><th scope="row">Không làm ở spec này</th><td>Topology RabbitMQ của staging (<a href="../../PID-00057/index.html">PID-00057</a>); Kho Audit Event (<a href="../../PID-00045/index.html">PID-00045</a>)</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00002-AC01 – PID-00002-AC06 (AC04–AC06 thêm khi làm rõ 11/11/2026, mỗi mục “Gồm” của ticket có AC kiểm được)</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-19">ADR-19</a>, <a href="../../../../architecture/sections/04-runtime-flows.html#f-02">F-02</a>, <a href="../../../../architecture/sections/06-data-architecture.html#s-6-4">kiến trúc 6.4</a>, <a href="../../../../database/sections/09-audit-and-platform.html#s-9-2">database 9.2–9.4</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-04">DBQ-04</a> (PO chốt 11/11/2026, H2)</td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Topology RabbitMQ của staging (<a href="../../PID-00057/index.html">PID-00057</a>); Kho Audit Event (<a href="../../PID-00045/index.html">PID-00045</a>); thư viện Python (<a href="../../PID-00005/index.html">PID-00005</a>)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-2">2. Input</h2>
@@ -43,50 +43,63 @@
 <ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-1">Kế hoạch luồng platform</a></li>
 <li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
 <li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li>Kiến trúc: <a href="../../../../architecture/sections/06-data-architecture.html#s-6-4">6.4</a> (outbox, relay, inbox, audit tập trung), <a href="../../../../architecture/sections/05-workflow-engine-and-orchestration.html#s-5-8">5.8</a> (idempotency), <a href="../../../../architecture/sections/11-deployment-and-operations.html#s-11-4">11.4</a> (cảnh báo outbox)</li>
+<li>Database: <a href="../../../../database/sections/09-audit-and-platform.html#s-9-2">9.2</a>, <a href="../../../../database/sections/09-audit-and-platform.html#s-9-3">9.3</a>, <a href="../../../../database/sections/09-audit-and-platform.html#s-9-4">9.4</a>, <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a> (vai trò), <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-2">12.2</a> (job dọn)</li>
 <li>Requirement: <a href="../../../../overview/sections/18-data-and-state-specifications.html#req-data-persist-001">DATA-PERSIST-001</a>, <a href="../../../../overview/sections/18-data-and-state-specifications.html#req-data-idemp-005">DATA-IDEMP-005</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-dur-001">NFR-DUR-001</a>, <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-audit-001">CTX-AUDIT-001</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-ret-008">NFR-RET-008</a></li></ul>
 <h3 id="s-2-2">2.2. Mã nguồn</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API hiện có, đổi tương thích ngược</td></tr>
+<tr><td><code>libs/ts/platform/src/tenancy/</code>, <code>errors/</code>, <code>logging/</code>, <code>telemetry/</code></td><td>Helper giao dịch, UUIDv7, problem+json, bộ che log, trace của <a href="../../PID-00001/index.html">PID-00001</a> (dùng lại, không viết lại)</td></tr>
 <tr><td><code>libs/ts/testing/src/index.ts</code></td><td>Thư viện test hiện có</td></tr>
-<tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>Thư viện Python hiện có</td></tr>
+<tr><td><code>docs/database/ddl/00-common.sql</code></td><td>Bảng <code>app.*</code>, hàm, vai trò; test nạp file này vào PostgreSQL của Testcontainers (chỉ đọc)</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
 <h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
-<tr><td>Phát</td><td><code>audit.recorded</code></td><td>audit</td><td>Audit Event tạo trong giao dịch của service nguồn (ADR-23)</td></tr>
-</tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>.</p>
-<h4>Bảng</h4><p><code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code>. Nguồn: <code>docs/database/ddl/00-common.sql</code>.</p>
+<tr><td>Phát</td><td><code>audit.recorded</code></td><td>audit</td><td>Audit Event tạo trong giao dịch của service nguồn (ADR-23); thư viện ghi vào outbox của service gọi</td></tr>
+<tr><td>Phát (relay)</td><td>Mọi dòng outbox của service dùng thư viện</td><td>Theo <code>x-consumers</code> của từng message</td><td>Sự kiện và Audit Event tới exchange <code>sires.events</code>; lệnh <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code> tới queue cùng tên</td></tr>
+<tr><td>Nghe (khung)</td><td>Mọi sự kiện mà service đăng ký handler</td><td>Service dùng thư viện</td><td>Consumer chung có inbox; nội dung xử lý do từng luồng viết</td></tr>
+</tbody></table></div><p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code> (quy tắc routing key ở <code>info.description</code>, trait <code>envelopeHeaders</code>, <code>persistentSend</code>); vỏ <code>docs/api-design/internal/schemas.yaml#/EventEnvelope</code> — <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} bắt buộc theo H2; <code>Idempotency-Key</code> ở <code>components/parameters.yaml</code>; <code>AuditEvent</code> ở <code>components/schemas/orchestration.yaml</code>.</p>
+<h4>Bảng</h4><p><code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code>; bảng <code>replica.*</code> của service gọi (cột <code>source_version</code>) cho helper replica. Nguồn: <code>docs/database/ddl/00-common.sql</code>. Vai trò: <code>_app</code> chỉ INSERT outbox, đọc ghi <code>idempotency_key</code> có RLS; <code>_system</code> (BYPASSRLS) cho relay, inbox, <code>job_lock</code>, ghi <code>replica.*</code>, job dọn (database 11.2).</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
-<tr><td><a href="../../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td><td>Sẵn sàng, chưa làm</td><td>Có</td></tr>
+<tr><td>Hợp đồng theo H2, H3, H4 (<code>EventEnvelope.aggregate</code> bắt buộc, quy ước cho <code>audit.recorded</code>, <code>400</code> khi thiếu <code>Idempotency-Key</code>) đã vào <code>main</code></td><td>Đang sửa ở nhánh <code>contracts/dbq-03-04-pid-00002-00003</code> cùng hồ sơ này</td><td>Có, cho S01–S04</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
 <pre>pnpm install
 uv sync --all-packages
 pnpm local:up</pre>
+<p>Test dùng Testcontainers với image PostgreSQL 16 + pgvector và RabbitMQ; cần Docker (Linux hoặc WSL2, như PID-00001 H1).</p>
 
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
-<tr><td id="o1">O1</td><td>Tệp</td><td><code>libs/ts/platform/src/outbox/</code> (tạo mới)</td><td>Outbox và relay</td><td>Test tích hợp với RabbitMQ</td></tr>
-<tr><td id="o2">O2</td><td>Tệp</td><td><code>libs/ts/platform/src/inbox/</code> (tạo mới)</td><td>Inbox idempotent</td><td>Test sự kiện trùng, lệch thứ tự</td></tr>
+<tr><td id="o1">O1</td><td>Tệp</td><td><code>libs/ts/platform/src/outbox/</code> (tạo mới)</td><td>Ghi outbox trong giao dịch, routing key, relay</td><td>Test tích hợp với RabbitMQ</td></tr>
+<tr><td id="o2">O2</td><td>Tệp</td><td><code>libs/ts/platform/src/inbox/</code> (tạo mới)</td><td>Consumer có inbox idempotent; helper replica theo <code>aggregate.version</code> (H1)</td><td>Test sự kiện trùng, lệch thứ tự</td></tr>
 <tr><td id="o3">O3</td><td>Tệp</td><td><code>libs/ts/platform/src/idempotency/</code> (tạo mới)</td><td>Idempotency-Key</td><td>Test gửi lặp</td></tr>
-<tr><td id="o4">O4</td><td>Tệp</td><td><code>libs/ts/platform/src/audit/</code> (tạo mới)</td><td>audit-emit</td><td>Test đơn vị</td></tr>
-<tr><td id="o5">O5</td><td>Sự kiện</td><td><code>apps/platform/src/</code> (tạo mới)</td><td>Phát qua outbox: 1</td><td>Test trùng và lệch thứ tự</td></tr>
+<tr><td id="o4">O4</td><td>Tệp</td><td><code>libs/ts/platform/src/audit/</code> (tạo mới)</td><td>audit-emit</td><td>Test đơn vị và tích hợp</td></tr>
+<tr><td id="o5">O5</td><td>Sự kiện</td><td><code>libs/ts/platform/src/audit/</code> — ghi vào outbox của service gọi (sửa 11/11/2026: không có <code>apps/platform</code>)</td><td>Phát <code>audit.recorded</code> qua outbox: 1</td><td>Test trùng và lệch thứ tự</td></tr>
 <tr><td id="o6">O6</td><td>Test</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 <tr><td id="o7">O7</td><td>Test</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o8">O8</td><td>Test</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o9">O9</td><td>Test</td><td><code>libs/ts/platform/src/audit/audit.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o10">O10</td><td>Tệp</td><td><code>libs/ts/platform/src/jobs/</code> (tạo mới)</td><td>Lease trong <code>app.job_lock</code>, job dọn theo retention, metric tuổi outbox</td><td>Test tích hợp</td></tr>
+<tr><td id="o11">O11</td><td>Test</td><td><code>libs/ts/platform/src/jobs/jobs.spec.ts</code> (tạo mới)</td><td>Test lease và job dọn</td><td>Lệnh ở mục 6</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
 <h3 id="s-4-1">4.1. Dữ liệu</h3>
-<p>Bảng ở mục 2.3, đúng DDL tham chiếu (DEC-57). Lệch thì ghi câu hỏi, không tự đổi schema.</p>
+<p>Bảng ở mục 2.3, đúng DDL tham chiếu (DEC-57). Lệch thì ghi câu hỏi, không tự đổi schema. <code>app.inbox</code> không có cột version: inbox chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>); so phiên bản làm ở bảng <code>replica.*</code> qua cột <code>source_version</code>, nay lấy bằng <code>aggregate.version</code> (H1, H2). Request dùng vai trò <code>_app</code>; relay, consumer, helper replica, job dọn dùng vai trò <code>_system</code> (database 11.2).</p>
 <h3 id="s-4-2">4.2. API</h3>
-<p>Không có API mới.</p>
+<p>Không có endpoint mới. Middleware <code>Idempotency-Key</code> áp cho operation khai báo tham số <code>IdempotencyKey</code>; lỗi theo <code>components/responses.yaml</code>: cùng khóa khác nội dung trả <code>422 idempotency_key_reused</code>; thiếu header trả <code>400</code> <code>validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code> (H4).</p>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
-<p>Phát qua outbox trong cùng giao dịch. Nghe qua inbox idempotent; bỏ bản cũ theo <code>aggregate.version</code>.</p>
+<p>Phát qua outbox trong cùng giao dịch: sự kiện và Audit Event bắt buộc có <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>}, <code>version</code> = <code>row_version</code> của entity sau thay đổi (H2); riêng <code>audit.recorded</code> dùng chính Audit Event: <code>type</code> = <code>audit_event</code>, <code>id</code> = id Audit Event (= id dòng outbox), <code>version</code> = 1 (H3); lệnh không bắt buộc. Routing key theo AsyncAPI: sự kiện đổi trạng thái thêm đoạn con là trạng thái đích viết thường, khoảng trắng thành <code>_</code>. Relay publish bền (deliveryMode 2) có publisher confirm, header <code>message_id</code> = <code>id</code> dòng outbox và <code>traceparent</code>. Nghe qua consumer có inbox idempotent; bỏ bản cũ bằng helper replica theo <code>aggregate.version</code> (H1).</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li>Ghi outbox trong giao dịch, relay phát lên RabbitMQ</li>
-<li>Inbox idempotent, bỏ sự kiện có <code>aggregate.version</code> cũ</li>
-<li>Middleware <code>Idempotency-Key</code> dùng bảng <code>app.idempotency_key</code></li>
-<li><code>audit-emit</code> phát <code>audit.recorded</code> qua outbox</li></ul>
+<ul><li>Ghi outbox trong giao dịch; relay chạy bằng <code>_system</code> dưới lease trong <code>app.job_lock</code>, đọc lô <code>WHERE published_at IS NULL ORDER BY created_at FOR UPDATE SKIP LOCKED</code>, publish có confirm rồi đặt <code>published_at</code> (database 9.2, 9.4)</li>
+<li>Inbox idempotent: INSERT <code>app.inbox</code> cùng giao dịch với tác dụng; trùng khóa thì bỏ qua message (H1)</li>
+<li>Helper replica: chỉ ghi khi <code>aggregate.version</code> lớn hơn <code>source_version</code> hiện có (H1)</li>
+<li>Middleware <code>Idempotency-Key</code> dùng bảng <code>app.idempotency_key</code>: cùng khóa cùng nội dung trả kết quả lần đầu; khác nội dung trả <code>422</code>; giữ 24 giờ (kiến trúc 5.8, database 9.3)</li>
+<li><code>audit-emit</code> phát <code>audit.recorded</code> qua outbox, <code>aggregate</code> = chính Audit Event (H3); actor bắt buộc theo CTX-AUDIT-001</li>
+<li>Job dọn dưới lease: outbox đã publish quá 24 giờ và <code>idempotency_key</code> quá <code>expires_at</code> (hằng giờ), inbox quá 7 ngày (hằng ngày) — database 12.2</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -94,15 +107,19 @@ pnpm local:up</pre>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
 <tr><td>Relay chết giữa chừng</td><td>Dòng chưa phát được phát lại khi khởi động, consumer lọc trùng qua inbox</td></tr>
-<tr><td>Cùng <code>Idempotency-Key</code> nhưng khác body</td><td>Từ chối theo mã lỗi ở <code>components/responses.yaml</code></td></tr>
+<tr><td>Cùng <code>Idempotency-Key</code> nhưng khác body</td><td>Từ chối <code>422 idempotency_key_reused</code> (<code>components/responses.yaml</code>)</td></tr>
+<tr><td>Sự kiện có <code>aggregate.version</code> không lớn hơn bản đã áp</td><td>Helper replica không ghi đè (H1)</td></tr>
+<tr><td>Thiếu header <code>Idempotency-Key</code> ở operation bắt buộc</td><td><code>400</code> problem+json <code>validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code> (H4)</td></tr>
 </tbody></table></div>
+<p>Danh sách đầy đủ EC01–EC18 ở <a href="scope.html#edge-case">scope.html</a>.</p>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> Ghi outbox trong giao dịch, relay phát lên RabbitMQ — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
-<li id="b2"><strong>B2</strong> Inbox idempotent, bỏ sự kiện có <code>aggregate.version</code> cũ — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b2"><strong>B2</strong> Consumer có inbox idempotent; helper replica bỏ bản có <code>aggregate.version</code> cũ (H1) — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 <li id="b3"><strong>B3</strong> Middleware <code>Idempotency-Key</code> dùng bảng <code>app.idempotency_key</code> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 <li id="b4"><strong>B4</strong> <code>audit-emit</code> phát <code>audit.recorded</code> qua outbox — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b5"><strong>B5</strong> Job dọn theo retention dưới lease và metric tuổi outbox — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -112,15 +129,18 @@ pnpm nx affected -t lint typecheck test build
 node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
-<tr><td>PID-00002-AC01</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts</code></td><td>Given một lệnh ghi lỗi giữa giao dịch, When giao dịch rollback, Then không có dòng outbox và không có Audit Event.</td></tr>
+<tr><td>PID-00002-AC01</td><td><code>libs/ts/platform/src/audit/audit.spec.ts</code></td><td>Given một lệnh ghi lỗi giữa giao dịch, When giao dịch rollback, Then không có dòng outbox và không có Audit Event.</td></tr>
 <tr><td>PID-00002-AC02</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts</code></td><td>Given cùng một sự kiện đến hai lần, When consumer xử lý, Then tác động chỉ áp dụng một lần.</td></tr>
-<tr><td>PID-00002-AC03</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts</code></td><td>Given sự kiện có <code>aggregate.version</code> nhỏ hơn bản đã xử lý, When đến, Then bị bỏ qua.</td></tr>
+<tr><td>PID-00002-AC03</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts</code></td><td>Given bảng replica đã áp bản có <code>aggregate.version</code> lớn hơn, When bản cũ đến, Then helper replica bỏ qua (H1).</td></tr>
+<tr><td>PID-00002-AC04</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts</code></td><td>Gửi lại cùng khóa, cùng nội dung trả kết quả lần đầu, handler chạy một lần.</td></tr>
+<tr><td>PID-00002-AC05</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts</code></td><td>Cùng khóa, khác nội dung trả <code>422 idempotency_key_reused</code>.</td></tr>
+<tr><td>PID-00002-AC06</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts</code></td><td>Dòng outbox đã commit được publish có confirm, <code>message_id</code> = id dòng, phát lại sau khi relay dừng.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
 <ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>platform</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
 <li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
-<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có. Phiếu <a href="../others/issues.html#i1">I1</a>, <a href="../others/issues.html#i2">I2</a> đã chuyển vào H4, H3.</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00002</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
 </main>
 <footer>SIRes · Spec kỹ thuật PID-00002 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

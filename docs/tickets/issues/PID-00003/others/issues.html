@@ -1,0 +1,187 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00003.">
+<title>PID-00003 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00003</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00003</p><h1>PID-00003 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này khi còn vấn đề <strong>chưa chốt</strong>: PO chưa trả lời ngay trong phiên, cần hỏi thêm người khác (Tech lead với AQ, DBQ; đội eTroy OIDC với ETR), đã hết 5 lượt hỏi, hay cổng sẵn sàng chưa đạt. Hồ sơ vẫn được lập đủ; mỗi vấn đề là một phiếu <code>I&lt;n&gt;</code> (nhãn cục bộ của hồ sơ).</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00003</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
+<p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Endpoint <code>x-apr</code> nhận token của gateway do orchestration chuyển tiếp (<code>aud</code> = orchestration) thế nào?</td><td>không (cần trước PID-00065)</td><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+<tr><td><a href="#i2">I2</a></td><td>Token Agent Run dùng cho nhiều service và Agent Run dài hơn 5 phút thì <code>aud</code> và hạn token xử lý thế nào?</td><td>không (cần trước PID-00047)</td><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+<tr><td><a href="#i3">I3</a></td><td>Token không đạt luật người ký trả mã lỗi nào?</td><td>không</td><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Endpoint x-apr nhận token gateway do orchestration chuyển tiếp thế nào?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>API và sự kiện</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>H1 cho orchestration chuyển tiếp nguyên token của gateway khi Researcher trả lời prompt có APR (F-08). Token đó có <code>aud</code> = orchestration, còn service sở hữu đối tượng chỉ nhận token có <code>aud</code> = chính nó, nên phê duyệt qua prompt sẽ luôn bị <code>401</code>.</td></tr>
+<tr><th scope="row">Nguồn</th><td>Kiến trúc 4, F-08: “orchestration gọi REST endpoint phê duyệt của service sở hữu đối tượng với token actor Researcher (lấy từ phiên của request này)”. <code>internal/responses.yaml#/InvalidServiceToken</code>: “… hoặc <code>aud</code> không phải service này”.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>EC07, N4, S03. Hợp đồng: mô tả <code>ServiceTokenClaims</code> hoặc <code>InvalidServiceToken</code> (PO sửa bằng contract-updating-skill). PID-00065 (prompt và phê duyệt), PID-00039 (gateway phát token actor).</td></tr>
+<tr><th scope="row">Chặn</th><td>không — PID này giữ kiểm <code>aud</code> chặt; cần trả lời trước PID-00065</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Route <code>x-apr</code> nhận token <code>act.type = researcher</code> do gateway ký có <code>aud</code> là service này hoặc orchestration</td><td>Không đổi claims, chỉ thêm một câu vào mô tả hợp đồng. Guard thêm một nhánh kiểm. Orchestration bị chiếm có thể dùng lại token gateway ≤ 5 phút của cùng tài khoản trên route <code>x-apr</code> — cùng mức rủi ro với việc chuyển tiếp nguyên token.</td></tr>
+<tr><td>B</td><td>Orchestration ký token mới (<code>aud</code> = service đích) kèm claim mới chứa nguyên token gateway; route <code>x-apr</code> kiểm token lồng do gateway ký, còn hạn, cùng <code>accountId</code></td><td>Thêm claim tùy chọn vào <code>ServiceTokenClaims</code>; guard kiểm hai token. Rủi ro tương đương A, mã phức tạp hơn.</td></tr>
+<tr><td>C</td><td><code>aud</code> nhận chuỗi hoặc mảng; gateway phát token cho trả lời prompt với <code>aud</code> = [orchestration, service sở hữu đối tượng]</td><td>Đổi kiểu trường <code>aud</code>; gateway phải biết service sở hữu từ prompt (thêm một lời gọi). Phạm vi token hẹp nhất.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — ít đổi nhất và đúng chữ “chuyển tiếp nguyên token” của H1, F-08. Hồ sơ hiện lập theo: kiểm <code>aud</code> chặt, token chuyển tiếp bị <code>401</code> (EC07); nhận token chuyển tiếp nằm ngoài phạm vi (N4).</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — Nới aud cho route x-apr</label>
+<label><input type="radio" name="I1" value="B"> B — Token lồng do orchestration ký</label>
+<label><input type="radio" name="I1" value="C"> C — aud nhiều giá trị do gateway phát</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Nới aud cho route x-apr: route có <code>x-apr</code> nhận token <code>act.type = researcher</code> do gateway ký có <code>aud</code> là service này hoặc orchestration; route khác giữ <code>aud</code> chặt — PO trong phiên, 11/11/2026 → H2</p>
+</article>
+
+<article class="issue" id="i2" data-issue="I2">
+<h2>I2 — Token Agent Run: aud cho nhiều service và hạn 5 phút</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>API và sự kiện; Agent và model</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Hợp đồng giao một token cho cả Agent Run, nhưng <code>aud</code> chỉ là một service và hạn ≤ 5 phút. Agent Run đọc từ nhiều service (orchestration, research, knowledge, library…) và có thể chạy lâu hơn 5 phút (heartbeat 30 s, mất heartbeat 110 s mới Interrupted), nên token sẽ bị từ chối ở service thứ hai hoặc sau phút thứ năm.</td></tr>
+<tr><th scope="row">Nguồn</th><td><code>internal/schemas.yaml#/AgentRunWorkOrder</code>, trường <code>serviceToken</code>: “dùng cho mọi lời gọi đọc của Agent Run này”. <code>#/ServiceTokenClaims</code>: <code>aud</code> là <code>ServiceName</code>, “hạn ≤ 5 phút”. <code>internal/orchestration.yaml</code>: <code>heartbeatAgentRun</code> không trả token mới.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>EC08, N5, S01. Hợp đồng: <code>ServiceTokenClaims.aud</code>, phản hồi <code>heartbeatAgentRun</code> hoặc endpoint mới (PO sửa bằng contract-updating-skill). PID-00047 (orchestration phát token), PID-00073 (worker agent-core), PID-00005 S03 (bên nhận Python).</td></tr>
+<tr><th scope="row">Chặn</th><td>không — PID này giữ <code>aud</code> một giá trị; cần trả lời trước PID-00047</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Token <code>act.type = agent</code> có <code>aud</code> là mảng các service Agent Run được đọc; orchestration trả token mới trong phản hồi heartbeat</td><td>Đổi <code>aud</code> thành chuỗi hoặc mảng; thêm trường tùy chọn vào phản hồi heartbeat. Bên nhận kiểm “<code>aud</code> chứa service này”. Giữ hạn ≤ 5 phút, không thêm endpoint.</td></tr>
+<tr><td>B</td><td>agent-core xin orchestration token theo từng service đích (endpoint nội bộ mới), xin lại khi gần hết hạn</td><td>Thêm một endpoint; nhiều lời gọi hơn; <code>aud</code> giữ một giá trị.</td></tr>
+<tr><td>C</td><td>Token Agent Run có hạn bằng thời gian tối đa của Agent Run, <code>aud</code> là mảng, không làm mới</td><td>Ít đổi luồng nhất nhưng bỏ quy tắc hạn ≤ 5 phút cho token agent; token lộ dùng được lâu hơn.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — giữ hạn 5 phút, dùng sẵn nhịp heartbeat 30 s, không thêm endpoint. Hồ sơ hiện lập theo: <code>aud</code> một giá trị, token có <code>aud</code> mảng bị <code>401</code> (EC08); token nhiều service và làm mới nằm ngoài phạm vi (N5).</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I2" value="A"> A — aud mảng, làm mới qua heartbeat</label>
+<label><input type="radio" name="I2" value="B"> B — Xin token theo từng service</label>
+<label><input type="radio" name="I2" value="C"> C — Token dài hạn cho Agent Run</label>
+<label><input type="radio" name="I2" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — aud mảng, làm mới qua heartbeat: token <code>act.type = agent</code> có <code>aud</code> là mảng các service Agent Run được đọc, bên nhận kiểm “<code>aud</code> chứa service này”, hạn ≤ 5 phút; orchestration trả <code>serviceToken</code> mới trong phản hồi <code>heartbeatAgentRun</code>, agent-core thay token — PO trong phiên, 11/11/2026 → H3</p>
+</article>
+
+<article class="issue" id="i3" data-issue="I3">
+<h2>I3 — Token không đạt luật người ký trả mã lỗi nào?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>API và sự kiện</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>H1 thêm ba luật: <code>sub</code> phải bằng service ký, token agent chỉ do orchestration ký, route <code>x-apr</code> chỉ nhận Researcher do gateway ký. Hợp đồng chỉ có <code>401 invalid_service_token</code> (thiếu token, sai chữ ký, hết hạn, sai <code>aud</code>) và <code>403 caller_not_allowed</code> (ngoài <code>x-callers</code>), chưa nói trường hợp này dùng mã nào. Client và test của mọi service phụ thuộc mã này.</td></tr>
+<tr><th scope="row">Nguồn</th><td><code>internal/responses.yaml#/InvalidServiceToken</code>, <code>#/CallerNotAllowed</code>; spec mục 4.7 chỉ ghi “Từ chối”.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>PID-00003-AC04, AC05, EC01, EC02, S03; mô tả mã trong <code>internal/responses.yaml</code> nếu PO chọn A hoặc C.</td></tr>
+<tr><th scope="row">Chặn</th><td>không</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td><code>401 invalid_service_token</code>: token không hợp lệ cho actor nó khai</td><td>Không thêm mã; thêm một câu vào mô tả <code>InvalidServiceToken</code>. <code>sub</code> khác service ký vốn là “sai chữ ký”.</td></tr>
+<tr><td>B</td><td><code>403 caller_not_allowed</code></td><td>Dùng lại mã có sẵn, nhưng mô tả hiện tại của mã chỉ nói về <code>x-callers</code>; phải sửa mô tả.</td></tr>
+<tr><td>C</td><td>Mã <code>403</code> mới, ví dụ <code>actor_not_allowed</code></td><td>Thêm response vào <code>internal/responses.yaml</code> và mọi operation có <code>x-apr</code>; phân biệt rõ nhất khi đọc log.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — không thêm mã, đúng nghĩa với trường hợp <code>sub</code> khác service ký. Hồ sơ hiện lập theo A.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I3" value="A"> A — 401 invalid_service_token</label>
+<label><input type="radio" name="I3" value="B"> B — 403 caller_not_allowed</label>
+<label><input type="radio" name="I3" value="C"> C — Mã 403 mới</label>
+<label><input type="radio" name="I3" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — 401 invalid_service_token cho mọi trường hợp không đạt luật người ký; PO thêm câu này vào mô tả <code>internal/responses.yaml#/InvalidServiceToken</code> — PO trong phiên, 11/11/2026 → H4</p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00003</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00003 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

@@ -107,7 +107,7 @@ sandbox-runner: không có database (trạng thái build ở manuscript, job qua
 <tr><td><code>replica.project_reference_scope</code></td><td>knowledge, research</td><td><code>project_reference.changed</code></td><td>Phạm vi truy xuất theo project (INT-VECTOR-001); Evidence chỉ từ Reference được chọn Active</td></tr>
 <tr><td><code>replica.account_embedding</code></td><td>knowledge</td><td><code>embedding_model.changed</code></td><td>Model embedding của tài khoản (DEC-31), xếp job index lại</td></tr>
 </tbody></table></div>
-<p>Hai khoảng trống với đặc tả sự kiện hiện tại: envelope chưa có <code>aggregateVersion</code> (kiến trúc 6.4 có nhắc), và <code>reference.status_changed</code> chưa mang <code>metadataVersion</code>. Cho tới khi bổ sung, <code>source_version</code> (bigint) lấy epoch millisecond của <code>occurredAt</code> và <code>metadata_version</code> ở manuscript có thể NULL (DBQ-04).</p>
+<p><code>source_version</code> lấy <code>aggregate.version</code> của sự kiện (bắt buộc từ 11/11/2026); bản sao chỉ ghi khi version mới lớn hơn bản đang có. <code>metadata_version</code> ở manuscript lấy <code>metadataVersion</code> của <code>reference.status_changed</code> và <code>reference.metadata_updated</code>. Hai khoảng trống ghi ở DBQ-04 đã đóng ngày 11/11/2026; trước đó <code>source_version</code> tạm lấy epoch millisecond của <code>occurredAt</code>.</p>
 
 <nav class="section-nav" aria-label="Điều hướng section"><a rel="prev" href="02-schema-conventions.html">← Mục 2</a><a href="../index.html">Mục lục database</a><a rel="next" href="04-identity-gateway-workspace.html">Mục 4 →</a></nav>
 </main>

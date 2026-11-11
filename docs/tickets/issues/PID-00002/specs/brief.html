@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00002.">
+<title>PID-00002 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>PID-00002 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<p>Bản tóm tắt đã gộp câu trả lời ở mục Làm rõ của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Thư viện dùng chung cho mọi service NestJS để thay đổi dữ liệu, Audit Event và message ra ngoài được ghi trong cùng một giao dịch rồi mới phát; để consumer nhận sự kiện trùng hay đến sai thứ tự vẫn chỉ áp tác động một lần và không ghi đè bản mới bằng bản cũ; để lệnh của người dùng gửi lại cùng khóa không chạy hai lần. Chưa có người dùng cuối; người dùng là các luồng service.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Thay đổi, Audit Event và sự kiện ghi trong cùng giao dịch; lỗi ở bất kỳ bước nào thì không có gì được ghi và không message nào được phát — DATA-PERSIST-001, NFR-DUR-001, CTX-AUDIT-001</li>
+<li>Một bảng <code>app.outbox</code> cho ba loại message: sự kiện (<code>event</code>), Audit Event (<code>audit</code>, routing key <code>audit.recorded</code>), lệnh (<code>command</code>: <code>agent.run</code>, <code>knowledge.index</code>, <code>sandbox.build</code>) — database 9.2</li>
+<li>Sự kiện và Audit Event bắt buộc có <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>}, <code>version</code> = <code>row_version</code> của entity sau thay đổi — H2 (DBQ-04); riêng <code>audit.recorded</code> dùng chính Audit Event: <code>type</code> = <code>audit_event</code>, <code>id</code> = id Audit Event (= id dòng outbox), <code>version</code> = 1 — H3</li>
+<li>Relay chạy bằng vai trò <code>_system</code>, một pod giữ lease trong <code>app.job_lock</code>, đọc theo lô <code>FOR UPDATE SKIP LOCKED</code> theo <code>created_at</code>, publish bền có publisher confirm rồi mới đặt <code>published_at</code>; giao ít nhất một lần, <code>message_id</code> = <code>id</code> dòng outbox — kiến trúc 6.4; database 9.2, 9.4; AsyncAPI</li>
+<li>Routing key của sự kiện đổi trạng thái có thêm đoạn con là trạng thái đích viết thường, khoảng trắng thành <code>_</code> — AsyncAPI <code>info.description</code></li>
+<li>Inbox chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>), INSERT cùng giao dịch với tác dụng — H1; database 9.3</li>
+<li>Bỏ bản cũ đến sau bản mới ở bảng <code>replica.*</code>: helper chỉ ghi khi <code>aggregate.version</code> lớn hơn <code>source_version</code> — H1, H2</li>
+<li>Lệnh có tác động mang <code>Idempotency-Key</code>; gửi lại cùng khóa trả kết quả lần đầu; cùng khóa khác nội dung trả <code>422 idempotency_key_reused</code>; thiếu header trả <code>400 validation_failed</code> với <code>errors[].field</code> = <code>Idempotency-Key</code>; giữ 24 giờ — DATA-IDEMP-001, kiến trúc 5.8, database 9.3, H4</li>
+<li>Audit Event có actor bắt buộc: Researcher (<code>accountId</code>), agent (tên agent + <code>agentRunId</code>) hoặc System (thành phần); không chứa giá trị key — CTX-AUDIT-001, AsyncAPI <code>audit.recorded</code></li>
+<li>Dọn theo retention: outbox đã publish 24 giờ, <code>idempotency_key</code> 24 giờ (hằng giờ), inbox 7 ngày (hằng ngày) — database 12.2</li>
+<li>Thư viện chỉ đổi tương thích ngược — quy tắc 1.4.5</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>libs/ts/platform/src/tenancy/</code>, <code>errors/</code>, <code>logging/</code>, <code>telemetry/</code> — tạo ở <a href="../../PID-00001/index.html">PID-00001</a> (chưa làm; PID này chờ)</li>
+<li><code>libs/ts/platform/src/outbox/</code>, <code>inbox/</code>, <code>idempotency/</code>, <code>audit/</code>, <code>jobs/</code> — tạo mới</li>
+<li><code>docs/database/ddl/00-common.sql</code> — có <code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code></li>
+<li><code>docs/api-design/internal/schemas.yaml#/EventEnvelope</code> — <code>aggregate</code> đang là tùy chọn; thành bắt buộc khi hợp đồng theo H2 merge</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>libs/ts/platform/src/outbox/</code>: Ghi outbox, routing key, relay → S01</li>
+<li>O2 <code>libs/ts/platform/src/inbox/</code>: Consumer có inbox, helper replica → S02</li>
+<li>O3 <code>libs/ts/platform/src/idempotency/</code>: Idempotency-Key → S03</li>
+<li>O4 <code>libs/ts/platform/src/audit/</code>: audit-emit → S04</li>
+<li>O5 <code>audit.recorded</code> qua outbox của service gọi → S04</li>
+<li>O6 <code>libs/ts/platform/src/outbox/outbox.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S01</li>
+<li>O7 <code>libs/ts/platform/src/inbox/inbox.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S02</li>
+<li>O8 <code>libs/ts/platform/src/idempotency/idempotency.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S03</li>
+<li>O9 <code>libs/ts/platform/src/audit/audit.spec.ts</code>: Test theo Tiêu chí nghiệm thu → S04</li>
+<li>O10 <code>libs/ts/platform/src/jobs/</code>: Lease, job dọn, metric tuổi outbox → S01 (lease), S05</li>
+<li>O11 <code>libs/ts/platform/src/jobs/jobs.spec.ts</code>: Test lease và job dọn → S05</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><strong>Helper replica</strong>: hàm upsert bảng <code>replica.*</code> của service nghe, chỉ ghi khi phiên bản đến lớn hơn bản đang giữ (H1).</li>
+<li><strong>Lease</strong>: dòng trong <code>app.job_lock</code> cho biết pod nào đang chạy một job nền tới thời điểm <code>lease_until</code> (database 9.4).</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00002</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00002 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

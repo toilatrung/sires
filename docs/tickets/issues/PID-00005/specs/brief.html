@@ -25,7 +25,10 @@
 <h2 id="quy-tac">Quy tắc</h2>
 <ul><li>Log bằng structlog, trace bằng OpenTelemetry; che dữ liệu như bản TS — kiến trúc 2.4, 10.3</li>
 <li>Consumer dùng aio-pika, ack thủ công — kiến trúc 2.4</li>
-<li>Vỏ sự kiện theo <code>EventEnvelope</code> — <code>internal/schemas.yaml</code></li>
+<li>Vỏ sự kiện theo <code>EventEnvelope</code>, <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} bắt buộc — <code>internal/schemas.yaml</code>; DBQ-04; H3</li>
+<li>Inbox chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>); bỏ bản cũ bằng helper upsert bảng replica, chỉ ghi khi <code>aggregate.version</code> &gt; <code>source_version</code> — H3; DDL <code>00-common.sql</code></li>
+<li>Token nội bộ ký ES256 bằng khóa riêng của từng service, <code>kid</code> = tên service, <code>sub</code> = service ký; token <code>act.type = agent</code> chỉ nhận khi orchestration ký và có <code>agentScope</code>, <code>agentRunId</code> — H2; cùng luật với PID-00003</li>
+<li>Token <code>act.type = agent</code> có <code>aud</code> là mảng các service Agent Run được đọc; bên nhận kiểm “<code>aud</code> chứa service này”, hạn ≤ 5 phút; token khác có <code>aud</code> mảng bị từ chối — H4</li>
 <li>FakeModelGateway trả kịch bản ghi sẵn theo (agent, bước), tiêm lỗi theo mã chuẩn, đếm attempts — kiến trúc 8.9</li>
 <li><code>agent-core</code> và <code>knowledge</code> cùng dùng interface <code>ModelGateway</code> (embedding qua thư viện dùng chung), nên interface đặt ở thư viện; adapter thật ở <code>agent-core</code> — kiến trúc 2.4, 8.1</li></ul>
 <h2 id="input-da-kiem">Input đã kiểm</h2>

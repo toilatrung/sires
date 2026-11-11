@@ -4,7 +4,19 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — hợp đồng cho RC-08 và tìm evidence, PO chốt 08/11/2026
+### Thay đổi gần nhất — hợp đồng baseline DBQ-03, DBQ-04 và khóa ký token nội bộ, PO chốt 11/11/2026
+
+Cổng PH-01 cần DBQ-03, DBQ-04 đã sửa vào hợp đồng. Chưa service nào phát hay nhận sự kiện, nên hai trường chuyển thành bắt buộc ngay trong `0.1.0-mvp` mà không cần phiên bản mới.
+
+- DBQ-04: `EventEnvelope.aggregate` (`type`, `id`, `version`) bắt buộc ở mọi sự kiện; `version` = `row_version` của entity sau thay đổi, quy tắc cho entity không có phiên bản, `audit.recorded`, `data.purged`, `usage.recorded` ghi ở mô tả schema. Inbox chỉ lọc trùng theo `id`; bản sao `replica.*` bỏ bản có version không lớn hơn `source_version`. `reference.status_changed` thêm `metadataVersion` (bắt buộc) cho bản sao của manuscript.
+- DBQ-03: sự kiện mới `usage.recorded` (knowledge → orchestration), báo usage của từng lô embedding khi index tài liệu; orchestration ghi `usage_ledger` với `source = embedding`, idempotent theo (`source`, `source_id`).
+- `ServiceTokenClaims`: mỗi service một khóa ES256 trong KMS, `kid` = tên service, `sub` = `kid`; token `act = agent` chỉ do orchestration ký, token `act = researcher` ở endpoint `x-apr` chỉ do gateway ký (architecture 10.4). Endpoint `x-apr` nhận token gateway do orchestration chuyển tiếp (`aud` = chính service hoặc `orchestration`). `aud` nhận chuỗi hoặc mảng: token Agent Run có `aud` là mảng service được đọc.
+- Token Agent Run giữ hạn ≤ 5 phút: `AgentRunControl` (phản hồi `heartbeatAgentRun`) thêm `serviceToken` tùy chọn để agent-core thay token.
+- `audit.recorded`: `aggregate` là chính Audit Event (`audit_event`, id, `version = 1`).
+- `InvalidServiceToken` (401) gồm cả token không đạt luật người ký (`sub` khác `kid`, token agent không do orchestration ký, token Researcher ở `x-apr` không do gateway ký).
+- Thiếu `Idempotency-Key` trả `400 validation_failed`; khai `400` ở 39 operation có header này còn thiếu (30 công khai, 9 nội bộ). `PreconditionRequired` (428) chỉ còn cho thiếu `If-Match`, chưa khai ở operation nào (thuộc PID-00001).
+
+### Hợp đồng cho RC-08 và tìm evidence, PO chốt 08/11/2026
 
 Hai chỗ thiếu phát hiện khi lập ticket. Tương thích ngược, không đổi schema; là **Assumption** như phần còn lại của bộ này.
 

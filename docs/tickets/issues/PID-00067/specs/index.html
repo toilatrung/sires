@@ -51,7 +51,10 @@
 <tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API thư viện nền</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<p>Không dùng hợp đồng hay bảng riêng.</p>
+<h4>Sự kiện</h4><div class="table-wrap"><table><thead><tr><th scope="col">Chiều</th><th scope="col">Message</th><th scope="col">Bên liên quan</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
+<tr><td>Nghe</td><td><code>usage.recorded</code></td><td>knowledge</td><td>Usage của một lô embedding khi index tài liệu (DBQ-03, thêm 11/11/2026)</td></tr>
+</tbody></table></div>
+<p>Nguồn: <code>docs/api-design/events/asyncapi.yaml</code>. Mỗi sự kiện ghi một dòng <code>app.usage_ledger</code> với <code>source = embedding</code>, <code>source_id = sourceId</code>; trùng (<code>source</code>, <code>source_id</code>) thì bỏ qua. Bảng: <code>app.usage_ledger</code> (<code>docs/database/ddl/orchestration.sql</code>).</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00047/index.html">PID-00047</a> Agent Run: phát lệnh agent.run, start, heartbeat, kết quả, thất bại</td><td>Chưa làm</td><td>Có</td></tr>
@@ -76,7 +79,7 @@ pnpm --filter @sires/orchestration dev</pre>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li><code>app.usage_ledger</code></li>
+<ul><li><code>app.usage_ledger</code>; nhận <code>usage.recorded</code> của knowledge thành dòng <code>source = embedding</code> (DBQ-03)</li>
 <li>Tổng hợp theo project, Task, workflow</li>
 <li>Giữ <code>noData</code> khi provider không trả số</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>

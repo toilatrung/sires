@@ -1,0 +1,44 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ghi chú thiết kế PID-00002.">
+<title>PID-00002 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>PID-00002 — Ghi chú thiết kế</h1>
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Mục không có gì thì ghi “Không có”.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li>Inbox không giữ phiên bản; so phiên bản làm ở bảng <code>replica.*</code> bằng helper replica, không thêm bảng hay cột vào DDL (H1).</li>
+<li><code>source_version</code> của bảng replica lấy bằng <code>aggregate.version</code> của sự kiện, không dùng epoch millisecond của <code>occurredAt</code> nữa (H2, đóng khoảng trống ghi ở database 3.5).</li>
+<li>Vai trò theo database 11.2: request dùng <code>_app</code> (chỉ INSERT outbox; <code>idempotency_key</code> có RLS); relay, consumer, helper replica, job dọn dùng <code>_system</code>. DBQ-01 còn mở: nếu PostgreSQL managed không cho BYPASSRLS thì vai trò <code>_system</code> cần thêm <code>SET LOCAL app.scope = 'system'</code>; không chặn PH-01 vì test chạy trên PostgreSQL cục bộ.</li>
+<li>Khóa idempotency ghi ở đầu giao dịch của lệnh nên request đồng thời cùng khóa chờ nhau ở khóa chính; chỉ kết quả đã commit được lưu (theo ví dụ giao dịch F-02 ở kiến trúc 6.4).</li>
+<li>Độ dài khóa kiểm theo hợp đồng (8–128); DDL cho phép tới 200 nên không xung đột.</li></ul>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<ul><li><code>event</code>, <code>audit</code> bắt buộc <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>}; <code>command</code> không bắt buộc (H2).</li>
+<li><code>command</code> publish tới queue cùng tên routing key qua default exchange; <code>event</code>, <code>audit</code> tới <code>sires.events</code> (database 9.2, AsyncAPI).</li>
+<li>Thư viện tính routing key có đoạn con trạng thái đích ở một chỗ, để mọi luồng phát cùng một dạng.</li>
+<li><code>aggregate</code> của <code>audit.recorded</code> là chính Audit Event: <code>type</code> = <code>audit_event</code>, <code>id</code> = id Audit Event (= id dòng outbox), <code>version</code> = 1; luôn điền được, kể cả truy cập bị từ chối (H3, từ I2).</li>
+<li>Thiếu header <code>Idempotency-Key</code> trả <code>400 validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code>, cùng dạng lỗi với bộ lọc Zod của PID-00001; <code>428</code> chỉ dành cho thiếu <code>If-Match</code> (H4, từ I1).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có.</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00002</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ghi chú thiết kế PID-00002 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

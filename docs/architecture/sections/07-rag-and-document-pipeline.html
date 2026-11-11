@@ -61,7 +61,7 @@
 <h2 id="s-7-3">7.3. Embedding theo tài khoản</h2>
 <ul>
 <li>DEC-31: một embedding model mỗi tài khoản, qua Provider Connection OpenAI hoặc Gemini của người dùng. Các model có số chiều khác nhau, nên vector được lưu ở <strong>bảng riêng cho mỗi embedding model</strong>: <code>vec.emb_&lt;model_slug&gt;(chunk_id, account_id, reference_id, embedding vector(D))</code>, mỗi bảng một index HNSW (cosine). Danh mục model hỗ trợ do hệ thống duy trì; thêm model = thêm bảng bằng migration.</li>
-<li>Chi phí embedding thuộc tài khoản provider của người dùng; usage của lời gọi embedding ghi vào sổ <code>usage_ledger</code> gắn Provider Connection để tổng hợp theo NFR-USAGE-002 (indexing không phải Agent Run).</li>
+<li>Chi phí embedding thuộc tài khoản provider của người dùng; usage của lời gọi embedding ghi vào sổ <code>usage_ledger</code> gắn Provider Connection để tổng hợp theo NFR-USAGE-002 (indexing không phải Agent Run): knowledge ghi <code>embedding_usage</code> và phát <code>usage.recorded</code> qua outbox trong cùng giao dịch, orchestration ghi sổ, idempotent theo (<code>source</code>, <code>source_id</code>) (DBQ-03, 11/11/2026).</li>
 <li>Gọi embedding theo lô (ví dụ 64–128 chunk/lời gọi), tôn trọng rate limit của provider; lỗi theo chính sách adapter (5.6).</li>
 <li>Thiếu Provider Connection có embedding (chỉ cấu hình Claude): Reference vẫn Trusted nhưng indexing ở trạng thái chờ cấu hình, kèm hướng dẫn tới Settings (ASM-12).</li>
 </ul>

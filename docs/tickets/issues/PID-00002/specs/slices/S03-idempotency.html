@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của PID-00002: Middleware Idempotency-Key.">
+<title>PID-00002 — S03 Middleware Idempotency-Key | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>S03 — Middleware Idempotency-Key</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00002-AC04, PID-00002-AC05</td></tr>
+<tr><th scope="row">Output spec</th><td>O3, O8</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC10, EC11, EC12, EC13, EC14, EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00001/index.html">PID-00001</a> (helper giao dịch, bộ lọc problem+json, Zod)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết decorator hoặc interceptor NestJS cho operation có tham số <code>Idempotency-Key</code>, chạy trong giao dịch của lệnh (vai trò <code>_app</code>, RLS theo <code>app.account_id</code>)</li>
+<li>Đầu giao dịch: <code>INSERT INTO app.idempotency_key (account_id, key, operation, request_hash) … ON CONFLICT DO NOTHING</code>; trùng khóa thì đọc dòng đã lưu: khác <code>operation</code> hoặc <code>request_hash</code> → <code>422 idempotency_key_reused</code>; giống → trả <code>response_status</code>, <code>response_body</code> đã lưu, không chạy handler</li>
+<li>Trước commit ghi <code>response_status</code>, <code>response_body</code>; lỗi thì rollback nên khóa không được lưu</li>
+<li>Dòng đã quá <code>expires_at</code> coi như không có (thay bằng dòng mới)</li>
+<li><code>request_hash</code> là SHA-256 của <code>operationId</code> và body đã chuẩn hóa; kiểm độ dài khóa 8–128 theo <code>components/parameters.yaml</code></li>
+<li>Thiếu header ở operation bắt buộc: trả <code>400</code> problem+json <code>validation_failed</code>, <code>errors[].field</code> = <code>Idempotency-Key</code>, không chạy handler (H4)</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › gửi lại trả kết quả lần đầu</code> (PID-00002-AC04)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › cùng khóa khác nội dung</code> (PID-00002-AC05)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › hai request đồng thời</code> (EC10)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › lần đầu lỗi</code> (EC11)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › khác operation</code> (EC12)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › khóa hết hạn</code> (EC13)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › thiếu header</code> (EC14)</li>
+<li><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › độ dài khóa</code> (EC15)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Hai AC và sáu EC của slice đạt trên PostgreSQL thật</li>
+<li>Middleware xuất qua <code>libs/ts/platform/src/index.ts</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00002</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00002 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

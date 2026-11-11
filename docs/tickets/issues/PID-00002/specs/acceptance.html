@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu và test của PID-00002.">
+<title>PID-00002 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00002</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00002</p><h1>PID-00002 — Tiêu chí nghiệm thu → test</h1>
+<p>Mỗi AC có ít nhất một test hoặc một mục kiểm trong báo cáo. Không tự đặt số khi PO chưa chốt. Test tích hợp chạy trên PostgreSQL 16 + pgvector và RabbitMQ thật qua Testcontainers, nạp <code>docs/database/ddl/00-common.sql</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00002-AC01</td><td>Given một lệnh đã ghi thay đổi, gọi ghi sự kiện và <code>audit-emit</code> rồi ném lỗi trước commit, When giao dịch rollback, Then <code>app.outbox</code> không có dòng nào (cả <code>event</code> lẫn <code>audit</code>), không có Audit Event và relay không publish message nào.</td><td><code>libs/ts/platform/src/audit/audit.spec.ts › rollback không để lại outbox và Audit Event</code></td><td>S04</td><td>Ticket, spec; DATA-PERSIST-001-AC01</td></tr>
+<tr><td>PID-00002-AC02</td><td>Given cùng một sự kiện (cùng <code>id</code>) được giao hai lần tới consumer, When consumer xử lý, Then tác động chỉ áp dụng một lần và <code>app.inbox</code> có đúng một dòng cho (<code>consumer</code>, <code>event_id</code>).</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts › sự kiện trùng chỉ áp một lần</code></td><td>S02</td><td>Ticket, spec</td></tr>
+<tr><td>PID-00002-AC03</td><td>Given bảng replica mẫu trong test đã có dòng với <code>source_version</code> = 5, When sự kiện cùng aggregate với <code>aggregate.version</code> = 4 đến, Then helper replica bỏ qua, dòng giữ nguyên <code>source_version</code> = 5 và báo “bỏ qua”; sự kiện <code>aggregate.version</code> = 6 thì được ghi.</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts › bản cũ đến sau bị bỏ</code></td><td>S02</td><td>H1</td></tr>
+<tr><td>PID-00002-AC04</td><td>Given lệnh với <code>Idempotency-Key</code> K đã thành công, When gửi lại K cùng operation, cùng body trong 24 giờ, Then trả đúng status và body lần đầu, handler chạy đúng một lần.</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › gửi lại trả kết quả lần đầu</code></td><td>S03</td><td>Kiến trúc 5.8; database 9.3</td></tr>
+<tr><td>PID-00002-AC05</td><td>Given K đã dùng thành công, When gửi K với body khác, Then trả <code>422</code> problem+json <code>idempotency_key_reused</code>, dữ liệu không đổi.</td><td><code>libs/ts/platform/src/idempotency/idempotency.spec.ts › cùng khóa khác nội dung</code></td><td>S03</td><td><code>components/parameters.yaml</code>; database 9.3</td></tr>
+<tr><td>PID-00002-AC06</td><td>Given giao dịch đã commit một dòng outbox <code>event</code>, When relay chạy, Then message tới <code>sires.events</code> với routing key đúng AsyncAPI, header <code>message_id</code> = <code>id</code> dòng, publish có confirm và <code>published_at</code> được đặt; relay dừng trước khi đặt <code>published_at</code> thì lần chạy sau publish lại cùng <code>message_id</code>.</td><td><code>libs/ts/platform/src/outbox/outbox.spec.ts › relay publish có confirm</code></td><td>S01</td><td>Kiến trúc 6.4; database 9.2</td></tr>
+<tr><td>DATA-PERSIST-001-AC01</td><td>Phần thư viện: lỗi sau khi ghi chuyển trạng thái, trước khi ghi Audit Event → cả hai không được ghi, không sự kiện nào được phát. Cùng test với PID-00002-AC01.</td><td><code>libs/ts/platform/src/audit/audit.spec.ts</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>NFR-DUR-001-AC01</td><td>Phần thư viện: chuyển trạng thái và Audit Event ghi trong cùng giao dịch (PID-00002-AC01). Kịch bản duyệt Plan rồi khởi động lại kiểm ở luồng planning (<a href="../../PID-00049/index.html">PID-00049</a>).</td><td><code>libs/ts/platform/src/audit/audit.spec.ts</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>CTX-AUDIT-001-AC01</td><td>Phần thư viện: Audit Event do <code>audit-emit</code> tạo có actor, <code>action</code>, mã APR khi có, <code>objectType</code>, <code>objectId</code>, <code>at</code> đúng schema <code>AuditEvent</code>; vỏ sự kiện có <code>aggregate</code> = {<code>audit_event</code>, id Audit Event, 1} (H3). Hiển thị audit trail ở luồng audit.</td><td><code>libs/ts/platform/src/audit/audit.spec.ts › đủ trường AuditEvent</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>CTX-AUDIT-001-AC02</td><td>Phần thư viện: actor agent phải có tên agent và <code>agentRunId</code> (EC16). Provider, model do service gọi điền.</td><td><code>libs/ts/platform/src/audit/audit.spec.ts › actor không hợp lệ</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>CTX-AUDIT-001-AC03</td><td>Phần thư viện: chuỗi giống key trong <code>summary</code> bị che (EC17). Service gọi không đưa giá trị key vào Audit Event.</td><td><code>libs/ts/platform/src/audit/audit.spec.ts › che key trong summary</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>CTX-AUDIT-001-AC04</td><td>Phần thư viện: không có API sửa hay xóa Audit Event; vai trò <code>_app</code> chỉ INSERT outbox. Kiểm chỉ ghi thêm ở kho audit (<a href="../../PID-00045/index.html">PID-00045</a>).</td><td>Mục kiểm trong <code>report.md</code>: liệt kê API xuất từ <code>libs/ts/platform/src/audit/</code></td><td>S04</td><td>PRD</td></tr>
+<tr><td>CTX-AUDIT-001-AC05</td><td>Phần thư viện: job dọn chỉ xóa dòng outbox đã publish quá 24 giờ, không chạm Audit Event ở kho audit (EC18).</td><td><code>libs/ts/platform/src/jobs/jobs.spec.ts › không xóa dòng chưa publish</code></td><td>S05</td><td>PRD</td></tr>
+<tr><td>NFR-RET-008-AC01</td><td>Phần thư viện: như CTX-AUDIT-001-AC05; export JSON, CSV thuộc luồng audit.</td><td><code>libs/ts/platform/src/jobs/jobs.spec.ts</code></td><td>S05</td><td>PRD</td></tr>
+<tr><td>DATA-IDEMP-005-AC01</td><td>Phần thư viện: message trùng tới consumer chỉ áp tác động một lần (PID-00002-AC02). Khóa tự nhiên của build ở luồng manuscript.</td><td><code>libs/ts/platform/src/inbox/inbox.spec.ts</code></td><td>S02</td><td>PRD</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00002</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tiêu chí nghiệm thu PID-00002 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
