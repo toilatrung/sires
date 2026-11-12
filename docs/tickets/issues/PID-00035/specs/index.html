@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td>Cổng từ PH-02 trở đi kiểm trên staging. AQ-12 chưa trả lời nên staging tạm chạy trên Home Lab (PO 08/11/2026, OQ-108).</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>infra</code> · PH-02</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Staging</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00035-AC01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00035-AC01, PID-00035-AC02</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a>, <a href="../../../../tickets/sections/04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-56">DEC-56</a></td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Broker quorum, KEDA (<a href="../../PID-00057/index.html">PID-00057</a>); Production (<a href="../../PID-00153/index.html">PID-00153</a>)</td></tr>
 </tbody></table></div>
@@ -78,7 +78,8 @@ pnpm local:up</pre>
 <ul><li>Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao</li>
 <li>Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code</li>
 <li>Smoke Playwright sau deploy</li>
-<li>Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu</li></ul>
+<li>Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu</li>
+<li><strong>Kiểm thay đổi trước</strong> (PO 12/11/2026): job đầu tiên tính service bị ảnh hưởng (cùng cách với job kiểm thay đổi của <a href="../../PID-00009/index.html">PID-00009</a>); job build, đẩy image, migration, smoke của service không bị ảnh hưởng bỏ qua bằng <code>if:</code> ở mức job. Không có service nào bị ảnh hưởng thì không deploy. Không tính được thay đổi thì deploy mọi service thay đổi so với lần deploy trước, không bỏ sót</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -105,6 +106,7 @@ node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00035-AC01</td><td><code>.github/workflows/deploy-staging.yml</code></td><td>Given một merge chạm một service, When pipeline chạy, Then chỉ service đó được deploy, migration của nó chạy, smoke đạt.</td></tr>
+<tr><td>PID-00035-AC02</td><td><code>.github/workflows/deploy-staging.yml</code></td><td>Given merge vào <code>develop</code> không chạm service nào, When pipeline chạy, Then các job build, đẩy image, migration, smoke báo skipped, không có lần deploy nào.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
