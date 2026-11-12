@@ -49,8 +49,8 @@
 <p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
 
 <h2 id="s-1">1. Ticket</h2>
-<ul><li><strong>Mục đích:</strong> 13 luồng code song song cần CI bắt lỗi hợp đồng sớm và đủ nhanh; cổng PH-01 đặt dưới 10 phút cho PR một service.</li>
-<li><strong>Gồm:</strong> Contract test Schemathesis; Kiểm payload theo AsyncAPI; Redocly lint khi sửa spec; Quét phụ thuộc và secret; Build image; Nx remote cache; Gắn kiểm tra lệch spec của <a href="../PID-00008/index.html">PID-00008</a>.</li>
+<ul><li><strong>Mục đích:</strong> 13 luồng code song song cần CI bắt lỗi hợp đồng sớm và đủ nhanh; cổng PH-01 đặt dưới 10 phút cho PR một service. PR vào <code>develop</code> chỉ chạy phần liên quan tới thay đổi, <code>main</code> chạy toàn bộ (PO 12/11/2026).</li>
+<li><strong>Gồm:</strong> Contract test Schemathesis; Kiểm payload theo AsyncAPI; Redocly lint khi sửa spec; Quét phụ thuộc và secret; Build image; Nx remote cache; Gắn kiểm tra lệch spec của <a href="../PID-00008/index.html">PID-00008</a>; Kiểm thay đổi trước khi chạy; PR vào <code>develop</code> bỏ qua job không liên quan tới thay đổi; PR vào <code>main</code> và push vào <code>main</code> chạy toàn bộ, dùng Nx cache; Tối ưu thời gian (hủy lần chạy cũ, cache, job song song, timeout, ghi thời gian từng job).</li>
 <li><strong>Không gồm:</strong> Deploy staging (<a href="../PID-00035/index.html">PID-00035</a>); Job eval (<a href="../PID-00113/index.html">PID-00113</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00008/index.html">PID-00008</a></li></ul>
@@ -61,11 +61,16 @@
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00009-AC01</strong> Given PR chạm một service NestJS, When CI chạy, Then xong dưới 10 phút.</li>
 <li><strong>PID-00009-AC02</strong> Given controller trả sai schema, When contract test chạy, Then job thất bại.</li>
-<li><strong>PID-00009-AC03</strong> Given secret trong diff, When CI quét, Then job thất bại.</li></ul>
+<li><strong>PID-00009-AC03</strong> Given secret trong diff, When CI quét, Then job thất bại.</li>
+<li><strong>PID-00009-AC04</strong> Given PR vào <code>develop</code> chỉ sửa file ngoài mọi project Nx (ví dụ <code>docs/tickets/</code>), When CI chạy, Then job kiểm thay đổi và job kiểm tài liệu (giấy phép, index) chạy, các job lint, typecheck, test, build, contract test, build image báo skipped, check bắt buộc vẫn đạt.</li>
+<li><strong>PID-00009-AC05</strong> Given PR vào <code>develop</code> chỉ chạm <code>libs/py/sires_common</code>, When CI chạy, Then chỉ target của <code>sires-common</code> và project dùng nó (<code>agent-core</code>, <code>knowledge</code>, <code>eval</code>) chạy, job chỉ dành cho TS báo skipped, build image chỉ cho service bị ảnh hưởng.</li>
+<li><strong>PID-00009-AC06</strong> Given PR vào <code>main</code> hoặc push vào <code>main</code>, When CI chạy, Then mọi job chạy cho mọi project, không lọc theo thay đổi; task có input không đổi lấy kết quả từ Nx cache.</li>
+<li><strong>PID-00009-AC07</strong> Given hai lần push liên tiếp vào cùng một PR, When lần sau bắt đầu, Then lần chạy trước bị hủy; lần chạy của push vào <code>main</code> không bị hủy.</li>
+<li><strong>PID-00009-AC08</strong> Given CI chạy xong, When mở job summary, Then có thời gian chạy của từng job.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00008/index.html">PID-00008</a> Kiểm tra code lệch spec và baseline hợp đồng.</li>
-<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<li>OQ, AQ, DBQ đang chặn: không có. Liên quan, không chặn: <a href="../../sections/04-dependencies-risks-and-questions.html#oq-111">OQ-111</a> (chừng nào PR còn vào <code>main</code> thì mọi PR chạy toàn bộ), <a href="../../sections/04-dependencies-risks-and-questions.html#oq-112">OQ-112</a> (ngưỡng thời gian ngoài AC01).</li>
 <li>PID chờ PID này: <a href="../PID-00035/index.html">PID-00035</a>, <a href="../PID-00113/index.html">PID-00113</a>.</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
