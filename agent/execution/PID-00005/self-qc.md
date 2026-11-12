@@ -71,6 +71,22 @@ Môi trường: Windows 11 (Smart App Control bật), Python 3.12 do uv 0.13.7 q
 - [x] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5 (YC1).
 - [x] Không còn mã gỡ lỗi (`print`), TODO không có chủ; test mới có tên theo AC, EC.
 
+## Lần 2 — 12/11/2026
+
+**Kết luận:** Đạt, trừ target Nx `typecheck` không chạy được trên máy PO (Smart App Control chặn DLL của mypy trong `uv.lock`); typecheck chạy bằng bản mypy thuần Python thì sạch.
+
+Thay đổi theo YC2–YC4 (report.md Lần 2), sau khi gộp `origin/main` (PR #18–#23).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `uv lock` | 80 package; `sires-common` có đủ phụ thuộc (aio-pika, asyncpg, structlog, OpenTelemetry, PyJWT…). |
+| `pnpm nx run-many -t lint typecheck test -p sires-common --skip-nx-cache` | test: 64 đạt, 2 cảnh báo (như Lần 1). lint lần đầu lỗi E501 ở `messaging.py:506`, đã sửa; `uv run ruff check .` → “All checks passed!”. typecheck: lỗi “ImportError: DLL load failed while importing fscache: An Application Control policy has blocked this file” (mypy 2.4.1 trong lock). |
+| `uv run --no-sync --with "mypy==2.4.1" --no-binary-package mypy python -m mypy src` | “Success: no issues found in 15 source files”. |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | 0 file thiếu giấy phép (sau khi xóa cache `.pytest_cache`, `.ruff_cache`, `.mypy_cache`); index khớp (157 PID). |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00005 --result` | “PID-00005: KẾT QUẢ ĐỦ (0 cảnh báo)”. |
+| `check-tracks.mjs --stdin` trên `git diff --name-only origin/main` cộng file mới | `tracks touched: infra, platform, repo`; cảnh báo hai luồng vì `uv.lock` xếp vào `infra` trong `check-tracks.mjs`, trong khi CODEOWNERS ghi lock không gán chủ (quy tắc 1.4.7). Chỉ là cảnh báo. |
+| Test mới | `test_errors.py`: danh mục khớp `common.yaml`; mã ngoài danh mục bị từ chối; 16 kiểu lỗi pydantic → `FieldErrorCode`; body sai → `invalid_format`, `invalid_type`, `too_small`, `too_big`, `unrecognized_field`; JSON sai → `field` rỗng; 404, 405 (kèm `Allow`), 401 (kèm `WWW-Authenticate`), 400, 403, 412, 413, 428, 503 đúng mã; 409, 415, 422, 429, 500, 502 trần → `500 internal_error`; mọi body khớp schema `Problem`. `test_logging.py › test_redaction_policy_shared_with_ts`: 12 tên trường của TS bị che, `input_tokens`/`token_count` giữ, đường dẫn có `/` giữ, định danh dài entropy < 4,5 giữ, JWT trong chuỗi bị che. |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

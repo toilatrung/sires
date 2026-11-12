@@ -137,6 +137,43 @@ def test_redact_helper_keeps_safe_values() -> None:
     )
 
 
+def test_redaction_policy_shared_with_ts(log_stream: io.StringIO) -> None:
+    """Policy common to the TS and Python libraries (PO 12/11/2026): TS field list, JWT pattern, entropy 4.5,
+    `/` ends a candidate run."""
+    named = {
+        "password": "hunter2",
+        "client_secret": "abc123",
+        "token": "t-1",
+        "access_token": "a-1",
+        "refresh_token": "r-1",
+        "id_token": "i-1",
+        "cookie": "sid=s3ss10n",
+        "set_cookie": "sid=s3ss10n",
+        "x_csrf_token": "csrf-1",
+        "proxy_authorization": "Basic dXNlcjpwYXNz",
+        "openai_api_key": "plain",
+        "secret": "s",
+    }
+    get_logger("test").info(
+        "policy",
+        **named,
+        input_tokens=1200,
+        token_count=3,
+        path="/v1/Projects/Ab12Cd34/Files/Report2026Q4",
+        identifier="ContextSnapshotOutdatedEvent2026",
+        jwt_in_text=f"sent {JWT}",
+    )
+    record = _records(log_stream)[0]
+    for field in named:
+        assert record[field] == REDACTED, field
+    # Exact names only: usage counters stay readable.
+    assert record["input_tokens"] == 1200 and record["token_count"] == 3
+    # `/` is not part of a candidate, and a long identifier below entropy 4.5 is kept.
+    assert record["path"] == "/v1/Projects/Ab12Cd34/Files/Report2026Q4"
+    assert record["identifier"] == "ContextSnapshotOutdatedEvent2026"
+    assert record["jwt_in_text"] == f"sent {REDACTED}"
+
+
 def test_account_dropped_without_hash_key() -> None:
     stream = io.StringIO()
     configure_logging("sires-common-test", stream=stream)

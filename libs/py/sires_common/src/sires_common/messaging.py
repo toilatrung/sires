@@ -36,7 +36,7 @@ from aio_pika.exceptions import AMQPError, ChannelInvalidStateError, DeliveryErr
 from opentelemetry.trace import SpanKind
 from pydantic import ValidationError
 
-from sires_common.errors import ProblemError, validation_failed
+from sires_common.errors import FieldErrorCode, ProblemError, validation_failed
 from sires_common.schemas import ActorRef, Aggregate, EventEnvelope, ServiceName
 from sires_common.telemetry import (
     context_from_headers,
@@ -502,8 +502,9 @@ def require_idempotency_key(value: str | None) -> str:
             [{"field": IDEMPOTENCY_HEADER, "code": "required", "message": "Thiếu header Idempotency-Key"}]
         )
     if not IDEMPOTENCY_KEY_MIN <= len(value) <= IDEMPOTENCY_KEY_MAX:
+        code: FieldErrorCode = "too_small" if len(value) < IDEMPOTENCY_KEY_MIN else "too_big"
         raise validation_failed(
-            [{"field": IDEMPOTENCY_HEADER, "code": "length", "message": "Idempotency-Key dài 8–128 ký tự"}]
+            [{"field": IDEMPOTENCY_HEADER, "code": code, "message": "Idempotency-Key dài 8–128 ký tự"}]
         )
     return value
 

@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00005](../../../docs/tickets/issues/PID-00005/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/py-sires-common` (đã commit) · **PR:** chưa mở
-- **Cập nhật:** 11/11/2026
+- **Nhánh:** `platform/py-sires-common` (đã commit) · **PR:** [#21](https://github.com/toilatrung/sires/pull/21)
+- **Cập nhật:** 12/11/2026 (Lần 2)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -64,6 +64,33 @@ Không có trong phạm vi. Các điểm cần PO quyết hoặc luồng khác l
   3. S01 “Chính sách che khớp bản TS”: chưa đối chiếu được vì PID-00001 chưa có trên `main` (người điều phối: không chờ mã TS). Chính sách hiện tại ở implement.md mục 2; QC hoặc PO đối chiếu khi PID-00001 merge (đề xuất 8).
 - **Bước tiếp theo:** QC chạy `spec-converge-skill PID-00005`; người điều phối rà nhánh `platform/py-sires-common` rồi mở PR; PO quyết ba điểm “Còn mở”.
 - **Tài liệu đi kèm:** không có.
+
+## Lần 2 — 12/11/2026
+
+Trạng thái giữ **Xong — chờ QC**. Lý do chạy lại: `main` có danh mục mã lỗi đóng (PR #22: `ErrorCode`, `FieldErrorCode`) và `uv.lock` (PR #23); PO chốt chính sách che log chung TS–Python. Gộp `origin/main` vào nhánh (merge commit, không viết lại lịch sử).
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC2 | PO, phiên 12/11/2026 | “lấy danh sách trường của TS, giữ mẫu JWT của Python, ngưỡng 4.5, không tính /” | Trong phạm vi: S01 “chính sách che khớp bản TS”; AC02 không đổi | Làm | `src/sires_common/telemetry.py`; `tests/test_logging.py › test_redaction_policy_shared_with_ts` |
+| YC3 | PO, phiên 12/11/2026 | “Bổ sung luôn cho tôi” (mã lỗi lệch danh mục `ErrorCode`, `FieldErrorCode` của hợp đồng) | Trong phạm vi: làm theo hợp đồng đã chốt 11/11/2026 (NFR-OBS-005), AC không đổi | Làm | `src/sires_common/errors.py`, `messaging.py`; `tests/test_errors.py`, `tests/test_messaging.py › test_idempotency_key` |
+| YC4 | PO, phiên 12/11/2026 | “xóa lock cục bộ, gộp main, chạy uv lock, commit uv.lock ngay trong PR 21” | Trong phạm vi: lock không gán chủ, luồng thêm phụ thuộc sinh lại (CODEOWNERS, quy tắc 1.4.7) | Làm | `uv.lock` (80 package, `sires-common` đủ phụ thuộc) |
+
+### Thay đổi
+
+- **Mã lỗi:** `ErrorCode`, `FieldErrorCode` là `Literal` trong `errors.py`, cùng thứ tự với `common.yaml` (test so trực tiếp). `ProblemError` hay `errors[]` mang mã ngoài danh mục → `ValueError`. Lỗi pydantic ánh xạ sang `FieldErrorCode` (`field_error_code`), không trả nguyên mã của pydantic; JSON sai cú pháp có `field` rỗng. `HTTPException` theo bảng: 400 `validation_failed`, 401 `unauthenticated`, 403 `forbidden`, 404 `not_found`, 405 `method_not_allowed`, 412 `precondition_failed`, 413 `payload_too_large`, 428 `precondition_required`, 503 `service_unavailable`; mã HTTP khác không có mã chung → log `undeclared_http_error`, trả `500 internal_error`. `Idempotency-Key` sai độ dài → `too_small`/`too_big` (trước: `length`).
+- **Che log (YC2):** tên trường chuẩn hóa như TS (bỏ mọi ký tự ngoài `a-z0-9`), che khi kết thúc bằng `apikey` hoặc thuộc danh sách TS (password, secret, client_secret, token, access/refresh/id token, cookie, set-cookie, csrf token, authorization, proxy-authorization); `input_tokens`, `token_count` không bị che. Ngưỡng entropy 4,5; `/` không thuộc đoạn ứng viên nên đường dẫn giữ nguyên. Mẫu JWT giữ.
+
+### Cần PO
+
+- **Còn mở (thay mục 6):**
+  1. `aggregate` của Audit Event: **đã đóng** — PR #22 sửa `designs/notes.html` (H3) và S02 theo hợp đồng.
+  2. Token Agent Run khi service gọi tiếp: **vẫn mở**, ghi thành OQ-110. Trường hợp cụ thể: `retrieveEvidence` của `knowledge` (PID-00093, PH-04) nhận token Agent Run từ `agent-core` nhưng phải gọi `library.getReferenceSelectionInternal` và `identity.getEmbeddingSettingsInternal` (`x-callers` chỉ có `knowledge`). Client hiện từ chối tự phát token trong request Agent Run, còn chuyển tiếp token Agent Run thì `identity` trả `403 caller_not_allowed` (`sub = agent-core`). Cần chốt trước PID-00093.
+  3. Che log: bốn điểm YC2 đã khớp. Còn lệch, PO chưa chốt: thiếu khóa băm `accountId` (TS: đọc `LOG_ACCOUNT_HASH_KEY`, thiếu thì khóa ngẫu nhiên theo tiến trình và cảnh báo; Python: bỏ trường, không đọc biến môi trường); giới hạn độ sâu (TS 32 tầng, Python không giới hạn); mẫu Google (TS đúng 35 ký tự sau `AIza`, Python ≥ 30); khoảng trắng sau `Bearer`/`Basic` (TS mọi khoảng trắng, Python một dấu cách). Bản TS (PID-00001, nhánh `platform/ts-core-tenancy-logging`) còn phải thêm mẫu JWT.
+- **Đề xuất cũ:** 1 xong (PR #22); 4 một phần (compose dùng `cgr.dev/chainguard/minio:latest` từ PR #18, chưa ghim digest); 6 xong (YC4); 2, 3, 5, 7, 8 (phần còn lại ở “Còn mở” 3), 9 chưa làm.
+- **Mới:** `uv.lock` ghim mypy 2.4.1 (wheel biên dịch bằng mypyc); trên máy PO Smart App Control chặn DLL `mypy/fscache`, nên `pnpm nx run sires-common:typecheck` lỗi “DLL load failed … Application Control policy”. Trên CI (Linux) không bị. Trên máy này chạy bản thuần Python: `uv run --no-sync --with "mypy==2.4.1" --no-binary-package mypy python -m mypy src`.
+- **Bước tiếp theo:** chạy lại CI của PR #21 trên `main` mới; QC chạy `spec-converge-skill PID-00005`.
 
 ---
 

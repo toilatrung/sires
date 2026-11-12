@@ -562,7 +562,7 @@ async def test_idempotency(app_pool: asyncpg.Pool) -> None:
             is None
         )
 
-    for header, code in ((None, "required"), ("short", "length"), ("x" * 129, "length")):
+    for header, code in ((None, "required"), ("short", "too_small"), ("x" * 129, "too_big")):
         with pytest.raises(ProblemError) as invalid:
             require_idempotency_key(header)
         assert (invalid.value.status, invalid.value.code) == (400, "validation_failed")

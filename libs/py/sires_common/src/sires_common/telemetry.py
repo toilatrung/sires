@@ -4,10 +4,15 @@
 
 """Logging with redaction (structlog) and tracing (OpenTelemetry) — architecture 10.3, 11.5; NFR-OBS-001/002.
 
-Redaction policy, applied to every log record after exceptions are formatted:
-- fields named like `api_key` or `authorization` (any case, `-`/`_` ignored) are replaced by `[REDACTED]`;
+Redaction policy, applied to every log record after exceptions are formatted (common to the TS and Python
+libraries, PO 12/11/2026: field list of the TS library, JWT pattern of this one, entropy 4.5, `/` not part of a
+candidate):
+- fields whose name, lower-cased without separators, ends with `apikey` or is one of `_SENSITIVE_FIELDS`
+  (authorization, password, secret, client_secret, token, access/refresh/id token, cookie, csrf token…) are
+  replaced by `[REDACTED]`;
 - inside any string: key-like values with a provider prefix (Anthropic/OpenAI `sk-…`, Google `AIza…`), JWTs,
-  `Bearer …` credentials and high-entropy tokens are replaced by `[REDACTED]`;
+  `Bearer …` credentials and high-entropy runs (≥ 32 characters, mixed case and digits, Shannon entropy ≥ 4.5;
+  `/` ends a run so URL and file paths stay readable) are replaced by `[REDACTED]`;
 - `account_id` / `accountId` is replaced by `account_hash`, an HMAC-SHA256 with the key from configuration
   (dropped when no key is configured).
 """
@@ -38,7 +43,24 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 REDACTED = "[REDACTED]"
 
-_SENSITIVE_FIELD_PARTS = ("apikey", "authorization")
+# Same set as libs/ts/platform/src/logging/redact.ts (SENSITIVE_FIELDS), compared after `_normalise`.
+_SENSITIVE_FIELDS = frozenset(
+    {
+        "authorization",
+        "proxyauthorization",
+        "password",
+        "secret",
+        "clientsecret",
+        "token",
+        "accesstoken",
+        "refreshtoken",
+        "idtoken",
+        "cookie",
+        "setcookie",
+        "csrftoken",
+        "xcsrftoken",
+    }
+)
 _ACCOUNT_FIELDS = ("accountid",)
 
 _PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -52,12 +74,14 @@ _PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?i)(?<=\bbearer )[A-Za-z0-9._~+/=\-]{8,}"),
     re.compile(r"(?i)(?<=\bbasic )[A-Za-z0-9+/=]{8,}"),
 )
-_CANDIDATE = re.compile(r"[A-Za-z0-9+/=_\-]{32,}")
-_ENTROPY_THRESHOLD = 4.0
+# Candidate secrets for the entropy check; `/` is left out so URL paths and file paths stay readable.
+_CANDIDATE = re.compile(r"[A-Za-z0-9+=_\-]{32,}")
+_ENTROPY_THRESHOLD = 4.5
+_NON_ALNUM = re.compile(r"[^a-z0-9]")
 
 
 def _normalise(name: str) -> str:
-    return name.lower().replace("-", "").replace("_", "")
+    return _NON_ALNUM.sub("", name.lower())
 
 
 def _shannon_entropy(value: str) -> float:
@@ -83,7 +107,7 @@ def redact_text(text: str) -> str:
 
 def _is_sensitive_field(name: str) -> bool:
     norm = _normalise(name)
-    return any(part in norm for part in _SENSITIVE_FIELD_PARTS)
+    return norm.endswith("apikey") or norm in _SENSITIVE_FIELDS
 
 
 def redact(value: Any) -> Any:
