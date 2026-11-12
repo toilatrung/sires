@@ -38,7 +38,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | `agent/execution/taskboard.html` | Taskboard: task đã đăng ký (sổ `task-registry`, chỉ PO ghi), đang chạy kèm tiến độ, chưa chạy; sinh bằng `node scripts/docs/update-index.mjs`, chỉ PO chạy |
 | `agent/execution/PID-Template/` | Khung mẫu của các file trên; chép sang `PID-NNNNN/` theo [agent/execution/README.md](agent/execution/README.md), không ghi kết quả vào đây |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `agent/execution/taskboard.html`; `update-index.mjs` gọi file này) |
-| `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1) |
+| `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1); `setup-windows.ps1`, `setup-wsl.sh` (cài môi trường: công cụ trên Windows, Docker Engine trong WSL), `clean-windows.ps1`, `clean-wsl.sh` (dọn môi trường thừa), `local-env.mjs` (`pnpm local:up`) — [README](scripts/development/README.md) |
 | `scripts/agent/`, `scripts/deployment/` | Chưa có nội dung |
 | `.github/CODEOWNERS`, `.github/workflows/ci.yml` | PO là code owner của `docs/`; CI pull request (`nx affected`, Python, giấy phép) |
 | `.claude/launch.json` | Máy chủ xem `ui-design` (cổng 5178) và `web` (cổng 5173) |
