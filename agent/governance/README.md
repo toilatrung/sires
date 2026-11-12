@@ -34,3 +34,8 @@ Chưa có. Khi có, mỗi quyết định là một file `decisions/<chủ-đề
 - Rule bị thay thế thì đổi trạng thái sang `Bãi bỏ` và ghi rule thay thế, không xoá file.
 - Rule ở đây ưu tiên hơn mặc định của công cụ agent; mâu thuẫn với `AGENT.md` thì hỏi PO.
 - Thêm rule mới thì cập nhật bảng **Rules** ở trên.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../LICENSES.md).

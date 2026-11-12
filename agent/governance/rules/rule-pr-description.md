@@ -40,3 +40,8 @@ Ví dụ: `feat(identity): khu quản trị hệ thống dưới /api/v1/identit
 - **Những file đã thay đổi**: nhiều file cùng mục đích thì gộp theo thư mục (`src/api/identity/admin/*`); quá 10 mục thì chỉ liệt kê nhóm chính.
 - Không dán log, diff, kết quả test đầy đủ, ảnh chụp dài hay danh sách checklist vào mô tả.
 - Không thêm dòng ghi công hay `Co-Authored-By` (xem [rule-pr-author](rule-pr-author.md)).
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

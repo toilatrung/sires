@@ -20,3 +20,8 @@ Lịch sử git và PR phải phản ánh người chịu trách nhiệm thay đ
 ## Ưu tiên
 
 Rule này ghi đè mặc định của công cụ agent (ví dụ hướng dẫn tự thêm `Co-Authored-By` hay dòng ghi công). Chỉ bỏ qua khi PO yêu cầu rõ trong phiên.
+
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
