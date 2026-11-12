@@ -35,7 +35,7 @@
 <ol><li>Viết outbox và relay với aio-pika. Hàm ghi outbox bắt buộc nhận <code>aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} và ghi vào các cột <code>aggregate_type</code>, <code>aggregate_id</code>, <code>aggregate_version</code> của <code>app.outbox</code>; thiếu thì báo lỗi ngay, không ghi dòng (EC04)</li>
 <li>Viết inbox: chỉ lọc trùng theo (<code>consumer</code>, <code>event_id</code>) của <code>app.inbox</code>, ghi trong cùng giao dịch với tác động; inbox không so <code>aggregate.version</code></li>
 <li>Viết helper upsert bảng replica: chỉ ghi khi <code>aggregate.version</code> của sự kiện lớn hơn <code>source_version</code> đang có, rồi đặt <code>source_version</code> = <code>aggregate.version</code>; bằng hoặc nhỏ hơn thì bỏ (EC05)</li>
-<li>Viết <code>Idempotency-Key</code>, audit-emit; Audit Event đi qua outbox với <code>aggregate</code> là đối tượng được audit</li>
+<li>Viết <code>Idempotency-Key</code>, audit-emit; Audit Event đi qua outbox với <code>aggregate</code> là chính Audit Event (<code>audit_event</code>, id, <code>version = 1</code>) theo <code>audit.recorded</code> trong hợp đồng</li>
 <li>Kiểm payload bằng JSON Schema đọc từ <code>docs/api-design/internal/schemas.yaml</code>, không phụ thuộc thư viện TS</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run sires-common:test</code> → đạt</li>

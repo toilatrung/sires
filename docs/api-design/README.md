@@ -4,7 +4,16 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — hợp đồng baseline DBQ-03, DBQ-04 và khóa ký token nội bộ, PO chốt 11/11/2026
+### Thay đổi gần nhất — danh mục mã lỗi problem+json, PO chốt 11/11/2026
+
+PID-00001 S02 (bộ lọc problem+json) và PID-00005-AC02 cần danh mục mã để đạt NFR-OBS-005 ("100% lỗi trả về có mã thuộc danh mục"), nhưng `Problem.code` là chuỗi tự do và không có mã cho lỗi không khai báo. Chưa service nào trả lỗi theo hợp đồng, nên thu hẹp `code` thành enum ngay trong `0.1.0-mvp`.
+
+- Schema mới `ErrorCode` (enum, danh mục đóng) gom mọi mã đang có trong hợp đồng và thêm `unauthenticated` (401), `forbidden` (403), `not_found` (404), `method_not_allowed` (405), `precondition_failed` (412), `payload_too_large` (413), `internal_error` (500), `service_unavailable` (503). `Problem.code` trỏ tới `ErrorCode`.
+- Schema mới `FieldErrorCode` cho `Problem.errors[].code`: `required`, `invalid_type`, `invalid_format`, `too_small`, `too_big`, `invalid_value`, `unrecognized_field`. Thư viện nền ánh xạ lỗi của Zod, pydantic sang bộ này, không trả nguyên mã của thư viện.
+- `components/responses.yaml`: mỗi response lỗi chung ghi mã cố định kèm ví dụ; thêm `MethodNotAllowed` (405) và `InternalError` (500, không lộ stack trace). Hai response này không khai ở từng operation; `internal/responses.yaml` thêm tham chiếu.
+- Lỗi provider vẫn dùng `ProviderErrorCode` (8.6) trong payload riêng, không đặt vào `Problem.code`.
+
+### Hợp đồng baseline DBQ-03, DBQ-04 và khóa ký token nội bộ, PO chốt 11/11/2026
 
 Cổng PH-01 cần DBQ-03, DBQ-04 đã sửa vào hợp đồng. Chưa service nào phát hay nhận sự kiện, nên hai trường chuyển thành bắt buộc ngay trong `0.1.0-mvp` mà không cần phiên bản mới.
 
@@ -79,7 +88,7 @@ Các mục còn lại của PRD không sinh endpoint riêng; ràng buộc của 
 - **Idempotency:** header `Idempotency-Key` cho mọi lệnh có tác động (DATA-IDEMP-001).
 - **Concurrency:** `ETag`/`If-Match` theo `rowVersion`; lệch trả `412` (DATA-CONC-001).
 - **Tác vụ dài:** `202` + `Workflow`; theo dõi bằng `GET /workflows/{id}` hoặc SSE `GET /events`.
-- **Lỗi:** `application/problem+json` với `code` ổn định (danh sách trong `components/responses.yaml`).
+- **Lỗi:** `application/problem+json` với `code` thuộc danh mục `ErrorCode`, lỗi từng trường dùng `FieldErrorCode` (`components/schemas/common.yaml`); response lỗi dùng chung ở `components/responses.yaml`. Lỗi không khai báo trả `500 internal_error`.
 - **Tên trạng thái:** giữ nguyên chuỗi của PRD (`In Progress`, `Pending Approval`…) để khớp mục 5/18.
 - **Ngôn ngữ:** `summary`/`description` viết tiếng Việt; tên đường dẫn, trường, enum, `operationId` tiếng Anh.
 

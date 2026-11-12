@@ -19,21 +19,51 @@ BadRequest:
           - field: researchQuestion
             code: required
 Unauthorized:
-  description: Chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới `GET /auth/login`.
+  description: |
+    `401 unauthenticated`: chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới
+    `GET /auth/login`.
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/unauthenticated
+        title: Chưa đăng nhập
+        status: 401
+        code: unauthenticated
 Forbidden:
-  description: Thiếu hoặc sai `X-CSRF-Token`.
+  description: "`403 forbidden`: thiếu hoặc sai `X-CSRF-Token`."
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/forbidden
+        title: Không được phép
+        status: 403
+        code: forbidden
 NotFound:
   description: |
-    Không tồn tại, hoặc thuộc tài khoản/project khác (NFR-ISOL, OWN-03) — hai trường hợp không phân biệt.
+    `404 not_found`: không tồn tại, hoặc thuộc tài khoản/project khác (NFR-ISOL, OWN-03) — hai trường hợp không phân
+    biệt. Đường dẫn không có route cũng trả mã này.
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/not_found
+        title: Không tìm thấy
+        status: 404
+        code: not_found
+MethodNotAllowed:
+  description: |
+    `405 method_not_allowed`: route có nhưng không nhận method này (PO 11/11/2026). Không khai ở từng operation; framework
+    trả khi gọi sai method.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/method_not_allowed
+        title: Method không được hỗ trợ
+        status: 405
+        code: method_not_allowed
 Conflict:
   description: |
     Xung đột trạng thái. `code` một trong: `invalid_transition` (DATA-STATE-001), `action_not_allowed_in_state`
@@ -51,10 +81,15 @@ Conflict:
         detail: Task đang Ready, không thể chuyển thẳng sang Completed.
         currentState: Ready
 PreconditionFailed:
-  description: "`If-Match` không khớp rowVersion hiện hành — tải lại rồi thử lại (DATA-CONC-001)."
+  description: "`412 precondition_failed`: `If-Match` không khớp rowVersion hiện hành — tải lại rồi thử lại (DATA-CONC-001)."
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/precondition_failed
+        title: Dữ liệu đã thay đổi
+        status: 412
+        code: precondition_failed
 PreconditionRequired:
   description: |
     `428 precondition_required` (RFC 6585): thiếu `If-Match` ở lệnh cần kiểm `rowVersion`. Thiếu `Idempotency-Key`
@@ -62,11 +97,21 @@ PreconditionRequired:
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/precondition_required
+        title: Thiếu If-Match
+        status: 428
+        code: precondition_required
 PayloadTooLarge:
-  description: File vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm.
+  description: "`413 payload_too_large`: file vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm."
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/payload_too_large
+        title: File vượt giới hạn
+        status: 413
+        code: payload_too_large
 UnprocessableEntity:
   description: |
     Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
@@ -83,10 +128,30 @@ UnprocessableEntity:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
 ServiceUnavailable:
-  description: Dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) — INT-OIDC-004, 17.
+  description: |
+    `503 service_unavailable`: dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) —
+    INT-OIDC-004, 17.
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/service_unavailable
+        title: Dịch vụ tạm không khả dụng
+        status: 503
+        code: service_unavailable
+InternalError:
+  description: |
+    `500 internal_error`: lỗi không khai báo (NFR-OBS-005, PO 11/11/2026). Không lộ stack trace hay thông điệp nội bộ;
+    `correlationId` để tra log. Mọi operation có thể trả mã này nên không khai ở từng operation.
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/internal_error
+        title: Lỗi hệ thống
+        status: 500
+        code: internal_error
+        correlationId: 0193a5c2-7b1e-7c3a-9d2f-4e5b6a7c8d9e
 
 WorkflowAccepted:
   description: Đã nhận yêu cầu; Workflow được tạo (Created/Running). Theo dõi qua `Location` hoặc `GET /events`.
