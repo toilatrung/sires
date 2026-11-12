@@ -33,14 +33,18 @@
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
 <ol><li>Thêm phụ thuộc vào <code>libs/py/sires_common/pyproject.toml</code></li>
-<li>Viết tenancy, UUIDv7, handler problem+json cho FastAPI, structlog có che dữ liệu, OpenTelemetry</li></ol>
+<li>Viết tenancy, UUIDv7, handler problem+json cho FastAPI, structlog có che dữ liệu, OpenTelemetry</li>
+<li><code>code</code> và <code>errors[].code</code> chỉ lấy từ danh mục <code>ErrorCode</code>, <code>FieldErrorCode</code> (<code>docs/api-design/components/schemas/common.yaml</code>, PO 11/11/2026). Python chưa có type sinh từ hợp đồng nên khai danh mục trong mã và có test so với <code>common.yaml</code>; ánh xạ lỗi của pydantic sang <code>FieldErrorCode</code>, không trả nguyên mã của pydantic</li>
+<li>Che log theo chính sách chung với bản TS (PO 12/11/2026, <a href="../../designs/notes.html#du-lieu">ghi chú thiết kế</a>)</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
 <li><code>libs/py/sires_common/tests/test_tenancy.py › test_rls</code> (PID-00005-AC01)</li>
-<li><code>libs/py/sires_common/tests/test_logging.py › test_redaction</code> (PID-00005-AC02)</li></ul>
+<li><code>libs/py/sires_common/tests/test_logging.py › test_redaction</code> (PID-00005-AC02)</li>
+<li><code>libs/py/sires_common/tests/test_errors.py</code> (NFR-OBS-005: mọi lỗi trả về có mã thuộc danh mục)</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
 <ul><li>Test RLS đạt trên PostgreSQL thật</li>
-<li>Chính sách che khớp bản TS</li></ul>
+<li>Chính sách che khớp bản TS</li>
+<li>Problem+json không có mã ngoài <code>ErrorCode</code>, <code>FieldErrorCode</code></li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00005</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Slice PID-00005 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>

@@ -76,7 +76,7 @@ pnpm local:up</pre>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao</li>
-<li>Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code</li>
+<li>Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code</li>
 <li>Smoke Playwright sau deploy</li>
 <li>Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
@@ -88,13 +88,13 @@ pnpm local:up</pre>
 <tr><td>Migration lỗi</td><td>Dừng deploy service đó, service khác không ảnh hưởng</td></tr>
 <tr><td>Home Lab mất điện hoặc mất mạng</td><td>Tạm dừng kiểm cổng, chạy lại khi có lại; không tính là đạt (DLR-09)</td></tr>
 <tr><td>URL staging không truy cập được từ runner của GitHub</td><td>Chạy smoke bằng Job sau đồng bộ trong cụm</td></tr>
-<tr><td>CI cần ghi tag image mới</td><td>Không commit thẳng vào <code>main</code> (ruleset <code>protect-main</code>)</td></tr>
+<tr><td>CI cần ghi tag image mới</td><td>Không commit thẳng vào <code>develop</code>, <code>main</code> (ruleset <code>protect-main-develop</code>)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
-<li id="b2"><strong>B2</strong> Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b2"><strong>B2</strong> Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b3"><strong>B3</strong> Smoke Playwright sau deploy — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b4"><strong>B4</strong> Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 </ol>
