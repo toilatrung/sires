@@ -4,7 +4,14 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — danh mục mã lỗi problem+json, PO chốt 11/11/2026
+### Thay đổi gần nhất — token khi service gọi tiếp trong Agent Run, PO chốt 16/11/2026
+
+`knowledge.retrieveEvidence` (PID-00093) nhận token Agent Run nhưng phải gọi `library.getReferenceSelectionInternal` và `identity.getEmbeddingSettingsInternal`; hợp đồng chưa nói service trung gian dùng token nào (tickets OQ-110). Chỉ đổi mô tả, không đổi schema hay `x-callers`; tương thích ngược.
+
+- `internal/schemas.yaml#/ServiceTokenClaims`: lời gọi lấy dữ liệu sẽ trả cho agent thì chuyển tiếp nguyên token Agent Run (service đích phải có trong `aud`, `agent-core` có trong `x-callers`); lời gọi phục vụ việc riêng của service trung gian thì service tự ký token `act.type = system` và tự áp `agentScope` lên kết quả.
+- Ảnh hưởng: client token của PID-00003 (TS) và PID-00005 (Python) phải cho tự ký trong request Agent Run với loại lời gọi thứ hai.
+
+### Danh mục mã lỗi problem+json, PO chốt 11/11/2026
 
 PID-00001 S02 (bộ lọc problem+json) và PID-00005-AC02 cần danh mục mã để đạt NFR-OBS-005 ("100% lỗi trả về có mã thuộc danh mục"), nhưng `Problem.code` là chuỗi tự do và không có mã cho lỗi không khai báo. Chưa service nào trả lỗi theo hợp đồng, nên thu hẹp `code` thành enum ngay trong `0.1.0-mvp`.
 
@@ -156,7 +163,7 @@ gateway, audit và sandbox-runner không mở endpoint nội bộ: gateway chỉ
 ### Quy ước nội bộ
 
 - **Không qua Internet:** server là DNS nội bộ Kubernetes (`http://<service>.sires.svc.cluster.local:8080`); không có Ingress. Đường dẫn bắt đầu bằng `/internal/`.
-- **Xác thực:** `Authorization: Bearer <token nội bộ>` — JWT ký bằng KMS, hạn ≤ 5 phút, nội dung theo `internal/schemas.yaml#/ServiceTokenClaims` (ADR-20). Chỉ gateway phát token actor Researcher; token của Agent Run luôn có actor agent và `agentScope`.
+- **Xác thực:** `Authorization: Bearer <token nội bộ>` — JWT ký bằng KMS, hạn ≤ 5 phút, nội dung theo `internal/schemas.yaml#/ServiceTokenClaims` (ADR-20). Chỉ gateway phát token actor Researcher; token của Agent Run luôn có actor agent và `agentScope`. Service nhận request Agent Run mà gọi tiếp: chuyển tiếp token Agent Run khi lấy dữ liệu trả cho agent, tự ký `act.type = system` khi phục vụ việc riêng (PO 16/11/2026).
 - **`x-callers`:** danh sách service được phép gọi operation; service khác nhận `403 caller_not_allowed`. Entity ngoài phạm vi tài khoản hoặc phạm vi agent vẫn trả `404`.
 - **Ghi đầu ra của agent:** body có `meta: AgentWriteMeta` (agentRunId, outputIndex, provenance); `Idempotency-Key` = `agentRunId:outputIndex`; phản hồi `WriteAck`. Mục không hợp lệ nằm trong `rejected`, không làm hỏng cả lô (architecture 5.8).
 - **Context bundle:** mọi API đọc cho Context Assembler trả `ContextBundle` gồm mục có `TypedRef` có phiên bản và lớp context (PRD 14.2), để ghi context manifest.

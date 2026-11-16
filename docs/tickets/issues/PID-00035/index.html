@@ -50,7 +50,7 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Cổng từ PH-02 trở đi kiểm trên staging. AQ-12 chưa trả lời nên staging tạm chạy trên Home Lab (PO 08/11/2026, OQ-108).</li>
-<li><strong>Gồm:</strong> Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao; Merge vào <code>main</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code; Smoke Playwright sau deploy; Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu.</li>
+<li><strong>Gồm:</strong> Kubernetes một node và Argo CD trên Home Lab (i7 thế hệ 11, 16 GB RAM); mỗi service một bản sao; Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code; Smoke Playwright sau deploy; Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu.</li>
 <li><strong>Không gồm:</strong> Broker quorum, KEDA (<a href="../PID-00057/index.html">PID-00057</a>); Production (<a href="../PID-00153/index.html">PID-00153</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00009/index.html">PID-00009</a>, <a href="../PID-00010/index.html">PID-00010</a></li>
@@ -60,7 +60,8 @@
 <li>Tệp: <code>infra/homelab/</code> — Cụm Kubernetes một node, Argo CD Application cho từng service</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
-<ul><li><strong>PID-00035-AC01</strong> Given một merge chạm một service, When pipeline chạy, Then chỉ service đó được deploy, migration của nó chạy, smoke đạt.</li></ul>
+<ul><li><strong>PID-00035-AC01</strong> Given một merge chạm một service, When pipeline chạy, Then chỉ service đó được deploy, migration của nó chạy, smoke đạt.</li>
+<li><strong>PID-00035-AC02</strong> Given merge vào <code>develop</code> không chạm service nào (ví dụ chỉ <code>docs/</code>, <code>agent/</code>), When pipeline chạy, Then job kiểm thay đổi chạy, các job build, đẩy image, migration, smoke báo skipped, không có lần deploy nào (PO 12/11/2026).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00009/index.html">PID-00009</a> CI đầy đủ: contract test, payload AsyncAPI, lint spec, quét bảo mật, build image, remote cache; <a href="../PID-00010/index.html">PID-00010</a> Dockerfile chung và Helm chart chung.</li>
