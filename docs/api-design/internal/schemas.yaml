@@ -28,6 +28,15 @@ ServiceTokenClaims:
       nguyên token của gateway trong request trả lời prompt (F-08), nên endpoint `x-apr` nhận token đó khi `aud` là
       chính service này hoặc `orchestration` (PO 11/11/2026). Endpoint khác kiểm `aud` chặt.
     Hạn ≤ 5 phút áp cho mọi token; token của Agent Run được làm mới qua phản hồi heartbeat (`AgentRunControl.serviceToken`).
+
+    Service nhận request mang token Agent Run mà phải gọi tiếp service khác (PO 16/11/2026, tickets OQ-110):
+    - lời gọi lấy dữ liệu sẽ trả về cho agent: chuyển tiếp nguyên token Agent Run; service đích phải có trong `aud` của
+      token và `agent-core` có trong `x-callers` của operation; service đích tự kiểm `agentScope`;
+    - lời gọi phục vụ việc riêng của service trung gian (cấu hình, metadata để tính phạm vi; ví dụ `knowledge` gọi
+      `getReferenceSelectionInternal`, `getEmbeddingSettingsInternal` khi xử lý `retrieveEvidence`): service tự ký token
+      của mình (`sub` = `kid` = tên mình, `act.type = system` kèm `component`, `accountId` và `projectId` lấy từ token
+      đến) và tự áp `agentScope` của token đến lên kết quả trả cho agent.
+    Không service nào ngoài orchestration ký token `act.type = agent`.
   required: [iss, sub, aud, exp, act]
   properties:
     iss: { type: string, examples: [sires-internal] }
