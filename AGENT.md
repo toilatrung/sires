@@ -63,7 +63,8 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 
 ## Git
 
-- Nhánh chính `main`; mỗi việc làm trên nhánh riêng và vào `main` qua pull request. Thay đổi `docs/` cần PO review (CODEOWNERS).
+- Hai nhánh dài hạn (PO 12/11/2026): `develop` chứa code chạy staging, `main` chứa code production. Ở giai đoạn tài liệu hiện nay mỗi việc vẫn làm trên nhánh riêng tạo từ `main` mới nhất và vào `main` qua pull request; thời điểm chuyển sang `develop` là OQ-111 (`docs/tickets` mục 4.3).
+- Ruleset `protect-main-develop` bảo vệ `main` và `develop`: chỉ vào qua pull request, không force-push, không xóa; commit phải có chữ ký (cài khóa ký SSH hoặc GPG trước khi mở PR); check CI `tracks` và `build` phải đạt trên nhánh đã cập nhật với nhánh đích; file có code owner (`docs/`, taskboard, `CODEOWNERS`) cần code owner duyệt. Chỉ PO được bypass.
 - Chỉ commit, push, tạo PR khi được yêu cầu. Ngoại lệ: `spec-execution-skill` commit và push riêng `agent/execution/PID-NNNNN/report.md` trên nhánh của ticket khi đặt hoặc đổi trạng thái, để taskboard thấy task đang chạy (PO duyệt 05/11/2026).
 - Commit và PR ghi tác giả là người dùng; không thêm dòng ghi công cho agent (`Co-Authored-By` của AI, "Generated with …").
 
