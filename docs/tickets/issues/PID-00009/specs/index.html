@@ -82,8 +82,8 @@ pnpm local:up</pre>
 <li>Gắn kiểm tra lệch spec của <a href="../../PID-00008/index.html">PID-00008</a></li>
 <li><strong>Kiểm thay đổi trước</strong> (PO 12/11/2026): job đầu tiên so nhánh với merge-base của nhánh đích, xuất danh sách project Nx bị ảnh hưởng và nhóm thay đổi (TS, Python, hợp đồng <code>docs/api-design</code>, tài liệu, Dockerfile/Helm/Terraform, workflow và file dùng chung); các job khác đọc kết quả này</li>
 <li><strong>PR vào <code>develop</code>:</strong> job không liên quan tới thay đổi bỏ qua ngay trong PR đó bằng điều kiện <code>if:</code> ở mức job (job skipped được GitHub tính là đạt); <code>nx affected</code> chỉ chạy project bị ảnh hưởng; build image chỉ cho service bị ảnh hưởng</li>
-<li><strong>PR vào <code>main</code> và push vào <code>main</code>:</strong> chạy toàn bộ: mọi job, mọi project (<code>nx run-many</code>), vẫn dùng Nx cache cho task có input không đổi. Ở giai đoạn tài liệu mọi PR vào <code>main</code> nên đều chạy toàn bộ cho tới khi đóng OQ-111</li>
-<li><strong>Thời gian:</strong> hủy lần chạy cũ khi PR có push mới (<code>concurrency</code>, không áp cho push vào <code>main</code>); cache pnpm, uv, Nx và layer Docker; job độc lập chạy song song; mỗi job có <code>timeout-minutes</code>; ghi thời gian từng job vào job summary. Ngưỡng ngoài AC01 chốt sau khi có số đo (OQ-112)</li></ul>
+<li><strong>PR vào <code>main</code> và push vào <code>main</code>:</strong> chạy toàn bộ: mọi job, mọi project (<code>nx run-many</code>), vẫn dùng Nx cache cho task có input không đổi. Ở giai đoạn tài liệu mọi PR vào <code>main</code> nên đều chạy toàn bộ cho tới khi <code>PID-00035</code> xong (OQ-111)</li>
+<li><strong>Thời gian:</strong> hủy lần chạy cũ khi PR có push mới (<code>concurrency</code>, không áp cho push vào <code>main</code>); cache pnpm, uv, Nx và layer Docker; job độc lập chạy song song; mỗi job có <code>timeout-minutes</code>; ghi thời gian từng job vào job summary. Ngưỡng ngoài AC01 (PR không chạm code, lần chạy toàn bộ trên <code>main</code>) = p95 của 20 lần chạy gần nhất cộng 20% (OQ-112, PO chốt 16/11/2026): Dev ghi số đo và ngưỡng tính được vào <code>report.md</code>, PO thêm thành AC</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -108,7 +108,7 @@ pnpm local:up</pre>
 <li id="b6"><strong>B6</strong> Nx remote cache — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b7"><strong>B7</strong> Gắn kiểm tra lệch spec của <a href="../../PID-00008/index.html">PID-00008</a> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b8"><strong>B8</strong> Job kiểm thay đổi và điều kiện chạy theo nhánh đích: <code>develop</code> lọc theo thay đổi, <code>main</code> chạy toàn bộ — Kết quả: AC04, AC05, AC06 đạt — Kiểm tra: PR thử vào <code>develop</code> (chỉ tài liệu; chỉ <code>sires_common</code>) và PR thử vào <code>main</code></li>
-<li id="b9"><strong>B9</strong> Tối ưu thời gian: <code>concurrency</code>, cache pnpm, uv, Nx, Docker, job song song, <code>timeout-minutes</code>, thời gian trong job summary — Kết quả: AC01, AC07, AC08 đạt — Kiểm tra: hai push liên tiếp vào PR thử; đọc job summary</li>
+<li id="b9"><strong>B9</strong> Tối ưu thời gian: <code>concurrency</code>, cache pnpm, uv, Nx, Docker, job song song, <code>timeout-minutes</code>, thời gian trong job summary; sau 20 lần chạy, ghi p95 cộng 20% của từng loại lần chạy vào <code>report.md</code> (OQ-112) — Kết quả: AC01, AC07, AC08 đạt — Kiểm tra: hai push liên tiếp vào PR thử; đọc job summary</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -129,7 +129,7 @@ node scripts/docs/add-license.mjs --check</pre>
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
 <ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>infra</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
 <li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
-<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có. Đã cấp mã: OQ-111 (thời điểm PR chuyển sang <code>develop</code>), OQ-112 (ngưỡng thời gian ngoài AC01).</li></ul>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có. Đã đóng 16/11/2026: OQ-111 (PR chuyển sang <code>develop</code> khi <code>PID-00035</code> xong), OQ-112 (ngưỡng p95 cộng 20%).</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00009</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
 </main>
 <footer>SIRes · Spec kỹ thuật PID-00009 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

@@ -79,7 +79,8 @@ pnpm local:up</pre>
 <li>Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code</li>
 <li>Smoke Playwright sau deploy</li>
 <li>Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu</li>
-<li><strong>Kiểm thay đổi trước</strong> (PO 12/11/2026): job đầu tiên tính service bị ảnh hưởng (cùng cách với job kiểm thay đổi của <a href="../../PID-00009/index.html">PID-00009</a>); job build, đẩy image, migration, smoke của service không bị ảnh hưởng bỏ qua bằng <code>if:</code> ở mức job. Không có service nào bị ảnh hưởng thì không deploy. Không tính được thay đổi thì deploy mọi service thay đổi so với lần deploy trước, không bỏ sót</li></ul>
+<li><strong>Kiểm thay đổi trước</strong> (PO 12/11/2026): job đầu tiên tính service bị ảnh hưởng (cùng cách với job kiểm thay đổi của <a href="../../PID-00009/index.html">PID-00009</a>); job build, đẩy image, migration, smoke của service không bị ảnh hưởng bỏ qua bằng <code>if:</code> ở mức job. Không có service nào bị ảnh hưởng thì không deploy. Không tính được thay đổi thì deploy mọi service thay đổi so với lần deploy trước, không bỏ sót</li>
+<li><strong>Chuyển sang <code>develop</code></strong> (OQ-111, PO chốt 16/11/2026): khi PID này xong, pull request tính năng vào <code>develop</code> và <code>develop</code> thành nhánh mặc định. Trong PID này luồng infra sửa CI (chạy khi push vào <code>develop</code>, <code>nx-set-shas</code> lấy nhánh đích thay vì <code>main</code>) và base mặc định của <code>scripts/development/check-tracks.mjs</code>; PO đổi nhánh mặc định và sửa <code>AGENT.md</code>, <code>README.md</code>, các skill nói tới <code>main</code></li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -98,6 +99,7 @@ pnpm local:up</pre>
 <li id="b2"><strong>B2</strong> Merge vào <code>develop</code>: runner của GitHub build và đẩy image service thay đổi; Argo CD kéo về, migration của service đó chạy trước khi đổi code — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b3"><strong>B3</strong> Smoke Playwright sau deploy — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b4"><strong>B4</strong> Giữ secret và KMS của staging ở nơi PO cấp khi Dev yêu cầu — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b5"><strong>B5</strong> Chuẩn bị chuyển sang <code>develop</code> (OQ-111): CI chạy khi push vào <code>develop</code>, <code>nx-set-shas</code> theo nhánh đích, base mặc định của <code>check-tracks.mjs</code> — Kết quả: PR thử vào <code>develop</code> tính affected đúng so với <code>develop</code> — Kiểm tra: PR thử vào <code>develop</code></li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
