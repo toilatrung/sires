@@ -25,6 +25,7 @@ from sires_common.service_auth import (
     ServiceCaller,
     ServiceTokenIssuer,
     TokenVerifier,
+    agent_run_headers,
     sign_token,
 )
 from sires_common.tenancy import uuid7
@@ -251,12 +252,74 @@ async def test_client() -> None:
     researcher_token = await _token(signer="agent-core")
     forwarded = client.post("/internal/forward", headers={"Authorization": f"Bearer {researcher_token}"})
     assert forwarded.json() == {"actor": RESEARCHER.as_json(), "accountId": str(ACCOUNT), "sub": "knowledge"}
-    # A request made with an Agent Run token cannot be turned into a self-issued token.
+    # A request made with an Agent Run token is not silently re-signed: the caller must choose (OQ-110).
     refused = client.post("/internal/forward", headers={"Authorization": f"Bearer {await _agent_token()}"})
-    assert "refused" in refused.json()
+    assert "agent_run_headers" in refused.json()["refused"]
 
     # Tokens are reused until close to expiry.
     assert await issuer.issue("research", actor=RESEARCHER) == await issuer.issue("research", actor=RESEARCHER)
+
+
+async def test_agent_run_downstream_calls() -> None:
+    """OQ-110 (c): knowledge handling an Agent Run request forwards the Agent Run token to fetch data returned to
+    the agent (target must be in aud), or signs its own system token for its own needs; it never guesses."""
+    issuer = ServiceTokenIssuer("knowledge", SIGNERS["knowledge"])
+    app = FastAPI()
+    install_problem_handlers(app)
+    auth = ServiceAuth(TokenVerifier("knowledge", KEYS))
+
+    @app.post("/internal/retrieve/{mode}")
+    async def retrieve(
+        mode: str,
+        caller: Annotated[ServiceCaller, Depends(auth.require(["research", "agent-core"]))],
+    ) -> dict[str, Any]:
+        assert caller.token not in repr(caller)
+        try:
+            if mode == "forward-research":
+                outgoing, target = agent_run_headers("research"), "research"
+            elif mode == "forward-identity":
+                outgoing, target = agent_run_headers("identity"), "identity"
+            elif mode == "own":
+                outgoing, target = await issuer.headers_for("identity", component="retrieval"), "identity"
+            else:
+                outgoing, target = await issuer.headers_for("identity"), "identity"
+        except ValueError as exc:
+            return {"refused": str(exc)}
+        token = outgoing["Authorization"].removeprefix("Bearer ")
+        downstream = TokenVerifier(target, KEYS).verify(token)  # type: ignore[arg-type]
+        return {
+            "same_token": token == caller.token,
+            "sub": downstream.service,
+            "kid": downstream.kid,
+            "actor": downstream.actor.as_json(),
+            "accountId": str(downstream.account_id),
+            "agentRunId": str(downstream.agent_run_id) if downstream.agent_run_id else None,
+        }
+
+    client = TestClient(app)
+    agent_token = await _agent_token(aud=("knowledge", "research"))
+    headers = {"Authorization": f"Bearer {agent_token}"}
+
+    forwarded = client.post("/internal/retrieve/forward-research", headers=headers).json()
+    assert forwarded["same_token"] is True
+    assert (forwarded["sub"], forwarded["kid"], forwarded["agentRunId"]) == ("agent-core", "orchestration", str(RUN_ID))
+
+    # identity is not a service this Agent Run may read: refused before any call is made.
+    assert "aud" in client.post("/internal/retrieve/forward-identity", headers=headers).json()["refused"]
+
+    own = client.post("/internal/retrieve/own", headers=headers).json()
+    assert own["same_token"] is False
+    assert (own["sub"], own["kid"], own["agentRunId"]) == ("knowledge", "knowledge", None)
+    assert own["accountId"] == str(ACCOUNT)
+    assert own["actor"] == {"type": "system", "component": "retrieval"}
+
+    assert "agent_run_headers" in client.post("/internal/retrieve/none", headers=headers).json()["refused"]
+
+    # Outside an Agent Run request there is no Agent Run token to forward.
+    researcher = {"Authorization": f"Bearer {await _token(signer='agent-core')}"}
+    assert "Agent Run" in client.post("/internal/retrieve/forward-research", headers=researcher).json()["refused"]
+    with pytest.raises(ValueError):
+        agent_run_headers("research")
 
 
 async def test_kms_signer_and_key_set_formats() -> None:

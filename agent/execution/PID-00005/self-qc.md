@@ -87,6 +87,23 @@ Thay đổi theo YC2–YC4 (report.md Lần 2), sau khi gộp `origin/main` (PR 
 | `check-tracks.mjs --stdin` trên `git diff --name-only origin/main` cộng file mới | `tracks touched: infra, platform, repo`; cảnh báo hai luồng vì `uv.lock` xếp vào `infra` trong `check-tracks.mjs`, trong khi CODEOWNERS ghi lock không gán chủ (quy tắc 1.4.7). Chỉ là cảnh báo. |
 | Test mới | `test_errors.py`: danh mục khớp `common.yaml`; mã ngoài danh mục bị từ chối; 16 kiểu lỗi pydantic → `FieldErrorCode`; body sai → `invalid_format`, `invalid_type`, `too_small`, `too_big`, `unrecognized_field`; JSON sai → `field` rỗng; 404, 405 (kèm `Allow`), 401 (kèm `WWW-Authenticate`), 400, 403, 412, 413, 428, 503 đúng mã; 409, 415, 422, 429, 500, 502 trần → `500 internal_error`; mọi body khớp schema `Problem`. `test_logging.py › test_redaction_policy_shared_with_ts`: 12 tên trường của TS bị che, `input_tokens`/`token_count` giữ, đường dẫn có `/` giữ, định danh dài entropy < 4,5 giữ, JWT trong chuỗi bị che. |
 
+## Lần 3 — 16/11/2026
+
+**Kết luận:** Đạt. Thay đổi theo YC5 (report.md Lần 3: client token theo OQ-110).
+
+Môi trường: Smart App Control nay chặn `.venv/Scripts/python.exe` (uv trampoline), nên không chạy được `uv run …` hay target Nx của Python. Các lệnh dưới chạy bằng trình thông dịch gốc của uv (`cpython-3.12.16`) với `site-packages` của `.venv` (runner ngoài repo, `PYTHONPATH` gồm `.venv/Lib/site-packages` và `src` cho test mở tiến trình con). Docker Engine trong WSL bật bằng `wsl.exe -d Ubuntu-24.04`, rồi gọi qua `DOCKER_HOST=tcp://localhost:2375`.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `ruff check .` | Lần đầu lỗi E501 ở `tests/test_service_auth.py:312`, đã tách dòng; chạy lại “All checks passed!”. |
+| `mypy src` (mypy 2.4.1 cài thuần Python ngoài repo, `--no-binary mypy`) | “Success: no issues found in 15 source files”. |
+| `pytest tests/test_service_auth.py tests/test_errors.py` | 32 đạt, thoát 0. |
+| `pytest` (toàn bộ) | Lần đầu 1 lỗi (`test_fake_gateway.py › test_import_without_provider_sdk`: tiến trình con thiếu `site-packages` do cách chạy) và lỗi setup ở test cần PostgreSQL/RabbitMQ (Docker chưa bật, `localhost:2375` từ chối kết nối). Sau khi thêm `PYTHONPATH` và bật WSL: 65 đạt, thoát 0. |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | 0 file thiếu giấy phép; index khớp. |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00005 --result` | “PID-00005: KẾT QUẢ ĐỦ (0 cảnh báo)”. |
+| `check-tracks.mjs --stdin` trên `git diff --name-only origin/main` | `tracks touched: infra, platform, repo`; cảnh báo hai luồng như Lần 2 (do `uv.lock`). |
+| Test mới | `test_service_auth.py › test_agent_run_downstream_calls`: chuyển tiếp tới `research` (có trong `aud`) giữ nguyên token, bên nhận thấy `sub = agent-core`, `kid = orchestration`, đúng `agentRunId`; chuyển tiếp tới `identity` (không có trong `aud`) bị từ chối trước khi gọi; tự ký với `component = retrieval` ra token `sub = kid = knowledge`, `act = {system, retrieval}`, đúng `accountId`, không có `agentRunId`; không nêu `component` bị từ chối; ngoài request Agent Run không chuyển tiếp được; token gốc không có trong `repr(caller)`. `› test_client` đổi phần từ chối theo thông báo mới. |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

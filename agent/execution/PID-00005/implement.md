@@ -27,7 +27,8 @@ Thư viện không có điểm vào riêng; service Python (`agent-core`, `knowl
 
 **C. Gọi service khác**
 
-1. `ServiceTokenIssuer.headers_for(audience)` — `service_auth.py:441`: trong request lấy actor, account, project từ caller đã kiểm; trong job hay consumer dùng `act = {type: system, component}`. Caller dùng token Agent Run → từ chối (dùng `bearer_headers` với token orchestration đã cấp).
+1. `ServiceTokenIssuer.headers_for(audience)` — `service_auth.py:452`: trong request lấy actor, account, project từ caller đã kiểm; trong job hay consumer dùng `act = {type: system, component}`. Request mang token Agent Run (OQ-110, PO chốt 16/11/2026): phải nêu `component` (việc riêng của service) và token tự ký có `act = {type: system, component}`, account, project lấy từ token đến; không nêu `component` → `ValueError` chỉ ra hai cách, client không tự đoán.
+   `agent_run_headers(audience)` — `service_auth.py:497`: chuyển tiếp nguyên token Agent Run của request đang xử lý (lấy dữ liệu trả cho agent); service đích không có trong `aud` của token, hoặc request không mang token Agent Run → `ValueError` trước khi gọi. `ServiceCaller.token` (`service_auth.py:221`) giữ JWT gốc cho việc này, không có trong `repr`.
 2. `issue` — `service_auth.py:408`: claims theo `ServiceTokenClaims` (`iss = sires-internal`, `sub` = service mình, `aud` = service đích, `exp` ≤ 5 phút), ký bằng `sign_token` (JWS ES256, header `kid` = service) qua `TokenSigner` (`LocalKeySigner` hoặc `KmsTokenSigner`). Token được dùng lại tới khi còn ≤ 60 giây.
 3. Bên nhận kiểm như luồng A bước 2.
 
@@ -51,7 +52,8 @@ Thư viện không có điểm vào riêng; service Python (`agent-core`, `knowl
 | `upsert_replica` | hàm | `messaging.py:450` | Upsert bản sao chỉ khi version lớn hơn | Bản sao `replica.*` của mọi service Python | Bản cũ đến sau không ghi đè | `test_messaging.py › test_replica_upsert` |
 | `claim_idempotency_key` | hàm, thuật toán | `messaging.py:527` | Giữ khóa, phát lại phản hồi, 422 khi dùng lại | Lệnh có tác động (DATA-IDEMP-001) | Một khóa một kết quả đã commit | `test_messaging.py › test_idempotency` |
 | `TokenVerifier.verify` | method, thuật toán | `service_auth.py:271` | Kiểm token nội bộ theo H2, H4 | Mọi endpoint nội bộ Python; dùng chung bộ khóa với bản TS | Chỉ orchestration phát token agent; `sub` = `kid` | `test_service_auth.py › test_guard`, `› test_signer_rules`, `› test_agent_scope`, `› test_unknown_kid`, `› test_aud_array` |
-| `ServiceTokenIssuer` | class | `service_auth.py:379` | Phát token cho lời gọi đi | Mọi lời gọi đi từ service Python | Không tự phát `act.type = agent`; hạn ≤ 5 phút | `test_service_auth.py › test_client`, `› test_tokens_follow_contract` |
+| `ServiceTokenIssuer` | class | `service_auth.py:388` | Phát token cho lời gọi đi | Mọi lời gọi đi từ service Python | Không tự phát `act.type = agent`; hạn ≤ 5 phút; trong request Agent Run chỉ tự ký `act.type = system` khi bên gọi nêu `component` (OQ-110) | `test_service_auth.py › test_client`, `› test_tokens_follow_contract`, `› test_agent_run_downstream_calls` |
+| `agent_run_headers` | hàm | `service_auth.py:497` | Chuyển tiếp token Agent Run cho lời gọi lấy dữ liệu trả cho agent | Lời gọi tiếp của mọi service Python nhận request Agent Run (ví dụ `knowledge`) | Chỉ chuyển tiếp tới service có trong `aud`; không chuyển tiếp ngoài request Agent Run | `test_service_auth.py › test_agent_run_downstream_calls` |
 | `FakeModelGateway` | class | `testing/fake_gateway.py:69` | Model giả theo kịch bản | Mọi test agent không mạng (NFR-MAINT-004) | Tất định; thiếu kịch bản thì báo lỗi | `test_fake_gateway.py › test_deterministic`, `› test_missing_step` |
 
 ### Thuật toán: che dữ liệu trong log

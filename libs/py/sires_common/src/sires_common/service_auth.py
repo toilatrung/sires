@@ -12,6 +12,10 @@
   `aud` = this service as a single value.
 - Every failure → `401 invalid_service_token`; a valid token whose `sub` is not in the route's `x-callers` →
   `403 caller_not_allowed` (internal/responses.yaml; PID-00003 I3).
+- A service handling an Agent Run request that calls another service (OQ-110, PO 16/11/2026): to fetch data
+  returned to the agent it forwards the Agent Run token (`agent_run_headers`, target must be in `aud`); for its own
+  needs it signs its own `act.type = system` token (`ServiceTokenIssuer.headers_for(..., component=...)`) and
+  applies the incoming `agentScope` to what it returns. The caller chooses; the client never guesses.
 """
 
 from __future__ import annotations
@@ -21,7 +25,7 @@ import contextvars
 import json
 import time
 from collections.abc import Awaitable, Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -215,10 +219,15 @@ class PublicKeySet:
 
 @dataclass(frozen=True, slots=True)
 class ServiceCaller:
-    """A verified internal token: who calls (`sub`), who signed (`kid`) and on whose behalf (`act`)."""
+    """A verified internal token: who calls (`sub`), who signed (`kid`) and on whose behalf (`act`).
+
+    `token` is the raw JWT, kept only so an Agent Run token can be forwarded (`agent_run_headers`); it is left out
+    of `repr` and comparisons.
+    """
 
     claims: ServiceTokenClaims
     kid: str
+    token: str = field(default="", repr=False, compare=False)
 
     @property
     def service(self) -> ServiceName:
@@ -309,7 +318,7 @@ class TokenVerifier:
         if claims.exp - now > MAX_TOKEN_TTL_SECONDS + self._skew:
             raise InvalidServiceToken("ttl_too_long")
         self._check_signer_and_audience(claims, kid)
-        return ServiceCaller(claims, kid)
+        return ServiceCaller(claims, kid, token)
 
     def _check_signer_and_audience(self, claims: ServiceTokenClaims, kid: str) -> None:
         if claims.act.type == "agent":
@@ -380,7 +389,9 @@ class ServiceTokenIssuer:
     """Issues tokens for this service's outgoing calls: `sub` = this service, `aud` = target service.
 
     Never issues `act.type = agent`: an Agent Run calls other services with the token orchestration gave it
-    (use `bearer_headers`); refreshing that token on heartbeat is the worker's job (PID-00073).
+    (use `bearer_headers`); refreshing that token on heartbeat is the worker's job (PID-00073). A service handling
+    an Agent Run request forwards that token with `agent_run_headers`, or signs a system token for its own needs
+    with `headers_for(..., component=...)` (OQ-110).
     """
 
     def __init__(
@@ -446,15 +457,28 @@ class ServiceTokenIssuer:
         account_id: UUID | None = None,
         project_id: UUID | None = None,
     ) -> dict[str, str]:
-        """`Authorization` header for a call to `audience`.
+        """`Authorization` header for a call to `audience`, signed by this service.
 
-        Inside a request: actor, account and project come from the verified incoming token. In a job or consumer
-        (no request): `act = {type: system, component}`, account and project as given.
+        Inside a request: actor, account and project come from the verified incoming token. Inside an Agent Run
+        request the call must serve this service's own needs (OQ-110): `component` is required and the token is
+        `act = {type: system, component}` with the incoming account and project; data returned to the agent is
+        fetched with `agent_run_headers` instead. In a job or consumer (no request): `act = {type: system,
+        component}`, account and project as given.
         """
         caller = current_service_caller()
-        if caller is not None:
-            if caller.actor.type == "agent":
-                raise ValueError("request của Agent Run: dùng token orchestration đã cấp (bearer_headers)")
+        if caller is not None and caller.actor.type == "agent":
+            if not component:
+                raise ValueError(
+                    "request của Agent Run: lấy dữ liệu trả cho agent thì dùng agent_run_headers(audience); "
+                    "việc riêng của service thì gọi headers_for(audience, component=...) (OQ-110)"
+                )
+            token = await self.issue(
+                audience,
+                actor=ActorRef(type="system", component=component),
+                account_id=caller.account_id,
+                project_id=caller.project_id,
+            )
+        elif caller is not None:
             token = await self.issue(
                 audience, actor=caller.actor, account_id=caller.account_id, project_id=caller.project_id
             )
@@ -468,6 +492,21 @@ class ServiceTokenIssuer:
                 project_id=project_id,
             )
         return bearer_headers(token)
+
+
+def agent_run_headers(audience: ServiceName) -> dict[str, str]:
+    """`Authorization` header forwarding the Agent Run token of the request being handled (OQ-110).
+
+    For calls that fetch data returned to the agent: the target checks `agentScope` itself. The target must be in
+    the token's `aud` (the services this Agent Run may read), otherwise the call would be refused there, so it is
+    refused here before any request is made.
+    """
+    caller = current_service_caller()
+    if caller is None or caller.actor.type != "agent" or not caller.token:
+        raise ValueError("agent_run_headers chỉ dùng khi request đang xử lý mang token Agent Run")
+    if not isinstance(caller.claims.aud, list) or audience not in caller.claims.aud:
+        raise ValueError(f"{audience} không có trong aud của token Agent Run: Agent Run này không được đọc service đó")
+    return bearer_headers(caller.token)
 
 
 def bearer_headers(token: str) -> dict[str, str]:

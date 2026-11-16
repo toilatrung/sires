@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00005](../../../docs/tickets/issues/PID-00005/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/py-sires-common` (đã commit) · **PR:** [#21](https://github.com/toilatrung/sires/pull/21)
-- **Cập nhật:** 12/11/2026 (Lần 2)
+- **Cập nhật:** 16/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -91,6 +91,29 @@ Trạng thái giữ **Xong — chờ QC**. Lý do chạy lại: `main` có danh 
 - **Đề xuất cũ:** 1 xong (PR #22); 4 một phần (compose dùng `cgr.dev/chainguard/minio:latest` từ PR #18, chưa ghim digest); 6 xong (YC4); 2, 3, 5, 7, 8 (phần còn lại ở “Còn mở” 3), 9 chưa làm.
 - **Mới:** `uv.lock` ghim mypy 2.4.1 (wheel biên dịch bằng mypyc); trên máy PO Smart App Control chặn DLL `mypy/fscache`, nên `pnpm nx run sires-common:typecheck` lỗi “DLL load failed … Application Control policy”. Trên CI (Linux) không bị. Trên máy này chạy bản thuần Python: `uv run --no-sync --with "mypy==2.4.1" --no-binary-package mypy python -m mypy src`.
 - **Bước tiếp theo:** chạy lại CI của PR #21 trên `main` mới; QC chạy `spec-converge-skill PID-00005`.
+
+## Lần 3 — 16/11/2026
+
+Trạng thái giữ **Xong — chờ QC**. Lý do chạy lại: PO đóng OQ-110 bằng phương án (c) (PR #26): service nhận request Agent Run mà gọi tiếp thì chuyển tiếp nguyên token Agent Run khi lấy dữ liệu trả cho agent, tự ký `act.type = system` khi phục vụ việc riêng. Hồ sơ PID-00005 (ghi chú thiết kế, S03) đã cập nhật theo. Gộp `origin/main` và cập nhật của nhánh trên GitHub (`8e087a1`) bằng merge commit, không viết lại lịch sử.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC5 | PO, phiên 16/11/2026 | “Sửa PR #21” (client token theo OQ-110 đã chốt) | Trong phạm vi: S03 đã sửa theo quyết định của PO, AC không đổi | Làm | `src/sires_common/service_auth.py`; `tests/test_service_auth.py › test_agent_run_downstream_calls`, `› test_client` |
+
+### Thay đổi
+
+- `ServiceCaller` giữ JWT gốc (`token`, không có trong `repr`, không dùng khi so sánh).
+- Hàm mới `agent_run_headers(audience)`: chuyển tiếp nguyên token Agent Run của request đang xử lý; service đích không có trong `aud`, hoặc request không mang token Agent Run → `ValueError` trước khi gọi.
+- `ServiceTokenIssuer.headers_for`: trong request Agent Run phải nêu `component` và tự ký `act = {type: system, component}` với `accountId`, `projectId` của token đến; không nêu `component` → `ValueError` chỉ ra hai cách. Ngoài Agent Run giữ như cũ. Vẫn không tự ký `act.type = agent`.
+- Việc áp `agentScope` lên kết quả trả cho agent là của service gọi (ví dụ `knowledge` trong PID-00093); thư viện để sẵn `caller.agent_scope`.
+
+### Cần PO
+
+- **Còn mở:** hết OQ của PID-00005. Còn lệch chính sách che log TS–Python ở bốn điểm chưa chốt (Lần 2, “Còn mở” 3).
+- **Mới:** trên máy PO, Smart App Control nay chặn cả `.venv/Scripts/python.exe` do uv sinh (“An Application Control policy has blocked this file”), nên mọi target Nx của Python (`uv run …`) không chạy được ở máy này; trình thông dịch gốc của uv (`%APPDATA%\uv\python\cpython-3.12.16-…\python.exe`) vẫn chạy. Docker trong WSL chỉ trả lời ở `localhost:2375` khi distro đang bật.
+- **Bước tiếp theo:** CI của PR #21 chạy lại sau push; QC chạy `spec-converge-skill PID-00005`.
 
 ---
 
