@@ -5,7 +5,10 @@ description: Independent QC check after a SIRes ticket (PID-NNNNN) has been impl
 
 # Spec converge — QC đối chiếu mã với ticket và spec, ghi `qc-report.md`
 
-Chuyển thể từ lệnh `converge` của [GitHub Spec Kit](https://github.com/github/spec-kit) (MIT, commit `a227e38`, giấy phép: [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)). Spec Kit ghi thêm việc vào `tasks.md` cho bước implement; ở SIRes QC chạy skill này độc lập với Dev và ghi kết quả vào `agent/execution/PID-NNNNN/qc-report.md`.
+Chuyển thể từ lệnh `converge` của [GitHub Spec Kit](https://github.com/github/spec-kit) (MIT, commit `a227e38`, giấy phép: [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md)). Spec Kit ghi thêm việc vào `tasks.md` cho bước implement; ở SIRes skill chạy theo hai chế độ (DEC-58, PO chốt 17/11/2026):
+
+- **Dev tự QC** — Dev chạy trên chính ticket của mình trước khi đặt `Xong — chờ QC` và mở PR; ghi khoảng trống vào `agent/execution/PID-NNNNN/self-qc.md` mục 5 “Tự đối chiếu”, không tạo `qc-report.md`. Còn CRITICAL hoặc HIGH thì Dev sửa rồi chạy lại.
+- **QC độc lập** — PO (hoặc agent PO giao, không mang kết luận của Dev) chạy sau khi Dev mở PR; ghi `agent/execution/PID-NNNNN/qc-report.md`. Chỉ chế độ này ghi `qc-report.md`; PO merge khi không còn CRITICAL, HIGH.
 
 | File | Dùng khi |
 | --- | --- |
@@ -13,7 +16,7 @@ Chuyển thể từ lệnh `converge` của [GitHub Spec Kit](https://github.com
 
 ## Quy tắc không đổi
 
-- **Chỉ ghi `agent/execution/PID-NNNNN/qc-report.md`.** Không sửa mã, không sửa `docs/`, không sửa `report.md`, `implement.md`, `self-qc.md` của Dev. Làm tiếp việc còn lại là việc của Dev (`spec-execution-skill PID-NNNNN`).
+- **Chỉ ghi kết quả, theo chế độ.** QC độc lập chỉ ghi `agent/execution/PID-NNNNN/qc-report.md`; Dev tự QC chỉ ghi mục 5 của `self-qc.md`. Khi chạy skill này không sửa mã, không sửa `docs/`; QC độc lập không sửa `report.md`, `implement.md`, `self-qc.md` của Dev. Làm tiếp việc còn lại là việc của Dev (`spec-execution-skill PID-NNNNN`).
 - **Nguồn ý định duy nhất:** ticket (AC), hồ sơ trong `docs/tickets/issues/PID-NNNNN/` và nguyên tắc dự án. Không suy ra phạm vi ngoài những gì chúng nêu. Khi tài liệu mâu thuẫn, theo thứ tự ở `docs/tickets/README.md` (PRD → `docs/api-design` → kiến trúc, database → ticket, spec).
 - **Báo cáo của Dev không phải bằng chứng.** `report.md`, `self-qc.md` ghi “xong”, “đạt” vẫn phải kiểm trong mã và tự chạy lệnh. Chỗ QC khác kết luận của Dev ghi rõ ở mục “Lệch với Self-QC”.
 - **Không phải công cụ diff:** đánh giá trạng thái mã hiện tại, không so nhánh hay lịch sử git.
@@ -33,8 +36,8 @@ Chuyển thể từ lệnh `converge` của [GitHub Spec Kit](https://github.com
    - Mã gần như chưa có → toàn bộ phạm vi là `missing`. Không còn gì → báo đã hội tụ.
 5. **Mức độ:** CRITICAL (vi phạm nguyên tắc, hoặc `missing`/`contradicts` chặn chức năng chính) · HIGH (`missing`/`partial` ở AC chính) · MEDIUM (`partial` phụ, `unrequested` không rõ lý do) · LOW (chi tiết nhỏ).
 6. **Tự chạy lệnh** khi có thể: lệnh ở spec mục 6, thường `pnpm nx run <project>:test` và `pnpm nx affected -t lint typecheck test build`; ranh giới bằng `node scripts/development/check-tracks.mjs --base origin/main`. Ghi kết quả thật. Ô Xây kiểm với stub, ô Hội tụ kiểm trên staging (`docs/tickets/README.md`): ghi rõ AC đạt ở mức nào. Ticket có màn hình → chạy thêm [sires-ui-review](../sires-ui-review/SKILL.md), ghi kết luận vào mục AC.
-7. **Ghi `agent/execution/PID-NNNNN/qc-report.md`** theo khung: cập nhật “Kết luận mới nhất” đầu file, thêm mục `Lần N — dd/mm/yyyy · spec-converge-skill`. Mỗi việc còn lại truy về một mã G và một nguồn; việc khắc phục `contradicts` đặt trước việc dựa trên nó.
-8. **Báo trong phiên và bước tiếp theo:** đường dẫn file; số G theo mức; không còn CRITICAL/HIGH → báo PO có thể nghiệm thu; còn việc → Dev chạy `spec-execution-skill PID-NNNNN` (đọc lần mới nhất, ghi “Lần N” trong `report.md`); thấy ticket hay spec sai, thiếu → đề xuất cho PO (không sửa spec).
+7. **Ghi kết quả.** QC độc lập: `agent/execution/PID-NNNNN/qc-report.md` theo khung, cập nhật “Kết luận mới nhất” đầu file, thêm mục `Lần N — dd/mm/yyyy · spec-converge-skill`. Dev tự QC: bảng G ở `self-qc.md` mục 5 (lần chạy sau thêm vào mục “Lần N” của `self-qc.md`). Mỗi việc còn lại truy về một mã G và một nguồn; việc khắc phục `contradicts` đặt trước việc dựa trên nó.
+8. **Báo trong phiên và bước tiếp theo:** đường dẫn file; số G theo mức. QC độc lập: không còn CRITICAL/HIGH → báo PO có thể merge, nghiệm thu; còn việc → Dev chạy `spec-execution-skill PID-NNNNN` (đọc lần mới nhất, ghi “Lần N” trong `report.md`). Dev tự QC: còn CRITICAL/HIGH → sửa trước khi đặt `Xong — chờ QC`. Thấy ticket hay spec sai, thiếu → đề xuất cho PO (không sửa spec).
 
 ---
 

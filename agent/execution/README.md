@@ -15,9 +15,9 @@ Mỗi thư mục `PID-NNNNN/` là kết quả của đúng một ticket trong `d
 | --- | --- | --- | --- |
 | `report.md` | Dev | Bắt đầu làm, cập nhật theo từng slice; commit và push khi đặt hoặc đổi dòng `**Trạng thái:**` | Trạng thái công việc, kết quả |
 | `implement.md` | Dev | Sau khi làm, sửa khi mã đổi | Luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao |
-| `self-qc.md` | Dev | Sau slice cuối hoặc khi dừng | Kết quả Self-QC |
-| `qc-report.md` | QC độc lập | Lần chạy QC đầu tiên, sau đó thêm mục “Lần N” | Khoảng trống, AC, việc còn lại, lệch với Self-QC |
-| `checklists/<domain>.md` | QC độc lập | Khi lập checklist | Checklist chất lượng yêu cầu theo domain (chép từ `checklists/DOMAIN.md`) |
+| `self-qc.md` | Dev | Sau slice cuối hoặc khi dừng, trước khi mở PR | Kết quả Self-QC, gồm mục 5 “Tự đối chiếu” do Dev tự chạy `spec-converge-skill` (DEC-58) |
+| `qc-report.md` | QC độc lập của PO | Sau khi Dev mở PR, trước khi PO merge; lần sau thêm mục “Lần N” | Khoảng trống, AC, việc còn lại, lệch với Self-QC |
+| `checklists/<domain>.md` | QC độc lập của PO | Khi lập checklist | Checklist chất lượng yêu cầu theo domain (chép từ `checklists/DOMAIN.md`) |
 | Tài liệu đi kèm | Dev | Nếu có | Ảnh chụp, log, dữ liệu mẫu; không có khung; liệt kê ở `report.md` mục 6 |
 
 ## Dùng khung
