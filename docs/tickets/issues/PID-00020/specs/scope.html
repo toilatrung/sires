@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00020.">
+<title>PID-00020 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00020</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00020</p><h1>PID-00020 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Revision Alembic đầu trong <code>apps/agent-core/migrations/</code> (SQL chép từ DDL, chạy trên SQLAlchemy async và asyncpg) tạo đủ đối tượng của <code>00-common.sql</code> và <code>agent-core.sql</code> (2 bảng, bảng nền tảng, hàm, index, RLS, quyền của vai trò); <code>downgrade()</code> không xóa dữ liệu</td><td>Ticket Gồm; DDL; DBD-02; spec 4.7; H4 (D1)</td><td>S01</td></tr>
+<tr><td>P2</td><td>Test PID-00020-AC01: dựng database từ revision và database từ DDL trên PostgreSQL 16 + pgvector (Testcontainers), so schema</td><td>Ticket AC01; database 12.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>Khung module: một gói con cho mỗi agent trong chín agent ở <code>agents/</code> và <code>prompts/</code>; chú thích phạm vi cho <code>gateway</code>, <code>context</code>, <code>registry</code>, <code>tools</code> (đã có từ scaffold)</td><td>Ticket Gồm; tickets 1.6</td><td>S02</td></tr>
+<tr><td>P4</td><td>Module cấu hình của agent-core đọc biến môi trường (DSN cho <code>_app</code>, <code>_system</code>, migrator; RabbitMQ; khóa ký ES256 <code>kid</code> = <code>agent-core</code>; bộ khóa công khai) và hàm dựng <code>TokenVerifier</code>, <code>ServiceAuth</code>, <code>ServiceTokenIssuer</code> của <code>sires_common</code>; chưa gắn route; test PID-00020-AC02</td><td>Ticket Gồm; PH-01; H1 (I1-A); PID-00005 H2</td><td>S03</td></tr>
+<tr><td>P5</td><td>README: entity sở hữu (2 bảng kỹ thuật), bản sao chỉ đọc (không có), module con, cấu hình, cách chạy revision cục bộ, trong test và trong image</td><td>Ticket Gồm</td><td>S06</td></tr>
+<tr><td>P6</td><td>Test hành vi DDL bằng vai trò <code>_app</code> trên database dựng từ revision (PID-00020-AC03); trước là N4</td><td>H2 (I2-A), H5 (D3); tickets PH-01</td><td>S05</td></tr>
+<tr><td>P7</td><td>Lệnh <code>alembic upgrade head</code> chạy trong image (Alembic là phụ thuộc chạy), <code>migration.enabled: true</code> và <code>migration.command</code> trong <code>apps/agent-core/deploy/values.yaml</code> theo khóa của PID-00010; trước là N5</td><td>H3 (I3-A), H4 (D1), H5 (D3); PID-00010 S02</td><td>S04</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Model Gateway: adapter, structured output, stream, usage, ánh xạ lỗi; dùng <code>provider_slot</code></td><td>Ticket “Không gồm”</td><td><a href="../../PID-00070/index.html">PID-00070</a></td></tr>
+<tr><td>N2</td><td>Nội dung registry, prompt template, Context Assembler, tool, định nghĩa và prompt của từng agent</td><td>Spec 4.6; ticket chỉ dựng khung</td><td><a href="../../PID-00071/index.html">PID-00071</a>, <a href="../../PID-00072/index.html">PID-00072</a> và các PID agent</td></tr>
+<tr><td>N3</td><td>Endpoint nội bộ <code>listAgentDefinitions</code>, <code>testProviderConnection</code> và việc gắn guard theo <code>x-callers</code> vào route; dùng <code>model_catalog_cache</code></td><td>Spec 4.2: không có API mới</td><td><a href="../../PID-00048/index.html">PID-00048</a></td></tr>
+<tr><td>N6</td><td>Tạo vai trò <code>sires_agent_core_*</code> ở môi trường cục bộ, staging</td><td>Vai trò do hạ tầng tạo (database 3.2); cục bộ theo D4 (H6)</td><td>Luồng infra: cục bộ <a href="../../PID-00159/index.html">PID-00159</a>; staging <a href="../../PID-00011/index.html">PID-00011</a>, <a href="../../PID-00035/index.html">PID-00035</a></td></tr>
+<tr><td>N7</td><td>Worker <code>agent.run</code>: nhận token Agent Run, thay token mới từ phản hồi <code>heartbeatAgentRun</code></td><td>PID-00005 N5; không có trong Gồm</td><td><a href="../../PID-00073/index.html">PID-00073</a></td></tr>
+<tr><td>N8</td><td>Đổi target Nx (<code>uv run …</code>) cho máy có Smart App Control; <code>implicitDependencies</code> trên <code>sires-common</code></td><td>Không có trong Gồm; đổi <code>uv run python -m</code> không đủ vì <code>python.exe</code> của <code>.venv</code> cũng bị chặn (PID-00005 Lần 3)</td><td>PO quyết (câu chung, báo cáo lô)</td></tr>
+<tr><td>N9</td><td>Dựng verifier, issuer khi khởi động app; dừng app khi thiếu biến bắt buộc; hướng dẫn tạo khóa dev cho <code>agent-core:dev</code></td><td>Phương án I1-B, PO không chọn (H1 nhận I1-A: không thêm hành vi khởi động)</td><td>PID sau nếu PO yêu cầu</td></tr>
+</tbody></table></div>
+<p>N4 (test hành vi DDL) và N5 (lệnh chạy revision, giá trị Helm) của bản 17/11/2026 đã chuyển vào phạm vi thành P6, P7 theo H2, H3; mã N4, N5 không dùng lại.</p>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét theo các nhóm của khung mẫu; ticket không có giao diện, model, sự kiện, phê duyệt hay state machine nên chỉ còn các nhóm dữ liệu, migration, triển khai (Job migration) và token nội bộ. Cấu hình theo H1: <code>kid</code> lạ ở EC06; thiếu biến lúc khởi động không thuộc PID này (N9). Các ca của test hành vi DDL nằm trong PID-00020-AC03 (<code>specs/acceptance.html</code>).</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Chạy <code>alembic downgrade</code> xuống dưới revision đầu</td><td>Báo lỗi rõ, không DROP bảng hay xóa dữ liệu; sửa sai bằng revision mới (chỉ tiến)</td><td>Spec 4.7; kiến trúc 6.10</td><td><code>apps/agent-core/tests/test_migrations.py › test_downgrade_refused</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Chạy <code>alembic upgrade head</code> lần hai (Job migration chạy trước mỗi lần deploy)</td><td>Không áp lại; không lỗi; schema không đổi</td><td>Kiến trúc 6.10; PID-00010 AC02</td><td><code>apps/agent-core/tests/test_migrations.py › test_upgrade_twice</code>; <code>› test_migrate_command</code> (chạy hai lần)</td><td>S01, S04</td></tr>
+<tr><td>EC03</td><td>Revision lỗi giữa chừng, ví dụ database chưa có vai trò <code>sires_agent_core_app</code></td><td>Lỗi của PostgreSQL được báo ra; không còn đối tượng nào của revision (rollback); revision không tự tạo vai trò</td><td>Database 3.2, 12.4</td><td><code>apps/agent-core/tests/test_migrations.py › test_missing_roles_rolls_back</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Bảng phiên bản <code>alembic_version</code></td><td>Không thuộc DDL: phép so bỏ qua; không đặt trong schema <code>app</code>, <code>replica</code> để <code>grant_standard</code> không cấp quyền lên nó</td><td>DBD-02 (chỉ so đối tượng của DDL)</td><td><code>apps/agent-core/tests/test_migrations.py › test_schema_matches_ddl</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>PostgreSQL managed không cho tạo <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code> hoặc vai trò BYPASSRLS</td><td>Theo DBQ-01: báo chặn trong <code>report.md</code>, không đổi DDL</td><td>DBQ-01</td><td>Thao tác tay (không kiểm được trên Testcontainers)</td><td>S01</td></tr>
+<tr><td>EC06</td><td>Token gửi tới có <code>kid</code> không có trong bộ khóa công khai nạp từ cấu hình</td><td>Verifier từ chối <code>401 invalid_service_token</code>; không tải khóa từ mạng</td><td>PID-00005 H2; PID-00003 I3; H1</td><td><code>apps/agent-core/tests/test_config.py › test_service_token_roundtrip</code></td><td>S03</td></tr>
+<tr><td>EC07</td><td>Job migration chạy trong image production (<code>uv sync --no-dev</code>: không có phụ thuộc dev)</td><td>Alembic và driver là phụ thuộc chạy; lệnh của <code>migration.command</code> chạy được từ thư mục làm việc của image</td><td>H3; <code>infra/docker/python/Dockerfile</code>; PID-00010 EC01</td><td><code>apps/agent-core/tests/test_migrations.py › test_migrate_command</code>; thao tác tay: chạy lệnh trong image</td><td>S04</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00020</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00020 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

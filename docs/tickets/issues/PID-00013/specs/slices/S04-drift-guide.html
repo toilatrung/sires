@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00013.">
+<title>S04 — Kiểm lệch khi OpenAPI đổi và hướng dẫn khu vực | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00013</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00013</p><h1>S04 — Kiểm lệch khi OpenAPI đổi và hướng dẫn khu vực</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00013-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC09, EC12 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đặt trong thư mục test của <code>shell/mock</code> một bản OpenAPI mẫu nhỏ và một override có type dùng một trường của schema; không sửa <code>docs/api-design</code>.</li>
+<li>Test AC01: sinh mock từ bản mẫu → typecheck override đạt; đổi tên trường trong bản mẫu (bản sao trong thư mục tạm) → sinh lại → dữ liệu sinh có trường mới, typecheck override báo lỗi ở đúng chỗ dùng trường cũ (EC12). Cách gọi typecheck trong test (API của TypeScript hoặc chạy <code>tsc</code>) Dev chọn.</li>
+<li>README <code>apps/web/src/shell/mock/README.md</code> (tạo mới, có ghi chú giấy phép): khu vực sinh mock cho operation của mình vào <code>apps/web/src/features/&lt;khu vực&gt;/__mocks__/</code>, viết override có type, khai qua hợp đồng <code>Feature</code>, bật trong dev và test, sinh lại khi hợp đồng đổi (EC09). Ví dụ theo PID-00036, PID-00037.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/shell/mock/mock.spec.ts › đổi schema thì typecheck báo lệch</code> (PID-00013-AC01; EC12)</li>
+<li><code>node scripts/docs/add-license.mjs --check</code> → đạt (README mới có ghi chú giấy phép)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC01 đạt; Dev khu vực đọc README là sinh và dùng được mock của mình</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00013</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00013 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

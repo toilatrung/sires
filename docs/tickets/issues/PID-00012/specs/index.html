@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td>Mọi khu vực giao diện dùng chung phần khung này. Có shell thì các khu vực làm song song mà không sửa chung file (quy tắc 1.4.9).</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>web/shell</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · Shell, mock</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00012-AC01, PID-00012-AC02</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00012-AC01, PID-00012-AC02; thêm khi làm rõ 18/11/2026: PID-00012-AC03 – PID-00012-AC06 (trang ticket mục 5, H2, H5, H7, H9)</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-18">DEC-18</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-51">DEC-51</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-52">DEC-52</a></td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Màn nghiệp vụ của từng khu vực</td></tr>
 </tbody></table></div>
@@ -63,8 +63,8 @@ pnpm --filter @sires/web dev</pre>
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
 <tr><td id="o1">O1</td><td>Màn hình</td><td><code>apps/web/src/shell/</code> (có sẵn)</td><td>Màn: Main, TopBar, ProjectRail, Components, States; i18n, trạng thái loading, empty, error</td><td>Test ở dòng dưới</td></tr>
-<tr><td id="o2">O2</td><td>Test</td><td><code>apps/web/src/shell/i18n.test.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
-<tr><td id="o3">O3</td><td>Test</td><td><code>apps/web/src/shell/sse.test.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o2">O2</td><td>Test</td><td><code>apps/web/src/shell/language-switch.spec.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/web/src/shell/sse.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
@@ -109,8 +109,12 @@ pnpm nx affected -t lint typecheck test build
 node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
-<tr><td>PID-00012-AC01</td><td><code>apps/web/src/shell/i18n.test.tsx</code></td><td>Given đổi ngôn ngữ vi/en, When mở shell, Then mọi nhãn của shell đổi theo và trạng thái đang nhập không mất.</td></tr>
-<tr><td>PID-00012-AC02</td><td><code>apps/web/src/shell/sse.test.ts</code></td><td>Given client SSE mất kết nối, When nối lại, Then gửi <code>Last-Event-ID</code>.</td></tr>
+<tr><td>PID-00012-AC01</td><td><code>apps/web/src/shell/language-switch.spec.tsx</code></td><td>Given đổi ngôn ngữ vi/en, When mở shell, Then mọi nhãn của shell đổi theo và trạng thái đang nhập không mất.</td></tr>
+<tr><td>PID-00012-AC02</td><td><code>apps/web/src/shell/sse.spec.ts</code></td><td>Given client SSE mất kết nối, When nối lại, Then gửi <code>Last-Event-ID</code>.</td></tr>
+<tr><td>PID-00012-AC03</td><td><code>apps/web/src/shell/preferences.spec.ts</code></td><td>Given đã đăng nhập ở tiếng Việt, When bấm EN, Then giao diện chuyển sang English ngay và lựa chọn được lưu vào <code>Preferences.uiLanguage</code>; <code>412</code> thì đọc lại rồi gửi lại; lỗi khác thì giữ English trong phiên và báo lỗi.</td></tr>
+<tr><td>PID-00012-AC04</td><td><code>apps/web/src/shell/sse.spec.ts</code></td><td>Given client SSE nối lại và server báo <code>Last-Event-ID</code> không còn phát lại được, When client nhận tín hiệu, Then phát “cần tải lại” cho nơi đăng ký; nối lại bình thường thì không.</td></tr>
+<tr><td>PID-00012-AC05</td><td><code>apps/web/src/shell/drafts.spec.tsx</code></td><td>Given ô nhập đã đăng ký với kho nháp có nội dung chưa gửi, When phiên hết hạn và đăng nhập lại cùng tài khoản, Then nội dung được khôi phục; gửi xong hoặc đăng xuất thì nháp bị xóa.</td></tr>
+<tr><td>PID-00012-AC06</td><td><code>apps/web/src/shell/logout.spec.tsx</code></td><td>Given đã đăng nhập ở màn có TopBar, When chọn “Đăng xuất” trong menu avatar, Then nháp bị xóa, SSE đóng và trình duyệt được đưa tới trang kết thúc phiên của eTroy theo hợp đồng.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00024.">
+<title>S06 — Chuẩn hóa sang ReferenceMetadata | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00024</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00024</p><h1>S06 — Chuẩn hóa sang <code>ReferenceMetadata</code></h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Làm theo H1 (phiếu I1 phương án A: parser trả <code>ReferenceMetadata</code>) và H2 (phiếu I2 phương án A: quy tắc chuẩn hóa), PO chấp nhận 18/11/2026. Slice này phủ mọi mục điền được <code>identifiers.sourceId</code> và <code>identifiers.url</code> theo hợp đồng hiện hành; mục thiếu URL và DOI, hoặc bản ghi RIS thiếu thẻ <code>ID</code>, làm ở <a href="S07-missing-identifiers.html">S07</a> sau khi PO nới hợp đồng.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00024-AC01 (metadata chuẩn hóa)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC19, EC20, EC22, EC23, EC24 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04, S05</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Chuyển mỗi mục đúng của S04, S05 thành <code>ReferenceMetadata</code> theo <code>components/schemas/library.yaml</code>, dùng type sinh <code>PublicApi.components['schemas']['ReferenceMetadata']</code> từ <code>@sires/contracts</code>: <code>title</code>, <code>authors[].name</code>, <code>year</code>, <code>venue</code>, <code>publicationType</code>, <code>identifiers</code> (<code>doi</code>, <code>arxivId</code>, <code>isbn</code>, <code>sourceId</code>, <code>url</code>), <code>abstractOrSnippet</code>, <code>source</code>, <code>retrievedAt</code>, <code>raw</code> = bản gốc của mục.</li>
+<li>Điền theo H1: <code>source</code> = <code>bibtex</code> hoặc <code>ris</code>; <code>identifiers.sourceId</code> = citation key (BibTeX) hoặc thẻ <code>ID</code> (RIS); <code>identifiers.url</code> = trường <code>url</code> (BibTeX) hoặc <code>UR</code> (RIS), không có thì <code>https://doi.org/</code> + DOI đã chuẩn hóa (EC24); <code>retrievedAt</code> = thời điểm parse (nguồn thời gian tiêm được để test cố định, Dev chọn cách).</li>
+<li>DOI: chữ thường, bỏ tiền tố <code>https://doi.org/</code>, <code>http://dx.doi.org/</code>, <code>doi:</code> (EC20; DDL cột <code>doi</code>).</li>
+<li>Ký hiệu LaTeX (H2, EC19): mọi trường chuẩn hóa ghi Unicode thuần — <code>{\"o}</code> → ö, <code>\&amp;</code> → &amp;, bỏ ngoặc giữ chữ hoa; công thức toán giữ nguyên chuỗi; bản gốc còn trong <code>raw</code>. Thư viện chuyển LaTeX (nếu dùng) khai trong <code>apps/library/package.json</code>, phiên bản cố định, ghi giấy phép ở <code>implement.md</code>.</li>
+<li>Loại tài liệu (H2, EC22): <code>publicationType</code> theo bảng ánh xạ ở <a href="../../designs/notes.html#du-lieu">designs/notes.html</a>; loại không có trong bảng → <code>other</code>; BibTeX có định danh arXiv (<code>eprint</code> với <code>archivePrefix = arXiv</code>) mà không thuộc loại trong bảng → <code>preprint</code>.</li>
+<li>Tên tác giả (H2, EC23): <code>authors[].name</code> = “Họ, Tên”; BibTeX “Tên Họ” đổi sang “Họ, Tên”; tên tập thể trong ngoặc giữ nguyên.</li>
+<li>Mục không điền được <code>identifiers.url</code> (không có URL và DOI) hoặc <code>identifiers.sourceId</code> (RIS không có <code>ID</code>): không làm ở slice này, không ép kiểu để vượt type sinh — S07.</li>
+<li>Test trong <code>apps/library/src/importers/importers.spec.ts</code>: mỗi kết quả qua kiểm schema <code>ReferenceMetadata</code> (validator JSON Schema hoặc kiểu sinh, Dev chọn); fixture cho slice này gồm mục có URL hoặc DOI và có mã định danh.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/library:test</code> → đạt</li>
+<li>Test: <code>apps/library/src/importers/importers.spec.ts › kết quả là ReferenceMetadata hợp lệ</code> (PID-00024-AC01)</li>
+<li>Test: <code>apps/library/src/importers/importers.spec.ts › ký hiệu LaTeX</code> (EC19), <code>› chuẩn hóa DOI</code> (EC20), <code>› loại tài liệu</code> (EC22), <code>› dạng tên tác giả</code> (EC23), <code>› URL từ DOI</code> (EC24)</li>
+<li><code>pnpm nx run @sires/library:typecheck</code>, <code>:lint</code> → đạt</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi mục đúng có URL hoặc DOI và có mã định danh trong fixture BibTeX, RIS cho ra <code>ReferenceMetadata</code> hợp lệ theo hợp đồng hiện hành, giá trị chuẩn hóa đúng H1, H2.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00024</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00024 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

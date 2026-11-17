@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td><code>agent-core</code> đã có thư mục module con từ scaffold; cần schema và cấu hình để các PID agent làm song song.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>agent-core</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · SPK-01, SPK-08</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00020-AC01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00020-AC01; PID-00020-AC02 (H1), PID-00020-AC03 (H2) bổ sung 18/11/2026</td></tr>
 <tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Model Gateway (<a href="../../PID-00070/index.html">PID-00070</a>)</td></tr>
 </tbody></table></div>
@@ -47,13 +47,16 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>apps/agent-core/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
 <tr><td><code>apps/agent-core/src/agent_core/main.py</code></td><td>Nơi gắn module mới</td></tr>
-<tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>API thư viện nền</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/tenancy.py</code>, <code>service_auth.py</code>, <code>messaging.py</code></td><td>API thư viện nền (<code>__init__.py</code> chỉ có docstring; sửa 17/11/2026)</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/testing/fixtures.py</code></td><td>Fixture pytest: PostgreSQL 16 + pgvector, <code>create_service_database</code> (database và vai trò của service)</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
 <h4>Bảng</h4><p><code>app.provider_slot</code>, <code>app.model_catalog_cache</code>. Nguồn: <code>docs/database/ddl/agent-core.sql</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
-<tr><td><a href="../../PID-00005/index.html">PID-00005</a> Thư viện nền Python sires_common: tương đương thư viện TS</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00005/index.html">PID-00005</a> Thư viện nền Python sires_common: tương đương thư viện TS</td><td>Xong, merge vào <code>main</code> 17/11/2026 (PR #21)</td><td>Không</td></tr>
+<tr><td><a href="../../PID-00159/index.html">PID-00159</a> Compose cục bộ tạo vai trò <code>sires_&lt;service&gt;_*</code> (D4, bổ sung 18/11/2026)</td><td>Chưa làm</td><td>Không: test tạo vai trò bằng fixture</td></tr>
+<tr><td><a href="../../PID-00010/index.html">PID-00010</a> Chart chung, Job migration nhận <code>migration.enabled</code>, <code>migration.command</code></td><td>Sẵn sàng, chưa có trên <code>main</code></td><td>Không: S04 ghi values theo khóa của PID-00010</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
 <pre>uv sync --all-packages
@@ -66,6 +69,7 @@ pnpm nx run agent-core:dev</pre>
 <tr><td id="o2">O2</td><td>Module</td><td><code>apps/agent-core/src/agent_core/</code> (có sẵn)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
 <tr><td id="o3">O3</td><td>Test</td><td><code>apps/agent-core/tests/test_migrations.py</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 <tr><td id="o4">O4</td><td>Tài liệu</td><td><code>apps/agent-core/README.md</code> (có sẵn)</td><td>Entity sở hữu, bản sao chỉ đọc</td><td>Đọc lại</td></tr>
+<tr><td id="o5">O5</td><td>Triển khai</td><td><code>apps/agent-core/deploy/values.yaml</code>, <code>apps/agent-core/pyproject.toml</code> (có sẵn)</td><td>Lệnh <code>alembic upgrade head</code> chạy trong image; <code>migration.enabled</code>, <code>migration.command</code> (bổ sung 18/11/2026, H3)</td><td>Test chạy lệnh trên Testcontainers; <code>check-charts.mjs</code> khi PID-00010 có trên <code>main</code></td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
@@ -78,7 +82,8 @@ pnpm nx run agent-core:dev</pre>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Revision Alembic theo DDL</li>
 <li>Cấu hình, service token, khung <code>gateway</code>, <code>context</code>, <code>registry</code>, <code>tools</code>, <code>agents</code>, <code>prompts</code></li>
-<li>README</li></ul>
+<li>README</li>
+<li>Bổ sung 18/11/2026 (H1, H4): revision chép SQL từ DDL, chạy bằng Alembic trên SQLAlchemy async và asyncpg (kiến trúc 6.10); “cấu hình, service token” là module cấu hình đọc biến môi trường và hàm dựng <code>TokenVerifier</code>, <code>ServiceAuth</code>, <code>ServiceTokenIssuer</code> của <code>sires_common</code>, chưa gắn route, không thêm hành vi khởi động</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -95,6 +100,8 @@ pnpm nx run agent-core:dev</pre>
 <li id="b3"><strong>B3</strong> Cấu hình, service token, khung <code>gateway</code>, <code>context</code>, <code>registry</code>, <code>tools</code>, <code>agents</code>, <code>prompts</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run agent-core:test</li>
 <li id="b4"><strong>B4</strong> README — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run agent-core:test</li>
 <li id="b5"><strong>B5</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run agent-core:test</li>
+<li id="b6"><strong>B6</strong> Lệnh chạy revision trong image và giá trị Helm <code>migration.*</code> (bổ sung 18/11/2026, H3) — Kết quả: Job migration của PID-00010 có lệnh để chạy — Kiểm tra: pnpm nx run agent-core:test</li>
+<li id="b7"><strong>B7</strong> Test hành vi DDL bằng vai trò <code>_app</code> (bổ sung 18/11/2026, H2) — Kết quả: PID-00020-AC03 đạt — Kiểm tra: pnpm nx run agent-core:test</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -104,6 +111,8 @@ node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00020-AC01</td><td><code>apps/agent-core/tests/test_migrations.py</code></td><td>Given revision Alembic, When áp lên database rỗng, Then schema khớp <code>docs/database/ddl/agent-core.sql</code>.</td></tr>
+<tr><td>PID-00020-AC02</td><td><code>apps/agent-core/tests/test_config.py</code></td><td>Given cấu hình test với khóa ES256 trong bộ nhớ, When issuer dựng từ <code>sires_common</code> ký token gửi <code>identity</code> và verifier phía <code>identity</code> kiểm, Then token được chấp nhận; <code>kid</code> lạ bị từ chối <code>401 invalid_service_token</code> (bổ sung 18/11/2026, H1).</td></tr>
+<tr><td>PID-00020-AC03</td><td><code>apps/agent-core/tests/test_ddl_behaviour.py</code></td><td>Given database dựng từ revision, When chạy bằng vai trò <code>sires_agent_core_app</code> các thao tác trái quy tắc đã ghi trong DDL, Then database từ chối từng thao tác (bổ sung 18/11/2026, H2; chi tiết ở <a href="acceptance.html">acceptance.html</a>).</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

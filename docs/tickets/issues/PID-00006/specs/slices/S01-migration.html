@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của PID-00006: project libs/ts/sample-service và migration mẫu theo kiến trúc 6.10.">
+<title>PID-00006 — S01 Project và migration mẫu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>S01 — Project và migration mẫu</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (spec B4: migration mẫu cho các luồng chép theo; H2, H6)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (khung project), O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1 (khung project), B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08, EC09 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00001/index.html">PID-00001</a> đã merge (drizzle-orm; drizzle-kit vào pnpm catalog theo D5) — chưa có trên <code>main</code> ngày 17/11/2026; <a href="../../../PID-00004/index.html">PID-00004</a> đã merge. Không chặn: <a href="../../../PID-00159/index.html">PID-00159</a> (test tự tạo vai trò).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo project Nx <code>libs/ts/sample-service/</code> (tạo mới): package <code>@sires/sample-service</code> (private), script <code>build</code>, <code>typecheck</code>, <code>lint</code>, <code>test</code> và tag Nx <code>type:lib</code>, <code>lang:ts</code>, <code>scope:platform</code> như <code>libs/ts/testing/package.json</code>; phụ thuộc bằng <code>catalog:</code> (NestJS, drizzle-orm, <code>pg</code>, <code>@sires/platform</code>; dev: drizzle-kit, <code>@sires/testing</code>, vitest, typescript). Không project nào khai báo phụ thuộc vào project này (H1). Gói chưa có trong catalog → dừng, báo PO (catalog thuộc luồng <code>infra</code>, quy tắc 1.4.7).</li>
+<li>Tạo migration đầu trong <code>libs/ts/sample-service/migrations/</code> (tạo mới) bằng drizzle-kit dưới dạng custom migration SQL, giữ journal của drizzle-kit (kiến trúc 6.10, H6): chép phần chung của <code>docs/database/ddl/00-common.sql</code> (extension, schema <code>app</code>, <code>replica</code>, hàm và bảng nền tảng), rồi SQL của bảng mẫu — một bảng có <code>account_id</code>, <code>row_version</code> theo quy ước DDL, cuối file <code>SELECT app.enable_tenant_rls()</code> và <code>SELECT app.grant_standard('&lt;svc&gt;', …)</code> như file DDL của service. Migration không tạo vai trò. Tên service trong vai trò <code>sires_&lt;svc&gt;_*</code> do Dev đặt, ghi <code>implement.md</code>.</li>
+<li>Lệnh migrate: mã gọi <code>migrate()</code> của drizzle-orm trên thư mục migration, nhận chuỗi kết nối từ cấu hình; một target Nx riêng của project chạy lệnh này. Chỉ tiến: không viết migration đảo. Slice này không viết schema Drizzle bằng TypeScript (thuộc S02, D1). Service mẫu không deploy nên không có giá trị Helm <code>migration.*</code> (N10).</li>
+<li>Test <code>libs/ts/sample-service/src/migration.spec.ts</code> (tạo mới): <code>startPostgres</code>; test tạo vai trò <code>_app</code>, <code>_system</code>, <code>_purge</code> của service mẫu (database 3.2; D4, tới khi PID-00159 có) rồi chạy lệnh migrate lên database rỗng; kiểm bảng mẫu có RLS bật và ép, quyền của <code>_app</code> đúng <code>grant_standard</code>. EC08: không tạo vai trò → migration lỗi. EC09: chạy migrate lần hai → không áp lại migration nào, schema không đổi.</li>
+<li>Viết <code>libs/ts/sample-service/README.md</code> (tạo mới): cách thêm migration custom SQL mới, cách chạy target migrate, vai trò do ai tạo — để các luồng chép theo. File mới chạy <code>node scripts/docs/add-license.mjs</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/sample-service:test</code> → đạt (cần Docker)</li>
+<li><code>libs/ts/sample-service/src/migration.spec.ts › áp lên database rỗng</code></li>
+<li><code>libs/ts/sample-service/src/migration.spec.ts › thiếu vai trò thì migration lỗi</code> (EC08)</li>
+<li><code>libs/ts/sample-service/src/migration.spec.ts › chạy lại migrate không áp lại</code> (EC09)</li>
+<li><code>pnpm nx run @sires/sample-service:lint</code>, <code>pnpm nx run @sires/sample-service:typecheck</code> → đạt; <code>node scripts/docs/add-license.mjs --check</code> → sạch</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Project mới chạy được lint, typecheck, test; migration mẫu áp lên database rỗng bằng target migrate; ba test trên đạt trên PostgreSQL 16 + pgvector thật; README đủ để luồng khác chép.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00006</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00006 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

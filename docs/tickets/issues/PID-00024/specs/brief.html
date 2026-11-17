@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00024.">
+<title>PID-00024 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00024</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00024</p><h1>PID-00024 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, gộp mục Làm rõ 17/11/2026 và câu trả lời H1–H9 của PO ngày 18/11/2026 (<a href="../index.html#phien-2">trang ticket, mục 5</a>). Không còn phiếu mở; <a href="../others/issues.html">phiếu I1–I4</a> giữ làm biên bản. Còn một việc sửa nguồn chặn S07. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng <code>library</code> dựng database <code>sires_library</code> bằng migration đúng DDL tham chiếu (kèm lệnh migrate và giá trị Helm), khai báo bốn state machine dạng dữ liệu để sinh bảng chuyển trạng thái, dựng khung bốn module con, và viết parser BibTeX, RIS trong <code>importers</code>. Parser nhận nội dung BibTeX hoặc RIS (một hay nhiều mục), trả kết quả từng mục: <code>ReferenceMetadata</code> đã chuẩn hóa (H1, H2) hoặc lỗi kèm lý do, để một mục hỏng không làm hỏng cả file. Parser được API nhập reference của PID-00076 (nhập tay, LIB-IMPORT-002) và nguồn khác dùng về sau; PID này không có API, không ghi Reference.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>DDL tham chiếu là chuẩn; migration thật phải sinh ra cùng schema, ở đây là <code>00-common.sql</code> chạy trước rồi <code>library.sql</code>; lệch thì ghi DBQ, không tự đổi schema — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>, <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a>, DEC-57, <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-6">quy tắc 1.4.6</a></li>
+<li>Bảng nền tảng <code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code>, <code>app.state_transition</code> và <code>replica.project_state</code> nằm trong migration của service — PID-00002 N5; DDL <code>00-common.sql</code>, <code>library.sql</code> dòng 9</li>
+<li>Migration đầu là SQL chép từ <code>library.sql</code> cùng các đối tượng chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit (journal), chạy bằng <code>migrate()</code> của drizzle-orm; chỉ tiến; đổi phá vỡ theo mở rộng → di chuyển → thu hẹp; schema Drizzle bằng TypeScript do PID tính năng viết — H5 (quyết định chung D1); <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; database 12.4</li>
+<li>Service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> trong <code>apps/library/deploy/values.yaml</code>; image production không có drizzle-kit, Job migration chạy mã migrate trong image — H6 (D3); PID-00010 EC01</li>
+<li>Vai trò <code>sires_library_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> do hạ tầng tạo trước (compose cục bộ: PID-00159); migration không tạo vai trò; test tự tạo vai trò trước khi chạy migration — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>; header <code>00-common.sql</code>; H7 (D4)</li>
+<li>Bảng <code>app.state_transition</code> sinh tự động từ khai báo state machine, không viết tay — <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a> (DEC-57). PID này khai báo bốn machine của library dạng dữ liệu trong mã domain của <code>library</code> và sinh dòng bằng helper của PID-00158; PID tính năng dùng lại khai báo — H3 (D2)</li>
+<li>Mỗi luồng service đưa test hành vi DDL vào CI cùng migration — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets 2, PH-01</a>; H6 (D3). Migration có AC riêng PID-00024-AC02 — H4</li>
+<li>Metadata tối thiểu để tạo reference: tiêu đề, ít nhất một tác giả, năm (hoặc ghi rõ thiếu năm); thiếu thì mục đó lỗi kèm lý do, các mục khác tiếp tục — <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#lib-import-001">LIB-IMPORT-001</a>; LIB-IMPORT-002 (luồng lỗi)</li>
+<li>Trùng citation key trong cùng file: báo trùng, mục sau không ghi đè mục trước — spec 4.7</li>
+<li>Parser BibTeX, RIS phía TypeScript; chuẩn hóa theo schema 17.6; lỗi từng entry báo riêng — <a href="../../../../architecture/sections/08-model-gateway-and-integrations.html#s-8-7">kiến trúc 8.7</a>; thư viện theo báo cáo SPK-03 (PID-00025), kiến trúc 2.3 nêu <code>@retorquere/bibtex-parser</code></li>
+<li>Parser trả <code>ReferenceMetadata</code> (17.6): <code>source</code> = <code>bibtex</code> hoặc <code>ris</code>; <code>identifiers.sourceId</code> = citation key (BibTeX) hoặc thẻ <code>ID</code> (RIS); <code>identifiers.url</code> = trường <code>url</code>/<code>UR</code>, không có thì <code>https://doi.org/</code> + DOI; <code>retrievedAt</code> = thời điểm parse; <code>raw</code> = bản gốc. Mục không có URL và DOI, hoặc RIS không có <code>ID</code>, hợp lệ vì hợp đồng đã nới <code>identifiers</code> cho nguồn nhập tay 18/11/2026 (S07) — H1</li>
+<li>Chuẩn hóa giá trị: ký hiệu LaTeX → Unicode thuần (công thức toán giữ nguyên chuỗi); <code>publicationType</code> theo bảng ánh xạ ở <a href="../designs/notes.html#du-lieu">designs/notes.html</a>; <code>authors[].name</code> = “Họ, Tên”, tên tập thể giữ nguyên — H2</li>
+<li>DOI lưu chữ thường, không tiền tố <code>https://doi.org/</code> — DDL <code>library.sql</code> (cột <code>doi</code>)</li>
+<li>Giới hạn 50 mục mỗi lô, tạo Reference Pending Approval, kiểm trùng, BibTeX key duy nhất trong tài khoản thuộc API nhập — LIB-IMPORT-001, LIB-METADATA-001, 18.5; PID-00076</li>
+<li>Thư viện chỉ <code>library</code> dùng khai báo trong <code>apps/library/package.json</code>; phiên bản dùng chung qua pnpm catalog do luồng <code>infra</code> giữ — <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-7">quy tắc 1.4.7</a>; Drizzle, drizzle-kit vào catalog qua PID-00001 — H8 (D5)</li>
+<li>PID phụ thuộc chưa làm (PID-00001, PID-00025, PID-00158) không chặn trạng thái Sẵn sàng; slice bắt đầu khi phần cần dùng đã merge — H9 (D6)</li>
+<li>Module con của <code>library</code>: <code>sources</code>, <code>doi</code>, <code>importers</code>, <code>references</code> — <a href="../../../sections/01-tracks-and-boundaries.html#s-1-6">tickets 1.6</a></li>
+<li>PR vào <code>main</code> (OQ-111); tự QC gồm spec-converge-skill trước khi mở PR (DEC-58)</li>
+<li>Bất biến sản phẩm: reference nhập tay không bao giờ vào thẳng Trusted (LIB-IMPORT-002) — PID này không tạo Reference nên chỉ giữ bằng DDL (mặc định <code>Pending Approval</code>, trigger chuyển trạng thái).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>apps/library/README.md</code>, <code>apps/library/src/app.module.ts</code>, <code>apps/library/src/app.module.spec.ts</code> — có</li>
+<li><code>apps/library/src/{sources,doi,importers,references}/</code> — có, chỉ có <code>.gitkeep</code></li>
+<li><code>apps/library/migrations/</code> — có, rỗng (<code>.gitkeep</code>)</li>
+<li><code>apps/library/package.json</code> — có; Nx project <code>@sires/library</code>, target <code>build</code>, <code>typecheck</code>, <code>lint</code>, <code>test</code> (Vitest); đã khai <code>@sires/testing</code> (devDependency)</li>
+<li><code>libs/ts/platform/src/index.ts</code> — có (HealthModule, bootstrapService); tenancy, Drizzle chưa có (PID-00001 chưa làm)</li>
+<li><code>libs/ts/testing</code> <code>startPostgres</code> (PostgreSQL 16 + pgvector qua Testcontainers) — có (PID-00004)</li>
+<li><code>docs/database/ddl/00-common.sql</code>, <code>docs/database/ddl/library.sql</code> — có; 4 bảng: <code>app.discovered_result</code>, <code>app.reference</code>, <code>app.reference_metadata_version</code>, <code>app.project_reference_selection</code>; DDL mới chạy thử trên PGlite (PostgreSQL 17), chưa chạy trên PostgreSQL 16 (database 12.4)</li>
+<li><code>components/schemas/library.yaml</code> <code>ReferenceMetadata</code> — có; <code>identifiers.sourceId</code>, <code>identifiers.url</code> còn bắt buộc, PO nới cho nguồn nhập tay theo H1 (trang ticket, “Phải sửa ở nguồn”) — chặn S07</li>
+<li>pnpm catalog — có <code>pg</code>, <code>@types/pg</code>, <code>vitest</code>, <code>testcontainers</code>; chưa có Drizzle, drizzle-kit (PID-00001 thêm — H8) và parser BibTeX, RIS</li>
+<li><code>apps/library/deploy/values.yaml</code> — có (<code>service</code>, <code>image</code>, <code>port</code>, <code>replicas</code>); chưa có khóa <code>migration</code>; Job migration của chart do PID-00010 S02 thêm (chưa làm)</li>
+<li>Helper sinh dòng chuyển trạng thái (PID-00158) — chưa có</li>
+<li>Báo cáo SPK-03 (PID-00025) — chưa có</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/library/migrations/</code>: migration đầu tiên tạo schema theo DDL → S01 (bảng, hàm, trigger, RLS, quyền), S02 (dòng chuyển trạng thái sinh bằng helper)</li>
+<li>Lệnh migrate và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> trong <code>apps/library/deploy/values.yaml</code> (H6) → S01</li>
+<li>Khai báo bốn state machine của library dạng dữ liệu (H3) → S02</li>
+<li>O2 <code>apps/library/src/importers/</code>: parser BibTeX, RIS → S04, S05, S06, S07</li>
+<li>O3 <code>apps/library/src/importers/importers.spec.ts</code>: test theo AC → S04, S05, S06, S07</li>
+<li>O4 <code>apps/library/README.md</code>: entity sở hữu, bản sao chỉ đọc <code>replica.project_state</code> → S03</li>
+<li>Khung module <code>sources</code>, <code>doi</code>, <code>importers</code>, <code>references</code> (spec 4.4, B4) → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Mục (entry) = một bản ghi trong file BibTeX (<code>@article{…}</code>) hoặc RIS (từ <code>TY</code> tới <code>ER</code>); tương ứng “mục” của lô nhập ở LIB-IMPORT-001.</li>
+<li>Citation key = khóa đầu entry BibTeX; khác <code>bibtexKey</code> của Reference (do API nhập tạo, duy nhất trong tài khoản).</li>
+<li>Reference, Trusted Reference, Pending Approval — glossary PRD 1.5.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00024</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00024 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

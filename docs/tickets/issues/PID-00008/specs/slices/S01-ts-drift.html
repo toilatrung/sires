@@ -1,0 +1,58 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00008.">
+<title>S01 — Kiểm lệch phía TypeScript | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00008</p><h1>S01 — Kiểm lệch phía TypeScript</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00008-AC01 (phần TypeScript)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04, EC05 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00007/index.html">PID-00007</a> S01 (type AsyncAPI) đã merge để kiểm cả message; phần OpenAPI làm được trên bộ sinh hiện có. PID-00007 chưa làm: ghi nhận, không chặn (H4). EC02 theo H3.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>libs/ts/contracts/scripts/check-drift.mjs</code> (tạo mới): gọi bộ sinh <code>scripts/generate.mjs</code> (có sẵn) để sinh lại type, lấy danh sách project TypeScript phụ thuộc <code>@sires/contracts</code> từ đồ thị Nx, chạy <code>tsc --noEmit</code> theo <code>tsconfig.json</code> của từng project; nhận thêm đường dẫn để kiểm fixture.</li>
+<li>Lỗi có kiểu nằm trong <code>src/generated</code> (trường thừa trong object literal, đọc trường không có) in thành một dòng: file:dòng, tên trường, schema hoặc message. Lỗi khác in nguyên văn, không gắn nhãn trường (EC02, H3). Có lỗi bất kỳ thì thoát mã khác 0; in danh sách project đã kiểm (EC05).</li>
+<li>Thêm script và target <code>check-drift</code>, <code>test</code> vào <code>libs/ts/contracts/package.json</code> (có sẵn); thêm <code>vitest</code> (<code>catalog:</code>, đã có trong catalog) vào devDependencies nếu dùng Vitest.</li>
+<li>Fixture trong <code>libs/ts/contracts/scripts/__fixtures__/</code> (tạo mới): một file dùng type sinh đúng, một file ghi trường không có trong schema, một file có lỗi kiểu không liên quan hợp đồng, một bản spec lỗi cú pháp cho EC03 (đặt trong fixture, không sửa <code>docs/</code>).</li>
+<li>Viết <code>libs/ts/contracts/scripts/check-drift.spec.mjs</code> (tạo mới); ghi ở <code>implement.md</code> cách nhận diện lỗi thuộc type sinh.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/contracts:check-drift</code> → đạt trên repo hiện tại, in danh sách project đã kiểm</li>
+<li><code>pnpm nx run @sires/contracts:test</code> → đạt</li>
+<li><code>pnpm nx run @sires/contracts:typecheck</code>, <code>pnpm nx run @sires/contracts:lint</code> → đạt</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › trường không có trong spec</code> (PID-00008-AC01)</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › lỗi không thuộc hợp đồng</code> (EC02)</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › spec lỗi cú pháp</code> (EC03)</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › luôn sinh lại</code> (EC04)</li>
+<li>Thao tác tay: chạy lệnh trên repo hiện tại, đối chiếu danh sách project đã kiểm (EC05)</li>
+<li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng <code>contracts</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Thêm một trường không có trong spec vào fixture thì lệnh thoát lỗi và nêu đúng trường, file:dòng; bỏ trường đó thì lệnh đạt.</li>
+<li>Sau khi PID-00007 S01 merge, fixture dùng type message AsyncAPI cũng bị bắt như trên.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00008</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00008 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

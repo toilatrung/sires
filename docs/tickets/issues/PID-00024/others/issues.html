@@ -1,0 +1,217 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00024.">
+<title>PID-00024 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00024</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00024</p><h1>PID-00024 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này khi còn vấn đề <strong>chưa chốt</strong>. Lần làm rõ 17/11/2026 chạy theo lô PH-01, PO không trả lời trong phiên; hồ sơ vẫn được lập đủ, mỗi vấn đề là một phiếu <code>I&lt;n&gt;</code> (nhãn cục bộ của hồ sơ).</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00024</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
+<p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
+<p><strong>18/11/2026:</strong> PO chấp nhận phương án đề xuất của cả bốn phiếu (“Chấp nhận tất cả”, lô PH-01). Câu trả lời đã chuyển vào <a href="../index.html#phien-2">mục 5 của trang ticket</a> thành H1–H4; I3 được cụ thể hóa bởi quyết định chung D2 (helper ở PID-00158). Phần sửa hợp đồng của I1 nằm ở mục “Phải sửa ở nguồn” của trang ticket. Trang này giữ làm biên bản.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Parser trả <code>ReferenceMetadata</code> đầy đủ hay bản ghi trung gian; điền trường bắt buộc thế nào khi mục không có URL, DOI?</td><td>có — S06</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+<tr><td><a href="#i2">I2</a></td><td>Quy tắc chuẩn hóa giá trị: ký hiệu LaTeX, ánh xạ loại tài liệu, dạng tên tác giả</td><td>có — S06</td><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+<tr><td><a href="#i3">I3</a></td><td>Bảng <code>app.state_transition</code> sinh từ khai báo domain (DEC-57, DR-01): khai báo và bộ sinh đặt ở đâu?</td><td>có — S02</td><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+<tr><td><a href="#i4">I4</a></td><td>Thêm AC cho migration của PID-00024?</td><td>không</td><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Parser BibTeX, RIS trả <code>ReferenceMetadata</code> (schema 17.6) đầy đủ hay bản ghi trung gian; nếu trả <code>ReferenceMetadata</code> thì điền <code>source</code>, <code>identifiers.sourceId</code>, <code>identifiers.url</code>, <code>retrievedAt</code> thế nào khi mục không có URL hay DOI?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · API và sự kiện · Mâu thuẫn tài liệu</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Quyết định đầu ra của parser (kiểu dữ liệu PID-00076 nhận) và test “metadata đúng” của AC01. Hợp đồng bắt buộc <code>identifiers.sourceId</code>, <code>identifiers.url</code> (định dạng URI), nhưng entry nhập tay hợp lệ theo LIB-IMPORT-001 (có tiêu đề, tác giả, năm) có thể không có URL, DOI hay mã định danh — khi đó không dựng được <code>ReferenceMetadata</code> hợp lệ.</td></tr>
+<tr><th scope="row">Nguồn</th><td><code>components/schemas/library.yaml</code> <code>ReferenceMetadata</code>: <code>required: [title, authors, identifiers, source, retrievedAt]</code>; <code>identifiers.required: [sourceId, url]</code>, <code>url</code> có <code>format: uri</code>; <code>source</code> ví dụ <code>bibtex</code> (không có <code>ris</code>). Kiến trúc 8.7: <code>bibtex_import</code>, <code>ris_import</code> “chuẩn hóa theo schema 17.6; lỗi từng entry báo riêng”. LIB-IMPORT-001: metadata tối thiểu là tiêu đề, ít nhất một tác giả, năm (hoặc ghi rõ thiếu năm); LIB-IMPORT-001, LIB-IMPORT-002: Reference Processing Agent chuẩn hóa metadata (LIB-METADATA-001).</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>PID-00024-AC01 (metadata chuẩn hóa), P8, EC21; S06; hợp đồng (“Phải sửa ở nguồn” trên trang ticket); PID-00076</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S06</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Parser trả <code>ReferenceMetadata</code>: <code>source</code> = <code>bibtex</code> hoặc <code>ris</code>; <code>sourceId</code> = citation key (BibTeX) hoặc thẻ <code>ID</code> (RIS); <code>url</code> = trường <code>url</code>/<code>UR</code>, không có thì <code>https://doi.org/</code> + DOI; <code>retrievedAt</code> = thời điểm parse. PO sửa hợp đồng: <code>identifiers.sourceId</code>, <code>identifiers.url</code> không bắt buộc với nguồn nhập tay; thêm <code>ris</code> vào ví dụ <code>source</code>.</td><td>S06 làm đủ; PID-00076 dùng thẳng kết quả. Cần một thay đổi hợp đồng (nới ràng buộc, chưa service nào dùng) trước khi S06 xong.</td></tr>
+<tr><td>B</td><td>Parser trả bản ghi trung gian (trường đã tách, DOI chuẩn hóa, cờ thiếu năm, bản gốc); dựng <code>ReferenceMetadata</code> ở PID-00076 khi tạo Reference.</td><td>S06 thu lại; AC01 kiểm trên bản ghi trung gian. Chỗ hở của hợp đồng vẫn phải xử lý trước PID-00076.</td></tr>
+<tr><td>C</td><td>Như A, nhưng không sửa hợp đồng: mục không có URL và DOI bị coi là lỗi.</td><td>Không đổi hợp đồng; nhưng thêm điều kiện ngoài metadata tối thiểu của LIB-IMPORT-001, nên entry hợp lệ theo PRD bị từ chối.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — đúng kiến trúc 8.7 (importer chuẩn hóa theo 17.6), giữ metadata tối thiểu của LIB-IMPORT-001, và chỗ hở của hợp đồng phải sửa dù chọn phương án nào. Hồ sơ hiện lập theo: S04, S05 trả kết quả đã tách (chung cho mọi phương án); S06 ghi “chặn bởi I1”.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — parser trả ReferenceMetadata, sửa hợp đồng cho nguồn nhập tay</label>
+<label><input type="radio" name="I1" value="B"> B — parser trả bản ghi trung gian, PID-00076 dựng ReferenceMetadata</label>
+<label><input type="radio" name="I1" value="C"> C — trả ReferenceMetadata, mục không có URL và DOI là lỗi</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="ngày/tháng/năm"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — parser trả ReferenceMetadata, sửa hợp đồng cho nguồn nhập tay — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H1</a></p>
+</article>
+
+<article class="issue" id="i2" data-issue="I2">
+<h2>I2 — Khi chuẩn hóa mục BibTeX, RIS: ký hiệu LaTeX trong giá trị xử lý thế nào, loại entry ánh xạ sang <code>publicationType</code> theo bảng nào, và <code>authors[].name</code> ghi dạng nào?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Giá trị chuẩn hóa được lưu vào <code>reference.metadata</code>, dùng để tìm kiếm, phát hiện nghi trùng (tiêu đề chuẩn hóa, năm, tác giả đầu — LIB-METADATA-001) và sinh lại BibTeX; đổi quy tắc sau khi có dữ liệu thì phải sửa dữ liệu cũ. Expected value trong test AC01 phụ thuộc quy tắc này.</td></tr>
+<tr><th scope="row">Nguồn</th><td>LIB-METADATA-001: chuẩn hóa “tiêu đề, danh sách tác giả (họ, tên), năm, venue, loại tài liệu, DOI/định danh, URL, tóm tắt”. <code>ReferenceMetadata.publicationType</code> enum: <code>article</code>, <code>conference</code>, <code>thesis</code>, <code>book</code>, <code>chapter</code>, <code>preprint</code>, <code>report</code>, <code>other</code>; <code>raw</code>: “Bản gốc để đối chiếu”. DDL <code>reference.authors_text</code>: “Họ Tên; Họ Tên”. Không nguồn nào nói về ký hiệu LaTeX hay bảng ánh xạ loại.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>PID-00024-AC01 (metadata chuẩn hóa), EC19, EC22; S06</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S06</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+<p>Bảng ánh xạ đề xuất cho phương án A và C — BibTeX: <code>article</code> → article; <code>inproceedings</code>, <code>conference</code> → conference; <code>phdthesis</code>, <code>mastersthesis</code>, <code>thesis</code> → thesis; <code>book</code> → book; <code>incollection</code>, <code>inbook</code> → chapter; <code>techreport</code>, <code>report</code> → report; entry có định danh arXiv (<code>eprint</code> với <code>archivePrefix = arXiv</code>) mà không thuộc loại trên → preprint; còn lại → other. RIS: <code>JOUR</code>, <code>EJOUR</code> → article; <code>CONF</code>, <code>CPAPER</code> → conference; <code>THES</code> → thesis; <code>BOOK</code>, <code>EBOOK</code> → book; <code>CHAP</code>, <code>ECHAP</code> → chapter; <code>RPRT</code> → report; còn lại → other.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Ký hiệu LaTeX chuyển sang Unicode thuần ở mọi trường chuẩn hóa (<code>{\"o}</code> → ö, <code>\&amp;</code> → &amp;, bỏ ngoặc giữ chữ hoa; công thức toán giữ nguyên chuỗi), bản gốc giữ trong <code>raw</code>; <code>publicationType</code> theo bảng trên; <code>authors[].name</code> = “Họ, Tên” (BibTeX “Tên Họ” đổi sang “Họ, Tên”; tên tập thể trong ngoặc giữ nguyên).</td><td>Tiêu đề, tên so được với nguồn khác khi phát hiện nghi trùng; tách lại họ, tên không mất thông tin khi sinh BibTeX. Test AC01 kiểm theo bảng và mẫu tên này.</td></tr>
+<tr><td>B</td><td>Giữ nguyên chuỗi như trong file, chỉ bỏ ngoặc ngoài cùng; <code>publicationType</code> chỉ đặt khi tên loại trùng enum, còn lại <code>other</code>; tên tác giả giữ nguyên.</td><td>Ít mã; nhưng tiêu đề còn ký hiệu LaTeX nên tìm kiếm và nghi trùng kém, nhiều mục thành <code>other</code>.</td></tr>
+<tr><td>C</td><td>Như A, nhưng <code>authors[].name</code> = “Tên Họ” (thứ tự hiển thị).</td><td>Cùng dạng với tên trả từ một số nguồn tìm kiếm; tên nhiều từ khó tách lại họ, tên khi sinh BibTeX.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — metadata chuẩn hóa không phụ thuộc cách viết của từng file, bản gốc vẫn còn trong <code>raw</code>, và “Họ, Tên” giữ được ranh giới họ, tên cho bibliography. Hồ sơ hiện lập theo: S04, S05 trả giá trị đã tách (chưa chuẩn hóa ký hiệu); S06 ghi “chặn bởi I2”.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I2" value="A"> A — Unicode, bảng ánh xạ đề xuất, tên “Họ, Tên”</label>
+<label><input type="radio" name="I2" value="B"> B — giữ nguyên chuỗi trong file</label>
+<label><input type="radio" name="I2" value="C"> C — như A, tên “Tên Họ”</label>
+<label><input type="radio" name="I2" value="Khác"> Khác (ghi ở dưới, kể cả sửa bảng ánh xạ)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="ngày/tháng/năm"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Unicode, bảng ánh xạ đề xuất, tên “Họ, Tên” — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H2</a></p>
+</article>
+
+<article class="issue" id="i3" data-issue="I3">
+<h2>I3 — Dòng của bảng <code>app.state_transition</code> phải sinh từ khai báo state machine của module domain (DEC-57, DR-01); với PID migration này, khai báo và bộ sinh đặt ở đâu?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · Ranh giới luồng · Mâu thuẫn tài liệu</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Ticket ghi “Migration theo DDL”, mà DDL tham chiếu chèn các dòng chuyển trạng thái bằng <code>INSERT</code> viết tay; quyết định PO đã chốt yêu cầu bảng này sinh tự động từ một khai báo duy nhất. Chép tay thì lệch DEC-57; tự viết bộ sinh trong service thì mỗi service một kiểu; chưa có PID nào làm helper chung. Câu hỏi này áp cho mọi PID migration có state machine (library, research, manuscript, planning, orchestration, workspace…).</td></tr>
+<tr><th scope="row">Nguồn</th><td>Database 10.2: “bảng <code>state_transition</code> là bản sinh tự động từ khai báo đó bởi migration, không viết tay (DR-01). Cách hiểu này PO đã chốt 03/11/2026 (DBQ-09, DEC-57).” DR-01 (biện pháp): “Sinh cả hai từ một khai báo (<code>libs/ts/platform</code>); test so khớp trong CI.” DDL <code>library.sql</code>: <code>INSERT INTO app.state_transition … VALUES …</code> viết tay. PID-00001 (platform) không gồm khai báo state machine. PID-00023 đặt state machine Task trong <code>apps/planning/src/task-state/</code>.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>P3, EC10; S02; mọi PID migration có state machine</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S02</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Khai báo ngay trong service ở PID này (<code>apps/library/src/</code>), service tự sinh dòng <code>INSERT</code> từ khai báo; test so khai báo với DDL tham chiếu.</td><td>Đúng DEC-57 ngay; không chờ ai. Mỗi service viết bộ sinh riêng (lặp ở khoảng 9 service, 3 Dev), dễ lệch cách làm.</td></tr>
+<tr><td>B</td><td>PO lập PID mới cho luồng <code>platform</code>: helper khai báo state machine và sinh SQL trong <code>libs/ts/platform</code> (đúng biện pháp DR-01); S02 của các PID migration phụ thuộc PID đó.</td><td>Một cách làm cho mọi service, domain module sau này dùng lại cùng khai báo. S02 chờ PID mới; phần còn lại của PID này không bị chặn.</td></tr>
+<tr><td>C</td><td>Chép dòng <code>INSERT</code> từ DDL vào migration ở PID này; PID domain sau (ví dụ PID-00076) thay bằng dòng sinh từ khai báo qua migration mới.</td><td>Nhanh; nhưng lệch DEC-57 trong một thời gian và phải có migration sửa lại, rủi ro DR-01 (lệch giữa database và domain).</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án B — DR-01 đã ghi helper thuộc <code>libs/ts/platform</code>; một helper chung giữ cách làm thống nhất cho mọi service khi ba Dev làm song song. Hồ sơ hiện lập theo: S01 dựng toàn bộ schema trừ dòng chuyển trạng thái; S02 ghi “chặn bởi I3”.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I3" value="A"> A — khai báo và bộ sinh trong service, ngay ở PID này</label>
+<label><input type="radio" name="I3" value="B"> B — PID platform mới cho helper chung (DR-01)</label>
+<label><input type="radio" name="I3" value="C"> C — chép dòng từ DDL, thay sau</label>
+<label><input type="radio" name="I3" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="ngày/tháng/năm"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> B — PID platform mới cho helper chung (DR-01); PID mới là PID-00158 theo quyết định chung D2 — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H3</a></p>
+</article>
+
+<article class="issue" id="i4" data-issue="I4">
+<h2>I4 — Migration của PID-00024 có cần tiêu chí nghiệm thu riêng (PID-00024-AC02) như PID-00023, PID-00029, PID-00030 không?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Phạm vi · Kiểm thử</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Ticket có migration ở Gồm và Đầu ra nhưng AC01 chỉ nói về parser; QC và nghiệm thu dựa vào AC, nên migration chỉ còn được kiểm theo cột “Kiểm bằng” của spec O1.</td></tr>
+<tr><th scope="row">Nguồn</th><td>Ticket PID-00024 mục 2: chỉ PID-00024-AC01. Spec O1 “Kiểm bằng: Áp lên database rỗng, so với DDL tham chiếu”. PID-00029-AC01, PID-00030-AC01, PID-00023-AC02: “Given migration, When áp lên database rỗng, Then schema khớp <code>docs/database/ddl/&lt;service&gt;.sql</code>.” Tickets 2, PH-01: mỗi luồng service đưa test hành vi DDL vào CI.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S01, S02; <code>specs/acceptance.html</code></td></tr>
+<tr><th scope="row">Chặn</th><td>không</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Thêm PID-00024-AC02: “Given migration, When áp lên database rỗng, Then schema khớp <code>docs/database/ddl/library.sql</code> (chạy sau <code>00-common.sql</code>).”</td><td>Không thêm việc (S01 đã làm test này); nghiệm thu migration rõ ràng, cùng mẫu với các PID migration khác.</td></tr>
+<tr><td>B</td><td>Không thêm AC; migration kiểm theo spec O1.</td><td>Không đổi ticket; QC chỉ đối chiếu migration với phạm vi P1, P2.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — migration là nửa của ticket và đã có test tương ứng ở S01. Hồ sơ hiện lập theo: phương án B (không tự thêm AC); test <code>migration.spec.ts › schema khớp DDL</code> vẫn nằm trong S01.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I4" value="A"> A — thêm PID-00024-AC02 cho migration</label>
+<label><input type="radio" name="I4" value="B"> B — không thêm AC</label>
+<label><input type="radio" name="I4" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="ngày/tháng/năm"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — thêm PID-00024-AC02 cho migration — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H4</a></p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00024</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00024 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

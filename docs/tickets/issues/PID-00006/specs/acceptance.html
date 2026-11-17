@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu và test của PID-00006.">
+<title>PID-00006 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>PID-00006 — Tiêu chí nghiệm thu → test</h1>
+<p>Mỗi AC có ít nhất một test. Test nằm trong project <code>libs/ts/sample-service</code> (H1), chạy trên PostgreSQL 16 + pgvector của <code>startPostgres</code> (image <code>pgvector/pgvector:pg16</code>). Số liệu SPK-10 đã chốt ở H5: 5 lần, đạt khi cả 5 lần dưới 10 phút.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00006-AC01</td><td>Given service mẫu trên PostgreSQL 16 + pgvector (Testcontainers) đã chạy migration mẫu, When lệnh đổi trạng thái chạy xong, Then trong cùng một giao dịch đã commit có trạng thái mới, đúng một dòng outbox <code>kind = event</code> (có <code>aggregate</code>) và đúng một dòng outbox <code>kind = audit</code> (<code>audit.recorded</code>); When lỗi trước commit, Then không có dòng nào trong ba loại (EC01).</td><td><code>libs/ts/sample-service/src/sample.spec.ts › trạng thái, Audit Event và outbox cùng một giao dịch</code></td><td>S02</td><td>Ticket; PID-00002 AC01, H2</td></tr>
+<tr><td>PID-00006-AC02</td><td>Given cùng một sự kiện (cùng <code>event_id</code>) gửi tới consumer của service mẫu hai lần, tuần tự hoặc đồng thời, When consumer xử lý, Then tác động áp đúng một lần và <code>app.inbox</code> có đúng một dòng <code>(consumer, event_id)</code>.</td><td><code>libs/ts/sample-service/src/sample.spec.ts › sự kiện trùng tác động đúng một lần</code></td><td>S03</td><td>Ticket; PID-00002 AC02</td></tr>
+<tr><td>PID-00006-AC03</td><td>Given dòng của tài khoản A trong bảng mẫu, When tài khoản B đọc qua helper tenancy (vai trò <code>_app</code>), Then 0 dòng; B ghi dòng mang <code>account_id</code> của A thì bị từ chối; không đặt <code>app.account_id</code> thì 0 dòng.</td><td><code>libs/ts/sample-service/src/sample.spec.ts › RLS chặn đọc chéo tài khoản</code></td><td>S04</td><td>Ticket; database 12.4</td></tr>
+<tr><td>PID-00006-AC04</td><td>Given PostgreSQL 16 + pgvector ≥ 0.8 của <code>startPostgres</code> và vai trò <code>sires_&lt;svc&gt;_*</code> của 11 service do test tạo, When chạy <code>00-common.sql</code> rồi file DDL của service trong database riêng của từng service (12 file DDL tham chiếu, 11 database), Then cả 11 database dựng xong không lỗi, và database của knowledge có extension <code>vector</code> phiên bản ≥ 0.8, cột <code>vector(1536)</code> và index HNSW.</td><td><code>libs/ts/sample-service/src/ddl-pg16.spec.ts › dựng 11 database từ DDL tham chiếu</code></td><td>S05</td><td>H3; database 12.4; <code>knowledge.sql</code> (AQ-09)</td></tr>
+<tr><td>PID-00006-AC05</td><td>Given endpoint nội bộ của service mẫu gắn service-auth guard của PID-00003, When gọi với token nội bộ hợp lệ của bên gọi được phép, Then đi qua; When token sai (sai chữ ký hoặc hết hạn) hoặc thiếu header <code>Authorization</code>, Then <code>401</code> problem+json <code>code = invalid_service_token</code> và handler không chạy.</td><td><code>libs/ts/sample-service/src/sample.spec.ts › endpoint nội bộ kiểm token nội bộ</code></td><td>S06</td><td>H4; PID-00003-AC01, EC05; <code>internal/responses.yaml#/InvalidServiceToken</code></td></tr>
+<tr><td>NFR-MAINT-004-AC01</td><td>Phần của ticket: Given bộ test của service mẫu, When chạy khi không có mạng ngoài (image container đã có trên máy), Then đạt.</td><td>Thao tác tay ở S04 (EC06), chạy lại với cả bộ sau S05, S06; ghi kết quả vào <code>self-qc.md</code></td><td>S04</td><td>PRD 16</td></tr>
+</tbody></table></div>
+<p>Bước B3 (báo cáo SPK-10) không có AC riêng; kiểm ở <a href="slices/S07-spk10-report.html">S07</a> bằng báo cáo theo H5. Migration mẫu (B4) không có AC riêng; kiểm ở <a href="slices/S01-migration.html">S01</a> bằng EC08, EC09.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00006</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tiêu chí nghiệm thu PID-00006 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

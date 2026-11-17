@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00026: revision Alembic theo DDL (gồm pgvector) và test so schema.">
+<title>S01 — Revision Alembic theo DDL (gồm pgvector) và test so schema | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>S01 — Revision Alembic theo DDL (gồm pgvector) và test so schema</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00026-AC01 (cấu trúc, dòng danh mục)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04, EC05, EC06 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>— (PID-00005 đã trên <code>main</code>)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thêm <code>alembic</code> và <code>sqlalchemy</code> (async) vào phụ thuộc chạy của <code>apps/knowledge/pyproject.toml</code> (không phải nhóm dev: S03 chạy revision trong image dựng bằng <code>uv sync --no-dev</code>, H3); driver asyncpg (đã có qua <code>sires-common</code>; PID-00005 đề xuất 5). Thêm <code>sires-common[testing]</code> vào nhóm phụ thuộc dev của app. Sinh lại <code>uv.lock</code> (quy tắc 1.4.7); check-tracks sẽ báo thêm luồng infra vì <code>uv.lock</code>, ghi vào <code>report.md</code>.</li>
+<li>Dựng Alembic trong <code>apps/knowledge/migrations/</code> (có sẵn, rỗng) theo quy ước D1 (H4, kiến trúc 6.10: Alembic trên SQLAlchemy async và asyncpg, SQL chép từ DDL, chỉ tiến): <code>env.py</code> chạy async, DSN của vai trò migrator lấy từ biến môi trường (tên biến Dev chọn, ghi README ở S05).</li>
+<li>Revision đầu: chép nguyên SQL của <code>docs/database/ddl/00-common.sql</code> rồi <code>knowledge.sql</code> (giữ thứ tự, nội dung, gồm <code>CREATE EXTENSION IF NOT EXISTS vector</code>, schema <code>vec</code>, dòng mẫu <code>embedding_model_catalog</code> và bảng <code>vec.emb_openai_text_embedding_3_small</code> — EC06); <strong>bỏ</strong> khối <code>INSERT INTO app.state_transition …</code> (S02 sinh từ khai báo, DEC-57); trigger <code>indexing_job_state</code> vẫn tạo. Không tạo vai trò.</li>
+<li><code>downgrade()</code> báo lỗi rõ, không DROP (EC02). Bảng <code>alembic_version</code> đặt ngoài schema <code>app</code>, <code>replica</code>, <code>vec</code> (EC05). Cách chạy SQL nhiều câu lệnh qua Alembic và asyncpg Dev tự quyết, ghi <code>implement.md</code>.</li>
+<li>Viết <code>apps/knowledge/tests/test_migrations.py</code> (tạo mới) với <code>pytest_plugins = ["sires_common.testing.fixtures"]</code>: <code>create_service_database(server, "knowledge", [], finalize=False)</code> cho database chạy revision; <code>create_service_database(server, "knowledge", [common_sql, knowledge_sql], finalize=False)</code> cho database dựng từ DDL (đọc từ <code>docs/database/ddl/</code>, chỉ đọc). Fixture tạo vai trò trong container (D4: tới khi PID-00159 có compose cục bộ). Với EC04 tạo database không qua fixture để thiếu vai trò.</li>
+<li>So schema ba schema <code>app</code>, <code>replica</code>, <code>vec</code> bằng công cụ diff schema hoặc truy vấn <code>pg_catalog</code> (Dev chọn, ghi <code>implement.md</code>); so thêm dòng <code>app.embedding_model_catalog</code>; bỏ dòng <code>state_transition</code> khỏi phép so ở slice này.</li>
+<li>DDL không chạy được trên PostgreSQL 16 + pgvector thật (kiểu <code>vector</code>, HNSW chưa từng chạy thử) → dừng, ghi “Cần PO”; không tự sửa SQL so với DDL.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run knowledge:test</code> → đạt (cần Docker; trên máy PO chạy pytest bằng trình thông dịch gốc của uv, ghi rõ trong <code>self-qc.md</code>)</li>
+<li><code>pnpm nx run knowledge:lint</code>, <code>pnpm nx run knowledge:typecheck</code> → đạt</li>
+<li>Test: <code>apps/knowledge/tests/test_migrations.py › test_schema_matches_ddl</code> (PID-00026-AC01; EC05, EC06)</li>
+<li>Test: <code>apps/knowledge/tests/test_migrations.py › test_upgrade_twice</code> (EC03)</li>
+<li>Test: <code>apps/knowledge/tests/test_migrations.py › test_missing_roles_rolls_back</code> (EC04)</li>
+<li>Test: <code>apps/knowledge/tests/test_migrations.py › test_downgrade_refused</code> (EC02)</li>
+<li>Thao tác tay: ghi vào <code>report.md</code> rằng EC01 (DBQ-01) chưa kiểm được trên managed, kèm phiên bản pgvector của image test</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Database dựng từ revision không lệch database dựng từ DDL ở ba schema và dòng danh mục; chạy lại không đổi; lỗi giữa chừng không để lại đối tượng; downgrade không mất bảng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00026</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S13 của ticket PID-00012.">
+<title>S13 — Đánh dấu hoạt động của người dùng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S13 — Đánh dấu hoạt động của người dùng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H6 (PO chấp nhận phương án B của <a href="../../others/issues.html#i6">I6</a> ngày 18/11/2026). <strong>Chưa làm được:</strong> H6 mâu thuẫn với đề xuất B của PID-00014 I1 (PO cũng chấp nhận); cơ chế chờ PO trả lời <a href="../../others/issues.html#i10">I10</a>.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>INT-OIDC-003-AC02 (phần shell)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5; H6; ADR-27; kiến trúc 10.2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC32 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04, S05, S07; chặn bởi I10; nếu I10 chọn header thì thêm chờ nguồn: header trong <code>docs/api-design</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo phương án PO chọn ở I10. A (header): client API nhận cờ “do người dùng”; router của shell và thao tác của khu vực gắn header theo hợp đồng mới; request không có cờ thì không gắn. B (<code>GET /auth/session</code>): router của shell gọi <code>getSession</code> mỗi lần điều hướng, mở màn hình; không bao giờ gọi định kỳ.</li>
+<li>Với cả hai phương án: kết nối và nối lại SSE (S05), các lần gọi lại GET sau sự kiện SSE (S07, S12) là request chạy nền, không mang dấu hiệu hoạt động (EC32); lệnh ghi do người dùng gửi tính là hoạt động (gateway xử lý).</li>
+<li>README của client API ghi cách khu vực đánh dấu thao tác của người dùng.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt; <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/shell/activity.spec.ts › request chạy nền không tính</code> (INT-OIDC-003-AC02 phần shell; EC32); <code>› điều hướng có dấu hiệu</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Request chạy nền không bao giờ mang dấu hiệu hoạt động; điều hướng và thao tác của người dùng có dấu hiệu, theo phương án PO chọn ở I10</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S13 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00012.">
+<title>S02 — TopBar, ngữ cảnh và routing | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S02 — TopBar, ngữ cảnh và routing</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Shell-frame.html">designs/Shell-frame.html</a> khối 1–4, 7.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00012-AC01 (nhãn TopBar đổi theo ngôn ngữ), UX-LAYOUT-001-AC01 (phần shell), UX-LAYOUT-003-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2, B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC03, EC05, EC06, EC17, EC22 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc <code>docs/ui-design/design.md</code> và màn <code>TopBar</code>, <code>Overview</code> (TopBar ngữ cảnh Project), <code>Main</code>, <code>SignIn</code>; dựng theo skill sires-ui-executor. Chép <code>docs/ui-design/assets/motion.css</code> vào <code>apps/web/src/shell/styles/</code> (tạo mới) và nạp ở <code>main.tsx</code> (có sẵn).</li>
+<li>Thay <code>apps/web/src/shell/App.tsx</code> (có sẵn) bằng khung: TopBar Global (logo → Dashboard, bộ chuyển ngữ cảnh, tab Dashboard, Research Projects, Discover, Trusted Library, Tasks &amp; Plan, Agent Activity; bên phải Trợ lý, Pending Actions, chuông Notifications, VI/EN, Settings, avatar — menu của avatar làm ở S14) và TopBar Project (bộ chuyển ghi “Project” và tên project, đường dẫn “Global / tên khu vực”, không tab Global, không Trợ lý). Tab đang chọn gạch chân <code>ink</code>; chỉ Pending Actions có viền brand (design.md §4).</li>
+<li>Dữ liệu của TopBar (số Pending Actions, số chưa đọc, danh sách project của bộ chuyển, tên project, chữ viết tắt avatar) đi qua một interface có type của shell; slice này dùng fixture trong thư mục test của shell; khi chưa có dữ liệu thì không hiện số (không hiện số giả). Nối API thật ở S07.</li>
+<li>Bộ chuyển ngữ cảnh là listbox dùng được bằng bàn phím: mục “Global” và các project; chọn Global → <code>/dashboard</code>, chọn project → <code>/projects/&lt;id&gt;/overview</code>; chỉ báo đổi ngay (UX-LAYOUT-003).</li>
+<li>VI/EN là nhóm hai nút <code>aria-pressed</code>, gọi hàm đổi ngôn ngữ của S01; lưu vào Preferences làm ở S08 (H2).</li>
+<li>Nút Trợ lý (chỉ ngữ cảnh Global) mở khung bên phải 340–440px mà không đổi route (EC22); nội dung khung do khu vực <code>global</code> cung cấp qua hợp đồng <code>Feature</code> trong <code>apps/web/src/shell/feature.ts</code> (có sẵn, thêm trường tùy chọn); chưa có nội dung thì dùng <code>Placeholder</code> sẵn có.</li>
+<li>Routing trong <code>apps/web/src/shell/routes.tsx</code> (có sẵn): giữ <code>/</code> → <code>/dashboard</code> và route của khu vực; route không tồn tại → trạng thái “không tìm thấy” trong khung (EC06; dùng thành phần lỗi của S06 khi có, trước đó bản tối giản); <code>/sign-in</code> render ngoài khung, chỉ có VI/EN (EC17).</li>
+<li>A11y: <code>aria-current</code> cho tab đang chọn, <code>aria-label</code> cho nút chỉ có icon (chuông, Settings, avatar), vòng focus 3px <code>#80B9EE</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/shell/language-switch.spec.tsx › đổi ngôn ngữ giữ trạng thái</code> (PID-00012-AC01: nhãn TopBar đổi, khung Trợ lý vẫn mở)</li>
+<li><code>apps/web/src/shell/topbar.spec.tsx › thanh điều hướng mọi màn</code> (UX-LAYOUT-001-AC01 phần shell); <code>› chuyển về Global</code> (UX-LAYOUT-003-AC01); <code>› nhãn giữ tiếng Anh</code> (EC05); <code>› trợ lý</code> (EC22)</li>
+<li><code>apps/web/src/shell/routes.spec.ts › route lạ</code> (EC06); <code>› sign-in không khung</code> (EC17); test hiện có “no two feature areas claim the same path” vẫn đạt</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src/shell</code> → 0 lỗi</li>
+<li>Thao tác tay: <code>pnpm --filter @sires/web dev</code>, so TopBar với <code>docs/ui-design/pages/TopBar.html</code>, <code>Overview.html</code> ở 1440×900</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>TopBar hai ngữ cảnh đúng màn tham chiếu; bộ chuyển ngữ cảnh, VI/EN, Trợ lý hoạt động bằng chuột và bàn phím; routing đúng IA PRD 4.3</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

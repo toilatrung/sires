@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00016.">
+<title>PID-00016 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00016</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00016</p><h1>PID-00016 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Làm rõ ngày 17/11/2026 trong lô PH-01 (phiếu I1–I5); ngày 18/11/2026 PO chấp nhận mọi đề xuất và sáu quyết định chung D1–D6, gộp thành H1–H7 ở <a href="../index.html#phien-2">trang ticket mục 5</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>System, luồng <code>identity</code>. Dựng database <code>sires_identity</code> bằng migration đúng DDL tham chiếu (kèm lệnh migrate, giá trị Helm, test hành vi DDL), khai báo hai state machine của identity để sinh dòng <code>app.state_transition</code>, và module envelope để API key của Provider Connection chỉ được lưu ở dạng mã hóa envelope: key mã hóa bằng DEK ngẫu nhiên (AES-256-GCM), DEK được bọc bằng KEK nằm trong KMS. Khi chạy trên máy Dev dùng KMS cục bộ đọc KEK từ cấu hình. Identity chỉ mã hóa; giải mã thuộc <code>agent-core</code> và <code>knowledge</code>. API Provider Connection (<a href="../../PID-00042/index.html">PID-00042</a>), giao envelope cho Agent Run (<a href="../../PID-00062/index.html">PID-00062</a>), xoay KEK (<a href="../../PID-00137/index.html">PID-00137</a>) không thuộc ticket này.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Lưu: key rõ → DEK ngẫu nhiên (AES-256-GCM, AAD = <code>accountId|connectionId</code>) → ciphertext, tag GCM 16 byte nối cuối <code>ciphertext</code>; DEK → KMS Encrypt bằng KEK <code>sires-provider-keys</code> → wrapped DEK; ghi <code>app.provider_secret</code> (<code>connection_id</code>, <code>account_id</code>, <code>ciphertext</code>, <code>nonce</code> 12 byte, <code>wrapped_dek</code>, <code>kek_version</code> = id khóa KMS đã bọc DEK) — <a href="../../../../architecture/sections/10-security-architecture.html#s-10-3">kiến trúc 10.3</a>, <code>docs/database/ddl/identity.sql</code>, H4</li>
+<li>KEK không rời KMS; identity chỉ có quyền Encrypt, <code>agent-core</code> và <code>knowledge</code> có quyền Decrypt; identity, gateway và client không bao giờ thấy lại key. Mã của identity không có hàm giải mã; giải mã chỉ có trong test để kiểm — <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-10">ADR-10</a>, kiến trúc 10.3, NFR-SECRETS-002, H2</li>
+<li><code>app.provider_secret</code>: vai trò <code>_app</code> chỉ INSERT, DELETE (không SELECT, không UPDATE); <code>_system</code> đọc cho API nội bộ; không vai trò nào UPDATE — DDL, <a href="../../../../database/sections/04-identity-gateway-workspace.html#s-4-1">database 4.1</a></li>
+<li>Không log key: logger che chuỗi giống key (tiền tố của ba provider, chuỗi entropy cao) và trường tên <code>api_key</code>, <code>authorization</code>; ngoại lệ được chuẩn hóa trước khi ghi lỗi; key không có trong thông báo lỗi — kiến trúc 10.3, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a>, logger của <a href="../../PID-00001/index.html">PID-00001</a></li>
+<li>KMS không truy cập được → lỗi rõ ràng, không lưu key dạng rõ — spec mục 4.7</li>
+<li>KMS cục bộ (máy Dev): KEK 32 byte và id khóa đọc từ cấu hình (biến môi trường, <code>.env</code> cục bộ không commit); bọc DEK bằng AES-256-GCM, wrapped DEK = nonce 12 byte rồi ciphertext có tag 16 byte — đúng định dạng <code>encrypt</code> của <code>sires_common.testing.LocalKms</code>, không đặt AAD (kiến trúc 10.3 không có AAD ở bước KMS Encrypt), để phía Python mở được bằng cùng KEK; <code>kek_version</code> = id khóa trong cấu hình; thiếu cấu hình thì identity không khởi động; cùng cấu hình thì wrapped DEK cũ vẫn mở được sau khởi động lại — H1, H4</li>
+<li>Envelope trả cho <code>agent-core</code>, <code>knowledge</code> sau này có <code>ciphertext</code>, <code>nonce</code>, <code>wrappedDek</code> (base64), <code>kekKeyId</code> (= <code>kek_version</code>), <code>aad</code> (chuỗi <code>accountId|connectionId</code>); không có trường tag riêng — <code>docs/api-design/internal/schemas.yaml#/ProviderSecretEnvelope</code>, H4</li>
+<li>Migration theo kiến trúc 6.10 (PO chốt 18/11/2026): migration đầu là SQL chép từ <code>identity.sql</code> cùng phần chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm qua lệnh migrate của service; chỉ tiến; schema Drizzle bằng TypeScript không thuộc migration. PID gồm test hành vi DDL, lệnh migrate và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code>. Lệch DDL thì ghi DBQ, không tự đổi — DEC-57, DBD-02, <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>, H5, H6</li>
+<li>Dòng <code>app.state_transition</code> là bản sinh từ khai báo state machine dạng dữ liệu trong module domain của identity, không viết tay: <code>account</code> (cột <code>status</code>, 4 chuyển) và <code>provider_connection</code> (cột <code>test_status</code>, 6 chuyển), đúng các cặp trong DDL; sinh bằng helper của <a href="../../PID-00158/index.html">PID-00158</a>; trigger chuyển trạng thái giữ SQL chép từ DDL; PID-00041, PID-00042 dùng lại khai báo — DR-01, DBQ-09, <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a>, H3 (D2)</li>
+<li>Vai trò <code>sires_identity_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> không nằm trong migration: Terraform tạo ở staging, production; compose tạo ở máy Dev (<a href="../../PID-00159/index.html">PID-00159</a>); tới khi có, test tự tạo vai trò cần dùng — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>, H6 (D4)</li>
+<li>Mọi bảng có <code>account_id</code> bật và ép RLS; <code>app.account.account_id</code> sinh từ <code>id</code> — DDL, <code>00-common.sql</code></li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/identity.sql</code> (5 bảng, view <code>analysis_same_model</code>, trigger <code>row_version</code> và trạng thái, khối <code>INSERT INTO app.state_transition</code> 10 dòng, <code>app.find_account_by_identity</code>, quyền) — có</li>
+<li><code>docs/api-design/internal/schemas.yaml#/ProviderSecretEnvelope</code>, <code>internal/identity.yaml</code> (<code>getProviderSecretEnvelope</code>) — có</li>
+<li><code>apps/identity/src/app.module.ts</code>, <code>main.ts</code>, <code>manifest.ts</code> — có (scaffold, cổng 3101); <code>apps/identity/migrations/</code> — có (chỉ <code>.gitkeep</code>); <code>apps/identity/README.md</code> — có; <code>apps/identity/deploy/values.yaml</code> — có (chưa có <code>migration.*</code>); project Nx <code>@sires/identity</code> — có</li>
+<li><code>LocalKms</code> của <code>@sires/testing</code> (<a href="../../PID-00004/index.html">PID-00004</a>, đã merge): AES-256-GCM trong bộ nhớ, định dạng <code>version | keyIdLength | keyId | iv | tag | data</code> — dùng làm cổng KMS trong test của S03; <code>sires_common.testing.LocalKms</code> bản Python (<a href="../../PID-00005/index.html">PID-00005</a>): <code>encrypt</code> trả <code>nonce | ciphertext+tag</code>, id khóa truyền riêng — định dạng adapter cục bộ phải khớp (H1)</li>
+<li><a href="../../PID-00001/index.html">PID-00001</a> (helper tenancy, logger che dữ liệu, Fastify, Drizzle, drizzle-kit trong catalog) — Sẵn sàng, chưa merge (nhánh <code>platform/ts-core-tenancy-logging</code>); chặn S01, S03 tới khi merge</li>
+<li><a href="../../PID-00158/index.html">PID-00158</a> (helper khai báo state machine, sinh SQL, so dòng; <code>libs/ts/platform/src/state-machine/</code>) — mới, chưa làm; chặn S02 tới khi merge</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/identity/migrations/</code>: custom migration SQL đầu, lệnh migrate → S01; SQL dòng <code>state_transition</code> sinh từ khai báo → S02</li>
+<li>O2 <code>apps/identity/src/envelope/</code> (tạo mới): module envelope và cổng KMS → S03; adapter KMS cục bộ → S04. Khai báo state machine trong module domain của identity (tạo mới) → S02</li>
+<li>O3 <code>apps/identity/src/envelope/envelope.spec.ts</code>, <code>apps/identity/src/migration.spec.ts</code> (tạo mới): test theo AC và test hành vi DDL → S01–S04</li>
+<li>O4 <code>apps/identity/README.md</code>: entity sở hữu, bản sao chỉ đọc, cách chạy migration, cấu hình KMS cục bộ → S01, S04</li>
+<li>O5 <code>apps/identity/deploy/values.yaml</code>: <code>migration.enabled</code>, <code>migration.command</code> → S01</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>KEK = khóa bọc trong KMS (<code>sires-provider-keys</code>); DEK = khóa dữ liệu ngẫu nhiên cho mỗi lần lưu; wrapped DEK = DEK đã bọc bằng KEK.</li>
+<li><code>kek_version</code> (cột DDL) ↔ <code>kekKeyId</code> (trường hợp đồng): cùng một giá trị, là id khóa KMS đã bọc DEK (KMS cục bộ: id khóa trong cấu hình; KMS thật: id hoặc tên phiên bản khóa KMS trả về) — H4.</li>
+<li>API key = khóa provider của Researcher trong Provider Connection (PRD 1.5, SCOPE-13).</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00016</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00016 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

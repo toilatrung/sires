@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ghi chú thiết kế PID-00016.">
+<title>PID-00016 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00016</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00016</p><h1>PID-00016 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#van-hanh">Vận hành</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Các điều dưới đây chốt ngày 18/11/2026 khi PO chấp nhận đề xuất của phiếu I1–I5 và quyết định chung D1–D6 (H1–H7 ở <a href="../index.html#phien-2">trang ticket</a>). Quy tắc dẫn xuất thẳng từ DDL, kiến trúc và hợp đồng ghi ở <a href="../specs/brief.html">specs/brief.html</a>.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li><code>kek_version</code> = id khóa KMS đã bọc DEK (KMS cục bộ: id khóa trong cấu hình; KMS thật: id hoặc tên phiên bản khóa KMS trả về); tag GCM 16 byte nối cuối <code>ciphertext</code> (H4).</li>
+<li>Wrapped DEK của KMS cục bộ = nonce 12 byte, rồi ciphertext có tag 16 byte — định dạng <code>encrypt</code> của <code>sires_common.testing.LocalKms</code>, không AAD (H1).</li>
+<li>Migration đầu là custom migration SQL của drizzle-kit (có journal) chép phần chung của <code>00-common.sql</code> và <code>identity.sql</code> trừ khối <code>INSERT INTO app.state_transition</code>; chạy bằng <code>migrate()</code> của drizzle-orm; chỉ tiến; vai trò không nằm trong migration; schema Drizzle bằng TypeScript thuộc phần tính năng (H5, H6; <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>).</li>
+<li>Dòng <code>app.state_transition</code> sinh từ khai báo <code>account</code>, <code>provider_connection</code> trong module domain của identity bằng helper của <a href="../../PID-00158/index.html">PID-00158</a>; SQL sinh ra đặt vào migration; PID-00041, PID-00042 dùng lại khai báo (H3, D2).</li></ul>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<ul><li>Không có API mới. <code>kekKeyId</code> của <code>ProviderSecretEnvelope</code> là giá trị của <code>kek_version</code> (PID-00062 trả ra, H4).</li></ul>
+<h2 id="van-hanh">Vận hành</h2>
+<ul><li>KMS cục bộ đọc KEK 32 byte và id khóa từ cấu hình (biến môi trường, <code>.env</code> cục bộ không commit); thiếu cấu hình thì identity không khởi động; tên cấu hình ghi README (H1).</li>
+<li>Lệnh migrate là mã của service chạy trong image; giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> ở <code>apps/identity/deploy/values.yaml</code>; Job đọc giá trị thuộc chart chung của PID-00010 (H6).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có (ticket không có màn hình).</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00016</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ghi chú thiết kế PID-00016 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

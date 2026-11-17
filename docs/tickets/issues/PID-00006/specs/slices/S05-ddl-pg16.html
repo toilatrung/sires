@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của PID-00006: dựng 11 database từ 12 file DDL tham chiếu trên PostgreSQL 16 + pgvector.">
+<title>PID-00006 — S05 DDL trên PostgreSQL 16 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>S05 — DDL tham chiếu trên PostgreSQL 16 + pgvector</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00006-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC10 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (project <code>libs/ts/sample-service</code>); <a href="../../../PID-00004/index.html">PID-00004</a> (<code>startPostgres</code>) đã merge. Không cần PID-00002, PID-00003.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Test <code>libs/ts/sample-service/src/ddl-pg16.spec.ts</code> (tạo mới) dùng một container <code>startPostgres</code> (image <code>pgvector/pgvector:pg16</code>). Với mỗi service có file DDL trong <code>docs/database/ddl/</code> (<code>agent-core</code>, <code>audit</code>, <code>gateway</code>, <code>identity</code>, <code>knowledge</code>, <code>library</code>, <code>manuscript</code>, <code>orchestration</code>, <code>planning</code>, <code>research</code>, <code>workspace</code>): tạo database riêng, tạo vai trò <code>sires_&lt;svc&gt;_app</code>, <code>_system</code>, <code>_purge</code> (database 3.2; D4), chạy <code>00-common.sql</code> rồi <code>&lt;svc&gt;.sql</code> (đọc file, không sửa).</li>
+<li>Kiểm cả 11 database dựng không lỗi; ở database của knowledge kiểm extension <code>vector</code> có phiên bản ≥ 0.8, bảng vector mẫu có cột <code>vector(1536)</code> và index HNSW đã tạo (database 12.4 “Chưa kiểm”).</li>
+<li>Lỗi ở một file (EC10): thông báo của test nêu đúng service, file và câu lệnh lỗi. Dev ghi DBQ trong <code>report.md</code> (mục Đề xuất cho PO), không sửa <code>docs/database/ddl/</code> và không bỏ qua file lỗi trong test; slice chưa xong tới khi PO sửa DDL.</li>
+<li>Ghi vào <code>report.md</code> phiên bản PostgreSQL, pgvector của lần chạy và kết quả từng database, để PO ghi vào database 12.4. Bộ test hành vi DDL của từng service không làm ở đây (N9, H7).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/sample-service:test</code> → đạt (cần Docker)</li>
+<li><code>libs/ts/sample-service/src/ddl-pg16.spec.ts › dựng 11 database từ DDL tham chiếu</code> (PID-00006-AC04; EC10)</li>
+<li>Thao tác tay: chạy lại EC06 (không mạng ngoài) với cả bộ test sau slice này</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Cả 11 database dựng không lỗi trên PostgreSQL 16 + pgvector ≥ 0.8; kết quả ghi trong <code>report.md</code> cho PO.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00006</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00006 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

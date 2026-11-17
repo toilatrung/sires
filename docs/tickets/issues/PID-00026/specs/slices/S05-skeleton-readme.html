@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00026: khung module con và README.">
+<title>S05 — Khung module con và README | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>S05 — Khung module con và README</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Bản 17/11/2026 là S03; đổi thành S05 ngày 18/11/2026 để chạy sau S03, S04 mới (README mô tả cả lệnh migrate, khai báo state machine và test hành vi DDL).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (ticket Gồm “Khung <code>extraction</code>, <code>chunking</code>, <code>embedding</code>, <code>retrieval</code>; README”, không có AC riêng)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>—</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02, S03, S04 (README mô tả revision, khai báo, lệnh migrate, test)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Bốn gói <code>extraction</code>, <code>chunking</code>, <code>embedding</code>, <code>retrieval</code> trong <code>apps/knowledge/src/knowledge/</code> đã có từ scaffold (chỉ chú thích giấy phép): thêm docstring phạm vi theo tickets 1.6 và kiến trúc 7 (trích xuất PDF bằng pypdfium2 + pdfplumber theo ADR-15; chunking giữ vị trí trang và đoạn; embedding bằng key của người dùng, tách bảng theo model; truy xuất lai có lọc theo tài khoản, project, reference). Không thêm logic hay phụ thuộc.</li>
+<li>Sửa <code>apps/knowledge/README.md</code> (có sẵn): bảng entity sở hữu theo DDL (SourceDocument, Chunk; bảng kỹ thuật <code>chunk_text</code>, <code>vec.emb_*</code>, <code>embedding_model_catalog</code>, <code>indexing_job</code>, <code>embedding_usage</code> — database 3.4); dòng “Bản sao chỉ đọc” liệt kê bốn bảng <code>replica.*</code> và sự kiện nguồn (database 3.5; consumer chưa có, N3); ghi danh mục model đang là mẫu chờ DBQ-05.</li>
+<li>Thêm mục chạy revision: quy ước D1 (SQL chép từ DDL, Alembic trên SQLAlchemy async và asyncpg, chỉ tiến); biến DSN của migrator; <code>alembic upgrade head</code> cục bộ (ghi rõ: tới khi PID-00159 xong, môi trường cục bộ chưa có vai trò <code>sires_knowledge_*</code> nên lệnh <code>GRANT</code> lỗi), trong test (fixture <code>sires_common</code>) và trong image (lệnh của S03, <code>migration.enabled</code>, <code>migration.command</code> ở <code>deploy/values.yaml</code>, Job của PID-00010); cách chạy test trên máy có Smart App Control (dẫn PID-00005 <code>report.md</code> Lần 3).</li>
+<li>Mục “State machine”: vị trí khai báo <code>indexing_job</code> (S02), helper Python của PID-00158 sinh dòng <code>app.state_transition</code>; đổi state machine = sửa khai báo rồi thêm revision mới, không sửa tay bảng. Mục “Kiểm thử”: test so schema, test hành vi DDL (S04).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run knowledge:lint</code>, <code>pnpm nx run knowledge:typecheck</code>, <code>pnpm nx run knowledge:test</code> → đạt (test <code>/health</code> có sẵn vẫn đạt)</li>
+<li>Đọc lại: mọi bảng của <code>docs/database/ddl/knowledge.sql</code> và bốn bản sao có trong README; đường dẫn trong README tồn tại; lệnh migrate trong README trùng <code>migration.command</code></li>
+<li><code>node scripts/docs/add-license.mjs --check</code> → 0 file thiếu</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Bốn module có docstring phạm vi; README nêu đủ entity sở hữu, bản sao chỉ đọc, khai báo state machine và cách chạy revision cục bộ, trong test, trong image</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00026</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

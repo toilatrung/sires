@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ghi chú thiết kế PID-00006.">
+<title>PID-00006 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>PID-00006 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#ma-va-ci">Mã và CI</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Các điều dưới đây chốt ngày 18/11/2026 khi PO chấp nhận đề xuất của phiếu I1–I5 và quyết định chung D1–D6 (H1–H8 ở <a href="../index.html#phien-2">trang ticket</a>). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li>Schema của service mẫu dựng bằng migration, không bằng SQL riêng trong test: migration đầu là custom migration SQL của drizzle-kit (có journal) gồm phần chung chép từ <code>00-common.sql</code> và SQL bảng mẫu; chạy bằng <code>migrate()</code> của drizzle-orm qua target Nx riêng; chỉ tiến (H2, H6; <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>).</li>
+<li>Schema Drizzle bằng TypeScript của bảng mẫu viết ở phần tính năng (S02), không ở slice migration (D1).</li>
+<li>Vai trò database không nằm trong migration; test tự tạo vai trò cần dùng tới khi <a href="../../PID-00159/index.html">PID-00159</a> cho compose tạo (H6, D4).</li>
+<li>Kiểm DDL trên PostgreSQL 16 + pgvector ≥ 0.8: chạy nguyên văn 12 file trong <code>docs/database/ddl/</code>, mỗi service một database, không chép DDL vào repo mã (H3). Test hành vi DDL của từng service thuộc PID migration của service đó (H7, D3).</li></ul>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<ul><li>Endpoint nội bộ của service mẫu chỉ có trong service mẫu, không thêm vào <code>docs/api-design</code>; gắn service-auth guard của PID-00003, danh sách bên gọi khai theo route trong mã (H4).</li></ul>
+<h2 id="ma-va-ci">Mã và CI</h2>
+<ul><li>Service mẫu là project Nx riêng <code>libs/ts/sample-service</code> (<code>@sires/sample-service</code>), không project nào phụ thuộc; <code>@sires/testing</code> không thêm NestJS (H1).</li>
+<li>Đo SPK-10 trên PR của chính ticket: 5 lần chạy cùng PR với <code>ci.yml</code> hiện tại, không Nx remote cache; đạt khi cả 5 lần dưới 10 phút (H5).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có (ticket không có màn hình).</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00006</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ghi chú thiết kế PID-00006 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

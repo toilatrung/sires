@@ -1,0 +1,88 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00009.">
+<title>PID-00009 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>PID-00009 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, gộp yêu cầu PO 12/11/2026, 16/11/2026 đã có trong ticket và spec. Làm rõ 17/11/2026 theo lô PH-01; ngày 18/11/2026 PO chấp nhận đề xuất của cả chín phiếu, đã gộp thành H1–H10 (trang ticket, mục 5). Không còn điểm chưa chốt; phiếu I1–I9 ở <a href="../others/issues.html">others/issues.html</a> giữ làm biên bản. Mỗi dòng dẫn nguồn.</p>
+
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là System (GitHub Actions trên runner của GitHub). Mỗi pull request và mỗi push vào <code>main</code> chạy CI: kiểm thay đổi trước, rồi chạy đúng các job cần cho thay đổi đó (PR vào <code>develop</code>) hoặc mọi job (PR vào <code>main</code>, push vào <code>main</code>). CI có thêm contract test, kiểm payload theo AsyncAPI, Redocly lint, quét secret và phụ thuộc, build image, cache Nx, và ghi thời gian từng job. Mục tiêu cổng PH-01: PR chạm một service NestJS xong CI dưới 10 phút.</p>
+
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Job đầu tiên tính thay đổi so với merge-base của nhánh đích: project Nx bị ảnh hưởng và nhóm thay đổi (TS, Python, hợp đồng <code>docs/api-design</code>, tài liệu, Dockerfile/Helm/Terraform, workflow và file dùng chung); job khác đọc kết quả này — spec 4.4; kiến trúc <a href="../../../../architecture/sections/11-deployment-and-operations.html#s-11-3">11.3</a> (PO 12/11/2026)</li>
+<li>PR vào <code>develop</code>: job không liên quan bỏ qua bằng <code>if:</code> ở mức job (skipped được tính là đạt); không lọc bằng <code>paths</code> ở mức workflow vì check bắt buộc sẽ treo “Expected” — spec 4.4, 4.7</li>
+<li>PR vào <code>main</code> và push vào <code>main</code>: mọi job, mọi project, vẫn dùng Nx cache — spec 4.4; AC06</li>
+<li>Tới khi <a href="../../PID-00035/index.html">PID-00035</a> xong, mọi PR tính năng vẫn vào <code>main</code> nên thực tế chạy toàn bộ; chế độ lọc chỉ kiểm được bằng PR thử vào <code>develop</code> — <a href="../../../sections/04-dependencies-risks-and-questions.html#oq-111">OQ-111</a></li>
+<li>Không tính được thay đổi (job lỗi, thiếu merge-base, clone nông) hoặc sửa file dùng chung → chạy toàn bộ — spec 4.7</li>
+<li><code>tracks</code> và <code>build</code> là check bắt buộc của ruleset <code>protect-main-develop</code>: giữ hai tên này; <code>build</code> thành job tổng chờ mọi job, đạt khi mọi job đạt hoặc skipped — spec 4.7; AGENT.md mục Git</li>
+<li>Hủy lần chạy cũ khi PR có push mới; không hủy lần chạy của push vào <code>main</code>; cache pnpm, uv, Nx, layer Docker; job độc lập chạy song song; mỗi job có <code>timeout-minutes</code>; thời gian từng job trong job summary — spec 4.4, B9; AC07, AC08</li>
+<li>Ngưỡng ngoài AC01 (PR không chạm code, lần chạy toàn bộ trên <code>main</code>) = p95 của 20 lần chạy gần nhất cộng 20%; Dev ghi số đo vào <code>report.md</code>, PO thêm thành AC — <a href="../../../sections/04-dependencies-risks-and-questions.html#oq-112">OQ-112</a>. PID xong khi AC01–AC08 đạt: <code>report.md</code> có số đo đã có, số lần chạy mỗi loại và lệnh tính p95 cộng 20% (lệnh ở lại repo); khi đủ 20 lần (loại có lọc: sau PID-00035) PO hoặc Dev chạy lại lệnh, PO thêm AC, không mở lại PID này — H5</li>
+<li>AC01 (dưới 10 phút) kết luận bằng lần chạy thường: PR mới vào <code>develop</code> có cache của <code>main</code>; lần không cache ghi để tham khảo — H4</li>
+<li>Contract test bằng Schemathesis cho OpenAPI nội bộ của service bị ảnh hưởng, kiểm payload theo AsyncAPI — kiến trúc 11.3; <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-14">ADR-14</a>. Mỗi project tự tham gia bằng target Nx của mình (một cho Schemathesis, một cho kiểm payload) khi đã có operation hay sự kiện; PID này làm runner, bộ kiểm dùng chung, job chạy target cho project bị ảnh hưởng (chế độ toàn bộ: mọi project có target) và bộ tự kiểm trong thư mục infra; hôm nay chưa project nào có target nên job chỉ chạy bộ tự kiểm — H2</li>
+<li>Quét phụ thuộc thất bại khi có lỗ hổng High hoặc Critical đã có phiên bản sửa; mức khác và lỗ hổng chưa có bản sửa ghi vào job summary; ngoại lệ khai trong file cấu hình của luồng infra kèm lý do, PO xem khi review PR — H3</li>
+<li>Kiểm chart Helm bằng <code>check-charts.mjs</code> (PID-00010) khi chart chung hoặc <code>apps/&lt;service&gt;/deploy/values.yaml</code> đổi; <code>terraform fmt -check</code>, <code>validate</code> khi <code>infra/terraform</code> đổi; chế độ toàn bộ chạy cả hai — H6</li>
+<li>Redocly lint khi sửa spec bằng ba lệnh ở <code>docs/api-design/README.md</code> (<code>@redocly/cli@2.11.1</code>) — kiến trúc 11.3; spec B3. Cùng job bundle OpenAPI ra thư mục tạm bằng cùng phiên bản Redocly và so với <code>docs/api-design/dist/openapi.bundled.yaml</code> (bỏ qua khác biệt ký tự xuống dòng); lệch thì thất bại và in lệnh bundle — H9</li>
+<li>Build image cho service bị ảnh hưởng; đẩy image lên registry thuộc pipeline deploy khi merge vào <code>develop</code> — kiến trúc 11.3; ticket “Không gồm” <a href="../../PID-00035/index.html">PID-00035</a></li>
+<li>Nx affected và remote cache là công cụ đã chốt — <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-21">ADR-21</a>. Cache Nx trong CI chỉ dùng cache của GitHub Actions: không dịch vụ ngoài, không tài khoản hay secret, <code>nx.json</code> giữ <code>neverConnectToCloud</code>, PR không ghi vào cache của <code>main</code> — H1</li>
+<li>Cài phụ thuộc Python trong CI bằng <code>uv sync --all-packages --locked</code> (lock lệch thì thất bại, như <code>pnpm install --frozen-lockfile</code>) — H7</li>
+<li><code>pnpm-lock.yaml</code>, <code>uv.lock</code> không tính là luồng trong <code>check-tracks.mjs</code> (như <code>docs</code>, <code>repo</code>); job kiểm thay đổi vẫn coi lock file là file dùng chung — H8</li>
+<li>CI chạy trên runner của GitHub, repo private — kiến trúc 11.3 (AQ-02, ADR-28)</li>
+<li>Một PR một luồng: PID này chỉ sửa thư mục của luồng <code>infra</code> (<code>.github/workflows/</code>, <code>scripts/development/</code>, <code>infra/</code>, file cấu hình gốc); không sửa <code>project.json</code>, <code>package.json</code> của luồng khác — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-1">1.4.1</a>, mục 1.3</li>
+<li>Dev tự QC trước khi đặt “Xong — chờ QC”: <code>self-qc.md</code> và spec-converge-skill trên chính ticket; PO QC độc lập và merge — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a></li></ul>
+
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>.github/workflows/ci.yml</code> — có: job <code>tracks</code> (chỉ PR, <code>check-tracks.mjs --base origin/&lt;base_ref&gt;</code>) và job <code>build</code> (add-license, update-index, <code>pnpm install --frozen-lockfile</code>, <code>uv sync --all-packages</code> không khóa, <code>nx-set-shas</code>, <code>nx affected -t lint typecheck test build</code>); trigger <code>pull_request</code> mọi nhánh, <code>push</code> vào <code>main</code></li>
+<li><code>nx.json</code> — có: <code>defaultBase: main</code>, <code>neverConnectToCloud: true</code>, cache bật cho build, typecheck, lint, test; <code>sharedGlobals</code> chỉ gồm <code>tsconfig.base.json</code>, <code>pnpm-workspace.yaml</code>, <code>eslint.config.mjs</code> (không có <code>pyproject.toml</code> gốc, <code>uv.lock</code>, <code>.python-version</code>)</li>
+<li>Project Python khai bằng <code>project.json</code> (<code>agent-core</code>, <code>knowledge</code>, <code>eval</code>, <code>sires-common</code>), không có <code>implicitDependencies</code>; <code>agent-core</code>, <code>knowledge</code> dùng <code>sires-common</code> qua uv workspace, <code>eval</code> dùng <code>agent-core</code>, <code>knowledge</code>; <code>eval</code> chỉ có lint, typecheck. Các <code>project.json</code> này thuộc luồng khác — có (thiếu cạnh phụ thuộc trong đồ thị Nx)</li>
+<li><code>@sires/contracts</code> có target <code>generate</code> với input <code>docs/api-design/**/*.yaml</code> — có</li>
+<li>12 service có <code>apps/&lt;service&gt;/deploy/values.yaml</code> (mọi service trừ <code>web</code>); Dockerfile chung <code>infra/docker/node/Dockerfile</code> (build-arg <code>SERVICE</code>), <code>infra/docker/python/Dockerfile</code> (build-arg <code>PACKAGE</code>, <code>MODULE</code>; dùng <code>uv sync --frozen</code>) — có</li>
+<li><code>scripts/development/check-tracks.mjs</code> — có; ánh xạ <code>pnpm-lock.yaml</code>, <code>uv.lock</code> vào luồng infra, trong khi <code>.github/CODEOWNERS</code> ghi lock file không gán chủ; sửa ở S01 (H8)</li>
+<li><code>scripts/docs/add-license.mjs</code> — có; <code>SKIP_DIRS</code> chưa bỏ qua <code>.ruff_cache</code>, <code>.mypy_cache</code>, <code>.pytest_cache</code> (Phải sửa ở nguồn, EC09)</li>
+<li><code>docs/api-design</code>: ba lệnh Redocly lint ở README đều đạt khi chạy ngày 17/11/2026 — có</li>
+<li><code>uv.lock</code> đã commit — có; CI chuyển sang <code>--locked</code> (H7)</li>
+<li><a href="../../PID-00008/index.html">PID-00008</a> <code>libs/ts/contracts/scripts/check-drift.mjs</code> — thiếu (chưa làm; S04 chờ)</li>
+<li>Nhánh <code>develop</code> lệch <code>main</code> 27 commit (theo <code>origin</code>, 17/11/2026); PR thử vào <code>develop</code> cần PO đồng bộ trước (EC11)</li>
+<li><a href="../../PID-00010/index.html">PID-00010</a> (<code>check-charts.mjs</code>), <a href="../../PID-00011/index.html">PID-00011</a> (Terraform) — chưa làm (Đ1, Sẵn sàng); PID này gắn chúng vào CI ở S11, S12 khi đã merge (H6)</li></ul>
+
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>.github/workflows/ci.yml</code> (có sẵn): job kiểm thay đổi, chế độ theo nhánh đích, job tài liệu, TS, Python, hợp đồng (lint, bundle, lệch spec), secret, phụ thuộc, image, contract test, payload, chart Helm, Terraform, job tổng <code>build</code>, <code>concurrency</code>, cache, <code>timeout-minutes</code>, job summary → S01, S03–S09, S11, S12</li>
+<li>O2 <code>nx.json</code> (có sẵn): plugin phụ thuộc Python, input cache cho file gốc Python; cache Nx qua cache của GitHub Actions, giữ <code>neverConnectToCloud</code> (H1) → S02, S03</li>
+<li><code>scripts/development/check-tracks.mjs</code> (có sẵn): lock file không tính là luồng (H8) → S01</li>
+<li>Script và cấu hình mới trong thư mục của luồng infra (script kiểm thay đổi, plugin Python cho Nx nếu tự viết, cấu hình quét, runner và bộ kiểm dùng chung kèm README hướng dẫn luồng service, bộ tự kiểm, lệnh tính ngưỡng OQ-112) — tạo mới, Dev chọn tên, ghi <code>implement.md</code> → S01, S02, S05, S06, S08, S09, S10</li>
+<li>Số đo thời gian và ngưỡng OQ-112 trong <code>agent/execution/PID-00009/report.md</code> → S10</li></ul>
+
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Chế độ lọc = PR vào <code>develop</code>, chỉ chạy job liên quan tới thay đổi; chế độ toàn bộ = PR vào <code>main</code>, push vào <code>main</code>, và mọi trường hợp không tính được thay đổi</li>
+<li>Nhóm thay đổi = loại file bị sửa (TS, Python, hợp đồng, tài liệu, Dockerfile/Helm/Terraform, workflow và file dùng chung), do job kiểm thay đổi xuất ra</li>
+<li>Job tổng <code>build</code> = job cuối chờ mọi job, là check bắt buộc của ruleset</li>
+<li>PR thử = pull request chỉ để kiểm CI, không merge, đóng và xóa nhánh sau khi kiểm</li>
+<li>Bộ tự kiểm = service nhỏ trả đúng và sai schema, payload đúng và sai, đặt trong thư mục luồng infra, để kiểm runner contract test và bộ kiểm payload khi chưa service nào tham gia (H2)</li>
+<li>Target tham gia = target Nx do project tự khai trong thư mục của mình để job contract test, kiểm payload chạy (H2); tên và cách khai theo README của runner</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00009</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

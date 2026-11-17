@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00026: test hành vi DDL trên database dựng từ revision.">
+<title>S04 — Test hành vi DDL trên database dựng từ revision | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>S04 — Test hành vi DDL trên database dựng từ revision</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Thêm 18/11/2026 theo H2 (I2-A) và quyết định chung D3 (H6): đưa test hành vi DDL của knowledge vào CI như tickets PH-01 yêu cầu; kiểu <code>vector</code> và index HNSW chưa từng chạy thử (database 12.4) nên được kiểm ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00026-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B7</td></tr>
+<tr><th scope="row">Edge case</th><td>— (các ca nằm trong PID-00026-AC02)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>apps/knowledge/tests/test_ddl_behaviour.py</code> (tạo mới) trên database dựng từ revision (S01), vai trò tạo bằng <code>create_service_database</code> của <code>sires_common.testing.fixtures</code> trên <code>pgvector/pgvector:pg16</code> (D4: tới khi PID-00159 xong).</li>
+<li>Dữ liệu mồi: hai tài khoản A, B; dòng <code>replica.*</code> ghi bằng <code>_system</code> (<code>_app</code> chỉ đọc <code>replica.*</code>); <code>source_document</code>, <code>chunk</code>, <code>chunk_text</code>, một vector 1.536 chiều ở <code>vec.emb_openai_text_embedding_3_small</code>, <code>indexing_job</code> cho từng tài khoản.</li>
+<li>Mỗi ca của PID-00026-AC02 (<code>specs/acceptance.html</code>) một test, chạy bằng vai trò <code>sires_knowledge_app</code> (ca 4 thêm <code>_system</code>) trong giao dịch đặt <code>app.account_id</code>. Kỳ vọng lấy từ <code>knowledge.sql</code> và <code>00-common.sql</code>, không đặt số mới (số chiều 1.536 là của dòng mẫu trong DDL); mỗi nhóm kèm một ca hợp lệ đối chứng đi qua.</li>
+<li>Kiểu <code>vector</code>, index HNSW hoặc hành vi khác chạy trên PostgreSQL 16 + pgvector khác DDL → dừng, ghi “Cần PO”; không sửa SQL so với DDL.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run knowledge:test</code> → đạt (cần Docker; trên máy PO chạy pytest bằng trình thông dịch gốc của uv, ghi rõ trong <code>self-qc.md</code>)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_rls_blocks_cross_account</code> (PID-00026-AC02, ca 1)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_chunk_text_tsv</code> (ca 2)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_duplicate_indexing_job_rejected</code> (ca 3, DATA-IDEMP-005)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_catalog_read_only</code> (ca 4)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_source_document_delete_cascades</code> (ca 5)</li>
+<li>Test: <code>apps/knowledge/tests/test_ddl_behaviour.py › test_vector_roundtrip_hnsw</code> (ca 6)</li>
+<li>Ghi vào <code>report.md</code> phiên bản pgvector của image test</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi ca của PID-00026-AC02 có test đạt trên PostgreSQL 16 + pgvector và chạy trong CI cùng <code>knowledge:test</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00026</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

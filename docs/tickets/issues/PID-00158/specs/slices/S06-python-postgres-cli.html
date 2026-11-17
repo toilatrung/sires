@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00158.">
+<title>S06 — Python: test PostgreSQL, lệnh in SQL, README | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S06 — Python: test PostgreSQL, lệnh in SQL, README</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC04 (knowledge, planning), PID-00158-AC05 (trên database), PID-00158-AC06 (phần Python)</td></tr>
+<tr><th scope="row">Output spec</th><td>O9 (<code>main</code>), O10 (<code>test_state_machine_pg.py</code>, <code>test_state_machine_cli.py</code>), O11 (README Python)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B7</td></tr>
+<tr><th scope="row">Edge case</th><td>EC11–EC13, EC16–EC19 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S05; Docker</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>libs/py/sires_common/tests/test_state_machine_pg.py</code> (tạo mới) với fixture <code>sires_postgres</code> (<code>sires_common.testing.fixtures</code>, đã nạp ở <code>conftest.py</code>) và <code>asyncpg</code>: tạo một database tạm, chạy <code>docs/database/ddl/00-common.sql</code>. <code>test_ddl_rows_knowledge_planning</code>: với <code>knowledge.sql</code> và <code>planning.sql</code>, chạy câu INSERT của DDL, đọc dòng, xóa bảng, khai báo lại bằng <code>define_state_machine</code>, chạy từng câu của <code>state_transition_statements</code> bằng <code>execute</code> riêng (EC19), so dòng; chạy lại, so lần nữa (EC12). <code>test_sync_one_machine</code>: như S03 bước 4 (EC11, EC13).</li>
+<li><code>main(argv)</code> trong <code>state_machine.py</code> và khối <code>if __name__ == "__main__"</code>: tham số 1 là đường dẫn module Python (dạng <code>a.b.c</code>), tham số 2 là tên thuộc tính (mặc định <code>STATE_MACHINES</code>); nạp bằng <code>importlib.import_module</code>; phần tử là <code>StateMachine</code> hay dict cùng hình (đi lại qua <code>define_state_machine</code>); in <code>render_state_transition_sql</code> ra stdout; lỗi → stderr, stdout rỗng, trả 1 (EC17).</li>
+<li>Viết <code>libs/py/sires_common/tests/test_state_machine_cli.py</code> (tạo mới): module mẫu tạo trong <code>tmp_path</code> và thêm vào <code>sys.path</code> (hay <code>monkeypatch.syspath_prepend</code>), xuất <code>STATE_MACHINES</code> từ <code>golden-machines.json</code>; <code>test_cli_prints_sql</code> (stdout bằng <code>golden.txt</code>, trả 0, dùng <code>capsys</code>); <code>test_cli_errors</code> (module không có, thuộc tính không có, không phải danh sách: trả 1, stderr có lý do, stdout rỗng).</li>
+<li>Cập nhật <code>libs/py/sires_common/README.md</code> (có sẵn): thêm dòng <code>state_machine</code> vào bảng module; quy trình cho revision Alembic: khai báo trong mã domain của service, chạy <code>uv run python -m sires_common.state_machine &lt;module&gt;</code> để xem SQL, trong revision lặp <code>op.execute</code> trên danh sách câu đã dán (EC19); đổi khai báo về sau là revision mới (EC18); test so dòng sau <code>alembic upgrade head</code> bằng <code>compare_state_transition_rows</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run sires-common:test</code> → đạt (cần Docker); <code>sires-common:typecheck</code>, <code>sires-common:lint</code> → đạt</li>
+<li>Test: <code>test_state_machine_pg.py › test_ddl_rows_knowledge_planning</code> (PID-00158-AC04; EC12, EC19)</li>
+<li>Test: <code>test_state_machine_pg.py › test_sync_one_machine</code> (PID-00158-AC05; EC11, EC13)</li>
+<li>Test: <code>test_state_machine_cli.py › test_cli_prints_sql</code>, <code>› test_cli_errors</code> (PID-00158-AC06; EC17)</li>
+<li>Thao tác tay (EC16): tắt Docker, chạy lại, thấy lỗi rõ ở <code>test_state_machine_pg.py</code>; các file test khác vẫn đạt.</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Dòng sinh từ bản Python bằng dòng DDL của knowledge và planning khi chạy từng câu qua asyncpg; đồng bộ chỉ chạm machine truyền vào; lệnh in đúng SQL; README Python đủ cho PID-00026 làm theo.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

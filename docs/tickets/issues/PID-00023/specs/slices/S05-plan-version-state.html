@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00023.">
+<title>S05 — State machine PlanVersion | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>S05 — State machine PlanVersion</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>DATA-STATE-001-AC02 (phần chuyển trạng thái), NFR-MAINT-003-AC01 (PlanVersion)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S03; <strong>PID-00158</strong> (kiểu khai báo, hàm sinh SQL — H2; chưa làm, ghi nhận không chặn Sẵn sàng). Phạm vi đã chốt (H4): PlanVersion khai báo ở PID này.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo H4: khai báo machine <code>plan_version</code> dạng dữ liệu trong module domain theo kiểu của PID-00158 (5 trạng thái Draft, Proposed, Approved, Superseded, Rejected; 4 cặp Draft → Proposed, Proposed → Approved với mã APR-01, Proposed → Rejected, Approved → Superseded), chỉ cặp, không điều kiện (kiểm cấu trúc 18.5, lý do bắt buộc, giao dịch duyệt ở PID-00049, PID đó dùng lại khai báo này).</li>
+<li>Sinh dòng <code>app.state_transition</code> cho <code>plan_version</code> bằng helper của PID-00158 vào custom migration sinh dòng như S03 (H2), không chép tay; test domain mọi cặp; test database: bảng khớp khai báo và DDL; trigger <code>plan_version_state</code> từ chối cặp ngoài bảng; trong một giao dịch Approved → Superseded rồi Proposed → Approved thì qua, thứ tự ngược lại bị partial unique từ chối (EC15).</li></ol>
+
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/planning:test</code> → đạt</li>
+<li>Test: <code>apps/planning/src/db/state-transition.spec.ts › plan_version</code> (DATA-STATE-001-AC02, NFR-MAINT-003-AC01; EC15)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>4 cặp PlanVersion có test hợp lệ, các cặp còn lại có test không hợp lệ, ở domain và database; dòng <code>plan_version</code> trong database sinh từ khai báo</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00023</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

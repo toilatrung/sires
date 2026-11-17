@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00029.">
+<title>PID-00029 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00029</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00029</p><h1>PID-00029 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, gộp mục Làm rõ 17/11/2026 của <a href="../index.html#s-5">trang ticket</a>. Câu trả lời H1–H6 của PO ngày 18/11/2026 (<a href="../index.html#phien-2">trang ticket, mục 5</a>) đã gộp vào; không còn điểm chưa chốt, <a href="../others/issues.html">phiếu I1</a> giữ làm biên bản. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng <code>research</code> dựng database <code>sires_research</code> bằng migration đúng DDL tham chiếu — Artifact, ArtifactVersion, Evidence, Claim, lịch sử Claim, liên kết Claim–Evidence, VerificationResult, bảng đầu vào provenance, và hai bản sao chỉ đọc từ <code>library</code> — kèm test hành vi DDL trên PostgreSQL 16, lệnh migrate và giá trị Helm của service, khai báo ba state machine dạng dữ liệu để sinh bảng chuyển trạng thái, rồi dựng khung module và README. Không có API, không nhận sự kiện ở PID này; các PID sau (PID-00052, PID-00106…) xây trên schema này.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>DDL tham chiếu là chuẩn; migration phải sinh ra cùng schema với <code>00-common.sql</code> chạy trước rồi <code>research.sql</code>; lệch thì ghi DBQ, không tự đổi schema — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>, <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a>, DEC-57, <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-6">quy tắc 1.4.6</a></li>
+<li>Bảng nền tảng <code>app.outbox</code>, <code>app.inbox</code>, <code>app.idempotency_key</code>, <code>app.job_lock</code>, <code>app.state_transition</code> và <code>replica.project_state</code> nằm trong migration của service — PID-00002 N5; DDL <code>research.sql</code> dòng 9</li>
+<li>Migration đầu là SQL chép từ <code>research.sql</code> cùng các đối tượng chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit (journal), chạy bằng <code>migrate()</code> của drizzle-orm; chỉ tiến; schema Drizzle bằng TypeScript do PID tính năng viết — H2 (quyết định chung D1); <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; database 12.4</li>
+<li>Service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> trong <code>apps/research/deploy/values.yaml</code>; image production không có drizzle-kit, Job migration chạy mã migrate trong image — H3 (D3); PID-00010 EC01</li>
+<li>Vai trò <code>sires_research_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> do hạ tầng tạo (compose cục bộ: PID-00159); migration không tạo; test tự tạo — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>; H4 (D4)</li>
+<li>Bảng <code>app.state_transition</code> sinh từ khai báo state machine của module domain, không viết tay — <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a> (DEC-57). PID này khai báo ba machine của <code>research</code> dạng dữ liệu trong mã domain của <code>research</code> và sinh dòng bằng helper của PID-00158; PID tính năng dùng lại khai báo — H1 (D2)</li>
+<li>Evidence chỉ tham chiếu Reference Trusted và được chọn Active cho project; bản sao chưa có dữ liệu thì Reference coi là chưa xác định, không coi là Trusted — PRD 18.5; DDL <code>tg_evidence_scope</code>; spec 4.7</li>
+<li>Mỗi Artifact tối đa một version Accepted; Accepted cần ApprovalRecord; Claim Accepted cần kết quả hỗ trợ đã đánh giá và ApprovalRecord — PRD 18.5; DDL</li>
+<li>Provenance bắt buộc với ArtifactVersion và với Evidence, Claim do agent tạo — DATA-PROV-001; DDL</li>
+<li>Bản sao chỉ đọc của <code>research</code>: <code>replica.project_state</code> (<code>project.lifecycle_changed</code>), <code>replica.reference_state</code> (<code>reference.status_changed</code>, <code>reference.deleted</code>), <code>replica.project_reference_scope</code> (<code>project_reference.changed</code>) — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-4">database 3.4</a>; kiến trúc 3.6.2</li>
+<li>Mỗi luồng service đưa test hành vi DDL vào CI cùng migration — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets 2, PH-01</a>; H3 (D3)</li>
+<li>PR vào <code>main</code> (OQ-111); tự QC gồm spec-converge-skill trước khi mở PR (DEC-58)</li>
+<li>Drizzle, drizzle-kit vào catalog qua PID-00001 — H5 (D5). PID phụ thuộc chưa làm (PID-00001, PID-00158) không chặn trạng thái Sẵn sàng; slice bắt đầu khi phần cần dùng đã merge — H6 (D6)</li>
+<li>Bất biến sản phẩm giữ bằng DDL ở PID này: artifact draft/accepted (một Accepted, cần phê duyệt), provenance bắt buộc, cách ly theo tài khoản (RLS) và theo project (khóa ngoại kèm <code>project_id</code>).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>apps/research/README.md</code>, <code>apps/research/src/app.module.ts</code>, <code>apps/research/src/app.module.spec.ts</code> — có</li>
+<li><code>apps/research/migrations/</code> — có, rỗng (<code>.gitkeep</code>)</li>
+<li><code>apps/research/package.json</code> — có; Nx project <code>@sires/research</code>, target <code>build</code>, <code>typecheck</code>, <code>lint</code>, <code>test</code> (Vitest); đã khai <code>@sires/testing</code></li>
+<li><code>libs/ts/platform/src/index.ts</code> — có; Drizzle chưa có; Drizzle, drizzle-kit vào catalog qua PID-00001 (chưa làm — H5)</li>
+<li><code>apps/research/deploy/values.yaml</code> — có (<code>service</code>, <code>image</code>, <code>port</code>, <code>replicas</code>); chưa có khóa <code>migration</code>; Job migration của chart do PID-00010 S02 thêm (chưa làm)</li>
+<li>Helper sinh dòng chuyển trạng thái (PID-00158) — chưa có</li>
+<li><code>libs/ts/testing</code> <code>startPostgres</code> — có (PID-00004)</li>
+<li><code>docs/database/ddl/00-common.sql</code>, <code>docs/database/ddl/research.sql</code> — có; 10 bảng như spec 2.3 cộng <code>replica.project_state</code>; chưa chạy trên PostgreSQL 16 (database 12.4)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/research/migrations/</code>: migration đầu tiên theo DDL → S01 (cấu trúc), S02 (dòng chuyển trạng thái sinh bằng helper)</li>
+<li>Lệnh migrate và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> trong <code>apps/research/deploy/values.yaml</code> (H3) → S01</li>
+<li>Khai báo ba state machine của <code>research</code> dạng dữ liệu (H1) → S02</li>
+<li>O2 <code>apps/research/src/</code>: khung module, mã chạy migration, test → S01, S03</li>
+<li>O3 <code>apps/research/README.md</code>: entity sở hữu, ba bảng sao chỉ đọc → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Evidence, Claim, Artifact, Artifact Version, Verification Result — glossary PRD 1.5; bảng tương ứng trong <code>research.sql</code>.</li>
+<li>Bản sao chỉ đọc = bảng trong schema <code>replica</code>, chỉ consumer sự kiện (vai trò <code>_system</code>) ghi.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00029</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00029 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

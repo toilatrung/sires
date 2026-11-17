@@ -1,0 +1,88 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00012.">
+<title>PID-00012 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>PID-00012 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Làm rõ 17/11/2026 theo lô PH-01; ngày 18/11/2026 PO chấp nhận đề xuất của chín phiếu I1–I9, đã gộp thành H1–H10 (trang ticket, mục 5). Còn mở phiếu I10 (cơ chế đánh dấu hoạt động, chặn S13) ở <a href="../others/issues.html#i10">others/issues.html</a>; ba slice chờ sửa nguồn (S11, S12, S14). Mỗi dòng dẫn nguồn.</p>
+
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher dùng SPA <code>web</code>. Shell là phần khung mọi khu vực dùng chung: TopBar, ProjectRail, routing theo IA PRD 4, token Cream và chuyển động, i18n vi/en, client API gọi gateway, client SSE <code>/events</code>, nhãn trạng thái chuẩn và trạng thái loading, empty, error. Sau làm rõ 18/11/2026 shell còn nối dữ liệu điều hướng, lưu ngôn ngữ vào Preferences, giữ nháp khi phiên hết hạn, cấp thẻ Interactive Agent Prompt, menu avatar với đăng xuất, và đánh dấu hoạt động của người dùng. Khu vực khác chỉ dùng shell qua API của nó (quy tắc 1.4.9, tickets 1.5), nên shell phải có trước để các khu vực làm song song.</p>
+
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Hai ngữ cảnh Global và Project; chỉ báo ngữ cảnh luôn hiện; chọn Global từ project đổi chỉ báo ngay — PRD <a href="../../../../overview/sections/04-information-architecture-and-navigation.html#s-4-3">4.3</a>; UX-LAYOUT-001, UX-LAYOUT-003</li>
+<li>TopBar ở Global: logo → Dashboard, bộ chuyển ngữ cảnh, tab Dashboard, Research Projects, Discover, Trusted Library, Tasks &amp; Plan, Agent Activity; bên phải Trợ lý, Pending Actions kèm số, chuông Notifications kèm số chưa đọc, VI/EN, Settings, avatar. Ở Project: bộ chuyển ghi “Project” và tên project, đường dẫn “Global / tên khu vực”, không có tab Global và Trợ lý — <code>docs/ui-design/pages/TopBar.html</code>, <code>Overview.html</code>; design.md §4</li>
+<li>ProjectRail 220–240px: tên project, trạng thái Plan, tám khu vực (Overview, Project AI Chat, Plan and Tasks, References and Evidence, Research Artifacts, Manuscript, Agent Activity, Activity and History), số việc chờ theo khu vực, ô Active task ở đáy; Manuscript ẩn rail — <code>ProjectRail.html</code>; design.md §4, §5</li>
+<li>Số trên TopBar và ProjectRail do shell nối: Pending Actions từ <code>openCount</code> của <code>GET /pending-actions</code>, chuông từ <code>unreadCount</code> của <code>GET /notifications</code>; số theo khu vực của rail từ <code>GET /pending-actions?projectId=</code>, nhóm theo cột “Xử lý tại” của PRD 4.4 (Interactive Agent Prompt → Project AI Chat; Plan approval request, Task review request, Manual work required → Plan and Tasks; Manuscript change proposal → Manuscript; Recovery decision → Agent Activity; Reference approval xử lý ở Trusted Library nên không thuộc khu vực nào của rail); bộ chuyển ngữ cảnh liệt kê Global và các project Active; cập nhật qua SSE — H1; PRD 4.4</li>
+<li>Địa chỉ theo PRD 4.3: <code>/dashboard</code>, <code>/projects/{projectId}/overview</code>…; mở lại sản phẩm về Dashboard; địa chỉ chỉ chứa định danh — PRD 4.3; <code>apps/web/README.md</code></li>
+<li>Ngôn ngữ mặc định theo Preferences; lần đầu theo trình duyệt, không xác định thì English; đổi ngôn ngữ áp dụng ngay, không mất trạng thái màn, không đổi nội dung nghiên cứu; thuật ngữ cố định và tên khu vực giữ tiếng Anh; ngày giờ và số theo ngôn ngữ giao diện, giờ theo múi giờ trình duyệt — UX-I18N-001–004; design.md §6</li>
+<li>Bấm VI/EN khi đã đăng nhập: áp dụng ngay rồi <code>PATCH /me/preferences</code> (<code>uiLanguage</code>) với <code>If-Match</code> theo <code>ETag</code> của <code>GET /me</code>; <code>412</code> thì đọc lại rồi gửi lại; lỗi khác thì giữ ngôn ngữ đã chọn trong phiên và báo lỗi theo UX-STATE-003 — H2</li>
+<li>Ngày giờ cùng mẫu ở hai ngôn ngữ: <code>dd/mm/yyyy</code>, <code>HH:mm</code> 24 giờ; số English dùng dấu phẩy ngăn nghìn, dấu chấm thập phân, tiếng Việt ngược lại — H3</li>
+<li>Mỗi khu vực một namespace i18n và route riêng; shell ghép qua <code>src/shell/features.ts</code> — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-9">1.4.9</a>; tickets 1.5</li>
+<li>Gọi gateway ở <code>/api/v1</code> bằng cookie <code>sires_session</code>; lệnh ghi gửi <code>X-CSRF-Token</code> lấy từ <code>GET /auth/session</code>; lệnh có tác động gửi <code>Idempotency-Key</code>; sửa bằng <code>If-Match</code> theo <code>ETag</code>; lỗi là problem+json với <code>code</code> thuộc <code>ErrorCode</code> để client dịch — <code>docs/api-design/openapi.yaml</code> (Quy ước chung); <code>components/schemas/common.yaml#/Problem</code></li>
+<li>SSE <code>GET /events</code>: mỗi bản ghi có <code>id</code>, <code>event</code> = <code>Event.type</code>, <code>data</code>; nối lại gửi <code>Last-Event-ID</code>; <code>chat.delta</code> không có id bền, không phát lại; quá xa thì client tải lại bằng GET — <code>paths/14-…yaml#/events</code>; <code>components/schemas/orchestration.yaml#/Event</code>. Hợp đồng sẽ có tín hiệu từ server khi <code>Last-Event-ID</code> không còn phát lại được; client phát “cần tải lại” chỉ khi nhận tín hiệu đó — H5 (chờ sửa nguồn)</li>
+<li>Phiên hết hạn khi đang dùng: báo và chuyển tới đăng nhập lại, giữ nội dung đang nhập; không đăng nhập dự phòng — UX-AUTH-002; INT-OIDC-003; spec 4.7. Nội dung giữ bằng kho nháp của shell: lưu cục bộ theo tài khoản và route, khu vực đăng ký ô nhập cần giữ, khôi phục sau đăng nhập, xóa khi gửi xong hoặc đăng xuất — H7</li>
+<li>Chỉ thao tác do người dùng gia hạn phiên (ADR-27): request do người dùng mang dấu hiệu hoạt động, request chạy nền (SSE, gọi lại sau sự kiện SSE) thì không — H6; cơ chế (header hay <code>GET /auth/session</code>) chờ phiếu I10</li>
+<li>Đăng xuất từ menu avatar trên TopBar (“Hồ sơ”, “Đăng xuất”), đăng xuất RP-initiated đưa trình duyệt tới trang kết thúc phiên của eTroy theo hợp đồng mới của <code>/auth/logout</code> — H9; INT-OIDC-003; DEC-55 (chờ sửa nguồn)</li>
+<li>Thao tác dài hiện bước, agent, thời gian đã chạy, hoạt động gần nhất; trống nêu lý do và hành động; lỗi nêu chuyện gì, đã lưu gì, làm gì tiếp, mã lỗi, không stack trace hay key — UX-STATE-001–003; design.md §2.4.1, §4 (<code>States</code>)</li>
+<li>Mỗi trạng thái chuẩn một nhãn, cùng chữ và kiểu ở mọi màn; tên trạng thái giữ tiếng Anh; chờ người dùng có dấu “cần bạn xử lý” — UX-STATUS-001; design.md §3. Bảng bổ sung PO duyệt (H4) dùng sau khi design.md §3 cập nhật</li>
+<li>Thẻ Interactive Agent Prompt là component trình bày của shell: Open, Answered, Expired, Cancelled; phương án dạng radio kèm hệ quả, không chọn sẵn kể cả “Đề xuất của agent”, nút xác nhận vô hiệu tới khi chọn, dùng được bằng bàn phím; khu vực truyền dữ liệu và callback, tự gọi API trả lời — H8; design.md §3, §4; UX-A11Y-002</li>
+<li>Token Cream, một nút chính mỗi màn, điều hướng màu trung tính, chuyển động subtle theo <code>motion.css</code>, reduced motion; WCAG 2.1 AA — DEC-18, DEC-51, DEC-52; design.md §2, §7, §8</li>
+<li>Responsive: đủ ở ≥ 1280px; tablet rail xếp xuống; điện thoại dưới 768px có header thu gọn và thanh tab dưới (Dashboard, Pending, Agent, Projects); không cuộn ngang ở 390px — design.md §5; <code>MobilePending.html</code>, <code>MobilePrompt.html</code>; UX-RESP-001</li>
+<li>Gói chỉ <code>web</code> dùng khai phiên bản trong <code>apps/web/package.json</code>; phiên bản dùng chung với luồng khác thuộc catalog của luồng infra — quy tắc 1.4.7</li>
+<li>Dev tự QC (<code>self-qc.md</code>, spec-converge-skill) trước “Xong — chờ QC”; PO QC độc lập và merge — DEC-58</li></ul>
+
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>apps/web/src/shell/</code> — có: <code>App.tsx</code> (khung tạm), <code>routes.tsx</code> (<code>/</code> → <code>/dashboard</code>, ghép route khu vực), <code>features.ts</code>, <code>feature.ts</code> (hợp đồng shell ↔ khu vực), <code>i18n.ts</code> (đang đặt cứng <code>lng: 'vi'</code>, khác UX-I18N-001), <code>Placeholder.tsx</code>, <code>styles/tokens.css</code> (token design.md §2), <code>styles/base.css</code>, test <code>i18n.spec.ts</code> (vi/en cùng khóa), <code>routes.spec.ts</code></li>
+<li><code>apps/web/src/features/*</code> — có tám khu vực placeholder, mỗi khu vực có route và namespace</li>
+<li><code>apps/web/package.json</code> — có; Nx project <code>@sires/web</code>; chưa có jsdom, Testing Library (phải thêm cho test giao diện)</li>
+<li><code>apps/web/vite.config.ts</code> — có; proxy <code>/api</code>, <code>/auth</code>, <code>/events</code> tới gateway</li>
+<li><code>@sires/contracts</code> — có <code>PublicApi</code> sinh từ <code>dist/openapi.bundled.yaml</code>, gồm <code>Event</code>, <code>Problem</code>, <code>ErrorCode</code></li>
+<li>Hợp đồng: <code>GET /auth/session</code> (<code>csrfToken</code>, <code>expiresAt</code>), <code>GET /me</code> (<code>preferences.uiLanguage</code>), <code>PATCH /me/preferences</code> (<code>If-Match</code>, CSRF, <code>x-apr: APR-09</code>), <code>GET /pending-actions</code> (<code>openCount</code>), <code>GET /notifications</code> (<code>unreadCount</code>), <code>GET /events</code> — có</li>
+<li>Màn tham chiếu: <code>Main</code>, <code>TopBar</code>, <code>ProjectRail</code>, <code>Components</code>, <code>States</code>, <code>Overview</code> (TopBar ngữ cảnh Project), <code>Manuscript</code> (không rail), <code>SignIn</code> và biến thể <code>session-expired</code> (không TopBar), <code>MobilePending</code>, <code>MobilePrompt</code> (khung điện thoại) — có</li>
+<li><code>docs/ui-design/assets/motion.css</code> — có; shell chép vào <code>apps/web/src/shell/styles/</code> (sires-ui-executor §4)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> ngày 17/11/2026: 0 lỗi, 1 cảnh báo (bóng của token <code>--sires-shadow-float</code>, đúng luật)</li>
+<li>Thiếu ở nguồn, PO đã chốt hướng ngày 18/11/2026: menu avatar và đăng xuất (H9 — sửa <code>docs/ui-design</code> TopBar, <code>/auth/logout</code>), kiểu cho trạng thái bổ sung (H4 — sửa design.md §3), tín hiệu SSE “không còn phát lại được” (H5 — sửa <code>/events</code>), cách đánh dấu hoạt động (H6, chờ I10)</li>
+<li><code>listPendingActions</code>, <code>listNotifications</code>, <code>listProjects</code>, <code>getProject</code>, <code>setActiveTask</code> (path 07), <code>updatePreferences</code>, <code>InteractiveAgentPrompt</code> — có trong OpenAPI công khai và <code>PublicApi</code></li>
+<li><a href="../../PID-00007/index.html">PID-00007</a> (type AsyncAPI) — chưa làm; shell chỉ cần <code>Event</code> trong OpenAPI công khai, đã sinh được (xem trang ticket mục 3)</li></ul>
+
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/web/src/shell/</code> (có sẵn, mở rộng): khung TopBar, ProjectRail, routing, i18n, client API, client SSE, trạng thái dùng chung → S01–S07; lưu ngôn ngữ, kho nháp, thẻ prompt, chip bổ sung, tải lại SSE, đánh dấu hoạt động, menu avatar và đăng xuất → S08–S14</li>
+<li>O2 <code>apps/web/src/shell/language-switch.spec.tsx</code> (tạo mới) → S01, S02</li>
+<li>O3 <code>apps/web/src/shell/sse.spec.ts</code> (tạo mới) → S05</li>
+<li>Test khác của shell, đặt tên <code>*.spec.ts(x)</code> theo quy ước sẵn có → từng slice</li></ul>
+
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Ngữ cảnh Global / Project = Global Workspace / Project Workspace (PRD 4.1, 4.2)</li>
+<li>Pending action, Notification = PRD 4.4; Active task = PRD 4.3</li>
+<li>Trạng thái chuẩn = trạng thái của entity ở PRD mục 5, 18.2 (tên tiếng Anh)</li>
+<li>Khu vực = khu vực tính năng của <code>web</code> ở tickets 1.5 (<code>web/shell</code>, <code>web/global</code>…)</li>
+<li>Kho nháp = nơi shell giữ nội dung chưa gửi của các ô nhập khu vực đã đăng ký, trên trình duyệt của người dùng (H7)</li>
+<li>Request chạy nền = request không do người dùng thao tác: kết nối SSE, nối lại, gọi lại sau sự kiện SSE, hẹn giờ (ADR-27, H6)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00012</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

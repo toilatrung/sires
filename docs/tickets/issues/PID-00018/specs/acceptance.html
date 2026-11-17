@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00018.">
+<title>PID-00018 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00018</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00018</p><h1>PID-00018 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test, gồm AC của ticket và AC requirement được phủ. Không có ngưỡng số nào chờ OQ.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00018-AC01</td><td>Given database sires_audit dựng từ migration (custom migration SQL của drizzle-kit chạy bằng migrate() của drizzle-orm — H1; schema khớp DDL tham chiếu) có một dòng app.audit_event, When vai trò sires_audit_app hoặc sires_audit_system chạy UPDATE hoặc DELETE dòng đó, Then bị từ chối (không có quyền); When vai trò sở hữu chạy UPDATE, Then trigger audit_event_append_only từ chối; dòng không đổi. Theo DDL, sires_audit_purge DELETE được (xóa cùng project hoặc tài khoản) — test ghi nhận, không coi là lỗi.</td><td><code>apps/audit/src/db/migration.spec.ts › schema khớp DDL tham chiếu</code>; <code>apps/audit/src/db/ddl-behaviour.spec.ts › không sửa được</code>; <code>› không xóa được trừ purge</code></td><td>S01, S02</td><td>ticket; audit.sql; database 9.1</td></tr>
+<tr><td>CTX-AUDIT-001-AC04</td><td>Phần database: Given Audit Event đã ghi, When actor bất kỳ (Researcher, agent, System qua vai trò _app hoặc _system) cố sửa hoặc xóa, Then bị từ chối. API không có thao tác sửa hay xóa (PID-00045).</td><td><code>apps/audit/src/db/ddl-behaviour.spec.ts › không sửa được</code>; <code>› không xóa được trừ purge</code></td><td>S02</td><td>PRD 14; database 9.1</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00018</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00018 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

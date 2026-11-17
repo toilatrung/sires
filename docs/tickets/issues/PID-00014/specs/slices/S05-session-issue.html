@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của PID-00014: Hàm tạo phiên, CSRF token và cookie cho PID-00038.">
+<title>PID-00014 — S05 Tạo phiên, CSRF token, cookie | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>S05 — Tạo phiên, CSRF token, cookie</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng của ticket (ticket mục 1 “Cookie <code>sires_session</code>”; kiến trúc 10.2, 10.5; H2, H3); PID-00038 dùng</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3, O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC15, EC17 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03. Secret khóa CSRF ở staging (PID-00035) không chặn: slice chạy với cấu hình cục bộ.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khóa CSRF của gateway đọc từ cấu hình (biến môi trường; giá trị cục bộ không commit); ghi tên cấu hình vào <code>apps/gateway/README.md</code> để PID-00035 cấp secret ở staging (H2). Độ dài và cách sinh khóa cho HMAC-SHA256: Dev chọn, ghi <code>implement.md</code>.</li>
+<li>Hàm tạo phiên nhận <code>accountId</code>, <code>absoluteExpiresAt</code> (PID-00038 tính theo token) và các cột tùy chọn của DDL; sinh session id ngẫu nhiên; CSRF token = HMAC-SHA256(khóa CSRF, session id); trong giao dịch có <code>app.account_id</code> ghi <code>sid_hash</code> = sha256(session id) và <code>csrf_token_hash</code> = sha256(CSRF token); trả session id và CSRF token cho bên gọi (H2).</li>
+<li>Hàm lấy CSRF token của phiên hiện tại cho <code>GET /auth/session</code> (PID-00038 hiện thực endpoint): tính lại HMAC-SHA256(khóa CSRF, session id trong cookie); không lưu, không đọc token rõ trong database (H2).</li>
+<li>Hàm dựng <code>Set-Cookie</code> cho <code>sires_session</code>: HttpOnly, Secure, SameSite=Lax, Path=/ (kiến trúc 10.2) và <code>Expires</code> = <code>absolute_expires_at</code> của phiên (H3).</li>
+<li>Test: tạo phiên rồi gửi lệnh ghi với CSRF token được cấp → đi qua kiểm CSRF của S03; EC15 — hai lần lấy token của cùng phiên (hai tab) cho cùng giá trị, lệnh ghi của cả hai đi qua; EC17 — đổi khóa CSRF sau khi tạo phiên, lệnh ghi mang token cũ → <code>403 forbidden</code>; thuộc tính cookie gồm <code>Expires</code> đúng <code>absolute_expires_at</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/gateway:test</code> → đạt (cần Docker)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › tạo phiên rồi gọi lệnh ghi với CSRF token được cấp</code></li>
+<li><code>apps/gateway/src/session/session.spec.ts › hai tab dùng chung CSRF token của phiên</code> (EC15)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › đổi khóa CSRF thì token cũ mất hiệu lực</code> (EC17)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › thuộc tính cookie sires_session</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PID-00038 tạo phiên, trả <code>csrfToken</code> của <code>getSession</code> và đặt cookie chỉ bằng hàm của module này; database vẫn chỉ có giá trị băm; test trên đạt.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00014</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00014 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

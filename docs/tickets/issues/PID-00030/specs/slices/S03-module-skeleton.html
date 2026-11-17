@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00030.">
+<title>S03 — Khung module và README | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00030</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00030</p><h1>S03 — Khung module và README</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (spec B3, O2, O3)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>Không có</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Dựng khung module của <code>manuscript</code> trong <code>apps/manuscript/src/</code> và gắn vào <code>apps/manuscript/src/app.module.ts</code> (có sẵn). Chia module là quyết định kỹ thuật của Dev (tickets 1.6 không liệt kê <code>manuscript</code>); gợi ý theo đường dẫn Module của PID sau: <code>revisions/</code> (PID-00053), <code>proposals/</code> (PID-00079), <code>bibliography/</code> (PID-00095), <code>builds/</code> (PID-00108), <code>kpi/</code> (PID-00146). Ghi cách chia ở <code>implement.md</code>.</li>
+<li>Cập nhật <code>apps/manuscript/src/app.module.spec.ts</code> (có sẵn): service vẫn khởi động, <code>/health</code> trả <code>{ service: 'manuscript', status: 'ok' }</code>, các module khung được nạp.</li>
+<li>Sửa <code>apps/manuscript/README.md</code> (có sẵn): dòng “Bản sao chỉ đọc” liệt kê <code>replica.project_state</code> (từ <code>project.lifecycle_changed</code>, chặn ghi khi project Archived hoặc đã xóa mềm) và <code>replica.reference_state</code> (từ <code>reference.status_changed</code>, <code>reference.metadata_updated</code>, <code>reference.deleted</code>; BibliographyEntry chỉ từ Reference Trusted, báo needs review khi metadata đổi) — database 3.4; thêm mục chạy migration; liệt kê module.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/manuscript:test</code> → đạt</li>
+<li>Test: <code>apps/manuscript/src/app.module.spec.ts › nạp module khung</code> (spec B3)</li>
+<li><code>pnpm nx run @sires/manuscript:build</code>, <code>:typecheck</code>, <code>:lint</code> → đạt</li>
+<li>Đọc lại <code>apps/manuscript/README.md</code> (spec O3)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Service khởi động với khung module, test đạt, README ghi đúng entity sở hữu, hai bảng sao chỉ đọc và sự kiện nguồn.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00030</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00030 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

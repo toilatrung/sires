@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00026.">
+<title>PID-00026 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>PID-00026 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Lô làm rõ 17/11/2026 không có câu trả lời <code>H</code> của PO. Ngày 18/11/2026 PO chấp nhận mọi đề xuất của <a href="../others/issues.html">phiếu I1–I3</a> (H1–H3) và sáu quyết định chung D1–D6; D1, D2, D3, D4, D6 đổi PID này (H4–H8, <a href="../index.html#phien-2">trang ticket mục 5</a>). Các quyết định đã gộp vào quy tắc dưới đây. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Dựng database <code>sires_knowledge</code> bằng một revision Alembic sao cho schema giống hệt DDL tham chiếu (<code>00-common.sql</code> rồi <code>knowledge.sql</code>): extension <code>vector</code>, schema <code>vec</code>, SourceDocument, Chunk, văn bản chunk có tsvector, bảng vector theo embedding model, job indexing, usage embedding và bốn bản sao chỉ đọc. Khai báo state machine <code>indexing_job</code> dạng dữ liệu để sinh dòng <code>app.state_transition</code> bằng helper Python của PID-00158, kiểm hành vi DDL (gồm pgvector) trên database dựng từ revision, cho Job migration (PID-00010) một lệnh chạy được trong image. Khung bốn module con (trích xuất, chunking, embedding, truy xuất) đã có từ scaffold; PID này ghi phạm vi cho chúng và viết README. Không có API, sự kiện, lời gọi provider. Tác nhân: System (Job migration khi deploy) và Dev của các PID pipeline.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Migration theo service, chỉ tiến; Alembic cho knowledge; bảng vector mới tạo rỗng rồi nạp bằng job nhúng lại — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a></li>
+<li>Quy ước migration (D1, H4): revision đầu là SQL chép từ <code>knowledge.sql</code> cùng đối tượng chung của <code>00-common.sql</code>, chạy bằng Alembic trên SQLAlchemy async và asyncpg; mỗi service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> — kiến trúc 6.10 (PO chốt 18/11/2026)</li>
+<li>Job migration (PID-00010) chạy <code>migration.command</code> trước Deployment trong image của service; lệnh là <code>alembic upgrade head</code>, nên Alembic là phụ thuộc chạy của app — H3; <a href="../../PID-00010/index.html">PID-00010</a> S02</li>
+<li>Test hành vi DDL thuộc PID migration (D3, H2, H6): bằng vai trò <code>_app</code>, <code>_system</code> trên database dựng từ revision, kiểm RLS ở <code>app</code>, <code>replica</code>, <code>vec</code>, trigger <code>tsv</code>, job trùng (DATA-IDEMP-005), quyền chỉ đọc danh mục model, xóa theo, ghi và đọc vector qua HNSW như DDL ghi — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets PH-01</a>; database 12.4 (kiểu <code>vector</code>, HNSW chưa từng chạy thử)</li>
+<li>DDL tham chiếu là chuẩn; migration sinh ra cùng schema; CI dựng một database từ migration, một từ <code>ddl/</code>, so bằng công cụ diff schema — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>; database 12.4</li>
+<li>Revision tạo cả đối tượng của <code>00-common.sql</code> (extension <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code>; schema <code>app</code>, <code>replica</code>; hàm; cấu hình tìm kiếm <code>app.sires_simple</code> mà trigger <code>tg_chunk_text_tsv</code> dùng; bảng <code>outbox</code>, <code>inbox</code>, <code>idempotency_key</code>, <code>job_lock</code>, <code>state_transition</code>) — đầu file <code>docs/database/ddl/00-common.sql</code>; <code>docs/database/README.md</code></li>
+<li>Extension <code>vector</code> ≥ 0.8 chỉ ở <code>sires_knowledge</code>; schema <code>vec</code> chứa một bảng mỗi embedding model, index HNSW <code>vector_cosine_ops</code> và index (<code>account_id</code>, <code>reference_id</code>) — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-3">database 3.3</a>; <a href="../../../../database/sections/07-library-and-knowledge.html#s-7-4">database 7.4</a>; ADR-05</li>
+<li>Danh mục model thật chưa chốt (DBQ-05): DDL có một dòng mẫu <code>openai_text_embedding_3_small</code> (1.536 chiều) và bảng <code>vec.emb_openai_text_embedding_3_small</code>; thêm model = migration thêm dòng danh mục, bảng và index — DDL <code>knowledge.sql</code>; database 7.4</li>
+<li>Bốn bản sao chỉ đọc: <code>replica.project_state</code> (<code>project.lifecycle_changed</code>), <code>replica.reference_state</code> (<code>reference.status_changed</code>, <code>reference.deleted</code>), <code>replica.project_reference_scope</code> (<code>project_reference.changed</code>), <code>replica.account_embedding</code> (<code>embedding_model.changed</code>); phạm vi truy xuất không nhận từ model — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-5">database 3.5</a>; DDL</li>
+<li>State machine <code>indexing_job</code> (7 cặp, kỹ thuật theo kiến trúc 7.1, 5.6); bảng <code>app.state_transition</code> sinh từ khai báo của module domain, không viết tay — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>, <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a></li>
+<li>PID này khai báo <code>indexing_job</code> dạng dữ liệu (các cặp từ → đến có trong DDL, không điều kiện chuyển) trong mã domain của knowledge — gói mới cho job indexing hoặc gói có sẵn, Dev chọn và ghi README; nơi khai báo duy nhất, PID-00105 dùng lại; dòng <code>app.state_transition</code> sinh bằng helper Python của PID-00158 (<code>libs/py/sires_common</code>), PID này không tự viết bộ sinh SQL; SQL sinh ra vào revision — H1, D2 (H5); DR-01; NFR-MAINT-003</li>
+<li>Bốn vai trò <code>sires_knowledge_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> do hạ tầng tạo; revision không tạo vai trò; DDL cấp quyền trên schema <code>vec</code> và thu quyền ghi <code>embedding_model_catalog</code> của <code>_app</code>, <code>_system</code> — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>; DDL. Ở môi trường cục bộ, compose tạo vai trò (PID-00159, D4, H7); tới khi có, test tạo vai trò bằng fixture của <code>sires_common</code></li>
+<li>PostgreSQL managed không cho tạo extension → theo DBQ-01, báo chặn — spec 4.7</li>
+<li>Driver asyncpg; <code>psycopg</code> bị chặn DLL trên máy PO — PID-00005 <code>report.md</code> đề xuất 5</li>
+<li>Module con: <code>extraction</code> (PDF, pypdfium2 + pdfplumber, ADR-15), <code>chunking</code>, <code>embedding</code>, <code>retrieval</code> (truy xuất lai) — <a href="../../../sections/01-tracks-and-boundaries.html#s-1-6">tickets 1.6</a>; kiến trúc 7</li>
+<li>Không import mã hay đọc database của service khác — quy tắc 1.4</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/00-common.sql</code>, <code>docs/database/ddl/knowledge.sql</code> — có (DEC-57). Kiểu <code>vector</code> và index HNSW chưa từng chạy thử (PGlite không có pgvector) — database 12.4</li>
+<li><code>apps/knowledge/migrations/</code> — có, rỗng</li>
+<li><code>apps/knowledge/src/knowledge/</code> — có <code>main.py</code> (FastAPI, chỉ <code>/health</code>) và gói rỗng <code>extraction</code>, <code>chunking</code>, <code>embedding</code>, <code>retrieval</code></li>
+<li><code>apps/knowledge/pyproject.toml</code> — phụ thuộc <code>fastapi</code>, <code>uvicorn</code>, <code>sires-common</code>; chưa có <code>alembic</code>, <code>sqlalchemy</code></li>
+<li><code>libs/py/sires_common</code> (PID-00005, merge 17/11/2026) — fixture <code>sires_postgres</code> (<code>pgvector/pgvector:pg16</code>), <code>create_service_database</code></li>
+<li><code>infra/local/postgres/init/01-databases.sql</code> — tạo database <code>sires_knowledge</code>, không tạo vai trò (PID-00159 sửa, D4)</li>
+<li><code>libs/py/sires_common</code> — chưa có helper sinh <code>app.state_transition</code> (PID-00158, ticket mới 18/11/2026)</li>
+<li><code>apps/knowledge/deploy/values.yaml</code> — có, chưa có khóa <code>migration</code>; <code>infra/helm/sires-service</code> chưa có Job migration (PID-00010 chưa làm)</li>
+<li><code>infra/docker/python/Dockerfile</code> — chép cả <code>apps/knowledge</code> vào <code>/repo</code>, <code>uv sync --frozen --no-dev --package …</code> (chỉ phụ thuộc chạy), chạy bằng <code>uv run --no-sync</code></li>
+<li>Hợp đồng — không dùng (spec 4.2, 4.3)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/knowledge/migrations/</code>: revision Alembic theo DDL → S01 (cấu trúc, dòng danh mục), S02 (dòng chuyển trạng thái sinh từ khai báo)</li>
+<li>O2 <code>apps/knowledge/src/knowledge/</code>: khai báo <code>indexing_job</code> → S02; khung bốn module con → S05</li>
+<li>O3 <code>apps/knowledge/tests/</code>: <code>test_migrations.py</code> → S01, S02, S03; <code>test_ddl_behaviour.py</code> → S04</li>
+<li>O4 <code>apps/knowledge/README.md</code>: entity sở hữu, bản sao chỉ đọc, khai báo state machine, chạy migration → S05</li>
+<li>O5 <code>apps/knowledge/deploy/values.yaml</code>: <code>migration.enabled</code>, <code>migration.command</code> → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>source_document</code>, <code>chunk</code> = SourceDocument, Chunk (PRD 1.5, 18.1); <code>chunk_text</code>, <code>vec.emb_&lt;slug&gt;</code>, <code>embedding_model_catalog</code>, <code>indexing_job</code>, <code>embedding_usage</code> là bảng kỹ thuật (database 3.4)</li>
+<li>Trạng thái <code>indexing_job</code>: Queued, Indexing, Indexed, Failed, Waiting Configuration</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00026</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

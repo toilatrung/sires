@@ -1,0 +1,66 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00018.">
+<title>PID-00018 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00018</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00018</p><h1>PID-00018 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Migration đầu dựng toàn bộ schema DDL tham chiếu của sires_audit (00-common.sql rồi audit.sql), đặt làm custom migration SQL của drizzle-kit; hàm chạy migration bằng migrate() của drizzle-orm, dùng chung cho test và lệnh migrate</td><td>ticket mục 1; DBD-02; H1</td><td>S01</td></tr>
+<tr><td>P2</td><td>Test so khớp schema giữa database dựng từ migration và database dựng từ DDL, trừ sổ migration của công cụ</td><td>DBD-02; database 12.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>Test hành vi DDL trong CI: chỉ ghi thêm theo vai trò, chỉ _system INSERT, CHECK, RLS, kpi_snapshot, audit_export</td><td>ticket mục 1, AC01; CTX-AUDIT-001-AC04; PH-01; H3</td><td>S02</td></tr>
+<tr><td>P4</td><td>Cấu hình kết nối database (vai trò _app, _system; người chạy migration), module kết nối qua helper tenancy của PID-00001, lệnh migrate riêng của service trong image, khóa migration.enabled, migration.command trong deploy/values.yaml, README</td><td>ticket mục 1 (khung module, README); PID-00010 N4; H3</td><td>S03</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Nhận sự kiện audit.recorded, account.created; truy vấn Audit Event</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00045/index.html">PID-00045</a></td></tr>
+<tr><td>N2</td><td>Service token (guard cho API công khai qua gateway, client cho lời gọi đi)</td><td>Mục Gồm không có; audit chưa có endpoint; PID-00045 đã phụ thuộc PID-00003; lời gọi research, manuscript ở PH-06</td><td><a href="../../PID-00045/index.html">PID-00045</a>, <a href="../../PID-00117/index.html">PID-00117</a></td></tr>
+<tr><td>N3</td><td>KPI định kỳ, export JSON/CSV</td><td>Tính năng PH-06</td><td><a href="../../PID-00117/index.html">PID-00117</a></td></tr>
+<tr><td>N4</td><td>Retention, xóa Audit Event cùng project hoặc tài khoản</td><td>PH-07</td><td><a href="../../PID-00139/index.html">PID-00139</a></td></tr>
+<tr><td>N5</td><td>Tạo vai trò database; phương án thay BYPASSRLS trên managed</td><td>Hạ tầng (database 3.2), migration không tạo (H2); DBQ-01 chờ AQ-12</td><td>Máy dev: <a href="../../PID-00159/index.html">PID-00159</a> (H2); staging, production: <a href="../../PID-00035/index.html">PID-00035</a>; Tech lead (DBQ-01)</td></tr>
+<tr><td>N6</td><td>Schema TS của Drizzle cho truy vấn</td><td>PID tính năng viết khi cần truy vấn (H1)</td><td><a href="../../PID-00045/index.html">PID-00045</a></td></tr>
+<tr><td>N7</td><td>Đưa drizzle-kit, drizzle-orm vào pnpm catalog</td><td>Thêm cùng Drizzle ở PID nền (H4)</td><td><a href="../../PID-00001/index.html">PID-00001</a></td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Quét theo nhóm: dữ liệu biên (giới hạn độ dài, mẫu mã); dữ liệu cũ, migration; phân quyền (vai trò, khác tài khoản); sự kiện trùng (cùng id); môi trường (container, image, cache CI). Giao diện, provider, agent không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Chạy migration lần hai</td><td>Không đổi gì (migration chỉ tiến, sổ migration bỏ qua bản đã chạy)</td><td>database 12.4; như PID-00017 spec 4.7</td><td><code>apps/audit/src/db/migration.spec.ts › chạy lần hai không đổi</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Database chưa có bốn vai trò <code>sires_audit_*</code></td><td>Migration dừng với lỗi, không để schema dở; migration không tạo vai trò, không cấp BYPASSRLS (vai trò cục bộ do PID-00159 tạo)</td><td>database 3.2; spec 4.7 (DBQ-01: không tự cấp quyền); H2</td><td><code>migration.spec.ts › thiếu vai trò thì dừng</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td><code>startPostgres()</code> mặc định tạo extension <code>vector</code></td><td>Tạo container với <code>extensions: []</code></td><td>libs/ts/testing; database 3.3</td><td><code>migration.spec.ts › schema khớp DDL tham chiếu</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Sổ migration của drizzle-orm (mặc định schema <code>drizzle</code>, bảng <code>__drizzle_migrations</code>) không có trong DDL</td><td>Loại khỏi phép so; mọi đối tượng khác phải khớp</td><td>DBD-02; H1</td><td><code>migration.spec.ts › schema khớp DDL tham chiếu</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Pull request chỉ sửa 00-common.sql hoặc audit.sql</td><td>Test so khớp chạy lại, không lấy cache của Nx (hai file DDL là input của target test)</td><td>DR-05; nx.json</td><td>Thao tác tay: sửa thử một dòng DDL, chạy lại lệnh test, thấy đỏ; hoàn tác</td><td>S01</td></tr>
+<tr><td>EC06</td><td>UPDATE app.audit_event bằng _app, _system, _purge hoặc vai trò sở hữu</td><td>Ba vai trò đầu: không có quyền UPDATE; vai trò sở hữu: trigger audit_event_append_only từ chối; dòng không đổi</td><td>audit.sql; database 9.1</td><td><code>apps/audit/src/db/ddl-behaviour.spec.ts › không sửa được</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>DELETE app.audit_event bằng _app, _system; bằng _purge</td><td>_app, _system: từ chối; _purge: xóa được (xóa cùng project hoặc tài khoản, NFR-RET-002, NFR-RET-008)</td><td>audit.sql; database 9.1</td><td><code>ddl-behaviour.spec.ts › không xóa được trừ purge</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>INSERT app.audit_event bằng _app; bằng _system; INSERT lần hai cùng id</td><td>_app: từ chối; _system: được; cùng id: vi phạm khóa chính (consumer PID-00045 dùng ON CONFLICT (id) DO NOTHING)</td><td>audit.sql; database 9.1</td><td><code>ddl-behaviour.spec.ts › chỉ system ghi</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>actor không đúng ActorRef (agent thiếu agentRunId; analysis thiếu instance); apr dạng APR-11; summary quá 2.000 ký tự</td><td>CHECK từ chối; actor hợp lệ thì actor_type = actor.type</td><td>00-common is_actor_ref; audit.sql</td><td><code>ddl-behaviour.spec.ts › check</code></td><td>S02</td></tr>
+<tr><td>EC10</td><td>Tài khoản B đọc Audit Event của A; thiếu app.account_id</td><td>Vai trò _app: 0 dòng của A; thiếu biến: 0 dòng</td><td>00-common enable_tenant_rls</td><td><code>ddl-behaviour.spec.ts › rls</code></td><td>S02</td></tr>
+<tr><td>EC11</td><td>kpi_snapshot trùng (account, project NULL, kpi, kỳ); period_end không sau period_start; kpi KPI-10</td><td>UNIQUE NULLS NOT DISTINCT từ chối bản trùng; CHECK từ chối kỳ sai và mã sai</td><td>audit.sql</td><td><code>ddl-behaviour.spec.ts › kpi snapshot</code></td><td>S02</td></tr>
+<tr><td>EC12</td><td>audit_export đổi row_version sai; format hay status ngoài danh sách</td><td>row_version phải tăng đúng 1; CHECK từ chối giá trị ngoài danh sách</td><td>audit.sql; 00-common tg_row_version</td><td><code>ddl-behaviour.spec.ts › audit export</code></td><td>S02</td></tr>
+<tr><td>EC13</td><td>Image production không có drizzle-kit</td><td>Lệnh migrate dùng mã trong image (<code>migrate()</code> của drizzle-orm đọc thư mục migration), lệnh khai trong values</td><td>PID-00010 EC01; H1, H3</td><td><code>apps/audit/src/migrate.spec.ts › lệnh migrate áp lên database rỗng</code></td><td>S03</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00018</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00018 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

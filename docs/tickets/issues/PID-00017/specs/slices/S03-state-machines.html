@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00017.">
+<title>S03 — State machine workspace và dòng chuyển trạng thái sinh từ khai báo | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00017</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00017</p><h1>S03 — State machine workspace và dòng chuyển trạng thái sinh từ khai báo</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>NFR-MAINT-003-AC01 (phần workspace)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3 (khung module: module domain)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC13, EC14 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <strong>PID-00158</strong> (kiểu khai báo machine, hàm kiểm chuyển, hàm sinh SQL, hàm so dòng ở <code>libs/ts/platform</code> — H2; chưa làm, ghi nhận không chặn Sẵn sàng). Phạm vi ba machine đã chốt (H3).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khai báo ba machine dạng dữ liệu trong module domain (tạo mới, ví dụ <code>apps/workspace/src/domain/state-machines.ts</code>) theo kiểu khai báo của PID-00158 (H2, H3): <code>research_project</code> Active → Archived, Archived → Active; <code>pending_action</code> Open → Resolved, Open → Expired, Expired → Resolved; <code>notification</code> Unread → Read. Chỉ cặp, không thêm điều kiện (để PID-00044, PID-00064, các PID đó dùng lại khai báo này).</li>
+<li>Hàm kiểm chuyển (dùng hàm chung của PID-00158 trên khai báo này): cặp ngoài khai báo (kể cả cùng trạng thái) bị từ chối với mã <code>invalid_transition</code> và trạng thái hiện hành (<code>ErrorCode</code>, <code>Problem.currentState</code>).</li>
+<li>Sinh SQL nạp dòng <code>app.state_transition</code> của ba machine từ khai báo bằng helper của PID-00158 (hàm sinh SQL hoặc lệnh in SQL của PID đó, đọc danh sách machine mà module domain xuất) và đặt vào một custom migration SQL mới của drizzle-kit, sau migration đầu của S01 (H1, H2); không chép tay, không sửa tay file sinh ra. Cách gọi (script trong <code>package.json</code> hay lệnh khác) Dev chọn, ghi README và <code>implement.md</code>.</li>
+<li>Test domain: mọi cặp có thứ tự của từng machine. Test database: sau migration, bảng bằng khai báo (dùng hàm so dòng của PID-00158) và bằng dòng của DDL tham chiếu; trigger từ chối cặp ngoài bảng và nhận cặp trong bảng.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/workspace:test</code> → đạt</li>
+<li>Test: <code>apps/workspace/src/domain/state-machines.spec.ts › mọi cặp</code> (NFR-MAINT-003-AC01; EC13)</li>
+<li>Test: <code>apps/workspace/src/db/state-transition.spec.ts › bảng khớp khai báo và DDL</code> (EC14); <code>› trigger</code> (EC13)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>6 cặp hợp lệ và mọi cặp không hợp lệ có test ở domain và database; bảng trong database sinh từ khai báo</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00017</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00017 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
