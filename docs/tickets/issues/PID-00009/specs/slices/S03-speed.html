@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00009.">
+<title>S03 — Hủy lần chạy cũ, cache, timeout, thời gian trong job summary | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S03 — Hủy lần chạy cũ, cache, timeout, thời gian trong job summary</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00009-AC06 (phần cache), PID-00009-AC07, PID-00009-AC08</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B6 (cache Nx trong CI), B9 (phần tối ưu thời gian)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC09, EC16 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01. Cache Nx chỉ dùng cache của GitHub Actions (H1, PO 18/11/2026)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li><code>concurrency</code> theo workflow và PR; hủy lần chạy cũ chỉ với sự kiện <code>pull_request</code>; push vào <code>main</code> không hủy (AC07).</li>
+<li>Cache: pnpm store (qua <code>setup-node</code>), uv (theo <code>uv.lock</code>), thư mục cache của Nx bằng cache của GitHub Actions (khóa theo nhánh và commit, khôi phục từ <code>main</code>). Không cache <code>.ruff_cache</code>, <code>.mypy_cache</code>, <code>.pytest_cache</code> cho job tài liệu (EC09). Cache trống hay lỗi không làm job thất bại (EC01). Không đổi <code>neverConnectToCloud</code>, không tạo tài khoản hay secret; PR chỉ đọc cache của <code>main</code>, không ghi vào cache của <code>main</code> (H1, N4).</li>
+<li>Job độc lập chỉ <code>needs</code> job kiểm thay đổi để chạy song song; chỉ job tổng <code>build</code> chờ mọi job.</li>
+<li>Mỗi job có <code>timeout-minutes</code>; giá trị Dev đặt theo số đo, ghi <code>implement.md</code> (giá trị kỹ thuật, không phải ngưỡng nghiệm thu). Job hết giờ bị hủy làm <code>build</code> thất bại (EC16).</li>
+<li>Job summary có bảng: tên job, kết quả (đạt, thất bại, skipped, hủy), thời gian chạy — ví dụ job tổng <code>build</code> đọc thời gian các job của lần chạy qua API của GitHub Actions (quyền <code>actions: read</code>) (AC08).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>PR thử T1: đẩy hai commit liên tiếp → lần chạy đầu bị hủy, lần sau chạy hết (PID-00009-AC07)</li>
+<li>Đọc cấu hình <code>concurrency</code>: <code>cancel-in-progress</code> chỉ đúng với <code>pull_request</code>; T5 — hai lần chạy push vào <code>main</code> gần nhau (khi có) đều chạy hết (PID-00009-AC07)</li>
+<li>T5 — lần chạy push vào <code>main</code> sau merge: log Nx báo đọc từ cache với task có input không đổi (PID-00009-AC06, phần cache)</li>
+<li>T1, T4: job summary có thời gian và kết quả từng job, kể cả job skipped (PID-00009-AC08)</li>
+<li>Thao tác tay (EC01): xóa cache của nhánh thử (<code>gh cache list --ref refs/pull/&lt;số PR&gt;/merge</code>, <code>gh cache delete &lt;id&gt;</code>) rồi chạy lại → đạt, chậm hơn</li>
+<li>Thao tác tay (EC16): trên nhánh thử đặt tạm <code>timeout-minutes: 1</code> cho một job dài → job bị hủy, <code>build</code> thất bại; hoàn lại</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC06 (phần cache), AC07, AC08 đạt; EC01, EC16 đạt; không có secret mới trong repo hay trong cài đặt Actions</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

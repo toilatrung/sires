@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Điều thiết kế đã chốt khi làm rõ ticket PID-00009.">
+<title>PID-00009 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>PID-00009 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li>
+<li><a href="#quy-uoc-ci">Quy ước CI đã chốt</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ (<code>H&lt;n&gt;</code>). Yêu cầu PO 12/11/2026 và 16/11/2026 đã nằm trong spec 4.4, 4.7. PO trả lời chín phiếu I1–I9 ngày 18/11/2026 (H1–H9, trang ticket mục 5); điều đã chốt ghi ở mục “Quy ước CI đã chốt”. Phiếu giữ làm biên bản ở <a href="../others/issues.html">others/issues.html</a>.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<p>Không có.</p>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<p>Contract test đọc <code>docs/api-design/internal/&lt;service&gt;.yaml</code>; kiểm payload đọc <code>docs/api-design/events/asyncapi.yaml</code> và <code>internal/schemas.yaml#/EventEnvelope</code>; job hợp đồng so bundle với <code>docs/api-design/dist/openapi.bundled.yaml</code>. Không sửa <code>docs/api-design</code>. Chi tiết ở mục dưới.</p>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có.</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<h2 id="quy-uoc-ci">Quy ước CI đã chốt</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Chủ đề</th><th scope="col">Đã chốt</th><th scope="col">H</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>Cache Nx</td><td>Chỉ cache của GitHub Actions cho thư mục cache Nx; không Nx Cloud, không bucket tự dựng, không tài khoản hay secret; <code>nx.json</code> giữ <code>neverConnectToCloud: true</code>; PR đọc cache của <code>main</code>, không ghi vào cache của <code>main</code></td><td>H1</td><td>S03</td></tr>
+<tr><td>Contract test, kiểm payload</td><td>Project tự tham gia bằng target Nx của mình (một target Schemathesis, một target kiểm payload) khi đã có operation hay sự kiện; stub, token thử, dữ liệu mẫu, mẫu payload nằm trong thư mục project. PID này làm runner và bộ kiểm dùng chung, README hướng dẫn tham gia (tên target, cách khai, cách khởi động), job chạy target cho project bị ảnh hưởng (chế độ toàn bộ: mọi project có target) và bộ tự kiểm trong thư mục infra</td><td>H2</td><td>S08, S09</td></tr>
+<tr><td>Quét phụ thuộc</td><td>Thất bại khi có lỗ hổng High hoặc Critical đã có phiên bản sửa; mức khác và lỗ hổng chưa có bản sửa ghi vào job summary; ngoại lệ khai trong file cấu hình của luồng infra kèm lý do, PO xem khi review PR</td><td>H3</td><td>S06</td></tr>
+<tr><td>Đo AC01</td><td>Kết luận bằng lần chạy thường (PR vào <code>develop</code> có cache của <code>main</code>); lần không cache ghi tham khảo</td><td>H4</td><td>S10</td></tr>
+<tr><td>Ngưỡng OQ-112</td><td>PID xong khi AC01–AC08 đạt; lệnh tính p95 cộng 20% ở lại repo; PO thêm ngưỡng thành AC khi đủ 20 lần chạy, không mở lại PID này</td><td>H5</td><td>S10</td></tr>
+<tr><td>Helm, Terraform</td><td><code>check-charts.mjs</code> khi chart chung hoặc <code>apps/&lt;service&gt;/deploy/values.yaml</code> đổi; <code>terraform fmt -check</code>, <code>validate</code> khi <code>infra/terraform</code> đổi; chế độ toàn bộ chạy cả hai</td><td>H6</td><td>S11, S12</td></tr>
+<tr><td>Cài Python</td><td><code>uv sync --all-packages --locked</code></td><td>H7</td><td>S01</td></tr>
+<tr><td>Lock file và luồng</td><td><code>pnpm-lock.yaml</code>, <code>uv.lock</code> không tính là luồng trong <code>check-tracks.mjs</code>; vẫn là file dùng chung với job kiểm thay đổi</td><td>H8</td><td>S01</td></tr>
+<tr><td>Bundle OpenAPI</td><td>Job hợp đồng bundle ra thư mục tạm bằng <code>@redocly/cli@2.11.1</code>, so với file đã commit, bỏ qua khác biệt ký tự xuống dòng; lệch thì thất bại và in lệnh bundle</td><td>H9</td><td>S04</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00009</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -156,6 +156,7 @@ COMMIT;</code></pre>
 <h2 id="s-6-10">6.10. Migration và ước lượng dung lượng</h2>
 <ul>
 <li>Migration theo service: drizzle-kit cho service NestJS, Alembic cho knowledge và agent-core (nếu có bảng); chỉ tiến; migration phá vỡ chia theo mẫu mở rộng → di chuyển dữ liệu → thu hẹp qua nhiều bản phát hành để deploy không downtime.</li>
+<li>Quy ước migration (PO chốt 18/11/2026, lô làm rõ PH-01): migration đầu của mỗi service là SQL chép từ <code>docs/database/ddl/&lt;service&gt;.sql</code> cùng các đối tượng chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit và chạy bằng <code>migrate()</code> của drizzle-orm (Python: Alembic trên SQLAlchemy async và asyncpg, cùng nguyên tắc). Mỗi service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code>; schema Drizzle bằng TypeScript do PID tính năng viết, không thuộc PID migration. PID migration gồm cả test hành vi DDL. Dòng <code>app.state_transition</code> sinh từ khai báo state machine dạng dữ liệu của từng service bằng helper của <code>PID-00158</code> (<code>libs/ts/platform</code>, bản Python trong <code>sires_common</code>), không chép tay (DR-01, DEC-57). Vai trò <code>sires_&lt;service&gt;_*</code> ở môi trường cục bộ do compose tạo (<code>PID-00159</code>), đúng database 3.2.</li>
 <li>CI chạy migration của service bị ảnh hưởng trên database trống và trên bản sao dữ liệu mẫu 16.4. Migration của một service không bao giờ chạm database của service khác.</li>
 </ul>
 <div class="table-wrap"><table>

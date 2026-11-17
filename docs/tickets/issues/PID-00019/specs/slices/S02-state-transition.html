@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00019: bảng chuyển trạng thái sinh từ khai báo domain bằng helper của PID-00158.">
+<title>S02 — Bảng chuyển trạng thái sinh từ khai báo domain | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00019</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00019</p><h1>S02 — Bảng chuyển trạng thái sinh từ khai báo domain</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Lập theo H1 (I1-A) và quyết định chung D2 (H5), PO chốt 18/11/2026: PID này viết khai báo, helper của <a href="../../../PID-00158/index.html">PID-00158</a> sinh dòng.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00019-AC01 (phần dữ liệu chuyển trạng thái)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC07 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <a href="../../../PID-00158/index.html">PID-00158</a> có trên <code>main</code> (helper TypeScript trong <code>libs/ts/platform</code>). Chưa có thì slice này “Bị chặn” trong <code>report.md</code>; không chặn <code>Sẵn sàng</code> (D6)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khai báo state machine dạng dữ liệu (chỉ các cặp từ → đến có trong DDL, không có điều kiện chuyển) cho bảy machine <code>workflow</code>, <code>workflow_step</code>, <code>agent_run</code>, <code>prompt</code>, <code>context_item</code>, <code>deliberation</code>, <code>deliberation_entry</code> (43 cặp, khớp PRD 18.2) trong mã domain của orchestration (tạo mới; vị trí trong <code>apps/orchestration/src/</code> Dev chọn, ghi <code>implement.md</code> và README ở S06). Đây là nơi khai báo duy nhất (NFR-MAINT-003); PID-00046 và các PID module dùng lại để kiểm chuyển trạng thái, nên đặt sao cho module khác import được mà không phạm luật import nội bộ engine của S03 (ví dụ xuất qua <code>engine/index.ts</code>). Kiểu dữ liệu của khai báo theo kiểu mà helper của PID-00158 nhận.</li>
+<li>Sinh SQL <code>INSERT INTO app.state_transition</code> từ khai báo bằng helper TypeScript của PID-00158 và đưa vào migration (DEC-57, database 10.2: “bản sinh tự động từ khai báo đó bởi migration, không viết tay”). Không tự viết bộ sinh SQL, không chép tay khối <code>INSERT</code> của DDL (D2). Cách đưa SQL sinh ra vào custom migration của drizzle-kit (nối vào migration đầu hay một custom migration thứ hai) theo hướng dẫn của helper; Dev ghi <code>implement.md</code>.</li>
+<li>Test đối chiếu ba nguồn: tập do helper sinh từ khai báo, dòng trong database dựng từ migration, dòng trong database dựng từ DDL (43 dòng). Lệch → báo đúng cặp lệch (EC06).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/orchestration:test</code> → đạt (cục bộ: <code>pnpm --filter @sires/orchestration test</code>)</li>
+<li>Test: <code>apps/orchestration/src/db/migration.spec.ts › state_transition sinh từ khai báo</code> (PID-00019-AC01; EC06)</li>
+<li>Test: <code>apps/orchestration/src/db/migration.spec.ts › chuyển ngoài bảng bị từ chối</code> (EC07: <code>workflow</code> Running → Created trả <code>check_violation</code>)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Dòng <code>app.state_transition</code> của database dựng từ migration bằng đúng tập của DDL và tập mà helper PID-00158 sinh từ khai báo; không có khối <code>INSERT</code> viết tay trong migration; không có bộ sinh SQL riêng trong <code>apps/orchestration</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00019</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00019 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

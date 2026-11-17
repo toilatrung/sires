@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S07 của ticket PID-00012.">
+<title>S07 — Nối dữ liệu điều hướng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S07 — Nối dữ liệu điều hướng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Làm theo H1 (PO chấp nhận phương án A của <a href="../../others/issues.html#i1">I1</a> ngày 18/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-LAYOUT-001-AC01 (số Pending Actions lấy từ API)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B5; H1</td></tr>
+<tr><th scope="row">Edge case</th><td>EC23, EC24, EC33, EC34 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03, S04, S05</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Nối interface dữ liệu của S02, S03 với client API có type (H1): số Pending Actions từ <code>openCount</code> của <code>GET /pending-actions</code> (<code>listPendingActions</code>); số chưa đọc từ <code>unreadCount</code> của <code>GET /notifications</code> (<code>listNotifications</code>); bộ chuyển ngữ cảnh liệt kê Global và các project Active (<code>listProjects</code>, EC34); tên project, trạng thái Plan (<code>getProject</code>); Active task và thao tác “Bỏ active task” (<code>setActiveTask</code>).</li>
+<li>Số việc chờ theo khu vực của rail: <code>GET /pending-actions?projectId=</code>, nhóm theo cột “Xử lý tại” của PRD 4.4 — Interactive Agent Prompt → Project AI Chat; Plan approval request, Task review request, Manual work required → Plan and Tasks; Manuscript change proposal → Manuscript; Recovery decision → Agent Activity. Reference approval xử lý ở Trusted Library (Global) nên không cộng vào khu vực nào của rail, vẫn tính trên TopBar (EC33).</li>
+<li>Cập nhật số khi có <code>pending_action.changed</code>, <code>notification.created</code>, đổi tên hay trạng thái project và Plan qua SSE của S05 (EC24). Các lần gọi lại GET sau sự kiện SSE là request chạy nền (không phải thao tác của người dùng); cách đánh dấu làm ở S13.</li>
+<li>Project không tồn tại hoặc của tài khoản khác (404) → trạng thái “không tìm thấy” (EC23).</li>
+<li>Test dùng stub của client API và SSE trong thư mục test của shell.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/shell/navigation.spec.tsx › số Pending Actions từ API</code> (UX-LAYOUT-001-AC01); <code>› cập nhật số qua SSE</code> (EC24); <code>› project 404</code> (EC23); <code>› nhóm số theo khu vực</code> (EC33); <code>› bộ chuyển chỉ có project Active</code> (EC34)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>TopBar và ProjectRail hiện số, project, Active task từ API và cập nhật qua SSE, nhóm số đúng H1</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S07 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

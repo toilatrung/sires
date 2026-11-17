@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00029.">
+<title>S02 — Bảng chuyển trạng thái sinh từ khai báo | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00029</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00029</p><h1>S02 — Bảng chuyển trạng thái sinh từ khai báo</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. DEC-57 (DBQ-09) và DR-01 yêu cầu bảng <code>app.state_transition</code> sinh từ khai báo state machine, không viết tay. Theo H1 (phiếu I1 phương án B, quyết định chung D2): helper chung ở <a href="../../../PID-00158/index.html">PID-00158</a> (<code>libs/ts/platform</code>) sinh dòng từ state machine khai báo dạng dữ liệu; slice này khai báo ba machine của <code>research</code> và sinh dòng bằng helper đó.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; hoàn tất phần dữ liệu của schema theo DDL (spec B2)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC13 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <a href="../../../PID-00158/index.html">PID-00158</a> (helper sinh dòng chuyển trạng thái) đã merge — chưa làm: ghi nhận, không chặn (H6)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khai báo dạng dữ liệu, theo định dạng của helper PID-00158, trong mã domain của <code>research</code> (<code>apps/research/src/</code>; file và module đặt khai báo do Dev chọn, ghi <code>implement.md</code>; PID tính năng dùng lại khai báo này), ba machine đúng các cặp from → to trong <code>docs/database/ddl/research.sql</code>: <code>artifact_version</code> (Draft → Accepted, Draft → Rejected, Accepted → Superseded), <code>evidence</code> (Active → Excluded, Excluded → Active, Active → Stale), <code>claim_approval</code> (Draft → Accepted, Draft → Rejected, Accepted → Draft).</li>
+<li>Sinh câu SQL chèn dòng <code>app.state_transition</code> từ khai báo bằng helper của PID-00158 và đặt vào migration của service: cùng custom migration SQL của S01 nếu S01 chưa merge, hoặc một custom migration SQL mới của drizzle-kit nếu S01 đã merge (chỉ tiến — H2). Không chép tay dòng <code>INSERT</code> từ DDL; không viết bộ sinh riêng trong service.</li>
+<li>Test <code>apps/research/src/db/state-transition.spec.ts</code> (tạo mới): dòng trong database khớp khai báo và khớp DDL; thử mọi cặp trạng thái của từng machine — chỉ cặp trong bảng được chấp nhận (EC13).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/research:test</code> → đạt</li>
+<li>Test: <code>apps/research/src/db/state-transition.spec.ts › ngoài bảng bị từ chối</code> (EC13)</li>
+<li>Test: <code>apps/research/src/db/state-transition.spec.ts › khớp DDL tham chiếu</code> (spec B2)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi cặp ngoài bảng bị database từ chối, mọi cặp trong bảng được chấp nhận, dòng trong database sinh từ đúng một nguồn: khai báo dạng dữ liệu của <code>research</code> qua helper PID-00158 (H1).</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00029</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00029 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

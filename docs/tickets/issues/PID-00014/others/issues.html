@@ -1,0 +1,220 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00014.">
+<title>PID-00014 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>PID-00014 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>Lập ngày 17/11/2026 khi làm rõ theo lô PH-01: PO yêu cầu làm rõ nhiều ticket một lượt và không trả lời câu hỏi trong phiên, nên mọi điểm chưa chốt thành phiếu. Hồ sơ vẫn được lập đủ; mỗi vấn đề là một phiếu <code>I&lt;n&gt;</code> (nhãn cục bộ của hồ sơ).</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00014</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
+<p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
+<p>Ngày 18/11/2026 PO trả lời “Chấp nhận tất cả”: phương án đề xuất của mọi phiếu là câu trả lời. Cả bốn phiếu đã chuyển vào hồ sơ (<a href="../index.html#phien-2">trang ticket mục 5</a>, H1–H4; quy ước migration chi tiết ở H5 theo quyết định chung D1, D3, D4, D5); trang này giữ làm biên bản.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Request GET nào là thao tác người dùng để gia hạn phiên</td><td>có — S04</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+<tr><td><a href="#i2">I2</a></td><td>CSRF token tạo và trả lại thế nào khi database chỉ lưu băm</td><td>có — S05</td><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+<tr><td><a href="#i3">I3</a></td><td>Cookie <code>sires_session</code> có hạn ở trình duyệt không</td><td>có — S05</td><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+<tr><td><a href="#i4">I4</a></td><td>Quy ước migration: chỗ đặt 00-common.sql, ai tạo vai trò, lệnh chạy</td><td>có — S01 (bước 2)</td><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Gateway phân biệt GET do điều hướng, mở màn hình (gia hạn phiên) với GET polling (không gia hạn) bằng cách nào?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Phân quyền · API và sự kiện · Ranh giới luồng</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>ADR-27 chỉ cho thao tác do người dùng (lệnh ghi, điều hướng, mở màn hình) gia hạn; SSE, polling, refresh nền thì không. Gateway nhận GET của điều hướng và GET polling giống hệt nhau; hợp đồng không có tín hiệu nào để phân biệt. Câu trả lời đổi mã guard, có thể đổi hợp đồng và cách luồng <code>web</code> gọi API.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-27">ADR-27</a>; <a href="../../../../architecture/sections/10-security-architecture.html#s-10-2">kiến trúc 10.2</a>: “Chỉ thao tác do người dùng thực hiện (lệnh ghi, điều hướng, mở màn hình) cập nhật last_activity của phiên; kết nối SSE, polling trạng thái và refresh token chạy nền không tính.” <a href="../../../../database/sections/04-identity-gateway-workspace.html#s-4-2">Database 4.2</a> (<code>last_seen_at</code>). <code>docs/api-design</code>: không có header hay đánh dấu nào cho việc này.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S04, EC14; điểm nối ở S02; luồng <code>web</code></td></tr>
+<tr><th scope="row">Chặn</th><td>có — S04</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Web gửi một header riêng (ví dụ <code>X-SIRes-User-Activity: 1</code>) cho GET do điều hướng, mở màn hình; gateway gia hạn khi lệnh ghi hoặc GET có header</td><td>PO thêm header vào hợp đồng (<code>parameters.yaml</code>, Quy ước chung của <code>openapi.yaml</code>); web gắn header trong lớp gọi API; quy tắc rõ, test dễ</td></tr>
+<tr><td>B</td><td>Không thêm header: gia hạn khi lệnh ghi hoặc <code>GET /auth/session</code>; web gọi <code>getSession</code> mỗi lần điều hướng, mở màn hình và không gọi nó theo chu kỳ</td><td>PO sửa mô tả <code>getSession</code> (được tính là thao tác; không gọi định kỳ); quy tắc gateway một dòng; web phải giữ đúng quy ước</td></tr>
+<tr><td>C</td><td>Chỉ lệnh ghi gia hạn</td><td>Không đổi hợp đồng; người chỉ đọc quá 12 giờ bị đăng xuất dù vẫn điều hướng — trái ADR-27</td></tr>
+<tr><td>D</td><td>Mọi request gia hạn trừ <code>/events</code> và các operation polling được đánh dấu trong OpenAPI (ví dụ <code>x-background: true</code>)</td><td>Sửa nhiều operation trong hợp đồng; PID-00039 đọc dấu khi sinh route; quên đánh dấu là polling kéo dài phiên</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án B — ít thay đổi hợp đồng nhất (chỉ mô tả <code>getSession</code>), quy tắc gateway đơn giản, web vốn phải gọi <code>getSession</code> để lấy CSRF token; giữ đúng ba loại thao tác ADR-27 nêu. Với mọi phương án, lệnh ghi bị từ chối (401, 403) không gia hạn. Hồ sơ hiện lập theo: S02 gia hạn khi lệnh ghi được chấp nhận, <code>/events</code> không gia hạn, GET khác chưa gia hạn (cách an toàn: không kéo dài phiên khi chưa rõ); S04 chặn bởi I1.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — Header riêng do web gửi</label>
+<label><input type="radio" name="I1" value="B"> B — Lệnh ghi và GET /auth/session gia hạn</label>
+<label><input type="radio" name="I1" value="C"> C — Chỉ lệnh ghi</label>
+<label><input type="radio" name="I1" value="D"> D — Đánh dấu operation polling trong OpenAPI</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> B — Lệnh ghi được chấp nhận và <code>GET /auth/session</code> gia hạn phiên; web gọi <code>getSession</code> khi điều hướng, mở màn hình, không gọi định kỳ; lệnh ghi bị từ chối không gia hạn — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H1</p>
+</article>
+
+<article class="issue" id="i2" data-issue="I2">
+<h2>I2 — CSRF token được tạo và trả lại cho <code>GET /auth/session</code> thế nào, khi database chỉ lưu <code>csrf_token_hash</code> và hai tab dùng chung một phiên?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · API và sự kiện</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td><code>getSession</code> phải trả <code>csrfToken</code> bất cứ lúc nào (tải lại trang, mở tab mới), nhưng DDL chỉ lưu băm nên server không đọc lại được một token ngẫu nhiên đã cấp. Cách tạo token quyết định hàm tạo phiên (S05) và <code>getSession</code> của PID-00038.</td></tr>
+<tr><th scope="row">Nguồn</th><td><code>docs/database/ddl/gateway.sql</code>: <code>csrf_token_hash bytea NOT NULL</code>, không có cột token rõ. <code>paths/15-settings-and-sign-in.yaml</code> <code>getSession</code>: <code>required: [accountId, expiresAt, csrfToken]</code>. <a href="../../../../architecture/sections/10-security-architecture.html#s-10-5">Kiến trúc 10.5</a>: “token đồng bộ (synchronizer token) trả qua /auth/session”. Spec mục 4.7: “Hai tab dùng chung phiên — Gia hạn đúng, không tạo phiên mới”.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S05, EC15; <a href="../../PID-00038/index.html">PID-00038</a> (<code>getSession</code>)</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S05</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Token = HMAC-SHA256(khóa bí mật của gateway, session id); khi tạo phiên lưu sha256(token) vào <code>csrf_token_hash</code>; <code>getSession</code> tính lại từ cookie; kiểm bằng sha256(header) so với <code>csrf_token_hash</code></td><td>Không đổi DDL; thêm một khóa bí mật cho gateway (cấu hình cục bộ, secret ở staging); mọi tab cùng token; đổi khóa thì token cũ mất hiệu lực</td></tr>
+<tr><td>B</td><td>Token ngẫu nhiên; mỗi lần <code>getSession</code> cấp token mới và ghi đè <code>csrf_token_hash</code></td><td>Tab khác mất token, lệnh ghi của tab đó bị 403 — trái spec 4.7</td></tr>
+<tr><td>C</td><td>Lưu token (mã hóa) trong cột mới của <code>app.session</code></td><td>Đổi DDL (DBQ, PO sửa <code>docs/database</code>); thêm khóa mã hóa</td></tr>
+<tr><td>D</td><td>Token ngẫu nhiên chỉ trả một lần khi đăng nhập; web tự giữ</td><td>Trái hợp đồng (<code>getSession</code> bắt buộc <code>csrfToken</code>); tải lại trang là mất token</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — giữ nguyên DDL và hợp đồng, nhiều tab dùng chung token, server tính lại được bất cứ lúc nào. Hồ sơ hiện lập theo: S03 kiểm sha256(header) với <code>csrf_token_hash</code> (đúng với A, B, C); test seed token biết trước; S05 chặn bởi I2.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I2" value="A"> A — HMAC của session id với khóa của gateway</label>
+<label><input type="radio" name="I2" value="B"> B — Token mới mỗi lần getSession</label>
+<label><input type="radio" name="I2" value="C"> C — Cột mới lưu token mã hóa</label>
+<label><input type="radio" name="I2" value="D"> D — Trả một lần khi đăng nhập</label>
+<label><input type="radio" name="I2" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — CSRF token = HMAC-SHA256(khóa bí mật của gateway, session id); lưu sha256(token) vào <code>csrf_token_hash</code> — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H2</p>
+</article>
+
+<article class="issue" id="i3" data-issue="I3">
+<h2>I3 — Cookie <code>sires_session</code> có ghi hạn (Expires hoặc Max-Age) không, tức đóng trình duyệt có phải đăng nhập lại không?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Phân quyền · Workflow và phê duyệt</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Không ghi hạn thì cookie mất khi đóng trình duyệt: thêm một điều kiện kết thúc phiên mà ADR-27 và INT-OIDC-003 không nêu. Ghi hạn thì đăng nhập còn sau khi mở lại trình duyệt, tới khi server hết hạn. Đổi hàm dựng cookie (S05) và hành vi người dùng thấy.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../../architecture/sections/10-security-architecture.html#s-10-2">Kiến trúc 10.2</a>: “sires_session (HttpOnly, Secure, SameSite=Lax, path /)” — không nói hạn. <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-003">INT-OIDC-003</a>: phiên kết thúc khi token hết hạn không làm mới được, sau 12 giờ không hoạt động, hoặc khi đăng xuất. <code>openapi.yaml</code> <code>sessionCookie</code>.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S05; <a href="../../PID-00038/index.html">PID-00038</a> (đặt cookie ở callback)</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S05</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Cookie bền, hạn = <code>absolute_expires_at</code> của phiên; server vẫn kiểm 12 giờ và thu hồi</td><td>Đóng trình duyệt không đăng xuất; chỉ các điều kiện của INT-OIDC-003 kết thúc phiên; test kiểm <code>Expires</code></td></tr>
+<tr><td>B</td><td>Cookie phiên của trình duyệt (không ghi hạn)</td><td>Đóng trình duyệt phải đăng nhập lại (eTroy OIDC có thể tự đăng nhập lại nếu phiên eTroy còn); phiên server còn tới khi hết hạn</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — giữ đúng các điều kiện kết thúc phiên đã chốt, server vẫn là nơi quyết định. Hồ sơ hiện lập theo: S05 chặn bởi I3.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I3" value="A"> A — Cookie bền tới absolute_expires_at</label>
+<label><input type="radio" name="I3" value="B"> B — Cookie phiên của trình duyệt</label>
+<label><input type="radio" name="I3" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Cookie bền, <code>Expires</code> = <code>absolute_expires_at</code>; server vẫn kiểm 12 giờ và thu hồi — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H3</p>
+</article>
+
+<article class="issue" id="i4" data-issue="I4">
+<h2>I4 — Migration của gateway theo quy ước nào: nạp 00-common.sql ở đâu, ai tạo vai trò <code>sires_gateway_*</code>, chạy migration bằng lệnh gì? (cùng câu với PID-00006 I2, PID-00016 I5)</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · Ranh giới luồng</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td><code>00-common.sql</code> phải chạy đầu tiên trong mọi database, nhưng chưa chốt nó nằm trong migration của từng service hay migration chung; nguồn nói khác nhau về ai tạo vai trò (<code>app.grant_standard</code> lỗi nếu vai trò chưa có); drizzle-kit chưa có trong pnpm catalog. Đổi nội dung file migration và cách test, cách chạy cục bộ.</td></tr>
+<tr><th scope="row">Nguồn</th><td><code>docs/database/ddl/00-common.sql</code>: “chạy ĐẦU TIÊN trong MỌI database … migration thật viết bằng drizzle-kit”, “Vai trò … do hạ tầng tạo trước”. <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">Database 3.2</a>: “Vai trò do hạ tầng (Terraform) tạo”. <code>infra/local/postgres/init/01-databases.sql</code>: “Schema, roles and extensions come from each service's migrations, starting from docs/database/ddl/00-common.sql.” <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">Kiến trúc 6.10</a>; quy tắc 1.4.7 (catalog thuộc <code>infra</code>).</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S01 bước 2, EC13; N6</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S01 (bước 2; các bước khác làm được)</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H4)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Migration đầu của gateway (drizzle-kit, SQL viết tay) gồm nguyên <code>00-common.sql</code> rồi <code>gateway.sql</code>; vai trò không nằm trong migration: Terraform tạo ở staging, production, luồng <code>infra</code> thêm script tạo vai trò vào <code>infra/local</code>, test tạo vai trò trong Testcontainers; project có target Nx chạy migration</td><td>Service tự đủ, so schema với DDL dễ; <code>00-common</code> lặp ở mỗi service; việc cho <code>infra</code> (catalog, script vai trò, sửa ghi chú <code>infra/local</code>)</td></tr>
+<tr><td>B</td><td><code>00-common</code> là migration chung do <code>libs/ts/platform</code> cung cấp, chạy trước; migration gateway chỉ chứa <code>gateway.sql</code>; vai trò như A</td><td>Không lặp; thêm việc cho luồng <code>platform</code> (runner hai tầng); gateway phụ thuộc phiên bản common</td></tr>
+<tr><td>C</td><td>Như A nhưng migration tự tạo vai trò nếu chưa có</td><td>Trái database 3.2; migrator cần quyền CREATEROLE</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — khớp ghi chú của <code>infra/local</code> và câu “chạy đầu tiên trong mọi database”, vai trò đúng database 3.2. Hồ sơ hiện lập theo: S01 viết phần <code>gateway.sql</code> của migration; test nạp <code>00-common.sql</code> từ <code>docs/</code> rồi áp migration và tự tạo vai trò; bước đặt <code>00-common</code> và lệnh chạy migration chặn bởi I4.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I4" value="A"> A — Migration mỗi service gồm 00-common; vai trò do hạ tầng và test tạo</label>
+<label><input type="radio" name="I4" value="B"> B — 00-common là migration chung của libs/ts/platform</label>
+<label><input type="radio" name="I4" value="C"> C — Migration tự tạo vai trò</label>
+<label><input type="radio" name="I4" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Migration đầu của gateway gồm phần chung của <code>00-common.sql</code>; vai trò do hạ tầng và test tạo; cách viết theo quyết định chung D1, D3, D4, D5 (H5) — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H4</p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00014</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00014 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

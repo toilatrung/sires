@@ -1,0 +1,34 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00020.">
+<title>PID-00020 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00020</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00020</p><h1>PID-00020 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test. Ticket không nêu AC requirement. Khung module (S02), lệnh migrate và giá trị Helm (S04) và README (S06) không có AC riêng, kiểm bằng mục “Kiểm” của slice. PID-00020-AC02 thêm 18/11/2026 theo H1 (PO chấp nhận đề xuất I1-A), PID-00020-AC03 theo H2 (I2-A; quyết định chung D3); kỳ vọng của AC03 lấy từ DDL, không số mới. Tên test là đề xuất; Dev đổi được, ghi tên thật ở <code>implement.md</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00020-AC01</td><td>Given database rỗng trên PostgreSQL 16 + pgvector (Testcontainers) đã có vai trò <code>sires_agent_core_app</code>, <code>_system</code>, <code>_purge</code>, When chạy <code>alembic upgrade head</code> của agent-core, Then so với database thứ hai dựng từ <code>docs/database/ddl/00-common.sql</code> rồi <code>agent-core.sql</code> trong cùng container, công cụ diff schema không báo lệch ở schema <code>app</code>, <code>replica</code>: bảng, cột (kiểu, NULL, mặc định), ràng buộc PK/CHECK, index (kể cả partial), trigger, hàm, RLS (bật, <code>FORCE</code>, policy), quyền của vai trò, extension, cấu hình tìm kiếm <code>app.sires_simple</code>; <code>alembic_version</code> không tính (EC04). Chạy lại không đổi gì (EC02); lỗi giữa chừng không để lại đối tượng (EC03); downgrade bị từ chối, không mất bảng (EC01).</td><td><code>apps/agent-core/tests/test_migrations.py › test_schema_matches_ddl</code>; <code>› test_upgrade_twice</code>; <code>› test_missing_roles_rolls_back</code>; <code>› test_downgrade_refused</code></td><td>S01</td><td>Ticket; DBD-02; database 12.4; spec 4.7</td></tr>
+<tr><td>PID-00020-AC02</td><td>Given cấu hình test của agent-core với cặp khóa ES256 sinh trong bộ nhớ (<code>kid</code> = <code>agent-core</code>) và bộ khóa công khai chứa khóa đó, When hàm dựng của module cấu hình tạo <code>ServiceTokenIssuer</code> ký một token gửi <code>identity</code>, và <code>TokenVerifier</code>, <code>ServiceAuth</code> của <code>sires_common</code> dựng phía <code>identity</code> từ cùng bộ khóa công khai kiểm token đó, Then token được chấp nhận với <code>sub</code> = <code>agent-core</code>; token có <code>kid</code> không có trong bộ khóa công khai bị từ chối <code>401 invalid_service_token</code> (EC06). <code>/health</code> vẫn trả như trước.</td><td><code>apps/agent-core/tests/test_config.py › test_service_token_roundtrip</code></td><td>S03</td><td>H1; PID-00005 H2; PID-00003 I3</td></tr>
+<tr><td>PID-00020-AC03</td><td>Given database dựng từ revision của agent-core (S01) trên PostgreSQL 16 + pgvector (Testcontainers), vai trò tạo bằng fixture của <code>sires_common</code>, dữ liệu mồi của hai tài khoản A, B, When chạy từng thao tác dưới đây bằng vai trò <code>sires_agent_core_app</code> trong giao dịch đặt <code>app.account_id</code>, Then database xử lý đúng như DDL: (1) tài khoản B không đọc thấy và không sửa được dòng <code>provider_slot</code>, <code>model_catalog_cache</code> của A (RLS); (2) <code>provider_slot</code> có <code>holder_agent_run_id</code> mà thiếu <code>lease_until</code> (hoặc ngược lại) bị CHECK <code>provider_slot_holder_ck</code> từ chối; (3) <code>_app</code> không đọc được <code>app.outbox</code>, <code>app.inbox</code>, <code>app.job_lock</code>. Mỗi nhóm có một ca hợp lệ đối chứng đi qua.</td><td><code>apps/agent-core/tests/test_ddl_behaviour.py › test_rls_blocks_cross_account</code>; <code>› test_provider_slot_holder_check</code>; <code>› test_app_role_cannot_read_outbox</code></td><td>S05</td><td>H2; DDL <code>agent-core.sql</code>, <code>00-common.sql</code> (<code>grant_standard</code>)</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00020</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00020 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

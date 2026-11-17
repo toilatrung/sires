@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00026.">
+<title>PID-00026 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>PID-00026 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Revision Alembic đầu trong <code>apps/knowledge/migrations/</code> (SQL chép từ DDL, chạy trên SQLAlchemy async và asyncpg) tạo đủ đối tượng của <code>00-common.sql</code> và <code>knowledge.sql</code>: extension <code>vector</code>, schema <code>vec</code>, 10 bảng của spec, <code>replica.project_state</code>, bảng nền tảng, hàm, trigger, index (gồm HNSW), RLS, quyền; dòng mẫu <code>embedding_model_catalog</code> đúng như DDL; <strong>trừ</strong> dòng <code>app.state_transition</code> (S02); <code>downgrade()</code> không xóa dữ liệu</td><td>Ticket Gồm; DDL; DBD-02; kiến trúc 6.10; H4 (D1)</td><td>S01</td></tr>
+<tr><td>P2</td><td>Test PID-00026-AC01 phần cấu trúc và dòng danh mục: dựng database từ revision và database từ DDL trên PostgreSQL 16 + pgvector (Testcontainers), so schema</td><td>Ticket AC01; database 12.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>Khai báo <code>indexing_job</code> dạng dữ liệu (7 cặp từ → đến có trong DDL, không điều kiện chuyển) trong mã domain của knowledge, nơi khai báo duy nhất; dòng <code>app.state_transition</code> sinh bằng helper Python của PID-00158, không viết tay, không tự viết bộ sinh; test đối chiếu</td><td>DEC-57; DBQ-09; database 10.2; H1, H5 (D2)</td><td>S02</td></tr>
+<tr><td>P4</td><td>Khung bốn module con (đã có từ scaffold): chú thích phạm vi theo tickets 1.6 và kiến trúc 7; README ghi entity sở hữu, bốn bản sao chỉ đọc, vị trí khai báo state machine, cách chạy revision cục bộ, trong test và trong image</td><td>Ticket Gồm</td><td>S05</td></tr>
+<tr><td>P5</td><td>Test hành vi DDL bằng vai trò <code>_app</code>, <code>_system</code> trên database dựng từ revision, gồm pgvector (PID-00026-AC02); trước là N4</td><td>H2 (I2-A), H6 (D3); tickets PH-01</td><td>S04</td></tr>
+<tr><td>P6</td><td>Lệnh <code>alembic upgrade head</code> chạy trong image (Alembic là phụ thuộc chạy), <code>migration.enabled: true</code> và <code>migration.command</code> trong <code>apps/knowledge/deploy/values.yaml</code> theo khóa của PID-00010; trước là N5</td><td>H3 (I3-A), H4 (D1), H6 (D3); PID-00010 S02</td><td>S03</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Pipeline: trích xuất PDF, chunking, embedding, truy xuất lai</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00051/index.html">PID-00051</a>, <a href="../../PID-00077/index.html">PID-00077</a>, <a href="../../PID-00093/index.html">PID-00093</a></td></tr>
+<tr><td>N2</td><td>Danh mục embedding model thật, bảng vector cho model khác, <code>halfvec</code></td><td>DBQ-05 chưa đóng; SPK-04 đo <code>halfvec</code>; DDL: thêm model = migration mới</td><td>Tech lead (DBQ-05); <a href="../../PID-00027/index.html">PID-00027</a>; <a href="../../PID-00077/index.html">PID-00077</a> (bảng vector theo model)</td></tr>
+<tr><td>N3</td><td>Nhận lệnh <code>knowledge.index</code>, vòng đời job indexing, consumer cập nhật bốn bản sao</td><td>Không có trong Gồm</td><td><a href="../../PID-00105/index.html">PID-00105</a> và PID sau của luồng knowledge</td></tr>
+<tr><td>N6</td><td>Tạo vai trò <code>sires_knowledge_*</code>; kiểm extension và BYPASSRLS trên managed</td><td>Vai trò do hạ tầng tạo (database 3.2); cục bộ theo D4 (H7); DBQ-01</td><td>Luồng infra: cục bộ <a href="../../PID-00159/index.html">PID-00159</a>; staging <a href="../../PID-00011/index.html">PID-00011</a>, <a href="../../PID-00035/index.html">PID-00035</a>; Tech lead (DBQ-01)</td></tr>
+<tr><td>N7</td><td>Đổi target Nx cho máy có Smart App Control; <code>implicitDependencies</code> trên <code>sires-common</code></td><td>Không có trong Gồm (PID-00005 Lần 3, qc-report đề xuất 6)</td><td>PO quyết (câu chung, báo cáo lô)</td></tr>
+<tr><td>N8</td><td>Helper sinh dòng <code>app.state_transition</code> từ khai báo state machine (bản Python và bản TypeScript)</td><td>D2 (H5): một helper chung cho mọi service</td><td><a href="../../PID-00158/index.html">PID-00158</a> (luồng platform)</td></tr>
+</tbody></table></div>
+<p>N4 (test hành vi DDL) và N5 (lệnh chạy revision, giá trị Helm) của bản 17/11/2026 đã chuyển vào phạm vi thành P5, P6 theo H2, H3; mã N4, N5 không dùng lại.</p>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét theo các nhóm của khung mẫu; ticket không có giao diện, lời gọi provider, sự kiện hay phê duyệt nên chỉ còn các nhóm dữ liệu, migration, trạng thái và triển khai (Job migration). Các ca của test hành vi DDL nằm trong PID-00026-AC02 (<code>specs/acceptance.html</code>), không lặp lại ở đây.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>PostgreSQL managed không cho tạo extension <code>vector</code> (hoặc <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code>)</td><td>Theo DBQ-01: báo chặn trong <code>report.md</code>, không đổi DDL</td><td>Spec 4.7; DBQ-01</td><td>Thao tác tay (không kiểm được trên Testcontainers)</td><td>S01</td></tr>
+<tr><td>EC02</td><td>Chạy <code>alembic downgrade</code> xuống dưới revision đầu</td><td>Báo lỗi rõ, không DROP bảng hay xóa dữ liệu; sửa sai bằng revision mới</td><td>Kiến trúc 6.10 (chỉ tiến)</td><td><code>apps/knowledge/tests/test_migrations.py › test_downgrade_refused</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Chạy <code>alembic upgrade head</code> lần hai (Job migration chạy trước mỗi lần deploy)</td><td>Không áp lại; không lỗi; schema và dòng danh mục không đổi</td><td>Kiến trúc 6.10; PID-00010 AC02</td><td><code>apps/knowledge/tests/test_migrations.py › test_upgrade_twice</code>; <code>› test_migrate_command</code> (chạy hai lần)</td><td>S01, S03</td></tr>
+<tr><td>EC04</td><td>Revision lỗi giữa chừng, ví dụ database chưa có vai trò <code>sires_knowledge_app</code></td><td>Lỗi của PostgreSQL được báo ra; không còn đối tượng nào của revision (rollback); revision không tự tạo vai trò</td><td>Database 3.2, 12.4</td><td><code>apps/knowledge/tests/test_migrations.py › test_missing_roles_rolls_back</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Bảng phiên bản <code>alembic_version</code></td><td>Không thuộc DDL: phép so bỏ qua; không đặt trong schema <code>app</code>, <code>replica</code>, <code>vec</code> để không nhận quyền do DDL cấp</td><td>DBD-02 (chỉ so đối tượng của DDL)</td><td><code>apps/knowledge/tests/test_migrations.py › test_schema_matches_ddl</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Danh mục model chưa chốt (DBQ-05) mà DDL có dòng mẫu <code>openai_text_embedding_3_small</code>, bảng <code>vector(1536)</code></td><td>Tạo đúng như DDL; không thêm, bỏ hay đổi số chiều; đổi danh mục bằng revision mới khi DBQ-05 đóng</td><td>DDL <code>knowledge.sql</code>; database 7.4</td><td><code>apps/knowledge/tests/test_migrations.py › test_schema_matches_ddl</code> (so cả dòng <code>embedding_model_catalog</code>)</td><td>S01</td></tr>
+<tr><td>EC07</td><td>Khai báo state machine <code>indexing_job</code> lệch DDL (thiếu, thừa cặp)</td><td>Test đối chiếu thất bại, chỉ ra cặp lệch; sửa khai báo, không sửa tay bảng</td><td>DEC-57; database 10.2</td><td><code>apps/knowledge/tests/test_migrations.py › test_state_transitions_from_declaration</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Sau khi nạp dòng, cập nhật <code>indexing_job.status</code> Indexed → Queued (không có trong bảng)</td><td>Trigger <code>tg_state_transition</code> từ chối (<code>check_violation</code>)</td><td>DDL</td><td><code>apps/knowledge/tests/test_migrations.py › test_transition_outside_table_rejected</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>Job migration chạy trong image production (<code>uv sync --no-dev</code>: không có phụ thuộc dev)</td><td>Alembic và driver là phụ thuộc chạy; lệnh của <code>migration.command</code> chạy được từ thư mục làm việc của image</td><td>H3; <code>infra/docker/python/Dockerfile</code>; PID-00010 EC01</td><td><code>apps/knowledge/tests/test_migrations.py › test_migrate_command</code>; thao tác tay: chạy lệnh trong image</td><td>S03</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00026</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

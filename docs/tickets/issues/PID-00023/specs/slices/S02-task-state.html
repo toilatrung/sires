@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00023.">
+<title>S02 — State machine Task trong domain: 28 cặp T-01–T-19 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>S02 — State machine Task trong domain: 28 cặp T-01–T-19</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00023-AC01, DATA-STATE-001-AC01 (domain), TASK-STATE-001-AC01, NFR-MAINT-003-AC01 (Task, domain)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06–EC09 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><strong>PID-00158</strong> ở phần dùng chung: kiểu khai báo machine và hàm kiểm chuyển ở <code>libs/ts/platform</code> (H2; chưa làm, ghi nhận không chặn Sẵn sàng). Bảng 28 cặp và test 100 cặp không phụ thuộc PID-00158, viết được trước. Không cần S01, không cần database.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khai báo Task dạng dữ liệu trong <code>apps/planning/src/task-state/</code> (tạo mới) theo kiểu khai báo của PID-00158 (H2): machine <code>task</code>, 10 trạng thái và 28 cặp ở bảng dưới, mỗi cặp có mã và actor; không thêm, bớt cặp. Khai báo này là nguồn sinh dòng ở S03 và PID tính năng dùng lại.</li>
+<li>Hàm kiểm chuyển (dùng hàm chung của PID-00158 trên khai báo này): nhận trạng thái hiện hành và đích; cặp có trong bảng trả mã T-NN; cặp không có (kể cả cùng trạng thái) từ chối bằng lỗi miền mang <code>invalid_transition</code> và trạng thái hiện hành. Không gọi database, không gọi service khác (NFR-MAINT-004).</li>
+<li>Viết <code>apps/planning/src/task-state/task-state.spec.ts</code>: duyệt đủ 100 cặp, so với bảng mong đợi viết tay trong test (lấy từ PRD 9.8); thêm ca EC06–EC09 có tên riêng.</li></ol>
+<h3 id="bang-28-cap">Bảng 28 cặp (PRD 9.8; khớp <code>planning.sql</code>, đối chiếu 17/11/2026)</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Mã</th><th scope="col">Từ</th><th scope="col">Đến</th><th scope="col">Actor</th></tr></thead><tbody>
+<tr><td>T-01</td><td>Draft</td><td>Blocked</td><td>System</td></tr>
+<tr><td>T-02</td><td>Draft</td><td>Ready</td><td>System</td></tr>
+<tr><td>T-03</td><td>Blocked</td><td>Ready</td><td>System</td></tr>
+<tr><td>T-04</td><td>Ready</td><td>Blocked</td><td>System</td></tr>
+<tr><td>T-05</td><td>Ready</td><td>Queued</td><td>Researcher</td></tr>
+<tr><td>T-05</td><td>Failed</td><td>Queued</td><td>Researcher</td></tr>
+<tr><td>T-06</td><td>Queued</td><td>In Progress</td><td>System</td></tr>
+<tr><td>T-07</td><td>Queued</td><td>Ready</td><td>Researcher</td></tr>
+<tr><td>T-08</td><td>In Progress</td><td>Waiting for User</td><td>System</td></tr>
+<tr><td>T-09</td><td>Waiting for User</td><td>In Progress</td><td>System</td></tr>
+<tr><td>T-10</td><td>In Progress</td><td>Ready</td><td>Researcher (hủy)</td></tr>
+<tr><td>T-10</td><td>In Progress</td><td>Blocked</td><td>Researcher (hủy)</td></tr>
+<tr><td>T-10</td><td>Waiting for User</td><td>Ready</td><td>Researcher (hủy)</td></tr>
+<tr><td>T-10</td><td>Waiting for User</td><td>Blocked</td><td>Researcher (hủy)</td></tr>
+<tr><td>T-11</td><td>In Progress</td><td>In Review</td><td>System</td></tr>
+<tr><td>T-12</td><td>In Progress</td><td>Failed</td><td>System</td></tr>
+<tr><td>T-12</td><td>Waiting for User</td><td>Failed</td><td>System</td></tr>
+<tr><td>T-13</td><td>In Review</td><td>Ready</td><td>Researcher</td></tr>
+<tr><td>T-14</td><td>In Review</td><td>Completed</td><td>Researcher</td></tr>
+<tr><td>T-15</td><td>In Review</td><td>Blocked</td><td>Researcher</td></tr>
+<tr><td>T-16</td><td>Failed</td><td>Blocked</td><td>System</td></tr>
+<tr><td>T-18</td><td>Blocked</td><td>Cancelled</td><td>Researcher / System</td></tr>
+<tr><td>T-18</td><td>Ready</td><td>Cancelled</td><td>Researcher / System</td></tr>
+<tr><td>T-18</td><td>Queued</td><td>Cancelled</td><td>Researcher / System</td></tr>
+<tr><td>T-18</td><td>In Review</td><td>Cancelled</td><td>Researcher / System</td></tr>
+<tr><td>T-18</td><td>Failed</td><td>Cancelled</td><td>Researcher / System</td></tr>
+<tr><td>T-19</td><td>Completed</td><td>Ready</td><td>Researcher</td></tr>
+<tr><td>T-19</td><td>Completed</td><td>Blocked</td><td>Researcher</td></tr>
+</tbody></table></div>
+<p>T-17 (Draft → không còn) không có cặp. Guard và chọn đích: S04 (H3).</p>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/planning:test</code> → đạt</li>
+<li>Test: <code>apps/planning/src/task-state/task-state.spec.ts › mọi cặp trạng thái</code> (PID-00023-AC01, NFR-MAINT-003-AC01; EC06)</li>
+<li>Test: <code>› Ready sang Completed bị từ chối</code> (DATA-STATE-001-AC01, TASK-STATE-001-AC01); <code>› cancelled là trạng thái cuối</code> (EC07); <code>› completed chỉ qua T-19</code> (EC08); <code>› không có T-17</code> (EC09)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Đúng 28 cặp được nhận với đúng mã; 72 cặp còn lại bị từ chối với <code>invalid_transition</code>; test chạy không cần mạng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00023</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

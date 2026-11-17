@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S12 của ticket PID-00012.">
+<title>S12 — Tải lại khi SSE báo không còn phát lại được | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S12 — Tải lại khi SSE báo không còn phát lại được</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H5 (PO chấp nhận phương án A của <a href="../../others/issues.html#i5">I5</a> ngày 18/11/2026). <strong>Chờ nguồn:</strong> làm khi PO đã thêm tín hiệu vào <code>/events</code> trong <code>docs/api-design</code> (trang ticket mục 5, Phải sửa ở nguồn).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00012-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5; H5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC14 (phần tải lại) (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S05, S07; chờ nguồn: tín hiệu “không còn phát lại được” ở <code>paths/14…#/events</code> và <code>Event</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc tín hiệu đúng dạng hợp đồng mới chốt (loại sự kiện riêng hoặc mã phản hồi của <code>/events</code>); không tự đặt tên hay dạng tín hiệu.</li>
+<li>Nhận tín hiệu → phát “cần tải lại” cho mọi nơi đăng ký của S05; nối lại bình thường (không có tín hiệu) → chỉ phát “đã nối lại” như S05 (EC14).</li>
+<li>Dữ liệu điều hướng của shell (S07) tải lại bằng GET khi nhận “cần tải lại”; khu vực tự tải lại dữ liệu của mình (ghi trong README của client SSE).</li>
+<li>Test dùng stub SSE trong thư mục test của shell, phát đúng tín hiệu theo hợp đồng mới.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt; <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/shell/sse.spec.ts › tải lại khi server báo</code> (PID-00012-AC04; EC14); <code>› gửi Last-Event-ID khi nối lại</code> vẫn đạt (PID-00012-AC02)</li>
+<li><code>apps/web/src/shell/navigation.spec.tsx › tải lại khi cần tải lại</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC04 đạt theo tín hiệu của hợp đồng mới; không có “cần tải lại” thừa sau lần nối lại bình thường</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S12 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

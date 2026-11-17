@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi, edge case của PID-00006.">
+<title>PID-00006 — Phạm vi | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>PID-00006 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên thì ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Câu trả lời của PO ngày 18/11/2026 (H1–H8) đã gộp vào bảng dưới.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Service NestJS mẫu trong project Nx riêng <code>libs/ts/sample-service</code> (<code>@sires/sample-service</code>, không project nào phụ thuộc): một bảng có <code>account_id</code>, schema Drizzle bằng TypeScript của bảng đó, lệnh đổi trạng thái ghi trạng thái + Audit Event + sự kiện domain qua outbox trong một giao dịch</td><td>ticket mục 1; spec B1; PID-00006-AC01; H1, H6</td><td>S01 (khung project), S02</td></tr>
+<tr><td>P2</td><td>Consumer của service mẫu dùng inbox; test gửi trùng (tuần tự và đồng thời) qua fake broker hoặc RabbitMQ của Testcontainers</td><td>ticket mục 1; spec B2; PID-00006-AC02</td><td>S03</td></tr>
+<tr><td>P3</td><td>Test RLS: tài khoản B không đọc, không ghi được dữ liệu của A; thiếu <code>app.account_id</code> thì 0 dòng; bộ test chạy được khi không có mạng ngoài</td><td>ticket mục 1; spec B2; PID-00006-AC03; NFR-MAINT-004-AC01; database 12.4</td><td>S04</td></tr>
+<tr><td>P4</td><td>Báo cáo SPK-10: chạy lại PR của chính ticket 5 lần với <code>ci.yml</code> hiện tại (không Nx remote cache), tổng thời gian workflow mỗi lần, đạt khi cả 5 lần dưới 10 phút</td><td>ticket mục 1; spec B3, 4.7; H1, H5</td><td>S07</td></tr>
+<tr><td>P5</td><td>Migration mẫu: custom migration SQL của drizzle-kit (có journal) gồm phần chung của <code>00-common.sql</code> và SQL bảng mẫu, chạy bằng <code>migrate()</code> của drizzle-orm qua target Nx riêng; chỉ tiến; test tự tạo vai trò</td><td>spec B4; kiến trúc 6.10; H2, H6</td><td>S01</td></tr>
+<tr><td>P6</td><td>Dựng 11 database từ 12 file DDL tham chiếu trên PostgreSQL 16 + pgvector ≥ 0.8 (Testcontainers), mỗi service một database, kể cả kiểu <code>vector</code> và index HNSW của knowledge</td><td>spec B5; database 12.4; PID-00006-AC04; H3</td><td>S05</td></tr>
+<tr><td>P7</td><td>Một endpoint nội bộ của service mẫu gắn service-auth guard của PID-00003; test token hợp lệ, sai, thiếu</td><td>spec B6; kiến trúc 12.2 (SPK-10 “service token”); PID-00006-AC05; H4</td><td>S06</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Service nghiệp vụ thật</td><td>Ticket “Không gồm”</td><td>Ticket của từng luồng service</td></tr>
+<tr><td>N2</td><td>Tối ưu CI</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00009/index.html">PID-00009</a> (luồng <code>infra</code>)</td></tr>
+<tr><td>N3</td><td>(Đã vào phạm vi: P5, theo H2)</td><td>—</td><td>—</td></tr>
+<tr><td>N4</td><td>(Đã vào phạm vi: P6, theo H3)</td><td>—</td><td>—</td></tr>
+<tr><td>N5</td><td>(Đã vào phạm vi: P7, theo H4)</td><td>—</td><td>—</td></tr>
+<tr><td>N6</td><td>Bản Python của service mẫu; chạy <code>sires-common:test</code></td><td>SPK-10 chỉ nói service NestJS; PID không chạm <code>libs/py</code></td><td>Không có</td></tr>
+<tr><td>N7</td><td>Ghi kết quả SPK-10 vào kiến trúc 12.2 và kết quả chạy DDL trên PostgreSQL 16 vào database 12.4</td><td>Chỉ PO ghi <code>docs/</code> (R-01)</td><td>PO, sau S07 và S05 (Phải sửa ở nguồn)</td></tr>
+<tr><td>N8</td><td>Kho Audit Event, topology RabbitMQ staging</td><td>PID-00002 “Không gồm”</td><td><a href="../../PID-00045/index.html">PID-00045</a>, <a href="../../PID-00057/index.html">PID-00057</a></td></tr>
+<tr><td>N9</td><td>Test hành vi DDL của từng service, gồm bộ 35 trường hợp đã chạy trên planning và orchestration</td><td>Mỗi PID migration mang test hành vi DDL của service mình (H7, D3)</td><td><a href="../../PID-00023/index.html">PID-00023</a>, <a href="../../PID-00019/index.html">PID-00019</a> và PID migration của các service khác</td></tr>
+<tr><td>N10</td><td>Giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> và Job migration cho service mẫu</td><td>Service mẫu không deploy (H6); Job migration chung thuộc chart</td><td>PID migration của từng service; <a href="../../PID-00010/index.html">PID-00010</a> (Job)</td></tr>
+<tr><td>N11</td><td>Tạo vai trò <code>sires_&lt;service&gt;_*</code> trong compose cục bộ; sửa ghi chú vai trò trong <code>infra/local/postgres/init/01-databases.sql</code></td><td>Luồng <code>infra</code> (D4)</td><td><a href="../../PID-00159/index.html">PID-00159</a></td></tr>
+<tr><td>N12</td><td>Thêm drizzle-kit vào pnpm catalog</td><td>Thêm cùng Drizzle (D5); catalog không thuộc luồng <code>platform</code> của PID này</td><td><a href="../../PID-00001/index.html">PID-00001</a></td></tr>
+<tr><td>N13</td><td>Gắn <code>libs/ts/sample-service</code> vào luồng <code>platform</code> trong bảng luồng 1.4 và <code>scripts/development/check-tracks.mjs</code></td><td>Tài liệu và script ngoài luồng của PID (R-01; <code>scripts/development/</code> thuộc <code>infra</code>)</td><td>PO (trang ticket, Phải sửa ở nguồn)</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét theo nhóm: đồng thời và idempotency, sự kiện (trùng, đồng thời), phân quyền (khác tài khoản, token nội bộ), dữ liệu biên (thiếu ngữ cảnh tenant), dữ liệu cũ (database thiếu vai trò, migration chạy lại), tương thích nền tảng (DDL trên PostgreSQL 16), vận hành CI. Nhóm giao diện, agent, provider, phê duyệt, provenance không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Lỗi xảy ra sau khi ghi trạng thái, trước commit</td><td>Rollback: không còn trạng thái mới, không dòng outbox <code>event</code>, không dòng outbox <code>audit</code></td><td>PID-00002-AC01; cổng PH-01</td><td><code>sample.spec.ts › lỗi giữa giao dịch không để lại dòng nào</code></td><td>S02</td></tr>
+<tr><td>EC02</td><td>Sự kiện đã xử lý xong rồi đến lại</td><td>Bỏ qua; tác động không áp lần hai; inbox vẫn một dòng</td><td>00-common.sql (<code>app.inbox</code>); PID-00002-AC02</td><td><code>sample.spec.ts › sự kiện trùng đến sau</code></td><td>S03</td></tr>
+<tr><td>EC03</td><td>Hai bản trùng của cùng <code>event_id</code> được xử lý đồng thời</td><td>Tác động đúng một lần; bản thua không để lại tác động (khóa chính <code>(consumer, event_id)</code>)</td><td>00-common.sql; PID-00002 S02</td><td><code>sample.spec.ts › sự kiện trùng xử lý đồng thời</code></td><td>S03</td></tr>
+<tr><td>EC04</td><td>Truy vấn bằng vai trò <code>_app</code> không đặt <code>app.account_id</code></td><td>0 dòng</td><td>00-common.sql (<code>app.current_account_id()</code>); database 12.4</td><td><code>sample.spec.ts › thiếu ngữ cảnh tenant thấy 0 dòng</code></td><td>S04</td></tr>
+<tr><td>EC05</td><td>Tài khoản B ghi dòng mang <code>account_id</code> của A</td><td>Bị từ chối (policy <code>WITH CHECK</code>)</td><td>00-common.sql (<code>enable_tenant_rls</code>); database 12.4</td><td><code>sample.spec.ts › ghi chéo tài khoản bị từ chối</code></td><td>S04</td></tr>
+<tr><td>EC06</td><td>Bộ test chạy khi không có mạng ngoài (image đã kéo về máy)</td><td>Đạt; không gọi dịch vụ ngoài</td><td>NFR-MAINT-004-AC01</td><td>Thao tác tay: ngắt mạng ngoài, chạy <code>pnpm nx run @sires/sample-service:test</code>; chạy lại sau S05, S06 với cả bộ</td><td>S04</td></tr>
+<tr><td>EC07</td><td>Một trong 5 lần đo CI của PR một service vượt 10 phút</td><td>Không đạt cổng; ghi số đo từng lần vào báo cáo, chuyển <a href="../../PID-00009/index.html">PID-00009</a> tối ưu</td><td>Spec mục 4.7; kiến trúc 11.3; H5</td><td>Báo cáo trong <code>agent/execution/PID-00006/report.md</code></td><td>S07</td></tr>
+<tr><td>EC08</td><td>Database chưa có vai trò của service mẫu khi chạy migration</td><td>Migration dừng với lỗi; test tạo vai trò trước khi chạy (vai trò không nằm trong migration)</td><td>Database 3.2; <code>00-common.sql</code> (<code>grant_standard</code>); H6 (D4)</td><td><code>migration.spec.ts › thiếu vai trò thì migration lỗi</code></td><td>S01</td></tr>
+<tr><td>EC09</td><td>Chạy lệnh migrate lần hai trên database đã migrate</td><td>Không áp lại migration nào (journal của drizzle-kit); schema không đổi</td><td>Kiến trúc 6.10; H6 (D1)</td><td><code>migration.spec.ts › chạy lại migrate không áp lại</code></td><td>S01</td></tr>
+<tr><td>EC10</td><td>Một file DDL tham chiếu lỗi trên PostgreSQL 16 + pgvector (lần chạy thử 02/11/2026 dùng PGlite)</td><td>Test báo đúng file và câu lệnh lỗi; Dev ghi DBQ trong <code>report.md</code>, không sửa DDL; S05 chưa xong tới khi PO sửa <code>docs/database/ddl/</code></td><td>Database 12.4; spec mục 4.7; H3</td><td><code>ddl-pg16.spec.ts › dựng 11 database từ DDL tham chiếu</code></td><td>S05</td></tr>
+<tr><td>EC11</td><td><code>nx affected</code> của PR được đo chọn thêm project ngoài <code>@sires/sample-service</code></td><td>Ghi danh sách project vào báo cáo và báo PO trước khi kết luận; không tự đổi PR đo hay cách đo</td><td>H1 (“PR một service” theo <code>nx affected</code>); H5</td><td>Báo cáo trong <code>agent/execution/PID-00006/report.md</code></td><td>S07</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00006</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Phạm vi PID-00006 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

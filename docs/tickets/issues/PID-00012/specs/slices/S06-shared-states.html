@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00012.">
+<title>S06 — Nhãn trạng thái và trạng thái dùng chung | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S06 — Nhãn trạng thái và trạng thái dùng chung</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/States.html">designs/States.html</a>.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-STATE-003-AC01 (phần component); PID-00012-AC01 (nhãn trạng thái dùng chung đổi theo ngôn ngữ)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B6, B7</td></tr>
+<tr><th scope="row">Edge case</th><td>EC11, EC12, EC19, EC20 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Chip trạng thái theo bảng design.md §3 và màn <code>Components</code>: nhận loại entity và trạng thái; chỉ cho các trạng thái có trong bảng (đề xuất nét đứt, đã chốt nét liền, cần bạn xử lý có icon, đang chạy có chấm <code>data-running</code>, cảnh báo, lỗi, trung tính); tên trạng thái giữ tiếng Anh; mọi chip có chữ. Bảng bổ sung PO duyệt (H4) thêm ở S11 sau khi design.md §3 cập nhật; trạng thái không có trong cả hai bảng: không tự đặt kiểu (EC20). Thẻ Interactive Agent Prompt làm ở S10 (H8).</li>
+<li>Execution label Available for agent và Manual editor requirement theo design.md §3.</li>
+<li>Đang tải: skeleton theo bố cục dòng thật (<code>data-skeleton</code>, <code>aria-hidden</code>) và dòng <code>role="status"</code> nêu đang tải gì.</li>
+<li>Thao tác dài theo <code>States</code> và design.md §2.4.1: tên thao tác, ai làm, thời gian đã chạy, hoạt động gần nhất, thanh biết số bước kèm “Bước n/m” hoặc thanh chạy lặp kèm thời gian đã chạy, nút hủy khi được truyền vào, câu “rời trang được”. Không spinner xoay.</li>
+<li>Trống: lý do và một hành động do màn truyền vào. Lỗi: chuyện gì xảy ra, phần đã lưu, làm gì tiếp, mã (<code>Problem.code</code>) và <code>correlationId</code>; dịch theo <code>code</code>: shell giữ bản dịch cho mã lỗi chung ở <code>components/responses.yaml</code>, khu vực giữ bản dịch mã nghiệp vụ trong namespace của mình; mã chưa dịch vẫn hiện mã (EC12); không stack trace, không body thô (EC11).</li>
+<li>Chuyển động theo <code>motion.css</code>; <code>prefers-reduced-motion</code> dừng vòng lặp (EC19).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/shell/states.spec.tsx › trạng thái lỗi</code> (UX-STATE-003-AC01 phần component); <code>› mã chưa dịch</code> (EC12); <code>› bảng nhãn</code> (EC20); <code>› đang tải có role status</code></li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src/shell</code> → 0 lỗi (gồm luật chuyển động, reduced motion — EC19)</li>
+<li>Thao tác tay: so với <code>docs/ui-design/pages/States.html</code>, <code>Components.html</code>; bật reduced motion</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Khu vực khác dùng được chip, execution label, đang tải, thao tác dài, trống, lỗi từ shell; đúng màn tham chiếu và check-ui sạch lỗi</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

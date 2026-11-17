@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S10 của ticket PID-00009.">
+<title>S10 — Đo thời gian CI và ghi số liệu OQ-112 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S10 — Đo thời gian CI và ghi số liệu OQ-112</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Đo AC01 làm được khi S01–S09 xong. Cách kết luận AC01 theo H4, cách xử lý ngưỡng OQ-112 theo H5 (PO 18/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00009-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>Số đo trong <code>agent/execution/PID-00009/report.md</code></td></tr>
+<tr><th scope="row">Bước spec</th><td>B9 (phần đo, OQ-112)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC11 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01–S09 (S11, S12 không cần: T3 không chạm Helm, Terraform nên hai job đó skipped)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Kiểm <code>develop</code> đã đi theo <code>main</code> (EC11), rồi mở PR thử T3 vào <code>develop</code> chỉ sửa một dòng chú thích trong <code>apps/gateway/src/</code>.</li>
+<li>Ghi thời gian lần chạy workflow (từ lúc tạo tới lúc hoàn tất) và thời gian từng job, cho lần có cache của <code>main</code> (dùng để kết luận AC01) và lần không cache (xóa cache của nhánh thử; chỉ để tham khảo) (H4).</li>
+<li>Viết lệnh hoặc script trong thư mục luồng infra đọc thời gian các lần chạy qua <code>gh run list</code> hoặc API của GitHub Actions, lọc theo loại lần chạy (PR không chạm code; lần chạy toàn bộ trên <code>main</code>), tính p95 của 20 lần gần nhất cộng 20% (OQ-112); chưa đủ 20 lần thì in số lần đã có và không in ngưỡng. Lệnh này ở lại repo để PO hoặc Dev chạy lại khi đủ 20 lần (loại có lọc: sau PID-00035) (H5).</li>
+<li>Ghi vào <code>report.md</code>: bảng số đo (link lần chạy, cache, tổng thời gian, job chậm nhất), số lần chạy đã có của mỗi loại, lệnh tính; ngưỡng chỉ ghi khi loại đó đã đủ 20 lần. Không chờ đủ 20 lần để báo Xong (H5).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>PR thử T3, lần có cache của <code>main</code>: lần chạy workflow dưới 10 phút (PID-00009-AC01, H4)</li>
+<li>Chạy lệnh tính p95 trên các lần chạy đã có → in số lần chạy mỗi loại; loại đủ 20 lần thì in p95 và p95 cộng 20%</li>
+<li><code>report.md</code> có bảng số đo và lệnh tính</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC01 đạt trên lần có cache của <code>main</code>; <code>report.md</code> có số đo cả hai lần, số lần chạy mỗi loại và lệnh tính OQ-112; lệnh ở lại repo</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S10 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của PID-00014: Tra phiên, hết hạn 12 giờ, gia hạn theo lệnh ghi.">
+<title>PID-00014 — S02 Tra phiên và hết hạn | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>S02 — Tra phiên và hết hạn</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00014-AC01, NFR-AUTH-001-AC01 (phần gateway)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC08 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (migration, lệnh migrate); <a href="../../../PID-00001/index.html">PID-00001</a> đã merge (helper tenancy, bộ lọc problem+json, logger, Fastify) — chưa có trên <code>main</code> ngày 17/11/2026</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo module <code>apps/gateway/src/session/</code> (tạo mới) và gắn vào <code>apps/gateway/src/app.module.ts</code> (có sẵn). Kết nối database bằng vai trò <code>sires_gateway_app</code>. Dùng Drizzle thì khai báo schema TypeScript của <code>app.session</code> ở module này (phần tính năng, D1).</li>
+<li>Guard toàn cục: đọc cookie <code>sires_session</code>, tính sha256, gọi <code>app.find_session</code>; không có dòng → <code>401</code> problem+json <code>code = unauthenticated</code> qua bộ lọc của PID-00001. Bỏ qua route công khai <code>/health</code>, <code>/auth/login</code>, <code>/auth/callback</code> (EC08). Gắn <code>accountId</code> của phiên vào request cho phần sau dùng.</li>
+<li>Gia hạn (H1): với lệnh ghi (POST, PUT, PATCH, DELETE) của phiên hợp lệ (S03 đặt kiểm CSRF trước bước này), trong giao dịch có <code>app.account_id</code> = <code>account_id</code> của phiên, đặt <code>last_seen_at = now()</code>, <code>idle_expires_at = now() + 12 giờ</code>. <code>GET /events</code> (EC07) và mọi GET khác không gia hạn; riêng <code>GET /auth/session</code> gia hạn ở S04.</li>
+<li>Không ghi lại phiên đã quá hạn hoặc thu hồi (<code>find_session</code> đã loại; EC04–EC06).</li>
+<li>Test: chạy lệnh migrate của S01 (test tạo vai trò trước), seed dòng <code>app.session</code> bằng kết nối quản trị (biết trước session id), dời <code>idle_expires_at</code>, <code>absolute_expires_at</code>, <code>revoked_at</code> để tạo từng tình huống; gắn route thử chỉ có trong test (một GET, một POST, một <code>/events</code>).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/gateway:test</code> → đạt (cần Docker)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › hết hạn sau 12 giờ không hoạt động</code> (PID-00014-AC01)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › không có phiên</code> (NFR-AUTH-001-AC01; EC02)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › hai tab dùng chung phiên</code> (EC01)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › cookie lạ</code> (EC03), <code>› phiên đã thu hồi</code> (EC04), <code>› quá hạn tuyệt đối</code> (EC05), <code>› biên 12 giờ</code> (EC06), <code>› SSE không gia hạn</code> (EC07), <code>› route công khai</code> (EC08)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi test trên đạt trên PostgreSQL 16 thật; lỗi trả đúng problem+json với mã trong <code>ErrorCode</code>; chỉ lệnh ghi được chấp nhận gia hạn phiên ở slice này.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00014</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00014 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

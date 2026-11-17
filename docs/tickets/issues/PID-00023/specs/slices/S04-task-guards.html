@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00023.">
+<title>S04 — Guard và chọn đích của T-01–T-19 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>S04 — Guard và chọn đích của T-01–T-19</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>TASK-STATE-001-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC12–EC14 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02. Phạm vi đã chốt (H3): guard và chọn đích thuộc PID này, dạng hàm thuần. Không cần database, không cần PID khác ngoài phần S02 dùng.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo H3: viết guard của từng mã theo cột Guard của PRD 9.8 (bảng dưới) dạng hàm thuần trong <code>apps/planning/src/task-state/</code>, nhận dữ kiện do bên gọi đưa vào; trả đạt, hoặc tên guard không đạt; không tự đọc database, không gọi service khác (NFR-MAINT-004). Không thêm guard ngoài cột Guard của 9.8.</li>
+<li>Chọn đích cho T-10 và T-19 theo dữ kiện “RC-01–RC-08 đạt” (Ready) hay không (Blocked).</li>
+<li>T-17 không phải chuyển trạng thái (EC09): viết hàm kiểm riêng “bỏ được Task Draft không” theo dữ kiện “Task từng thuộc baseline”, để PID-00049 gọi khi đặt <code>deleted_at</code>.</li>
+<li>Thêm test vào <code>apps/planning/src/task-state/task-state.spec.ts</code>: mỗi guard một ca đạt và một ca không đạt; EC12–EC14. Ánh xạ guard không đạt sang <code>ErrorCode</code> và mã HTTP không làm ở đây (PID-00074, PID-00075, PID-00091).</li></ol>
+<h3 id="bang-guard">Guard theo PRD 9.8</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Mã</th><th scope="col">Từ → Đến</th><th scope="col">Guard (cột Guard của 9.8)</th><th scope="col">Dữ kiện bên gọi đưa vào</th></tr></thead><tbody>
+<tr><td>T-01</td><td>Draft → Blocked</td><td>Một trong RC-01–RC-08 không đạt</td><td>readiness RC-01–RC-08 đạt (phải sai)</td></tr>
+<tr><td>T-02</td><td>Draft → Ready</td><td>RC-01–RC-08 đạt</td><td>readiness RC-01–RC-08 đạt</td></tr>
+<tr><td>T-03</td><td>Blocked → Ready</td><td>RC-01–RC-08 đạt</td><td>readiness RC-01–RC-08 đạt</td></tr>
+<tr><td>T-04</td><td>Ready → Blocked</td><td>Một trong RC-01–RC-08 không đạt</td><td>readiness RC-01–RC-08 đạt (phải sai)</td></tr>
+<tr><td>T-05</td><td>Ready, Failed → Queued</td><td>RC-01–RC-09 đạt</td><td>readiness RC-01–RC-09 đạt</td></tr>
+<tr><td>T-06, T-08, T-09, T-12</td><td>theo bảng 28 cặp</td><td>— (không có guard)</td><td>—</td></tr>
+<tr><td>T-07</td><td>Queued → Ready</td><td>Workflow chưa Running</td><td>Workflow đã Running</td></tr>
+<tr><td>T-10</td><td>In Progress, Waiting for User → Ready hoặc Blocked</td><td>Đích theo readiness RC-01–RC-08</td><td>readiness RC-01–RC-08 đạt (chọn đích)</td></tr>
+<tr><td>T-11</td><td>In Progress → In Review</td><td>Có đủ đầu ra bắt buộc</td><td>có đủ đầu ra bắt buộc</td></tr>
+<tr><td>T-13</td><td>In Review → Ready</td><td>Phản hồi và reasonCode không rỗng</td><td>phản hồi, reasonCode</td></tr>
+<tr><td>T-14</td><td>In Review → Completed</td><td>Mọi acceptance criterion đánh dấu đạt; mọi đầu ra bắt buộc có version Accepted</td><td>mọi criterion đạt; mọi đầu ra bắt buộc có version Accepted</td></tr>
+<tr><td>T-15</td><td>In Review → Blocked</td><td>Lý do và reasonCode không rỗng</td><td>lý do, reasonCode</td></tr>
+<tr><td>T-16</td><td>Failed → Blocked</td><td>Một trong RC-01–RC-08 không đạt</td><td>readiness RC-01–RC-08 đạt (phải sai)</td></tr>
+<tr><td>T-17</td><td>Draft → (không còn)</td><td>Task chưa từng thuộc baseline</td><td>Task từng thuộc baseline (hàm kiểm riêng, bước 3)</td></tr>
+<tr><td>T-18</td><td>Blocked, Ready, Queued, In Review, Failed → Cancelled</td><td>Không có Workflow hoạt động</td><td>có Workflow hoạt động</td></tr>
+<tr><td>T-19</td><td>Completed → Ready hoặc Blocked</td><td>Ghi lý do (đích theo RC-01–RC-08, EC14)</td><td>lý do; readiness RC-01–RC-08 đạt (chọn đích). Cờ needs review cho Task phụ thuộc (IMP-06) không thuộc guard: PID-00091</td></tr>
+</tbody></table></div>
+
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/planning:test</code> → đạt</li>
+<li>Test: <code>task-state.spec.ts › guard T-14</code> (TASK-STATE-001-AC04; EC12); <code>› guard workflow</code> (EC13); <code>› chọn đích theo readiness</code> (EC14); <code>› mỗi guard một ca đạt, một ca không đạt</code> (bảng guard)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mỗi guard trong bảng có test đạt và không đạt; chọn đích T-10, T-19 có test cả hai đích; test chạy không cần mạng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00023</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

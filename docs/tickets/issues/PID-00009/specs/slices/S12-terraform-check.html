@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S12 của ticket PID-00009.">
+<title>S12 — Kiểm Terraform trong CI | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S12 — Kiểm Terraform trong CI</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H6 (PO chấp nhận phương án A của <a href="../../others/issues.html#i6">I6</a> ngày 18/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (H6)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>H6 (làm rõ 18/11/2026; spec 4.4 nhóm Dockerfile/Helm/Terraform)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (cờ “Terraform đổi”); <a href="../../../PID-00011/index.html">PID-00011</a> đã merge (module trong <code>infra/terraform/modules/</code>, <code>infra/terraform/envs/staging</code>, <code>envs/production</code>). PID-00011 chưa làm: ghi nhận, không chặn trạng thái Sẵn sàng (H10); chưa merge khi các slice khác xong thì ghi <code>report.md</code>, làm slice này sau trong cùng PID hoặc ở Lần 2 (H6)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Job kiểm Terraform trong <code>.github/workflows/ci.yml</code>: cài Terraform bằng action chính thức; <code>terraform fmt -check -recursive</code> trên <code>infra/terraform</code>; <code>terraform init -backend=false</code> rồi <code>terraform validate</code> cho từng module và từng môi trường, đúng như PID-00011 nghiệm thu (PID-00011-AC01, AC03). Không dùng backend thật, không cần secret, không <code>plan</code>, <code>apply</code>.</li>
+<li>Điều kiện chạy theo H6: chế độ lọc khi job kiểm thay đổi báo “Terraform đổi” (<code>infra/terraform/</code>); chế độ toàn bộ luôn chạy; còn lại skipped (EC15).</li>
+<li>Không sửa file trong <code>infra/terraform</code> ngoài phần cần cho CI chạy được; lỗi định dạng hay cấu hình của module báo cho PID-00011 qua <code>report.md</code>.</li>
+<li>Job kiểm Terraform thuộc danh sách job mà job tổng <code>build</code> chờ.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Script kiểm thay đổi với <code>infra/terraform/envs/staging/main.tf</code> → cờ “Terraform đổi” bật; với <code>infra/helm/sires-service/values.yaml</code> → tắt (EC15)</li>
+<li>Thao tác tay trên nhánh thử (không merge): PR vào <code>develop</code> làm lệch thụt lề của một file <code>.tf</code> → job thất bại ở <code>fmt -check</code>; hoàn lại định dạng → đạt; đóng PR, xóa nhánh</li>
+<li>PR thử T1: job kiểm Terraform skipped; T4 — CI của PR PID-00009 vào <code>main</code>: job chạy (chế độ toàn bộ) và đạt</li>
+<li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng infra</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Terraform sai định dạng hay không validate được làm CI thất bại ở PR; job chạy đúng điều kiện H6, không cần secret</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S12 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

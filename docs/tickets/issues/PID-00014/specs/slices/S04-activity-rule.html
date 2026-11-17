@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của PID-00014: GET /auth/session gia hạn phiên, GET khác không.">
+<title>PID-00014 — S04 Gia hạn phiên bằng GET /auth/session | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>S04 — Gia hạn phiên bằng GET /auth/session</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng của ticket (ADR-27: điều hướng, mở màn hình là thao tác; polling không; cách phân biệt theo H1)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC14 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02. Mô tả <code>getSession</code> trong hợp đồng do PO sửa (trang ticket, Phải sửa ở nguồn) — không chặn slice này.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Trong guard của S02: request <code>GET /auth/session</code> có phiên hợp lệ được gia hạn như lệnh ghi được chấp nhận — trong giao dịch có <code>app.account_id</code> = <code>account_id</code> của phiên, đặt <code>last_seen_at = now()</code>, <code>idle_expires_at = now() + 12 giờ</code> — rồi chuyển cho handler (handler của endpoint thuộc PID-00038). Mọi GET khác, kể cả polling và <code>/events</code>, không gia hạn (H1). Không thêm header hay đánh dấu nào vào hợp đồng.</li>
+<li>Test EC14: gắn handler thử ở <code>GET /auth/session</code> và một GET thử khác. Gọi <code>GET /auth/session</code> → <code>last_seen_at</code>, <code>idle_expires_at</code> đổi theo lúc gọi; gọi GET thử khác nhiều lần → không đổi; phiên đã quá 12 giờ gọi <code>GET /auth/session</code> → <code>401</code>, không gia hạn (EC06).</li>
+<li>Không sửa <code>docs/api-design</code>; mô tả <code>getSession</code> và việc web gọi nó khi điều hướng do PO và PID-00012 làm.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/gateway:test</code> → đạt (cần Docker)</li>
+<li><code>apps/gateway/src/session/session.spec.ts › GET /auth/session gia hạn, GET khác không</code> (EC14)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Gateway chỉ gia hạn phiên trong hai trường hợp: lệnh ghi được chấp nhận và <code>GET /auth/session</code> (H1); test EC14 đạt; S02 không còn điểm nối chưa hiện thực.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00014</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00014 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

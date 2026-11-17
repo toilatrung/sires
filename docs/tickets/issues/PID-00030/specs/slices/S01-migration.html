@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00030.">
+<title>S01 — Migration theo DDL, lệnh migrate, giá trị Helm, test hành vi DDL | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00030</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00030</p><h1>S01 — Migration theo DDL, lệnh migrate, giá trị Helm, test hành vi DDL</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00030-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2 (mã chạy migration); lệnh migrate và giá trị Helm (P6, H3)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC13 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00001/index.html">PID-00001</a> đã merge phần thêm Drizzle, drizzle-kit, node-postgres vào pnpm catalog (H5, quyết định chung D5); <a href="../../../PID-00004/index.html">PID-00004</a> (đã merge). PID-00001 chưa làm: ghi nhận, không chặn (H6).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo migration đầu tiên trong <code>apps/manuscript/migrations/</code> (có sẵn, rỗng) là <strong>custom migration SQL của drizzle-kit</strong> (drizzle-kit tạo file SQL rỗng và mục journal; tên file theo drizzle-kit) — H2, quyết định chung D1, <a href="../../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>: nội dung chép từ <code>docs/database/ddl/00-common.sql</code> rồi <code>docs/database/ddl/manuscript.sql</code>, <strong>trừ</strong> câu <code>INSERT INTO app.state_transition</code> (S02 sinh bằng helper). Giữ nguyên tên đối tượng, khóa ngoại hoãn, trigger, chính sách RLS, <code>GRANT</code>/<code>REVOKE</code>; không tạo vai trò. Không viết schema Drizzle bằng TypeScript (PID tính năng viết — N8). Chỉ tiến.</li>
+<li>Mã chạy migration trong <code>apps/manuscript/src/db/</code> (tạo mới) bằng <code>migrate()</code> của drizzle-orm (node-postgres) và script <code>migrate</code> trong <code>apps/manuscript/package.json</code> (có sẵn), chạy được trong image không có drizzle-kit (PID-00010 EC01). Gói <code>drizzle-orm</code>, <code>pg</code> qua <code>catalog:</code>, <code>drizzle-kit</code> là devDependency qua <code>catalog:</code>; gói khác chưa có trong catalog thì dừng.</li>
+<li>Thêm vào <code>apps/manuscript/deploy/values.yaml</code> (có sẵn) khóa <code>migration.enabled: true</code> và <code>migration.command</code> = lệnh chạy mã migrate ở bước 2 trong image (H3, quyết định chung D3; Job migration của chart thuộc PID-00010 S02). Lệnh cụ thể ghi <code>implement.md</code>.</li>
+<li>Test tích hợp <code>apps/manuscript/src/db/migration.spec.ts</code> (tạo mới) với <code>startPostgres</code> của <code>@sires/testing</code>: tạo vai trò như database 3.2 (<code>_system</code>, <code>_purge</code> có BYPASSRLS; compose cục bộ chưa tạo tới khi có PID-00159 — H4); dựng database A bằng mã migrate của bước 2, database B bằng hai file DDL (bỏ phần <code>INSERT</code> chuyển trạng thái); so schema A và B — công cụ do Dev chọn (database 12.4 gợi ý migra), ghi <code>implement.md</code>.</li>
+<li>Test hành vi DDL cho EC02–EC13 trên database A bằng đúng vai trò (<code>_app</code> có <code>SET LOCAL app.account_id</code>, hoặc <code>_system</code>); mồi <code>replica.project_state</code>, <code>replica.reference_state</code> bằng <code>_system</code>; Manuscript và revision đầu tạo trong cùng giao dịch (khóa ngoại hoãn). Trong S01 bảng chuyển trạng thái còn rỗng nên mọi <code>UPDATE</code> đổi trạng thái đều bị từ chối — test EC09 kiểm đúng thông báo “lỗi thời” (trigger chấp nhận chạy trước trigger trạng thái).</li>
+<li>DDL lỗi trên PostgreSQL 16 mà không sửa được trong migration (EC01) → dừng, ghi đề xuất DBQ vào <code>report.md</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/manuscript:test</code> → đạt (cần Docker)</li>
+<li><code>pnpm nx run @sires/manuscript:typecheck</code>, <code>pnpm nx run @sires/manuscript:lint</code> → đạt</li>
+<li>Test: <code>apps/manuscript/src/db/migration.spec.ts › schema khớp DDL</code> (PID-00030-AC01)</li>
+<li>Đọc lại <code>apps/manuscript/deploy/values.yaml</code>: có <code>migration.enabled: true</code> và <code>migration.command</code> trùng lệnh của script <code>migrate</code> (H3); khi PID-00010 S02 đã merge: <code>helm template infra/helm/sires-service -f apps/manuscript/deploy/values.yaml</code> có Job migration</li>
+<li>Test: <code>apps/manuscript/src/db/migration.spec.ts › chạy trên PostgreSQL 16</code> (EC01), <code>› thiếu vai trò</code> (EC02), <code>› chạy lại</code> (EC03), <code>› RLS</code> (EC04), <code>› một Manuscript mỗi project</code> (EC05), <code>› Manuscript cần revision hiện hành</code> (EC06), <code>› ràng buộc revision</code> (EC07), <code>› ràng buộc file</code> (EC08), <code>› proposal lỗi thời không chấp nhận được</code> (EC09), <code>› Accepted cần citation check và phê duyệt</code> (EC10), <code>› bibliography chỉ từ Reference Trusted</code> (EC11), <code>› build idempotent</code> (EC12), <code>› chặn ghi theo vòng đời project</code> (EC13)</li>
+<li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng <code>manuscript</code> (cảnh báo <code>infra</code> do <code>pnpm-lock.yaml</code> đổi thì ghi <code>report.md</code>, quy tắc 1.4.7)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Database rỗng chạy migration xong có schema giống hệt database dựng từ DDL tham chiếu (trừ dòng chuyển trạng thái), và test EC02–EC13 đạt trên PostgreSQL 16 + pgvector, và <code>values.yaml</code> có khóa <code>migration</code> đúng lệnh migrate.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00030</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00030 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

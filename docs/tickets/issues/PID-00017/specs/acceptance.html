@@ -1,0 +1,33 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00017.">
+<title>PID-00017 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00017</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00017</p><h1>PID-00017 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test, gồm AC của ticket và AC requirement được phủ. Không có ngưỡng số nào chờ OQ.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00017-AC01</td><td>Given database rỗng trên PostgreSQL 16 + pgvector đã có bốn vai trò sires_workspace_*, When chạy migration của service (custom migration SQL của drizzle-kit chạy bằng migrate() của drizzle-orm — H1), Then schema khớp database dựng từ 00-common.sql + workspace.sql (không tính sổ migration của công cụ); và các test hành vi DDL ở EC06–EC12 đều đạt trên database đã migrate.</td><td><code>apps/workspace/src/db/migration.spec.ts › schema khớp DDL tham chiếu</code>; <code>apps/workspace/src/db/ddl-behaviour.spec.ts</code> (mọi ca)</td><td>S01, S02</td><td>ticket; DBD-02; DDL</td></tr>
+<tr><td>NFR-MAINT-003-AC01</td><td>Phần workspace: Given khai báo ba machine, When thử mọi cặp có thứ tự trong tập trạng thái của từng machine (research_project 2×2, pending_action 3×3, notification 2×2), Then đúng 6 cặp của PRD 18.2 được nhận, các cặp còn lại bị từ chối với invalid_transition; trigger database cho cùng kết quả khi đổi status, với dòng app.state_transition sinh từ khai báo bằng helper của PID-00158. Khai báo ở PID này theo H3; công cụ theo H2.</td><td><code>apps/workspace/src/domain/state-machines.spec.ts › mọi cặp</code>; <code>apps/workspace/src/db/state-transition.spec.ts › trigger</code></td><td>S03</td><td>PRD 18.2; database 10.2; H2, H3</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00017</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00017 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

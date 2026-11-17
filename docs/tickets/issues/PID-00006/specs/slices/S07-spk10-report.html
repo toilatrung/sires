@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S07 của PID-00006: đo thời gian CI 5 lần và báo cáo SPK-10.">
+<title>PID-00006 — S07 Báo cáo SPK-10 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>S07 — Báo cáo SPK-10</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. (Trước 18/11/2026 là S04.)</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (bước B3, cổng ra PH-01 “Pull request chạm một service NestJS chạy CI dưới 10 phút”)</td></tr>
+<tr><th scope="row">Output spec</th><td>Báo cáo trong <code>agent/execution/PID-00006/report.md</code></td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC07, EC11 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01–S06 xong; pull request của ticket đã mở trên GitHub (Dev tạo PR khi được yêu cầu). Cách đặt service mẫu theo H1, cách đo theo H5.</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>PR được đo là pull request của chính ticket, gồm S01–S06 (H1). Trước khi đo, ghi danh sách project mà <code>nx affected</code> chọn trên PR đó; có project ngoài <code>@sires/sample-service</code> → ghi vào báo cáo và báo PO trước khi kết luận, không tự đổi PR hay cách đo (EC11).</li>
+<li>Chạy CI của cùng PR đó 5 lần (lần đầu và 4 lần chạy lại toàn bộ job) với <code>.github/workflows/ci.yml</code> hiện tại; không bật Nx remote cache (<code>nx.json</code> giữ <code>neverConnectToCloud</code>); ghi commit của <code>ci.yml</code> lúc đo (H5).</li>
+<li>Mỗi lần ghi: liên kết lần chạy, tổng thời gian workflow, thời gian từng job <code>tracks</code>, <code>build</code>; trong <code>build</code> tách thời gian <code>pnpm install</code>, <code>uv sync</code>, <code>nx affected</code>.</li>
+<li>Kết luận: đạt khi cả 5 lần dưới 10 phút. Một lần từ 10 phút trở lên → không đạt cổng, ghi đề xuất cho PID-00009 (EC07). Ghi cấu hình đo để PID-00009 so sánh khi đổi CI.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00006 --result</code> → báo cáo đủ mục</li>
+<li>Báo cáo trong <code>agent/execution/PID-00006/report.md</code> có: danh sách project <code>nx affected</code> chọn (EC11), liên kết và số đo của 5 lần, thời gian từng job, cấu hình CI lúc đo, kết luận so với 10 phút (EC07)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Báo cáo có số đo của 5 lần theo H5 và kết luận; PO dùng nó để ghi kết quả SPK-10 vào kiến trúc 12.2.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00006</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00006 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

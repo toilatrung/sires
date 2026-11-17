@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00158.">
+<title>S04 — TS: lệnh in SQL, export, README | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S04 — TS: lệnh in SQL, export, README</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC06 (phần TS)</td></tr>
+<tr><th scope="row">Output spec</th><td>O3, O4, O6 (<code>bin</code>, loại <code>testdata</code> khỏi build), O7 (<code>cli.spec.ts</code>), O11 (README TS)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC17, EC18 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li><code>runCli(argv, io)</code> trả mã thoát: tham số 1 là đường dẫn module JS (tuyệt đối hoặc tính từ thư mục đang chạy), tham số 2 là tên export (mặc định <code>stateMachines</code>); nạp bằng <code>import()</code> qua <code>pathToFileURL</code>; mỗi phần tử là machine đã định nghĩa hoặc khai báo dạng dữ liệu cùng hình, đi lại qua <code>defineStateMachine</code>; ghi <code>renderStateTransitionSql</code> ra stdout. Lỗi (module không có, export không có, không phải mảng, khai báo sai) → stderr nêu lý do, stdout rỗng, mã 1 (EC17) — file: <code>libs/ts/platform/src/state-machine/cli.ts</code> (tạo mới).</li>
+<li>File chạy có shebang <code>#!/usr/bin/env node</code> gọi <code>runCli(process.argv.slice(2), …)</code> và đặt <code>process.exitCode</code>; thêm <code>"bin": { "sires-state-transition-sql": "dist/state-machine/cli.js" }</code> (hay file bin riêng Dev chọn, ghi <code>implement.md</code>) vào <code>libs/ts/platform/package.json</code>.</li>
+<li>Export từ <code>libs/ts/platform/src/state-machine/index.ts</code> (tạo mới) mọi tên ở <a href="../index.html#s-4-2">spec 4.2</a>; thêm một dòng export ở <code>libs/ts/platform/src/index.ts</code> (có sẵn), không đổi dòng cũ.</li>
+<li>Viết <code>cli.spec.ts</code>: module mẫu là file JS trong <code>testdata</code> (tạo mới, xuất <code>stateMachines</code> là dữ liệu đọc từ <code>golden-machines.json</code>); “in SQL” (stdout bằng <code>golden.txt</code> sau khi bỏ <code>\r</code>, mã 0); “lỗi module” (đường dẫn không có, export không có, export không phải mảng: mã 1, stderr có lý do, stdout rỗng) — file: <code>libs/ts/platform/src/state-machine/cli.spec.ts</code> (tạo mới).</li>
+<li>Cập nhật <code>libs/ts/platform/README.md</code> (có sẵn): API (bảng spec 4.2); quy trình dùng trong migration và đổi khai báo về sau theo <a href="../index.html#s-4-4">spec 4.4</a> (EC18), có ví dụ lệnh <code>pnpm nx run @sires/&lt;service&gt;:build</code> rồi <code>pnpm exec sires-state-transition-sql dist/…/state-machines.js</code> trong thư mục service; nhắc chạy <code>node scripts/docs/add-license.mjs</code> cho file <code>.sql</code> mới; ví dụ test so dòng sau migration bằng <code>compareStateTransitionRows</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:build</code> → có <code>libs/ts/platform/dist/state-machine/cli.js</code>, không có <code>dist/state-machine/testdata</code>; <code>pnpm nx run @sires/platform:test</code>, <code>:typecheck</code>, <code>:lint</code> → đạt</li>
+<li>Test: <code>cli.spec.ts › in SQL</code>, <code>› lỗi module</code> (PID-00158-AC06; EC17)</li>
+<li>Thao tác tay: <code>node libs/ts/platform/dist/state-machine/cli.js &lt;module JS mẫu đã build&gt;</code> in đúng SQL; <code>node scripts/docs/add-license.mjs --check</code> sạch.</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Lệnh in đúng SQL và báo lỗi đúng mã thoát; mọi tên ở spec 4.2 import được từ <code>@sires/platform</code>; export cũ không đổi; README đủ để một PID migration làm theo không phải hỏi.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

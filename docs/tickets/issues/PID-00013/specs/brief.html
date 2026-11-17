@@ -1,0 +1,66 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00013.">
+<title>PID-00013 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00013</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00013</p><h1>PID-00013 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Làm rõ 17/11/2026 theo lô PH-01, không hỏi PO trong phiên: không có phiếu mở riêng của PID này. Ngày 18/11/2026 PO xác nhận hồ sơ (H1, trang ticket mục 5); điểm chung với shell đã chốt ở <a href="../../PID-00012/index.html#phien-2">PID-00012</a> (H1, H2, H5), kiểm bundle trong CI ở <a href="../../PID-00009/index.html#phien-2">PID-00009</a> (H9). Mỗi dòng dẫn nguồn.</p>
+
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Dev của các khu vực <code>web</code>. Trong lúc gateway và service chưa có (tới PH-02, PH-03), mỗi khu vực chạy màn và test với mock sinh từ OpenAPI công khai. PID này làm phần dùng chung trong <code>web/shell</code>: bộ sinh mock có type, cách bật mock khi chạy dev và test, mock mẫu cho <code>/events</code>. Mock của từng khu vực do khu vực tự sinh và giữ trong thư mục của mình.</p>
+
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Mock sinh từ OpenAPI công khai; khi OpenAPI đổi một schema, sinh lại thì mock đổi theo và typecheck báo chỗ lệch — ticket AC01</li>
+<li>Operation không có ví dụ → sinh theo schema, không lỗi — spec 4.7</li>
+<li>Mock riêng của khu vực nằm trong thư mục của khu vực (<code>apps/web/src/features/&lt;khu vực&gt;/__mocks__/</code> theo PID-00036, PID-00037, PID-00060) — ticket “Không gồm”; quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-4">1.4.4</a>; tickets 1.5</li>
+<li>Mock dùng khi chạy dev và test; không thuộc bản build triển khai — ticket mục 1 (“Cách bật mock khi chạy dev và test”); PO xác nhận 18/11/2026</li>
+<li>Shell gọi thêm các operation path 07 và <code>updatePreferences</code> (PID-00012 H1, H2); mock của chúng do khu vực <code>global</code>, <code>project</code>, <code>settings</code> khai, mock dùng chung của shell không khai lại (EC10)</li>
+<li><code>web</code> chỉ gọi gateway bằng OpenAPI công khai và SSE <code>/events</code>; không mock API nội bộ hay AsyncAPI — kiến trúc 3.2; tickets 1.2 (web: “chỉ gọi gateway”)</li>
+<li>Lỗi giả lập dùng problem+json với <code>code</code> thuộc <code>ErrorCode</code>, lỗi từng trường thuộc <code>FieldErrorCode</code> — <code>components/schemas/common.yaml#/Problem</code> (PO 11/11/2026)</li>
+<li>SSE: bản ghi có <code>id</code>, <code>event</code>, <code>data</code> (<code>Event</code>); nối lại theo <code>Last-Event-ID</code>; <code>chat.delta</code> không có id bền — <code>paths/14-…yaml#/events</code>; <code>Event</code></li>
+<li>Một khu vực không sửa file của khu vực khác; shell ghép qua <code>src/shell/features.ts</code> — quy tắc 1.4.9</li>
+<li>Gói chỉ <code>web</code> dùng khai phiên bản trong <code>apps/web/package.json</code> — quy tắc 1.4.7</li>
+<li>Dev tự QC (<code>self-qc.md</code>, spec-converge-skill) trước “Xong — chờ QC” — DEC-58</li></ul>
+
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/api-design/dist/openapi.bundled.yaml</code> — có; khớp nguồn khi bundle lại ngày 17/11/2026 (chỉ khác ký tự xuống dòng); cũng là nguồn của <code>PublicApi</code> trong <code>libs/ts/contracts/scripts/generate.mjs</code>; CI sẽ kiểm khớp nguồn (PID-00009 H9)</li>
+<li><code>@sires/contracts</code> (<code>PublicApi</code>) — có</li>
+<li><code>apps/web/src/shell/mock/</code> — chưa có (tạo mới)</li>
+<li>Client API, client SSE của shell — chưa có; làm ở <a href="../../PID-00012/index.html">PID-00012</a> S04, S05</li>
+<li><code>apps/web/vite.config.ts</code> — có; proxy <code>/api</code>, <code>/auth</code>, <code>/events</code> tới gateway khi không bật mock</li>
+<li>PID khu vực đã ghi chỗ đặt mock: PID-00036 (<code>features/settings/__mocks__/</code>, 16 operation), PID-00037 (<code>features/global/__mocks__/</code>, 8 operation), PID-00060 (<code>features/global/__mocks__/</code>, 7 operation) — có</li></ul>
+
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/web/src/shell/mock/</code> (tạo mới): bộ sinh mock, bật mock khi dev và test, mock mẫu <code>/events</code>, README hướng dẫn khu vực → S01–S04</li>
+<li>O2 <code>apps/web/src/shell/mock/mock.spec.ts</code> (tạo mới) → S01, S04</li></ul>
+
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Mock = handler giả lập phản hồi của gateway theo OpenAPI công khai; không phải stub service nội bộ (luồng service tự viết, quy tắc 1.4.4)</li>
+<li>Phần sinh = file bộ sinh tạo ra, không sửa tay; override = mã khu vực viết tay, có type, dựa trên phần sinh</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00013</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00013 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

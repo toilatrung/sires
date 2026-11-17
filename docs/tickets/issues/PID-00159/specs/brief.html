@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00159.">
+<title>PID-00159 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>PID-00159 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1, H2). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng infra (người làm congminh1705) làm cho PostgreSQL của compose cục bộ có sẵn vai trò của từng service theo database 3.2, ngay khi chạy <code>pnpm local:up</code>, kể cả trên volume Dev đã có. Nhờ đó Dev của 11 service chạy được migration (DDL gọi <code>app.grant_standard</code> và cấp quyền cho các vai trò này) và chạy service bằng đúng vai trò như ở staging. Thêm một lệnh kiểm <code>pnpm local:check-db</code> để Dev và QC thấy vai trò, quyền đã đúng.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Compose cục bộ tạo vai trò <code>sires_&lt;svc&gt;_*</code> theo database 3.2; không chặn PID khác, test tự tạo vai trò tới khi PID này xong — H1 (D4).</li>
+<li>Script khởi tạo của luồng infra tạo bốn vai trò mỗi database, <code>_system</code> và <code>_purge</code> có BYPASSRLS; sửa chú thích của <code>infra/local</code>; migration không tạo vai trò — H2 (PID-00023 I5, PID-00017 I4, PID-00016 I5, PID-00006 I2).</li>
+<li>Bốn vai trò mỗi database: owner (không LOGIN, sở hữu schema và chạy migration), <code>_app</code> (LOGIN, có RLS), <code>_system</code>, <code>_purge</code> (LOGIN, BYPASSRLS) — database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-06">DBD-06</a>.</li>
+<li>Không service nào kết nối database của service khác — database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-1">3.1</a>.</li>
+<li>Quyền trên bảng do DDL cấp bằng <code>app.grant_standard</code>; owner chỉ dùng cho migration — database <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a>.</li>
+<li><code>vector</code> chỉ ở <code>sires_knowledge</code> — database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-3">3.3</a>; <code>vector</code> 0.8.7 của image không trusted nên superuser tạo lúc init (kiểm 18/11/2026).</li>
+<li>Migration của service: SQL chép từ DDL, lệnh migrate riêng mỗi service (D1, D3); vai trò chạy migration ở cục bộ chưa chốt — phiếu <a href="../others/issues.html#i1">I1</a>.</li>
+<li>Luồng infra giữ <code>infra/</code>, <code>scripts/development/</code>, <code>package.json</code> gốc — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#trk-infra">1.3</a>.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>infra/local/compose.yaml</code> — image <code>pgvector/pgvector:pg16</code> (PostgreSQL 16.15), người dùng <code>sires</code>, mật khẩu <code>sires-local</code>, init mount — có.</li>
+<li><code>infra/local/postgres/init/01-databases.sql</code> — 11 database, chú thích sai về vai trò — có.</li>
+<li><code>scripts/development/local-env.mjs</code> — <code>up</code>, <code>down</code>, <code>ps</code>, <code>logs</code>; qua WSL khi ở Windows — có.</li>
+<li>DDL: <code>app.grant_standard(p_svc)</code> cấp cho <code>sires_&lt;svc&gt;_app</code>, <code>_system</code>, <code>_purge</code>; <code>agent-core.sql</code> dùng <code>agent_core</code> — có.</li>
+<li>PID phụ thuộc: không có. Vai trò chạy migration: thiếu tên ở database 3.2 → I1.</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>02-roles.sql</code> (vai trò, chủ, CONNECT, <code>vector</code>) → S01; phần vai trò chạy migration → S03</li>
+<li>O2 chú thích <code>01-databases.sql</code> → S01</li>
+<li>O3 <code>local-env.mjs</code>: <code>check-db</code> → S01 (mục 1–5), S02 (mục 6, bước áp ở <code>up</code>), S03 (mục 7)</li>
+<li>O4 script <code>local:check-db</code> → S01</li>
+<li>O5 vai trò chạy migration → S03 (chặn bởi I1)</li>
+<li>O6 README → S04</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>&lt;svc&gt;</code> = khóa service trong tên database và vai trò: gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, agent_core, knowledge</li>
+<li>vai trò chạy migration (migrator) = vai trò mà lệnh migrate của service đăng nhập (database 3.2)</li>
+<li>volume cũ = volume <code>postgres-data</code> của compose tạo trước PID này</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00159</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

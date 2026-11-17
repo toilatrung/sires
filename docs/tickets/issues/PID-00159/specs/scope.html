@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00159.">
+<title>PID-00159 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>PID-00159 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc H1, H2 ở <a href="../index.html#s-5">trang ticket</a>.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td><code>infra/local/postgres/init/02-roles.sql</code>: bốn vai trò cho mỗi service trong 11 database, thuộc tính đúng database 3.2, mật khẩu cục bộ <code>sires-local</code>; chạy lại không đổi</td><td>H1, H2; database 3.2; ticket AC01</td><td>S01</td></tr>
+<tr><td>P2</td><td>Database <code>sires_&lt;svc&gt;</code> thuộc <code>sires_&lt;svc&gt;_owner</code>; thu CONNECT của PUBLIC; cấp CONNECT cho vai trò của đúng service</td><td>Database 3.1, 3.2; ticket AC02</td><td>S01</td></tr>
+<tr><td>P3</td><td>Extension <code>vector</code> trong <code>sires_knowledge</code> do superuser tạo lúc init</td><td>Database 3.3; <code>vector</code> không trusted; ticket AC04</td><td>S01</td></tr>
+<tr><td>P4</td><td><code>local-env.mjs</code>: <code>up</code> áp <code>02-roles.sql</code> cho volume đã có; hành động <code>check-db</code>; script <code>local:check-db</code> ở <code>package.json</code> gốc</td><td>H1; ticket AC01–AC04</td><td>S01, S02</td></tr>
+<tr><td>P5</td><td>Vai trò chạy migration ở cục bộ và mục <code>check-db</code> áp thử DDL tham chiếu của 11 service</td><td>Database 3.2; ticket AC05; phiếu I1</td><td>S03</td></tr>
+<tr><td>P6</td><td>Sửa chú thích <code>01-databases.sql</code>; README <code>infra/</code> và <code>scripts/development/</code></td><td>H2</td><td>S01, S04</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Vai trò ở staging, production</td><td>Terraform tạo (database 3.2); chờ nhà cloud (AQ-12, DBQ-01)</td><td>PID-00035, module Terraform</td></tr>
+<tr><td>N2</td><td>Fixture Testcontainers tạo vai trò giống <code>02-roles.sql</code></td><td>Thuộc luồng platform; D4: test tự tạo vai trò</td><td>PID platform sau nếu PO muốn (câu hỏi đề xuất ở spec mục 7)</td></tr>
+<tr><td>N3</td><td>Migration, lệnh migrate, giá trị Helm <code>migration.*</code> của service</td><td>D1, D3; quy tắc 1.4.6</td><td>11 PID migration</td></tr>
+<tr><td>N4</td><td>Hạn mức kết nối theo vai trò (<code>CONNECTION LIMIT</code>)</td><td>Database 3.3 chưa có số; không đặt số khi PO chưa chốt</td><td>Khi PO chốt số</td></tr>
+<tr><td>N5</td><td>Chạy <code>check-db</code> trong CI</td><td>Cần job có Docker và compose; ngoài D4</td><td>PID-00009 hoặc PID infra sau (câu hỏi đề xuất)</td></tr>
+<tr><td>N6</td><td>Tạo extension trusted (<code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code>)</td><td>Migration tạo qua <code>00-common.sql</code> bằng quyền owner</td><td>PID migration</td></tr>
+<tr><td>N7</td><td>Quyền trên bảng, RLS</td><td>DDL cấp (<code>app.grant_standard</code>, <code>app.enable_tenant_rls</code>)</td><td>PID migration</td></tr>
+<tr><td>N8</td><td>TLS, pooler, secret manager</td><td>Chỉ staging, production (database 3.3, 3.2)</td><td>PID-00035</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét: dữ liệu cũ (volume có sẵn), chạy lại, thuộc tính sai, tên đặc biệt, quyền chéo, môi trường (Windows, WSL, Docker chưa chạy), DDL chưa chạy thử trên PostgreSQL 16. Không áp dụng: giao diện, provider, sự kiện, phê duyệt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Volume tạo trước PID này (init không chạy lại)</td><td><code>up</code> áp <code>02-roles.sql</code> sau khi PostgreSQL sẵn sàng; dữ liệu giữ nguyên</td><td>spec 4.4</td><td>thao tác tay “volume cũ” (S02)</td><td>S02</td></tr>
+<tr><td>EC02</td><td>Chạy <code>02-roles.sql</code> nhiều lần</td><td>Không lỗi; thuộc tính, thành viên, chủ, ACL không đổi</td><td>ticket AC03</td><td><code>local-env.mjs check-db › chạy lại không đổi</code></td><td>S02</td></tr>
+<tr><td>EC03</td><td>Vai trò đã có nhưng sai thuộc tính (ví dụ <code>_system</code> thiếu BYPASSRLS, hay có SUPERUSER)</td><td>Script đặt lại đúng database 3.2</td><td>spec 4.4</td><td>thao tác tay: sửa thuộc tính, <code>pnpm local:up</code>, <code>check-db › vai trò</code> đạt</td><td>S01</td></tr>
+<tr><td>EC04</td><td>Database <code>sires_&lt;svc&gt;</code> chưa có</td><td>Bỏ qua phần database của service đó, vẫn tạo vai trò; <code>check-db</code> báo thiếu database</td><td>spec 4.4</td><td>thao tác tay: chạy <code>02-roles.sql</code> trên container PostgreSQL trống, không lỗi</td><td>S01</td></tr>
+<tr><td>EC05</td><td>Service có gạch nối (agent-core)</td><td>Database và vai trò dùng <code>agent_core</code> như DDL</td><td><code>agent-core.sql</code> (<code>grant_standard('agent_core')</code>)</td><td><code>check-db › vai trò</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td><code>vector</code> không trusted</td><td>Superuser tạo trong <code>sires_knowledge</code> lúc init và trong bản tạm của knowledge ở <code>check-db</code></td><td>file <code>vector.control</code> của image (kiểm 18/11/2026)</td><td><code>check-db › extension</code>; <code>› áp DDL tham chiếu</code></td><td>S01, S03</td></tr>
+<tr><td>EC07</td><td>Vai trò của service A kết nối database của B</td><td>Bị từ chối (không có CONNECT)</td><td>Database 3.1</td><td><code>check-db › kết nối</code></td><td>S01</td></tr>
+<tr><td>EC08</td><td>Superuser <code>sires</code> của compose</td><td>Vẫn kết nối mọi database (công cụ, init)</td><td>spec 4.4</td><td><code>check-db › kết nối</code></td><td>S01</td></tr>
+<tr><td>EC09</td><td>PostgreSQL chưa sẵn sàng hay <code>psql</code> lỗi khi áp script trong <code>up</code></td><td>Chờ healthcheck bằng <code>up -d --wait</code>; lỗi thì in lý do, mã thoát khác 0</td><td>spec 4.4</td><td>thao tác tay: làm hỏng tạm một dòng của script, <code>pnpm local:up</code> báo lỗi; hoàn tác</td><td>S02</td></tr>
+<tr><td>EC10</td><td>Windows: Docker trong WSL; nội dung DDL đưa qua stdin</td><td>Gọi <code>docker compose exec -T</code> qua <code>wsl.exe</code> như các hành động hiện có</td><td><code>local-env.mjs</code>; <code>scripts/development/README.md</code></td><td>thao tác tay trên Windows: <code>pnpm local:up</code>, <code>pnpm local:check-db</code></td><td>S02, S03</td></tr>
+<tr><td>EC11</td><td>Áp DDL tham chiếu lỗi vì lý do không phải vai trò</td><td>Dừng S03, ghi DBQ đề xuất trong <code>report.md</code>; không sửa DDL</td><td>Database 12.4 (chưa chạy trên PostgreSQL 16)</td><td><code>check-db › áp DDL tham chiếu</code></td><td>S03</td></tr>
+<tr><td>EC12</td><td>Database tạm <code>sires_check_*</code> còn sót từ lần chạy dừng giữa chừng</td><td>Xóa trước khi tạo, xóa sau khi xong</td><td>spec 4.4</td><td><code>check-db › áp DDL tham chiếu</code> (không còn database tạm sau khi chạy)</td><td>S03</td></tr>
+<tr><td>EC13</td><td>sandbox-runner, web</td><td>Không có database nên không tạo vai trò</td><td>Database 3.1</td><td><code>check-db › vai trò</code> (đúng 44 vai trò <code>sires_*</code> của 11 service)</td><td>S01</td></tr>
+<tr><td>EC14</td><td>Mật khẩu cục bộ</td><td>Chỉ cho máy phát triển; README ghi rõ không dùng ở staging</td><td>spec 4.1</td><td>thao tác tay: đọc README</td><td>S04</td></tr>
+<tr><td>EC15</td><td><code>down</code>, <code>ps</code>, <code>logs</code></td><td>Hành vi không đổi</td><td>spec 4.2</td><td>thao tác tay: chạy ba lệnh</td><td>S02</td></tr>
+<tr><td>EC16</td><td>pg_hba của image tin kết nối loopback trong container</td><td>Kiểm mật khẩu qua TCP tới địa chỉ không phải loopback của container</td><td>spec 4.4</td><td><code>check-db › đăng nhập bằng mật khẩu</code></td><td>S01</td></tr>
+<tr><td>EC17</td><td>Gọi <code>check-db</code> khi compose chưa chạy</td><td>Thông báo chạy <code>pnpm local:up</code> trước; mã 1</td><td>spec 4.2</td><td>thao tác tay: <code>pnpm local:down</code> rồi <code>pnpm local:check-db</code></td><td>S01</td></tr>
+<tr><td>EC18</td><td>Vai trò đã có với mật khẩu khác (Dev tạo tay trước đây)</td><td>Script đặt lại <code>sires-local</code></td><td>spec 4.4</td><td><code>check-db › đăng nhập bằng mật khẩu</code></td><td>S01</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00159</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

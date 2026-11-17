@@ -4,7 +4,14 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — token khi service gọi tiếp trong Agent Run, PO chốt 16/11/2026
+### Thay đổi gần nhất — metadata nhập từ BibTeX, RIS, PO chốt 18/11/2026
+
+Parser BibTeX, RIS của library (PID-00024, H1) trả `ReferenceMetadata`, nhưng mục nhập tay có thể không có URL, DOI hay mã định danh trong khi `identifiers.sourceId`, `identifiers.url` đang bắt buộc với mọi nguồn.
+
+- `components/schemas/library.yaml#/ReferenceMetadata`: hai trường này chỉ bắt buộc khi `source` không phải `bibtex` hay `ris` (`if`/`then`/`else`); mô tả ghi cách parser điền (`sourceId` = citation key hoặc thẻ `ID`, `url` = `url`/`UR` hoặc `https://doi.org/` + DOI); thêm `ris` vào `source.examples`.
+- Nới ràng buộc, tương thích ngược với bên gửi; type sinh của `@sires/contracts` nay cho phép thiếu `sourceId`, `url`. Bundle `dist/openapi.bundled.yaml` dựng lại.
+
+### Token khi service gọi tiếp trong Agent Run, PO chốt 16/11/2026
 
 `knowledge.retrieveEvidence` (PID-00093) nhận token Agent Run nhưng phải gọi `library.getReferenceSelectionInternal` và `identity.getEmbeddingSettingsInternal`; hợp đồng chưa nói service trung gian dùng token nào (tickets OQ-110). Chỉ đổi mô tả, không đổi schema hay `x-callers`; tương thích ngược.
 

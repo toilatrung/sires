@@ -1,0 +1,175 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00159: Môi trường cục bộ: vai trò database theo service, đúng database 3.2.">
+<title>PID-00159 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 18/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00159</p><h1>PID-00159 — Môi trường cục bộ: vai trò database theo service, đúng database 3.2</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00159</a> · Luồng: <code>infra</code> · Giai đoạn: PH-01 · Soạn 18/11/2026 · Viết theo spec-docs-skill; Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td><code>pnpm local:up</code> tạo vai trò database theo service đúng database 3.2, để migration và service chạy trên PostgreSQL của compose với cùng quyền như staging.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>infra</code> (<code>infra/local</code>, <code>scripts/development</code>, <code>package.json</code> gốc) · PH-01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00159-AC01 đến PID-00159-AC05; AC05 chặn bởi I1</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Quyết định chung D4 (PO 18/11/2026); câu trả lời H1, H2 ở <a href="../index.html#s-5">trang ticket</a>; database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-1">3.1</a>, <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a>, <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-3">3.3</a>, <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a>; <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-06">DBD-06</a>; kiến trúc <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">6.10</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Vai trò ở staging, production (Terraform, PID-00035); fixture Testcontainers (luồng platform); migration và lệnh migrate của service; hạn mức kết nối; chạy <code>check-db</code> trong CI; extension trusted; quyền trên bảng (DDL cấp)</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li>Database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a> — bốn vai trò mỗi database, LOGIN, RLS, mục đích; owner không LOGIN, “migration đăng nhập bằng vai trò migrator là thành viên”.</li>
+<li>Database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-1">3.1</a> — 11 database <code>sires_&lt;svc&gt;</code>; không service nào kết nối database của service khác. <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-3">3.3</a> — extension theo database (<code>vector</code> chỉ ở <code>sires_knowledge</code>).</li>
+<li>Database <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a> — quyền trên bảng do <code>app.grant_standard</code> cấp; owner chỉ dùng cho migration.</li>
+<li>Kế hoạch: <a href="../../../sections/01-tracks-and-boundaries.html#trk-infra">luồng infra</a>, <a href="../../../sections/01-tracks-and-boundaries.html#entry-local">1.1 môi trường local</a>, <a href="../../../sections/02-phases-and-gates.html#ph-01">PH-01</a>, <a href="../../../sections/03-track-plans.html#s-3-1">3.1</a>; quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-1">1.4</a>.</li>
+<li><code>scripts/development/README.md</code> — Docker Engine trong WSL, <code>DOCKER_HOST</code>, <code>pnpm local:up</code>.</li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><a href="../../../../../infra/local/compose.yaml"><code>infra/local/compose.yaml</code></a></td><td>Service <code>postgres</code>: image <code>pgvector/pgvector:pg16</code>, <code>POSTGRES_USER=sires</code>, <code>POSTGRES_PASSWORD=sires-local</code>, mount <code>./postgres/init</code> vào <code>/docker-entrypoint-initdb.d</code>, healthcheck</td></tr>
+<tr><td><a href="../../../../../infra/local/postgres/init/01-databases.sql"><code>infra/local/postgres/init/01-databases.sql</code></a></td><td>11 database; chú thích dòng 5–6 phải sửa</td></tr>
+<tr><td><a href="../../../../../scripts/development/local-env.mjs"><code>scripts/development/local-env.mjs</code></a></td><td>Bảng <code>ACTIONS</code>, cách gọi <code>docker compose</code> qua <code>wsl.exe</code> khi ở Windows; nơi thêm bước áp vai trò và hành động <code>check-db</code></td></tr>
+<tr><td><a href="../../../../../package.json"><code>package.json</code></a></td><td>Script <code>local:up</code>, <code>local:down</code>; thêm <code>local:check-db</code></td></tr>
+<tr><td><a href="../../../../../infra/README.md"><code>infra/README.md</code></a>, <a href="../../../../../scripts/development/README.md"><code>scripts/development/README.md</code></a></td><td>Nơi ghi vai trò, DSN, lệnh</td></tr>
+<tr><td><a href="../../../../../libs/py/sires_common/src/sires_common/testing/fixtures.py"><code>libs/py/sires_common/src/sires_common/testing/fixtures.py</code></a></td><td>Chỉ đọc: cách test hiện tạo vai trò (khối <code>DO</code> kiểm <code>pg_roles</code>); không sửa (luồng platform)</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<ul><li>Không có endpoint, sự kiện.</li>
+<li>DDL chỉ đọc: <a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a> (<code>CREATE EXTENSION</code> trusted, <code>app.grant_standard</code>) và 11 file service.</li></ul>
+<div class="table-wrap"><table><thead><tr><th scope="col">Service</th><th scope="col">Database</th><th scope="col">Tiền tố vai trò</th><th scope="col">File DDL</th><th scope="col">PID migration</th></tr></thead><tbody>
+<tr><td>gateway</td><td><code>sires_gateway</code></td><td><code>sires_gateway_</code></td><td><code>gateway.sql</code></td><td>PID-00014</td></tr>
+<tr><td>identity</td><td><code>sires_identity</code></td><td><code>sires_identity_</code></td><td><code>identity.sql</code></td><td>PID-00016</td></tr>
+<tr><td>workspace</td><td><code>sires_workspace</code></td><td><code>sires_workspace_</code></td><td><code>workspace.sql</code></td><td>PID-00017</td></tr>
+<tr><td>planning</td><td><code>sires_planning</code></td><td><code>sires_planning_</code></td><td><code>planning.sql</code></td><td>PID-00023</td></tr>
+<tr><td>orchestration</td><td><code>sires_orchestration</code></td><td><code>sires_orchestration_</code></td><td><code>orchestration.sql</code></td><td>PID-00019</td></tr>
+<tr><td>library</td><td><code>sires_library</code></td><td><code>sires_library_</code></td><td><code>library.sql</code></td><td>PID-00024</td></tr>
+<tr><td>research</td><td><code>sires_research</code></td><td><code>sires_research_</code></td><td><code>research.sql</code></td><td>PID-00029</td></tr>
+<tr><td>manuscript</td><td><code>sires_manuscript</code></td><td><code>sires_manuscript_</code></td><td><code>manuscript.sql</code></td><td>PID-00030</td></tr>
+<tr><td>audit</td><td><code>sires_audit</code></td><td><code>sires_audit_</code></td><td><code>audit.sql</code></td><td>PID-00018</td></tr>
+<tr><td>agent-core</td><td><code>sires_agent_core</code></td><td><code>sires_agent_core_</code></td><td><code>agent-core.sql</code></td><td>PID-00020</td></tr>
+<tr><td>knowledge</td><td><code>sires_knowledge</code></td><td><code>sires_knowledge_</code></td><td><code>knowledge.sql</code> (có <code>vector</code>)</td><td>PID-00026</td></tr>
+</tbody></table></div>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td>Compose cục bộ chạy được (<code>pnpm local:up</code>)</td><td>Có trên <code>main</code></td><td>Không</td></tr>
+<tr><td>Docker Engine trong WSL2 hoặc trên Linux</td><td>Theo <code>scripts/development/README.md</code></td><td>Không</td></tr>
+<tr><td>Vai trò chạy migration ở cục bộ</td><td>Chưa chốt: phiếu <a href="../others/issues.html#i1">I1</a></td><td>Có — S03 (PID-00159-AC05)</td></tr>
+<tr><td>DDL tham chiếu chạy được trên PostgreSQL 16</td><td>Database 12.4: mới chạy thử trên PGlite (PostgreSQL 17)</td><td>Không (lỗi DDL → dừng S03, EC11)</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm local:check-db
+pnpm local:down</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Tệp SQL</td><td><code>infra/local/postgres/init/02-roles.sql</code> (tạo mới)</td><td>Vai trò của 11 service, chủ database, quyền kết nối, <code>vector</code> trong <code>sires_knowledge</code>; chạy lại không đổi (4.4)</td><td><code>pnpm local:check-db</code></td></tr>
+<tr><td id="o2">O2</td><td>Tệp SQL</td><td><code>infra/local/postgres/init/01-databases.sql</code> (có sẵn)</td><td>Sửa chú thích: vai trò do <code>02-roles.sql</code> tạo theo database 3.2; schema và extension trusted do migration của service tạo; <code>vector</code> do init tạo</td><td>Đọc lại</td></tr>
+<tr><td id="o3">O3</td><td>Script</td><td><code>scripts/development/local-env.mjs</code> (có sẵn)</td><td><code>up</code>: sau <code>up -d --wait</code> áp <code>02-roles.sql</code>; hành động mới <code>check-db</code> (4.4)</td><td><code>pnpm local:up</code>, <code>pnpm local:check-db</code></td></tr>
+<tr><td id="o4">O4</td><td>Cấu hình</td><td><code>package.json</code> gốc (có sẵn)</td><td>Script <code>local:check-db</code> → <code>node scripts/development/local-env.mjs check-db</code></td><td><code>pnpm local:check-db</code></td></tr>
+<tr><td id="o5">O5</td><td>Vai trò chạy migration</td><td><code>02-roles.sql</code>, <code>local-env.mjs</code> (phần <code>check-db</code> áp DDL)</td><td>Theo câu trả lời I1 (đề xuất: <code>sires_&lt;svc&gt;_migrator</code>)</td><td><code>pnpm local:check-db</code> › áp DDL tham chiếu</td></tr>
+<tr><td id="o6">O6</td><td>Tài liệu</td><td><code>infra/README.md</code>, <code>scripts/development/README.md</code> (có sẵn)</td><td>Bảng vai trò, mật khẩu cục bộ, DSN mẫu, lệnh <code>local:check-db</code>, cách volume cũ được áp vai trò</td><td>Đọc lại; <code>node scripts/docs/add-license.mjs --check</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<ul><li>Không tạo bảng, không chạy DDL lên 11 database thật (migration của service làm việc đó). Script chỉ tạo vai trò, đổi chủ database, quyền CONNECT và extension <code>vector</code>.</li>
+<li>Vai trò, mỗi service trong 2.3 (database 3.2):
+<div class="table-wrap"><table><thead><tr><th scope="col">Vai trò</th><th scope="col">Thuộc tính</th><th scope="col">CONNECT</th></tr></thead><tbody>
+<tr><td><code>sires_&lt;svc&gt;_owner</code></td><td>NOLOGIN; chủ database <code>sires_&lt;svc&gt;</code></td><td>(là chủ)</td></tr>
+<tr><td><code>sires_&lt;svc&gt;_app</code></td><td>LOGIN, NOBYPASSRLS</td><td>Chỉ <code>sires_&lt;svc&gt;</code></td></tr>
+<tr><td><code>sires_&lt;svc&gt;_system</code></td><td>LOGIN, BYPASSRLS</td><td>Chỉ <code>sires_&lt;svc&gt;</code></td></tr>
+<tr><td><code>sires_&lt;svc&gt;_purge</code></td><td>LOGIN, BYPASSRLS</td><td>Chỉ <code>sires_&lt;svc&gt;</code></td></tr>
+<tr><td>Vai trò chạy migration</td><td>Theo I1</td><td>Theo I1</td></tr>
+</tbody></table></div>
+Mọi vai trò: NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, INHERIT. Vai trò LOGIN dùng mật khẩu cục bộ <code>sires-local</code> (giống <code>POSTGRES_PASSWORD</code>; chỉ máy phát triển).</li></ul>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API. Lệnh dòng lệnh:</p>
+<ul><li><code>node scripts/development/local-env.mjs up</code> (<code>pnpm local:up</code>): như cũ, rồi áp <code>02-roles.sql</code>.</li>
+<li><code>node scripts/development/local-env.mjs check-db</code> (<code>pnpm local:check-db</code>): mỗi mục kiểm in một dòng <code>OK</code> hoặc <code>LỖI</code> kèm lý do; có <code>LỖI</code> thì mã thoát 1. Compose chưa chạy → thông báo chạy <code>pnpm local:up</code> trước, mã 1 (EC17).</li>
+<li><code>down</code>, <code>ps</code>, <code>logs</code> không đổi (EC15).</li></ul>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li><strong><code>02-roles.sql</code></strong> chạy bằng superuser <code>sires</code> (entrypoint của image chạy file theo thứ tự tên, sau <code>01-databases.sql</code>). Danh sách 11 service là dữ liệu trong file (một mảng), vòng lặp trong khối <code>DO</code>: chưa có vai trò thì <code>CREATE ROLE</code>; luôn <code>ALTER ROLE</code> đặt lại thuộc tính ở 4.1 và mật khẩu cục bộ (EC03, EC18). Database <code>sires_&lt;svc&gt;</code> có thì: <code>ALTER DATABASE … OWNER TO sires_&lt;svc&gt;_owner</code>; <code>REVOKE CONNECT ON DATABASE … FROM PUBLIC</code>; <code>GRANT CONNECT</code> cho <code>_app</code>, <code>_system</code>, <code>_purge</code> (và vai trò chạy migration theo I1); không có thì bỏ qua phần database của service đó, vẫn tạo vai trò (EC04). Cuối file: nếu có <code>sires_knowledge</code> thì <code>\connect sires_knowledge</code> và <code>CREATE EXTENSION IF NOT EXISTS vector</code> (EC06); không tạo extension ở database khác.</li>
+<li>Owner phải là chủ database: migration chạy bằng quyền owner cần quyền CREATE trên database (tạo schema <code>app</code>, <code>replica</code>, extension trusted) và quyền trên schema <code>public</code> (PostgreSQL 15+ giao cho chủ database). <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code> trusted nên migration tự tạo; <code>vector</code> 0.8.7 không trusted nên init tạo.</li>
+<li><strong>Volume đã có</strong>: entrypoint chỉ chạy <code>/docker-entrypoint-initdb.d</code> khi thư mục dữ liệu trống. <code>local-env.mjs up</code>, sau khi <code>up -d --wait</code> thành công, chạy <code>docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U sires -d sires -f /docker-entrypoint-initdb.d/02-roles.sql</code> (qua <code>wsl.exe</code> khi ở Windows, như các lệnh khác của file); lỗi → in lý do, mã thoát khác 0 (EC01, EC09, EC10).</li>
+<li><strong><code>check-db</code></strong> chạy truy vấn bằng <code>docker compose exec -T postgres psql</code> và kiểm:
+<ol><li>vai trò: 44 vai trò (11 × 4) có đúng thuộc tính 4.1 (<code>pg_roles</code>);</li>
+<li>chủ database: <code>pg_database.datdba</code> của 11 database là <code>sires_&lt;svc&gt;_owner</code>;</li>
+<li>kết nối: vai trò LOGIN của mỗi service có CONNECT ở database của mình, không có ở 10 database còn lại (<code>has_database_privilege</code>), và thử kết nối thật một cặp chéo bị từ chối; superuser <code>sires</code> vẫn kết nối được (EC07, EC08);</li>
+<li>đăng nhập bằng mật khẩu: mỗi vai trò LOGIN đăng nhập được database của mình bằng <code>sires-local</code> qua TCP tới địa chỉ không phải loopback của container (pg_hba của image tin loopback, EC16);</li>
+<li>extension: <code>sires_knowledge</code> có <code>vector</code>;</li>
+<li>chạy lại không đổi: chụp thuộc tính vai trò, thành viên vai trò, chủ và ACL của 11 database, chạy lại <code>02-roles.sql</code>, chụp lần nữa, so (EC02);</li>
+<li>áp DDL tham chiếu (S03, theo I1): với mỗi service, xóa <code>sires_check_&lt;svc&gt;</code> nếu còn (EC12), tạo lại do <code>sires_&lt;svc&gt;_owner</code> làm chủ với quyền CONNECT như database thật (bản tạm của knowledge có <code>vector</code> do superuser tạo), đọc <code>docs/database/ddl/00-common.sql</code> và <code>&lt;svc&gt;.sql</code> ở máy và đưa qua stdin vào <code>psql</code> đăng nhập bằng vai trò chạy migration, kiểm mọi bảng, view, hàm trong <code>app</code>, <code>replica</code>, <code>vec</code> thuộc <code>sires_&lt;svc&gt;_owner</code>, rồi xóa database tạm.</li></ol></li>
+<li>Migration không tạo vai trò; script không cấp quyền trên bảng (DDL cấp bằng <code>app.grant_standard</code>, database 11.2).</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Volume tạo trước PID này</td><td><code>up</code> áp <code>02-roles.sql</code>; dữ liệu giữ nguyên</td></tr>
+<tr><td>Vai trò đã có nhưng sai thuộc tính hay mật khẩu</td><td>Script đặt lại theo 4.1</td></tr>
+<tr><td>Database của một service chưa có</td><td>Bỏ qua phần database của service đó; vẫn tạo vai trò; <code>check-db</code> báo <code>LỖI</code> thiếu database</td></tr>
+<tr><td>Áp DDL tham chiếu lỗi vì lý do không phải vai trò</td><td>Dừng S03, ghi DBQ đề xuất trong <code>report.md</code>, không sửa DDL</td></tr>
+<tr><td>Database tạm <code>sires_check_*</code> còn sót</td><td><code>check-db</code> xóa trước khi tạo và sau khi xong</td></tr>
+<tr><td>Compose chưa chạy khi gọi <code>check-db</code></td><td>Thông báo chạy <code>pnpm local:up</code> trước; mã 1</td></tr>
+<tr><td>Không có <code>wsl.exe</code> hay Docker</td><td>Như hành động hiện có của <code>local-env.mjs</code>: thông báo dựng môi trường bằng <code>setup-windows.ps1</code> hoặc <code>setup-wsl.sh</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Viết O1 (trừ phần vai trò chạy migration) và sửa O2 — Kết quả: volume mới có 44 vai trò, chủ database, CONNECT đúng service, <code>vector</code> — Kiểm tra: <code>node scripts/development/local-env.mjs down -v</code> (xóa volume cục bộ; chỉ làm khi chấp nhận mất dữ liệu) rồi <code>pnpm local:up</code>, xem bằng <code>psql</code> trong container</li>
+<li id="b2"><strong>B2</strong> Viết <code>check-db</code> mục 1–5 ở 4.4 trong O3, thêm O4 — Kết quả: <code>pnpm local:check-db</code> in <code>OK</code> cho mọi mục — Kiểm tra: chạy lệnh; sửa tay một thuộc tính (ví dụ <code>ALTER ROLE sires_planning_system NOBYPASSRLS</code>) thấy <code>LỖI</code></li>
+<li id="b3"><strong>B3</strong> Thêm bước áp <code>02-roles.sql</code> vào <code>up</code> và mục 6 của <code>check-db</code> (O3) — Kết quả: volume cũ có vai trò sau <code>pnpm local:up</code>; chạy lại không đổi — Kiểm tra: thao tác tay ở S02; <code>pnpm local:check-db</code></li>
+<li id="b4"><strong>B4</strong> Sau câu trả lời I1: thêm vai trò chạy migration vào O1 và mục 7 của <code>check-db</code> (O5) — Kết quả: 11 service áp được DDL tham chiếu bằng vai trò đó, đối tượng thuộc owner — Kiểm tra: <code>pnpm local:check-db</code> › áp DDL tham chiếu</li>
+<li id="b5"><strong>B5</strong> Viết O6 — Kết quả: README đủ để Dev service đặt DSN và chạy lệnh — Kiểm tra: đọc lại; <code>node scripts/docs/add-license.mjs --check</code></li>
+<li id="b6"><strong>B6</strong> Chạy lệnh ở mục 6 — Kết quả: đạt hết — Kiểm tra: kết quả ghi trong <code>self-qc.md</code></li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm local:up
+pnpm local:check-db
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check
+pnpm nx affected -t lint typecheck test build</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00159-AC01</td><td><code>scripts/development/local-env.mjs check-db › vai trò</code>, <code>› chủ database</code></td><td>44 vai trò đúng thuộc tính database 3.2; 11 database thuộc owner của service</td></tr>
+<tr><td>PID-00159-AC02</td><td><code>local-env.mjs check-db › kết nối</code>, <code>› đăng nhập bằng mật khẩu</code></td><td>Mỗi vai trò LOGIN vào được database của mình bằng <code>sires-local</code>; vào database khác bị từ chối</td></tr>
+<tr><td>PID-00159-AC03</td><td><code>local-env.mjs check-db › chạy lại không đổi</code>; thao tác tay “volume cũ” ở S02</td><td>Ảnh chụp trước và sau khi chạy lại giống nhau; volume cũ có vai trò, bảng thử còn dữ liệu</td></tr>
+<tr><td>PID-00159-AC04</td><td><code>local-env.mjs check-db › extension</code>; thao tác tay trên volume mới</td><td><code>sires_knowledge</code> có <code>vector</code>; volume mới: 10 database còn lại chỉ có <code>plpgsql</code></td></tr>
+<tr><td>PID-00159-AC05</td><td><code>local-env.mjs check-db › áp DDL tham chiếu</code></td><td>11 service áp xong không lỗi; đối tượng trong <code>app</code>, <code>replica</code>, <code>vec</code> thuộc owner; không còn database <code>sires_check_*</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>infra</code> (<code>apps/</code>, <code>libs/</code>); <code>docs/</code> (chỉ đọc DDL); <code>infra/helm</code>, <code>infra/terraform</code>, <code>infra/docker</code>, <code>.github/workflows</code> (ngoài phạm vi PID này); file sinh tự động; migration đã có; tên database ở <code>01-databases.sql</code>.</li>
+<li><strong>Dừng và hỏi khi:</strong> chưa có câu trả lời I1 mà tới S03; áp DDL tham chiếu lỗi vì lý do không phải vai trò (ghi DBQ đề xuất); cần đổi hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> (1) Có nên có PID platform để fixture Testcontainers (<code>@sires/testing</code>, <code>sires_common.testing.create_service_database</code>) tạo vai trò giống <code>02-roles.sql</code> (hiện mật khẩu và vai trò chạy migration khác cục bộ) không? (2) Có đưa <code>check-db</code> vào CI (job có Docker) ở PID-00009 hay PID infra sau không? Không chặn PID này.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00159</a><a href="../../../index.html">Kế hoạch triển khai</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Spec kỹ thuật PID-00159 · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

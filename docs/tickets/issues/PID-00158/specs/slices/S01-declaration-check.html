@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00158.">
+<title>S01 — TS: khai báo machine và hàm kiểm chuyển | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S01 — TS: khai báo machine và hàm kiểm chuyển</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC01, PID-00158-AC02 (phần TS)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O7 (<code>define.spec.ts</code>, <code>check.spec.ts</code>)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC07, EC14 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>— (không cần database, không cần PID khác)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo thư mục <code>libs/ts/platform/src/state-machine/</code> (tạo mới). Viết kiểu khai báo theo <a href="../index.html#s-4-2">spec 4.2</a>: <code>machine</code>, <code>states</code> (danh sách, dùng <code>as const</code> để suy ra union trạng thái), <code>transitions</code> gồm <code>from</code>, <code>to</code>, <code>code</code> (tùy chọn), <code>actors</code> (tùy chọn, trong <code>researcher</code>, <code>agent</code>, <code>system</code>) — file: <code>define.ts</code> (tạo mới).</li>
+<li><code>defineStateMachine(decl)</code>: kiểm mọi ca ở <a href="../index.html#s-4-7">spec 4.7</a> (EC02–EC07), ném <code>StateMachineDefinitionError</code> nêu machine và giá trị sai; trả đối tượng đóng băng sâu, kiểu <code>readonly</code> (EC14); giữ chỉ mục tra cặp theo (từ, đến) để tra nhanh — file: <code>define.ts</code>, <code>errors.ts</code> (tạo mới).</li>
+<li><code>findTransition(m, from, to)</code> trả cặp (kèm <code>code</code>, <code>actors</code>) hay <code>undefined</code>; <code>assertTransition(m, from, to)</code> trả cặp hoặc ném <code>InvalidTransitionError</code> với <code>code = 'invalid_transition'</code>, <code>machine</code>, <code>currentState</code>, <code>targetState</code> (EC01). Không gọi database, mạng, hay lớp HTTP — file: <code>check.ts</code>, <code>errors.ts</code> (tạo mới).</li>
+<li>Viết <code>define.spec.ts</code>: “nhận khai báo hợp lệ” (một machine mẫu nhỏ có mã, không mã, actor), “từ chối khai báo sai” (mỗi ca của 4.7 một trường hợp có tên), “không sửa được” (gán thuộc tính, đẩy phần tử đều không đổi được đối tượng) — file: <code>libs/ts/platform/src/state-machine/define.spec.ts</code> (tạo mới).</li>
+<li>Viết <code>check.spec.ts</code> › “mọi cặp có thứ tự”: với một machine mẫu (ví dụ 4 trạng thái, 5 cặp, có mã), duyệt mọi cặp có thứ tự kể cả X → X, so với bảng mong đợi viết tay trong test; kiểm thuộc tính của lỗi — file: <code>libs/ts/platform/src/state-machine/check.spec.ts</code> (tạo mới).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt; <code>pnpm nx run @sires/platform:typecheck</code>, <code>:lint</code> → đạt</li>
+<li>Test: <code>check.spec.ts › mọi cặp có thứ tự</code> (PID-00158-AC01; EC01)</li>
+<li>Test: <code>define.spec.ts › từ chối khai báo sai</code> (PID-00158-AC02; EC02–EC07), <code>› không sửa được</code> (EC14)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mọi cặp khai báo được nhận kèm mã; mọi cặp khác ném <code>InvalidTransitionError</code> có đủ bốn thuộc tính; mọi ca khai báo sai ném <code>StateMachineDefinitionError</code>; test chạy không cần Docker và mạng.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

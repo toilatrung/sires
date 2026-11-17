@@ -1,0 +1,34 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00026.">
+<title>PID-00026 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>PID-00026 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test. Ticket không nêu AC requirement. Số dòng chuyển trạng thái và dòng danh mục lấy từ DDL. Lệnh migrate và giá trị Helm (S03), khung module và README (S05) không có AC riêng, kiểm bằng mục “Kiểm” của slice. PID-00026-AC02 thêm 18/11/2026 theo H2 (PO chấp nhận đề xuất I2-A; quyết định chung D3); mọi kỳ vọng của AC02 lấy từ DDL, không số mới. Tên test là đề xuất; Dev đổi được, ghi tên thật ở <code>implement.md</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00026-AC01</td><td>Given database rỗng trên PostgreSQL 16 + pgvector (Testcontainers, <code>pgvector/pgvector:pg16</code>) đã có vai trò <code>sires_knowledge_app</code>, <code>_system</code>, <code>_purge</code>, When chạy <code>alembic upgrade head</code> của knowledge, Then so với database thứ hai dựng từ <code>docs/database/ddl/00-common.sql</code> rồi <code>knowledge.sql</code> trong cùng container, công cụ diff schema không báo lệch ở schema <code>app</code>, <code>replica</code>, <code>vec</code>: bảng, cột (gồm <code>vector(1536)</code>, <code>tsvector</code>), ràng buộc PK/UQ/FK (kể cả <code>ON DELETE CASCADE</code>)/CHECK, index (partial, GIN, HNSW <code>vector_cosine_ops</code>), trigger, hàm, RLS (bật, <code>FORCE</code>, policy), quyền của vai trò (gồm schema <code>vec</code>), extension (gồm <code>vector</code>), cấu hình tìm kiếm; dòng của <code>app.embedding_model_catalog</code> bằng nhau (1 dòng mẫu); <code>alembic_version</code> không tính (EC05). Chạy lại không đổi gì (EC03); lỗi giữa chừng không để lại đối tượng (EC04); downgrade bị từ chối (EC02).</td><td><code>apps/knowledge/tests/test_migrations.py › test_schema_matches_ddl</code>; <code>› test_upgrade_twice</code>; <code>› test_missing_roles_rolls_back</code>; <code>› test_downgrade_refused</code></td><td>S01</td><td>Ticket; DBD-02; database 12.4; DDL</td></tr>
+<tr><td>PID-00026-AC01</td><td>(phần dữ liệu chuyển trạng thái) Given hai database trên, When đọc <code>app.state_transition</code>, Then hai tập (<code>machine</code>, <code>from_state</code>, <code>to_state</code>) bằng nhau — 7 dòng của <code>indexing_job</code> — và bằng tập mà helper Python của PID-00158 sinh từ khai báo state machine trong mã domain (H1, D2); <code>indexing_job</code> Indexed → Queued bị từ chối (EC08).</td><td><code>apps/knowledge/tests/test_migrations.py › test_state_transitions_from_declaration</code>; <code>› test_transition_outside_table_rejected</code></td><td>S02</td><td>DDL; DEC-57; database 10.2</td></tr>
+<tr><td>PID-00026-AC02</td><td>Given database dựng từ revision của knowledge (S01) trên PostgreSQL 16 + pgvector (Testcontainers, <code>pgvector/pgvector:pg16</code>), vai trò tạo bằng fixture của <code>sires_common</code>, dữ liệu mồi của hai tài khoản A, B (bản sao <code>replica.*</code> ghi bằng <code>_system</code>), When chạy từng thao tác dưới đây bằng vai trò <code>sires_knowledge_app</code> (hoặc <code>_system</code> ở ca 4) trong giao dịch đặt <code>app.account_id</code>, Then database xử lý đúng như DDL: (1) đọc dòng của tài khoản A ở schema <code>app</code>, <code>replica</code>, <code>vec</code> khi <code>app.account_id</code> là B — không thấy dòng nào (RLS); (2) ghi <code>chunk_text.text</code> thì <code>tsv</code> được tính (trigger <code>chunk_text_tsv</code>, cấu hình <code>app.sires_simple</code>); (3) tạo job indexing thứ hai cùng (<code>reference_id</code>, <code>content_hash</code>, <code>embedding_model</code>, <code>kind</code>) bị chặn bởi <code>indexing_job_natural_uq</code> (DATA-IDEMP-005); (4) <code>_app</code>, <code>_system</code> ghi <code>app.embedding_model_catalog</code> bị từ chối; (5) xóa <code>source_document</code> xóa theo <code>chunk</code>, <code>chunk_text</code> và dòng của <code>vec.emb_openai_text_embedding_3_small</code>; (6) ghi một vector 1.536 chiều vào <code>vec.emb_openai_text_embedding_3_small</code> rồi truy vấn theo khoảng cách cosine (index HNSW <code>vector_cosine_ops</code>) đọc lại được dòng đó. Mỗi nhóm có một ca hợp lệ đối chứng đi qua.</td><td><code>apps/knowledge/tests/test_ddl_behaviour.py › test_rls_blocks_cross_account</code>; <code>› test_chunk_text_tsv</code>; <code>› test_duplicate_indexing_job_rejected</code>; <code>› test_catalog_read_only</code>; <code>› test_source_document_delete_cascades</code>; <code>› test_vector_roundtrip_hnsw</code></td><td>S04</td><td>H2; DDL <code>knowledge.sql</code>, <code>00-common.sql</code>; database 3.2, 7.4, 12.4</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00026</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

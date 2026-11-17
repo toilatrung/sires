@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00018.">
+<title>PID-00018 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00018</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00018</p><h1>PID-00018 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, lập ngày 17/11/2026 trong lô PH-01; cập nhật 18/11/2026 gộp câu trả lời H1–H5 (PO chấp nhận mọi đề xuất, <a href="../index.html#phien-2">trang ticket mục 5</a>). Không còn điểm chưa chốt; <a href="../others/issues.html">others/issues.html</a> là biên bản. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>System: dựng database <code>sires_audit</code> bằng migration của chính service, đúng DDL tham chiếu, kèm test chứng minh schema khớp và kho Audit Event chỉ ghi thêm (không ai sửa được, chỉ vai trò purge xóa được khi xóa project hoặc tài khoản); dựng khung (cấu hình, kết nối database, lệnh migrate) để PID-00045 viết consumer và truy vấn.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>DDL tham chiếu là chuẩn; migration sinh ra cùng schema; CI so hai database — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>, <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a></li>
+<li>Migration đầu là SQL chép từ <code>00-common.sql</code> rồi <code>audit.sql</code>, đặt làm custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm trong mã service; chỉ tiến; schema TypeScript của Drizzle do PID tính năng viết — <a href="../../../../architecture/sections/02-technology-stack.html#s-2-3">kiến trúc 2.3</a>, <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; H1</li>
+<li>PID migration gồm test hành vi DDL, lệnh migrate riêng của service và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> — H3; <code>drizzle-kit</code>, <code>drizzle-orm</code> vào pnpm catalog qua <a href="../../PID-00001/index.html">PID-00001</a> — H4</li>
+<li>Audit Event chỉ ghi thêm: trigger <code>audit_event_append_only</code> chặn UPDATE, không vai trò nào có UPDATE; <code>_app</code> không INSERT; chỉ <code>_purge</code> DELETE — <a href="../../../../database/ddl/audit.sql"><code>docs/database/ddl/audit.sql</code></a>, <a href="../../../../database/sections/09-audit-and-platform.html#s-9-1">database 9.1</a></li>
+<li>Mọi actor không sửa, không xóa được Audit Event — <a href="../../../../overview/sections/14-shared-context-and-orchestration-architecture.html#req-ctx-audit-001">CTX-AUDIT-001</a>-AC04</li>
+<li>Audit Event bị xóa cùng project hoặc tài khoản, không bị xóa riêng — <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-ret-008">NFR-RET-008</a></li>
+<li><code>id</code> của Audit Event = id dòng outbox ở service nguồn (không có giá trị mặc định); <code>actor_type</code> là cột sinh từ <code>actor-&gt;&gt;'type'</code> — <a href="../../../../database/ddl/audit.sql"><code>docs/database/ddl/audit.sql</code></a></li>
+<li>Bốn vai trò mỗi database do hạ tầng tạo, migration không tạo; <code>_system</code>, <code>_purge</code> BYPASSRLS; managed có cho BYPASSRLS không là DBQ-01 — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-01">DBQ-01</a>; cục bộ: compose tạo ở <a href="../../PID-00159/index.html">PID-00159</a>, tới lúc đó test tự tạo — H2</li>
+<li>Trạng thái và chuyển trạng thái: không có state machine trong <code>audit.sql</code>; PID này không dùng helper sinh <code>app.state_transition</code> của PID-00158.</li>
+<li>Bất biến của SIRes: mọi hành động có tác động lâu dài có actor; Audit Event không chứa API key, nội dung tài liệu hay toàn văn prompt (NFR-OBS-002, do service nguồn soạn).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a>, <a href="../../../../database/ddl/audit.sql"><code>docs/database/ddl/audit.sql</code></a> — có (Đã duyệt, DEC-57)</li>
+<li><code>apps/audit/</code>: <code>package.json</code> (project Nx <code>@sires/audit</code>), <code>src/app.module.ts</code>, <code>src/manifest.ts</code> (cổng 3108, database <code>sires_audit</code>), <code>migrations/.gitkeep</code>, <code>deploy/values.yaml</code>, <code>README.md</code> — có</li>
+<li><code>libs/ts/platform</code> — chỉ có <code>bootstrapService</code>, <code>HealthModule</code>; tenancy chưa có (PID-00001 chưa merge)</li>
+<li><code>libs/ts/testing</code> — có <code>startPostgres()</code> (mặc định tạo extension <code>vector</code>)</li>
+<li>pnpm catalog — có <code>pg</code>; thiếu <code>drizzle-orm</code> và <code>drizzle-kit</code>, cả hai do PID-00001 thêm (H4)</li>
+<li>Hợp đồng: không có <code>internal/audit.yaml</code>; API công khai Audit ở <code>paths/14-shared-context-and-orchestration-architecture.yaml</code> (PID-00045)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/audit/migrations/</code>: migration đầu (custom migration SQL của drizzle-kit, H1) dựng schema DDL → <a href="slices/S01-migration.html">S01</a></li>
+<li>O2 <code>apps/audit/src/</code>: hàm chạy migration và test so khớp → <a href="slices/S01-migration.html">S01</a>; test hành vi DDL → <a href="slices/S02-append-only.html">S02</a>; cấu hình, kết nối database, lệnh migrate → <a href="slices/S03-config-db-readme.html">S03</a></li>
+<li>O3 <code>apps/audit/README.md</code>: entity sở hữu, bản sao chỉ đọc (không có), cách chạy migration → <a href="slices/S03-config-db-readme.html">S03</a></li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Audit Event = <code>app.audit_event</code>; “chỉ ghi thêm” = append-only</li>
+<li>vai trò = role của PostgreSQL theo database 3.2</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00018</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00018 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00158.">
+<title>S02 — TS: sinh dòng, SQL xác định, so dòng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S02 — TS: sinh dòng, SQL xác định, so dòng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC03 (phần TS), PID-00158-AC05 (hàm so dòng)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O5, O7 (<code>sql.spec.ts</code>)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC07–EC10, EC13, EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li><code>stateTransitionRows(machines)</code>: kiểm danh sách (rỗng → lỗi, EC10; trùng tên → lỗi, EC09); trả dòng (<code>machine</code>, <code>fromState</code>, <code>toState</code>, <code>code</code> hay <code>null</code>) sắp theo code point như <a href="../index.html#s-4-1">spec 4.1</a> (không dùng <code>localeCompare</code>) — file: <code>libs/ts/platform/src/state-machine/sql.ts</code> (tạo mới).</li>
+<li><code>stateTransitionStatements(machines)</code> trả hai câu DELETE và INSERT … ON CONFLICT như spec 4.1; <code>renderStateTransitionSql(machines)</code> ghép hai dòng chú thích cố định, câu DELETE, dòng <code>--&gt; statement-breakpoint</code>, câu INSERT; xuống dòng LF, kết thúc bằng LF; nháy đơn nhân đôi (EC07) — file: <code>sql.ts</code>.</li>
+<li><code>compareStateTransitionRows(actual, machines)</code>: chỉ xét dòng có <code>machine</code> trong danh sách; trả <code>missing</code> (có trong khai báo, không có trong <code>actual</code>), <code>unexpected</code> (ngược lại), <code>codeMismatch</code> (cùng cặp, khác mã: dòng khai báo và mã thực tế) (EC13) — file: <code>sql.ts</code>.</li>
+<li>Tạo bộ mẫu dùng chung: <code>libs/ts/platform/src/state-machine/testdata/golden-machines.json</code> (tạo mới; mảng khai báo dạng dữ liệu, khóa <code>machine</code>, <code>states</code>, <code>transitions</code> với <code>from</code>, <code>to</code>, <code>code</code>, <code>actors</code>) theo yêu cầu của spec 4.1: ít nhất hai machine, cặp có mã và không mã, trạng thái có khoảng trắng, một giá trị có nháy đơn, một giá trị không phải ASCII (EC08). Sinh SQL, đọc duyệt bằng mắt, lưu đúng chuỗi đó vào <code>testdata/golden.txt</code> (tạo mới; LF).</li>
+<li>Viết <code>sql.spec.ts</code>: “xác định khi đổi thứ tự” (sinh lại sau khi đảo thứ tự machine, <code>states</code>, <code>transitions</code>: giống hệt), “khớp golden.txt” (đọc file, bỏ <code>\r</code> — EC15), “so dòng” (thiếu, thừa, khác mã, khớp, dòng của machine khác bị bỏ qua), “danh sách machine sai” (rỗng, trùng tên) — file: <code>libs/ts/platform/src/state-machine/sql.spec.ts</code> (tạo mới).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
+<li>Test: <code>sql.spec.ts › xác định khi đổi thứ tự</code>, <code>› khớp golden.txt</code> (PID-00158-AC03; EC07, EC08, EC15)</li>
+<li>Test: <code>sql.spec.ts › so dòng</code> (PID-00158-AC05; EC13), <code>› danh sách machine sai</code> (EC09, EC10)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li><code>golden.txt</code> ghim dạng chữ của SQL; đổi thứ tự khai báo không đổi một byte nào; hàm so dòng nêu đúng ba loại lệch; test không cần Docker.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

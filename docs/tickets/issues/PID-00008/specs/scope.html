@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00008.">
+<title>PID-00008 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00008</p><h1>PID-00008 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc phiếu <code>I&lt;n&gt;</code>.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td><code>libs/ts/contracts/scripts/check-drift.mjs</code>: sinh lại type từ <code>docs/api-design</code>, typecheck mọi project TypeScript phụ thuộc <code>@sires/contracts</code>; lỗi do mã dùng trường không có trong type sinh → thoát lỗi, mỗi lỗi nêu file, dòng, tên trường và schema hoặc message</td><td>ticket mục 1 (Gồm); PID-00008-AC01; ADR-14</td><td>S01</td></tr>
+<tr><td>P2</td><td>Target Nx <code>check-drift</code> và <code>test</code> của <code>@sires/contracts</code> để CI chạy bằng một lệnh; test và fixture của script trong <code>libs/ts/contracts</code></td><td>ticket “chạy được trong CI”; spec mục 6</td><td>S01</td></tr>
+<tr><td>P3</td><td>Kiểm cùng cách cho mã Python dùng client và mô hình sinh (<code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code>): chạy mypy, lỗi thuộc mô hình sinh báo cùng mẫu với TypeScript</td><td>ticket mục 1; PID-00007 (client Python); H1 (I1 phương án B)</td><td>S02</td></tr>
+<tr><td>P4</td><td>Danh sách kiểm baseline và mục “Baseline hợp đồng” trong <code>agent/execution/PID-00008/report.md</code>: DBQ-03, DBQ-04 có trong hợp đồng và trong type sinh; generate (TS, Python) và typecheck đạt; bản gộp công khai khớp nguồn; mâu thuẫn hợp đồng còn mở; kết luận cho PO duyệt</td><td>ticket mục 1 (Gồm); PID-00008-AC02; cổng PH-01</td><td>S03</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Sửa <code>docs/api-design</code> theo DBQ-03, DBQ-04 (đã làm 11/11/2026) và mọi sửa hợp đồng khác, kể cả mâu thuẫn routing key</td><td>Ticket “Không gồm”; R-01; OQ-103</td><td>PO (contract-updating-skill)</td></tr>
+<tr><td>N2</td><td>Gắn <code>check-drift</code> vào workflow CI</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00009/index.html">PID-00009</a></td></tr>
+<tr><td>N3</td><td>Contract test lúc chạy (Schemathesis), kiểm payload theo AsyncAPI</td><td>Kiến trúc 11.3; ticket PID-00009</td><td><a href="../../PID-00009/index.html">PID-00009</a></td></tr>
+<tr><td>N4</td><td>Kiểm “đổi phá vỡ không tăng phiên bản” (spec mục 4.7, kiến trúc 3.6.6)</td><td>H2 (I2 phương án A): hợp đồng chưa có quy tắc phiên bản cho OpenAPI nội bộ, và PO đang đổi phá vỡ có chủ đích trong <code>0.1.0-mvp</code></td><td>PO thêm quy tắc phiên bản vào <code>docs/api-design/README.md</code>, rồi PID riêng hoặc <a href="../../PID-00009/index.html">PID-00009</a></td></tr>
+<tr><td>N5</td><td>Sửa mã service để hết lệch</td><td><code>check-drift</code> chỉ báo; mỗi luồng sửa thư mục của mình (quy tắc 1.4)</td><td>Luồng sở hữu service</td></tr>
+<tr><td>N6</td><td>Kiểm tĩnh route controller và routing key phát ra so với OpenAPI, AsyncAPI</td><td>H1: PO chọn B ở I1, không chọn C; kiểm route và payload lúc chạy thuộc contract test</td><td><a href="../../PID-00009/index.html">PID-00009</a> (lúc chạy)</td></tr>
+<tr><td>N7</td><td>Duyệt baseline hợp đồng</td><td>Quyết định của PO (R-04, cổng PH-01)</td><td>PO</td></tr>
+<tr><td>N8</td><td>Đổi cấu hình mypy hoặc plugin của project Python</td><td>Thuộc luồng <code>agent-core</code>, <code>knowledge</code>, <code>platform</code> (quy tắc 1.4)</td><td>Đề xuất PID cho luồng đó nếu S02 cần</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Mã TS dùng type sinh mà ghi trường thừa (object literal) hoặc đọc trường không có trong schema</td><td>Thoát lỗi; mỗi lỗi một dòng: file:dòng, tên trường, schema hoặc message trong type sinh</td><td>PID-00008-AC01; spec 4.4</td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › trường không có trong spec</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Lỗi typecheck không do type sinh (ví dụ sai kiểu nội bộ của service)</td><td>Thoát lỗi, in nguyên lỗi, không gắn nhãn “trường không có trong spec”</td><td>H3 (I3 phương án A)</td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › lỗi không thuộc hợp đồng</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Spec trong <code>docs/api-design</code> lỗi cú pháp, không sinh được type</td><td>Thoát lỗi, nêu file spec; không báo “đạt” (generate dừng như PID-00007 EC01)</td><td>PID-00007 spec 4.7</td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › spec lỗi cú pháp</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Type trong <code>src/generated</code> cũ hoặc bị sửa tay</td><td>Luôn sinh lại trước khi kiểm; kết quả chỉ theo spec hiện tại</td><td>AGENT.md; <code>libs/ts/contracts/README.md</code></td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › luôn sinh lại</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Chưa service nào import type sinh (hiện chỉ <code>libs/ts/testing</code>)</td><td>Vẫn chạy và in danh sách project đã kiểm; AC01 kiểm bằng fixture trong <code>libs/ts/contracts</code></td><td>Hiện trạng repo 17/11/2026</td><td>Thao tác tay: <code>pnpm nx run @sires/contracts:check-drift</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Mã Python dùng trường không có trong client hoặc mô hình sinh</td><td>Như EC01 cho Python: thoát lỗi; mỗi lỗi một dòng: file:dòng, tên trường, mô hình trong <code>sires_common.generated</code></td><td>PID-00008-AC01; H1</td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › Python: trường không có trong mô hình sinh</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Máy không có uv khi kiểm phần Python</td><td>Báo rõ thiếu uv và không báo đạt cho phần Python; phần TS vẫn chạy (như PID-00007 EC02)</td><td>PID-00007 spec 4.7</td><td><code>libs/ts/contracts/scripts/check-drift.spec.mjs › thiếu uv</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Phát hiện mâu thuẫn trong hợp đồng khi lập baseline (ví dụ routing key ở mục “Phải sửa ở nguồn”)</td><td>Ghi vào báo cáo baseline kèm hai đoạn trích; không sửa <code>docs/api-design</code></td><td>R-01; OQ-103</td><td>Mục kiểm trong báo cáo</td><td>S03</td></tr>
+<tr><td>EC09</td><td><code>docs/api-design/dist/openapi.bundled.yaml</code> không khớp bản gộp lại từ <code>openapi.yaml</code> (type công khai sinh từ bản gộp cũ)</td><td>Ghi trong báo cáo là việc của PO (gộp lại); không sửa file sinh</td><td>AGENT.md (file sinh); <code>docs/api-design/README.md</code></td><td>Mục kiểm trong báo cáo</td><td>S03</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00008</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00008 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

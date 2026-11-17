@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00019: lệnh chạy migration trong image và giá trị Helm migration.">
+<title>S04 — Lệnh chạy migration trong image và giá trị Helm | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00019</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00019</p><h1>S04 — Lệnh chạy migration trong image và giá trị Helm</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Thêm 18/11/2026 theo H3 (I3-A) và quyết định chung D1, D3 (H4, H6): Job migration của <a href="../../../PID-00010/index.html">PID-00010</a> chạy <code>migration.command</code> trước Deployment, image production không có drizzle-kit.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (H3 không thêm AC; kiểm bằng mục “Kiểm” dưới đây)</td></tr>
+<tr><th scope="row">Output spec</th><td>O5, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC09 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (thư mục <code>migrations/</code>, <code>drizzle-orm</code>, <code>pg</code> là phụ thuộc chạy). <a href="../../../PID-00010/index.html">PID-00010</a> chưa có trên <code>main</code>: không chặn — values ghi theo khóa của PID-00010 S02</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết điểm vào chạy migration (tạo mới; vị trí trong <code>apps/orchestration/src/</code>, ví dụ <code>src/db/migrate.ts</code>, Dev chọn, ghi <code>implement.md</code>): gọi <code>migrate()</code> của <code>drizzle-orm</code> (migrator node-postgres) với thư mục <code>migrations/</code> của S01; DSN của vai trò migrator lấy từ biến môi trường (tên biến Dev chọn, ghi README ở S06). Không gọi drizzle-kit lúc chạy: image dựng bằng <code>pnpm deploy --prod</code> (<code>infra/docker/node/Dockerfile</code>) nên không có devDependencies (PID-00010 EC01; EC09).</li>
+<li>Thêm script (ví dụ <code>migrate</code>) vào <code>apps/orchestration/package.json</code> chạy bản đã build trong <code>dist/</code>. Image phải có <code>dist/</code> và <code>migrations/</code> (gồm journal); thiếu thì sửa trong <code>apps/orchestration</code> (ví dụ trường <code>files</code> của <code>package.json</code>), không sửa <code>infra/docker/node/Dockerfile</code> (luồng infra; cần thì dừng, đề xuất ticket).</li>
+<li>Sửa <code>apps/orchestration/deploy/values.yaml</code> (có sẵn): thêm <code>migration.enabled: true</code> và <code>migration.command</code> là lệnh ở bước 2, đúng khóa và kiểu giá trị chart của PID-00010 nhận (PID-00010 S02). PID-00010 chưa có trên <code>main</code> thì ghi theo spec của PID-00010 và ghi vào <code>report.md</code> để kiểm lại khi chart có.</li>
+<li>Chạy lại trên database đã áp không làm gì và không lỗi (EC02: migrator bỏ qua migration đã ghi sổ).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/orchestration:test</code> → đạt (cục bộ: <code>pnpm --filter @sires/orchestration test</code>); cần Docker</li>
+<li><code>pnpm nx run @sires/orchestration:build</code> → đạt, <code>dist/</code> có điểm vào migrate</li>
+<li>Test: <code>apps/orchestration/src/db/migrate.spec.ts › lệnh migrate trên database rỗng</code> (tạo mới; EC02, EC09): chạy điểm vào của bước 1 với DSN của database trong container (vai trò tạo như S01) → database có đủ bảng như S01; chạy lần hai không lỗi, không đổi schema</li>
+<li>Thao tác tay (EC09): dựng image bằng <code>docker build -f infra/docker/node/Dockerfile --build-arg SERVICE=orchestration .</code>, chạy lệnh của <code>migration.command</code> trong image với một database có vai trò; ghi kết quả vào <code>report.md</code></li>
+<li>Khi PID-00010 đã có trên <code>main</code>: <code>node scripts/development/check-charts.mjs</code> → đạt với values của orchestration</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Job migration của PID-00010 có lệnh chạy được migration của orchestration trong image production, không cần drizzle-kit; <code>apps/orchestration/deploy/values.yaml</code> có <code>migration.enabled</code>, <code>migration.command</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00019</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00019 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

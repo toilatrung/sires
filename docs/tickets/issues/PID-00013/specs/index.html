@@ -50,7 +50,7 @@
 <tr><td><code>apps/web/src/main.tsx</code></td><td>Điểm vào ứng dụng</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<p>Không dùng hợp đồng hay bảng riêng.</p>
+<p>OpenAPI công khai <code>docs/api-design/dist/openapi.bundled.yaml</code> (cùng nguồn với type <code>PublicApi</code> của <code>@sires/contracts</code>); schema <code>Event</code> cho <code>/events</code>; <code>Problem</code>, <code>ErrorCode</code> cho phản hồi lỗi. Không dùng bảng dữ liệu. (Sửa khi làm rõ 17/11/2026: bản trước ghi “Không dùng hợp đồng”.)</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td><a href="../../PID-00012/index.html">PID-00012</a> Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</td><td>Chưa làm</td><td>Có</td></tr>
@@ -61,8 +61,8 @@ pnpm --filter @sires/web dev</pre>
 
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
-<tr><td id="o1">O1</td><td>Màn hình</td><td><code>apps/web/src/shell/mock/</code> (tạo mới)</td><td>Màn: theo Gồm; i18n, trạng thái loading, empty, error</td><td>Test ở dòng dưới</td></tr>
-<tr><td id="o2">O2</td><td>Test</td><td><code>apps/web/src/shell/mock/mock.test.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o1">O1</td><td>Mã</td><td><code>apps/web/src/shell/mock/</code> (tạo mới)</td><td>Bộ sinh mock từ OpenAPI công khai, cách bật mock khi chạy dev và test, mock mẫu cho <code>/events</code>; không có màn hình</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Test</td><td><code>apps/web/src/shell/mock/mock.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
@@ -77,7 +77,7 @@ pnpm --filter @sires/web dev</pre>
 <li>Cách bật mock khi chạy dev và test</li>
 <li>Mock mẫu cho <code>/events</code></li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
-<p>Theo <a href="../designs/notes.html">designs/notes.html</a>. Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review.</p>
+<p>Không có giao diện (sửa khi làm rõ 17/11/2026: bản trước trỏ tới sires-ui-executor theo khung mẫu của ticket giao diện).</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
 <p>Không gọi model trực tiếp.</p>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
@@ -87,12 +87,12 @@ pnpm --filter @sires/web dev</pre>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
-<li id="b1"><strong>B1</strong> Đọc <code>docs/ui-design/design.md</code>, màn tham chiếu, <code>designs/notes.html</code> — Kết quả: Danh sách màn và trạng thái — Kiểm tra: Khớp mục 4.5</li>
-<li id="b2"><strong>B2</strong> Dựng theo skill sires-ui-executor: Bộ sinh mock từ OpenAPI công khai — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b3"><strong>B3</strong> Dựng theo skill sires-ui-executor: Cách bật mock khi chạy dev và test — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b4"><strong>B4</strong> Dựng theo skill sires-ui-executor: Mock mẫu cho <code>/events</code> — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b5"><strong>B5</strong> Chuỗi vi/en theo namespace khu vực; trạng thái loading, empty, error — Kết quả: Không còn chuỗi cứng — Kiểm tra: Đổi ngôn ngữ trên preview</li>
-<li id="b6"><strong>B6</strong> Viết test Vitest, chạy <code>check-ui.mjs</code> — Kết quả: Test đạt — Kiểm tra: pnpm nx run @sires/web:test</li>
+<li id="b1"><strong>B1</strong> Đọc <code>docs/api-design/dist/openapi.bundled.yaml</code>, <code>@sires/contracts</code> (<code>PublicApi</code>), client API và client SSE của PID-00012 — Kết quả: Danh sách operation, kiểu phản hồi — Kiểm tra: Khớp mục 2.3</li>
+<li id="b2"><strong>B2</strong> Bộ sinh mock từ OpenAPI công khai: chọn operation, sinh handler và dữ liệu có type (ví dụ trong spec, không có thì theo schema) — Kết quả: Mock sinh ra typecheck đạt — Kiểm tra: <code>pnpm nx run @sires/web:test</code></li>
+<li id="b3"><strong>B3</strong> Cách bật mock khi chạy dev (mặc định tắt) và trong test; bản build production không có mock — Kết quả: Dev và test chạy được không cần gateway — Kiểm tra: <code>pnpm --filter @sires/web dev</code> với mock bật; <code>pnpm nx run @sires/web:build</code></li>
+<li id="b4"><strong>B4</strong> Mock mẫu cho <code>/events</code> — Kết quả: Client SSE của shell nhận sự kiện mẫu, nối lại theo <code>Last-Event-ID</code> — Kiểm tra: <code>pnpm nx run @sires/web:test</code></li>
+<li id="b5"><strong>B5</strong> Hướng dẫn cho khu vực: sinh mock vào <code>apps/web/src/features/&lt;khu vực&gt;/__mocks__/</code>, viết override có type — Kết quả: README của <code>shell/mock</code> — Kiểm tra: Đọc lại theo PID-00036, PID-00037</li>
+<li id="b6"><strong>B6</strong> Viết test Vitest cho AC01 (đổi schema → sinh lại → typecheck báo chỗ lệch) — Kết quả: Test đạt — Kiểm tra: <code>pnpm nx run @sires/web:test</code></li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -102,7 +102,7 @@ pnpm nx affected -t lint typecheck test build
 node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
-<tr><td>PID-00013-AC01</td><td><code>apps/web/src/shell/mock/mock.test.ts</code></td><td>Given OpenAPI đổi một schema, When sinh lại, Then mock đổi theo và typecheck báo chỗ lệch.</td></tr>
+<tr><td>PID-00013-AC01</td><td><code>apps/web/src/shell/mock/mock.spec.ts</code></td><td>Given OpenAPI đổi một schema, When sinh lại, Then mock đổi theo và typecheck báo chỗ lệch.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

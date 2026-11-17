@@ -1,0 +1,194 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00158: Sinh bảng app.state_transition từ khai báo state machine (helper TS và Python).">
+<title>PID-00158 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>0.1 · 18/11/2026</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00158</p><h1>PID-00158 — Sinh bảng app.state_transition từ khai báo state machine (helper TS và Python)</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00158</a> · Luồng: <code>platform</code> · Giai đoạn: PH-01 · Soạn 18/11/2026 · Viết theo spec-docs-skill; Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Một helper dùng chung để mọi service khai báo state machine dạng dữ liệu một lần, kiểm chuyển trạng thái ở domain từ khai báo đó, và sinh dòng <code>app.state_transition</code> cho migration — đúng DEC-57: bảng là bản sinh, không viết tay.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>platform</code> (<code>libs/ts/platform</code>, <code>libs/py/sires_common</code>) · PH-01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00158-AC01 … PID-00158-AC06 (toàn bộ). Requirement: không phủ trực tiếp; phục vụ DATA-STATE-001-AC01 và NFR-MAINT-003-AC01 ở các PID migration.</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Quyết định chung D2, D1 (PO 18/11/2026); <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a>; <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>; <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a>; <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-03">DBD-03</a>; <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-003">NFR-MAINT-003</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-004">NFR-MAINT-004</a>; câu trả lời H1–H4 ở <a href="../index.html#s-5">trang ticket</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Khai báo machine của service, migration nạp dòng, test so dòng sau migration (8 PID migration); guard, chọn đích, quyền theo trạng thái, APR, Audit Event (module domain của service); ánh xạ lỗi sang HTTP; CHECK và trigger (chép từ DDL theo D1); gói mới trong pnpm catalog</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li>Database <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">10.2</a> — state machine ở database là lớp thứ hai; bảng machine và số cặp; “bảng state_transition là bản sinh tự động từ khai báo đó bởi migration, không viết tay”.</li>
+<li>Database <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">12.4</a> — thêm giá trị trạng thái = sửa CHECK và bảng chuyển trạng thái trong cùng migration; migration chỉ tiến.</li>
+<li>Kiến trúc <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">6.10</a> — quy ước migration PO chốt 18/11/2026 (D1, D2).</li>
+<li>Quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-5">1.4.5</a> (thư viện chỉ đổi tương thích ngược), <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-7">1.4.7</a> (catalog do infra giữ); kế hoạch luồng platform <a href="../../../sections/03-track-plans.html#s-3-1">3.1</a>.</li>
+<li>Hồ sơ dùng helper: <a href="../../PID-00023/index.html">PID-00023</a> (slice S02, S03: bảng 28 cặp Task, thử 100 cặp), <a href="../../PID-00026/index.html">PID-00026</a> (Python, revision Alembic).</li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><a href="../../../../../libs/ts/platform/src/index.ts"><code>libs/ts/platform/src/index.ts</code></a></td><td>Nơi thêm export; hiện chỉ có <code>bootstrapService</code>, <code>HealthModule</code></td></tr>
+<tr><td><a href="../../../../../libs/ts/platform/package.json"><code>libs/ts/platform/package.json</code></a></td><td>Thêm <code>bin</code>, devDependency, input của target test (phần <code>nx</code>)</td></tr>
+<tr><td><a href="../../../../../libs/ts/platform/tsconfig.build.json"><code>libs/ts/platform/tsconfig.build.json</code></a></td><td>Loại thư mục <code>testdata</code> khỏi bản build</td></tr>
+<tr><td><a href="../../../../../libs/ts/testing/src/containers/postgres.ts"><code>libs/ts/testing/src/containers/postgres.ts</code></a></td><td><code>startPostgres({ extensions: [] })</code> cho test PostgreSQL 16 + pgvector</td></tr>
+<tr><td><a href="../../../../../libs/py/sires_common/src/sires_common/testing/fixtures.py"><code>libs/py/sires_common/src/sires_common/testing/fixtures.py</code></a></td><td>Fixture <code>sires_postgres</code> cho test Python</td></tr>
+<tr><td><a href="../../../../../libs/py/sires_common/project.json"><code>libs/py/sires_common/project.json</code></a></td><td>Input của target <code>test</code> (thêm DDL và bộ mẫu dùng chung)</td></tr>
+<tr><td><a href="../../../../../libs/py/sires_common/src/sires_common/errors.py"><code>libs/py/sires_common/src/sires_common/errors.py</code></a></td><td>Danh sách <code>ErrorCode</code> có <code>invalid_transition</code> (không gọi lớp HTTP từ helper)</td></tr>
+<tr><td><a href="../../../../../scripts/development/check-tracks.mjs"><code>scripts/development/check-tracks.mjs</code></a></td><td>Xác nhận hai thư viện cùng luồng <code>platform</code></td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<ul><li>Bảng: <code>app.state_transition (machine text, from_state text, to_state text, code text NULL, PRIMARY KEY (machine, from_state, to_state))</code> và trigger <code>app.tg_state_transition</code> ở <a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a>. Vai trò <code>_app</code>, <code>_system</code> chỉ đọc bảng này (<code>app.grant_standard</code>).</li>
+<li>Mã lỗi: <code>invalid_transition</code> trong <code>ErrorCode</code> (<code>docs/api-design/components/schemas/common.yaml</code>); 409 <code>Conflict</code> có <code>currentState</code> (<a href="../../../../api-design/components/responses.yaml"><code>components/responses.yaml</code></a>) — service dùng, helper không.</li>
+<li>Actor: <code>ActorRef.type</code> = <code>researcher</code>, <code>agent</code>, <code>system</code> (<code>common.yaml</code>).</li></ul>
+<div class="table-wrap"><table><thead><tr><th scope="col">File DDL</th><th scope="col">Machine (số cặp)</th><th scope="col">Mã</th><th scope="col">PID migration</th></tr></thead><tbody>
+<tr><td><a href="../../../../database/ddl/identity.sql"><code>identity.sql</code></a></td><td><code>provider_connection</code> (6, cột <code>test_status</code>), <code>account</code> (4)</td><td>không</td><td>PID-00016</td></tr>
+<tr><td><a href="../../../../database/ddl/workspace.sql"><code>workspace.sql</code></a></td><td><code>research_project</code> (2), <code>pending_action</code> (3), <code>notification</code> (1)</td><td>không</td><td>PID-00017</td></tr>
+<tr><td><a href="../../../../database/ddl/planning.sql"><code>planning.sql</code></a></td><td><code>task</code> (28), <code>plan_version</code> (4)</td><td>T-01–T-19; <code>APR-01</code>; <code>NULL</code></td><td>PID-00023</td></tr>
+<tr><td><a href="../../../../database/ddl/orchestration.sql"><code>orchestration.sql</code></a></td><td><code>workflow</code> (16), <code>workflow_step</code> (11), <code>agent_run</code> (5), <code>prompt</code> (3), <code>context_item</code> (2), <code>deliberation</code> (3), <code>deliberation_entry</code> (3, trạng thái chữ thường)</td><td>không</td><td>PID-00019</td></tr>
+<tr><td><a href="../../../../database/ddl/library.sql"><code>library.sql</code></a></td><td><code>discovered_result</code> (4), <code>reference_approval</code> (4), <code>reference_indexing</code> (8), <code>project_reference_selection</code> (2)</td><td>không</td><td>PID-00024</td></tr>
+<tr><td><a href="../../../../database/ddl/knowledge.sql"><code>knowledge.sql</code></a></td><td><code>indexing_job</code> (7)</td><td>không</td><td>PID-00026 (Python)</td></tr>
+<tr><td><a href="../../../../database/ddl/research.sql"><code>research.sql</code></a></td><td><code>artifact_version</code> (3), <code>evidence</code> (3), <code>claim_approval</code> (3)</td><td>không</td><td>PID-00029</td></tr>
+<tr><td><a href="../../../../database/ddl/manuscript.sql"><code>manuscript.sql</code></a></td><td><code>change_proposal</code> (3), <code>build</code> (4), <code>manuscript_file</code> (1)</td><td>không</td><td>PID-00030</td></tr>
+</tbody></table></div>
+<p>Tổng 25 machine, 133 cặp (đếm 18/11/2026). Khối INSERT của <code>planning.sql</code> có 4 cột (kèm <code>code</code>), các file khác 3 cột. Trạng thái có khoảng trắng (<code>Waiting for User</code>, <code>Deletion Requested</code>) và chữ thường (<code>draft</code>, <code>final</code>).</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00004/index.html">PID-00004</a> <code>startPostgres()</code></td><td>Đã merge vào <code>main</code></td><td>Không</td></tr>
+<tr><td><a href="../../PID-00005/index.html">PID-00005</a> <code>sires_common.testing.fixtures</code></td><td>Đã merge vào <code>main</code></td><td>Không</td></tr>
+<tr><td><code>pg</code>, <code>@types/pg</code>, <code>vitest</code> trong pnpm catalog; <code>asyncpg</code>, <code>pytest</code> trong <code>sires-common</code></td><td>Đã có</td><td>Không</td></tr>
+<tr><td><a href="../../PID-00001/index.html">PID-00001</a> sửa cùng <code>index.ts</code>, <code>package.json</code>, <code>README.md</code></td><td>Chưa merge</td><td>Không (rebase khi merge sau)</td></tr>
+<tr><td>Docker cho test PostgreSQL</td><td>Linux, hoặc WSL2 với <code>DOCKER_HOST=tcp://localhost:2375</code> (<code>scripts/development/README.md</code>)</td><td>Không (chỉ S03, S06)</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+uv sync --all-packages
+pnpm nx run @sires/platform:test
+pnpm nx run sires-common:test</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Module</td><td><code>libs/ts/platform/src/state-machine/define.ts</code>, <code>check.ts</code>, <code>errors.ts</code> (tạo mới)</td><td>Kiểu khai báo, <code>defineStateMachine</code>, <code>findTransition</code>, <code>assertTransition</code>, <code>InvalidTransitionError</code>, <code>StateMachineDefinitionError</code></td><td>O7</td></tr>
+<tr><td id="o2">O2</td><td>Module</td><td><code>libs/ts/platform/src/state-machine/sql.ts</code> (tạo mới)</td><td><code>stateTransitionRows</code>, <code>stateTransitionStatements</code>, <code>renderStateTransitionSql</code>, <code>compareStateTransitionRows</code></td><td>O7, O8</td></tr>
+<tr><td id="o3">O3</td><td>Lệnh</td><td><code>libs/ts/platform/src/state-machine/cli.ts</code> (tạo mới); <code>bin</code> <code>sires-state-transition-sql</code> trong <code>libs/ts/platform/package.json</code></td><td>In SQL của machine trong một module JS đã build</td><td>O7 (<code>cli.spec.ts</code>)</td></tr>
+<tr><td id="o4">O4</td><td>Export</td><td><code>libs/ts/platform/src/state-machine/index.ts</code> (tạo mới), <code>libs/ts/platform/src/index.ts</code> (có sẵn)</td><td>Export mọi tên ở 4.2; không đổi export cũ</td><td><code>pnpm nx run @sires/platform:build</code>, <code>:typecheck</code></td></tr>
+<tr><td id="o5">O5</td><td>Dữ liệu test</td><td><code>libs/ts/platform/src/state-machine/testdata/golden-machines.json</code>, <code>golden.txt</code> (tạo mới)</td><td>Bộ khai báo mẫu dạng dữ liệu và SQL mong đợi, dùng chung cho TS và Python</td><td>O7, O10</td></tr>
+<tr><td id="o6">O6</td><td>Cấu hình</td><td><code>libs/ts/platform/package.json</code>, <code>tsconfig.build.json</code> (có sẵn); <code>libs/py/sires_common/project.json</code> (có sẵn)</td><td>devDependency <code>@sires/testing</code> (<code>workspace:*</code>), <code>pg</code>, <code>@types/pg</code> (<code>catalog:</code>); input test: <code>docs/database/ddl/*.sql</code>, <code>golden.txt</code>, <code>golden-machines.json</code>; build loại <code>src/**/testdata/**</code></td><td><code>pnpm nx run @sires/platform:test</code> chạy lại khi DDL đổi</td></tr>
+<tr><td id="o7">O7</td><td>Test</td><td><code>libs/ts/platform/src/state-machine/define.spec.ts</code>, <code>check.spec.ts</code>, <code>sql.spec.ts</code>, <code>cli.spec.ts</code> (tạo mới)</td><td>Test đơn vị, không cần Docker</td><td><code>pnpm nx run @sires/platform:test</code></td></tr>
+<tr><td id="o8">O8</td><td>Test</td><td><code>libs/ts/platform/src/state-machine/ddl.pg.spec.ts</code> (tạo mới)</td><td>Đối chiếu 8 file DDL, đồng bộ, chạy lại trên PostgreSQL 16 (Docker)</td><td><code>pnpm nx run @sires/platform:test</code></td></tr>
+<tr><td id="o9">O9</td><td>Module</td><td><code>libs/py/sires_common/src/sires_common/state_machine.py</code> (tạo mới)</td><td>Bản Python của O1–O3; <code>python -m sires_common.state_machine</code></td><td>O10</td></tr>
+<tr><td id="o10">O10</td><td>Test</td><td><code>libs/py/sires_common/tests/test_state_machine.py</code>, <code>test_state_machine_pg.py</code>, <code>test_state_machine_cli.py</code> (tạo mới)</td><td>Như O7, O8 cho Python; khớp <code>golden.txt</code></td><td><code>pnpm nx run sires-common:test</code></td></tr>
+<tr><td id="o11">O11</td><td>Tài liệu</td><td><a href="../../../../../libs/ts/platform/README.md"><code>libs/ts/platform/README.md</code></a>, <a href="../../../../../libs/py/sires_common/README.md"><code>libs/py/sires_common/README.md</code></a> (có sẵn)</td><td>API, quy trình dùng trong migration (4.4), đổi khai báo về sau</td><td>Đọc lại; <code>node scripts/docs/add-license.mjs --check</code></td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<ul><li>Không tạo bảng, không đổi DDL. SQL sinh ra chỉ chạm <code>app.state_transition</code>, chỉ các dòng có <code>machine</code> thuộc danh sách truyền vào.</li>
+<li><strong>Dòng:</strong> mỗi cặp khai báo là một dòng (<code>machine</code>, <code>from_state</code>, <code>to_state</code>, <code>code</code>); <code>code</code> không khai báo → <code>NULL</code>. Dòng sắp theo <code>machine</code>, rồi <code>from_state</code>, rồi <code>to_state</code>, so theo code point Unicode (TS không dùng <code>localeCompare</code>; Python so chuỗi mặc định). Thứ tự khai báo không ảnh hưởng đầu ra.</li>
+<li><strong>SQL đồng bộ</strong> (<code>renderStateTransitionSql</code>), theo thứ tự:
+<ol><li>Hai dòng chú thích cố định: câu nói SQL sinh từ khai báo state machine, không sửa tay (DR-01, DEC-57); câu liệt kê machine kèm số cặp theo thứ tự đã sắp.</li>
+<li>Câu <code>DELETE FROM app.state_transition WHERE machine IN (…) AND (machine, from_state, to_state) NOT IN (VALUES …);</code> — xóa cặp không còn trong khai báo của các machine đó.</li>
+<li>Một dòng <code>--&gt; statement-breakpoint</code> (dấu tách câu của drizzle-kit; với PostgreSQL là chú thích).</li>
+<li>Câu <code>INSERT INTO app.state_transition (machine, from_state, to_state, code) VALUES … ON CONFLICT (machine, from_state, to_state) DO UPDATE SET code = EXCLUDED.code WHERE app.state_transition.code IS DISTINCT FROM EXCLUDED.code;</code></li></ol>
+Xuống dòng luôn là LF; kết thúc bằng một LF. Chuỗi bọc nháy đơn, nháy đơn bên trong nhân đôi; không dùng <code>E''</code> hay <code>$$</code>. Không có thời gian, đường dẫn, phiên bản hay giá trị phụ thuộc máy. Dạng chữ chính xác (thụt lề, mỗi dòng VALUES một cặp) do Dev chọn ở S02 và được ghim bằng <code>golden.txt</code>; Python phải cho đúng chuỗi đó.</li>
+<li><strong>Từng câu</strong> (<code>stateTransitionStatements</code>): trả hai câu DELETE, INSERT ở trên (không chú thích, không dấu tách) để chạy riêng từng câu — Alembic <code>op.execute</code> trên asyncpg không chạy nhiều câu trong một lệnh có chuẩn bị (EC19).</li>
+<li><strong>Bộ mẫu dùng chung</strong> <code>golden-machines.json</code>: mảng khai báo dạng dữ liệu (khóa <code>machine</code>, <code>states</code>, <code>transitions</code> với <code>from</code>, <code>to</code>, <code>code</code>, <code>actors</code>). Phải có: ít nhất hai machine; cặp có mã và không mã; trạng thái có khoảng trắng; một giá trị có nháy đơn; một giá trị không phải ASCII (EC07, EC08). <code>golden.txt</code> là đầu ra mong đợi; file <code>.txt</code> nên <code>add-license.mjs</code> không chèn giấy phép vào.</li></ul>
+<h3 id="s-4-2">4.2. API</h3>
+<p>API thư viện, không có endpoint HTTP. Tên dưới đây là bắt buộc để 8 PID migration và PID tính năng gọi giống nhau; tên file nội bộ Dev có thể đổi, ghi <code>implement.md</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">TypeScript (<code>@sires/platform</code>)</th><th scope="col">Python (<code>sires_common.state_machine</code>)</th><th scope="col">Hành vi</th></tr></thead><tbody>
+<tr><td><code>defineStateMachine(decl)</code> với <code>decl = { machine, states, transitions: [{ from, to, code?, actors? }] }</code>; kiểu <code>StateMachine&lt;S&gt;</code> suy ra union trạng thái từ <code>states</code> (<code>as const</code>)</td><td><code>define_state_machine(machine, states, transitions)</code>; <code>Transition(from_state, to_state, code=None, actors=())</code>; nhận cả dict cùng khóa với JSON</td><td>Kiểm khai báo (EC02–EC07); trả đối tượng không sửa được (EC14); <code>actors</code> lấy trong <code>researcher</code>, <code>agent</code>, <code>system</code></td></tr>
+<tr><td><code>findTransition(m, from, to)</code></td><td><code>find_transition(m, from_state, to_state)</code></td><td>Trả cặp (kèm <code>code</code>, <code>actors</code>) hoặc <code>undefined</code> / <code>None</code></td></tr>
+<tr><td><code>assertTransition(m, from, to)</code></td><td><code>assert_transition(m, from_state, to_state)</code></td><td>Trả cặp hoặc ném <code>InvalidTransitionError</code></td></tr>
+<tr><td><code>InvalidTransitionError</code>: <code>code = 'invalid_transition'</code>, <code>machine</code>, <code>currentState</code>, <code>targetState</code></td><td><code>InvalidTransitionError</code>: <code>code</code>, <code>machine</code>, <code>current_state</code>, <code>target_state</code></td><td>Lỗi miền; không phải lỗi HTTP</td></tr>
+<tr><td><code>StateMachineDefinitionError</code>: <code>machine</code>, mô tả giá trị sai</td><td><code>StateMachineDefinitionError</code> (con của <code>ValueError</code>)</td><td>Ném khi định nghĩa hay khi truyền danh sách machine sai (EC09, EC10)</td></tr>
+<tr><td><code>stateTransitionRows(machines)</code> → <code>StateTransitionRow[]</code> (<code>machine</code>, <code>fromState</code>, <code>toState</code>, <code>code: string | null</code>)</td><td><code>state_transition_rows(machines)</code> → danh sách <code>StateTransitionRow</code> (<code>machine</code>, <code>from_state</code>, <code>to_state</code>, <code>code</code>)</td><td>Dòng đã sắp (4.1)</td></tr>
+<tr><td><code>stateTransitionStatements(machines)</code> → hai chuỗi</td><td><code>state_transition_statements(machines)</code></td><td>DELETE, INSERT (4.1)</td></tr>
+<tr><td><code>renderStateTransitionSql(machines)</code> → chuỗi</td><td><code>render_state_transition_sql(machines)</code></td><td>SQL đồng bộ; hai ngôn ngữ cho cùng chuỗi</td></tr>
+<tr><td><code>compareStateTransitionRows(actual, machines)</code> → <code>{ missing, unexpected, codeMismatch }</code></td><td><code>compare_state_transition_rows(actual, machines)</code></td><td>Chỉ xét dòng của machine truyền vào; <code>codeMismatch</code> mang dòng khai báo và mã thực tế; cả ba rỗng khi khớp</td></tr>
+<tr><td>Lệnh <code>sires-state-transition-sql &lt;module.js&gt; [tên export]</code>; mặc định export <code>stateMachines</code>; hàm <code>runCli(argv, io)</code> trả mã thoát (để test)</td><td><code>python -m sires_common.state_machine &lt;module.path&gt; [ATTR]</code>; mặc định <code>STATE_MACHINES</code>; hàm <code>main(argv)</code></td><td>Mỗi phần tử là machine đã định nghĩa hoặc khai báo dạng dữ liệu cùng hình (đi lại qua hàm định nghĩa); in <code>renderStateTransitionSql</code> ra stdout; lỗi → stderr, mã thoát 1, stdout rỗng (EC17)</td></tr>
+</tbody></table></div>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Khai báo của service là nguồn duy nhất của state machine (NFR-MAINT-003, DEC-57). Thư viện không chứa machine của service nào; dữ liệu mẫu chỉ ở <code>testdata</code>.</li>
+<li>Hàm kiểm chỉ xét cặp (từ, đến). Guard, chọn đích (ví dụ T-10 về Ready hay Blocked), quyền theo trạng thái, APR, actor được phép và Audit Event thuộc module domain của service (database 10.2). Helper không đọc database, không gọi mạng (NFR-MAINT-004).</li>
+<li>Cặp X → X không được khai báo và luôn bị hàm kiểm từ chối; database không tra cặp này vì trigger bỏ qua UPDATE giữ nguyên trạng thái.</li>
+<li><strong>Dùng trong migration</strong> (ghi ở README, H2, H4): (1) PID migration khai báo machine của service trong module domain và xuất danh sách (<code>stateMachines</code> / <code>STATE_MACHINES</code>); (2) build service rồi chạy lệnh in SQL; (3) tạo custom migration bằng <code>drizzle-kit generate --custom</code> hay revision Alembic, dán SQL (Alembic: lặp <code>op.execute</code> trên <code>state_transition_statements</code>); (4) <code>node scripts/docs/add-license.mjs</code> gắn giấy phép cho file <code>.sql</code> mới; (5) test database của service, sau khi áp mọi migration: <code>compareStateTransitionRows</code> trả rỗng (DR-01 “test so khớp trong CI”).</li>
+<li><strong>Đổi khai báo về sau:</strong> không sửa migration cũ; thêm migration mới chứa SQL sinh lại cho machine đổi, cùng migration sửa CHECK nếu thêm trạng thái (database 12.4). Migration không import khai báo lúc chạy: nội dung migration phải cố định (kiến trúc 6.10).</li>
+<li>Tương thích ngược (quy tắc 1.4.5): chỉ thêm export; không đổi <code>bootstrapService</code>, <code>HealthModule</code> và module Python hiện có.</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Kiểm cặp X → X, hay cặp không khai báo</td><td><code>InvalidTransitionError</code> (<code>invalid_transition</code>, trạng thái hiện hành)</td></tr>
+<tr><td>Khai báo sai (tên machine không khớp <code>^[a-z][a-z0-9_]*$</code>; <code>states</code> hay <code>transitions</code> rỗng; trạng thái trùng; cặp trùng; cặp X → X; trạng thái ngoài <code>states</code>; giá trị rỗng, có ký tự U+0000–U+001F, U+007F, khoảng trắng đầu cuối; actor ngoài ba giá trị)</td><td><code>StateMachineDefinitionError</code> nêu machine và giá trị sai</td></tr>
+<tr><td>Danh sách machine rỗng, hay hai machine trùng tên, khi sinh SQL hoặc so dòng</td><td><code>StateMachineDefinitionError</code></td></tr>
+<tr><td>Nháy đơn, ký tự không phải ASCII</td><td>Nháy nhân đôi; thứ tự theo code point, TS và Python giống nhau</td></tr>
+<tr><td>Chạy SQL hai lần; dòng khác mã; dòng của machine khác</td><td>Không đổi; cập nhật mã; không chạm</td></tr>
+<tr><td><code>golden.txt</code> bị đổi sang CRLF khi checkout trên Windows (<code>core.autocrlf=true</code>)</td><td>Test bỏ <code>\r</code> khi đọc file; chuỗi sinh ra luôn LF</td></tr>
+<tr><td>Không có Docker</td><td>Test PostgreSQL báo lỗi rõ (<code>DockerUnavailableError</code>; lỗi fixture ở Python), không bỏ qua im lặng; test đơn vị nằm ở file khác, vẫn chạy</td></tr>
+<tr><td>Khối INSERT của một file DDL đổi dạng (thêm cột, cách viết khác)</td><td>Bộ đọc trong test báo lỗi nêu tên file; không bỏ qua file. Test ghi số đếm 18/11/2026 (8 file, 25 machine, 133 cặp); PO đổi DDL thì cập nhật số trong cùng PR</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Viết O1: kiểu khai báo, <code>defineStateMachine</code> (kiểm 4.7, đóng băng sâu), <code>findTransition</code>, <code>assertTransition</code>, hai lớp lỗi; <code>define.spec.ts</code>, <code>check.spec.ts</code> — Kết quả: khai báo đúng được nhận, khai báo sai bị từ chối, mọi cặp có thứ tự của một machine mẫu cho đúng kết quả — Kiểm tra: <code>pnpm nx run @sires/platform:test</code></li>
+<li id="b2"><strong>B2</strong> Viết O2 và O5: dòng đã sắp, hai câu, SQL đồng bộ, so dòng; tạo <code>golden-machines.json</code> rồi <code>golden.txt</code> từ đầu ra đã duyệt bằng mắt; <code>sql.spec.ts</code> (xác định khi đổi thứ tự, khớp <code>golden.txt</code>, so dòng) — Kết quả: đầu ra cố định, được ghim — Kiểm tra: <code>pnpm nx run @sires/platform:test</code></li>
+<li id="b3"><strong>B3</strong> Viết O8 với <code>startPostgres({ extensions: [] })</code>: chạy <code>00-common.sql</code>; với mỗi file DDL, đọc khối INSERT (bộ đọc chỉ dùng trong test, đặt trong <code>testdata</code> hay trong file spec), chạy khối đó, lấy dòng, xóa bảng, khai báo lại bằng helper, chạy SQL sinh ra, so; chạy lần hai; kịch bản đồng bộ một machine khi bảng có dòng lệch và dòng của machine khác — Kết quả: AC04, AC05 trên database — Kiểm tra: <code>pnpm nx run @sires/platform:test</code> (Docker)</li>
+<li id="b4"><strong>B4</strong> Viết O3, O4, O6: <code>runCli</code> và file bin (shebang), <code>bin</code> trong <code>package.json</code>, export, input test, loại <code>testdata</code> khỏi build; <code>cli.spec.ts</code> dùng một module JS mẫu trong <code>testdata</code> — Kết quả: lệnh in đúng SQL, lỗi đúng mã thoát — Kiểm tra: <code>pnpm nx run @sires/platform:build</code>, <code>:test</code>; chạy tay <code>node libs/ts/platform/dist/state-machine/cli.js</code> trên một module đã build</li>
+<li id="b5"><strong>B5</strong> Viết README TS (O11): API, quy trình 4.4, đổi khai báo về sau — Kết quả: PID migration làm theo được — Kiểm tra: đọc lại</li>
+<li id="b6"><strong>B6</strong> Viết O9 (phần không database) và <code>test_state_machine.py</code>: cùng kiểm, cùng lỗi, đọc <code>golden-machines.json</code> và <code>golden.txt</code> của TS bằng đường dẫn tính từ gốc repo — Kết quả: AC01–AC03, AC05 (so dòng) ở Python — Kiểm tra: <code>pnpm nx run sires-common:test</code></li>
+<li id="b7"><strong>B7</strong> Viết <code>test_state_machine_pg.py</code> (fixture <code>sires_postgres</code>; khối INSERT của <code>knowledge.sql</code>, <code>planning.sql</code>; đồng bộ; chạy từng câu bằng <code>state_transition_statements</code>), <code>main()</code> và <code>test_state_machine_cli.py</code>; thêm input test vào <code>project.json</code>; README Python (O11) — Kết quả: AC04 (phần Python), AC05, AC06 ở Python — Kiểm tra: <code>pnpm nx run sires-common:test</code> (Docker)</li>
+<li id="b8"><strong>B8</strong> Chạy lệnh ở mục 6 — Kết quả: đạt hết — Kiểm tra: kết quả ghi trong <code>self-qc.md</code></li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/platform:lint
+pnpm nx run @sires/platform:typecheck
+pnpm nx run @sires/platform:test
+pnpm nx run @sires/platform:build
+pnpm nx run sires-common:lint
+pnpm nx run sires-common:typecheck
+pnpm nx run sires-common:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00158-AC01</td><td><code>libs/ts/platform/src/state-machine/check.spec.ts</code> › “mọi cặp có thứ tự”; <code>libs/py/sires_common/tests/test_state_machine.py</code> › <code>test_every_ordered_pair</code></td><td>Cặp khai báo trả kèm mã; mọi cặp khác (kể cả X → X) ném <code>InvalidTransitionError</code> có <code>invalid_transition</code>, machine, trạng thái hiện hành</td></tr>
+<tr><td>PID-00158-AC02</td><td><code>define.spec.ts</code> › “từ chối khai báo sai”; <code>test_state_machine.py</code> › <code>test_invalid_declarations</code></td><td>Mỗi ca sai trong 4.7 ném <code>StateMachineDefinitionError</code> nêu giá trị sai</td></tr>
+<tr><td>PID-00158-AC03</td><td><code>sql.spec.ts</code> › “xác định khi đổi thứ tự”, “khớp golden.txt”; <code>test_state_machine.py</code> › <code>test_render_is_deterministic</code>, <code>test_matches_shared_golden</code></td><td>Chuỗi giống hệt; TS và Python bằng đúng <code>golden.txt</code> (sau khi bỏ <code>\r</code> của file)</td></tr>
+<tr><td>PID-00158-AC04</td><td><code>ddl.pg.spec.ts</code> › “khớp mọi khối INSERT của docs/database/ddl”, “chạy lần hai không đổi”; <code>test_state_machine_pg.py</code> › <code>test_ddl_rows_knowledge_planning</code></td><td>8 file, 25 machine, 133 cặp: tập dòng sinh ra bằng tập dòng DDL, kể cả <code>code</code>; chạy lại không đổi</td></tr>
+<tr><td>PID-00158-AC05</td><td><code>ddl.pg.spec.ts</code> › “đồng bộ một machine”; <code>sql.spec.ts</code> › “so dòng”; <code>test_state_machine_pg.py</code> › <code>test_sync_one_machine</code>; <code>test_state_machine.py</code> › <code>test_compare_rows</code></td><td>Machine đích bằng khai báo, machine khác giữ nguyên; hàm so dòng nêu đúng thiếu, thừa, khác mã; rỗng khi khớp</td></tr>
+<tr><td>PID-00158-AC06</td><td><code>cli.spec.ts</code> › “in SQL”, “lỗi module”; <code>test_state_machine_cli.py</code> › <code>test_cli_prints_sql</code>, <code>test_cli_errors</code></td><td>Stdout bằng hàm sinh SQL, mã 0; lỗi → mã 1, stderr có lý do, stdout rỗng</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>platform</code> (<code>apps/</code>, <code>infra/</code>, <code>scripts/</code>, file cấu hình gốc, pnpm catalog); <code>docs/</code> (chỉ đọc DDL); file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có; export hiện có của hai thư viện.</li>
+<li><strong>Dừng và hỏi khi:</strong> khối INSERT của DDL không đọc được theo dạng hiện có, hay dòng sinh ra khác DDL không do lỗi helper (DDL là chuẩn); cần gói mới trong catalog hay ràng buộc uv (đề xuất PR cho luồng infra); cần đổi hành vi mà spec và mục Làm rõ không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có. Sửa ở nguồn (DR-01, PH-01, kế hoạch 3.1) ghi ở mục “Phải sửa ở nguồn” của trang ticket.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00158</a><a href="../../../index.html">Kế hoạch triển khai</a></nav>
+</main>
+<footer>AI Research Assistant (SIRes) · Spec kỹ thuật PID-00158 · 0.1 (đề xuất). · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

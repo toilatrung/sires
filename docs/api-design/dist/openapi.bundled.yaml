@@ -8211,13 +8211,38 @@ components:
         - Imported
     ReferenceMetadata:
       type: object
-      description: Schema metadata chuẩn hóa (17.6).
+      description: |
+        Schema metadata chuẩn hóa (17.6). `identifiers.sourceId` và `identifiers.url` bắt buộc với metadata lấy từ nguồn tra
+        cứu (adapter, DOI, PDF). Với mục nhập từ file BibTeX hoặc RIS (`source` = `bibtex`, `ris`) hai trường này được thiếu:
+        parser điền `sourceId` = citation key (BibTeX) hoặc thẻ `ID` (RIS), `url` = trường `url`/`UR`, không có thì
+        `https://doi.org/` + DOI, khi có (PO 18/11/2026, PID-00024).
       required:
         - title
         - authors
         - identifiers
         - source
         - retrievedAt
+      if:
+        required:
+          - source
+        properties:
+          source:
+            enum:
+              - bibtex
+              - ris
+      then: {}
+      else:
+        properties:
+          identifiers:
+            required:
+              - sourceId
+              - url
+            properties:
+              sourceId:
+                type: string
+              url:
+                type: string
+                format: uri
       properties:
         title:
           type: string
@@ -8252,9 +8277,7 @@ components:
             - other
         identifiers:
           type: object
-          required:
-            - sourceId
-            - url
+          description: '`sourceId`, `url` bắt buộc trừ khi `source` là `bibtex` hoặc `ris` (xem mô tả schema).'
           properties:
             doi:
               type: string
@@ -8281,6 +8304,7 @@ components:
             - semantic_scholar
             - doi
             - bibtex
+            - ris
             - pdf
         retrievedAt:
           $ref: '#/components/schemas/Timestamp'

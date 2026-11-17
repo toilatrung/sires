@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của PID-00016: migration sires_identity, lệnh migrate, giá trị Helm, quyền, RLS, README.">
+<title>PID-00016 — S01 Migration sires_identity | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00016</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00016</p><h1>S01 — Migration sires_identity</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00016-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3 (<code>migration.spec.ts</code>), O4, O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC05, EC06, EC07 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00001/index.html">PID-00001</a> đã merge (drizzle-orm; drizzle-kit vào pnpm catalog theo D5) — chưa có trên <code>main</code> ngày 17/11/2026; <a href="../../../PID-00004/index.html">PID-00004</a> đã merge. Không chặn: <a href="../../../PID-00159/index.html">PID-00159</a> (test tự tạo vai trò), <a href="../../../PID-00010/index.html">PID-00010</a> (Job đọc <code>migration.*</code>).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo migration đầu trong <code>apps/identity/migrations/</code> (có sẵn) bằng drizzle-kit dưới dạng custom migration SQL, giữ journal của drizzle-kit (kiến trúc 6.10, H6): chép phần chung của <code>docs/database/ddl/00-common.sql</code>, rồi nguyên văn <code>docs/database/ddl/identity.sql</code> (5 bảng, khóa ngoại deferrable, view <code>analysis_same_model</code> với <code>security_invoker</code>, trigger <code>row_version</code> và trạng thái, <code>app.find_account_by_identity</code>, <code>enable_tenant_rls</code>, <code>grant_standard</code>, REVOKE trên <code>provider_secret</code>, quyền EXECUTE). Không đưa khối <code>INSERT INTO app.state_transition</code> vào (sinh ở S02, H3). Migration không tạo vai trò. Không đổi schema; lệch thì ghi DBQ trong <code>report.md</code> và dừng. Slice này không viết schema Drizzle bằng TypeScript (D1).</li>
+<li>Lệnh migrate của service: mã gọi <code>migrate()</code> của drizzle-orm trên <code>apps/identity/migrations/</code>, nhận chuỗi kết nối từ cấu hình, chạy được trong image production (không gọi drizzle-kit lúc chạy, PID-00010 EC01); một target Nx của <code>@sires/identity</code> chạy lệnh này trên máy Dev. Chỉ tiến: không viết migration đảo.</li>
+<li>Sửa <code>apps/identity/deploy/values.yaml</code> (có sẵn): thêm <code>migration.enabled: true</code> và <code>migration.command</code> là lệnh ở bước 2, theo dạng giá trị mà chart chung của PID-00010 đọc (chart chưa có thì theo mô tả ở PID-00010, ghi <code>implement.md</code>).</li>
+<li>Test AC02 trong <code>apps/identity/src/migration.spec.ts</code> (tạo mới): <code>startPostgres</code>; test tạo vai trò <code>sires_identity_app</code>, <code>_system</code>, <code>_purge</code> (database 3.2; D4, tới khi PID-00159 có), chạy lệnh migrate lên database rỗng, so schema với database thứ hai dựng từ <code>00-common.sql</code> + <code>identity.sql</code> (Dev chọn cách so, ví dụ <code>pg_dump --schema-only</code> trong container rồi chuẩn hóa; ghi ở <code>implement.md</code>). Dữ liệu của <code>app.state_transition</code> không so ở đây (S02).</li>
+<li>Test hành vi DDL (D3): EC05 (quyền <code>provider_secret</code> theo vai trò), EC06 (RLS hai tài khoản, thiếu <code>app.account_id</code>), EC07 (thiếu vai trò thì migration lỗi).</li>
+<li>Sửa <code>apps/identity/README.md</code> (có sẵn): entity sở hữu và bảng tương ứng, ghi rõ <code>provider_secret</code> chỉ chứa ciphertext; bản sao chỉ đọc: không có; cách chạy migration (target Nx, lệnh trong image, vai trò do ai tạo).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/identity:test</code> → đạt (cần Docker)</li>
+<li><code>apps/identity/src/migration.spec.ts › áp lên database rỗng</code> (PID-00016-AC02)</li>
+<li><code>apps/identity/src/migration.spec.ts › quyền provider_secret</code> (EC05), <code>› RLS identity</code> (EC06), <code>› thiếu vai trò thì migration lỗi</code> (EC07)</li>
+<li>Đọc lại <code>apps/identity/deploy/values.yaml</code>: có <code>migration.enabled</code>, <code>migration.command</code></li>
+<li><code>node scripts/docs/add-license.mjs --check</code> → sạch (file migration mới có ghi chú giấy phép)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Schema dựng bằng lệnh migrate giống schema dựng từ DDL tham chiếu; quyền và RLS đúng DDL; giá trị Helm và README đủ để chạy migration ở máy Dev và trong cụm.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00016</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00016 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

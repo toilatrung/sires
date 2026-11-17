@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00019: migration theo DDL và test so schema.">
+<title>S01 — Migration theo DDL và test so schema | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00019</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00019</p><h1>S01 — Migration theo DDL và test so schema</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00019-AC01 (phần cấu trúc)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC03, EC04, EC05, EC08 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><a href="../../../PID-00001/index.html">PID-00001</a> có trên <code>main</code> (Drizzle ORM, node-postgres, <code>drizzle-kit</code> trong catalog — D5, H8). Chưa có thì slice này “Bị chặn” trong <code>report.md</code>; không chặn <code>Sẵn sàng</code> (D6)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết migration đầu trong <code>apps/orchestration/migrations/</code> (có sẵn, rỗng) theo quy ước D1 (H4, kiến trúc 6.10): một custom migration SQL của drizzle-kit (tạo bằng <code>drizzle-kit generate --custom</code>, kèm journal do công cụ sinh) chép từ <code>docs/database/ddl/00-common.sql</code> rồi <code>orchestration.sql</code>, giữ nguyên thứ tự và nội dung; chạy bằng <code>migrate()</code> của drizzle-orm (migrator node-postgres). Không viết schema Drizzle bằng TypeScript (PID tính năng, N6). Spec ghi tên <code>NNN_init.sql</code>: theo cách đặt tên của drizzle-kit, ghi tên thật ở <code>implement.md</code>.</li>
+<li><strong>Bỏ</strong> khối <code>INSERT INTO app.state_transition …</code> của <code>orchestration.sql</code>: dòng chuyển trạng thái do S02 sinh từ khai báo (DEC-57), không chép tay. Trigger <code>*_state</code> vẫn tạo ở S01.</li>
+<li>Không tạo vai trò trong migration (database 3.2); lệnh <code>app.grant_standard('orchestration')</code> và <code>REVOKE</code> cuối file giữ nguyên nên cần vai trò có sẵn.</li>
+<li>Thêm phụ thuộc vào <code>apps/orchestration/package.json</code> bằng <code>catalog:</code>: <code>drizzle-orm</code>, <code>pg</code> là phụ thuộc chạy (S04 chạy migration trong image), <code>drizzle-kit</code> (dev). Dòng catalog do PID-00001 thêm (D5); chưa có trên <code>main</code> thì dừng slice, ghi “Bị chặn”, không tự thêm dòng catalog (quy tắc 1.4.7). <code>pnpm-lock.yaml</code> đổi nên check-tracks báo thêm luồng infra; ghi vào <code>report.md</code>.</li>
+<li>Viết test <code>apps/orchestration/src/db/migration.spec.ts</code> (tạo mới) dùng <code>startPostgres</code> của <code>@sires/testing</code>: tạo hai database rỗng và vai trò <code>sires_orchestration_app</code>, <code>_system</code>, <code>_purge</code> trong container (mã tạo vai trò nằm trong thư mục test của orchestration, dùng lại ở S04, S05; D4: test tự tạo vai trò tới khi PID-00159 có compose cục bộ); database A chạy migration bằng <code>migrate()</code>; database B chạy hai file DDL đọc từ <code>docs/database/ddl/</code> (chỉ đọc). Bỏ dòng <code>state_transition</code> khỏi phép so ở slice này (S02 so riêng).</li>
+<li>So schema bằng một công cụ diff schema hoặc truy vấn catalog <code>pg_catalog</code>; Dev chọn công cụ, ghi ở <code>implement.md</code>. Phạm vi so theo PID-00019-AC01 trong <code>specs/acceptance.html</code>; bảng phiên bản của công cụ migration không tính (EC04); <code>vector</code> do helper tạo không được làm lệch phép so (EC05).</li>
+<li>DDL không chạy được trên PostgreSQL 16 thật (DDL mới chạy thử trên PGlite 17) → dừng, ghi “Cần PO” để PO mở DBQ; không tự sửa SQL so với DDL.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/orchestration:test</code> → đạt (cục bộ khi Nx không dựng được graph: <code>pnpm --filter @sires/orchestration test</code>); cần Docker</li>
+<li><code>pnpm nx run @sires/orchestration:lint</code>, <code>pnpm nx run @sires/orchestration:typecheck</code> → đạt</li>
+<li>Test: <code>apps/orchestration/src/db/migration.spec.ts › schema khớp DDL</code> (PID-00019-AC01; EC04, EC05)</li>
+<li>Test: <code>apps/orchestration/src/db/migration.spec.ts › chạy lại không đổi schema</code> (EC02)</li>
+<li>Test: <code>apps/orchestration/src/db/migration.spec.ts › thiếu vai trò thì rollback</code> (EC03)</li>
+<li>Thao tác tay: ghi vào <code>report.md</code> rằng EC08 (DBQ-01) chưa kiểm được trên managed</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Database dựng từ migration không lệch database dựng từ DDL ở mọi đối tượng nêu trong AC01 (trừ dòng <code>state_transition</code>); chạy lại không đổi; lỗi giữa chừng không để lại đối tượng nào</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00019</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00019 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00017.">
+<title>S04 — Cấu hình, kết nối database, lệnh migrate | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00017</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00017</p><h1>S04 — Cấu hình, kết nối database, lệnh migrate</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (khung; dùng cho PID-00017-AC01 khi chạy migration bằng lệnh)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <strong>PID-00001</strong> (helper tenancy, drizzle-orm, chưa merge). Khóa chart theo PID-00010 S02 (chưa merge, không chặn).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Cấu hình (tạo mới, ví dụ <code>apps/workspace/src/config/</code>): chuỗi kết nối cho vai trò <code>_app</code> (request) và <code>_system</code> (consumer, job về sau), chuỗi kết nối người chạy migration; đọc từ biến môi trường, kiểm khi khởi động. Tên biến Dev chọn, ghi README và <code>implement.md</code>.</li>
+<li>Module kết nối database dùng helper tenancy của PID-00001 (giao dịch có <code>SET LOCAL app.account_id</code>); gắn vào <code>apps/workspace/src/app.module.ts</code> (có sẵn). Không viết repository nghiệp vụ.</li>
+<li>Lệnh migrate riêng của service trong image (H5; tạo mới, ví dụ <code>apps/workspace/src/migrate.ts</code> → <code>dist/migrate.js</code>, script <code>migrate</code> trong <code>package.json</code>) dùng hàm của S01 (<code>migrate()</code> của drizzle-orm, H1); đường dẫn thư mục <code>migrations/</code> tính từ vị trí file build để chạy được trong image; không gọi drizzle-kit lúc chạy (EC15).</li>
+<li>Thêm <code>migration.enabled: true</code> và <code>migration.command</code> vào <code>apps/workspace/deploy/values.yaml</code> (H5; tên khóa theo PID-00010 S02).</li>
+<li>Chạy migration trên PostgreSQL của <code>pnpm local:up</code>: chỉ làm khi <a href="../../../PID-00159/index.html">PID-00159</a> đã merge (compose tạo vai trò — H4); chưa thì ghi “chờ PID-00159” trong <code>report.md</code>, không tự tạo vai trò trên compose.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/workspace:test</code> → đạt (gồm <code>src/app.module.spec.ts</code> có sẵn)</li>
+<li>Test: <code>apps/workspace/src/migrate.spec.ts › lệnh migrate áp lên database rỗng</code> (EC15)</li>
+<li><code>pnpm nx run @sires/workspace:build</code> → có <code>dist/migrate.js</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Service khởi động với cấu hình database; lệnh migrate chạy được từ bản build</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00017</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00017 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

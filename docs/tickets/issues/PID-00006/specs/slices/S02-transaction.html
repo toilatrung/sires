@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của PID-00006: Service mẫu và giao dịch trạng thái + Audit Event + outbox.">
+<title>PID-00006 — S02 Service mẫu, một giao dịch | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00006</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00006</p><h1>S02 — Service mẫu, một giao dịch</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. (Trước 18/11/2026 là S01.)</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00006-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2 (test một giao dịch)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (project, migration mẫu); <a href="../../../PID-00002/index.html">PID-00002</a> S01 (outbox), S04 (audit-emit) đã merge; <a href="../../../PID-00001/index.html">PID-00001</a> (helper tenancy, Drizzle) đã merge; <a href="../../../PID-00004/index.html">PID-00004</a> đã merge. Hai PID đầu chưa có trên <code>main</code> ngày 17/11/2026: tới khi merge, slice dừng và báo (không chặn <code>Sẵn sàng</code>, H8).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo module NestJS mẫu trong <code>libs/ts/sample-service/src/</code> (project của S01): schema Drizzle bằng TypeScript của bảng mẫu (phần tính năng, D1) và một lệnh đổi trạng thái.</li>
+<li>Phần dựng database trong test: PostgreSQL 16 + pgvector của <code>startPostgres</code>, test tạo vai trò <code>_app</code>, <code>_system</code>, <code>_purge</code> của service mẫu rồi chạy lệnh migrate của S01 (không dựng schema bằng SQL riêng trong test).</li>
+<li>Lệnh đổi trạng thái chạy trong một giao dịch có <code>app.account_id</code> (helper của PID-00001): cập nhật trạng thái, ghi sự kiện domain qua outbox (có <code>aggregate</code> type, id, version), gọi audit-emit (Audit Event qua outbox, <code>audit.recorded</code>) — chỉ dùng API của PID-00002, không tự ghi bảng outbox.</li>
+<li>Test AC01 đọc lại bằng kết nối quản trị: trạng thái mới, một dòng <code>kind = event</code>, một dòng <code>kind = audit</code> cùng giao dịch. Test EC01 ném lỗi sau bước ghi trạng thái: không còn dòng nào.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/sample-service:test</code> → đạt (cần Docker)</li>
+<li><code>libs/ts/sample-service/src/sample.spec.ts › trạng thái, Audit Event và outbox cùng một giao dịch</code> (PID-00006-AC01)</li>
+<li><code>libs/ts/sample-service/src/sample.spec.ts › lỗi giữa giao dịch không để lại dòng nào</code> (EC01)</li>
+<li><code>pnpm nx run @sires/sample-service:lint</code>, <code>pnpm nx run @sires/sample-service:typecheck</code> → đạt</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Hai test trên đạt trên PostgreSQL 16 + pgvector thật, schema dựng bằng migration mẫu; service mẫu chỉ dùng API công khai của thư viện nền.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00006</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00006 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

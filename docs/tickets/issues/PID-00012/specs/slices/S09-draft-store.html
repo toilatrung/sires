@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S09 của ticket PID-00012.">
+<title>S09 — Kho nháp dùng chung | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S09 — Kho nháp dùng chung</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H7 (PO chấp nhận phương án A của <a href="../../others/issues.html#i7">I7</a> ngày 18/11/2026). Thực hiện lời hứa của màn <code>SignIn--state-session-expired</code>: nội dung đang nhập được giữ lại và khôi phục sau khi đăng nhập.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00012-AC05 (phần đăng xuất nối ở S14)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5; H7; spec 4.7 (phiên hết hạn)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08 (phần giữ nội dung), EC29, EC30 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04 (phiên, luồng phiên hết hạn)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Kho nháp (tạo mới, ví dụ <code>apps/web/src/shell/drafts/</code>), xuất qua API của shell cho khu vực (quy tắc 1.4.9): khu vực đăng ký một ô nhập bằng khóa gồm route và định danh ô; kho lưu nội dung khi ô đổi, trả nội dung đã lưu khi ô đăng ký lại, và có hàm xóa nháp của một ô.</li>
+<li>Lưu cục bộ trên trình duyệt theo tài khoản (<code>accountId</code> của <code>GET /auth/session</code>) và route; cách lưu (localStorage, IndexedDB…) Dev chọn, ghi <code>implement.md</code>. Không gửi nháp lên server.</li>
+<li>Luồng phiên hết hạn của S04 gọi kho lưu nội dung hiện có của mọi ô đã đăng ký trước khi chuyển SignIn; sau đăng nhập lại và quay về route cũ (đường dẫn quay lại), ô đăng ký lại thì nhận lại nội dung (EC08).</li>
+<li>Chỉ khôi phục nháp của tài khoản đang đăng nhập; nháp của tài khoản khác không được trả về (EC29).</li>
+<li>Khu vực gọi xóa nháp của ô sau khi gửi xong; hàm xóa mọi nháp của tài khoản để S14 gọi khi đăng xuất (EC30).</li>
+<li>README của shell (hoặc <code>drafts/README.md</code>, có ghi chú giấy phép) hướng dẫn khu vực đăng ký ô nhập, xóa sau khi gửi; ví dụ cho ô nhập Chat.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt; <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/shell/drafts.spec.tsx › khôi phục sau đăng nhập lại</code> (PID-00012-AC05; EC08); <code>› tài khoản khác không khôi phục</code> (EC29); <code>› xóa khi gửi xong, khi đăng xuất</code> (EC30, gọi trực tiếp hàm xóa của tài khoản)</li>
+<li><code>apps/web/src/shell/session.spec.ts › phiên hết hạn</code> vẫn đạt</li>
+<li><code>node scripts/docs/add-license.mjs --check</code> → đạt (README mới có ghi chú giấy phép)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Khu vực đăng ký được ô nhập; nội dung chưa gửi còn sau khi phiên hết hạn và đăng nhập lại cùng tài khoản; nháp bị xóa khi gửi xong hoặc khi gọi xóa của tài khoản</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S09 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

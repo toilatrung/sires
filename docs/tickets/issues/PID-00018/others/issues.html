@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00018.">
+<title>PID-00018 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00018</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00018</p><h1>PID-00018 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này ngày 17/11/2026 trong lô làm rõ PH-01: PO không trả lời câu hỏi trong phiên, nên mọi điểm làm đổi mã, dữ liệu hay test mà nguồn chưa chốt được ghi thành phiếu <code>I1…</code> (nhãn cục bộ của hồ sơ). Hồ sơ vẫn lập đủ theo phương án an toàn: slice bị ảnh hưởng ghi “chặn bởi I…”.</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00018</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H1…</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ”.</li></ol>
+<p>Phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống; đề xuất không được coi là câu trả lời.</p>
+<p><strong>18/11/2026:</strong> PO trả lời “Chấp nhận tất cả” cho báo cáo lô PH-01 — mọi phiếu nhận phương án đề xuất. Hai phiếu đã chuyển vào hồ sơ (H1–H2 ở <a href="../index.html#phien-2">trang ticket mục 5</a>); trang này giữ làm biên bản, không xoá.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Migration NestJS viết thế nào với drizzle-kit: SQL chép từ DDL hay sinh từ schema TS của Drizzle?</td><td>có — S01</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+<tr><td><a href="#i2">I2</a></td><td>Vai trò <code>sires_audit_owner/_app/_system/_purge</code> trên PostgreSQL cục bộ do ai tạo?</td><td>không (test tự tạo vai trò; cần trước khi chạy migration trên compose)</td><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Migration của service NestJS viết thế nào với drizzle-kit: SQL chép từ DDL tham chiếu, hay sinh từ schema TS của Drizzle; schema bảng dạng TS có thuộc PID migration không?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · Cổng sẵn sàng (chung cho 9 service NestJS)</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Kiến trúc 2.3 chọn “Drizzle ORM + node-postgres; migration bằng drizzle-kit (SQL được review)” và DBD-02 bắt migration sinh ra đúng schema DDL tham chiếu, nhưng không nói SQL lấy từ đâu. Hai cách cho ra bộ file khác nhau, phạm vi PID khác nhau (có hay không viết schema TS cho mọi bảng) và cách viết migration về sau khác nhau. Phần lớn DDL — hàm <code>app.*</code>, trigger, RLS qua <code>app.enable_tenant_rls()</code>, GRANT, view <code>security_invoker</code>, khóa ngoại DEFERRABLE, dữ liệu tham chiếu — không khai báo được hoặc khó khai báo bằng schema TS. Các PID migration khác (PID-00014, PID-00016, PID-00017, PID-00019, PID-00023, PID-00024, PID-00029, PID-00030) gặp cùng câu hỏi; chọn khác nhau thì mỗi service một kiểu. Thêm nữa: <code>drizzle-kit</code> chưa có trong pnpm catalog (luồng infra giữ, quy tắc 1.4.7); <code>drizzle-orm</code> mới có trên nhánh chưa merge của PID-00001.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../../architecture/sections/02-technology-stack.html#s-2-3">Kiến trúc 2.3</a> (“migration bằng drizzle-kit (SQL được review)”); <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>; <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a>; đầu file <a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a> (“migration thật viết bằng drizzle-kit … phải sinh ra cùng schema này”); <a href="../../PID-00010/index.html">PID-00010</a> N4, EC01 (lệnh migration do luồng service viết, image không có drizzle-kit).</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S01 (slice sau phụ thuộc S01); Output O1 (migration); EC01, EC04 ở <a href="../specs/scope.html">scope</a>.</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S01</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>SQL trước: tạo migration rỗng bằng <code>drizzle-kit generate --custom</code>, chép nội dung <code>00-common.sql</code> và <code>audit.sql</code> (trừ phần do công cụ khác sinh, như dòng <code>app.state_transition</code>); chạy bằng <code>migrate()</code> của drizzle-orm trong mã service. Schema TS cho truy vấn viết ở PID tính năng (hoặc sinh bằng <code>drizzle-kit pull</code> từ database đã migrate), không dùng để sinh migration; migration sau cũng viết SQL.</td><td>Khớp DDL gần như nguyên văn, so schema ít lệch (DR-05); PID migration không viết schema TS; snapshot của drizzle-kit không dùng. Cần drizzle-kit (dev) và drizzle-orm trong pnpm catalog.</td></tr>
+<tr><td>B</td><td>Schema TS trước: viết mọi bảng bằng schema TS của Drizzle, <code>drizzle-kit generate</code> sinh SQL cho phần khai báo được; phần còn lại thêm bằng migration custom.</td><td>PID migration viết thêm schema TS cho mọi bảng; SQL sinh ra khác DDL ở tên ràng buộc, thứ tự, biểu thức → sửa tới khi so schema đạt; migration sau sinh từ schema TS cộng phần custom.</td></tr>
+<tr><td>C</td><td>Không dùng drizzle-kit: file SQL đánh số và bộ chạy tự viết.</td><td>Trái kiến trúc 2.3 → PO sửa kiến trúc; phải giữ bộ chạy migration riêng (mỗi service hoặc ở platform).</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — DDL là chuẩn (DBD-02) nên chép nguyên văn ít rủi ro lệch nhất; vẫn đúng “migration bằng drizzle-kit, SQL được review”; giống nhau cho 9 service. Kèm theo: drizzle-kit vào pnpm catalog bằng PR riêng cho luồng infra; drizzle-orm theo PID-00001. Hồ sơ hiện lập theo: S01 chặn bởi I1.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — SQL chép từ DDL (drizzle-kit custom)</label>
+<label><input type="radio" name="I1" value="B"> B — Schema TS sinh SQL</label>
+<label><input type="radio" name="I1" value="C"> C — Không dùng drizzle-kit</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — SQL chép từ DDL (drizzle-kit custom) — PO chấp nhận đề xuất — trùng quyết định chung D1 — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H1</a></p>
+</article>
+
+<article class="issue" id="i2" data-issue="I2">
+<h2>I2 — Bốn vai trò <code>sires_audit_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> trên PostgreSQL cục bộ (<code>pnpm local:up</code>) do ai tạo trước khi chạy migration?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Môi trường · Ranh giới luồng (chung cho mọi service có database)</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>DDL gọi <code>app.grant_standard('audit')</code> và <code>REVOKE … FROM sires_audit_app</code>: vai trò phải có sẵn, không thì migration lỗi. Database 3.2 và đầu <code>00-common.sql</code> ghi vai trò do hạ tầng tạo; nhưng <code>infra/local/postgres/init/01-databases.sql</code> (luồng infra) chỉ tạo 11 database và ghi “Schema, roles and extensions come from each service's migrations”. Test dùng Testcontainers tự tạo vai trò nên không bị ảnh hưởng; chạy migration trên PostgreSQL của compose (spec mục 2.5) thì lỗi.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">Database 3.2</a> (“Vai trò do hạ tầng (Terraform) tạo”); <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-06">DBD-06</a>; đầu <a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a> (“Vai trò … do hạ tầng tạo trước”); <code>infra/local/postgres/init/01-databases.sql</code> dòng 5–6 (mâu thuẫn).</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>Chạy migration trên máy (thao tác tay ở slice khung); không ảnh hưởng test tự động.</td></tr>
+<tr><th scope="row">Chặn</th><td>không — test tự tạo vai trò; cần trả lời trước khi Dev chạy migration trên compose và trước PH-02</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Luồng infra thêm script khởi tạo cục bộ tạo bốn vai trò cho mỗi database (<code>_system</code>, <code>_purge</code> có BYPASSRLS) và sửa dòng chú thích; PO cấp PID infra (<a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a>: congminh1705 giữ infra). Migration không tạo vai trò.</td><td>Đúng database 3.2; service không đổi gì; chạy migration trên compose chờ PID infra.</td></tr>
+<tr><td>B</td><td>Migration của service tạo vai trò nếu chưa có.</td><td>Trái database 3.2; trên PostgreSQL managed vai trò chạy migration thường không có CREATEROLE và không cấp được BYPASSRLS → migration staging lỗi.</td></tr>
+<tr><td>C</td><td>Mỗi service có script riêng chỉ cho máy dev tạo vai trò, ngoài migration.</td><td>Không chạm infra; lặp ở mỗi service; dễ lệch với cách hạ tầng tạo thật.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — đúng nguồn (database 3.2), một chỗ cho mọi service. Hồ sơ hiện lập theo: migration không tạo vai trò; test tạo vai trò trong fixture; chạy migration trên compose ghi “chờ I2” ở slice khung.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I2" value="A"> A — Infra tạo vai trò cục bộ</label>
+<label><input type="radio" name="I2" value="B"> B — Migration tạo vai trò</label>
+<label><input type="radio" name="I2" value="C"> C — Script dev của từng service</label>
+<label><input type="radio" name="I2" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Infra tạo vai trò cục bộ — PO chấp nhận đề xuất — compose cục bộ tạo vai trò ở PID-00159 theo quyết định chung D4 — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H2</a></p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00018</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00018 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

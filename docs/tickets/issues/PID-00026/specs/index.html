@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td><code>sires_knowledge</code> có pgvector và bảng vector theo model; schema phải đúng trước khi làm pipeline.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>knowledge</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · SPK-04, SPK-05</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00026-AC01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00026-AC01, PID-00026-AC02 (bổ sung 18/11/2026, H2)</td></tr>
 <tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Pipeline (<a href="../../PID-00051/index.html">PID-00051</a>, <a href="../../PID-00077/index.html">PID-00077</a>, <a href="../../PID-00093/index.html">PID-00093</a>)</td></tr>
 </tbody></table></div>
@@ -47,14 +47,18 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>apps/knowledge/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
 <tr><td><code>apps/knowledge/src/knowledge/main.py</code></td><td>Nơi gắn module mới</td></tr>
-<tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>API thư viện nền</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/tenancy.py</code>, <code>service_auth.py</code>, <code>messaging.py</code></td><td>API thư viện nền (<code>__init__.py</code> chỉ có docstring; sửa 17/11/2026)</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/testing/fixtures.py</code></td><td>Fixture pytest: PostgreSQL 16 + pgvector, <code>create_service_database</code> (database và vai trò của service)</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<h4>Bảng</h4><p><code>replica.reference_state</code>, <code>replica.project_reference_scope</code>, <code>replica.account_embedding</code>, <code>app.embedding_model_catalog</code>, <code>app.source_document</code>, <code>app.indexing_job</code>, <code>app.chunk</code>, <code>app.chunk_text</code>, <code>vec.emb_openai_text_embedding_3_small</code>, <code>app.embedding_usage</code>. Nguồn: <code>docs/database/ddl/knowledge.sql</code>.</p>
+<h4>Bảng</h4><p><code>replica.reference_state</code>, <code>replica.project_reference_scope</code>, <code>replica.account_embedding</code>, <code>app.embedding_model_catalog</code>, <code>app.source_document</code>, <code>app.indexing_job</code>, <code>app.chunk</code>, <code>app.chunk_text</code>, <code>vec.emb_openai_text_embedding_3_small</code>, <code>app.embedding_usage</code>; thêm <code>replica.project_state</code> do <code>app.create_replica_project_state()</code> tạo (bổ sung 17/11/2026). Nguồn: <code>docs/database/ddl/knowledge.sql</code>; đối tượng chung (bảng nền tảng, hàm) từ <code>00-common.sql</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
-<tr><td><a href="../../PID-00005/index.html">PID-00005</a> Thư viện nền Python sires_common: tương đương thư viện TS</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00005/index.html">PID-00005</a> Thư viện nền Python sires_common: tương đương thư viện TS</td><td>Xong, merge vào <code>main</code> 17/11/2026 (PR #21)</td><td>Không</td></tr>
 <tr><td><a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-01">DBQ-01</a> Vai trò BYPASSRLS, extension trên PostgreSQL managed</td><td>Chờ Tech lead</td><td>Không chặn mã; chờ AQ-12, cần trước PH-07</td></tr>
+<tr><td><a href="../../PID-00158/index.html">PID-00158</a> Helper sinh <code>app.state_transition</code> từ state machine khai báo dạng dữ liệu (bản Python trong <code>libs/py/sires_common</code>; D2, bổ sung 18/11/2026)</td><td>Chưa làm (ticket mới 18/11/2026)</td><td>Có cho S02; không chặn <code>Sẵn sàng</code> (D6)</td></tr>
+<tr><td><a href="../../PID-00159/index.html">PID-00159</a> Compose cục bộ tạo vai trò <code>sires_&lt;service&gt;_*</code> (D4, bổ sung 18/11/2026)</td><td>Chưa làm</td><td>Không: test tạo vai trò bằng fixture</td></tr>
+<tr><td><a href="../../PID-00010/index.html">PID-00010</a> Chart chung, Job migration nhận <code>migration.enabled</code>, <code>migration.command</code></td><td>Sẵn sàng, chưa có trên <code>main</code></td><td>Không: S03 ghi values theo khóa của PID-00010</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
 <pre>uv sync --all-packages
@@ -67,6 +71,7 @@ pnpm nx run knowledge:dev</pre>
 <tr><td id="o2">O2</td><td>Module</td><td><code>apps/knowledge/src/knowledge/</code> (có sẵn)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
 <tr><td id="o3">O3</td><td>Test</td><td><code>apps/knowledge/tests/test_migrations.py</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
 <tr><td id="o4">O4</td><td>Tài liệu</td><td><code>apps/knowledge/README.md</code> (có sẵn)</td><td>Entity sở hữu, bản sao chỉ đọc</td><td>Đọc lại</td></tr>
+<tr><td id="o5">O5</td><td>Triển khai</td><td><code>apps/knowledge/deploy/values.yaml</code>, <code>apps/knowledge/pyproject.toml</code> (có sẵn)</td><td>Lệnh <code>alembic upgrade head</code> chạy trong image; <code>migration.enabled</code>, <code>migration.command</code> (bổ sung 18/11/2026, H3)</td><td>Test chạy lệnh trên Testcontainers; <code>check-charts.mjs</code> khi PID-00010 có trên <code>main</code></td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
@@ -79,7 +84,8 @@ pnpm nx run knowledge:dev</pre>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Revision Alembic theo DDL, gồm extension pgvector</li>
 <li>Khung <code>extraction</code>, <code>chunking</code>, <code>embedding</code>, <code>retrieval</code></li>
-<li>README</li></ul>
+<li>README</li>
+<li>Bổ sung 18/11/2026 (H1, H4, H5): revision chép SQL từ DDL, chạy bằng Alembic trên SQLAlchemy async và asyncpg (kiến trúc 6.10); state machine <code>indexing_job</code> khai báo dạng dữ liệu trong mã domain, dòng <code>app.state_transition</code> sinh bằng helper Python của PID-00158, không viết tay, không tự viết bộ sinh</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
@@ -96,6 +102,8 @@ pnpm nx run knowledge:dev</pre>
 <li id="b3"><strong>B3</strong> Khung <code>extraction</code>, <code>chunking</code>, <code>embedding</code>, <code>retrieval</code> — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
 <li id="b4"><strong>B4</strong> README — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run knowledge:test</li>
 <li id="b5"><strong>B5</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run knowledge:test</li>
+<li id="b6"><strong>B6</strong> Lệnh chạy revision trong image và giá trị Helm <code>migration.*</code> (bổ sung 18/11/2026, H3) — Kết quả: Job migration của PID-00010 có lệnh để chạy — Kiểm tra: pnpm nx run knowledge:test</li>
+<li id="b7"><strong>B7</strong> Test hành vi DDL bằng vai trò <code>_app</code>, <code>_system</code> (bổ sung 18/11/2026, H2) — Kết quả: PID-00026-AC02 đạt — Kiểm tra: pnpm nx run knowledge:test</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -105,6 +113,7 @@ node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00026-AC01</td><td><code>apps/knowledge/tests/test_migrations.py</code></td><td>Given revision Alembic, When áp lên PostgreSQL 16 + pgvector, Then schema khớp <code>docs/database/ddl/knowledge.sql</code>.</td></tr>
+<tr><td>PID-00026-AC02</td><td><code>apps/knowledge/tests/test_ddl_behaviour.py</code></td><td>Given database dựng từ revision, When chạy bằng vai trò <code>sires_knowledge_app</code>, <code>_system</code> các thao tác đã ghi trong DDL, Then database xử lý đúng như DDL ghi (bổ sung 18/11/2026, H2; chi tiết ở <a href="acceptance.html">acceptance.html</a>).</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

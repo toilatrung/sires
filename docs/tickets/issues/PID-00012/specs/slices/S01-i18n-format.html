@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00012.">
+<title>S01 — Nền test giao diện, i18n và định dạng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S01 — Nền test giao diện, i18n và định dạng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00012-AC01 (phần đổi ngôn ngữ giữ trạng thái), UX-I18N-002-AC01 (phần shell), UX-I18N-004-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC03, EC04, EC21, EC25 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thêm môi trường test giao diện cho <code>@sires/web</code>: jsdom và Testing Library khai phiên bản trong <code>apps/web/package.json</code> (chỉ <code>web</code> dùng, quy tắc 1.4.7), cấu hình Vitest trong <code>apps/web/vite.config.ts</code> (có sẵn); không sửa <code>pnpm-workspace.yaml</code>. Test đặt tên <code>*.spec.ts(x)</code> như test hiện có.</li>
+<li>Sửa <code>apps/web/src/shell/i18n.ts</code> (có sẵn): bỏ <code>lng: 'vi'</code> đặt cứng; ngôn ngữ ban đầu = Preferences khi có (S04 nạp), nếu chưa có thì theo trình duyệt (<code>vi*</code> → vi, <code>en*</code> → en), không xác định → English (EC01). Xuất hàm đổi ngôn ngữ dùng <code>i18next.changeLanguage</code>, không remount cây route (EC03); đặt <code>lang</code> của tài liệu theo ngôn ngữ.</li>
+<li>Khóa của namespace <code>shell</code> trong <code>apps/web/src/shell/i18n/vi.json</code>, <code>en.json</code> (có sẵn) cho mọi nhãn của shell; tên khu vực, Pending Actions, Notifications, Settings và thuật ngữ PRD 1.5 giữ tiếng Anh ở cả hai file, đúng chữ màn tham chiếu.</li>
+<li>Hàm định dạng ngày, giờ, số cho mọi khu vực (tạo mới, ví dụ <code>apps/web/src/shell/format.ts</code>): theo ngôn ngữ giao diện, múi giờ trình duyệt (EC21); ngày <code>dd/mm/yyyy</code>, giờ <code>HH:mm</code> 24 giờ theo design.md §6 ở cả tiếng Việt và English; số English dùng dấu phẩy ngăn nghìn, dấu chấm thập phân (<code>1,234.5</code>), tiếng Việt ngược lại (<code>1.234,5</code>) (H3, EC25); số dùng chữ số đều cột.</li>
+<li>Giữ test <code>i18n.spec.ts</code> (vi/en cùng khóa, EC04); thêm test ngôn ngữ ban đầu, định dạng, đổi ngôn ngữ giữ ô nhập.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/shell/i18n.spec.ts › ngôn ngữ ban đầu</code> (EC01); <code>› vi/en cùng khóa</code> (EC04)</li>
+<li><code>apps/web/src/shell/format.spec.ts › vi theo múi giờ trình duyệt</code> (UX-I18N-004-AC01); <code>› múi giờ</code> (EC21); <code>› en cùng mẫu ngày, số theo ngôn ngữ</code> (EC25)</li>
+<li><code>apps/web/src/shell/language-switch.spec.tsx › đổi ngôn ngữ giữ trạng thái</code> (PID-00012-AC01 phần giữ trạng thái; UX-I18N-002-AC01 phần shell; EC03)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Test giao diện chạy được trong <code>@sires/web</code>; ngôn ngữ ban đầu đúng UX-I18N-001; đổi ngôn ngữ không mất trạng thái; hàm định dạng dùng được từ khu vực khác</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

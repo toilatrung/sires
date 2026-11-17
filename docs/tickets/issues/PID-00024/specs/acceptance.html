@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00024.">
+<title>PID-00024 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00024</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00024</p><h1>PID-00024 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test. Số liệu kiểm lấy từ ticket, spec, PRD và câu trả lời của PO (H1, H2, H4 — 18/11/2026); không tự đặt số khi chưa chốt. Phần “metadata chuẩn hóa” của AC01 theo H1, H2; riêng mục thiếu URL và DOI hoặc RIS thiếu <code>ID</code> (S07) chờ PO nới hợp đồng. Fixture “đa ngành” lấy từ ít nhất ba lĩnh vực, như bộ dữ liệu nghiệm thu PRD 19.14 (DEC-45); dùng lại mẫu thật của SPK-03 (PID-00025) nếu có.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00024-AC01</td><td><strong>BibTeX:</strong> Given một file BibTeX mẫu có mục của ít nhất ba lĩnh vực và nhiều loại entry, cùng một entry sai cú pháp, một entry thiếu tiêu đề, một entry thiếu năm và hai entry trùng citation key, When parse, Then mỗi mục đúng có tiêu đề, danh sách tác giả theo thứ tự, năm, venue, DOI, URL, loại entry đúng như trong file; entry sai cú pháp và entry thiếu tiêu đề thành lỗi riêng kèm lý do; entry thiếu năm không lỗi và ghi rõ thiếu năm; entry trùng key thứ hai báo trùng, không ghi đè; số mục đúng không đổi so với khi bỏ các mục hỏng. <strong>RIS:</strong> Given một file RIS mẫu cùng tính chất (có một bản ghi thiếu <code>ER</code> hoặc thiếu tác giả), When parse, Then kỳ vọng tương tự. <strong>Chuẩn hóa:</strong> metadata của mỗi mục đúng là <code>ReferenceMetadata</code> (17.6) hợp lệ theo hợp đồng: <code>source</code> = <code>bibtex</code> hoặc <code>ris</code>, <code>identifiers.sourceId</code> = citation key hoặc thẻ <code>ID</code>, <code>identifiers.url</code> = <code>url</code>/<code>UR</code> hoặc <code>https://doi.org/</code> + DOI, <code>retrievedAt</code> = thời điểm parse, <code>raw</code> = bản gốc (H1); giá trị Unicode thuần, <code>publicationType</code> theo bảng ánh xạ, <code>authors[].name</code> = “Họ, Tên” (H2). Mục thiếu URL và DOI, hoặc RIS thiếu <code>ID</code>: hợp lệ khi thiếu trường tương ứng, vì hợp đồng đã nới 18/11/2026 (S07).</td><td><code>apps/library/src/importers/importers.spec.ts › BibTeX mẫu đa ngành</code> (S04); <code>apps/library/src/importers/importers.spec.ts › RIS mẫu đa ngành</code> (S05); <code>apps/library/src/importers/importers.spec.ts › kết quả là ReferenceMetadata hợp lệ</code> (S06); <code>apps/library/src/importers/importers.spec.ts › mọi mục đúng là ReferenceMetadata hợp lệ</code> (S07)</td><td>S04, S05, S06, S07</td><td>Ticket; spec 4.7; LIB-IMPORT-001 (metadata tối thiểu); PRD 19.14 (ba lĩnh vực); H1, H2</td></tr>
+<tr><td>PID-00024-AC02</td><td>Given database rỗng trên PostgreSQL 16 + pgvector đã có bốn vai trò <code>sires_library_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code>, When chạy migration của <code>library</code> (custom migration SQL của drizzle-kit, chạy bằng <code>migrate()</code> của drizzle-orm — H5), Then schema (extension, schema <code>app</code>, <code>replica</code>; bảng, cột, kiểu, mặc định, ràng buộc, index, hàm, trigger, chính sách RLS, quyền) giống hệt database dựng từ <code>docs/database/ddl/00-common.sql</code> rồi <code>docs/database/ddl/library.sql</code>; dòng <code>app.state_transition</code> so ở S02.</td><td><code>apps/library/src/db/migration.spec.ts › schema khớp DDL</code></td><td>S01</td><td>H4 (I4 phương án A); header DDL “Chạy sau 00-common.sql”; DBD-02; database 12.4</td></tr>
+</tbody></table></div>
+<h2 id="khong-nghiem-thu">AC requirement liên quan, không nghiệm thu ở PID này</h2>
+<p>LIB-IMPORT-002-AC01 (3 DOI → 3 Reference Pending Approval), AC02 (mục BibTeX trùng DOI với Trusted Reference → trùng lặp, đề xuất liên kết), AC03 (PDF không có lớp văn bản hoặc &gt; 50 MB bị từ chối), AC04 (PDF đã duyệt → Trusted, indexing Queued) cần API nhập, kiểm trùng và PDF — nghiệm thu ở <a href="../../PID-00076/index.html">PID-00076</a>. PID này cung cấp bước phân tích BibTeX mà AC02 dùng (DOI của entry được tách ở S04).</p>
+<h2 id="migration">Migration</h2>
+<p>Migration có AC riêng PID-00024-AC02 từ 18/11/2026 (H4, phiếu <a href="../others/issues.html#i4">I4</a>). Test hành vi DDL ở <code>specs/scope.html</code> EC01–EC10 (S01, S02) không phải AC riêng nhưng thuộc phạm vi P2, P3 (H6, quyết định chung D3).</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00024</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00024 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

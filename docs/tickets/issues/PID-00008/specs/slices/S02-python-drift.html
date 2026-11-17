@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00008.">
+<title>S02 — Kiểm lệch phía Python | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00008</p><h1>S02 — Kiểm lệch phía Python</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thuộc phạm vi theo H1 (PO chọn phương án B ở phiếu I1, 18/11/2026): kiểm cả mã Python, không kiểm tĩnh route và routing key.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00008-AC01 (phần Python)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC07 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <a href="../../../PID-00007/index.html">PID-00007</a> S02 (client và mô hình Python) đã merge — PID-00007 chưa làm: ghi nhận, không chặn (H4)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Mở rộng <code>libs/ts/contracts/scripts/check-drift.mjs</code>: sau khi sinh client và mô hình Python (bộ sinh của PID-00007), chạy mypy cho project Python dùng chúng — <code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code> — bằng target <code>typecheck</code> có sẵn của từng project hoặc gọi mypy trực tiếp trên fixture.</li>
+<li>Lỗi có kiểu nằm trong gói <code>sires_common.generated</code> in thành một dòng: file:dòng, tên trường, mô hình; lỗi khác xử lý như EC02 của S01 (thoát lỗi, in nguyên văn — H3).</li>
+<li>Thiếu uv: in rõ “thiếu uv”, không báo đạt cho phần Python, phần TS vẫn chạy (EC07).</li>
+<li>Fixture Python trong <code>libs/ts/contracts/scripts/__fixtures__/python/</code> (tạo mới): một file dùng mô hình sinh đúng, một file dùng trường không có trong mô hình.</li>
+<li>Nếu mypy chỉ bắt được trường thừa khi bật plugin hay tùy chọn trong cấu hình của project Python (thuộc luồng khác) → dừng, đề xuất PID cho luồng đó (N8), không tự sửa.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/contracts:test</code> → đạt</li>
+<li><code>pnpm nx run @sires/contracts:check-drift</code> → đạt trên repo hiện tại</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › Python: trường không có trong mô hình sinh</code> (PID-00008-AC01)</li>
+<li>Test: <code>libs/ts/contracts/scripts/check-drift.spec.mjs › thiếu uv</code> (EC07)</li>
+<li>Test cho EC06 là test AC01 phần Python ở trên</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Fixture Python dùng trường không có trong mô hình sinh thì lệnh thoát lỗi và nêu đúng trường; bỏ trường đó thì đạt.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00008</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00008 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
