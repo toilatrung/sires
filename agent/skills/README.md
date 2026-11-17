@@ -15,7 +15,7 @@ Skill chia theo vai trò. Đường dẫn trong lệnh tính từ gốc repo. Th
 | `ui-design/` | [vendor/animate-ui](ui-design/vendor/animate-ui/SKILL.md) | Skill bên thứ ba (Animate UI, giấy phép MIT + Commons Clause trong thư mục đó); nguồn token chuyển động (DEC-51) |
 | `qc/` | [spec-analyze-skill](qc/spec-analyze-skill/SKILL.md) | Rà nhất quán và độ phủ ticket ↔ spec ↔ PRD ↔ hợp đồng ↔ database, trước khi giao Dev; ghi `qc-report.md` |
 | `qc/` | [spec-checklist-skill](qc/spec-checklist-skill/SKILL.md) | Checklist chất lượng yêu cầu theo domain (ux, api, data, workflow, agent…), “unit test cho câu chữ”; ghi `checklists/<domain>.md` |
-| `qc/` | [spec-converge-skill](qc/spec-converge-skill/SKILL.md) | QC độc lập sau khi Dev làm xong: đối chiếu mã với AC và spec, liệt kê việc còn lại trước khi PO nghiệm thu; ghi `qc-report.md` |
+| `qc/` | [spec-converge-skill](qc/spec-converge-skill/SKILL.md) | Đối chiếu mã với AC và spec, liệt kê việc còn lại. Hai chế độ (DEC-58): Dev tự chạy trên ticket của mình trước khi mở PR (ghi `self-qc.md` mục 5); PO QC độc lập sau đó, trước khi merge (ghi `qc-report.md`) |
 | `qc/` | [sires-ui-review](qc/sires-ui-review/SKILL.md) | Đối chiếu giao diện đã dựng với thiết kế đã duyệt; `scripts/check-ui.mjs` |
 
 ## Luồng một ticket
@@ -23,9 +23,9 @@ Skill chia theo vai trò. Đường dẫn trong lệnh tính từ gốc repo. Th
 ```
 PO   scaffold-docs (PRD, nguồn) → đăng ký task (taskboard) → spec-docs (specs/index.html) → spec-clarify (làm rõ, chia slice, đặt Sẵn sàng)
 QC   spec-analyze · spec-checklist (trước khi giao Dev, nếu cần)
-Dev  spec-execution PID-NNNNN (làm, Self-QC)
+Dev  spec-execution PID-NNNNN (làm, Self-QC gồm tự chạy spec-converge — DEC-58), mở PR, sang ticket tiếp theo
 PO   contract-updating (khi Dev báo thiếu hợp đồng; Dev pull main rồi làm tiếp)
-QC   spec-converge PID-NNNNN → Dev làm tiếp hoặc PO nghiệm thu
+PO   review PR, spec-converge PID-NNNNN (QC độc lập) → Dev làm “Lần N” hoặc PO merge, nghiệm thu
 ```
 
 | Thư mục | Ai ghi | Nội dung |
@@ -34,7 +34,7 @@ QC   spec-converge PID-NNNNN → Dev làm tiếp hoặc PO nghiệm thu
 | `agent/execution/taskboard.html` | PO (sổ đăng ký `task-registry`, rồi `node scripts/docs/update-index.mjs`) | Task đã đăng ký, đang chạy kèm tiến độ từ `report.md`, chưa chạy |
 | `docs/tickets/issues/PID-NNNNN/` | PO (R-01–R-07) | Ticket, `specs/`, `designs/`, `others/` |
 | `agent/execution/PID-NNNNN/` | Dev | `report.md` (trạng thái công việc, kết quả), `implement.md` (luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao), `self-qc.md` (kết quả Self-QC), tài liệu đi kèm |
-| `agent/execution/PID-NNNNN/` | QC độc lập | `qc-report.md`, `checklists/` |
+| `agent/execution/PID-NNNNN/` | QC độc lập của PO (DEC-58) | `qc-report.md`, `checklists/` |
 | `agent/execution/PID-Template/` | Sửa khi đổi cấu trúc báo cáo | Khung mẫu của các file trên; không phải ticket, cách dùng ở [agent/execution/README.md](../execution/README.md) |
 
 Dev và QC không ghi `docs/`; điều cần sửa ghi thành đề xuất cho PO.

@@ -21,7 +21,7 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 | API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md). Thiếu hoặc sai hợp đồng: Dev báo PO, PO cập nhật bằng `agent/skills/po/contract-updating-skill`, Dev pull về (OQ-103) |
 | Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/dev/sires-ui-executor`, `agent/skills/qc/sires-ui-review` |
 | Code một service, ranh giới luồng, giai đoạn | [docs/tickets/index.html](docs/tickets/index.html) (quy tắc 1.4) và `apps/<service>/README.md` |
-| Làm một ticket `PID-NNNNN` | Dev: skill `agent/skills/dev/spec-execution-skill` (đọc `docs/tickets/issues/PID-NNNNN/`, làm, ghi kết quả vào `agent/execution/PID-NNNNN/`). PO chuẩn bị bằng `agent/skills/po/spec-docs-skill`, `agent/skills/po/spec-clarify-skill`. QC độc lập: `agent/skills/qc/spec-converge-skill` |
+| Làm một ticket `PID-NNNNN` | Dev: skill `agent/skills/dev/spec-execution-skill` (đọc `docs/tickets/issues/PID-NNNNN/`, làm, ghi kết quả vào `agent/execution/PID-NNNNN/`). PO chuẩn bị bằng `agent/skills/po/spec-docs-skill`, `agent/skills/po/spec-clarify-skill`. DEC-58: Dev làm liên tục các ticket được giao và tự QC toàn bộ trước khi mở PR (`self-qc.md`, gồm tự chạy `agent/skills/qc/spec-converge-skill`); PO review PR, QC độc lập bằng `spec-converge-skill` (`qc-report.md`) rồi merge |
 
 PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval-001"`) thay vì đọc cả trang; anchor có dạng `s-16-10`, `req-…`, `oq-096`, `asm-13`.
 
@@ -34,7 +34,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | `libs/ts/{platform,contracts,testing}`, `libs/py/sires_common` | Thư viện dùng chung; `contracts` sinh type từ `docs/api-design` (`src/generated/` không commit) |
 | `e2e/`, `eval/`, `infra/` | Playwright; eval harness; compose cục bộ, Dockerfile, Helm, Terraform |
 | `agent/skills/` | Skill cho agent, chia theo vai trò ([agent/skills/README.md](agent/skills/README.md)): `po/` (dựng và giữ `docs/`, viết spec, làm rõ ticket), `dev/` (thực thi ticket, đọc spec, dựng UI), `ui-design/` (prototype UI, Animate UI), `qc/` (rà ticket và spec, đối chiếu mã với AC, review UI) |
-| `agent/execution/PID-NNNNN/` | Kết quả một ticket: `report.md`, `implement.md`, `self-qc.md` và tài liệu đi kèm do Dev ghi; `qc-report.md`, `checklists/` do QC độc lập ghi |
+| `agent/execution/PID-NNNNN/` | Kết quả một ticket: `report.md`, `implement.md`, `self-qc.md` và tài liệu đi kèm do Dev ghi; `qc-report.md`, `checklists/` do QC độc lập của PO ghi (DEC-58) |
 | `agent/execution/taskboard.html` | Taskboard: task đã đăng ký (sổ `task-registry`, chỉ PO ghi), đang chạy kèm tiến độ, chưa chạy; sinh bằng `node scripts/docs/update-index.mjs`, chỉ PO chạy |
 | `agent/execution/PID-Template/` | Khung mẫu của các file trên; chép sang `PID-NNNNN/` theo [agent/execution/README.md](agent/execution/README.md), không ghi kết quả vào đây |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `agent/execution/taskboard.html`; `update-index.mjs` gọi file này) |
