@@ -386,6 +386,55 @@ async def test_invalid_envelope_is_rejected(system_pool: asyncpg.Pool) -> None:
     assert await _count_effects(system_pool) == 0
 
 
+async def test_consumer_nack_over_rabbitmq(system_pool: asyncpg.Pool, amqp: AbstractConnection) -> None:
+    """Spec 4.4 (manual ack) through RabbitMQ: a failing handler is nacked with requeue and the redelivery is
+    processed once; an invalid envelope is nacked without requeue (dead-lettered), never reaching the handler."""
+    event_type = f"test.{_suffix()}.happened"
+    calls = 0
+
+    async def flaky(conn: Connection, envelope: EventEnvelope) -> None:
+        nonlocal calls
+        calls += 1
+        await _record_effect(conn, envelope)
+        if calls == 1:
+            raise RuntimeError("transient")
+
+    setup = await amqp.channel()
+    dead_letters = await setup.declare_exchange(f"test.dlx.{_suffix()}", aio_pika.ExchangeType.FANOUT, auto_delete=True)
+    rejected = await setup.declare_queue(f"test.dead.{_suffix()}", exclusive=True, auto_delete=True)
+    await rejected.bind(dead_letters)
+    consumer = RecordingConsumer(
+        f"nack_{_suffix()}", system_pool, queue_arguments={"x-dead-letter-exchange": dead_letters.name}
+    )
+    consumer.on(event_type, flaky)
+    channel = await consumer.start(amqp)
+    exchange = await setup.get_exchange(EVENTS_EXCHANGE)
+    try:
+        envelope = EventEnvelope(
+            id=uuid7(),
+            type=event_type,
+            schemaVersion=1,
+            producer="library",
+            occurredAt="2026-11-11T08:00:00Z",  # type: ignore[arg-type]
+            accountId=ACCOUNT,
+            aggregate=Aggregate(type="reference", id=uuid7(), version=1),
+            data={},
+        )
+        body = json.dumps(envelope.as_json()).encode()
+        await exchange.publish(aio_pika.Message(body, message_id=str(envelope.id)), routing_key=event_type)
+        await _wait_for(lambda: InboxOutcome.PROCESSED in consumer.outcomes)
+        assert calls == 2  # first delivery failed and was requeued, the redelivery succeeded
+        assert await _count_effects(system_pool, envelope.id) == 1
+
+        await exchange.publish(aio_pika.Message(b"not json", message_id=str(uuid7())), routing_key=event_type)
+        dead = await _drain(rejected, 1)
+        assert [message.body for message in dead] == [b"not json"]
+        assert calls == 2  # the handler never saw the invalid message
+    finally:
+        await channel.close()
+        await setup.close()
+
+
 async def test_replica_upsert(system_pool: asyncpg.Pool) -> None:
     """PID-00005-AC04 (versions), EC05: with source_version = 5, versions 4 and 5 are dropped; 6 is written."""
     project_id = uuid7()

@@ -1,7 +1,7 @@
 # PID-00005 — Triển khai
 
 - **Ticket:** [PID-00005](../../../docs/tickets/issues/PID-00005/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 11/11/2026
+- **Cập nhật:** 17/11/2026 (Lần 4)
 
 File này mô tả mã **đang thật sự chạy**, đọc từ mã sau khi làm, để người sau hiểu nhanh và QC biết nên soi ở đâu. Không chép lại spec. Sửa mã thì sửa file này cho đúng.
 
@@ -11,10 +11,10 @@ Thư viện không có điểm vào riêng; service Python (`agent-core`, `knowl
 
 **A. Request HTTP nội bộ** — service dựng FastAPI, gọi `install_problem_handlers(app)` rồi `app.add_middleware(RequestContextMiddleware, service=…)`.
 
-1. Điểm vào: `RequestContextMiddleware.__call__` — `telemetry.py:239`. Dùng SERVER span mà FastAPI (bản 0.162) tự mở từ `traceparent`; không có span thì tự mở. Gắn `request_id`, `trace_id` vào mọi dòng log, trả `X-Request-Id`.
-2. Guard: `ServiceAuth.require(x-callers)` — `service_auth.py:362`. Đọc `Authorization: Bearer`, gọi `TokenVerifier.verify` (`service_auth.py:271`); lỗi → `InvalidServiceToken` (401), `sub` ngoài danh sách → `CallerNotAllowed` (403). Caller đã kiểm lưu ở `request.state` và contextvar `current_service_caller()`.
+1. Điểm vào: `RequestContextMiddleware.__call__` — `telemetry.py:263`. Dùng SERVER span mà FastAPI (bản 0.162) tự mở từ `traceparent`; không có span thì tự mở. Gắn `request_id`, `trace_id` vào mọi dòng log, trả `X-Request-Id`.
+2. Guard: `ServiceAuth.require(x-callers)` — `service_auth.py:371`. Đọc `Authorization: Bearer`, gọi `TokenVerifier.verify` (`service_auth.py:280`); lỗi → `InvalidServiceToken` (401), `sub` ngoài danh sách → `CallerNotAllowed` (403). Caller đã kiểm lưu ở `request.state` và contextvar `current_service_caller()`.
 3. Xử lý: handler mở `tenant_transaction(pool, caller.account_id)` — `tenancy.py:66`: `BEGIN`, `set_config('app.account_id', …, true)` (tương đương `SET LOCAL`), commit hoặc rollback.
-4. Kết quả lỗi: `ProblemError` → problem+json đúng `code`; `RequestValidationError` → `400 validation_failed` kèm `errors[]`, mã từng trường thuộc `FieldErrorCode` (`field_error_code`); `HTTPException` → mã trong `ErrorCode` theo bảng `_HTTP_PROBLEMS` (400, 401, 403, 404, 405, 412, 413, 428, 503), mã HTTP khác → `500 internal_error`; `ProblemError` với mã ngoài danh mục → `ValueError`; ngoại lệ còn lại → `ProblemMiddleware` (`errors.py:135`) trả `500 internal_error` không có stack trace, log qua structlog đã che.
+4. Kết quả lỗi: `ProblemError` → problem+json đúng `code`; `RequestValidationError` → `400 validation_failed` kèm `errors[]`, mã từng trường thuộc `FieldErrorCode` (`field_error_code`); `HTTPException` → mã trong `ErrorCode` theo bảng `_HTTP_PROBLEMS` (400, 401, 403, 404, 405, 412, 413, 428, 503), mã HTTP khác → `500 internal_error`; `ProblemError` với mã ngoài danh mục → `ValueError`; ngoại lệ còn lại → `ProblemMiddleware` (`errors.py:281`) trả `500 internal_error` không có stack trace, log qua structlog đã che.
 
 **B. Ghi thay đổi và phát sự kiện**
 
@@ -23,13 +23,13 @@ Thư viện không có điểm vào riêng; service Python (`agent-core`, `knowl
 3. Relay (vai trò `_system`): `OutboxRelay.run` — `messaging.py:316` giữ lease `app.job_lock` (`acquire_lease`, `messaging.py:215`) rồi gọi `run_once` — `messaging.py:285`: khóa lô `published_at IS NULL … FOR UPDATE SKIP LOCKED`, publish có publisher confirm (event, audit → `sires.events`; command → queue cùng tên), đặt `published_at` cho dòng đã confirm, commit.
 4. Consumer: `EventConsumer.start` — `messaging.py:401` khai queue `<service>.events`, bind `<type>.#`, consume ack thủ công; `_on_message` (`messaging.py:412`) mở CONSUMER span từ header `traceparent`, gọi `handle` (`messaging.py:389`): parse vỏ, trong `system_transaction` chèn `app.inbox` (`record_inbox`, `messaging.py:341`), trùng → bỏ qua, mới → chạy handler cùng giao dịch; commit rồi ack.
 5. Bản sao: handler gọi `upsert_replica` / `apply_replica_event` — `messaging.py:450`, `messaging.py:479`: upsert chỉ ghi khi `version > source_version`.
-6. Lệnh có `Idempotency-Key`: `require_idempotency_key` (`messaging.py:498`) kiểm header; `claim_idempotency_key` (`messaging.py:527`) ở đầu giao dịch; `store_idempotent_response` (`messaging.py:570`) trước commit.
+6. Lệnh có `Idempotency-Key`: `require_idempotency_key` (`messaging.py:498`) kiểm header; `claim_idempotency_key` (`messaging.py:528`) ở đầu giao dịch; `store_idempotent_response` (`messaging.py:571`) trước commit.
 
 **C. Gọi service khác**
 
 1. `ServiceTokenIssuer.headers_for(audience)` — `service_auth.py:452`: trong request lấy actor, account, project từ caller đã kiểm; trong job hay consumer dùng `act = {type: system, component}`. Request mang token Agent Run (OQ-110, PO chốt 16/11/2026): phải nêu `component` (việc riêng của service) và token tự ký có `act = {type: system, component}`, account, project lấy từ token đến; không nêu `component` → `ValueError` chỉ ra hai cách, client không tự đoán.
-   `agent_run_headers(audience)` — `service_auth.py:497`: chuyển tiếp nguyên token Agent Run của request đang xử lý (lấy dữ liệu trả cho agent); service đích không có trong `aud` của token, hoặc request không mang token Agent Run → `ValueError` trước khi gọi. `ServiceCaller.token` (`service_auth.py:221`) giữ JWT gốc cho việc này, không có trong `repr`.
-2. `issue` — `service_auth.py:408`: claims theo `ServiceTokenClaims` (`iss = sires-internal`, `sub` = service mình, `aud` = service đích, `exp` ≤ 5 phút), ký bằng `sign_token` (JWS ES256, header `kid` = service) qua `TokenSigner` (`LocalKeySigner` hoặc `KmsTokenSigner`). Token được dùng lại tới khi còn ≤ 60 giây.
+   `agent_run_headers(audience)` — `service_auth.py:497`: chuyển tiếp nguyên token Agent Run của request đang xử lý (lấy dữ liệu trả cho agent); service đích không có trong `aud` của token, hoặc request không mang token Agent Run → `ValueError` trước khi gọi. `ServiceCaller.token` (`service_auth.py:230`) giữ JWT gốc cho việc này, không có trong `repr`.
+2. `issue` — `service_auth.py:419`: claims theo `ServiceTokenClaims` (`iss = sires-internal`, `sub` = service mình, `aud` = service đích, `exp` ≤ 5 phút), ký bằng `sign_token` (JWS ES256, header `kid` = service) qua `TokenSigner` (`LocalKeySigner` hoặc `KmsTokenSigner`). Token được dùng lại tới khi còn ≤ 60 giây.
 3. Bên nhận kiểm như luồng A bước 2.
 
 **D. Test doubles (`testing/`)**
@@ -44,14 +44,14 @@ Thư viện không có điểm vào riêng; service Python (`agent-core`, `knowl
 | --- | --- | --- | --- | --- | --- | --- |
 | `tenant_transaction` | hàm (context manager) | `tenancy.py:66` | Giao dịch có `app.account_id` cục bộ | Mọi truy vấn tenant của service Python đi qua; sai thì lộ dữ liệu chéo tài khoản | Cách ly tenant (RLS), không rò sang giao dịch sau | `test_tenancy.py › test_rls`, `› test_account_does_not_leak_between_transactions` |
 | `uuid7` | hàm | `tenancy.py:35` | Sinh UUIDv7 | id outbox = id sự kiện = message id | Id sắp theo thời gian | `test_tenancy.py › test_uuid7_layout` |
-| `Redactor`, `redact_text` | class, thuật toán | `telemetry.py:105`, `telemetry.py:77` | Che key, token, trường `api_key`/`authorization`, băm `accountId` | Mọi log của service Python; NFR-SECRETS-001, NFR-OBS-001/002 | Không có key trong log | `test_logging.py › test_redaction` |
-| `ProblemMiddleware`, `install_problem_handlers` | class, hàm | `errors.py:135`, `errors.py:173` | Lỗi → problem+json; lỗi không khai báo → `internal_error` | Mọi lỗi HTTP của service Python | Không lộ stack trace | `test_logging.py › test_redaction`, `› test_problem_json` |
+| `Redactor`, `redact_text` | class, thuật toán | `telemetry.py:129`, `telemetry.py:101` | Che key, token, trường `api_key`/`authorization`, băm `accountId` | Mọi log của service Python; NFR-SECRETS-001, NFR-OBS-001/002 | Không có key trong log | `test_logging.py › test_redaction` |
+| `ProblemMiddleware`, `install_problem_handlers` | class, hàm | `errors.py:281`, `errors.py:319` | Lỗi → problem+json; lỗi không khai báo → `internal_error` | Mọi lỗi HTTP của service Python | Không lộ stack trace | `test_logging.py › test_redaction`, `› test_problem_json` |
 | `Outbox.emit_event`, `Outbox.emit_audit` | method | `messaging.py:105`, `messaging.py:123` | Ghi sự kiện, Audit Event vào outbox trong giao dịch | Điểm nối với mọi consumer (hợp đồng EventEnvelope, AsyncAPI) | `aggregate` bắt buộc; ghi cùng giao dịch | `test_messaging.py › test_envelope_and_rollback`, `› test_missing_aggregate`, `› test_audit_actor_rules` |
 | `OutboxRelay.run_once` | method, thuật toán | `messaging.py:285` | Publish lô có confirm, đánh dấu `published_at` | Đường duy nhất từ DB ra RabbitMQ | Ít nhất một lần; message id ổn định | `test_messaging.py › test_relay_restart`, `› test_relay_routes_commands`, `› test_relay_loop_only_leader_publishes` |
-| `EventConsumer.handle` | method | `messaging.py:389` | Lọc trùng inbox và chạy handler cùng giao dịch | Mọi consumer Python | Tác động đúng một lần theo (`consumer`, `event_id`) | `test_messaging.py › test_inbox`, `› test_handler_failure_is_redelivered` |
+| `EventConsumer.handle` | method | `messaging.py:389` | Lọc trùng inbox và chạy handler cùng giao dịch | Mọi consumer Python | Tác động đúng một lần theo (`consumer`, `event_id`) | `test_messaging.py › test_inbox`, `› test_handler_failure_is_redelivered`, `› test_consumer_nack_over_rabbitmq` |
 | `upsert_replica` | hàm | `messaging.py:450` | Upsert bản sao chỉ khi version lớn hơn | Bản sao `replica.*` của mọi service Python | Bản cũ đến sau không ghi đè | `test_messaging.py › test_replica_upsert` |
-| `claim_idempotency_key` | hàm, thuật toán | `messaging.py:527` | Giữ khóa, phát lại phản hồi, 422 khi dùng lại | Lệnh có tác động (DATA-IDEMP-001) | Một khóa một kết quả đã commit | `test_messaging.py › test_idempotency` |
-| `TokenVerifier.verify` | method, thuật toán | `service_auth.py:271` | Kiểm token nội bộ theo H2, H4 | Mọi endpoint nội bộ Python; dùng chung bộ khóa với bản TS | Chỉ orchestration phát token agent; `sub` = `kid` | `test_service_auth.py › test_guard`, `› test_signer_rules`, `› test_agent_scope`, `› test_unknown_kid`, `› test_aud_array` |
+| `claim_idempotency_key` | hàm, thuật toán | `messaging.py:528` | Giữ khóa, phát lại phản hồi, 422 khi dùng lại | Lệnh có tác động (DATA-IDEMP-001) | Một khóa một kết quả đã commit | `test_messaging.py › test_idempotency` |
+| `TokenVerifier.verify` | method, thuật toán | `service_auth.py:280` | Kiểm token nội bộ theo H2, H4 | Mọi endpoint nội bộ Python; dùng chung bộ khóa với bản TS | Chỉ orchestration phát token agent; `sub` = `kid` | `test_service_auth.py › test_guard`, `› test_signer_rules`, `› test_agent_scope`, `› test_unknown_kid`, `› test_aud_array` |
 | `ServiceTokenIssuer` | class | `service_auth.py:388` | Phát token cho lời gọi đi | Mọi lời gọi đi từ service Python | Không tự phát `act.type = agent`; hạn ≤ 5 phút; trong request Agent Run chỉ tự ký `act.type = system` khi bên gọi nêu `component` (OQ-110) | `test_service_auth.py › test_client`, `› test_tokens_follow_contract`, `› test_agent_run_downstream_calls` |
 | `agent_run_headers` | hàm | `service_auth.py:497` | Chuyển tiếp token Agent Run cho lời gọi lấy dữ liệu trả cho agent | Lời gọi tiếp của mọi service Python nhận request Agent Run (ví dụ `knowledge`) | Chỉ chuyển tiếp tới service có trong `aud`; không chuyển tiếp ngoài request Agent Run | `test_service_auth.py › test_agent_run_downstream_calls` |
 | `FakeModelGateway` | class | `testing/fake_gateway.py:69` | Model giả theo kịch bản | Mọi test agent không mạng (NFR-MAINT-004) | Tất định; thiếu kịch bản thì báo lỗi | `test_fake_gateway.py › test_deterministic`, `› test_missing_step` |

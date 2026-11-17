@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00005](../../../docs/tickets/issues/PID-00005/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/py-sires-common` (đã commit) · **PR:** [#21](https://github.com/toilatrung/sires/pull/21)
-- **Cập nhật:** 16/11/2026 (Lần 3)
+- **Cập nhật:** 17/11/2026 (Lần 4)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -114,6 +114,18 @@ Trạng thái giữ **Xong — chờ QC**. Lý do chạy lại: PO đóng OQ-110
 - **Còn mở:** hết OQ của PID-00005. Còn lệch chính sách che log TS–Python ở bốn điểm chưa chốt (Lần 2, “Còn mở” 3).
 - **Mới:** trên máy PO, Smart App Control nay chặn cả `.venv/Scripts/python.exe` do uv sinh (“An Application Control policy has blocked this file”), nên mọi target Nx của Python (`uv run …`) không chạy được ở máy này; trình thông dịch gốc của uv (`%APPDATA%\uv\python\cpython-3.12.16-…\python.exe`) vẫn chạy. Docker trong WSL chỉ trả lời ở `localhost:2375` khi distro đang bật.
 - **Bước tiếp theo:** CI của PR #21 chạy lại sau push; QC chạy `spec-converge-skill PID-00005`.
+
+## Lần 4 — 17/11/2026
+
+Trạng thái giữ **Xong — chờ QC**. Lý do chạy lại: QC độc lập Lần 1 (`qc-report.md`, 17/11/2026) kết luận có thể nghiệm thu, còn 3 khoảng trống LOW; PO yêu cầu sửa rồi merge (“Sửa rồi merge”).
+
+| G (qc-report) | Đã làm | Kiểm bằng |
+| --- | --- | --- |
+| G1 — `implement.md` lệch mã | Sửa 14 tham chiếu `file:dòng` theo mã hiện tại (đối chiếu từng tên: `RequestContextMiddleware.__call__` 263, `ServiceAuth.require` 371, `TokenVerifier.verify` 280, `ProblemMiddleware` 281, `install_problem_handlers` 319, `Redactor` 129, `redact_text` 101, `claim_idempotency_key` 528, `store_idempotent_response` 571, `ServiceTokenIssuer.issue` 419, `ServiceCaller.token` 230); ngày cập nhật của `implement.md`, `self-qc.md` | Đọc lại từng dòng định nghĩa trong mã |
+| G2 — chú thích MinIO cũ | `testing/fixtures.py`: chú thích nói cùng image với `infra/local/compose.yaml` | Đọc lại `compose.yaml` |
+| G3 — nhánh `nack` chưa có test qua RabbitMQ | Test mới `test_messaging.py › test_consumer_nack_over_rabbitmq`: handler lỗi → `nack(requeue=True)`, lần giao lại xử lý đúng một lần; vỏ sai → `nack(requeue=False)`, vào dead-letter exchange, handler không chạy | RabbitMQ 4 thật qua Testcontainers |
+
+Không đổi mã nguồn ngoài chú thích; không đổi AC. Các vấn đề QC đề nghị PO sửa ở nguồn (lệnh kiểm trong spec, điểm che log chưa chốt, việc còn thiếu so với bản TS, routing key, PID-00057, công cụ repo) không thuộc Dev, giữ nguyên ở `qc-report.md` mục 6.
 
 ---
 

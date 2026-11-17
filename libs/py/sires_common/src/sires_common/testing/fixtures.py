@@ -27,7 +27,7 @@ from sires_common.testing.kms import LocalKms
 
 POSTGRES_IMAGE = os.environ.get("SIRES_TEST_POSTGRES_IMAGE", "pgvector/pgvector:pg16")
 RABBITMQ_IMAGE = os.environ.get("SIRES_TEST_RABBITMQ_IMAGE", "rabbitmq:4-management")
-# compose.yaml names minio/minio:latest, which Docker Hub no longer serves (11/11/2026); see the PID-00005 report.
+# Same image as infra/local/compose.yaml (minio/minio is no longer served by Docker Hub, PO 11/11/2026).
 MINIO_IMAGE = os.environ.get("SIRES_TEST_MINIO_IMAGE", "cgr.dev/chainguard/minio:latest")
 
 

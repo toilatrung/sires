@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00005](../../../docs/tickets/issues/PID-00005/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 11/11/2026
+- **Cập nhật:** 17/11/2026 (Lần 4)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -103,6 +103,17 @@ Môi trường: Smart App Control nay chặn `.venv/Scripts/python.exe` (uv tram
 | `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00005 --result` | “PID-00005: KẾT QUẢ ĐỦ (0 cảnh báo)”. |
 | `check-tracks.mjs --stdin` trên `git diff --name-only origin/main` | `tracks touched: infra, platform, repo`; cảnh báo hai luồng như Lần 2 (do `uv.lock`). |
 | Test mới | `test_service_auth.py › test_agent_run_downstream_calls`: chuyển tiếp tới `research` (có trong `aud`) giữ nguyên token, bên nhận thấy `sub = agent-core`, `kid = orchestration`, đúng `agentRunId`; chuyển tiếp tới `identity` (không có trong `aud`) bị từ chối trước khi gọi; tự ký với `component = retrieval` ra token `sub = kid = knowledge`, `act = {system, retrieval}`, đúng `accountId`, không có `agentRunId`; không nêu `component` bị từ chối; ngoài request Agent Run không chuyển tiếp được; token gốc không có trong `repr(caller)`. `› test_client` đổi phần từ chối theo thông báo mới. |
+
+## Lần 4 — 17/11/2026
+
+**Kết luận:** Đạt. Sửa G1–G3 của QC độc lập Lần 1 (report.md Lần 4). Môi trường như Lần 3 (trình thông dịch gốc của uv, Docker trong WSL).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `ruff check .` | “All checks passed!”. |
+| `mypy src` (mypy 2.4.1 thuần Python) | “Success: no issues found in 15 source files”. |
+| `pytest tests/test_messaging.py -k "nack or inbox or handler_failure or invalid_envelope"` | 4 đạt, thoát 0. |
+| `pytest` (toàn bộ) | 66 đạt, thoát 0 (65 cũ + `test_consumer_nack_over_rabbitmq`). |
 
 ---
 
