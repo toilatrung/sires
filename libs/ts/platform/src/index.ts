@@ -3,6 +3,29 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 export { bootstrapService, createServiceApp, type ServiceAppOptions } from './bootstrap';
+export {
+  DEFAULT_CODE_BY_STATUS,
+  DEFAULT_TITLE_BY_STATUS,
+  ERROR_STATUS,
+  FIELD_ERROR_CODES,
+  isErrorCode,
+  isFieldErrorCode,
+  PROBLEM_CONTENT_TYPE,
+  PROBLEM_TYPE_BASE,
+  ProblemException,
+  ProblemJsonFilter,
+  toProblem,
+  validationProblem,
+  ZodProblemValidationPipe,
+  zodIssuesToFieldErrors,
+  type ErrorCode,
+  type FieldErrorCode,
+  type ProblemBody,
+  type ProblemFieldError,
+  type ProblemOptions,
+  type ProblemResult,
+  type ZodIssueLike,
+} from './errors';
 export { HealthController, HealthModule, SERVICE_MANIFEST, type HealthStatus } from './health';
 export {
   correlationFields,

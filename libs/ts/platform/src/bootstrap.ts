@@ -15,6 +15,8 @@ import { NestFactory } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Logger as PinoNestLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
+import { ProblemJsonFilter } from './errors/problem.filter';
+import { ZodProblemValidationPipe } from './errors/validation';
 import { LoggingModule } from './logging/logging.module';
 import { type RequestLike, requestIdFor } from './logging/request-id';
 import type { ServiceManifest } from './manifest';
@@ -48,7 +50,8 @@ class ServiceRootModule {
 
 /**
  * Builds a NestJS service on the Fastify adapter (architecture 2.3) without listening: OpenTelemetry started
- * first, the redacting pino logger as the application logger, one log context and one request id per request.
+ * first, the redacting pino logger as the application logger, one log context and one request id per request,
+ * problem+json errors and Zod input validation.
  */
 export async function createServiceApp(
   rootModule: Type<unknown>,
@@ -65,6 +68,9 @@ export async function createServiceApp(
     { bufferLogs: true },
   );
   app.useLogger(app.get(PinoNestLogger));
+  // Errors as application/problem+json with a catalogue code; Zod DTOs validated on every route (PID-00001 S02).
+  app.useGlobalFilters(new ProblemJsonFilter());
+  app.useGlobalPipes(new ZodProblemValidationPipe());
   return app;
 }
 
