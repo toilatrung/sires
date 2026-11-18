@@ -25,6 +25,20 @@ Cấu hình qua biến môi trường: `PORT`, `LOG_LEVEL` (mặc định `info`
 - 400, 401, 403, 404, 405, 412, 413, 428, 503 dùng được exception của NestJS: bộ lọc gán mã cố định của status (`validation_failed`, `unauthenticated`, `forbidden`, `not_found`, …). Cần mã khác (ví dụ `invalid_service_token`) thì dùng `ProblemException`.
 - Lỗi không khai báo (không có status, hoặc 5xx) → `500 internal_error`, log mức `error` có stack. Lỗi 4xx của framework không có mã trong danh mục (415 của Fastify…) cũng trả `500 internal_error` nhưng chỉ log mức `warn` kèm `status` gốc. Mã cho 415, 429 chờ hợp đồng.
 
+**Outbox, inbox, idempotency, audit-emit** (PID-00002, ADR-19, F-02; chi tiết ở `agent/execution/PID-00002/implement.md`):
+
+| Phần | API | Ghi chú |
+| --- | --- | --- |
+| Ghi outbox | `writeEvent(tx, …)`, `writeCommand(tx, …)`, `eventRoutingKey`, `buildEnvelope` | Trong giao dịch của lệnh (`withAccountTransaction`, vai trò `_app` chỉ INSERT); sự kiện bắt buộc `aggregate {type, id, version}`; routing key sự kiện đổi trạng thái thêm trạng thái đích (`workflow.status_changed.waiting_for_user`); lệnh `agent.run`, `knowledge.index`, `sandbox.build` không bắt buộc aggregate |
+| Relay | `new OutboxRelay({ db, amqpUrl, service }).start()` / `.stop()` | Vai trò `_system`; lease `outbox-relay` trong `app.job_lock`; lô `FOR UPDATE SKIP LOCKED` theo `created_at`; publish bền có confirm, header `message_id`, `traceparent`; chỉ đặt `published_at` cho dòng được confirm; lệnh không có queue nhận thì giữ lại |
+| Consumer | `new EventConsumer({ service, db, amqpUrl, handlers, queueArguments }).start()` | Queue `<service>.events`; `app.inbox` cùng giao dịch `_system` với handler; trùng `id` → bỏ; handler lỗi → nack giao lại; vỏ sai → nack không requeue (dead-letter) |
+| Replica | `applyReplica(tx, { table, key, values, version })` | Chỉ ghi khi `aggregate.version` > `source_version`; trả `applied` hoặc `skipped` |
+| Idempotency-Key | `IdempotencyModule.forRoot({ db, accountId })`, `@Idempotent('<operationId>')`, `idempotentTransaction()`, `runIdempotent` | Gửi lại cùng khóa trả kết quả lần đầu; khác nội dung hoặc operation → `422 idempotency_key_reused`; thiếu header → `400 validation_failed` (`errors[].field = Idempotency-Key`); giữ 24 giờ |
+| Audit | `emitAudit(tx, { producer, accountId, actor, action, objectType, objectId, … })` | Dòng outbox `audit.recorded` cùng giao dịch; `aggregate = {audit_event, id, 1}`; kiểm actor; che chuỗi giống key trong `summary`; không có hàm sửa, xóa |
+| Job | `startCleanupJobs(db, { service })`, `runHourlyCleanup`, `runDailyCleanup`, `acquireLease`, `registerOutboxAgeMetric` | Hằng giờ: outbox đã publish quá 24 giờ, idempotency_key quá hạn; hằng ngày: inbox quá 7 ngày; không xóa dòng outbox chưa publish; gauge `sires.outbox.oldest_unpublished_age` (giây) |
+
+Relay, consumer và job dùng database nối bằng vai trò `_system` của service; request dùng `_app`. Tham số queue (quorum, dead-letter) do cấu hình của môi trường đưa vào `queueArguments` (PID-00057). Test chạy PostgreSQL và RabbitMQ thật qua Testcontainers.
+
 Test tenancy chạy PostgreSQL 16 + pgvector thật qua Testcontainers, cần Docker (đặt `DOCKER_HOST` nếu Docker không ở socket mặc định).
 
 Chỉ đổi tương thích ngược (quy tắc 1.4.5): đổi phá vỡ thì thêm API mới và đánh dấu API cũ deprecated; luồng service tự chuyển.
