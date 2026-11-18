@@ -1,6 +1,6 @@
 # PID-00001 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 0 HIGH, 4 MEDIUM, 5 LOW. PO đã chốt các điểm mở (mục “Quyết định của PO”). Dev làm “Lần 3” theo mục “Việc còn lại” (Lần 1, 18/11/2026)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (G10–G12, không chặn merge). QC chưa tự chạy được lệnh test (môi trường không vào được registry npm); CI trên `1a02018` đạt 42/42 (Lần 2, 18/11/2026)
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -88,6 +88,90 @@ Dev chạy `spec-execution-skill PID-00001`, ghi “Lần 3” trong `report.md`
 - Ghi các quyết định G3, G4, G6, G8, G9 vào hồ sơ PID-00001 (`designs/notes.html`, `scope.html` cho EC của 428/412) và `docs/docs_context.md`.
 - Mở yêu cầu hợp đồng cho mã 415 (và 429 nếu cần) bằng `contract-updating-skill`.
 - Sau Lần 3: chạy lại `spec-converge-skill PID-00001` (QC Lần 2), merge khi không còn CRITICAL, HIGH và lệnh ở việc 5 đạt.
+
+## Lần 2 — 18/11/2026 · spec-converge-skill
+
+Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #30, nhánh `platform/ts-core-tenancy-logging`, commit `1a02018` (Lần 3 của Dev T1xNTH: `32a1927` G1, G2; `c162ef6` G5; `ef77167` G4; `bbeb3a8`, `1a02018` kết quả). Nhánh đã chứa `origin/main` mới nhất (`de98a18`).
+
+Phạm vi đã đọc: mọi thay đổi mã từ `406d2ca` (`libs/ts/platform/README.md`, `errors/problem.filter.ts`, `errors/errors.spec.ts`, `logging/redact.ts`, `logging/request-id.ts`, `logging/logging.module.ts`, `logging/logger.spec.ts`, `telemetry/telemetry.ts`, `telemetry/telemetry.spec.ts`), cộng `errors/catalog.ts`, `logging/context.ts`. Để kiểm lời khai về thư viện, QC đọc mã nguồn đúng phiên bản trong `pnpm-lock.yaml`: `fastify@5.11.3` (`lib/content-type-parser.js`) và `@opentelemetry/instrumentation-http@0.223.0` (`src/http.ts`, `src/utils.ts`), lấy từ GitHub theo tag.
+
+### Đối chiếu việc còn lại của Lần 1
+
+| Mã Lần 1 | Kết quả Lần 2 | Bằng chứng |
+| --- | --- | --- |
+| G1 | **Đóng.** Test mới kiểm đủ điều QC yêu cầu: `setLogContext` trả `true` (`{ tagged: true }`), log của handler có `request_id` = `sires.request_id` của span, `trace_id` = trace id của span, `project_id`, `account_hash` dạng 64 hex, và `accountId` không xuất hiện ở dạng rõ. Giữ chỗ mở context là đúng: Fastify 5.11.3 gói callback sau khi đọc body bằng `AsyncResource` tạo trong context của request (`content-type-parser.js:205–206`, `resource.bind(onDone)`), nên handler chạy lại trong context kể cả khi body đến sau. Xem G10 về độ phủ của test | `telemetry/telemetry.spec.ts:109–133` |
+| G2 | **Đóng** cho request đến. Log: serializer `req` ghi `withoutQuery(req.url)`. Span: instrumentation 0.223.0 chỉ dùng semconv ổn định, gắn `url.path` và `url.query` vào thuộc tính khi mở span (`utils.ts`, `getIncomingRequestAttributes`) rồi mới gọi `requestHook` (`http.ts:597–601`); hook ghi đè `url.query` = `[REDACTED]`. Khi response kết thúc chỉ thêm status, không thêm URL. Test quét toàn bộ log, thuộc tính và tên span, không có `abc123`, `xyz789`, `code=`, `token=`. Xem G11 về request đi ra | `logging/logging.module.ts:45`, `logging/request-id.ts:34`, `telemetry/telemetry.ts:116–142`, `telemetry/telemetry.spec.ts:135–150` |
+| G3 | Đóng (PO giữ mã). Ghi hồ sơ là việc của PO | — |
+| G4 | **Đóng.** (a) `logUndeclared`: có status < 500 → `warn` kèm `status`; không có status hoặc 5xx → `error` có stack. Test 415 thật của Fastify (`FST_ERR_CTP_INVALID_MEDIA_TYPE`, status 415) → `500 internal_error`, dòng `warn` (40) có `status: 415`, `request_id`, không có dòng `error` (50); test cũ vẫn kiểm `lỗi không khai báo` ở mức 50. (b) README có mục “Trả lỗi trong service”: 409, 422 bắt buộc `ProblemException`; danh sách status bộ lọc tự gán mã khớp `DEFAULT_CODE_BY_STATUS` | `errors/problem.filter.ts:93–104`, `errors/errors.spec.ts:151–164`, `errors/catalog.ts` (`DEFAULT_CODE_BY_STATUS`), `libs/ts/platform/README.md:22–26` |
+| G5 | **Đóng.** So khớp hậu tố `apikey`, `secret`, `token`, `password`, `privatekey` sau khi chuẩn hóa, cộng tên chính xác `authorization`, `proxyauthorization`, `cookie`, `setcookie`. QC tự chạy `isSensitiveField` (mục Lệnh): 13/13 tên phải che bị che (gồm `webhookSecret`, `privateKey`, `private_key`, `sessionToken`, `apiSecret`, `dbPassword`); 16/16 tên thường không bị che (`tokenCount`, `passwordPolicy`, `maxTokens`, `inputTokens`, `input_tokens`, `promptTokenCount`, `request_id`, `trace_id`, `account_hash`, `project_id`…). Che dư đã biết: `nextPageToken`, `pageToken`, `isSecret`, `hasPassword` (chấp nhận được, Dev đã ghi). Xem G12 | `logging/redact.ts:17–18`, `:90–93`, `logging/logger.spec.ts:79–91` |
+| G6, G8, G9 | Đóng (PO quyết 18/11/2026). Ghi hồ sơ là việc của PO | — |
+| G7 | Chuyển PID-00006 theo quyết định của PO | — |
+| Việc 5 (lệnh spec mục 6) | QC chưa tự chạy được lệnh test (mục Lệnh). CI của GitHub đã chạy trên `1a02018` và đạt | mục Lệnh |
+
+Không thấy hồi quy: thay đổi Lần 3 chỉ nằm trong `libs/ts/platform/` và `agent/execution/PID-00001/`; danh sách trường che mới là tập lớn hơn danh sách cũ (mọi tên cũ đều kết thúc bằng một hậu tố mới hoặc nằm trong tập tên chính xác); đổi mức log chỉ áp cho nhánh 4xx không có mã.
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G10 | PID-00001-AC06 · QC G1 | partial | LOW | `telemetry/telemetry.spec.ts:119`: body 64 KB gửi qua loopback đã nằm sẵn trong buffer khi Fastify gắn listener, nên test không đi qua nhánh body đến sau, là nhánh chỉ đúng nhờ `AsyncResource` của Fastify. QC chạy thử với `http` thuần của Node (`AsyncLocalStorage.run` rồi gắn listener ở tick sau): body 64 KB giữ context, body 512 KB, 900 KB và body gửi trễ 50 ms mất context (3/3 lần chạy). Mã hiện tại đúng; chỉ là test không khóa được hành vi nếu Fastify đổi cách đọc body | Tùy chọn: thêm một ca body ≥ 512 KB (dưới giới hạn 1 MB) hoặc body gửi theo nhiều đoạn có trễ vào test G1 |
+| G11 | NFR-OBS-002 · QC G2 | partial | LOW | `telemetry/telemetry.ts:117`: `requestHook` bỏ qua request đi ra. Với request đi ra qua `http`/`https`, instrumentation 0.223.0 ghi `url.full` kèm query, chỉ che các tham số `sig`, `Signature`, `AWSAccessKeyId`, `X-Goog-*`, `X-Amz-*` (`internal-types.ts`, `DEFAULT_QUERY_STRINGS_TO_REDACT`); ví dụ `?key=AIza…`, `?token=…` vào span ở dạng rõ. `self-qc.md` Lần 3 ghi “cần lưu ý”, giao PID-00003; nhưng client nội bộ của PID-00003 dùng `fetch` (undici, không được vá), còn cấu hình instrumentation thuộc platform | PO chọn: platform cắt query khỏi `url.full` của span đi ra (trong `requestHook` hoặc qua `redactedQueryParams`), hoặc ghi rõ việc này vào PID-00003/PID-00151 |
+| G12 | NFR-OBS-002 · kiến trúc 10.3 | partial | LOW | `logging/redact.ts:17`: tên bí mật kết thúc bằng `key` (ngoài `apikey`, `privatekey`) không bị che theo tên: `secretKey`, `secretAccessKey`, `secret_access_key`, `accessKey`, `signingKey`, `encryptionKey`, `hashKey`; cả `passphrase`, `credentials`, `pwd` (QC tự chạy, mục Lệnh). Giá trị dài, ngẫu nhiên vẫn có thể bị che theo entropy, giá trị ngắn hoặc có `/` thì không | PO quyết khi chốt chính sách che chung với `sires_common` (PID-00005): thêm hậu tố `secretkey`, `accesskey`, `signingkey`, `encryptionkey`, `passphrase`, `credential(s)` hay giữ như hiện tại |
+
+Ngoài phạm vi, chỉ ghi để biết: `ConflictException` trần (409) nay chỉ ghi mức `warn`, nên lỗi lập trình “quên dùng `ProblemException`” không còn hiện ở cảnh báo lỗi hệ thống. Đúng với quyết định của PO (chỉ “không có status hoặc 5xx” ghi `error`) và README đã cấm; nếu muốn bắt sớm thì thêm luật lint ở PID-00006.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00001-AC01 | đạt theo đọc mã (không đổi từ Lần 1) | đọc mã + test (Testcontainers) | `tenancy.spec.ts › không đọc được dữ liệu tài khoản khác` | QC không chạy; CI `1a02018`: `tenancy.spec.ts` 7/7 đạt |
+| PID-00001-AC02 | đạt theo đọc mã (không đổi) | như trên | `tenancy.spec.ts › thiếu account_id trả 0 dòng` | như trên |
+| PID-00001-AC03 | đạt theo đọc mã; G3 đã quyết | như trên | `concurrency.spec.ts › lệch phiên bản trả 412` | QC không chạy; CI: `concurrency.spec.ts` 8/8 đạt |
+| PID-00001-AC04 | đạt theo đọc mã; G4 đóng | stub (Fastify thật trong test) | `errors.spec.ts › problem json và lỗi không khai báo (PID-00001-AC04)`, `› lỗi 4xx của framework không có mã … (QC G4)` | QC không chạy; CI: `errors.spec.ts` 4/4 đạt |
+| PID-00001-AC05 | đạt theo đọc mã và lệnh QC tự chạy; G5 đóng, có G12 | đơn vị | `logger.spec.ts › che dữ liệu nhạy cảm`, `› che trường nhạy cảm theo hậu tố tên (QC G5)` | QC chạy `isSensitiveField`, `redactValue` trực tiếp: đúng như test khai; CI: `logger.spec.ts` 8/8 đạt |
+| PID-00001-AC06 | đạt theo đọc mã (GET và POST có body); có G10 | stub | `telemetry.spec.ts › span và log cùng mã yêu cầu`, `› POST có body giữ log context và mã tương quan (…, QC G1)` | QC không chạy; CI: `telemetry.spec.ts` 6/6 đạt |
+| PID-00001-AC07 | đạt theo đọc mã; G7 chuyển PID-00006 | stub | `validation.spec.ts › lỗi schema Zod (PID-00001-AC07)` | QC không chạy; CI: `validation.spec.ts` 3/3 đạt |
+| NFR-OBS-002-AC01 | đạt phần thư viện; G2 đóng, có G11, G12 | đơn vị + stub | `logger.spec.ts › quét log bằng chuỗi mẫu …`, `telemetry.spec.ts › không ghi query string vào log và span (…, QC G2)` | QC không chạy; CI đạt |
+| NFR-OBS-005-AC01 | đạt phần thư viện; G4 đóng | stub | `errors.spec.ts › mã lỗi thuộc danh mục (NFR-OBS-005-AC01)` | QC không chạy; CI đạt |
+
+Edge case: EC01–EC05 không đổi từ Lần 1. Edge case mới của Dev (`nextPageToken` bị che, query của request đi ra) đã xét ở G5, G11.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Lỗi `ERR_PNPM_META_FETCH_FAIL … getaddrinfo ENOTFOUND registry.npmjs.org`: môi trường QC không vào được registry npm |
+| `pnpm nx run @sires/platform:test` | không chạy — thiếu `node_modules` (lý do ở trên) |
+| `pnpm nx run sires-common:test` | không chạy — cùng lý do (không vào được registry) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | không chạy — cùng lý do |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: infra, platform, repo`; cảnh báo 2 luồng (infra, platform). `infra` là `pnpm-workspace.yaml`, `pnpm-lock.yaml` như Lần 1; Lần 3 không thêm file ngoài `libs/ts/platform/`, `agent/execution/PID-00001/` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard khớp, `docs/index.html` khớp) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00001 --result` | `KẾT QUẢ ĐỦ (1 cảnh báo)`: trạng thái `Xong — chờ QC`; cảnh báo “self-qc.md còn 3 mục tự kiểm chưa đánh dấu” (các mục “không áp dụng” ở Lần 1) |
+| `node --experimental-strip-types` chạy `isSensitiveField`, `redactValue` của `logging/redact.ts` (file không có import) trên danh sách tên ở G5, G12 | Kết quả như ghi ở G5, G12; `{ webhookSecret, config: { dbPassword, maxTokens: 4096 } }` → `webhookSecret`, `dbPassword` thành `[REDACTED]`, `maxTokens` giữ 4096 |
+| Thử `AsyncLocalStorage` với `http` thuần của Node (script tạm ngoài repo, đã chạy 3 lần) | Body 64 KB giữ context; 512 KB, 900 KB, body gửi trễ mất context (căn cứ của G10) |
+| Kết quả CI do GitHub chạy (QC đọc log job `build`, run `44238702942`, commit `1a02018`, không phải QC tự chạy) | `@sires/platform:test`: 8 file, 42/42 đạt (Testcontainers chạy thật: `tenancy.spec.ts` 7, `concurrency.spec.ts` 8); `sires-common` 66 đạt; `nx affected -t lint typecheck test build` đạt 19 project; job `tracks` đạt |
+
+### Lệch với Self-QC
+
+- `report.md` Lần 3 nói test G1 “đạt ngay trên mã cũ” và giữ chỗ mở context. QC đồng ý, nhưng lý do đúng là `AsyncResource` của Fastify; body 64 KB của test không đi qua nhánh body đến sau (G10).
+- `self-qc.md` Lần 3 giao span của request đi ra cho PID-00003. QC thấy PID-00003 dùng `fetch` (không được vá); cấu hình che nằm ở platform (G11).
+- `self-qc.md` Lần 3 ghi `add-license.mjs --check` còn 7 file cache Python bị bỏ qua; trên bản clone sạch của QC kết quả là 0 file.
+- Kết quả 42/42 test, `nx affected` 19 project của Dev khớp với log CI; QC chưa tự chạy lại. Lời khai “tạm bỏ từng sửa đổi thì test tương ứng lỗi” chưa được QC kiểm.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không còn việc bắt buộc trước khi merge. Ba việc LOW, PO chọn làm ở PR này, ở PR sau hoặc bỏ:
+
+1. **G11 (NFR-OBS-002):** PO chọn chỗ xử lý query của span đi ra (platform hay PID-00003/PID-00151). Nếu là platform: cắt query khỏi `url.full` của span đi ra, thêm test gọi `http.request` tới `…?token=xyz` và kiểm span không có `xyz`.
+2. **G12 (NFR-OBS-002):** PO chốt danh sách tên che chung cho `@sires/platform` và `sires_common` (PID-00005), rồi Dev thêm hậu tố nếu PO đồng ý.
+3. **G10 (PID-00001-AC06):** thêm ca body ≥ 512 KB hoặc gửi trễ vào test G1.
+
+### Đề xuất cho PO
+
+- Có thể merge PR #30: 0 CRITICAL, 0 HIGH, 0 MEDIUM; CI đạt trên `1a02018`. QC chưa tự chạy được lệnh test; nếu PO muốn kết quả do QC chạy thì chạy lại trong môi trường có registry npm và Docker.
+- Vẫn còn từ Lần 1: ghi quyết định G3, G4, G6, G8, G9 vào hồ sơ PID-00001 (`designs/notes.html`, `scope.html` cho 428/412) và `docs/docs_context.md`; mở yêu cầu hợp đồng cho mã 415, 429 (`contract-updating-skill`).
+- Khi làm PID-00005: đưa so khớp hậu tố G5 (và kết luận G12) sang `sires_common` để hai bản che log giống nhau (kiến trúc 11.4).
 
 ---
 
