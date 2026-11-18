@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-core-tenancy-logging` (Lần 2 chưa commit: merge `origin/main` đã stage, mã S02 chưa commit) · **PR:** chưa mở
+- **Nhánh:** `platform/ts-core-tenancy-logging` (đã commit, đã push) · **PR:** chưa mở
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -65,7 +65,7 @@ Không có.
 
 ## Lần 2 — 18/11/2026
 
-Người làm: Dev T1xNTH (agent Claude Code trong phiên của T1xNTH), theo yêu cầu “gỡ trạng thái block, chuyển sang hoàn thành”. Ticket giao cho `toilatrung`; làm trong worktree riêng của nhánh này, **chưa commit, chưa push** (máy chưa có định danh git, khóa ký). “Hoàn thành” ở đây là `Xong — chờ QC`; PO QC độc lập và nghiệm thu.
+Người làm: Dev T1xNTH (agent Claude Code trong phiên của T1xNTH), theo yêu cầu “gỡ trạng thái block, chuyển sang hoàn thành”. Ticket giao cho `toilatrung`; làm trong worktree riêng của nhánh này; commit (có chữ ký, tác giả T1xNTH) và push 18/11/2026. “Hoàn thành” ở đây là `Xong — chờ QC`; PO QC độc lập và nghiệm thu.
 
 ### Gỡ chặn
 
