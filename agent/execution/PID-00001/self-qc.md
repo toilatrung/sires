@@ -1,6 +1,6 @@
 # PID-00001 — Self-QC của Dev
 
-**Kết luận:** Đạt (Lần 2 — 18/11/2026; Lần 1 “Chưa đạt — S02 bị chặn” giữ ở dưới)
+**Kết luận:** Đạt (Lần 3 — 18/11/2026, sau QC Lần 1; Lần 1, Lần 2 giữ ở dưới)
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 18/11/2026
@@ -130,6 +130,41 @@ Chế độ Dev tự QC, 18/11/2026: đối chiếu `acceptance.html`, `scope.ht
 | G5 | unrequested | LOW | Bộ lọc và pipe đăng ký toàn cục trong `createServiceApp` (spec chỉ ghi “cấu hình pipe… xuất qua index.ts”) | `bootstrap.ts:72` | Giữ: đúng mục đích ticket (mọi service cùng cách trả lỗi); vẫn xuất qua `index.ts` để service tự dùng |
 
 Không có CRITICAL, HIGH.
+
+## Lần 3 — 18/11/2026
+
+Người chạy: Dev T1xNTH (agent Claude Code), sau `qc-report.md` Lần 1. Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker thật cho Testcontainers. Nhánh tại `f713467` cộng thay đổi Lần 3.
+
+### 1. Lệnh (spec mục 6 và việc 5 của QC)
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/platform --skip-nx-cache` | Đạt. Test: 8 file, 42/42 (thêm 4 so với Lần 2: G1, G2, G4, G5) |
+| `pnpm nx run sires-common:test --skip-nx-cache` | Đạt: 66 passed, 2 warnings (deprecation, không thuộc ticket) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | Đạt, 19 project (Nx vẫn ghi 11 task “flaky” từ lần lỗi `.venv` ở Lần 2) |
+| Kiểm test bắt được lỗi: tạm bỏ từng sửa đổi (serializer `withoutQuery`; `scrubQueryAttributes`; hậu tố G5; nhánh `warn` G4), chạy test của thư mục, khôi phục (so khớp byte) | Mỗi lần có test lỗi tương ứng (1, 1, 2, 1 test); khôi phục xong đạt hết |
+| `check-tracks.mjs --stdin` (file khác `origin/main` cộng file chưa theo dõi) | `infra, platform, repo` — như Lần 2 (`infra` là catalog và lockfile) |
+| `node scripts/docs/add-license.mjs --check` | File của ticket đủ; chỉ 7 file cache Python bị `.gitignore` bỏ qua |
+| `node scripts/docs/update-index.mjs --check` | Khớp |
+
+### 2. AC → test (thay đổi so với Lần 2)
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00001-AC06 | `telemetry.spec.ts › span và log cùng mã yêu cầu`, `› POST có body giữ log context và mã tương quan (PID-00001-AC06, QC G1)` | Đạt cả GET và POST có body |
+| NFR-OBS-002-AC01 | thêm `telemetry.spec.ts › không ghi query string vào log và span (NFR-OBS-002, QC G2)`, `logger.spec.ts › che trường nhạy cảm theo hậu tố tên (QC G5)` | Đạt (phần thư viện) |
+| NFR-OBS-005-AC01 | thêm `errors.spec.ts › lỗi 4xx của framework không có mã: 500 internal_error, log mức warn kèm status (QC G4)` | Đạt |
+
+### 3. Edge case mới
+
+| # | Trạng thái | Lưu ý |
+| --- | --- | --- |
+| Trường kết thúc bằng `token` nhưng không bí mật (`nextPageToken`) | Cần lưu ý | Bị che theo G5; chấp nhận che dư. Số đếm `…Tokens` không bị che |
+| Query của request đi ra (client HTTP) | Cần lưu ý | `scrubQueryAttributes` chỉ áp cho request đến; span của request đi ra do PID-00003 (client nội bộ) xử lý |
+
+### 5. Tự đối chiếu (spec-converge-skill, DEC-58)
+
+Đối chiếu lại với `qc-report.md` Lần 1 và quyết định của PO. G1, G2, G4, G5 đã xử lý (bảng ở `report.md` Lần 3). G3, G6, G8: PO giữ mã hiện tại. G7: chuyển PID-00006. G9: ghi nhận. Không còn CRITICAL, HIGH, MEDIUM thuộc phạm vi Dev; còn lại là việc ghi hồ sơ và hợp đồng của PO.
 
 ---
 

@@ -1,7 +1,7 @@
 # PID-00001 — Triển khai
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 18/11/2026 (Lần 2: S02, che JWT, key Google từ 30 ký tự)
+- **Cập nhật:** 18/11/2026 (Lần 2: S02, che JWT, key Google từ 30 ký tự; Lần 3: QC G2, G4, G5)
 
 File này mô tả mã **đang thật sự chạy**, đọc từ mã sau khi làm, để người sau hiểu nhanh và QC biết nên soi ở đâu. Không chép lại spec. Sửa mã thì sửa file này cho đúng.
 
@@ -23,13 +23,13 @@ Mã nằm trong `libs/ts/platform/src/` (S01 `tenancy/`, S02 `errors/`, S03 `log
 2. Fastify sinh request id bằng cùng `requestIdFor` (đọc lại `req.id`), middie chép id đó sang request thô — `bootstrap.ts:53`.
 3. Middleware của nestjs-pino (pino-http, `customAttributeKeys.reqId = 'request_id'`, `quietReqLogger`) gắn `request_id` cho logger của request; `LogContextMiddleware` mở một log context riêng cho request — `logging/logging.module.ts:21`, `:33`.
 4. Mỗi dòng log: `mixin` thêm `trace_id`, `span_id` của span đang chạy và các mã của log context (`account_hash`, `project_id`, `task_id`, `workflow_id`, `agent_run_id`, `build_id`) — `logging/context.ts:66`; rồi `hooks.streamWrite` che dữ liệu trên dòng JSON cuối cùng — `logging/logger.ts:26`, `logging/redact.ts:133`.
-5. Kết thúc response: pino-http ghi `request completed` (chỉ `req.method`, `req.url`, `res.statusCode`, `responseTime`); span kết thúc khi response `close` và đi tới exporter nếu có.
+5. Kết thúc response: pino-http ghi `request completed` (chỉ `req.method`, đường dẫn `req.url` không kèm query — `withoutQuery`, `res.statusCode`, `responseTime`); span kết thúc khi response `close` và đi tới exporter nếu có. `requestHook` đã ghi đè `url.query` = `[REDACTED]` và cắt query khỏi URL của span — `telemetry/telemetry.ts:136`, `logging/request-id.ts:34`.
 
 **Một lỗi** (S02):
 
 1. Tham số kiểu DTO `createZodDto(...)` đi qua `ZodProblemValidationPipe`: pipe của nestjs-zod kiểm schema; lỗi Zod thành `ProblemException('validation_failed', { errors })`, mỗi issue ánh xạ sang `FieldErrorCode` (`zodIssuesToFieldErrors`) — `errors/validation.ts:62`, `:93`.
 2. Mọi lỗi ném ra từ controller, pipe, guard hay từ Fastify trước handler (JSON sai, body quá giới hạn, không có route) tới `ProblemJsonFilter.catch` — `errors/problem.filter.ts:81`.
-3. `toProblem`: `ProblemException` giữ mã và trường của nó; lỗi HTTP khác lấy mã cố định theo status (`DEFAULT_CODE_BY_STATUS`); còn lại `500 internal_error` và ghi log mức error có stack (đã che) — `errors/problem.filter.ts:59`, `errors/catalog.ts:88`.
+3. `toProblem`: `ProblemException` giữ mã và trường của nó; lỗi HTTP khác lấy mã cố định theo status (`DEFAULT_CODE_BY_STATUS`); còn lại `500 internal_error`. `logUndeclared` ghi mức `warn` kèm `status` khi lỗi có status 4xx (do client), mức `error` có stack (đã che) cho lỗi không khai báo thật — `errors/problem.filter.ts:59`, `:93`, `errors/catalog.ts:88`.
 4. Trả `application/problem+json` với `type`, `title`, `status`, `code`, `correlationId` = mã yêu cầu.
 
 **Giao dịch theo tài khoản** (S01):
@@ -53,6 +53,8 @@ Mã nằm trong `libs/ts/platform/src/` (S01 `tenancy/`, S02 `errors/`, S03 `log
 | `startTelemetry`, `enableHttpInstrumentation` | hàm | `libs/ts/platform/src/telemetry/telemetry.ts:58`, `:108` | Đăng ký tracer, context manager, propagator W3C, instrumentation HTTP; chọn exporter | AC06, EC05; trace nối liền giữa service (NFR-OBS-004) | Không có exporter thì service vẫn chạy | `telemetry.spec.ts › span và log cùng mã yêu cầu`, `› chạy khi không có exporter` |
 | `requestIdFor` | hàm | `libs/ts/platform/src/logging/request-id.ts:20` | Chọn mã yêu cầu một lần cho mỗi request | Một mã chung cho span (requestHook), Fastify và pino-http | Span và log cùng mã | `telemetry.spec.ts › dùng lại x-request-id dạng UUID và traceparent của bên gọi` |
 | `ProblemJsonFilter`, `toProblem` | hàm, class | `libs/ts/platform/src/errors/problem.filter.ts:81`, `:59` | Biến mọi lỗi thành problem+json có mã thuộc danh mục | AC04, NFR-OBS-005-AC01; mọi lỗi của mọi service NestJS đi qua | Không lộ stack hay thông điệp nội bộ; mọi `code` thuộc `ErrorCode` | `errors.spec.ts › problem json và lỗi không khai báo (PID-00001-AC04)`, `› mã lỗi thuộc danh mục (NFR-OBS-005-AC01)` |
+| `isSensitiveField` | hàm | `libs/ts/platform/src/logging/redact.ts:90` | Quyết định trường nào luôn bị che theo tên: hậu tố `apikey`, `secret`, `token`, `password`, `privatekey` và vài tên chính xác | NFR-OBS-002; mọi object được log | Không lộ giá trị dưới tên nhạy cảm; không che nhầm số đếm token | `logger.spec.ts › che trường nhạy cảm theo hậu tố tên (QC G5)` |
+| `scrubQueryAttributes`, `withoutQuery` | hàm | `libs/ts/platform/src/telemetry/telemetry.ts:136`, `libs/ts/platform/src/logging/request-id.ts:34` | Bỏ giá trị query khỏi span và log request | NFR-OBS-002; query có thể chứa `code`, `state`, token ngắn | Log và span chỉ có metadata | `telemetry.spec.ts › không ghi query string vào log và span (NFR-OBS-002, QC G2)` |
 | `ERROR_STATUS`, `DEFAULT_CODE_BY_STATUS` | bảng | `libs/ts/platform/src/errors/catalog.ts:29`, `:88` | Status của từng mã; mã mặc định theo status | Điểm nối với hợp đồng: `satisfies Record<ErrorCode, number>` buộc khớp type sinh | Danh mục không chép tay; hợp đồng đổi thì build lỗi | `errors.spec.ts` |
 | `ZodProblemValidationPipe`, `zodIssuesToFieldErrors` | class, thuật toán | `libs/ts/platform/src/errors/validation.ts:93`, `:62` | Kiểm DTO Zod, ánh xạ mã Zod sang `FieldErrorCode` | AC07, EC03; mọi endpoint có DTO | Trả mọi trường sai; không trả nguyên mã của Zod | `validation.spec.ts › lỗi schema Zod (PID-00001-AC07)`, `› nhiều trường sai (EC03)`, `› ánh xạ mã Zod sang FieldErrorCode` |
 | `createServiceApp`, `bootstrapService` | hàm | `libs/ts/platform/src/bootstrap.ts:53`, `:72` | Dựng service NestJS trên Fastify với logger và tracing | Điểm vào của mọi service NestJS (10 app) | Tracing bật trước khi tạo HTTP server | `telemetry.spec.ts`; chạy thử `apps/identity/dist/main.js` (self-qc.md mục 1) |
@@ -80,7 +82,7 @@ Mã nằm trong `libs/ts/platform/src/` (S01 `tenancy/`, S02 `errors/`, S03 `log
 - 412 và 428 ném bằng `HttpException` của NestJS; `ProblemJsonFilter` gán `precondition_failed`, `precondition_required` theo status (S02).
 - UUIDv7 tự viết (khoảng 30 dòng, `node:crypto`) thay vì thêm thư viện; không nhận tham số thời điểm để không ai vô tình đẩy đồng hồ của tiến trình lên tương lai.
 - Che dữ liệu ở `hooks.streamWrite` (trên dòng JSON cuối) thay vì `redact` theo đường dẫn của pino: `redact` không phủ được key nằm sâu tùy ý hay trong chuỗi thông báo lỗi (EC04).
-- Danh sách trường luôn che: mọi tên kết thúc bằng `apikey` (`api_key`, `apiKey`, `x-api-key`, …) và `authorization`, `proxy-authorization`, `password`, `secret`, `client_secret`, `token`, `access_token`, `refresh_token`, `id_token`, `cookie`, `set-cookie`, `csrf_token`, `x-csrf-token` (so khớp chữ thường, bỏ dấu phân cách). Ngoài `api_key`, `authorization` của kiến trúc 10.3, các tên còn lại thêm để che chặt hơn (phiên `sires_session`, CSRF token, token nội bộ).
+- Danh sách trường luôn che (Lần 3, QC G5): mọi tên kết thúc bằng `apikey`, `secret`, `token`, `password`, `privatekey` (`x-api-key`, `client_secret`, `webhookSecret`, `refresh_token`, `sessionToken`, `dbPassword`, `private_key`…) và đúng các tên `authorization`, `proxy-authorization`, `cookie`, `set-cookie` (so khớp chữ thường, bỏ dấu phân cách). Tên kết thúc bằng `tokens` (`maxTokens`, `inputTokens`) không bị che vì là số đếm token của model; tên chỉ chứa từ ở đầu (`tokenCount`, `passwordPolicy`) cũng không. Hệ quả: trường kiểu `nextPageToken` bị che.
 - Ngưỡng entropy 4.5 bit/ký tự, độ dài tối thiểu 32, bắt buộc có chữ hoa, chữ thường và chữ số; `/` không thuộc chuỗi ứng viên. Đo trên 20 000 mẫu: chuỗi ngẫu nhiên 40 ký tự đạt ≥ 4.5 khoảng 95 %, 48 ký tự gần như 100 %, 32 ký tự khoảng 55 %; định danh dài kiểu `ContextSnapshotOutdatedEvent2026` 3.9–4.2. Hex chữ thường (UUID, trace id, hash) không bao giờ bị che. Xem “cần lưu ý” ở `self-qc.md`.
 - `account_hash` = HMAC-SHA256 hex đủ 64 ký tự; khóa từ `LOG_ACCOUNT_HASH_KEY`; thiếu khóa thì dùng khóa ngẫu nhiên của tiến trình và ghi một cảnh báo (service vẫn chạy, `accountId` vẫn không lộ).
 - Log của request chỉ có `req.method`, `req.url`, `res.statusCode`, `responseTime`; không ghi header hay body (NFR-OBS-002: chỉ metadata).
@@ -98,6 +100,8 @@ Mã nằm trong `libs/ts/platform/src/` (S01 `tenancy/`, S02 `errors/`, S03 `log
 - (Lần 2) Pipe bọc `createZodValidationPipe` của nestjs-zod, nhận lại lỗi Zod rồi tự dựng `validation_failed`, vì cần giá trị đầu vào để phân biệt trường vắng (`required`) với sai kiểu (`invalid_type`); Zod 4 không đưa giá trị vào issue. `errors[].field` nối đường dẫn bằng dấu chấm; lỗi ở gốc body không có `field`. `message` là thông điệp tiếng Anh của Zod (không chứa giá trị đầu vào).
 - (Lần 2) `zod` 4.6.7, `nestjs-zod` 5.5.0 (bản 5.6.0 mới phát hành 10 ngày nên chưa dùng), `drizzle-kit` 0.31.11 (D1) qua pnpm catalog.
 - (Lần 2) Vitest biên dịch bằng esbuild, không sinh `design:paramtypes`; test HTTP của pipe khai metadata tường minh. Đã kiểm trên bản build `tsc` thật (self-qc.md Lần 2).
+- (Lần 3) Log context: test POST có body (QC G1) cho thấy `AsyncLocalStorage.run` trong middleware vẫn bao bước Fastify đọc body và handler, nên giữ nguyên chỗ mở context.
+- (Lần 3) Query string: pino-http serializer ghi `withoutQuery(req.url)`; span: `requestHook` ghi đè thuộc tính đã có (`url.query` → `[REDACTED]`; `url.full`, `http.url`, `http.target` cắt ở `?`) vì API OpenTelemetry không cho xóa thuộc tính; tên span (`GET`) không mang URL.
 
 ---
 
