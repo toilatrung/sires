@@ -2,7 +2,7 @@
   "name": "@sires/contracts",
   "version": "0.0.0",
   "private": true,
-  "description": "Types generated from docs/api-design (OpenAPI public and internal)",
+  "description": "Types and clients generated from OpenAPI and AsyncAPI contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -16,6 +16,9 @@
   ],
   "scripts": {
     "generate": "node scripts/generate.mjs",
+    "generate:ts": "node scripts/generate.mjs --ts-only",
+    "generate:python": "node scripts/generate.mjs --python-only",
+    "test": "node --test scripts/generate.spec.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
@@ -33,6 +36,17 @@
     ],
     "targets": {
       "generate": {
+        "executor": "nx:noop",
+        "dependsOn": [
+          "generate-ts",
+          "generate-python"
+        ]
+      },
+      "generate-ts": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node libs/ts/contracts/scripts/generate.mjs --ts-only"
+        },
         "cache": true,
         "inputs": [
           "{workspaceRoot}/docs/api-design/**/*.yaml",
@@ -42,14 +56,28 @@
           "{projectRoot}/src/generated"
         ]
       },
+      "generate-python": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node libs/ts/contracts/scripts/generate.mjs --python-only"
+        },
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/docs/api-design/**/*.yaml",
+          "{projectRoot}/scripts/**/*"
+        ],
+        "outputs": [
+          "{workspaceRoot}/libs/py/sires_common/src/sires_common/generated"
+        ]
+      },
       "build": {
         "dependsOn": [
-          "generate"
+          "generate-ts"
         ]
       },
       "typecheck": {
         "dependsOn": [
-          "generate"
+          "generate-ts"
         ]
       }
     }
