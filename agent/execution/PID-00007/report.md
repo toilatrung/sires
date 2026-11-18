@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00007](../../../docs/tickets/issues/PID-00007/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
-- **Nhánh:** `contracts/asyncapi-python-generation` (chỉ report.md commit/push theo skill; mã triển khai chưa commit) · **PR:** chưa mở
+- **Nhánh:** `contracts/asyncapi-python-generation` (mã đã commit/push: `dc90548`, ký SSH) · **PR:** [#33](https://github.com/toilatrung/sires/pull/33)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -32,7 +32,7 @@
 
 ## 4. Việc còn lại
 
-Không còn việc triển khai trong phạm vi. Chưa commit/push mã hay mở PR vì phiên này chỉ yêu cầu triển khai; report.md được commit/push riêng theo quy trình skill. QC độc lập và nghiệm thu thuộc PO sau khi có PR chứa mã.
+Không còn việc triển khai trong phạm vi. Mã đã commit/push và mở PR #33 theo yêu cầu người dùng trong phiên. QC độc lập và nghiệm thu thuộc PO.
 
 ## 5. Yêu cầu thêm
 
@@ -43,7 +43,7 @@ Không có.
 - **Đề xuất cho PO:** Công cụ license đang quét file cache; scanner luồng cảnh báo contracts/platform/infra dù ticket dùng chung được phép chạm các output này. Nếu chỉnh công cụ, giao luồng infra riêng; không chặn PID-00007.
 - **Yêu cầu hợp đồng:** Không có.
 - **Còn mở:** Không có điều chưa rõ hoặc hợp đồng thiếu đang chặn. Naming hint của generator và cảnh báo dependency/môi trường ghi trong self-qc.md.
-- **Bước tiếp theo:** Dev commit/push mã và mở PR khi được yêu cầu; PO review, chạy QC độc lập bằng spec-converge-skill PID-00007 và merge.
+- **Bước tiếp theo:** PO review PR #33, chạy QC độc lập bằng spec-converge-skill PID-00007 và merge.
 - **Tài liệu đi kèm:** Không có.
 
 ---
