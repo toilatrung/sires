@@ -148,6 +148,21 @@ describe('ProblemJsonFilter', () => {
     }
   });
 
+  it('lỗi 4xx của framework không có mã: 500 internal_error, log mức warn kèm status (QC G4)', async () => {
+    const before = lines.length;
+    const { res, body, requestId } = await call('/err/echo', {
+      method: 'POST',
+      headers: { 'content-type': 'text/x-unknown' },
+      body: 'abc',
+    });
+    expect(res.status).toBe(500);
+    expect(body).toMatchObject({ code: 'internal_error', correlationId: requestId });
+    const logged = lines.slice(before).map((line) => JSON.parse(line) as Record<string, unknown>);
+    const warn = logged.find((l) => l['msg'] === 'lỗi HTTP không có mã trong danh mục');
+    expect(warn).toMatchObject({ level: 40, status: 415, code: 'internal_error', request_id: requestId });
+    expect(logged.some((l) => l['level'] === 50)).toBe(false);
+  });
+
   it('lỗi HTTP không có mã trong danh mục thành internal_error', () => {
     const teapot = Object.assign(new Error('unsupported media type'), { statusCode: 415 });
     expect(toProblem(teapot, 'r1')).toMatchObject({ status: 500, undeclared: true, body: { code: 'internal_error' } });
