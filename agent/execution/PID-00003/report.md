@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-service-auth` (chưa commit mã) · **PR:** chưa mở
+- **Nhánh:** `platform/ts-service-auth` (đã commit, đã push) · **PR:** [#34](https://github.com/toilatrung/sires/pull/34)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
