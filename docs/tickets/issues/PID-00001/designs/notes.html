@@ -21,9 +21,13 @@
 <p class="eyebrow">Ticket · PID-00001</p><h1>PID-00001 — Ghi chú thiết kế</h1>
 <p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Mục không có gì thì ghi “Không có”.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<ul><li>12/11/2026 (PO): che log theo một chính sách chung cho bản TS và bản Python (PID-00005): giữ danh sách tên trường của bản TS, ngưỡng entropy 4,5, ký tự <code>/</code> không thuộc đoạn ứng viên; thêm mẫu JWT (<code>eyJ….….…</code>) như bản Python để token nội bộ bị che trọn cả ba phần. Các điểm khác giữa hai bản (khóa băm <code>accountId</code> khi thiếu cấu hình, giới hạn độ sâu, mẫu key Google, khoảng trắng sau <code>Bearer</code>) chưa chốt.</li></ul>
+<ul><li>12/11/2026 (PO): che log theo một chính sách chung cho bản TS và bản Python (PID-00005): giữ danh sách tên trường của bản TS, ngưỡng entropy 4,5, ký tự <code>/</code> không thuộc đoạn ứng viên; thêm mẫu JWT (<code>eyJ….….…</code>) như bản Python để token nội bộ bị che trọn cả ba phần. Các điểm khác giữa hai bản (khóa băm <code>accountId</code> khi thiếu cấu hình, giới hạn độ sâu, mẫu key Google, khoảng trắng sau <code>Bearer</code>) chưa chốt.</li>
+<li>18/11/2026 (PO, H5): bốn điểm còn lại chốt theo bản TS — thiếu khóa băm <code>accountId</code> thì dùng khóa ngẫu nhiên theo tiến trình và ghi một cảnh báo; duyệt tối đa 32 tầng, sâu hơn che cả nhánh; key Google = <code>AIza</code> + từ 30 ký tự; giữ mẫu <code>Bearer</code>/<code>Basic</code> của bản TS. PID-00005 đổi bản Python theo.</li></ul>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<ul><li>18/11/2026 (PO, lô làm rõ PH-01): PID này thêm <code>drizzle-orm</code>, <code>drizzle-kit</code> và driver PostgreSQL vào pnpm catalog để mọi PID migration NestJS dùng chung (quy ước migration ở kiến trúc 6). PID-00002, PID-00003 chuyển cho <code>T1xNTH</code>; PID này vẫn do <code>toilatrung</code> làm.</li></ul>
+<ul><li>18/11/2026 (PO, lô làm rõ PH-01): PID này thêm <code>drizzle-orm</code>, <code>drizzle-kit</code> và driver PostgreSQL vào pnpm catalog để mọi PID migration NestJS dùng chung (quy ước migration ở kiến trúc 6). PID-00002, PID-00003 chuyển cho <code>T1xNTH</code>; PID này vẫn do <code>toilatrung</code> làm.</li>
+<li>18/11/2026 (PO, H8): Lần 2 và Lần 3 của PID này do <code>T1xNTH</code> làm.</li>
+<li>18/11/2026 (PO, H3): <code>If-Match</code> thiếu → 428; <code>*</code>, ETag yếu, danh sách, giá trị không phải số → 412.</li>
+<li>18/11/2026 (PO, H4, H6): service NestJS chạy trên Fastify, nghe <code>0.0.0.0</code>; bộ lọc problem+json, pipe Zod toàn cục; status không có mã → <code>500 internal_error</code> (4xx log <code>warn</code>); 409, 422 bắt buộc <code>ProblemException</code>; mã 415, 429 thêm ở hợp đồng (PR #31).</li></ul>
 <h2 id="giao-dien">Giao diện</h2>
 <p>Không có.</p>
 <h2 id="agent-va-model">Agent và model</h2>
