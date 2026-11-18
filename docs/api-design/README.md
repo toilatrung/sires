@@ -4,7 +4,17 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — metadata nhập từ BibTeX, RIS, PO chốt 18/11/2026
+### Thay đổi gần nhất — mã lỗi 415, 429, PO chốt 18/11/2026
+
+QC độc lập PID-00001 (G4, `agent/execution/PID-00001/qc-report.md`): bộ lọc problem+json của `libs/ts/platform` phải trả `500 internal_error` cho lỗi 415 của Fastify (`Content-Type` không nhận) vì danh mục `ErrorCode` không có mã cho status này; gateway có rate limit (kiến trúc 3, 4) nhưng hợp đồng không có mã 429. PO chốt tên mã trong phiên.
+
+- `components/schemas/common.yaml#/ErrorCode`: thêm `unsupported_media_type` (415) và `rate_limited` (429; cùng tên, cùng nghĩa với `ProviderErrorCode.rate_limited` nhưng là `Problem.code` của SIRes). Mô tả theo HTTP status cập nhật.
+- `components/responses.yaml`: thêm `UnsupportedMediaType` (415) và `TooManyRequests` (429, header `Retry-After` số giây). Như `InternalError`, mọi operation có body (415) và mọi operation của `/api/v1` (429) có thể trả nên không khai ở từng operation.
+- Tương thích ngược với client (chỉ thêm giá trị enum, thêm response). **Thư viện dùng danh mục đóng phải thêm hai mã cùng lúc:** `sires_common.errors.ErrorCode` (test `test_catalogs_match_contract` so đúng thứ tự với enum) và `ERROR_STATUS` của `libs/ts/platform` (`satisfies Record<ErrorCode, number>`, PR #30) — không thêm thì test, build của hai thư viện lỗi sau khi sinh lại type.
+- Ticket cập nhật mục 2.3: PID-00039 (khung rate limit), PID-00136 (rate limit đầy đủ).
+- `dist/openapi.bundled.yaml` phải dựng lại (`npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml`) trước khi merge: type công khai của `@sires/contracts` sinh từ file này.
+
+### Metadata nhập từ BibTeX, RIS, PO chốt 18/11/2026
 
 Parser BibTeX, RIS của library (PID-00024, H1) trả `ReferenceMetadata`, nhưng mục nhập tay có thể không có URL, DOI hay mã định danh trong khi `identifiers.sourceId`, `identifiers.url` đang bắt buộc với mọi nguồn.
 
