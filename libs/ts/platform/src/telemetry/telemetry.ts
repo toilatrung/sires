@@ -13,7 +13,8 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchSpanProcessor, type SpanExporter, type SpanProcessor, TracerProvider } from '@opentelemetry/sdk-trace';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { requestIdFor } from '../logging/request-id';
+import { REDACTED } from '../logging/redact';
+import { requestIdFor, withoutQuery } from '../logging/request-id';
 
 // OpenTelemetry for HTTP (architecture 11.4, NFR-OBS-004): one server span per incoming request, W3C traceparent
 // in and out, export over OTLP/HTTP when an endpoint is configured. The span carries the request id that the
@@ -113,7 +114,9 @@ function enableHttpInstrumentation(provider: TracerProvider): HttpInstrumentatio
   }
   httpInstrumentation = new HttpInstrumentation({
     requestHook: (span: Span, request) => {
-      if (isIncoming(request)) span.setAttribute(REQUEST_ID_ATTRIBUTE, requestIdFor(request));
+      if (!isIncoming(request)) return;
+      span.setAttribute(REQUEST_ID_ATTRIBUTE, requestIdFor(request));
+      scrubQueryAttributes(span);
     },
   });
   registerInstrumentations({ tracerProvider: provider, instrumentations: [httpInstrumentation] });
@@ -123,6 +126,20 @@ function enableHttpInstrumentation(provider: TracerProvider): HttpInstrumentatio
   load('node:http');
   load('node:https');
   return httpInstrumentation;
+}
+
+/**
+ * Spans carry metadata only (NFR-OBS-002): the query string of an incoming request may hold short secrets (OIDC
+ * `code`, `state`, a `token`) that redaction by shape cannot recognise. The instrumentation sets URL attributes
+ * before `requestHook` runs, so they are overwritten here: `url.query` masked, full URLs and targets cut at `?`.
+ */
+function scrubQueryAttributes(span: Span): void {
+  const attributes = (span as Span & { attributes?: Record<string, unknown> }).attributes ?? {};
+  if (attributes['url.query'] !== undefined) span.setAttribute('url.query', REDACTED);
+  for (const key of ['url.full', 'http.url', 'http.target']) {
+    const value = attributes[key];
+    if (typeof value === 'string') span.setAttribute(key, withoutQuery(value) ?? value);
+  }
 }
 
 function isIncoming(request: unknown): request is IncomingMessage {

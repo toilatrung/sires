@@ -3,13 +3,14 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import { randomBytes } from 'node:crypto';
-import { Controller, Get, Logger, Module } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Module, Post } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { SpanKind } from '@opentelemetry/api';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { InMemorySpanExporter, type ReadableSpan, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createServiceApp, type ServiceAppOptions } from '../bootstrap';
+import { setLogContext } from '../logging/context';
 import { uuidv7 } from '../tenancy/uuid';
 import { currentTelemetry, exporterFromEnv, REQUEST_ID_ATTRIBUTE } from './telemetry';
 
@@ -21,6 +22,14 @@ class PingController {
   ping(): { ok: true } {
     this.logger.log('xử lý ping');
     return { ok: true };
+  }
+
+  /** Route with a JSON body: Fastify reads the body before the handler, after middleware ran (QC G1). */
+  @Post('notes')
+  note(@Body() body: { accountId: string; projectId: string }): { tagged: boolean } {
+    const tagged = setLogContext({ accountId: body.accountId, projectId: body.projectId });
+    this.logger.log('ghi note');
+    return { tagged };
   }
 }
 
@@ -95,6 +104,49 @@ describe('OpenTelemetry cho HTTP', () => {
       expect(log.trace_id).toBe(span.spanContext().traceId);
       expect(log.service).toBe('sample');
     }
+  });
+
+  it('POST có body giữ log context và mã tương quan (PID-00001-AC06, QC G1)', async () => {
+    const exporter = new InMemorySpanExporter();
+    const started = await startApp({ telemetry: { spanProcessor: new SimpleSpanProcessor({ exporter }) } });
+    app = started.app;
+    const accountId = uuidv7();
+    const projectId = uuidv7();
+
+    const response = await fetch(`${started.url}/ping/notes`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ accountId, projectId, text: 'x'.repeat(64 * 1024) }),
+    });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ tagged: true });
+
+    const span = await waitFor(() => exporter.getFinishedSpans().find((item) => item.kind === SpanKind.SERVER));
+    const log = await waitFor(() => started.logs().find((item) => item.msg === 'ghi note'));
+    expect(log).toMatchObject({
+      request_id: span.attributes[REQUEST_ID_ATTRIBUTE],
+      trace_id: span.spanContext().traceId,
+      project_id: projectId,
+    });
+    expect(log.account_hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(started.logs())).not.toContain(accountId);
+  });
+
+  it('không ghi query string vào log và span (NFR-OBS-002, QC G2)', async () => {
+    const exporter = new InMemorySpanExporter();
+    const started = await startApp({ telemetry: { spanProcessor: new SimpleSpanProcessor({ exporter }) } });
+    app = started.app;
+
+    const response = await fetch(`${started.url}/ping?code=abc123&token=xyz789&state=s1`);
+    expect(response.status).toBe(200);
+
+    const span = await waitFor(() => exporter.getFinishedSpans().find((item) => item.kind === SpanKind.SERVER));
+    const log = await waitFor(() => started.logs().find((item) => item.msg === 'request completed'));
+    expect(log.req).toEqual({ method: 'GET', url: '/ping' });
+    const recorded = JSON.stringify({ logs: started.logs(), attributes: span.attributes, name: span.name });
+    for (const value of ['abc123', 'xyz789', 'code=', 'token=']) expect(recorded).not.toContain(value);
+    expect(Object.values(span.attributes)).toContain('/ping');
+    if (span.attributes['url.query'] !== undefined) expect(span.attributes['url.query']).toBe('[REDACTED]');
   });
 
   it('dùng lại x-request-id dạng UUID và traceparent của bên gọi', async () => {

@@ -26,3 +26,13 @@ export function requestIdFor(req: RequestLike): string {
   holder.id = id;
   return id;
 }
+
+/**
+ * Path of a request target without its query string (NFR-OBS-002: logs and spans carry metadata only). Query values
+ * such as the OIDC `code`, `state` or a `token` are too short to be caught by the entropy rule, so they are dropped.
+ */
+export function withoutQuery(target: string | undefined): string | undefined {
+  if (target === undefined) return undefined;
+  const cut = target.search(/[?#]/);
+  return cut === -1 ? target : target.slice(0, cut);
+}

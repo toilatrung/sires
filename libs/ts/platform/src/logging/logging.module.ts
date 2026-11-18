@@ -15,7 +15,7 @@ import { LoggerModule } from 'nestjs-pino';
 import type { ServiceManifest } from '../manifest';
 import { runWithLogContext } from './context';
 import { createLogger, type LoggerOptions } from './logger';
-import { requestIdFor } from './request-id';
+import { requestIdFor, withoutQuery } from './request-id';
 
 /** Opens one log context per HTTP request, so `setLogContext` in a handler only tags that request's logs. */
 export class LogContextMiddleware implements NestMiddleware {
@@ -28,7 +28,7 @@ export class LogContextMiddleware implements NestMiddleware {
 export class LoggingModule implements NestModule {
   /**
    * nestjs-pino over {@link createLogger}: one `request completed` line per request with method, url, status and
-   * time only (no headers, no body), `request_id` on every line logged while handling the request.
+   * time only (no headers, no body, no query string), `request_id` on every line logged while handling the request.
    */
   static forService(manifest: ServiceManifest, options: Omit<LoggerOptions, 'service'> = {}): DynamicModule {
     const logger = createLogger({ ...options, service: manifest.name });
@@ -42,7 +42,7 @@ export class LoggingModule implements NestModule {
             customAttributeKeys: { reqId: 'request_id' },
             quietReqLogger: true,
             serializers: {
-              req: (req: { method?: string; url?: string }) => ({ method: req.method, url: req.url }),
+              req: (req: { method?: string; url?: string }) => ({ method: req.method, url: withoutQuery(req.url) }),
               res: (res: { statusCode?: number }) => ({ statusCode: res.statusCode }),
             },
           },
