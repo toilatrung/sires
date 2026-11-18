@@ -19,6 +19,9 @@ dependencies = [
   "aio-pika>=9.4",
   "pyjwt[crypto]>=2.9",
   "cryptography>=43",
+  "httpx>=0.27",
+  "attrs>=25.3",
+  "python-dateutil>=2.9",
 ]
 
 [project.optional-dependencies]
@@ -44,3 +47,24 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sires_common"]
+
+[tool.hatch.build]
+artifacts = ["src/sires_common/generated/**"]
+
+# Generated clients are checked by import/operation coverage tests, not handwritten-code style rules.
+[tool.ruff]
+extend = "../../../pyproject.toml"
+extend-exclude = ["src/sires_common/generated"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+exclude = ["src/sires_common/generated/"]
+
+[[tool.mypy.overrides]]
+module = "sires_common.generated.*"
+follow_imports = "skip"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
