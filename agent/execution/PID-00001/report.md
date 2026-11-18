@@ -1,10 +1,10 @@
 # PID-00001 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — Lần 3 theo qc-report.md (G1, G2, G4, G5)
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-core-tenancy-logging` (đã commit, đã push) · **PR:** [#30](https://github.com/toilatrung/sires/pull/30)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 18/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
