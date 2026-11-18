@@ -36,24 +36,48 @@
     ],
     "targets": {
       "generate": {
+        "executor": "nx:noop",
+        "dependsOn": [
+          "generate-ts",
+          "generate-python"
+        ]
+      },
+      "generate-ts": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node libs/ts/contracts/scripts/generate.mjs --ts-only"
+        },
         "cache": true,
         "inputs": [
           "{workspaceRoot}/docs/api-design/**/*.yaml",
           "{projectRoot}/scripts/**/*"
         ],
         "outputs": [
-          "{projectRoot}/src/generated",
+          "{projectRoot}/src/generated"
+        ]
+      },
+      "generate-python": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node libs/ts/contracts/scripts/generate.mjs --python-only"
+        },
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/docs/api-design/**/*.yaml",
+          "{projectRoot}/scripts/**/*"
+        ],
+        "outputs": [
           "{workspaceRoot}/libs/py/sires_common/src/sires_common/generated"
         ]
       },
       "build": {
         "dependsOn": [
-          "generate"
+          "generate-ts"
         ]
       },
       "typecheck": {
         "dependsOn": [
-          "generate"
+          "generate-ts"
         ]
       }
     }

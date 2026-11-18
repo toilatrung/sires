@@ -1,6 +1,6 @@
 # PID-00007 — Self-QC của Dev
 
-**Kết luận:** Đạt — 3/3 AC; không còn CRITICAL/HIGH; giới hạn môi trường và cảnh báo bên dưới.
+**Kết luận:** Đạt — đã sửa G1/HIGH và G2/MEDIUM của QC độc lập Lần 1; 3/3 AC; ba LOW được ghi rõ, chờ PO đánh giá lại.
 
 - **Ticket:** [PID-00007](../../../docs/tickets/issues/PID-00007/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 18/11/2026
@@ -87,6 +87,31 @@ CI run `44261530655` phát hiện I001 trong test_contracts_import.py. Lần ki�
 | `uv run --package sires-common python -m pytest libs/py/sires_common/tests/test_contracts_import.py` | 13/13 đạt |
 
 Tự đối chiếu lại: cấu hình chỉ xác định package nội bộ, giữ rule lint và phạm vi ticket; không sửa docs, không thay mã sinh. G6 (`partial`, MEDIUM) — lint không ổn định trên checkout sạch — đã xử lý bằng known-first-party, có kiểm không cache ở cả hai trạng thái generated. CI remote được theo dõi sau push.
+
+## Lần 3 — 18/11/2026 · Sửa QC độc lập Lần 1
+
+Phản hồi QC nằm ở `qc-report.md` commit `791b2fb` và comment PR #33. Các mã G trong mục này là mã của QC độc lập, khác bảng G của lượt tự kiểm ban đầu. Giữ lịch sử Lần 2 (sửa CI); lượt sửa theo QC được nối tiếp tại đây. Không sửa qc-report.md.
+
+| G của QC | Sửa và bằng chứng | Kết quả tự đối chiếu |
+| --- | --- | --- |
+| G1 — HIGH | `package.json` tách `generate-ts` và `generate-python`, mỗi target có cache/đầu ra riêng; generate dùng nx:noop gom hai target. Build/typecheck chỉ cần generate-ts; sires-common:test chỉ cần generate-python | Đã sửa. Gateway build và contracts typecheck không uv đạt, image Node dựng thật đạt |
+| G2 — MEDIUM | `messages.check.ts` dùng keyof MessagePayloads, giữ kiểm never/unknown/object và ca thiếu attempt. Test thêm message vào spec tạm, generate, rồi compile chính index.ts/messages.check.ts hiện tại bằng TypeScript | Đã sửa. Không cần cập nhật tên message viết tay; test đạt |
+| G3 — LOW | README nêu hai generator chỉ pin gói gốc, dependency bắc cầu chưa khóa và lần chạy mới cần mạng | Còn giới hạn đã công khai; không suy rằng PO đã chấp nhận. PO quyết có khóa toolchain ở lượt sau |
+| G4 — LOW | README và report ghi việc dựng image Python phải generate trước khi đóng gói | Giao PID-00010; không sửa Dockerfile infra trong ticket contracts |
+| G5 — LOW | README và report ghi cần kiểm strict mypy với import thật khi service bắt đầu dùng client | Giao PID-00048/PID-00070; không đổi cấu hình mypy của service khác |
+
+| Lệnh đã chạy | Kết quả thật |
+| --- | --- |
+| WSL: xác nhận command -v uv không tìm thấy, rồi `pnpm nx run @sires/gateway:build --skip-nx-cache --outputStyle=static` | Đạt; chỉ generate-ts cùng các build TS được chạy; không dùng cache để che yêu cầu uv |
+| Cùng PATH không uv: `pnpm nx run @sires/contracts:typecheck --skip-nx-cache --outputStyle=static` | Đạt |
+| `docker build -f infra/docker/node/Dockerfile --build-arg SERVICE=gateway -t sires/pid00007-gateway:qc .` | Đạt trên checkout sạch tạo từ git archive và overlay đúng file sửa; context không chứa node_modules, .venv hoặc generated local. Dùng nguyên Dockerfile Node trên node:22-slim, không thêm uv |
+| `pnpm nx run @sires/contracts:generate --skip-nx-cache --outputStyle=static` | Đạt, chạy hai target ngôn ngữ và target tổng; 9 API nội bộ, 42 message |
+| `node --test libs/ts/contracts/scripts/generate.spec.mjs` | 3/3 đạt trên Windows; ca thêm message compile được messages.check.ts thật |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=3 --outputStyle=static` | Đạt trên 15 project và 2 target phụ thuộc trong WSL; gồm contracts:test, typecheck/lint và sires-common:test |
+| `node scripts/docs/add-license.mjs --check` | Còn 8 file cache local thiếu header như lượt trước; không có file nguồn sửa thiếu license |
+| File sửa qua check-tracks --stdin; git diff --check | Thoát 0; cảnh báo contracts/platform vì sửa đúng phụ thuộc sires-common:test theo QC. Diff sạch, không sửa docs/ hay infra/ |
+
+Tự chạy lại spec-converge-skill ở chế độ Dev: P1/P2, O1–O5, S01/S02 và AC01–AC03 được giữ; G1/G2 đã sửa với bằng chứng trên, không còn CRITICAL/HIGH trong mã hiện tại. QC độc lập cần chạy lại trên commit mới; không đổi kết luận của file QC thay PO.
 
 ---
 

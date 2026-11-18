@@ -5,13 +5,13 @@
 
 ## 1. Luồng đã triển khai
 
-`pnpm nx run @sires/contracts:generate` đọc OpenAPI công khai, 9 OpenAPI nội bộ và 42 message AsyncAPI. Đầu vào chỉ đọc, không sửa `docs/`. CLI có `--ts-only` và `--python-only`; thiếu uv thì phần Python báo lỗi kèm cách chạy TS riêng.
+`pnpm nx run @sires/contracts:generate` gom hai target `generate-ts` và `generate-python`, đọc OpenAPI công khai, 9 OpenAPI nội bộ và 42 message AsyncAPI. Đầu vào chỉ đọc, không sửa `docs/`. Build/typecheck TypeScript chỉ kéo `generate-ts`, không cần uv. CLI có `--ts-only` và `--python-only`; thiếu uv thì phần Python báo lỗi kèm cách chạy TS riêng.
 
 1. `generate()` kiểm uv khi cần Python, tạo staging riêng dưới `.nx/contracts/`, đọc AsyncAPI bằng resolver của toolchain openapi-typescript. Payload mỗi message được chiếu sang schema OpenAPI có tên ổn định, external reference được bundle trước khi sinh.
 2. TypeScript: openapi-typescript sinh API công khai, API nội bộ và payload AsyncAPI. `generated/index.ts` xuất namespace API và từng message; `src/index.ts` vốn đã re-export index sinh. `MessagePayloads` ánh xạ tên message tới payload, mỗi message còn có alias PascalCase hậu tố `Message`.
 3. Python: datamodel-code-generator sinh `messages.py` dùng Pydantic v2; openapi-python-client sinh 9 package client, chuẩn hóa dấu gạch ngang thành gạch dưới. Không sinh client cho schemas.yaml, responses.yaml hay API công khai. Client generator chạy `--fail-on-warning`.
-4. Bộ sinh thêm header giấy phép vào các file Python và ghi manifest client/model. Chỉ sau khi cả hai ngôn ngữ sinh thành công, `publish()` đổi thư mục đích; lỗi publish khôi phục các bản cũ. Staging luôn được dọn trong finally.
-5. Nx cache cả hai thư mục generated; `sires-common:test` phụ thuộc `@sires/contracts:generate`. `.gitignore` bỏ qua cả hai đầu ra. Phụ thuộc runtime client khai báo tại sires-common; Hatch artifacts đưa mã sinh vào wheel dù mã không commit. Ruff/mypy bỏ qua mã sinh, test import kiểm toàn bộ module và đủ operationId.
+4. Bộ sinh thêm header giấy phép vào các file Python và ghi manifest client/model. Mỗi lần gọi bộ sinh chỉ publish khi các đầu ra được yêu cầu đã sinh thành công; lỗi publish khôi phục bản cũ. Hai target Nx có staging và đầu ra riêng; CLI gọi trực tiếp không có cờ vẫn sinh và publish cả hai cùng một lượt. Staging luôn được dọn trong finally.
+5. Nx cache riêng từng thư mục generated; `sires-common:test` phụ thuộc `@sires/contracts:generate-python`. Target generate tổng dùng `nx:noop` và phụ thuộc hai target ngôn ngữ, không sinh lại lần thứ ba. `.gitignore` bỏ qua cả hai đầu ra. Phụ thuộc runtime client khai báo tại sires-common; Hatch artifacts đưa mã sinh vào wheel dù mã không commit. Ruff/mypy bỏ qua mã sinh, test import kiểm toàn bộ module và đủ operationId.
 
 ## 2. Hàm, thuật toán, class ảnh hưởng cao
 
@@ -35,7 +35,7 @@
 - Pin openapi-python-client 0.28.0 dùng httpx hiện có, datamodel-code-generator 0.97.0 dùng Pydantic v2; uv tool chạy công cụ trong môi trường riêng. Formatter builtin tránh phụ thuộc ruff bên ngoài môi trường công cụ.
 - Mỗi client package nằm ngay dưới `sires_common.generated`, model message nằm ở `messages.py`; manifest phục vụ kiểm inventory.
 - Test dùng bản sao spec trong thư mục tạm để kiểm thêm message và spec sai, không sửa `docs/` thật.
-- `messages.check.ts` kiểm inventory đủ 42 message, loại payload không phải object/never/unknown và bắt lỗi thiếu attempt bằng TypeScript.
+- `messages.check.ts` duyệt `keyof MessagePayloads` từ hợp đồng sinh, loại payload không phải object/never/unknown và bắt lỗi thiếu attempt bằng TypeScript. Không có danh sách tên message viết tay; test thêm một message trong spec tạm rồi compile chính messages.check.ts hiện tại.
 - `test_contracts_import.py` import mọi module, đối chiếu đủ 55 operationId và chạy import từ thư mục agent-core/knowledge; kiểm thiếu từng trường bắt buộc và giá trị attempt ngoài biên.
 - Ruff isort khai báo `sires_common` là known-first-party để phân loại import ổn định cả khi generated chưa tồn tại trên checkout sạch; không phụ thuộc cache Ruff hoặc thứ tự chạy generate/lint.
 - Phần thêm vào sires-common, gitignore, lock và Nx thuộc đầu ra/cấu hình cần thiết của ticket dùng chung; không thay mã nghiệp vụ service khác. uv.lock sinh bằng `uv add`, không sửa tay.

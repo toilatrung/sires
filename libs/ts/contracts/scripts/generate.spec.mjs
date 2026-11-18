@@ -9,6 +9,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import ts from 'typescript';
 import { generate } from './generate.mjs';
 
 function fixture(t) {
@@ -21,6 +22,14 @@ function fixture(t) {
   fs.writeFileSync(path.join(specRoot, 'internal/test.yaml'), JSON.stringify(api));
   const events = { asyncapi: '3.0.0', info: api.info, components: { messages: {
     first: { payload: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } } },
+    agentRunRequested: { payload: {
+      type: 'object', required: ['agentRunId', 'workflowId', 'stepId', 'accountId', 'agent', 'attempt'],
+      properties: {
+        agentRunId: { type: 'string' }, workflowId: { type: 'string' },
+        stepId: { type: 'string' }, accountId: { type: 'string' },
+        agent: { type: 'string', enum: ['orchestrator'] }, attempt: { type: 'integer' },
+      },
+    } },
   } } };
   fs.writeFileSync(path.join(specRoot, 'events/asyncapi.yaml'), JSON.stringify(events));
   return { workspace, specRoot, mode: 'ts', events };
@@ -35,6 +44,17 @@ test('AC01: adding a message produces an exported payload type after regeneratio
   const output = fs.readFileSync(path.join(options.workspace, 'libs/ts/contracts/src/generated/messages.ts'), 'utf8');
   assert.match(output, /export type SecondMessage/);
   assert.match(output, /count\?: number/);
+  const src = path.join(options.workspace, 'libs/ts/contracts/src');
+  for (const file of ['index.ts', 'messages.check.ts']) {
+    fs.copyFileSync(fileURLToPath(new URL(`../src/${file}`, import.meta.url)), path.join(src, file));
+  }
+  const program = ts.createProgram([path.join(src, 'messages.check.ts')], {
+    noEmit: true, strict: true, skipLibCheck: true, types: [],
+    target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext,
+  });
+  assert.deepEqual(ts.getPreEmitDiagnostics(program).map((diagnostic) =>
+    ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')), [],
+  'the actual messages.check.ts must still compile after adding a message to the contract');
 });
 
 test('EC01: invalid spec preserves the entire previous output and reports the source file', async (t) => {

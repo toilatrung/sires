@@ -4,24 +4,10 @@
 
 import type { AgentRunRequestedMessage, MessagePayloads } from './index';
 
-// An explicit inventory ensures every message participates in typechecking.
-type MessageNames =
-  | 'accountCreated' | 'accountDeletionRequested' | 'providerConnectionChanged'
-  | 'providerConnectionIssueReported' | 'embeddingModelChanged' | 'projectLifecycleChanged'
-  | 'projectPurgeDue' | 'messagePosted' | 'researchContextVersioned' | 'pendingActionChanged'
-  | 'notificationCreated' | 'planGenerationRequested' | 'planVersionStatusChanged' | 'taskActivated'
-  | 'taskActivationCancelled' | 'taskStatusChanged' | 'workflowCreated' | 'workflowStatusChanged'
-  | 'agentRunStatusChanged' | 'promptStatusChanged' | 'deliberationStarted' | 'deliberationRoundClosed'
-  | 'deliberationEntryAdded' | 'deliberationEntryFinalized' | 'deliberationEntryRetracted'
-  | 'deliberationStatusChanged' | 'contextSnapshotOutdated' | 'referenceStatusChanged'
-  | 'referenceMetadataUpdated' | 'referenceDeleted' | 'projectReferenceChanged'
-  | 'referenceIndexingStatusChanged' | 'usageRecorded' | 'researchObjectStatusChanged'
-  | 'manuscriptObjectStatusChanged' | 'auditRecorded' | 'dataPurged' | 'agentRunRequested'
-  | 'indexRequested' | 'sandboxJobRequested' | 'sandboxJobCompleted' | 'chatDelta';
+// Follow the generated contract so new messages need no handwritten inventory update.
+type MessageNames = keyof MessagePayloads;
 
 type Assert<T extends true> = T;
-export type EveryMessagePresent = Assert<MessageNames extends keyof MessagePayloads ? true : false>;
-export type NoMessageUnchecked = Assert<keyof MessagePayloads extends MessageNames ? true : false>;
 type InvalidPayloads = {
   [K in MessageNames]: [MessagePayloads[K]] extends [never] ? K
     : unknown extends MessagePayloads[K] ? K
