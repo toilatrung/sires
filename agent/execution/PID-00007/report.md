@@ -1,6 +1,6 @@
 # PID-00007 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — sửa QC độc lập G1, G2
 
 - **Ticket:** [PID-00007](../../../docs/tickets/issues/PID-00007/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
 - **Nhánh:** `contracts/asyncapi-python-generation` (mã đã commit/push: `dc90548`, ký SSH) · **PR:** [#33](https://github.com/toilatrung/sires/pull/33)
