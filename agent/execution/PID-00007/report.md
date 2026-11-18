@@ -1,9 +1,9 @@
 # PID-00007 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — sửa QC độc lập G1, G2
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00007](../../../docs/tickets/issues/PID-00007/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
-- **Nhánh:** `contracts/asyncapi-python-generation` (mã đã commit/push: `dc90548`, ký SSH) · **PR:** [#33](https://github.com/toilatrung/sires/pull/33)
+- **Nhánh:** `contracts/asyncapi-python-generation` (mã sửa QC: `9bca2ff`, ký SSH) · **PR:** [#33](https://github.com/toilatrung/sires/pull/33)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -28,7 +28,7 @@
 - WSL Ubuntu 24.04: affected lint/typecheck/test/build đạt trên 15 project. Kiểm cuối contracts + sires-common đạt, gồm 3 test generator và 79 test Python (13 test mới); sires-common:test chạy lại sau cấu hình testpaths đạt 79/79, chỉ còn 2 cảnh báo deprecation của dependency.
 - Wheel build đạt, có manifest/mã sinh, không có pyc; môi trường isolated import được 570 module. Runtime agent-core và knowledge không có dependency dev đều import được client/model. Nx cache khôi phục được cả hai thư mục generated.
 - Windows: generate trực tiếp đạt sau `pnpm nx reset`; lần affected trước đó lỗi EPERM được ghi nguyên kết quả trong self-qc.md. Nền tảng kiểm đầy đủ theo hồ sơ là WSL.
-- Dev đã tự chạy spec-converge-skill, không còn CRITICAL/HIGH; chưa có QC độc lập của PO.
+- QC độc lập Lần 1 (`qc-report.md`, commit `791b2fb`) có G1/HIGH và G2/MEDIUM; đã sửa ở Lần 3 bên dưới. Dev tự đối chiếu lại không còn CRITICAL/HIGH; chờ PO QC lại, không sửa kết luận độc lập thay PO.
 
 ## 4. Việc còn lại
 
@@ -53,6 +53,15 @@ Không có.
 - Sửa `libs/py/sires_common/pyproject.toml`: khai báo `tool.ruff.lint.isort.known-first-party = ["sires_common"]`, không đổi rule I001 hay thứ tự thực thi để né lỗi.
 - Kiểm sau sửa: `ruff check . --no-cache` đạt cả khi chưa có và đã có generated; `pnpm nx run sires-common:lint --skip-nx-cache` đạt; 13/13 test hợp đồng Python đạt.
 - Đẩy bản sửa lên cùng PR #33 và theo dõi lại CI. Không thay hợp đồng hoặc chức năng sinh mã.
+
+## Lần 3 — 18/11/2026 · Sửa QC độc lập Lần 1
+
+- Yêu cầu: comment của PO trên PR #33 và qc-report.md commit `791b2fb`. Lần 2 của báo cáo đã dùng cho sửa CI; lượt sửa QC được ghi nối tiếp ở đây, không ghi đè lịch sử.
+- G1/HIGH: tách target `generate-ts` và `generate-python`, cache/đầu ra riêng. `generate` gom hai target; build/typecheck TS chỉ phụ thuộc generate-ts. `sires-common:test` chỉ phụ thuộc generate-python. Không cài uv vào image Node hoặc sửa Dockerfile ngoài luồng.
+- G2/MEDIUM: bỏ danh sách 42 tên message viết tay, dùng `keyof MessagePayloads`; giữ kiểm payload object/never/unknown và mẫu agent.run. Test thêm message mới trong bản sao spec rồi compile chính messages.check.ts hiện tại đạt mà không cần sửa mã theo tên mới.
+- Kiểm thật: gateway build và contracts typecheck đạt khi uv hoàn toàn không có trên PATH, tắt Nx cache; Docker build nguyên image Node của gateway trên checkout sạch đạt. Generate tổng đạt (hai target); affected lint/typecheck/test/build đạt trên 15 project và 2 target phụ thuộc trong WSL; 3/3 test generator đạt.
+- G3/LOW: README ghi giới hạn chỉ pin generator, dependency bắc cầu chưa khóa, máy mới cần PyPI; PO quyết việc khóa toolchain. G4/LOW: đề xuất PID-00010 sinh Python trước khi đóng gói image. G5/LOW: đề xuất PID-00048/PID-00070 kiểm strict mypy với import client thật khi bắt đầu dùng. Không tự sửa infra hay cấu hình service khác.
+- Kết quả chi tiết và tự đối chiếu DEC-58 ở self-qc.md Lần 3. Đã giữ nguyên qc-report.md; đẩy cùng PR #33 để CI và PO kiểm lại.
 
 ---
 
