@@ -1,9 +1,9 @@
 # PID-00001 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — S02 bị chặn (cần hợp đồng): PID-00001-AC04, PID-00001-AC07, NFR-OBS-005-AC01 và EC03 chưa có test; S01, S03, S04 đạt
+**Kết luận:** Đạt (Lần 2 — 18/11/2026; Lần 1 “Chưa đạt — S02 bị chặn” giữ ở dưới)
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 11/11/2026
+- **Cập nhật:** 18/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -71,6 +71,65 @@ Môi trường: Windows 11, Node 24.21.0, pnpm 10.34.9, Docker Engine 29.8.2 tro
 - [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`. — ngoài `libs/ts/platform/` và `agent/execution/PID-00001/` chỉ có `pnpm-workspace.yaml`, `pnpm-lock.yaml` để thêm phụ thuộc.
 - [ ] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5. — Chưa trọn: không có yêu cầu thêm trong phiên, nhưng 428 khi thiếu `If-Match` và việc chuyển `bootstrapService` sang Fastify không ghi trong spec PID-00001 (làm theo hợp đồng, kiến trúc 2.3, PID-00002 H4); nêu ở `report.md` mục 6 để PO xác nhận.
 - [x] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC.
+
+## Lần 2 — 18/11/2026
+
+Người chạy: Dev T1xNTH (agent Claude Code). Môi trường: Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker Engine trên máy (Testcontainers chạy thật). Worktree của nhánh `platform/ts-core-tenancy-logging` sau khi merge `origin/main` (`de98a18`, merge đã stage, chưa commit).
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/platform` | Đạt. Test: 8 file, 38/38 đạt (gồm `errors.spec.ts` 3, `validation.spec.ts` 3, `logger.spec.ts` 7, test PostgreSQL thật của S01) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | Đạt, 19 project. Lần đầu các task Python lỗi “Failed to spawn: ruff/mypy”, “starlette.testclient requires httpx2” vì worktree chưa có `.venv`; chạy `uv sync --all-packages` rồi chạy lại: đạt (Nx ghi 11 task “flaky” do lần lỗi đó) |
+| Kiểm trên bản build `tsc` thật: dựng `dist/`, biên dịch một controller có DTO `createZodDto` bằng `tsc --emitDecoratorMetadata`, gọi HTTP (file tạm, đã xóa) | `{ name: 'ok' }` → 201; `{ name: 'a', extra: 1 }` → 400 `application/problem+json`, `validation_failed`, `errors` = `name/too_small`, `extra/unrecognized_field`, có `correlationId` |
+| Kiểm test bắt được lỗi: tạm bỏ mã theo status trong `toProblem`; tạm bỏ nhánh `required` trong ánh xạ Zod; chạy `src/errors`, khôi phục file (so khớp byte) | Lần 1: 1 test lỗi; lần 2: 2 test lỗi; khôi phục xong 6/6 đạt |
+| `node scripts/docs/add-license.mjs --check` | File của ticket đủ ghi chú; chỉ báo 7 file cache Python bị `.gitignore` bỏ qua (không thuộc ticket) |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID) |
+| `check-tracks.mjs --stdin` trên file khác `origin/main` (cộng file chưa theo dõi) | `infra, platform, repo` — cảnh báo 2 luồng: `infra` chỉ là `pnpm-workspace.yaml` (catalog: `zod`, `nestjs-zod`, `drizzle-kit` theo S02 và D1) và `pnpm-lock.yaml`; như Lần 1 |
+| `check-ui.mjs`, preview | Không có màn hình |
+
+### 2. AC → test (thay các dòng “Chưa có test” của Lần 1)
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00001-AC04 | `libs/ts/platform/src/errors/errors.spec.ts › problem json và lỗi không khai báo (PID-00001-AC04)` | Đạt — lỗi khai báo trả đúng `code`, status, `title`, `detail`, `currentState`, `correlationId`; lỗi không khai báo (có key và đường dẫn file trong thông điệp) trả `500 internal_error`, thân không có stack, thông điệp hay key; log có nguyên nhân, key đã che |
+| PID-00001-AC07 | `libs/ts/platform/src/errors/validation.spec.ts › lỗi schema Zod (PID-00001-AC07)` | Đạt — 400 problem+json `validation_failed`, `errors = [{ field: researchQuestion, code: required }]` |
+| NFR-OBS-005-AC01 | `libs/ts/platform/src/errors/errors.spec.ts › mã lỗi thuộc danh mục (NFR-OBS-005-AC01)` | Đạt (phần thư viện) — 8 tình huống (409, 412, 428, 404 có và không có route, 500, JSON sai 400, body quá lớn 413): mọi `code` thuộc `ErrorCode`, status khớp danh mục, `type` đúng, có `correlationId` |
+| Các AC khác | Như Lần 1 | Đạt lại trong 38/38 test |
+
+### 3. Edge case
+
+| # | Trạng thái | Cách giải quyết (test) hoặc lưu ý |
+| --- | --- | --- |
+| EC03 | Đã giải quyết | `validation.spec.ts › nhiều trường sai (EC03)`: 7 trường sai (độ dài, kiểu, định dạng uuid, enum, phần tử mảng, trường lồng, trường thừa) trả đủ 7 lỗi, mọi mã thuộc `FieldErrorCode` |
+| Mới — status không có mã trong danh mục (415…) | Cần lưu ý | Trả `500 internal_error` (`errors.spec.ts › lỗi HTTP không có mã trong danh mục thành internal_error`); PO quyết có thêm mã vào hợp đồng không (report.md Lần 2) |
+| Mới — Zod bỏ qua lỗi phần tử khi mảng sai độ dài | Cần lưu ý | Hành vi của Zod 4: mảng vượt `max` chỉ báo `too_big` ở mảng, không báo phần tử; client sửa xong mảng mới thấy lỗi phần tử |
+| Mới — vitest không sinh metadata decorator | Cần lưu ý | Test HTTP của service dùng DTO Zod phải khai `design:paramtypes` hoặc chạy trên bản build; bản build thật đã kiểm |
+| Mới — JWT, key Google ≥ 30 | Đã giải quyết | `logger.spec.ts › che JWT và key Google dài hơn 35 ký tự` (kèm kiểm không che nhầm `eyJsonParser`, `AIzaTest`) |
+
+### 4. Tự kiểm (cập nhật)
+
+- [x] Mọi slice đã chạy lệnh ở mục “Kiểm”, kết quả ở trên.
+- [x] Không import mã, không đọc database của service khác; dùng đúng hợp đồng trong `docs/api-design` (`ErrorCode`, `FieldErrorCode`, `Problem`, response chung).
+- [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`. File sinh `libs/ts/contracts/src/generated/` chỉ sinh lại bằng lệnh, không commit.
+- [ ] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md`. — Các yêu cầu thêm YC1–YC4 ghi ở report.md Lần 2 (trong phạm vi, chờ PO xác nhận); 428 và `If-Match: *` của Lần 1 vẫn chờ PO ghi vào hồ sơ.
+- [x] Không còn mã gỡ lỗi; test mới có tên theo AC, EC.
+- [x] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH.
+
+### 5. Tự đối chiếu (spec-converge-skill, DEC-58)
+
+Chế độ Dev tự QC, 18/11/2026: đối chiếu `acceptance.html`, `scope.html` (P1–P4, EC01–EC05), slice S01–S04, spec mục 3 (O1–O10), 5 (B1–B5), 6, 7 và ghi chú thiết kế (12/11, 18/11) với mã hiện tại; tự chạy lại lệnh ở mục 1. `check-pid.mjs PID-00001 --result`: đạt.
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G1 | unrequested | MEDIUM | 428 khi thiếu `If-Match` và 412 cho `*`, ETag yếu, danh sách: có trong mã, chưa có trong hồ sơ PID-00001 (hợp đồng có `PreconditionRequired`; PID-00002 H4 giao 428 cho PID-00001) | `tenancy/concurrency.ts:32`; report.md Lần 1 mục 6 điểm 1, 2 | Để PO quyết, ghi vào hồ sơ hoặc yêu cầu gỡ |
+| G2 | partial | LOW | Bốn điểm che log I-A–I-D: bản TS theo đề xuất của T1xNTH, PO chưa xác nhận; bản Python (PID-00005) còn khác ở I-A, I-B, I-D | `logging/redact.ts`, `libs/py/sires_common/src/sires_common/telemetry.py:66-75` | Đề xuất cho PO ở report.md Lần 2; phần Python ngoài phạm vi |
+| G3 | partial | LOW | Lỗi HTTP có status ngoài danh mục (415…) thành `500 internal_error` | `errors/problem.filter.ts:59` | Giữ để đạt NFR-OBS-005; PO quyết có thêm mã vào hợp đồng không |
+| G4 | partial | LOW | Test HTTP của pipe khai `design:paramtypes` tay; kiểm trên bản build `tsc` mới làm thủ công, chưa có test tự động | `errors/validation.spec.ts:31` | Ghi ở implement.md mục 3; PID-00006 (service mẫu) có thể thêm test trên bản build |
+| G5 | unrequested | LOW | Bộ lọc và pipe đăng ký toàn cục trong `createServiceApp` (spec chỉ ghi “cấu hình pipe… xuất qua index.ts”) | `bootstrap.ts:72` | Giữ: đúng mục đích ticket (mọi service cùng cách trả lỗi); vẫn xuất qua `index.ts` để service tự dùng |
+
+Không có CRITICAL, HIGH.
 
 ---
 
