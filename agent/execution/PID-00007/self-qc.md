@@ -74,6 +74,20 @@ Kiểm trong WSL Ubuntu 24.04 trên bản sao `/tmp/sires-pid00007-validation`, 
 
 Không có missing/contradicts/unrequested còn mở ở chức năng chính; không có CRITICAL/HIGH còn lại. PO chạy QC độc lập sau khi có PR chứa mã.
 
+## Lần 2 — 18/11/2026 · Đối chiếu lỗi CI
+
+CI run `44261530655` phát hiện I001 trong test_contracts_import.py. Lần kiểm trước có generated sẵn và cache Ruff, nên chưa kiểm đúng trạng thái checkout sạch. Phân loại first-party của import submodule thay đổi theo sự tồn tại của generated. Đây là thiếu sót trong kiểm tra local trước PR.
+
+| Kiểm | Kết quả |
+| --- | --- |
+| Trước sửa: ẩn generated, `ruff check tests/test_contracts_import.py --no-cache --diff` | Tái hiện đúng I001 của CI: import model bị chuyển sang nhóm third-party |
+| Sau khai báo known-first-party: `ruff check . --no-cache`, generated không tồn tại | Đạt |
+| Sau khai báo known-first-party: `ruff check . --no-cache`, generated tồn tại | Đạt |
+| `pnpm nx run sires-common:lint --skip-nx-cache` | Đạt trong WSL |
+| `uv run --package sires-common python -m pytest libs/py/sires_common/tests/test_contracts_import.py` | 13/13 đạt |
+
+Tự đối chiếu lại: cấu hình chỉ xác định package nội bộ, giữ rule lint và phạm vi ticket; không sửa docs, không thay mã sinh. G6 (`partial`, MEDIUM) — lint không ổn định trên checkout sạch — đã xử lý bằng known-first-party, có kiểm không cache ở cả hai trạng thái generated. CI remote được theo dõi sau push.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

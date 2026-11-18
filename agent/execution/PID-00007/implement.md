@@ -37,6 +37,7 @@
 - Test dùng bản sao spec trong thư mục tạm để kiểm thêm message và spec sai, không sửa `docs/` thật.
 - `messages.check.ts` kiểm inventory đủ 42 message, loại payload không phải object/never/unknown và bắt lỗi thiếu attempt bằng TypeScript.
 - `test_contracts_import.py` import mọi module, đối chiếu đủ 55 operationId và chạy import từ thư mục agent-core/knowledge; kiểm thiếu từng trường bắt buộc và giá trị attempt ngoài biên.
+- Ruff isort khai báo `sires_common` là known-first-party để phân loại import ổn định cả khi generated chưa tồn tại trên checkout sạch; không phụ thuộc cache Ruff hoặc thứ tự chạy generate/lint.
 - Phần thêm vào sires-common, gitignore, lock và Nx thuộc đầu ra/cấu hình cần thiết của ticket dùng chung; không thay mã nghiệp vụ service khác. uv.lock sinh bằng `uv add`, không sửa tay.
 
 ---

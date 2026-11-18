@@ -46,6 +46,14 @@ Không có.
 - **Bước tiếp theo:** PO review PR #33, chạy QC độc lập bằng spec-converge-skill PID-00007 và merge.
 - **Tài liệu đi kèm:** Không có.
 
+## Lần 2 — 18/11/2026 · Sửa CI PR #33
+
+- CI run `44261530655` lỗi duy nhất `sires-common:lint`, Ruff I001 ở `tests/test_contracts_import.py`. Khi chưa generate, Ruff phân loại import `sires_common.generated.messages` thành third-party; sau generate thì thành first-party. Cache Ruff ở lần kiểm local che khuất trường hợp thiếu thư mục sinh.
+- Tái hiện bằng cách chuyển thư mục generated sang staging trên bản sao WSL rồi chạy `ruff check --no-cache --diff`; thấy đúng diff import như CI. Khôi phục generated sau kiểm.
+- Sửa `libs/py/sires_common/pyproject.toml`: khai báo `tool.ruff.lint.isort.known-first-party = ["sires_common"]`, không đổi rule I001 hay thứ tự thực thi để né lỗi.
+- Kiểm sau sửa: `ruff check . --no-cache` đạt cả khi chưa có và đã có generated; `pnpm nx run sires-common:lint --skip-nx-cache` đạt; 13/13 test hợp đồng Python đạt.
+- Đẩy bản sửa lên cùng PR #33 và theo dõi lại CI. Không thay hợp đồng hoặc chức năng sinh mã.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
