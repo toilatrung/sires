@@ -29,10 +29,15 @@ const SENSITIVE_FIELDS = new Set([
 /** Field names holding an account id; logged only as `account_hash` (architecture 11, NFR-OBS-001). */
 const ACCOUNT_ID_FIELDS = new Set(['accountid']);
 
-/** Key prefixes of the three providers (Anthropic `sk-ant-`, OpenAI `sk-`/`sk-proj-`, Google `AIza`). */
-const PROVIDER_KEY_PATTERNS: readonly RegExp[] = [
+/**
+ * Secrets recognised by shape, masked whole. Shared with structlog in sires_common (PO 12/11/2026): JWT/JWS compact
+ * tokens (internal service tokens included), then key prefixes of the three providers — Anthropic `sk-ant-`, OpenAI
+ * `sk-`/`sk-proj-`, Google `AIza` followed by 30 or more characters (I-C, see PID-00001 report).
+ */
+const SHAPED_SECRET_PATTERNS: readonly RegExp[] = [
+  /(?<![A-Za-z0-9])eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g,
   /(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{16,}/g,
-  /(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{35}/g,
+  /(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{30,}/g,
 ];
 
 /** Credentials after an HTTP auth scheme, for headers that end up inside a message string. */
@@ -78,10 +83,10 @@ export function looksLikeSecret(candidate: string): boolean {
   );
 }
 
-/** Masks provider keys, credentials after `Bearer`/`Basic` and high-entropy runs inside a string. */
+/** Masks JWTs, provider keys, credentials after `Bearer`/`Basic` and high-entropy runs inside a string. */
 export function redactString(value: string): string {
   let result = value;
-  for (const pattern of PROVIDER_KEY_PATTERNS) result = result.replace(pattern, REDACTED);
+  for (const pattern of SHAPED_SECRET_PATTERNS) result = result.replace(pattern, REDACTED);
   result = result.replace(AUTH_SCHEME_PATTERN, (_match, scheme: string) => `${scheme} ${REDACTED}`);
   return result.replace(ENTROPY_CANDIDATE, (candidate) => (looksLikeSecret(candidate) ? REDACTED : candidate));
 }

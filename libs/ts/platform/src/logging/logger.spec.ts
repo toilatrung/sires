@@ -65,6 +65,17 @@ describe('logger che dữ liệu', () => {
     }
   });
 
+  it('che JWT và key Google dài hơn 35 ký tự', () => {
+    const b64 = (bytes: number) => randomBytes(bytes).toString('base64url');
+    const jwt = `eyJ${b64(12)}.eyJ${b64(30)}.${b64(32)}`;
+    const googleLong = `AIza${b64(40).slice(0, 39)}`;
+    const googleShort = `AIza${b64(30).slice(0, 30)}`;
+    const masked = redactString(`token=${jwt}; keys ${googleLong} ${googleShort}`);
+    expect(masked).toBe(`token=${REDACTED}; keys ${REDACTED} ${REDACTED}`);
+    // A plain word starting with the same letters is not a secret.
+    expect(redactString('eyJsonParser và AIzaTest')).toBe('eyJsonParser và AIzaTest');
+  });
+
   it('quét log bằng chuỗi mẫu không còn giá trị nhạy cảm (NFR-OBS-002-AC01)', () => {
     const secrets = sampleSecrets();
     const accountId = uuidv7();
