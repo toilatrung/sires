@@ -1,6 +1,6 @@
 # PID-00003 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 0 HIGH, 1 MEDIUM (Lần 1, 18/11/2026)
+**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 0 HIGH, 1 MEDIUM (Lần 1, 18/11/2026) PO đã chốt các điểm mở (mục “Quyết định của PO”); Dev làm Lần 2 theo mục đó.
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -79,6 +79,26 @@ Việc 2–5 là LOW, có thể làm cùng lần sửa G1 hoặc để sau theo 
 - Chốt G2 (body 401 có nêu lý do hay không) và G6 (luật `act.agentRunId = agentRunId`) để hai bản cùng hành vi.
 - Guard gắn theo controller (`@UseGuards`); controller nội bộ quên gắn guard sẽ không được bảo vệ. Cân nhắc kiểm ở luồng service (PID-00007, PID-00008 khi sinh x-callers) hoặc một test chung cho route `/internal/*`.
 - Ghi chú x-callers cho token chuyển tiếp (`gateway`, `agent-core` phải có trong x-callers của route nhận token chuyển tiếp — self-qc G3): QC đồng ý, chuyển cho PID-00065, PID-00007, PID-00008.
+
+### Quyết định của PO (18/11/2026)
+
+PO Trịnh Quang Trung chốt trong phiên QC: “G6 giữ, còn lại chốt theo đề xuất của bạn”. Hồ sơ `docs/tickets/issues/PID-00003/` chưa ghi các quyết định này; PO ghi sau (R-01–R-07). Dev làm theo mục này, không chờ hồ sơ.
+
+| Điểm | Quyết định | Ai làm |
+| --- | --- | --- |
+| G1 (MEDIUM) | **Sửa**: token `act.type = agent` có `aud` không phải mảng → `401 invalid_service_token`; sửa test `guard.spec.ts › aud mảng` (token agent `aud = 'planning'` phải bị từ chối) | Dev PID-00003, Lần 2 |
+| G2 | Body 401 **không nêu lý do cụ thể** (như bản Python): `detail` chung; lý do từ chối chỉ ghi ở log mức `warn` (không kèm token) | Dev PID-00003, Lần 2 |
+| G3 | Đặt `title` theo ví dụ hợp đồng: `invalid_service_token` → “Token nội bộ không hợp lệ”, `caller_not_allowed` → “Service không được phép gọi endpoint này” | Dev PID-00003, Lần 2 |
+| G4 | Bọc `JSON.parse` của `SERVICE_AUTH_PRIVATE_KEY` (và `SERVICE_AUTH_PUBLIC_KEYS`): lỗi chỉ nêu tên biến, không chứa giá trị | Dev PID-00003, Lần 2 |
+| G5 | Chỉ đặt một trong `SERVICE_AUTH_PRIVATE_KEY`, `SERVICE_AUTH_PUBLIC_KEYS` → **lỗi khởi động** nêu biến thiếu, không rơi về seed. Giữ tiêu chí chặn seed theo `NODE_ENV === 'production'` | Dev PID-00003, Lần 2 |
+| G6 | **Giữ** luật `act.agentRunId` phải bằng `agentRunId` của token agent (khác → 401), cho **cả TS và Python** | TS: đã có. Python: PID-00005 lần sau |
+| Lệch đồng hồ | **Chung 30 giây** cho mọi bên kiểm token (TS `SERVICE_TOKEN_CLOCK_TOLERANCE_SECONDS = 30` đã có) | Python: PID-00005 lần sau (`TokenVerifier` mặc định 30 s, áp cho `exp` và giới hạn TTL) |
+| Tên biến, định dạng khóa | **Chung tên biến `SERVICE_AUTH_*` của bản TS** cho mọi service: `SERVICE_AUTH_PRIVATE_KEY` (JWK riêng), `SERVICE_AUTH_PUBLIC_KEYS` (JWKS), `SERVICE_AUTH_DEV_SEED` (chỉ cục bộ, test) | Python: PID-00005 lần sau (nạp từ biến môi trường, khóa dev từ seed như TS). PID-00020 (`agent_core.config`, nhánh `agent-core/migration-skeleton`) đổi tên biến `SERVICE_TOKEN_SIGNING_KEY_PEM`, `SERVICE_TOKEN_PUBLIC_KEYS` sang tên trên trước khi QC |
+| Body 401 bản Python | Giữ như hiện tại (đã không nêu lý do) | — |
+| Guard gắn theo controller | Thêm kiểm chung “mọi route `/internal/*` có guard service-auth” khi sinh và kiểm x-callers | PID-00008 (kiểm lệch spec) — PO ghi vào hồ sơ khi làm rõ |
+| x-callers cho token chuyển tiếp | `gateway`, `agent-core` phải có trong x-callers của route nhận token chuyển tiếp (self-qc G3 của Dev) | PID-00065, PID-00007, PID-00008 — PO ghi vào hồ sơ |
+
+Việc của Dev PID-00003 Lần 2: G1 (bắt buộc trước merge), G2–G5; chạy lại lệnh spec mục 6, ghi kết quả thật ở `self-qc.md`, `report.md` Lần 2, đặt `Xong — chờ QC`.
 
 ---
 
