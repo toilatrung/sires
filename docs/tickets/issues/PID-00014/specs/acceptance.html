@@ -1,0 +1,34 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu và test của PID-00014.">
+<title>PID-00014 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>PID-00014 — Tiêu chí nghiệm thu → test</h1>
+<p>Mỗi AC có ít nhất một test. Số liệu lấy từ ticket, ADR-27, DDL và hợp đồng; 12 giờ là giá trị đã chốt (DEC-54, INT-OIDC-003). Chưa có route nghiệp vụ (định tuyến là <a href="../../PID-00039/index.html">PID-00039</a>), nên test gắn một route thử chỉ có trong test sau guard của phiên.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00014-AC01</td><td>Given phiên có <code>idle_expires_at</code> đã qua (không có thao tác người dùng quá 12 giờ), When gọi một route cần phiên, Then <code>401</code> problem+json <code>code = unauthenticated</code> và <code>last_seen_at</code> không đổi; Given phiên không hoạt động dưới 12 giờ, When gửi một lệnh ghi hợp lệ, Then đi tiếp và <code>idle_expires_at</code> = thời điểm lệnh đó + 12 giờ.</td><td><code>apps/gateway/src/session/session.spec.ts › hết hạn sau 12 giờ không hoạt động</code></td><td>S02</td><td>Ticket; ADR-27; DDL; INT-OIDC-003-AC02</td></tr>
+<tr><td>PID-00014-AC02</td><td>Given phiên hợp lệ, When gửi POST, PUT, PATCH hoặc DELETE thiếu <code>X-CSRF-Token</code>, Then <code>403</code> problem+json <code>code = forbidden</code>, handler không chạy và phiên không được gia hạn; có token đúng thì đi tiếp.</td><td><code>apps/gateway/src/session/session.spec.ts › lệnh ghi thiếu CSRF bị từ chối</code></td><td>S03</td><td>Ticket; <code>responses.yaml#/Forbidden</code>; kiến trúc 10.5; H1</td></tr>
+<tr><td>NFR-AUTH-001-AC01</td><td>Phần của gateway ở PH-01: Given không có phiên đăng nhập, When gọi route cần phiên, Then <code>401 unauthenticated</code> và không có dữ liệu trả về. Quét toàn bộ endpoint làm khi có định tuyến (PID-00039).</td><td><code>apps/gateway/src/session/session.spec.ts › không có phiên</code></td><td>S02</td><td>PRD 16</td></tr>
+</tbody></table></div>
+<p>NFR-AUTH-001-AC02 (chuyển tới eTroy OIDC, không có form mật khẩu) ở ngoài phạm vi (N7). Migration (S01), gia hạn bằng <code>GET /auth/session</code> (S04) và hàm tạo phiên (S05) không có AC riêng của ticket; kiểm bằng EC13, EC16 (S01), EC14 (S04), EC15, EC17 và test thuộc tính cookie (S05) theo H1–H5.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00014</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tiêu chí nghiệm thu PID-00014 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

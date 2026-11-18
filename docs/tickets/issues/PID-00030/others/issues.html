@@ -1,0 +1,128 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00030.">
+<title>PID-00030 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00030</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00030</p><h1>PID-00030 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này khi còn vấn đề <strong>chưa chốt</strong>. Lần làm rõ 17/11/2026 chạy theo lô PH-01, PO không trả lời trong phiên; hồ sơ vẫn được lập đủ, mỗi vấn đề là một phiếu <code>I&lt;n&gt;</code> (nhãn cục bộ của hồ sơ).</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00030</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
+<p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
+<p><strong>18/11/2026:</strong> PO chấp nhận phương án đề xuất của phiếu (“Chấp nhận tất cả”, lô PH-01); quyết định chung D2 cụ thể hóa phương án B thành PID-00158. Câu trả lời đã chuyển vào <a href="../index.html#phien-2">mục 5 của trang ticket</a> thành H1; trang này giữ làm biên bản.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Bảng <code>app.state_transition</code> sinh từ khai báo domain (DEC-57, DR-01): khai báo và bộ sinh đặt ở đâu?</td><td>có — S02</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Dòng của bảng <code>app.state_transition</code> phải sinh từ khai báo state machine của module domain (DEC-57, DR-01); với PID migration của <code>manuscript</code>, khai báo và bộ sinh đặt ở đâu?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · Ranh giới luồng · Mâu thuẫn tài liệu</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Ticket ghi “Migration theo DDL”, mà <code>manuscript.sql</code> chèn tám dòng chuyển trạng thái (<code>change_proposal</code>, <code>build</code>, <code>manuscript_file</code>) bằng <code>INSERT</code> viết tay; quyết định PO đã chốt yêu cầu bảng này sinh tự động từ một khai báo duy nhất. Chép tay thì lệch DEC-57; tự viết bộ sinh trong service thì mỗi service một kiểu; chưa có PID nào làm helper chung. Cùng câu hỏi với <a href="../../PID-00024/others/issues.html#i3">PID-00024 I3</a>, <a href="../../PID-00029/others/issues.html#i1">PID-00029 I1</a> và mọi PID migration có state machine.</td></tr>
+<tr><th scope="row">Nguồn</th><td>Database 10.2: “bảng <code>state_transition</code> là bản sinh tự động từ khai báo đó bởi migration, không viết tay (DR-01). Cách hiểu này PO đã chốt 03/11/2026 (DBQ-09, DEC-57).” DR-01 (biện pháp): “Sinh cả hai từ một khai báo (<code>libs/ts/platform</code>); test so khớp trong CI.” DDL <code>manuscript.sql</code>: <code>INSERT INTO app.state_transition … VALUES …</code> viết tay. PID-00001 (platform) không gồm khai báo state machine.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>P3, EC14 và nhánh chấp nhận của EC09; S02</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S02</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Khai báo ngay trong service ở PID này (<code>apps/manuscript/src/</code>), service tự sinh dòng <code>INSERT</code>; test so khai báo với DDL tham chiếu.</td><td>Đúng DEC-57 ngay; không chờ ai. Mỗi service viết bộ sinh riêng, dễ lệch cách làm giữa ba Dev.</td></tr>
+<tr><td>B</td><td>PO lập PID mới cho luồng <code>platform</code>: helper khai báo state machine và sinh SQL trong <code>libs/ts/platform</code> (đúng biện pháp DR-01); S02 của các PID migration phụ thuộc PID đó.</td><td>Một cách làm cho mọi service; domain module sau (PID-00079, PID-00108) dùng lại cùng khai báo. S02 chờ PID mới; S01, S03 không bị chặn.</td></tr>
+<tr><td>C</td><td>Chép dòng <code>INSERT</code> từ DDL vào migration ở PID này; PID domain sau thay bằng dòng sinh từ khai báo qua migration mới.</td><td>Nhanh; lệch DEC-57 một thời gian, phải có migration sửa lại, rủi ro DR-01.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án B — DR-01 đã ghi helper thuộc <code>libs/ts/platform</code>; một helper chung giữ cách làm thống nhất cho mọi service. Hồ sơ hiện lập theo: S01 dựng toàn bộ schema trừ dòng chuyển trạng thái (đủ cho PID-00030-AC01); S02 ghi “chặn bởi I1”.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — khai báo và bộ sinh trong service, ngay ở PID này</label>
+<label><input type="radio" name="I1" value="B"> B — PID platform mới cho helper chung (DR-01)</label>
+<label><input type="radio" name="I1" value="C"> C — chép dòng từ DDL, thay sau</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="ngày/tháng/năm"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> B — PID platform mới cho helper chung (DR-01); PID mới là PID-00158 theo quyết định chung D2 — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → <a href="../index.html#phien-2">H1</a></p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00030</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00030 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

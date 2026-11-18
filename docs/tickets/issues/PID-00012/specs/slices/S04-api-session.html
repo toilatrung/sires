@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00012.">
+<title>S04 — Client API và phiên | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S04 — Client API và phiên</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Shell-frame.html">designs/Shell-frame.html</a> khối 8.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-AUTH-001-AC01 (phần shell)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5; spec 4.7 (phiên hết hạn)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC07, EC08, EC09, EC10, EC11 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Client API (tạo mới, ví dụ <code>apps/web/src/shell/api/</code>) dùng type <code>PublicApi</code> của <code>@sires/contracts</code>: gốc <code>/api/v1</code>, cookie cùng origin; lệnh ghi gửi <code>X-CSRF-Token</code> lấy từ <code>GET /auth/session</code> (EC09); hàm tạo và giữ <code>Idempotency-Key</code> theo thao tác để gửi lại dùng cùng khóa (EC10); trả <code>ETag</code> và nhận <code>If-Match</code> cho lệnh sửa.</li>
+<li>Lỗi: phản hồi <code>application/problem+json</code> thành lỗi có type theo <code>Problem</code> (<code>code</code> thuộc <code>ErrorCode</code>, <code>errors[].code</code> thuộc <code>FieldErrorCode</code>, <code>correlationId</code>); phản hồi không phải problem+json hay lỗi mạng thành lỗi chung nêu lỗi mạng hoặc mã HTTP, không giữ body thô (EC11).</li>
+<li>Phiên: khi tải ứng dụng gọi <code>GET /auth/session</code>; 401 → chuyển <code>/sign-in</code> kèm đường dẫn quay lại tương đối (EC07); có phiên → <code>GET /me</code> để lấy <code>preferences.uiLanguage</code> (EC02), chữ viết tắt avatar cho TopBar, và giữ <code>ETag</code> của lần đọc này cho S08 (H2). Không gọi <code>GET /auth/session</code> theo chu kỳ (an toàn với mọi phương án của I10).</li>
+<li>Mọi 401 <code>unauthenticated</code> khi đang dùng → một luồng “phiên hết hạn”: chuyển SignIn trạng thái session-expired, kèm đường dẫn quay lại (EC08). Tên tham số truyền sang SignIn ghi ở README của shell để <a href="../../../PID-00036/index.html">PID-00036</a> dùng. Luồng này gọi kho nháp của S09 lưu nội dung các ô đã đăng ký trước khi chuyển (H7). Đánh dấu hoạt động của người dùng: S13 (H6, chờ I10).</li>
+<li>Test dùng stub <code>fetch</code> trong thư mục test của shell (quy tắc 1.4.4); không gọi gateway thật.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt; <code>pnpm nx run @sires/web:typecheck</code> → đạt</li>
+<li><code>apps/web/src/shell/session.spec.ts › chưa đăng nhập</code> (UX-AUTH-001-AC01 phần shell; EC07); <code>› ngôn ngữ theo Preferences</code> (EC02); <code>› phiên hết hạn</code> (EC08)</li>
+<li><code>apps/web/src/shell/api.spec.ts › csrf</code> (EC09); <code>› idempotency</code> (EC10); <code>› lỗi không phải problem</code> (EC11); <code>› problem có type</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Khu vực khác gọi được API có type qua client của shell; chưa đăng nhập và phiên hết hạn đều về SignIn đúng trạng thái</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -51,7 +51,7 @@
 <tr><td><code>libs/py/sires_common/src/sires_common/__init__.py</code></td><td>Thư viện Python hiện có</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<p>Không dùng hợp đồng hay bảng riêng.</p>
+<p>Không dùng bảng riêng. Hợp đồng: danh mục mã lỗi <code>ErrorCode</code> (<code>Problem.code</code>) và <code>FieldErrorCode</code> (<code>Problem.errors[].code</code>) ở <code>docs/api-design/components/schemas/common.yaml</code>; response lỗi chung ở <code>components/responses.yaml</code>, gồm <code>InternalError</code> (500 <code>internal_error</code>) và <code>MethodNotAllowed</code> (405). Bổ sung theo yêu cầu của S02, PO chốt 11/11/2026.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
 <tr><td>Không có điều kiện riêng</td><td>Làm được ngay</td><td>Không</td></tr>
@@ -86,12 +86,12 @@ pnpm local:up</pre>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Tenancy: helper chạy hàm trong giao dịch có <code>SET LOCAL app.account_id</code>, dùng Drizzle + node-postgres</li>
 <li>Sinh UUIDv7; helper kiểm <code>rowVersion</code> theo <code>If-Match</code>, lệch trả <code>412</code></li>
-<li>Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ <code>components/responses.yaml</code>; kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>), lỗi schema trả <code>validation_failed</code> kèm <code>errors[].field</code>, <code>errors[].code</code></li>
+<li>Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ danh mục <code>ErrorCode</code> (<code>components/schemas/common.yaml</code>); kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>), lỗi schema trả <code>validation_failed</code> kèm <code>errors[].field</code>, <code>errors[].code</code> theo <code>FieldErrorCode</code></li>
 <li>Logger pino: che dữ liệu nhạy cảm, băm <code>accountId</code>, gắn mã tương quan</li>
 <li>Khởi tạo OpenTelemetry cho HTTP, xuất qua <code>index.ts</code></li>
 <li>Truy cập database bằng Drizzle ORM + node-postgres; giao dịch đặt <code>SET LOCAL app.account_id</code> (kiến trúc 2.3; database 11)</li>
 <li>Thiếu <code>app.account_id</code> thì RLS trả 0 dòng, an toàn mặc định (database 11)</li>
-<li>Lỗi theo RFC 9457 với <code>code</code> ổn định (<code>components/responses.yaml</code>, NFR-OBS-005)</li>
+<li>Lỗi theo RFC 9457 với <code>code</code> ổn định (<code>ErrorCode</code> trong <code>components/schemas/common.yaml</code>, <code>components/responses.yaml</code>, NFR-OBS-005)</li>
 <li>Log bằng pino, che chuỗi giống key (tiền tố ba provider, chuỗi entropy cao) và trường <code>api_key</code>, <code>authorization</code>; <code>accountId</code> trong log là giá trị băm có khóa (kiến trúc 10.3; NFR-OBS-001, NFR-OBS-002)</li>
 <li>Kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>) (H2; kiến trúc 2.3)</li>
 <li>Thư viện chỉ đổi tương thích ngược (quy tắc 1.4.5)</li></ul>
@@ -112,7 +112,7 @@ pnpm local:up</pre>
 <ol>
 <li id="b1"><strong>B1</strong> Tenancy: helper chạy hàm trong giao dịch có <code>SET LOCAL app.account_id</code>, dùng Drizzle + node-postgres — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 <li id="b2"><strong>B2</strong> Sinh UUIDv7; helper kiểm <code>rowVersion</code> theo <code>If-Match</code>, lệch trả <code>412</code> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
-<li id="b3"><strong>B3</strong> Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ <code>components/responses.yaml</code>; kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>), lỗi schema trả <code>validation_failed</code> kèm <code>errors[].field</code>, <code>errors[].code</code> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
+<li id="b3"><strong>B3</strong> Bộ lọc lỗi <code>application/problem+json</code> cho adapter Fastify, mã lấy từ danh mục <code>ErrorCode</code> (<code>components/schemas/common.yaml</code>); kiểm tra đầu vào bằng Zod (<code>nestjs-zod</code>), lỗi schema trả <code>validation_failed</code> kèm <code>errors[].field</code>, <code>errors[].code</code> theo <code>FieldErrorCode</code> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 <li id="b4"><strong>B4</strong> Logger pino: che dữ liệu nhạy cảm, băm <code>accountId</code>, gắn mã tương quan — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 <li id="b5"><strong>B5</strong> Khởi tạo OpenTelemetry cho HTTP, xuất qua <code>index.ts</code> — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx run @sires/platform:test</li>
 </ol>

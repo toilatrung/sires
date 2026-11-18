@@ -38,7 +38,7 @@ FIG-301 là kế hoạch tĩnh: ô trên sơ đồ không đổi khi ticket xong
 
 | Mức | Gồm | Xong khi |
 | --- | --- | --- |
-| Ticket | Một `PID-NNNNN` | `report.md` báo `Xong — chờ QC`, QC độc lập đạt, PO nghiệm thu |
+| Ticket | Một `PID-NNNNN` | Dev tự QC đạt (`self-qc.md`, gồm tự chạy spec-converge) và `report.md` báo `Xong — chờ QC`; PO review PR, QC độc lập đạt, PO merge và nghiệm thu (DEC-58) |
 | Ô trên FIG-301 | Mọi ticket cùng luồng và cùng `PH-NN` | Mọi ticket của ô đã xong hoặc đã hủy. Ô Duy trì có thể không có ticket |
 | Giai đoạn | Mọi ô trong cột `PH-NN` | Cổng ra đạt và PO xác nhận; kết quả ghi vào nhật ký [../docs_context.md](../docs_context.md) |
 

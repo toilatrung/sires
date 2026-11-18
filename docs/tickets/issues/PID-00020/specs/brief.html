@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00020.">
+<title>PID-00020 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00020</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00020</p><h1>PID-00020 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Lô làm rõ 17/11/2026 không có câu trả lời <code>H</code> của PO. Ngày 18/11/2026 PO chấp nhận mọi đề xuất của <a href="../others/issues.html">phiếu I1–I3</a> (H1–H3) và sáu quyết định chung D1–D6; D1, D3, D4 đổi PID này (H4–H6, <a href="../index.html#phien-2">trang ticket mục 5</a>). Các quyết định đã gộp vào quy tắc dưới đây. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Dựng database <code>sires_agent_core</code> bằng một revision Alembic sao cho schema giống hệt DDL tham chiếu (<code>00-common.sql</code> rồi <code>agent-core.sql</code>: semaphore theo Provider Connection, cache danh mục model), kiểm hành vi DDL trên database dựng từ revision, cho Job migration (PID-00010) một lệnh chạy được trong image, và chuẩn bị khung của service để các PID agent, Model Gateway, registry, Context Assembler làm song song: một thư mục cho mỗi agent trong <code>agents/</code> và <code>prompts/</code>, một module cấu hình với hàm dựng verifier, issuer token nội bộ từ <code>sires_common</code> (chưa gắn route). Không có API, sự kiện hay lời gọi model. Tác nhân: System (Job migration khi deploy) và Dev của các PID sau.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Migration theo service, chỉ tiến; Alembic cho agent-core — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; spec 4.7 (downgrade theo mở rộng → di chuyển → thu hẹp, không xóa dữ liệu)</li>
+<li>Quy ước migration (D1, H4): revision đầu là SQL chép từ <code>agent-core.sql</code> cùng đối tượng chung của <code>00-common.sql</code>, chạy bằng Alembic trên SQLAlchemy async và asyncpg; mỗi service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> — kiến trúc 6.10 (PO chốt 18/11/2026)</li>
+<li>Job migration (PID-00010) chạy <code>migration.command</code> trước Deployment trong image của service; lệnh là <code>alembic upgrade head</code>, nên Alembic là phụ thuộc chạy của app — H3; <a href="../../PID-00010/index.html">PID-00010</a> S02</li>
+<li>Test hành vi DDL thuộc PID migration (D3, H2, H5): bằng vai trò <code>_app</code> trên database dựng từ revision, kiểm RLS, CHECK <code>provider_slot_holder_ck</code> và quyền trên <code>outbox</code>, <code>inbox</code>, <code>job_lock</code> như DDL ghi — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets PH-01</a></li>
+<li>DDL tham chiếu là chuẩn; migration sinh ra cùng schema; CI dựng một database từ migration, một từ <code>ddl/</code>, so bằng công cụ diff schema — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>; <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a></li>
+<li>Revision tạo cả đối tượng của <code>00-common.sql</code> (extension, schema <code>app</code>, <code>replica</code>, hàm, cấu hình tìm kiếm, bảng <code>outbox</code>, <code>inbox</code>, <code>idempotency_key</code>, <code>job_lock</code>, <code>state_transition</code>) — đầu file <code>docs/database/ddl/00-common.sql</code>; <code>docs/database/README.md</code>. Agent-core không có state machine, không có dòng <code>state_transition</code>, không có bản sao <code>replica.*</code> — <code>agent-core.sql</code></li>
+<li>Agent-core chỉ giữ dữ liệu kỹ thuật (<code>provider_slot</code>, <code>model_catalog_cache</code>), không có entity nghiệp vụ; mất dữ liệu này không ảnh hưởng nghiệp vụ — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-1">kiến trúc 6.1</a>; DDL</li>
+<li>Bốn vai trò <code>sires_agent_core_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> do hạ tầng tạo; revision không tạo vai trò; <code>app.grant_standard('agent_core', …)</code> cần vai trò có sẵn — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>; DDL. Ở môi trường cục bộ, compose tạo vai trò (PID-00159, D4, H6); tới khi có, test tạo vai trò bằng fixture của <code>sires_common</code></li>
+<li>Driver PostgreSQL của <code>sires_common</code> là asyncpg; <code>psycopg</code> bị Smart App Control chặn DLL <code>libpq</code> trên máy PO, nên Alembic nên chạy qua asyncpg hoặc phải kiểm trước trên máy đó — PID-00005 <code>report.md</code> đề xuất 5</li>
+<li>Module con: <code>gateway</code> (Model Gateway ba provider), <code>context</code> (Context Assembler), <code>registry</code>, <code>tools</code>, <code>agents/&lt;agent&gt;</code> và <code>prompts/&lt;agent&gt;</code> cho từng agent: orchestrator, discovery, reference_processing, evidence_retrieval, synthesis, writing, verification, diagram, analysis; mỗi agent một thư mục để làm song song — <a href="../../../sections/01-tracks-and-boundaries.html#s-1-6">tickets 1.6</a></li>
+<li>Thay đổi prompt, định nghĩa agent thuộc NFR-EVAL-004; gọi model chỉ qua Model Gateway; agent không thực hiện được APR — spec 4.6. PID này chỉ tạo thư mục rỗng, không thêm prompt hay định nghĩa agent</li>
+<li>Token nội bộ: mỗi service một cặp khóa ES256, <code>kid</code> = tên service, khóa riêng trong KMS (test: khóa trong bộ nhớ); bộ khóa công khai nạp từ cấu hình hoặc secret khi khởi động, <code>kid</code> lạ thì từ chối, không tự tải khóa từ mạng — PID-00005 H2 và <a href="../../PID-00005/designs/notes.html">ghi chú thiết kế</a></li>
+<li>Cấu hình, service token của agent-core ở PID này (H1): module cấu hình đọc biến môi trường (DSN cho <code>_app</code>, <code>_system</code>, migrator; RabbitMQ; khóa ký ES256 <code>kid</code> = <code>agent-core</code> từ PEM khi cục bộ và test, KMS ở staging; bộ khóa công khai) và hàm dựng <code>TokenVerifier</code>, <code>ServiceAuth</code>, <code>ServiceTokenIssuer</code> của <code>sires_common</code>; chưa gắn vào route (PID-00048 gắn guard theo <code>x-callers</code>), không thêm hành vi khởi động, <code>/health</code> giữ nguyên; một chỗ cấu hình cho PID-00048, PID-00070, PID-00072</li>
+<li>Không import mã hay đọc database của service khác — quy tắc 1.4</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/00-common.sql</code>, <code>docs/database/ddl/agent-core.sql</code> — có (DEC-57); chưa chạy trên PostgreSQL 16 thật (database 12.4)</li>
+<li><code>apps/agent-core/migrations/</code> — có, rỗng</li>
+<li><code>apps/agent-core/src/agent_core/</code> — có <code>main.py</code> (FastAPI, chỉ <code>/health</code>) và gói rỗng <code>gateway</code>, <code>context</code>, <code>registry</code>, <code>tools</code>, <code>agents</code>, <code>prompts</code>; chưa có thư mục theo từng agent, chưa có module cấu hình</li>
+<li><code>apps/agent-core/pyproject.toml</code> — phụ thuộc <code>fastapi</code>, <code>uvicorn</code>, <code>sires-common</code>; chưa có <code>alembic</code>, <code>sqlalchemy</code></li>
+<li><code>apps/agent-core/project.json</code> — target <code>dev</code>, <code>lint</code>, <code>typecheck</code>, <code>test</code> chạy <code>uv run …</code></li>
+<li><code>libs/py/sires_common</code> (PID-00005, merge 17/11/2026) — có <code>tenancy</code>, <code>service_auth</code>, <code>testing.fixtures</code> (<code>create_service_database</code> tạo database <code>sires_&lt;service&gt;_&lt;ngẫu nhiên&gt;</code> và ba vai trò)</li>
+<li><code>infra/local/postgres/init/01-databases.sql</code> — tạo database <code>sires_agent_core</code>, không tạo vai trò (PID-00159 sửa, D4); <code>infra/local/.env.example</code> có <code>POSTGRES_URL</code>, <code>RABBITMQ_URL</code></li>
+<li><code>apps/agent-core/deploy/values.yaml</code> — có (<code>service</code>, <code>image</code>, <code>port</code>, <code>replicas</code>), chưa có khóa <code>migration</code>; <code>infra/helm/sires-service</code> chưa có Job migration (PID-00010 chưa làm)</li>
+<li><code>infra/docker/python/Dockerfile</code> — chép cả <code>apps/agent-core</code> vào <code>/repo</code>, <code>uv sync --frozen --no-dev --package …</code> (chỉ phụ thuộc chạy), chạy bằng <code>uv run --no-sync</code></li>
+<li>Hợp đồng — <code>internal/agent-core.yaml</code> có <code>listAgentDefinitions</code> (<code>x-callers</code>: orchestration, identity, gateway) và <code>testProviderConnection</code> (identity); endpoint thuộc PID-00048, không làm ở đây</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/agent-core/migrations/</code>: revision Alembic theo DDL → S01</li>
+<li>O2 <code>apps/agent-core/src/agent_core/</code>: thư mục theo từng agent (S02); module cấu hình và hàm dựng token (S03)</li>
+<li>O3 <code>apps/agent-core/tests/</code>: <code>test_migrations.py</code> → S01, S04; <code>test_skeleton.py</code> → S02; <code>test_config.py</code> → S03; <code>test_ddl_behaviour.py</code> → S05</li>
+<li>O4 <code>apps/agent-core/README.md</code>: entity sở hữu, bản sao chỉ đọc, cấu hình, chạy migration → S06</li>
+<li>O5 <code>apps/agent-core/deploy/values.yaml</code>: <code>migration.enabled</code>, <code>migration.command</code> → S04</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>provider_slot</code> = semaphore theo Provider Connection (kiến trúc 5.12, TR-10); <code>model_catalog_cache</code> = cache danh mục model (INT-PROVIDER-002)</li>
+<li>Tên agent trong mã: <code>reference_processing</code>, <code>evidence_retrieval</code> = Reference Processing Agent, Evidence Retrieval Agent (PRD 1.5; <code>app.is_actor_ref</code>)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00020</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00020 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

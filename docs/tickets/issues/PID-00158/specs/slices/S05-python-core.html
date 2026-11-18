@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00158.">
+<title>S05 — Python: khai báo, kiểm chuyển, sinh SQL, so dòng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S05 — Python: khai báo, kiểm chuyển, sinh SQL, so dòng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC01, PID-00158-AC02, PID-00158-AC03, PID-00158-AC05 (phần Python, không database)</td></tr>
+<tr><th scope="row">Output spec</th><td>O9 (phần không database), O10 (<code>test_state_machine.py</code>), O6 (input test của <code>sires-common</code>)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC10, EC13–EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02 (<code>golden-machines.json</code>, <code>golden.txt</code> đã có); S01 làm mẫu hành vi</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo <code>libs/py/sires_common/src/sires_common/state_machine.py</code> (tạo mới): <code>Transition</code> (dataclass frozen: <code>from_state</code>, <code>to_state</code>, <code>code</code>, <code>actors</code> là tuple), <code>StateMachine</code> (frozen), <code>define_state_machine(machine, states, transitions)</code> nhận <code>Transition</code> hay dict cùng khóa với JSON (<code>from</code>, <code>to</code>, <code>code</code>, <code>actors</code>); cùng các ca kiểm như TS (<a href="../index.html#s-4-7">spec 4.7</a>), ném <code>StateMachineDefinitionError</code> (con của <code>ValueError</code>). Kiểu có chú thích đủ cho <code>mypy</code>.</li>
+<li><code>find_transition</code>, <code>assert_transition</code>, <code>InvalidTransitionError</code> (<code>code = "invalid_transition"</code>, <code>machine</code>, <code>current_state</code>, <code>target_state</code>); không import <code>fastapi</code> hay <code>sires_common.errors</code> trong module này.</li>
+<li><code>state_transition_rows</code>, <code>state_transition_statements</code>, <code>render_state_transition_sql</code>, <code>compare_state_transition_rows</code> theo <a href="../index.html#s-4-1">spec 4.1</a>: cùng thứ tự (so chuỗi mặc định của Python là theo code point), cùng chuỗi từng byte với TS.</li>
+<li>Thêm vào <code>libs/py/sires_common/project.json</code> (có sẵn), target <code>test</code>: <code>inputs</code> gồm <code>default</code>, <code>{workspaceRoot}/libs/ts/platform/src/state-machine/testdata/golden-machines.json</code>, <code>{workspaceRoot}/libs/ts/platform/src/state-machine/testdata/golden.txt</code>, <code>{workspaceRoot}/docs/database/ddl/*.sql</code>.</li>
+<li>Viết <code>libs/py/sires_common/tests/test_state_machine.py</code> (tạo mới): <code>test_every_ordered_pair</code>, <code>test_invalid_declarations</code>, <code>test_machine_is_immutable</code>, <code>test_render_is_deterministic</code>, <code>test_matches_shared_golden</code> (đọc hai file của TS bằng đường dẫn tính từ gốc repo, bỏ <code>\r</code> — EC15), <code>test_compare_rows</code>, <code>test_render_rejects_bad_lists</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run sires-common:test</code>, <code>sires-common:typecheck</code>, <code>sires-common:lint</code> → đạt</li>
+<li>Test: <code>test_state_machine.py › test_every_ordered_pair</code> (PID-00158-AC01; EC01)</li>
+<li>Test: <code>› test_invalid_declarations</code> (PID-00158-AC02; EC02–EC07), <code>› test_machine_is_immutable</code> (EC14)</li>
+<li>Test: <code>› test_render_is_deterministic</code>, <code>› test_matches_shared_golden</code> (PID-00158-AC03; EC08, EC15)</li>
+<li>Test: <code>› test_compare_rows</code> (PID-00158-AC05; EC13), <code>› test_render_rejects_bad_lists</code> (EC09, EC10)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Bản Python cho cùng kết quả kiểm và cùng lỗi như TS; SQL sinh từ <code>golden-machines.json</code> bằng đúng <code>golden.txt</code>; test chạy không cần Docker.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

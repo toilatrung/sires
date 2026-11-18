@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00017.">
+<title>S01 — Migration theo DDL và test so khớp schema | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00017</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00017</p><h1>S01 — Migration theo DDL và test so khớp schema</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00017-AC01 (phần schema)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC05 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><strong>PID-00001</strong> (<code>drizzle-kit</code>, <code>drizzle-orm</code> trong pnpm catalog — H6; chưa merge, ghi nhận không chặn Sẵn sàng). Không cần PID-00003. <code>pg</code>, <code>@sires/testing</code> đã có. Cách viết migration đã chốt (H1).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo H1: thêm <code>drizzle-kit</code> (dev) và <code>drizzle-orm</code> vào <code>apps/workspace/package.json</code> bằng <code>catalog:</code>; cấu hình drizzle-kit (tạo mới, ví dụ <code>apps/workspace/drizzle.config.ts</code>, dialect PostgreSQL, thư mục ra <code>migrations/</code>); tạo migration đầu rỗng bằng <code>drizzle-kit generate --custom</code> trong <code>apps/workspace/migrations/</code> (có sẵn thư mục, xoá <code>.gitkeep</code>; giữ journal của drizzle-kit), rồi chép vào đó <code>docs/database/ddl/00-common.sql</code> rồi <code>docs/database/ddl/workspace.sql</code>, <strong>bỏ câu INSERT INTO app.state_transition</strong> (S03 nạp). Không đổi schema; không tạo vai trò; không viết schema TypeScript của Drizzle cho bảng; giữ license ở đầu file SQL (<code>node scripts/docs/add-license.mjs</code>).</li>
+<li>Viết hàm chạy migration dùng chung (tạo mới, ví dụ <code>apps/workspace/src/db/migrate.ts</code>) bằng <code>migrate()</code> của drizzle-orm (node-postgres): nhận chuỗi kết nối của người chạy migration, áp mọi migration chưa chạy trong giao dịch, trả lỗi rõ khi thất bại (EC02).</li>
+<li>Viết fixture test (tạo mới, thư mục test của luồng): <code>startPostgres({ extensions: [] })</code> của <code>@sires/testing</code> (EC03); tạo bốn vai trò <code>sires_workspace_owner</code>, <code>_app</code>, <code>_system</code> (BYPASSRLS), <code>_purge</code> (BYPASSRLS) như database 3.2; tạo hai database trong cùng container: một chạy migration, một chạy hai file DDL.</li>
+<li>Viết <code>apps/workspace/src/db/migration.spec.ts</code> (tạo mới): so schema hai database bằng cách không cần công cụ ngoài luồng (ví dụ <code>pg_dump --schema-only</code> chạy trong container rồi chuẩn hóa, hoặc truy vấn catalog), loại sổ migration của drizzle-orm (EC04); chạy migration lần hai không đổi (EC01); database thiếu vai trò thì migration dừng, không để schema dở (EC02). Cách so ghi ở <code>implement.md</code>.</li>
+<li>Khai báo <code>{workspaceRoot}/docs/database/ddl/00-common.sql</code> và <code>workspace.sql</code> là input của target <code>test</code> trong phần <code>nx</code> của <code>apps/workspace/package.json</code> (EC05).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/workspace:test</code> → đạt</li>
+<li>Test: <code>apps/workspace/src/db/migration.spec.ts › schema khớp DDL tham chiếu</code> (PID-00017-AC01; EC03, EC04)</li>
+<li>Test: <code>› chạy lần hai không đổi</code> (EC01); <code>› thiếu vai trò thì dừng</code> (EC02)</li>
+<li>Thao tác tay (EC05): sửa tạm một dòng trong <code>workspace.sql</code>, chạy lại lệnh test, thấy test chạy lại (không cache) và đỏ; hoàn tác.</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Migration dựng database khớp DDL tham chiếu (trừ dòng state_transition và sổ migration); test chạy trong <code>nx affected</code> của CI</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00017</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00017 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

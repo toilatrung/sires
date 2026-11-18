@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Điều thiết kế đã chốt khi làm rõ ticket PID-00023.">
+<title>PID-00023 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>PID-00023 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#quy-tac-chuyen">Quy tắc chuyển trạng thái</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Lần làm rõ 17/11/2026 (lô PH-01) không hỏi PO trong phiên; ngày 18/11/2026 PO chấp nhận mọi đề xuất, các điều dưới đây chốt theo H1–H6 ở <a href="../index.html#phien-2">trang ticket mục 5</a> (quy ước chung ở <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>).</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li><strong>Migration (H1):</strong> custom migration SQL của drizzle-kit trong <code>apps/planning/migrations/</code> (tạo bằng <code>drizzle-kit generate --custom</code>, giữ journal), chạy bằng <code>migrate()</code> của drizzle-orm trong mã service; chỉ tiến. Migration đầu = <code>00-common.sql</code> rồi <code>planning.sql</code> (gồm <code>replica.project_state</code>), bỏ câu <code>INSERT INTO app.state_transition</code>. Không có schema TypeScript của Drizzle trong PID này. Sổ migration của drizzle-orm nằm ngoài phép so schema.</li>
+<li><strong>State machine (H2, H4):</strong> <code>task</code> (28 cặp, mã T-NN) và <code>plan_version</code> (4 cặp, Proposed → Approved mang mã APR-01) khai báo dạng dữ liệu trong <code>apps/planning/src/task-state/</code> theo kiểu của PID-00158; dòng <code>app.state_transition</code> sinh bằng helper của PID-00158 vào một custom migration sau migration đầu. PID-00049, PID-00074, PID-00075, PID-00091 dùng lại khai báo, không khai báo lại.</li>
+<li><strong>Vai trò (H5):</strong> migration không tạo vai trò; test tạo bốn vai trò trong fixture; compose cục bộ tạo vai trò ở PID-00159.</li>
+<li><strong>Triển khai (H6):</strong> lệnh migrate riêng của service chạy từ bản build; <code>deploy/values.yaml</code> có <code>migration.enabled: true</code>, <code>migration.command</code>.</li></ul>
+<h2 id="quy-tac-chuyen">Quy tắc chuyển trạng thái</h2>
+<ul><li><strong>Guard và chọn đích (H3):</strong> mỗi guard ở cột Guard của PRD 9.8 là một hàm thuần trong <code>apps/planning/src/task-state/</code>, nhận dữ kiện do bên gọi đưa vào, trả đạt hoặc tên guard không đạt; không đọc database, không gọi service khác. Chọn đích T-10, T-19 theo dữ kiện RC-01–RC-08 (đạt → Ready, không → Blocked). T-17 có hàm kiểm riêng theo dữ kiện “Task từng thuộc baseline”. Bên gọi (PID-00074, PID-00075, PID-00091; PID-00049 với T-17) tính dữ kiện và ánh xạ guard không đạt sang <code>ErrorCode</code>.</li></ul>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<p>Không có.</p>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có (ticket không có màn hình).</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00023</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

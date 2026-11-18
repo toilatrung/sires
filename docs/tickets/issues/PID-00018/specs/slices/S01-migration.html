@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00018.">
+<title>S01 — Migration theo DDL và test so khớp schema | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00018</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00018</p><h1>S01 — Migration theo DDL và test so khớp schema</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00018-AC01 (nền: database dựng từ migration, schema khớp DDL)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC05 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td><strong>PID-00001</strong> (<code>drizzle-kit</code>, <code>drizzle-orm</code> trong pnpm catalog — H4; chưa merge, ghi nhận không chặn Sẵn sàng). <code>pg</code>, <code>@sires/testing</code> đã có. Cách viết migration đã chốt (H1).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo H1: thêm <code>drizzle-kit</code> (dev) và <code>drizzle-orm</code> vào <code>apps/audit/package.json</code> bằng <code>catalog:</code>; cấu hình drizzle-kit (tạo mới, ví dụ <code>apps/audit/drizzle.config.ts</code>, dialect PostgreSQL, thư mục ra <code>migrations/</code>); tạo migration đầu rỗng bằng <code>drizzle-kit generate --custom</code> trong <code>apps/audit/migrations/</code> (xoá <code>.gitkeep</code>; giữ journal của drizzle-kit), rồi chép vào đó <code>docs/database/ddl/00-common.sql</code> rồi <code>docs/database/ddl/audit.sql</code>; không đổi schema, không tạo vai trò, không viết schema TypeScript của Drizzle cho bảng; giữ license ở đầu file.</li>
+<li>Viết hàm chạy migration dùng chung (tạo mới, ví dụ <code>apps/audit/src/db/migrate.ts</code>) bằng <code>migrate()</code> của drizzle-orm (node-postgres): áp mọi migration chưa chạy trong giao dịch, lỗi rõ khi thất bại.</li>
+<li>Fixture test: <code>startPostgres({ extensions: [] })</code>; tạo bốn vai trò <code>sires_audit_owner</code>, <code>_app</code>, <code>_system</code> (BYPASSRLS), <code>_purge</code> (BYPASSRLS); hai database trong một container: một từ migration, một từ hai file DDL.</li>
+<li>Viết <code>apps/audit/src/db/migration.spec.ts</code>: so schema hai database (không cần công cụ ngoài luồng; loại sổ migration của drizzle-orm — EC04), chạy lần hai không đổi (EC01), thiếu vai trò thì dừng (EC02). Ghi cách so ở <code>implement.md</code>.</li>
+<li>Khai báo hai file DDL là input của target <code>test</code> trong phần <code>nx</code> của <code>apps/audit/package.json</code> (EC05).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/audit:test</code> → đạt</li>
+<li>Test: <code>apps/audit/src/db/migration.spec.ts › schema khớp DDL tham chiếu</code> (EC03, EC04); <code>› chạy lần hai không đổi</code> (EC01); <code>› thiếu vai trò thì dừng</code> (EC02)</li>
+<li>Thao tác tay (EC05): sửa thử một dòng <code>audit.sql</code>, chạy lại lệnh test, thấy đỏ; hoàn tác</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Migration dựng database khớp DDL tham chiếu; test chạy trong <code>nx affected</code> của CI</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00018</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00018 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

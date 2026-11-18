@@ -182,17 +182,52 @@ Page:
     nextCursor:
       type: [string, 'null']
 
+ErrorCode:
+  type: string
+  description: |
+    Danh mục mã lỗi của `Problem.code` (NFR-OBS-005, PO chốt 11/11/2026). Danh mục đóng: service chỉ trả mã có ở đây,
+    thêm mã mới phải sửa hợp đồng. Theo HTTP status:
+    400 `validation_failed`; 401 `unauthenticated`, `invalid_service_token`; 403 `forbidden`, `caller_not_allowed`;
+    404 `not_found`; 405 `method_not_allowed`; 409 `invalid_transition`, `action_not_allowed_in_state`,
+    `project_archived`, `active_workflow_exists`, `readiness_failed`, `open_plan_version_exists`,
+    `base_revision_mismatch`, `citation_check_failed`, `connection_in_use`, `duplicate_name`, `restore_window_expired`,
+    `stale_agent_run`; 412 `precondition_failed`; 413 `payload_too_large`; 422 `idempotency_key_reused`,
+    `dependency_cycle`, `reference_not_trusted`, `pdf_without_text_layer`, `model_not_available`, `instance_required`,
+    `instance_not_allowed`, `schema_invalid` và các mã của Deliberation Board (`draft_reference`,
+    `change_reason_required`, `entry_immutable`, `synthesis_incomplete`, `problem_type_not_allowed`,
+    `analysis_agent_not_configured`, `deliberation_not_confirmed`, `deliberation_mismatch`); 428
+    `precondition_required`; 500 `internal_error` (lỗi không khai báo, không lộ stack trace); 503 `service_unavailable`.
+    Lỗi của provider dùng `ProviderErrorCode` (8.6) trong payload riêng, không đặt vào `Problem.code`.
+  enum: [validation_failed, unauthenticated, invalid_service_token, forbidden, caller_not_allowed, not_found,
+    method_not_allowed, invalid_transition, action_not_allowed_in_state, project_archived, active_workflow_exists,
+    readiness_failed, open_plan_version_exists, base_revision_mismatch, citation_check_failed, connection_in_use,
+    duplicate_name, restore_window_expired, stale_agent_run, precondition_failed, payload_too_large,
+    idempotency_key_reused, dependency_cycle, reference_not_trusted, pdf_without_text_layer, model_not_available,
+    instance_required, instance_not_allowed, schema_invalid, draft_reference, change_reason_required, entry_immutable,
+    synthesis_incomplete, problem_type_not_allowed, analysis_agent_not_configured, deliberation_not_confirmed,
+    deliberation_mismatch, precondition_required, internal_error, service_unavailable]
+
+FieldErrorCode:
+  type: string
+  description: |
+    Mã lỗi từng trường trong `Problem.errors[]` khi `code = validation_failed` (PO chốt 11/11/2026). Thư viện nền ánh xạ
+    lỗi của bộ kiểm schema (Zod ở TS, pydantic ở Python) sang bộ mã này, không trả nguyên mã của thư viện.
+    `required` — thiếu trường hoặc header bắt buộc; `invalid_type` — sai kiểu; `invalid_format` — sai định dạng (uuid,
+    date-time, uri, email, pattern); `too_small` — dưới giới hạn (minLength, minimum, minItems); `too_big` — vượt giới
+    hạn (maxLength, maximum, maxItems); `invalid_value` — không thuộc enum hoặc giá trị cho phép; `unrecognized_field` —
+    trường không có trong schema.
+  enum: [required, invalid_type, invalid_format, too_small, too_big, invalid_value, unrecognized_field]
+
 Problem:
   type: object
-  description: RFC 9457 Problem Details với `code` ổn định để client dịch thông báo (UX-I18N).
+  description: |
+    RFC 9457 Problem Details với `code` ổn định để client dịch thông báo (UX-I18N). `code` thuộc danh mục `ErrorCode`.
   required: [type, title, status, code]
   properties:
     type: { type: string, format: uri }
     title: { type: string }
     status: { type: integer }
-    code:
-      type: string
-      examples: [validation_failed, invalid_transition, action_not_allowed_in_state, readiness_failed]
+    code: { $ref: '#/ErrorCode' }
     detail: { type: string }
     instance: { type: string }
     currentState:
@@ -204,7 +239,7 @@ Problem:
         type: object
         properties:
           field: { type: string }
-          code: { type: string }
+          code: { $ref: '#/FieldErrorCode' }
           message: { type: string }
     suggestedAction:
       type: string

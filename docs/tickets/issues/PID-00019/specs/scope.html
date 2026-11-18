@@ -1,0 +1,66 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00019.">
+<title>PID-00019 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00019</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00019</p><h1>PID-00019 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Migration đầu trong <code>apps/orchestration/migrations/</code> là custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm, tạo đủ đối tượng của <code>00-common.sql</code> và <code>orchestration.sql</code>: 12 bảng, <code>replica.project_state</code>, bảng nền tảng, hàm, trigger, index, RLS, quyền của bốn vai trò; <strong>trừ</strong> dòng dữ liệu của <code>app.state_transition</code> (S02)</td><td>Ticket Gồm; DDL; DBD-02; H4 (D1)</td><td>S01</td></tr>
+<tr><td>P2</td><td>Test PID-00019-AC01 phần cấu trúc: dựng database từ migration và database từ DDL trên PostgreSQL 16 + pgvector (Testcontainers), so schema</td><td>Ticket AC01; database 12.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>Khai báo bảy state machine dạng dữ liệu (43 cặp từ → đến có trong DDL, không điều kiện chuyển) trong mã domain của orchestration, nơi khai báo duy nhất; dòng <code>app.state_transition</code> sinh từ khai báo bằng helper TypeScript của PID-00158, không viết tay, không tự viết bộ sinh; test đối chiếu</td><td>DEC-57; DBQ-09; database 10.2; H1, H5 (D2)</td><td>S02</td></tr>
+<tr><td>P4</td><td>Khung năm module con (<code>engine</code>, <code>prompts</code>, <code>context-store</code>, <code>deliberation</code>, <code>usage</code>) nạp vào <code>AppModule</code>; interface của engine xuất qua một điểm vào; luật lint chặn module khác import file nội bộ của engine</td><td>Ticket Gồm, AC02; tickets 1.6</td><td>S03</td></tr>
+<tr><td>P5</td><td>README: entity sở hữu (12 bảng), bản sao chỉ đọc <code>replica.project_state</code>, vị trí khai báo state machine, cách chạy migration cục bộ, trong test và trong image</td><td>Ticket Gồm; PH-01</td><td>S06</td></tr>
+<tr><td>P6</td><td>Test hành vi DDL bằng vai trò <code>_app</code> trên database dựng từ migration (PID-00019-AC03); trước là N3</td><td>H2 (I2-A), H6 (D3); tickets PH-01</td><td>S05</td></tr>
+<tr><td>P7</td><td>Lệnh chạy migration bằng <code>migrate()</code> của drizzle-orm trong image (không cần drizzle-kit), script trong <code>apps/orchestration/package.json</code>, <code>migration.enabled: true</code> và <code>migration.command</code> trong <code>apps/orchestration/deploy/values.yaml</code> theo khóa của PID-00010; trước là N4</td><td>H3 (I3-A), H4 (D1), H6 (D3); PID-00010 S02</td><td>S04</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Logic engine: chuyển trạng thái, checkpoint, heartbeat, sweeper, Recovery decision</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00046/index.html">PID-00046</a></td></tr>
+<tr><td>N2</td><td>Logic, API và sự kiện của <code>prompts</code>, <code>context-store</code>, <code>usage</code>, <code>deliberation</code></td><td>Spec 4.2, 4.3: không có API, sự kiện; ticket chỉ dựng khung</td><td><a href="../../PID-00065/index.html">PID-00065</a>, <a href="../../PID-00066/index.html">PID-00066</a>, <a href="../../PID-00067/index.html">PID-00067</a>, <a href="../../PID-00087/index.html">PID-00087</a></td></tr>
+<tr><td>N5</td><td>Tạo vai trò <code>sires_orchestration_*</code> và database ở môi trường cục bộ, staging</td><td>Vai trò do hạ tầng tạo (database 3.2); cục bộ theo D4 (H7)</td><td>Luồng infra: cục bộ <a href="../../PID-00159/index.html">PID-00159</a>; staging <a href="../../PID-00011/index.html">PID-00011</a>, <a href="../../PID-00035/index.html">PID-00035</a></td></tr>
+<tr><td>N6</td><td>Định nghĩa bảng Drizzle (<code>pgTable</code>) để truy vấn</td><td>Không có trong Gồm; AC không cần; D1: schema Drizzle bằng TypeScript do PID tính năng viết (H4)</td><td>PID đầu tiên dùng bảng (<a href="../../PID-00046/index.html">PID-00046</a> trở đi)</td></tr>
+<tr><td>N7</td><td>Consumer <code>project.lifecycle_changed</code> cập nhật <code>replica.project_state</code></td><td>Không có trong Gồm; PID này chỉ tạo bảng</td><td>PID sau của luồng orchestration</td></tr>
+<tr><td>N8</td><td>Helper sinh dòng <code>app.state_transition</code> từ khai báo state machine (bản TypeScript và bản Python)</td><td>D2 (H5): một helper chung cho mọi service</td><td><a href="../../PID-00158/index.html">PID-00158</a> (luồng platform)</td></tr>
+<tr><td>N9</td><td>Thêm <code>drizzle-orm</code>, <code>drizzle-kit</code>, node-postgres vào pnpm catalog</td><td>D5 (H8); catalog thuộc luồng infra (quy tắc 1.4.7)</td><td><a href="../../PID-00001/index.html">PID-00001</a></td></tr>
+</tbody></table></div>
+<p>N3 (test hành vi DDL) và N4 (lệnh chạy migration, giá trị Helm) của bản 17/11/2026 đã chuyển vào phạm vi thành P6, P7 theo H2, H3; mã N3, N4 không dùng lại.</p>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét theo các nhóm của khung mẫu; ticket không có giao diện, model, sự kiện hay phê duyệt nên chỉ còn các nhóm dữ liệu, migration, trạng thái, triển khai (Job migration) và ranh giới module. Các ca của test hành vi DDL nằm trong PID-00019-AC03 (<code>specs/acceptance.html</code>), không lặp lại ở đây.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Module con cần đổi trạng thái workflow</td><td>Đi qua interface của engine; import file nội bộ của engine từ module khác bị lint báo lỗi</td><td>Spec 4.7; tickets 1.6</td><td><code>apps/orchestration/src/engine/engine-boundary.spec.ts › luật chặn import nội bộ engine</code></td><td>S03</td></tr>
+<tr><td>EC02</td><td>Chạy migration lần hai trên database đã áp (Job migration chạy trước mỗi lần deploy)</td><td>Không áp lại migration đã ghi trong bảng phiên bản của công cụ; không lỗi; schema không đổi</td><td>Kiến trúc 6.10; PID-00010 AC02</td><td><code>apps/orchestration/src/db/migration.spec.ts › chạy lại không đổi schema</code>; <code>apps/orchestration/src/db/migrate.spec.ts › lệnh migrate trên database rỗng</code> (chạy hai lần)</td><td>S01, S04</td></tr>
+<tr><td>EC03</td><td>Migration lỗi giữa chừng, ví dụ database chưa có vai trò <code>sires_orchestration_app</code></td><td>Lỗi của PostgreSQL được báo ra; không còn đối tượng nào của migration (rollback); migration không tự tạo vai trò</td><td>Database 3.2, 12.4</td><td><code>apps/orchestration/src/db/migration.spec.ts › thiếu vai trò thì rollback</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Bảng phiên bản của công cụ migration (ví dụ <code>drizzle.__drizzle_migrations</code>)</td><td>Không thuộc DDL: phép so bỏ qua; không đặt trong schema <code>app</code>, <code>replica</code> để <code>grant_standard</code> không cấp quyền lên nó</td><td>DBD-02 (chỉ so đối tượng của DDL)</td><td><code>apps/orchestration/src/db/migration.spec.ts › schema khớp DDL</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Container test đã có extension <code>vector</code> (mặc định của <code>startPostgres</code>) mà orchestration không dùng</td><td>Hai database đem so dựng cùng điều kiện; <code>vector</code> không thuộc DDL của orchestration (chỉ ở knowledge) nên không được có ở database dựng từ migration</td><td>Database 3.3; <code>libs/ts/testing/src/containers/postgres.ts</code></td><td><code>apps/orchestration/src/db/migration.spec.ts › schema khớp DDL</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Khai báo state machine lệch PRD 18.2 hoặc DDL (thiếu, thừa cặp)</td><td>Test đối chiếu thất bại, chỉ ra cặp lệch; sửa khai báo, không sửa tay bảng</td><td>DEC-57; database 10.2</td><td><code>apps/orchestration/src/db/migration.spec.ts › state_transition sinh từ khai báo</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Sau khi nạp dòng, cập nhật <code>workflow.status</code> Running → Created</td><td>Trigger <code>tg_state_transition</code> từ chối (<code>check_violation</code>)</td><td>DDL; database 12.4 (ca đã chạy thử trên PGlite)</td><td><code>apps/orchestration/src/db/migration.spec.ts › chuyển ngoài bảng bị từ chối</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>PostgreSQL managed không cho tạo <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code> hoặc vai trò BYPASSRLS</td><td>Theo DBQ-01: báo chặn trong <code>report.md</code>, không đổi DDL</td><td>DBQ-01; database 3.3</td><td>Thao tác tay (không kiểm được trên Testcontainers)</td><td>S01</td></tr>
+<tr><td>EC09</td><td>Job migration chạy trong image production, không có drizzle-kit (devDependencies không vào image)</td><td>Lệnh của <code>migration.command</code> chỉ dùng <code>migrate()</code> của drizzle-orm, mã đã build và thư mục <code>migrations/</code> có trong image</td><td>PID-00010 EC01; H3; <code>infra/docker/node/Dockerfile</code></td><td><code>apps/orchestration/src/db/migrate.spec.ts › lệnh migrate trên database rỗng</code>; thao tác tay: chạy lệnh trong image</td><td>S04</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00019</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00019 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

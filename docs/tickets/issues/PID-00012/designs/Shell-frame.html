@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00012 — Sketch: Khung shell (TopBar, ProjectRail, điện thoại)</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header.top { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header.top small { color:var(--mute); }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:24px; padding:24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; }
+  .state h2 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:12px; color:var(--mute); text-align:center; }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+  .bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; border:1px solid var(--line); border-radius:4px; padding:6px; font-size:12px; }
+  .bar span { border:1px solid var(--line); border-radius:4px; padding:2px 6px; }
+  .bar .sp { flex:1; border:0; }
+  .row { display:flex; gap:8px; margin-top:8px; }
+  .rail { width:34%; border:1px solid var(--line); border-radius:4px; padding:6px; font-size:12px; }
+  .rail div { padding:2px 4px; }
+  .rail .on { background:#e6e8ec; }
+  .work { flex:1; }
+  .tabs { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line); margin-top:8px; font-size:12px; text-align:center; }
+  .tabs div { padding:6px 0; }
+</style>
+</head>
+<body>
+<header class="top">
+  <strong>PID-00012 — Khung shell</strong> · sketch bố cục và trạng thái<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/TopBar.html, ProjectRail.html, Overview.html, Manuscript.html, SignIn--state-session-expired.html, MobilePending.html · route mọi màn · tác nhân Researcher · nguồn: spec mục 4.5, design.md §4–§5, PRD 4.3</small>
+</header>
+<main>
+  <section class="state"><h2>1 · Global — có dữ liệu</h2><p class="why">UX-LAYOUT-001-AC01 · S02 (số từ API: S07)</p>
+    <div class="bar"><span>Logo</span><span>Ngữ cảnh: Global ▾</span><span>Dashboard</span><span>Research Projects</span><span>Discover</span><span>Trusted Library</span><span>Tasks &amp; Plan</span><span>Agent Activity</span><span class="sp"></span><span>Trợ lý</span><span>Pending Actions 8</span><span>Chuông 3</span><span>VI | EN</span><span>Settings</span><span>NT</span></div>
+    <div class="ph" style="margin-top:8px">Route của khu vực (Outlet)</div></section>
+
+  <section class="state"><h2>2 · Project — TopBar và ProjectRail</h2><p class="why">UX-LAYOUT-003-AC01 · EC05 · S02, S03</p>
+    <div class="bar"><span>Logo</span><span>Project: RAG trong tổng quan… ▾</span><span>Global / Overview</span><span class="sp"></span><span>Pending Actions 8</span><span>Chuông 3</span><span>VI | EN</span><span>Settings</span><span>NT</span></div>
+    <div class="row"><div class="rail"><div><b>Tên project</b></div><div>Plan v3 · Approved</div><div class="on">Overview</div><div>Project AI Chat 2</div><div>Plan and Tasks 3</div><div>References and Evidence</div><div>Research Artifacts</div><div>Manuscript 1</div><div>Agent Activity</div><div>Activity and History</div><div>— Active task T-2.3 · Bỏ active task</div></div><div class="work ph">Vùng làm việc</div></div></section>
+
+  <section class="state"><h2>3 · Sau khi bấm EN</h2><p class="why">PID-00012-AC01 · EC03 · tên khu vực giữ nguyên (EC05)</p>
+    <div class="bar"><span>Context: Global ▾</span><span>Dashboard …</span><span class="sp"></span><span>Assistant</span><span>Pending Actions 8</span><span>VI | <b>EN</b></span></div>
+    <div class="ph" style="margin-top:8px">Ô nhập vẫn còn “câu hỏi đang gõ…”; route và khung Trợ lý giữ nguyên</div></section>
+
+  <section class="state"><h2>4 · Trợ lý mở khung bên phải</h2><p class="why">EC22 · UX-LAYOUT-002 · nội dung do khu vực global (PID-00060)</p>
+    <div class="row"><div class="work ph">Màn hiện tại vẫn hiển thị</div><div class="rail" style="width:40%">Khung Trợ lý 340–440px<br>“Global — không có ngữ cảnh project”<br>(placeholder tới PID-00060)</div></div></section>
+
+  <section class="state"><h2>5 · Manuscript — không rail</h2><p class="why">EC16 · thanh công cụ thuộc PID-00115</p>
+    <div class="bar"><span>Project: … ▾</span><span>Global / Manuscript</span><span class="sp"></span><span>Pending Actions 8</span></div>
+    <div class="ph" style="margin-top:8px">Toàn bộ chiều ngang cho Manuscript</div></section>
+
+  <section class="state"><h2>6 · Điện thoại 390 px</h2><p class="why">EC18 · UX-RESP-001 · design.md §5 · MobilePending</p>
+    <div class="phone"><div class="bar"><span>[menu] Mở menu</span><span>Global</span></div><div class="ph" style="margin-top:8px;height:140px">Nội dung (không cuộn ngang)</div><div class="tabs"><div>Dashboard</div><div>Pending · 8</div><div>Agent</div><div>Projects</div></div></div></section>
+
+  <section class="state"><h2>7 · Lỗi — route không tồn tại; /sign-in không khung</h2><p class="why">EC06 · EC17</p>
+    <div class="bar"><span>Ngữ cảnh: Global ▾</span><span class="sp"></span><span>VI | EN</span></div>
+    <div class="ph" style="margin-top:8px">Không tìm thấy trang · nêu đường dẫn · liên kết về Dashboard (trạng thái lỗi của S06)</div>
+    <div class="ph" style="margin-top:8px">/sign-in: chỉ VI | EN và nội dung SignIn (PID-00036)</div></section>
+
+  <section class="state"><h2>8 · Đang tải — kiểm phiên; phiên hết hạn</h2><p class="why">EC07 · EC08 · UX-AUTH-002 · S04</p>
+    <div class="ph">Đang kiểm phiên (role="status", không spinner xoay)</div>
+    <div class="ph" style="margin-top:8px">401 → /sign-in, trạng thái session-expired, kèm đường dẫn quay lại. Nội dung ô đã đăng ký nằm trong kho nháp, khôi phục sau đăng nhập lại (S09, H7)</div></section>
+
+  <section class="state"><h2>9 · Trống — chưa có dữ liệu điều hướng</h2><p class="why">S02 bước 3 · S07 (H1)</p>
+    <div class="bar"><span>Ngữ cảnh: Global ▾</span><span class="sp"></span><span>Pending Actions</span><span>Chuông</span><span>VI | EN</span></div>
+    <div class="ph" style="margin-top:8px">Không hiện số khi chưa có dữ liệu; không hiện số giả</div></section>
+
+  <section class="state"><h2>10 · Menu avatar — Hồ sơ, Đăng xuất</h2><p class="why">PID-00012-AC06 · H9 · S14 (chờ sửa TopBar trong docs/ui-design và /auth/logout)</p>
+    <div class="bar"><span>Ngữ cảnh: Global ▾</span><span class="sp"></span><span>VI | EN</span><span>Settings</span><span>[NT] ▾</span></div>
+    <div class="row"><div class="work"></div><div class="rail" style="width:40%">Hồ sơ → /settings/profile<br>Đăng xuất → xóa nháp, đóng SSE, tới trang kết thúc phiên của eTroy</div></div></section>
+</main>
+</body>
+</html>

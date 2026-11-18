@@ -131,7 +131,13 @@ Trang vào tài liệu: [docs/index.html](docs/index.html). Tài liệu là HTML
 
 ## Phát triển
 
-Cần Node 22+ và pnpm 10 (`corepack enable`); với service Python cần uv và Python 3.12; môi trường cục bộ cần Docker.
+Trên Windows: Git, Node 24, pnpm, uv và Python 3.12 cài trên Windows; Docker Engine cài trong WSL2. Một lệnh kiểm và cài đủ (kèm script dọn môi trường thừa), chi tiết ở [scripts/development/README.md](scripts/development/README.md):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scriptsdevelopmentsetup-windows.ps1
+```
+
+Sau đó:
 
 ```bash
 pnpm install
@@ -154,7 +160,7 @@ Mỗi pull request chỉ chạm một luồng (một service hoặc một khu v�
 ## Đóng góp
 
 - `docs/` chỉ được ghi khi PO yêu cầu hoặc duyệt. Quy tắc R-01–R-07 ở [docs/README.md](docs/README.md).
-- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request. Thay đổi `docs/` cần PO review (CODEOWNERS).
+- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request; `develop` dành cho code chạy staging, pull request chuyển sang `develop` khi `PID-00035` xong (OQ-111). Thay đổi `docs/` cần PO review (CODEOWNERS); commit phải có chữ ký, check CI `tracks`, `build` phải đạt (ruleset `protect-main-develop`).
 - Coding agent đọc [AGENT.md](AGENT.md) trước khi làm việc.
 - File mới phải có ghi chú giấy phép:
 

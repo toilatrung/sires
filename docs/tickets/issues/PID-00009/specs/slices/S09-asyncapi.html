@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S09 của ticket PID-00009.">
+<title>S09 — Kiểm payload theo AsyncAPI | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S09 — Kiểm payload theo AsyncAPI</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Cách tham gia theo H2 (PO chấp nhận phương án A của <a href="../../others/issues.html#i2">I2</a> ngày 18/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (spec B2)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2; H2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC17, EC18 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Bộ kiểm payload dùng chung đọc schema message trong <code>docs/api-design/events/asyncapi.yaml</code> (và <code>internal/schemas.yaml#/EventEnvelope</code>), đặt trong thư mục luồng infra (H2).</li>
+<li>Job kiểm payload chạy target Nx kiểm payload do project tự khai, như S08: project bị ảnh hưởng có target (chế độ lọc) hoặc mọi project có target (chế độ toàn bộ); chưa có target thì chỉ chạy bộ tự kiểm và đạt (EC17); target thất bại → job thất bại, nêu project, message và trường (EC18).</li>
+<li>Bộ tự kiểm có một payload đúng và một payload sai (thiếu <code>aggregate</code>).</li>
+<li>README của thư mục bộ kiểm hướng dẫn luồng service tham gia: tên target, cách khai, nơi đặt mẫu payload trong thư mục project (quy tắc 1.4.4).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Bộ tự kiểm: payload sai (thiếu <code>aggregate</code>) → job thất bại, nêu message và trường; payload đúng → đạt (EC18)</li>
+<li>T4 — CI của PR PID-00009 vào <code>main</code>: job kiểm payload chạy bộ tự kiểm, 0 project có target, đạt (EC17)</li>
+<li>PR thử T1: job kiểm payload skipped</li>
+<li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng infra</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Job kiểm payload chạy, chặn payload sai của bộ tự kiểm; README hướng dẫn tham gia có đủ để một luồng service tự thêm target</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S09 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

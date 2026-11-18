@@ -1,0 +1,36 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00159.">
+<title>PID-00159 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>PID-00159 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một mục kiểm của <code>pnpm local:check-db</code> (<code>node scripts/development/local-env.mjs check-db</code>) hoặc một thao tác tay có bước rõ. Luồng infra không có project Nx cho script này; lệnh kiểm chạy trên compose cục bộ. PID này không phủ AC requirement nào.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00159-AC01</td><td>Given volume PostgreSQL mới, When chạy <code>pnpm local:up</code>, Then (1) có đúng 44 vai trò <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> cho 11 khóa service (gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, agent_core, knowledge); (2) owner NOLOGIN; <code>_app</code> LOGIN, NOBYPASSRLS; <code>_system</code>, <code>_purge</code> LOGIN, BYPASSRLS; (3) không vai trò nào có SUPERUSER, CREATEDB, CREATEROLE, REPLICATION; (4) chủ của database <code>sires_&lt;svc&gt;</code> là <code>sires_&lt;svc&gt;_owner</code>.</td><td><code>scripts/development/local-env.mjs check-db › vai trò</code>, <code>› chủ database</code></td><td>S01</td><td>Database 3.2; H1</td></tr>
+<tr><td>PID-00159-AC02</td><td>Given vai trò LOGIN của service A, When đăng nhập database của A bằng mật khẩu <code>sires-local</code> qua TCP (không qua loopback của container), Then được; When kết nối database của mỗi service B khác A, Then bị từ chối vì không có CONNECT; superuser <code>sires</code> vẫn kết nối được mọi database.</td><td><code>local-env.mjs check-db › kết nối</code>, <code>› đăng nhập bằng mật khẩu</code></td><td>S01</td><td>Database 3.1</td></tr>
+<tr><td>PID-00159-AC03</td><td>Given volume tạo trước PID này (11 database, chưa có vai trò, <code>sires_planning</code> có bảng thử với một dòng), When chạy <code>pnpm local:up</code> trên nhánh của PID, Then <code>check-db</code> mục vai trò, chủ database, kết nối đạt và bảng thử còn dòng đó. Given vai trò đã có, When chạy lại <code>02-roles.sql</code>, Then không lỗi và ảnh chụp thuộc tính vai trò, thành viên, chủ, ACL của 11 database trước và sau giống nhau.</td><td><code>local-env.mjs check-db › chạy lại không đổi</code>; thao tác tay “volume cũ” ở S02</td><td>S02</td><td>spec 4.4</td></tr>
+<tr><td>PID-00159-AC04</td><td>Given <code>pnpm local:up</code> đã chạy, When liệt kê extension của <code>sires_knowledge</code>, Then có <code>vector</code>. Given volume mới (chưa chạy migration nào), When liệt kê extension của 10 database còn lại, Then chỉ có <code>plpgsql</code>.</td><td><code>local-env.mjs check-db › extension</code>; thao tác tay trên volume mới (S01)</td><td>S01</td><td>Database 3.3; <code>vector.control</code></td></tr>
+<tr><td>PID-00159-AC05</td><td>(chặn bởi I1) Given vai trò chạy migration của mỗi service theo câu trả lời I1, When <code>check-db</code> tạo database tạm <code>sires_check_&lt;svc&gt;</code> do <code>sires_&lt;svc&gt;_owner</code> làm chủ (bản của knowledge có <code>vector</code>) rồi áp <code>docs/database/ddl/00-common.sql</code> và <code>&lt;svc&gt;.sql</code> bằng vai trò đó, Then cả 11 service áp xong không lỗi; mọi bảng, view, hàm trong <code>app</code>, <code>replica</code> (và <code>vec</code> ở knowledge) thuộc <code>sires_&lt;svc&gt;_owner</code>; sau khi chạy không còn database <code>sires_check_*</code>.</td><td><code>local-env.mjs check-db › áp DDL tham chiếu</code></td><td>S03</td><td>Database 3.2; DDL tham chiếu; I1</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00159</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -46,6 +46,15 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 - [ ] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`.
 - [ ] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5.
 - [ ] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC.
+- [ ] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH.
+
+## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
+
+Dev tự chạy `spec-converge-skill PID-NNNNN` trên chính ticket này trước khi đặt `Xong — chờ QC` và mở PR. Ghi khoảng trống ở đây, không tạo `qc-report.md` (chỉ QC độc lập của PO ghi file đó). Còn CRITICAL hoặc HIGH thì sửa rồi chạy lại.
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G1 | <missing, partial, contradicts, unrequested> | <CRITICAL, HIGH, MEDIUM, LOW> | <…> | <…> | <sửa ở…; hoặc để PO quyết vì…> |
 
 ---
 

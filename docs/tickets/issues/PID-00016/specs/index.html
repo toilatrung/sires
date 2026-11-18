@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00016</span></header>
 <main id="main-content">
 <p class="eyebrow">Spec kỹ thuật · PID-00016</p><h1>PID-00016 — Identity: migration, KMS cục bộ, envelope encryption</h1>
-<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00016</a> · Luồng: <code>identity</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: Confirmed — PO duyệt 18/11/2026 · Ticket: <a href="../index.html">PID-00016</a> · Luồng: <code>identity</code> · Giai đoạn: PH-01 · Soạn 05/11/2026 · Làm rõ 17/11/2026, 18/11/2026 (H1–H7) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
 <li><a href="#s-3">3. Output</a></li>
@@ -34,8 +34,8 @@
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>identity</code> · PH-01</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Khung, spike · Envelope</td></tr>
 <tr><th scope="row">AC phủ trong spec</th><td>PID-00016-AC01, PID-00016-AC02</td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-10">ADR-10</a></td></tr>
-<tr><th scope="row">Không làm ở spec này</th><td>API Provider Connection (<a href="../../PID-00042/index.html">PID-00042</a>); Xoay KEK (<a href="../../PID-00137/index.html">PID-00137</a>)</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-10">ADR-10</a>, <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>, <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>API Provider Connection (<a href="../../PID-00042/index.html">PID-00042</a>); Xoay KEK (<a href="../../PID-00137/index.html">PID-00137</a>); Giải mã key trong mã của identity (ADR-10, H2)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-2">2. Input</h2>
@@ -43,18 +43,22 @@
 <ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-4">Kế hoạch luồng identity</a></li>
 <li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-01">Giai đoạn PH-01, cổng ra</a></li>
 <li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
+<li><a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">Kiến trúc 6.10</a> — quy ước migration (PO chốt 18/11/2026)</li>
 <li>Requirement: <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-secrets-001">NFR-SECRETS-001</a></li></ul>
 <h3 id="s-2-2">2.2. Mã nguồn</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>apps/identity/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
 <tr><td><code>apps/identity/src/app.module.ts</code></td><td>Nơi gắn module mới</td></tr>
-<tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API thư viện nền</td></tr>
+<tr><td><code>apps/identity/deploy/values.yaml</code></td><td>Giá trị Helm riêng của identity (quy tắc 1.4.8), thêm <code>migration.*</code></td></tr>
+<tr><td><code>libs/ts/platform/src/index.ts</code></td><td>API thư viện nền; helper state machine của PID-00158 (<code>libs/ts/platform/src/state-machine/</code>, sau khi merge)</td></tr>
+<tr><td><code>libs/py/sires_common/src/sires_common/testing/kms.py</code></td><td>Định dạng <code>encrypt</code> mà adapter KMS cục bộ phải khớp (H1)</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<h4>Bảng</h4><p><code>app.account</code>, <code>app.verification_thresholds</code>, <code>app.provider_connection</code>, <code>app.provider_secret</code>, <code>app.agent_model_assignment</code>. Nguồn: <code>docs/database/ddl/identity.sql</code>.</p>
+<h4>Bảng</h4><p><code>app.account</code>, <code>app.verification_thresholds</code>, <code>app.provider_connection</code>, <code>app.provider_secret</code>, <code>app.agent_model_assignment</code>. Nguồn: <code>docs/database/ddl/identity.sql</code> (sau <code>00-common.sql</code>). Hợp đồng đọc để khớp tên: <code>docs/api-design/internal/schemas.yaml#/ProviderSecretEnvelope</code>.</p>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
-<tr><td><a href="../../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00001/index.html">PID-00001</a> Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry; Drizzle và drizzle-kit trong catalog (D5)</td><td>Chưa merge: đang làm trên nhánh <code>platform/ts-core-tenancy-logging</code>, S02 (problem+json) chưa xong (sửa 17/11/2026)</td><td>Không chặn Sẵn sàng (H7); S01, S03 chờ merge</td></tr>
+<tr><td><a href="../../PID-00158/index.html">PID-00158</a> Helper sinh <code>app.state_transition</code> từ khai báo state machine (D2)</td><td>Mới lập 18/11/2026, chưa làm</td><td>Không chặn Sẵn sàng (H7); S02 chờ merge</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
 <pre>pnpm install
@@ -63,23 +67,25 @@ pnpm --filter @sires/identity dev</pre>
 
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
-<tr><td id="o1">O1</td><td>Migration</td><td><code>apps/identity/migrations/</code> (có sẵn)</td><td>File <code>NNN_init.sql</code> mới tạo 5 bảng theo DDL</td><td>Áp lên database rỗng, so với DDL tham chiếu</td></tr>
-<tr><td id="o2">O2</td><td>Module</td><td><code>apps/identity/src/envelope/</code> (tạo mới)</td><td>Hiện thực phần Gồm</td><td>Test ở dòng dưới</td></tr>
-<tr><td id="o3">O3</td><td>Test</td><td><code>apps/identity/src/envelope/envelope.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
-<tr><td id="o4">O4</td><td>Tài liệu</td><td><code>apps/identity/README.md</code> (có sẵn)</td><td>Entity sở hữu, bản sao chỉ đọc</td><td>Đọc lại</td></tr>
+<tr><td id="o1">O1</td><td>Migration</td><td><code>apps/identity/migrations/</code> (có sẵn)</td><td>Custom migration SQL đầu của drizzle-kit (có journal): phần chung <code>00-common.sql</code> và 5 bảng theo DDL; SQL dòng <code>state_transition</code> sinh từ khai báo; lệnh migrate của service (H3, H6)</td><td>Áp lên database rỗng, so với DDL tham chiếu</td></tr>
+<tr><td id="o2">O2</td><td>Module</td><td><code>apps/identity/src/envelope/</code> (tạo mới); khai báo state machine trong module domain của identity (tạo mới)</td><td>Module envelope, cổng KMS, adapter KMS cục bộ; khai báo <code>account</code>, <code>provider_connection</code></td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/identity/src/envelope/envelope.spec.ts</code>, <code>apps/identity/src/migration.spec.ts</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu và test hành vi DDL</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Tài liệu</td><td><code>apps/identity/README.md</code> (có sẵn)</td><td>Entity sở hữu, bản sao chỉ đọc, cách chạy migration, cấu hình KMS cục bộ</td><td>Đọc lại</td></tr>
+<tr><td id="o5">O5</td><td>Giá trị Helm</td><td><code>apps/identity/deploy/values.yaml</code> (có sẵn)</td><td><code>migration.enabled</code>, <code>migration.command</code> (H6, D3)</td><td>Đọc lại; render bằng script của <a href="../../PID-00010/index.html">PID-00010</a> khi có</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
 <h3 id="s-4-1">4.1. Dữ liệu</h3>
-<p>Bảng ở mục 2.3, đúng DDL tham chiếu (DEC-57). Lệch thì ghi câu hỏi, không tự đổi schema.</p>
+<p>Bảng ở mục 2.3, đúng DDL tham chiếu (DEC-57). Lệch thì ghi câu hỏi, không tự đổi schema. Migration theo kiến trúc 6.10 (H6); dòng <code>app.state_transition</code> sinh từ khai báo bằng helper của PID-00158, không chép tay (DR-01, H3). <code>kek_version</code> = id khóa KMS đã bọc DEK; tag GCM 16 byte nối cuối <code>ciphertext</code> (H4).</p>
 <h3 id="s-4-2">4.2. API</h3>
 <p>Không có API mới.</p>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li>Migration <code>sires_identity</code> theo DDL</li>
-<li>KMS cục bộ cho dev</li>
-<li>Module envelope: mã hóa, giải mã, không log giá trị</li>
+<ul><li>Migration <code>sires_identity</code> theo DDL, lệnh migrate và giá trị Helm <code>migration.*</code> (H5, H6)</li>
+<li>State machine <code>account</code>, <code>provider_connection</code> khai báo dạng dữ liệu trong module domain của identity (H3)</li>
+<li>KMS cục bộ cho dev: KEK và id khóa từ cấu hình, định dạng khớp <code>sires_common</code> (H1)</li>
+<li>Module envelope: mã hóa, không log giá trị; giải mã chỉ trong test (H2)</li>
 <li>Khung module, README</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Không có giao diện.</p>
@@ -88,14 +94,15 @@ pnpm --filter @sires/identity dev</pre>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
 <tr><td>KMS không truy cập được</td><td>Lỗi rõ ràng, không lưu key dạng rõ</td></tr>
+<tr><td>Thiếu cấu hình KEK cục bộ</td><td>Identity không khởi động (H1)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> Viết migration từ <code>docs/database/ddl</code>, không đổi schema; lệch thì ghi DBQ — Kết quả: Database đúng DDL — Kiểm tra: Áp lên database rỗng và so sánh</li>
-<li id="b2"><strong>B2</strong> Migration <code>sires_identity</code> theo DDL — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
-<li id="b3"><strong>B3</strong> KMS cục bộ cho dev — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
-<li id="b4"><strong>B4</strong> Module envelope: mã hóa, giải mã, không log giá trị — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b2"><strong>B2</strong> Migration <code>sires_identity</code> theo DDL: custom migration SQL của drizzle-kit, lệnh migrate, giá trị Helm <code>migration.*</code>, test hành vi DDL; dòng <code>state_transition</code> sinh từ khai báo (H3, H6) — Kết quả: Migration chạy bằng lệnh của service, test hành vi DDL đạt — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b3"><strong>B3</strong> KMS cục bộ cho dev (H1) — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
+<li id="b4"><strong>B4</strong> Module envelope: mã hóa, không log giá trị (H2) — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
 <li id="b5"><strong>B5</strong> Khung module, README — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/identity:test</li>
 <li id="b6"><strong>B6</strong> Test tích hợp với Testcontainers — Kết quả: Tiêu chí nghiệm thu đạt — Kiểm tra: pnpm nx run @sires/identity:test</li>
 </ol>
@@ -107,7 +114,7 @@ node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00016-AC01</td><td><code>apps/identity/src/envelope/envelope.spec.ts</code></td><td>Given một API key, When lưu, Then database chỉ có bản mã và không log nào chứa giá trị.</td></tr>
-<tr><td>PID-00016-AC02</td><td><code>apps/identity/migrations</code></td><td>Given migration, When áp lên database rỗng, Then schema khớp <code>docs/database/ddl/identity.sql</code>.</td></tr>
+<tr><td>PID-00016-AC02</td><td><code>apps/identity/src/migration.spec.ts</code></td><td>Given migration, When áp lên database rỗng, Then schema khớp <code>docs/database/ddl/identity.sql</code>.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

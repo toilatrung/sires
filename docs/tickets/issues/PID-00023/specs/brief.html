@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00023.">
+<title>PID-00023 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>PID-00023 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, lập ngày 17/11/2026 trong lô PH-01; cập nhật 18/11/2026 gộp câu trả lời H1–H8 (PO chấp nhận mọi đề xuất, <a href="../index.html#phien-2">trang ticket mục 5</a>). Không còn điểm chưa chốt; <a href="../others/issues.html">others/issues.html</a> là biên bản. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>System: dựng database <code>sires_planning</code> bằng migration đúng DDL tham chiếu và viết state machine Task (T-01–T-19) trong module domain của planning, là nơi duy nhất quyết định một chuyển trạng thái có hợp lệ không; bảng chuyển trạng thái ở database sinh từ cùng khai báo làm lớp bảo vệ thứ hai. Các PID sau (PID-00049, PID-00074, PID-00075, PID-00091) gọi state machine này thay vì tự kiểm.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Task có 10 trạng thái: Draft, Blocked, Ready, Queued, In Progress, Waiting for User, In Review, Completed, Failed, Cancelled — <a href="../../../../overview/sections/09-research-plan-and-task-management.html#task-state-001">PRD 9.8</a></li>
+<li>Chỉ chuyển có trong bảng T-01–T-19 được thực hiện; yêu cầu ngoài bảng hoặc guard sai bị từ chối, trạng thái không đổi — TASK-STATE-001 (Main Flow, Alternative Flows); DATA-STATE-001</li>
+<li>Cancelled là trạng thái cuối; Completed chỉ thoát qua T-19; Workflow và Task là hai state machine riêng — TASK-STATE-001 Business Rules</li>
+<li>T-17 (Task Draft bị bỏ) không phải chuyển trạng thái: đặt <code>deleted_at</code>, không có dòng trong bảng — <a href="../../../../database/sections/05-planning.html#s-5-3">database 5.3</a></li>
+<li>Cờ needs review là thuộc tính, không phải trạng thái — PRD 9.8</li>
+<li>State machine khai báo một lần trong module domain; <code>app.state_transition</code> sinh từ khai báo bởi migration, không viết tay; trigger <code>task_state</code>, <code>plan_version_state</code> là lớp thứ hai — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>, <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a>. Khai báo dạng dữ liệu theo kiểu của <a href="../../PID-00158/index.html">PID-00158</a>, dòng sinh bằng helper của PID đó vào một custom migration; PID tính năng dùng lại khai báo — H2</li>
+<li>100% chuyển của 18.2 có test hợp lệ và không hợp lệ — <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-003">NFR-MAINT-003</a>; domain kiểm được không cần mạng — <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-004">NFR-MAINT-004</a></li>
+<li>Chuyển ngoài bảng trả <code>409 invalid_transition</code> kèm <code>currentState</code> ở API — <code>components/responses.yaml#/Conflict</code>, <code>common.yaml#/Problem</code>; API ở PID-00074</li>
+<li>Guard của mọi mã ở cột Guard của PRD 9.8 (RC-01–RC-08, RC-01–RC-09, Workflow hoạt động, Workflow đã Running, đủ đầu ra bắt buộc, criterion, đầu ra Accepted, phản hồi và reasonCode, lý do, Task từng thuộc baseline) và chọn đích T-10, T-19 theo RC-01–RC-08: viết ở PID này dạng hàm thuần nhận dữ kiện, trả tên guard không đạt; PID-00074, PID-00075, PID-00091 tính dữ kiện và ánh xạ sang <code>ErrorCode</code> — H3</li>
+<li>PlanVersion: Draft → Proposed → Approved | Rejected; Approved → Superseded; tối đa một Approved và một Draft/Proposed mở mỗi plan; bất biến khi ≠ Draft — <a href="../../../../overview/sections/18-data-and-state-specifications.html#s-18-2">PRD 18.2</a>, <a href="../../../../database/sections/05-planning.html#s-5-2">database 5.2</a>. PID này khai báo 4 cặp (chỉ cặp); kiểm cấu trúc 18.5, lý do bắt buộc, giao dịch duyệt ở PID-00049 — H4</li>
+<li>Migration đầu là SQL chép từ <code>00-common.sql</code> rồi <code>planning.sql</code>, đặt làm custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm; chỉ tiến; schema TypeScript của Drizzle do PID tính năng viết — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>; H1. PID migration gồm test hành vi DDL, lệnh migrate riêng, giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> — H6</li>
+<li>DDL tham chiếu là chuẩn; migration sinh cùng schema; bốn vai trò do hạ tầng tạo, migration không tạo (cục bộ: compose ở <a href="../../PID-00159/index.html">PID-00159</a>, tới lúc đó test tự tạo — H5); <code>_app</code> chỉ DELETE <code>task_dependency</code>, <code>task_input_ref</code> — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>, <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>, <a href="../../../../database/ddl/planning.sql"><code>docs/database/ddl/planning.sql</code></a></li>
+<li>Ghi chặn khi project không Active: trigger <code>tg_project_writable</code> trên <code>plan_version</code>, <code>task</code> đọc <code>replica.project_state</code>, chỉ áp cho vai trò <code>_app</code> — <a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a></li>
+<li>Bất biến của SIRes: agent đề xuất, System kiểm soát, Researcher quyết định (T-05, T-07, T-13–T-15, T-19 do Researcher khởi phát).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><a href="../../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a>, <a href="../../../../database/ddl/planning.sql"><code>docs/database/ddl/planning.sql</code></a> — có (Đã duyệt, DEC-57); 28 dòng <code>task</code> khớp PRD 9.8</li>
+<li><code>apps/planning/</code>: <code>package.json</code> (project Nx <code>@sires/planning</code>), <code>src/app.module.ts</code>, <code>src/manifest.ts</code> (cổng 3103, database <code>sires_planning</code>), <code>migrations/.gitkeep</code>, <code>deploy/values.yaml</code>, <code>README.md</code> — có; <code>src/task-state/</code> — tạo mới</li>
+<li><code>libs/ts/platform</code> — chỉ có <code>bootstrapService</code>, <code>HealthModule</code>; tenancy chưa có (PID-00001 chưa merge)</li>
+<li><code>libs/ts/testing</code> — có <code>startPostgres()</code> (mặc định tạo extension <code>vector</code>)</li>
+<li>pnpm catalog — có <code>pg</code>; thiếu <code>drizzle-orm</code> và <code>drizzle-kit</code>, cả hai do PID-00001 thêm (H7); <code>libs/ts/platform</code> chưa có helper khai báo state machine — PID-00158 làm (H2)</li>
+<li><code>libs/ts/contracts</code> — type sinh từ OpenAPI có <code>ErrorCode</code> (gồm <code>invalid_transition</code>)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/planning/migrations/</code> (custom migration SQL của drizzle-kit, H1): migration đầu dựng schema DDL → <a href="slices/S01-migration.html">S01</a>; dòng chuyển trạng thái sinh từ khai báo → <a href="slices/S03-task-transition-rows.html">S03</a>, <a href="slices/S05-plan-version-state.html">S05</a></li>
+<li>O2 <code>apps/planning/src/task-state/</code>: khai báo Task và hàm kiểm → <a href="slices/S02-task-state.html">S02</a>; guard → <a href="slices/S04-task-guards.html">S04</a>; PlanVersion → <a href="slices/S05-plan-version-state.html">S05</a></li>
+<li>O3 <code>apps/planning/src/task-state/task-state.spec.ts</code>: test mọi cặp → <a href="slices/S02-task-state.html">S02</a>; test DDL ở <code>apps/planning/src/db/</code> → <a href="slices/S01-migration.html">S01</a>, <a href="slices/S03-task-transition-rows.html">S03</a>, <a href="slices/S06-ddl-behaviour.html">S06</a></li>
+<li>O4 <code>apps/planning/README.md</code>; cấu hình, kết nối database, lệnh migrate → <a href="slices/S07-config-db-readme.html">S07</a></li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>cặp = (trạng thái nguồn, trạng thái đích) của một chuyển; mã = T-NN của PRD 9.8</li>
+<li>machine = giá trị cột <code>app.state_transition.machine</code> (<code>task</code>, <code>plan_version</code>)</li>
+<li>guard = điều kiện của chuyển ở cột Guard của 9.8; dữ kiện = giá trị bên gọi đưa vào để kiểm guard</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00023</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

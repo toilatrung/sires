@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00019.">
+<title>PID-00019 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00019</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00019</p><h1>PID-00019 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Lô làm rõ 17/11/2026 không có câu trả lời <code>H</code> của PO. Ngày 18/11/2026 PO chấp nhận mọi đề xuất của <a href="../others/issues.html">phiếu I1–I3</a> (H1–H3) và sáu quyết định chung D1–D6 (H4–H9, <a href="../index.html#phien-2">trang ticket mục 5</a>); các quyết định đã gộp vào quy tắc dưới đây. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Dựng database <code>sires_orchestration</code> bằng migration của service sao cho schema giống hệt DDL tham chiếu (<code>00-common.sql</code> rồi <code>orchestration.sql</code>), khai báo bảy state machine của orchestration dạng dữ liệu để sinh dòng <code>app.state_transition</code> bằng helper của PID-00158, kiểm hành vi DDL trên database dựng từ migration, cho Job migration (PID-00010) một lệnh chạy được trong image, và tách sẵn khung năm module con của orchestration để các PID sau (engine, prompt, context store, deliberation, usage) làm song song mà không đụng file của nhau. Không có API, sự kiện hay logic nghiệp vụ. Tác nhân: System (Job migration chạy trước mỗi lần deploy, PID-00010) và Dev của các PID sau.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Migration theo service, chỉ tiến; drizzle-kit cho service NestJS; migration của một service không chạm database của service khác — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a></li>
+<li>Quy ước migration (D1, H4): migration đầu là SQL chép từ <code>orchestration.sql</code> cùng đối tượng chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm; mỗi service có lệnh migrate riêng và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code>; schema Drizzle bằng TypeScript do PID tính năng viết — kiến trúc 6.10 (PO chốt 18/11/2026)</li>
+<li>Image production không có drizzle-kit: Job migration chạy <code>migration.command</code> trước Deployment, lệnh dùng <code>migrate()</code> của drizzle-orm có trong image — <a href="../../PID-00010/index.html">PID-00010</a> (S02, EC01); H3</li>
+<li><code>drizzle-orm</code>, <code>drizzle-kit</code>, node-postgres vào pnpm catalog do PID-00001 thêm (D5, H8); PID này không thêm dòng catalog — quy tắc 1.4.7</li>
+<li>DDL tham chiếu là chuẩn thiết kế; migration thật phải sinh ra cùng schema; CI dựng một database từ migration, một từ <code>ddl/</code>, so bằng công cụ diff schema — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-02">DBD-02</a>; <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a></li>
+<li>Migration của orchestration tạo cả đối tượng của <code>00-common.sql</code>: extension <code>pgcrypto</code>, <code>unaccent</code>, <code>pg_trgm</code>; schema <code>app</code>, <code>replica</code>; các hàm <code>app.*</code> (UUIDv7, tenant, kiểm ActorRef, provenance, <code>tg_row_version</code>, <code>tg_immutable</code>, <code>tg_state_transition</code>, <code>tg_project_writable</code>, <code>enable_tenant_rls</code>, <code>grant_standard</code>); cấu hình tìm kiếm <code>app.sires_simple</code>; bảng <code>outbox</code>, <code>inbox</code>, <code>idempotency_key</code>, <code>job_lock</code>, <code>state_transition</code> — đầu file <code>docs/database/ddl/00-common.sql</code> (“migration thật … phải sinh ra cùng schema này”); <code>docs/database/README.md</code> (thứ tự chạy)</li>
+<li>Bảng của orchestration: 12 bảng nghiệp vụ và kỹ thuật (<code>workflow</code>, <code>workflow_step</code>, <code>agent_run</code>, <code>agent_run_debug_transcript</code>, <code>checkpoint</code>, <code>interactive_agent_prompt</code>, <code>context_item</code>, <code>context_snapshot</code>, <code>deliberation</code>, <code>deliberation_participant</code>, <code>deliberation_entry</code>, <code>usage_ledger</code>) và bản sao <code>replica.project_state</code> qua <code>app.create_replica_project_state()</code> — <code>docs/database/ddl/orchestration.sql</code>; <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-5">database 3.5</a></li>
+<li>Bốn vai trò <code>sires_orchestration_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> do hạ tầng tạo trước; migration đăng nhập bằng vai trò migrator là thành viên của <code>_owner</code>, không tạo vai trò — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>. Ở môi trường cục bộ, compose tạo vai trò (PID-00159, D4, H7); tới khi có, test tự tạo vai trò trong container</li>
+<li>Bảng <code>app.state_transition</code> là bản sinh tự động từ khai báo state machine của module domain, không viết tay; trigger giữ làm lớp bảo vệ thứ hai — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>, <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">database 10.2</a></li>
+<li>PID này khai báo bảy machine dạng dữ liệu (các cặp từ → đến có trong DDL, không điều kiện chuyển) trong mã domain của orchestration — nơi khai báo duy nhất, PID-00046 và các PID module dùng lại; dòng <code>app.state_transition</code> sinh bằng helper TypeScript của PID-00158 (<code>libs/ts/platform</code>), PID này không tự viết bộ sinh SQL; SQL sinh ra vào migration — H1, D2 (H5); DR-01; NFR-MAINT-003</li>
+<li>Bảy machine của orchestration, 43 cặp chuyển: <code>workflow</code> 16, <code>workflow_step</code> 11, <code>agent_run</code> 5, <code>prompt</code> 3, <code>context_item</code> 2, <code>deliberation</code> 3, <code>deliberation_entry</code> 3 — database 10.2; PRD 18.2 (gồm Waiting for User → Paused, DEC-53)</li>
+<li>Migration lỗi không để lại schema nửa vời; index lớn tạo <code>CONCURRENTLY</code> ngoài giao dịch (migration đầu không có) — database 12.4</li>
+<li>Test hành vi DDL thuộc PID migration (D3, H2, H6): bằng vai trò <code>_app</code> trên database dựng từ migration, kiểm các hành vi đã ghi trong chú thích DDL (chuyển trạng thái, một Workflow chưa kết thúc cho mỗi Task — DATA-IDEMP-002, bản ghi bất biến, RLS, chặn ghi khi project không Active) — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets PH-01</a>; database 12.4</li>
+<li>Module con: <code>engine</code> (Workflow, Step, Checkpoint, heartbeat, sweeper, Recovery decision), <code>prompts</code> (InteractiveAgentPrompt, phê duyệt APR), <code>context-store</code> (ContextItem), <code>deliberation</code> (Deliberation, Board, Snapshot), <code>usage</code>. <code>engine</code> là lõi; module khác gọi engine qua interface trong service, không sửa trạng thái workflow trực tiếp — <a href="../../../sections/01-tracks-and-boundaries.html#s-1-6">tickets 1.6</a></li>
+<li>Không import mã hay đọc database của service khác — quy tắc 1.4; <code>apps/orchestration/README.md</code></li>
+<li>Bất biến SIRes (agent đề xuất, System kiểm soát, Researcher quyết định; provenance; cách ly theo project và task) không có hành vi mới ở ticket này; schema giữ nguyên các ràng buộc phục vụ chúng (<code>app.is_actor_ref</code>, RLS, <code>tg_immutable</code>, <code>tg_agent_run_final</code>) đúng như DDL.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/00-common.sql</code>, <code>docs/database/ddl/orchestration.sql</code> — có (DEC-57). DDL mới chạy thử trên PGlite (PostgreSQL 17), chưa chạy trên PostgreSQL 16 thật — database 12.4</li>
+<li><code>apps/orchestration/migrations/</code> — có, rỗng (chỉ <code>.gitkeep</code>)</li>
+<li><code>apps/orchestration/src/engine/</code>, <code>prompts/</code>, <code>context-store/</code>, <code>deliberation/</code>, <code>usage/</code> — có, chỉ <code>.gitkeep</code></li>
+<li><code>apps/orchestration/src/app.module.ts</code>, <code>app.module.spec.ts</code> — có (chỉ <code>HealthModule</code>)</li>
+<li><code>libs/ts/platform/src/index.ts</code> — có; trên <code>main</code> chỉ có bootstrap, health, manifest. Tenancy, Drizzle của PID-00001 chưa có trên <code>main</code></li>
+<li><code>libs/ts/testing</code> (PID-00004, merge 12/11/2026) — có <code>startPostgres</code>: PostgreSQL 16 + pgvector, cổng ngẫu nhiên, mặc định tạo extension <code>vector</code></li>
+<li>pnpm catalog — có <code>pg</code>, <code>@testcontainers/postgresql</code>; chưa có <code>drizzle-orm</code> (thêm ở nhánh PID-00001) và <code>drizzle-kit</code> (PID-00001 thêm theo D5, 18/11/2026)</li>
+<li><code>libs/ts/platform</code> — chưa có helper sinh <code>app.state_transition</code> (PID-00158, ticket mới 18/11/2026)</li>
+<li><code>infra/local/postgres/init/01-databases.sql</code> — tạo database <code>sires_orchestration</code>, không tạo vai trò (PID-00159 sửa, D4)</li>
+<li><code>apps/orchestration/deploy/values.yaml</code> — có (<code>service</code>, <code>image</code>, <code>port</code>, <code>replicas</code>), chưa có khóa <code>migration</code>; <code>infra/helm/sires-service</code> chưa có Job migration (PID-00010 chưa làm)</li>
+<li><code>infra/docker/node/Dockerfile</code> — image dựng bằng <code>pnpm deploy --prod</code> (không có devDependencies), chạy <code>node dist/main.js</code></li>
+<li>Hợp đồng — không dùng (spec 4.2, 4.3: không có API, sự kiện)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/orchestration/migrations/</code>: migration đầu theo DDL → S01 (cấu trúc), S02 (dòng chuyển trạng thái sinh từ khai báo)</li>
+<li>O2 <code>apps/orchestration/src/</code>: khai báo bảy state machine → S02; khung năm module con và interface engine → S03</li>
+<li>O3 Test: test migration, lệnh migrate, hành vi DDL và <code>apps/orchestration/src/app.module.spec.ts</code> → S01, S02, S03, S04, S05</li>
+<li>O4 <code>apps/orchestration/README.md</code>: entity sở hữu, bản sao chỉ đọc, khai báo state machine, chạy migration → S06</li>
+<li>O5 Lệnh migrate trong <code>apps/orchestration/package.json</code> và <code>migration.enabled</code>, <code>migration.command</code> trong <code>apps/orchestration/deploy/values.yaml</code> → S04</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>workflow</code>, <code>workflow_step</code>, <code>agent_run</code> = Workflow, WorkflowStep, AgentRun (PRD 1.5, 18.1)</li>
+<li><code>interactive_agent_prompt</code> (machine <code>prompt</code>) = InteractiveAgentPrompt</li>
+<li><code>context_item</code>, <code>context_snapshot</code> = ContextItem, ContextSnapshot; <code>deliberation_entry</code> = DeliberationEntry (Deliberation Board)</li>
+<li>Tên bảng, cột <code>snake_case</code> số ít; trường PRD camelCase ↔ cột snake_case (<code>rowVersion</code> ↔ <code>row_version</code>) — <code>docs/database/README.md</code></li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00019</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00019 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

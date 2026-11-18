@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00009.">
+<title>S02 — Phụ thuộc Python trong đồ thị Nx và input cache | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S02 — Phụ thuộc Python trong đồ thị Nx và input cache</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00009-AC05 (phần project chạy); PID-00009-AC06 (cache không trả kết quả cũ)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B8 (phần AC05); spec 4.7 dòng “Nx không thấy phụ thuộc Python”</td></tr>
+<tr><th scope="row">Edge case</th><td>EC05, EC06 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Cho Nx thấy phụ thuộc giữa project Python bằng plugin đăng ký trong <code>nx.json</code> (có sẵn): plugin cộng đồng cho uv workspace, hoặc plugin cục bộ đọc <code>[tool.uv.sources]</code> có <code>workspace = true</code> trong <code>pyproject.toml</code> của từng project; plugin cục bộ đặt trong thư mục luồng infra. Dev chọn, ghi lý do ở <code>implement.md</code>.</li>
+<li>Không sửa <code>project.json</code>, <code>pyproject.toml</code> của <code>agent-core</code>, <code>knowledge</code>, <code>eval</code>, <code>sires-common</code> (luồng khác). Không làm được bằng plugin → dừng, ghi “Cần PO”, đề xuất PID cho luồng app (EC05, N9).</li>
+<li>Khai <code>pyproject.toml</code> gốc, <code>uv.lock</code>, <code>.python-version</code> làm input cho target Python trong <code>nx.json</code> (named input hoặc <code>targetDefaults</code>), để đổi các file này làm mất cache cũ (EC06).</li>
+<li>Nếu thêm phụ thuộc gói ở <code>package.json</code> gốc: chạy lại <code>pnpm install</code>, không sửa tay <code>pnpm-lock.yaml</code> (quy tắc 1.4.7).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx show projects --affected --files=libs/py/sires_common/src/sires_common/errors.py</code> → đúng <code>sires-common</code>, <code>agent-core</code>, <code>knowledge</code>, <code>eval</code> (EC05)</li>
+<li><code>pnpm nx show projects --affected --files=apps/knowledge/src</code> → <code>knowledge</code>, <code>eval</code>; không có <code>agent-core</code></li>
+<li><code>pnpm nx run-many -t lint typecheck test --projects=tag:lang:python</code> → đạt như trước khi sửa</li>
+<li>Thao tác tay (EC06): trên nhánh cục bộ đổi <code>line-length</code> trong <code>[tool.ruff]</code> của <code>pyproject.toml</code> gốc, chạy <code>pnpm nx run agent-core:lint</code> → Nx không đọc từ cache; hoàn lại thay đổi</li>
+<li>PR thử T2 vào <code>develop</code> (PID-00009-AC05, phần project): job Python chạy đúng bốn project, job TS skipped</li>
+<li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng infra</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Đồ thị Nx có cạnh <code>agent-core</code> → <code>sires-common</code>, <code>knowledge</code> → <code>sires-common</code>, <code>eval</code> → <code>agent-core</code>, <code>knowledge</code>; AC05 phần project đạt trên T2; EC06 đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

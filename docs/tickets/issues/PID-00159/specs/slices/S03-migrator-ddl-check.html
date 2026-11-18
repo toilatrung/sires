@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00159.">
+<title>S03 — Vai trò chạy migration và áp thử DDL tham chiếu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>S03 — Vai trò chạy migration và áp thử DDL tham chiếu</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00159-AC05</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (vai trò chạy migration), O3 (<code>check-db</code> mục 7), O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC10–EC12 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; chặn bởi <a href="../../others/issues.html#i1">I1</a> (vai trò nào đăng nhập để chạy migration)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Theo câu trả lời I1, bổ sung <code>02-roles.sql</code>. Nếu A (đề xuất): mỗi service thêm <code>sires_&lt;svc&gt;_migrator</code> — LOGIN, mật khẩu <code>sires-local</code>, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOBYPASSRLS, <code>GRANT sires_&lt;svc&gt;_owner TO sires_&lt;svc&gt;_migrator</code>, <code>ALTER ROLE sires_&lt;svc&gt;_migrator SET role = 'sires_&lt;svc&gt;_owner'</code>, CONNECT chỉ database của service; chạy lại không đổi. Nếu B hay C: làm đúng phương án được chọn, ghi <code>implement.md</code>; mục 1–6 của <code>check-db</code> cập nhật theo.</li>
+<li>Thêm mục 7 “áp DDL tham chiếu” vào <code>check-db</code> (<a href="../index.html#s-4-4">spec 4.4</a>): với mỗi service trong 11, bằng superuser: <code>DROP DATABASE IF EXISTS sires_check_&lt;svc&gt;</code> (EC12), <code>CREATE DATABASE sires_check_&lt;svc&gt; OWNER sires_&lt;svc&gt;_owner</code>, thu CONNECT của PUBLIC, cấp CONNECT cho vai trò chạy migration; với knowledge, <code>CREATE EXTENSION vector</code> trong bản tạm (EC06). Đọc <code>docs/database/ddl/00-common.sql</code> và file DDL của service ở máy, đưa qua stdin vào <code>psql -v ON_ERROR_STOP=1</code> đăng nhập bằng vai trò chạy migration qua TCP với mật khẩu (EC10). Truy vấn <code>pg_class</code>, <code>pg_proc</code> trong <code>app</code>, <code>replica</code>, <code>vec</code>: mọi đối tượng thuộc <code>sires_&lt;svc&gt;_owner</code>. Xóa database tạm, kể cả khi lỗi.</li>
+<li>Lỗi khi áp DDL mà không do vai trò hay quyền (ví dụ cú pháp, hàm không có trên PostgreSQL 16) → dừng slice, ghi DBQ đề xuất kèm file, dòng, thông báo lỗi trong <code>report.md</code>; không sửa DDL (EC11).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm local:up</code>, <code>pnpm local:check-db</code> → mọi mục <code>OK</code>, gồm “áp DDL tham chiếu” cho 11 service</li>
+<li>Test: <code>local-env.mjs check-db › áp DDL tham chiếu</code> (PID-00159-AC05; EC06, EC11, EC12)</li>
+<li>Sau lệnh: không còn database tên <code>sires_check_*</code> (<code>\l</code> trong container)</li>
+<li>Trên Windows (EC10): chạy từ PowerShell, nội dung DDL đi qua stdin của <code>wsl.exe</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Vai trò chạy migration theo I1 có trong init; DDL tham chiếu của 11 service áp được bằng vai trò đó, đối tượng thuộc owner; Dev service có DSN migrator cục bộ chạy được.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00159</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00008.">
+<title>S03 — Danh sách kiểm baseline và báo cáo | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00008</p><h1>S03 — Danh sách kiểm baseline và báo cáo</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice này chỉ đọc <code>docs/api-design</code>; mọi sai lệch tìm thấy được ghi vào báo cáo, không sửa.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00008-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (lệnh dùng để kiểm); báo cáo ở spec mục 6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08, EC09 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02 (H1); <a href="../../../PID-00007/index.html">PID-00007</a> đã merge — chưa làm: ghi nhận, không chặn (H4)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Trên <code>main</code> mới nhất, chạy <code>pnpm nx run @sires/contracts:generate</code> (TS công khai, nội bộ, AsyncAPI; client và mô hình Python), <code>pnpm nx run @sires/contracts:typecheck</code>, <code>pnpm nx run @sires/contracts:check-drift</code>; ghi commit đã kiểm và kết quả từng lệnh.</li>
+<li>Kiểm và ghi bằng chứng file:dòng cho từng mục: DBQ-03 — message <code>usage.recorded</code> có trong <code>events/asyncapi.yaml</code>, <code>x-producer: knowledge</code>, <code>x-consumers</code> có <code>orchestration</code>; DBQ-04 — <code>EventEnvelope.required</code> có <code>aggregate</code>, <code>aggregate.required</code> = <code>type</code>, <code>id</code>, <code>version</code> (<code>internal/schemas.yaml</code>), <code>reference.status_changed</code> có <code>metadataVersion</code> bắt buộc; type TS và mô hình Python sinh ra có đúng các trường đó (tên type, file sinh).</li>
+<li>Gộp lại <code>docs/api-design/openapi.yaml</code> vào thư mục tạm bằng lệnh ở <code>docs/api-design/README.md</code> (<code>npx @redocly/cli@2.11.1 bundle …</code>) và so với <code>dist/openapi.bundled.yaml</code>; lệch thì ghi là việc của PO (EC09).</li>
+<li>Ghi mâu thuẫn hợp đồng còn mở: routing key (trang ticket, mục “Phải sửa ở nguồn”) và mọi mâu thuẫn mới thấy, mỗi mục trích đúng hai đoạn (EC08).</li>
+<li>Viết mục “Baseline hợp đồng” trong <code>agent/execution/PID-00008/report.md</code>: phiên bản <code>info.version</code> của từng file hợp đồng, commit đã kiểm, bảng mục kiểm (đạt/không, bằng chứng), kết quả lệnh, mâu thuẫn còn mở, kết luận “Baseline sẵn sàng cho PO duyệt”, hoặc “Chưa sẵn sàng” kèm tên mục chưa đạt. Không tự ghi “PO đã duyệt”.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/contracts:generate</code> → đạt</li>
+<li><code>pnpm nx run @sires/contracts:typecheck</code> → đạt</li>
+<li><code>pnpm nx run @sires/contracts:check-drift</code> → đạt</li>
+<li>Mục kiểm trong báo cáo: <code>agent/execution/PID-00008/report.md › Baseline hợp đồng</code> (PID-00008-AC02)</li>
+<li>Mục kiểm trong báo cáo: mâu thuẫn hợp đồng còn mở (EC08), so bản gộp công khai (EC09)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Báo cáo có đủ mục kiểm kèm bằng chứng, ba lệnh đạt, và PO đọc báo cáo là quyết được có duyệt baseline hay không.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00008</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00008 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

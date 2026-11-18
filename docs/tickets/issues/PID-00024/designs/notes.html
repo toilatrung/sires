@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Điều thiết kế đã chốt khi làm rõ ticket PID-00024.">
+<title>PID-00024 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00024</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00024</p><h1>PID-00024 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ (<code>H&lt;n&gt;</code>). PO trả lời phiếu I1–I4 và đưa sáu quyết định chung D1–D6 ngày 18/11/2026 (H1–H9, <a href="../index.html#phien-2">trang ticket mục 5</a>). Điều rút thẳng từ nguồn (DDL, database, LIB-IMPORT-001) ghi ở <a href="../specs/brief.html">brief</a>; chi tiết hiện thực Dev tự quyết (tên file migration theo drizzle-kit, công cụ so schema, cấu trúc parser, nơi đặt khai báo state machine) ghi ở <code>implement.md</code>.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li><strong>Migration</strong> (H5, D1): custom migration SQL của drizzle-kit (journal) chép từ <code>00-common.sql</code> (đối tượng chung) và <code>library.sql</code>, chạy bằng <code>migrate()</code> của drizzle-orm; chỉ tiến; không có schema Drizzle bằng TypeScript ở PID này. Lệnh migrate riêng của service; <code>apps/library/deploy/values.yaml</code> có <code>migration.enabled: true</code>, <code>migration.command</code> (H6, D3).</li>
+<li><strong>Bảng chuyển trạng thái</strong> (H3, D2): bốn machine khai báo dạng dữ liệu trong mã domain của <code>library</code>, đúng các cặp from → to của <code>library.sql</code>; dòng <code>app.state_transition</code> sinh bằng helper PID-00158 và nằm trong migration; PID tính năng dùng lại khai báo.</li>
+<li><strong>Điền <code>ReferenceMetadata</code> từ BibTeX, RIS</strong> (H1): <code>source</code> = <code>bibtex</code> | <code>ris</code>; <code>identifiers.sourceId</code> = citation key | thẻ <code>ID</code>; <code>identifiers.url</code> = <code>url</code> | <code>UR</code>, không có thì <code>https://doi.org/</code> + DOI; <code>retrievedAt</code> = thời điểm parse; <code>raw</code> = bản gốc. Thiếu URL và DOI hoặc thiếu <code>ID</code> → bỏ trường tương ứng, hợp lệ khi PO đã nới hợp đồng (S07).</li>
+<li><strong>Chuẩn hóa giá trị</strong> (H2): ký hiệu LaTeX → Unicode thuần ở mọi trường chuẩn hóa (<code>{\"o}</code> → ö, <code>\&amp;</code> → &amp;, bỏ ngoặc giữ chữ hoa; công thức toán giữ nguyên chuỗi); <code>authors[].name</code> = “Họ, Tên” (BibTeX “Tên Họ” đổi sang “Họ, Tên”; tên tập thể trong ngoặc giữ nguyên).</li></ul>
+<p>Bảng ánh xạ <code>publicationType</code> (H2, chép từ phiếu I2):</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Định dạng</th><th scope="col">Loại trong file</th><th scope="col"><code>publicationType</code></th></tr></thead><tbody>
+<tr><td>BibTeX</td><td><code>article</code></td><td><code>article</code></td></tr>
+<tr><td>BibTeX</td><td><code>inproceedings</code>, <code>conference</code></td><td><code>conference</code></td></tr>
+<tr><td>BibTeX</td><td><code>phdthesis</code>, <code>mastersthesis</code>, <code>thesis</code></td><td><code>thesis</code></td></tr>
+<tr><td>BibTeX</td><td><code>book</code></td><td><code>book</code></td></tr>
+<tr><td>BibTeX</td><td><code>incollection</code>, <code>inbook</code></td><td><code>chapter</code></td></tr>
+<tr><td>BibTeX</td><td><code>techreport</code>, <code>report</code></td><td><code>report</code></td></tr>
+<tr><td>BibTeX</td><td>Loại khác có định danh arXiv (<code>eprint</code> với <code>archivePrefix = arXiv</code>)</td><td><code>preprint</code></td></tr>
+<tr><td>BibTeX</td><td>Còn lại</td><td><code>other</code></td></tr>
+<tr><td>RIS</td><td><code>JOUR</code>, <code>EJOUR</code></td><td><code>article</code></td></tr>
+<tr><td>RIS</td><td><code>CONF</code>, <code>CPAPER</code></td><td><code>conference</code></td></tr>
+<tr><td>RIS</td><td><code>THES</code></td><td><code>thesis</code></td></tr>
+<tr><td>RIS</td><td><code>BOOK</code>, <code>EBOOK</code></td><td><code>book</code></td></tr>
+<tr><td>RIS</td><td><code>CHAP</code>, <code>ECHAP</code></td><td><code>chapter</code></td></tr>
+<tr><td>RIS</td><td><code>RPRT</code></td><td><code>report</code></td></tr>
+<tr><td>RIS</td><td>Còn lại</td><td><code>other</code></td></tr>
+</tbody></table></div>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<p>Không có API, sự kiện ở PID này. Hợp đồng <code>ReferenceMetadata.identifiers</code> chờ PO nới cho nguồn nhập tay (H1; trang ticket “Phải sửa ở nguồn”) — S07 chờ.</p>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có.</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00024</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00024 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

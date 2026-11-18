@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Điều thiết kế đã chốt khi làm rõ ticket PID-00020.">
+<title>PID-00020 — Ghi chú thiết kế | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00020</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00020</p><h1>PID-00020 — Ghi chú thiết kế</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ. Lô 17/11/2026 không có câu trả lời của PO; ngày 18/11/2026 PO chấp nhận đề xuất của <a href="../others/issues.html">phiếu I1–I3</a> và sáu quyết định chung D1–D6 (<a href="../index.html#phien-2">H1–H6</a>). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
+<h2 id="du-lieu">Dữ liệu</h2>
+<ul><li>18/11/2026 (H4, D1): revision đầu là SQL chép từ <code>docs/database/ddl/agent-core.sql</code> cùng đối tượng chung của <code>00-common.sql</code>, chạy bằng Alembic trên SQLAlchemy async và asyncpg; chỉ tiến. Đã ghi ở kiến trúc 6.10.</li>
+<li>18/11/2026 (H2, H5; D3): PID này gồm test hành vi DDL bằng vai trò <code>_app</code> trên database dựng từ revision (PID-00020-AC03).</li>
+<li>18/11/2026 (H3, H5; D1, D3): Job migration chạy <code>alembic upgrade head</code> trong image của service; Alembic là phụ thuộc chạy; <code>migration.enabled: true</code>, <code>migration.command</code> nằm ở <code>apps/agent-core/deploy/values.yaml</code> theo khóa của PID-00010.</li>
+<li>18/11/2026 (H6, D4): vai trò <code>sires_agent_core_*</code> ở cục bộ do compose của PID-00159 tạo; test tạo vai trò bằng fixture.</li>
+<li>D2 không áp dụng: agent-core không có state machine, không có dòng <code>app.state_transition</code>.</li></ul>
+<h2 id="api-va-su-kien">API và sự kiện</h2>
+<ul><li>18/11/2026 (H1): “Cấu hình, service token” ở PID này là module cấu hình đọc biến môi trường và hàm dựng <code>TokenVerifier</code>, <code>ServiceAuth</code>, <code>ServiceTokenIssuer</code> của <code>sires_common</code>; chưa gắn vào route (PID-00048 gắn guard theo <code>x-callers</code>); không thêm hành vi khởi động; <code>/health</code> giữ nguyên. Nghiệm thu bằng PID-00020-AC02 (token ký rồi kiểm; <code>kid</code> lạ → <code>401 invalid_service_token</code>).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<p>Không có.</p>
+<h2 id="agent-va-model">Agent và model</h2>
+<p>Không có.</p>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00020</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00020 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

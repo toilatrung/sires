@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bảng AC, test và slice của ticket PID-00158.">
+<title>PID-00158 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>PID-00158 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test. Số liệu kiểm lấy từ ticket, spec và đếm DDL ngày 18/11/2026 (8 file, 25 machine, 133 cặp). PID này không phủ trực tiếp AC requirement nào; DATA-STATE-001-AC01 (lớp database) và NFR-MAINT-003-AC01 được phủ ở các PID migration dùng helper.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00158-AC01</td><td>Given một machine khai báo bằng helper (tên, trạng thái, cặp kèm mã và actor tùy chọn), When kiểm từng cặp có thứ tự trong các trạng thái đã khai báo (gồm cặp cùng trạng thái), Then (1) cặp có trong khai báo được nhận và trả về kèm mã; (2) mọi cặp khác bị từ chối bằng <code>InvalidTransitionError</code> có <code>code = invalid_transition</code>, tên machine, trạng thái hiện hành và trạng thái đích. Đúng như vậy ở TS và Python.</td><td><code>libs/ts/platform/src/state-machine/check.spec.ts › mọi cặp có thứ tự</code>; <code>libs/py/sires_common/tests/test_state_machine.py › test_every_ordered_pair</code></td><td>S01, S05</td><td>ticket; H2</td></tr>
+<tr><td>PID-00158-AC02</td><td>Given từng khai báo sai trong danh sách: tên machine không khớp <code>^[a-z][a-z0-9_]*$</code>; <code>states</code> rỗng hay có trạng thái trùng; <code>transitions</code> rỗng; cặp trùng; cặp X → X; trạng thái ngoài <code>states</code>; giá trị rỗng, có ký tự U+0000–U+001F hay U+007F, có khoảng trắng đầu cuối; actor ngoài <code>researcher</code>, <code>agent</code>, <code>system</code>, When định nghĩa machine, Then ném <code>StateMachineDefinitionError</code> nêu machine và giá trị sai; không có đối tượng nào được trả về. Đúng như vậy ở TS và Python.</td><td><code>define.spec.ts › từ chối khai báo sai</code>; <code>test_state_machine.py › test_invalid_declarations</code></td><td>S01, S05</td><td>spec 4.7</td></tr>
+<tr><td>PID-00158-AC03</td><td>Given cùng một tập machine, When sinh SQL hai lần, và sau khi đảo thứ tự machine, thứ tự <code>states</code>, thứ tự <code>transitions</code>, Then ba chuỗi giống hệt nhau. Given <code>testdata/golden-machines.json</code>, When định nghĩa từ dữ liệu đó rồi sinh SQL bằng TS và bằng Python, Then cả hai bằng đúng nội dung <code>testdata/golden.txt</code> (đã bỏ <code>\r</code>).</td><td><code>sql.spec.ts › xác định khi đổi thứ tự</code>, <code>› khớp golden.txt</code>; <code>test_state_machine.py › test_render_is_deterministic</code>, <code>› test_matches_shared_golden</code></td><td>S02, S05</td><td>spec 4.1</td></tr>
+<tr><td>PID-00158-AC04</td><td>Given PostgreSQL 16 (image <code>pgvector/pgvector:pg16</code>) đã chạy <code>docs/database/ddl/00-common.sql</code>, và với mỗi file trong 8 file DDL có khối <code>INSERT INTO app.state_transition</code>, When (1) chạy khối INSERT của DDL, đọc dòng, xóa bảng; (2) khai báo lại các machine đó bằng helper, chạy SQL sinh ra, đọc dòng; (3) chạy SQL sinh ra lần nữa, Then tập dòng (<code>machine</code>, <code>from_state</code>, <code>to_state</code>, <code>code</code>) ở (2) bằng (1) và ở (3) bằng (2); tổng 25 machine, 133 cặp. Bản Python làm như vậy với <code>knowledge.sql</code> và <code>planning.sql</code>, chạy từng câu bằng <code>state_transition_statements</code>.</td><td><code>libs/ts/platform/src/state-machine/ddl.pg.spec.ts › khớp mọi khối INSERT của docs/database/ddl</code>, <code>› chạy lần hai không đổi</code>; <code>libs/py/sires_common/tests/test_state_machine_pg.py › test_ddl_rows_knowledge_planning</code></td><td>S03, S06</td><td>D2; đếm DDL 18/11/2026</td></tr>
+<tr><td>PID-00158-AC05</td><td>Given bảng có dòng của machine A lệch khai báo (thiếu một cặp, thừa một cặp, một cặp khác mã) và dòng của machine B, When chạy SQL sinh cho riêng A, Then dòng của A bằng khai báo và dòng của B giữ nguyên. Given danh sách dòng có thiếu, thừa, khác mã so với khai báo, When gọi hàm so dòng, Then <code>missing</code>, <code>unexpected</code>, <code>codeMismatch</code> nêu đúng từng cặp; danh sách khớp thì cả ba rỗng; dòng của machine không truyền vào bị bỏ qua.</td><td><code>ddl.pg.spec.ts › đồng bộ một machine</code>; <code>sql.spec.ts › so dòng</code>; <code>test_state_machine_pg.py › test_sync_one_machine</code>; <code>test_state_machine.py › test_compare_rows</code></td><td>S02, S03, S05, S06</td><td>H2; DR-01</td></tr>
+<tr><td>PID-00158-AC06</td><td>Given một module mẫu xuất danh sách machine (TS: file JS trong <code>testdata</code>, export <code>stateMachines</code>; Python: module có <code>STATE_MACHINES</code>), When chạy lệnh in SQL (TS: <code>runCli</code>; Python: <code>main</code>), Then stdout bằng đúng kết quả hàm sinh SQL, mã thoát 0. Given module không có, tên xuất không có, hay giá trị không phải danh sách machine hợp lệ, When chạy, Then mã thoát 1, stderr có lý do, stdout rỗng.</td><td><code>cli.spec.ts › in SQL</code>, <code>› lỗi module</code>; <code>libs/py/sires_common/tests/test_state_machine_cli.py › test_cli_prints_sql</code>, <code>› test_cli_errors</code></td><td>S04, S06</td><td>H2</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00158</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

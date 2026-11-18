@@ -15,7 +15,7 @@ spec-execution-skill PID-NNNNN <yêu cầu thêm>     như trên, kèm yêu cầ
 
 Đây là skill duy nhất Dev cần chạy: skill tự đọc tài liệu, tự kiểm điều kiện, tự làm và tự ghi kết quả. **Đọc** ở `docs/tickets/issues/PID-NNNNN/` (PO sở hữu). **Ghi** ở `agent/execution/PID-NNNNN/` và mã nguồn của luồng.
 
-Vị trí trong luồng: PO [spec-docs-skill](../../po/spec-docs-skill/SKILL.md) → PO [spec-clarify-skill](../../po/spec-clarify-skill/SKILL.md) (đặt `Sẵn sàng`) → **spec-execution-skill** → QC [spec-converge-skill](../../qc/spec-converge-skill/SKILL.md) → PO nghiệm thu.
+Vị trí trong luồng: PO [spec-docs-skill](../../po/spec-docs-skill/SKILL.md) → PO [spec-clarify-skill](../../po/spec-clarify-skill/SKILL.md) (đặt `Sẵn sàng`) → **spec-execution-skill** (Dev làm và tự QC toàn bộ, gồm tự chạy [spec-converge-skill](../../qc/spec-converge-skill/SKILL.md) trên ticket của mình) → PO review PR và QC độc lập bằng spec-converge-skill → PO merge, nghiệm thu (DEC-58). Dev làm liên tục các ticket được giao trên taskboard, không chờ PO giữa các ticket.
 
 ## Kết quả
 
@@ -24,7 +24,7 @@ agent/execution/PID-NNNNN/
   report.md            Dev — trạng thái công việc, kết quả
   implement.md         Dev — luồng đã triển khai; hàm, thuật toán, class ảnh hưởng cao
   self-qc.md           Dev — kết quả Self-QC
-  qc-report.md         QC độc lập (spec-analyze-skill, spec-converge-skill) — Dev đọc, không sửa
+  qc-report.md         QC độc lập của PO (spec-analyze-skill, spec-converge-skill) — Dev đọc, không sửa
   checklists/          QC (spec-checklist-skill) — Dev đọc, không sửa
   <tài liệu đi kèm>    ảnh chụp, log, dữ liệu mẫu — nếu có; liệt kê ở report.md mục 6
 ```
@@ -86,12 +86,13 @@ node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-NNNNN --res
    - Bảng AC → test → kết quả cho mọi AC trong `acceptance.html`.
    - Mọi `EC` trong `scope.html`: đã giải quyết (bằng gì, test nào) / cần lưu ý / chưa xử lý; thêm edge case mới phát hiện khi làm.
    - Nguyên tắc dự án và mã gỡ lỗi: theo danh sách trong khung `self-qc.md`.
+   - **Tự đối chiếu (DEC-58):** chạy [spec-converge-skill](../../qc/spec-converge-skill/SKILL.md) `PID-NNNNN` ở chế độ Dev tự QC; ghi khoảng trống G… vào `self-qc.md` mục 5, không tạo `qc-report.md`. Còn CRITICAL hoặc HIGH → sửa, chạy lại; không đặt `Xong — chờ QC` khi còn.
 6. **Viết kết quả.**
    - `implement.md`: mô tả luồng mã đang thật sự chạy và các thành phần ảnh hưởng cao (tiêu chí ở khung). Viết sau khi làm, đọc từ mã; không chép lại spec.
    - `report.md`: tóm tắt, trạng thái slice, yêu cầu thêm, đề xuất và còn mở, tài liệu đi kèm. Đặt `**Trạng thái:** Xong — chờ QC` (mọi slice Xong, Self-QC đạt) hoặc `Bị chặn — <mã, lý do>` hoặc `Đang làm — dừng ở SNN: <lý do>`.
    - Chạy `check-pid.mjs PID-NNNNN --result`; sửa đến khi không còn `LỖI`.
    - Dòng `**Trạng thái:**` đã đổi so với lần push trước → commit và push `report.md` như bước 3.
-7. **Báo trong phiên** (ngắn): đường dẫn `agent/execution/PID-NNNNN/`; slice xong / chặn; AC đạt; edge case cần lưu ý; yêu cầu thêm và đề xuất cho PO; bước tiếp theo — QC chạy `spec-converge-skill PID-NNNNN`, Dev commit mã và tạo PR khi được yêu cầu.
+7. **Báo trong phiên** (ngắn): đường dẫn `agent/execution/PID-NNNNN/`; slice xong / chặn; AC đạt; edge case cần lưu ý; yêu cầu thêm và đề xuất cho PO; bước tiếp theo — Dev commit mã và tạo PR khi được yêu cầu, rồi chuyển sang ticket được giao tiếp theo; PO review PR, QC độc lập (`spec-converge-skill PID-NNNNN`, ghi `qc-report.md`) và merge; việc QC trả về làm thành “Lần N” của ticket này (DEC-58).
 
 ---
 

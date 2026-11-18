@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00020: cấu hình và service token.">
+<title>S03 — Cấu hình và service token | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00020</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00020</p><h1>S03 — Cấu hình và service token</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Lập theo H1 (PO chấp nhận đề xuất I1-A, 18/11/2026): module cấu hình và hàm dựng token từ <code>sires_common</code>, chưa gắn route, không thêm hành vi khởi động.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00020-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>— (PID-00005 đã trên <code>main</code>)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Module cấu hình của agent-core (tạo mới; vị trí Dev chọn trong <code>apps/agent-core/src/agent_core/</code>) đọc từ biến môi trường: tên service <code>agent-core</code>; DSN cho vai trò <code>_app</code>, <code>_system</code> và migrator; RabbitMQ; khóa ký ES256 của agent-core (<code>kid</code> = <code>agent-core</code>: PEM khi chạy cục bộ và test, khóa KMS ở staging); bộ khóa công khai các service. Tên biến ghi README (S06).</li>
+<li>Hàm dựng <code>TokenVerifier</code>, <code>ServiceAuth</code> và <code>ServiceTokenIssuer</code> của <code>sires_common.service_auth</code> từ cấu hình (<code>LocalKeySigner</code> hoặc <code>KmsTokenSigner</code>; <code>PublicKeySet</code>). Bộ khóa công khai nạp từ cấu hình khi khởi tạo, không tải từ mạng (PID-00005 H2). Không gắn guard vào route nào (PID-00048 làm).</li>
+<li>Không thêm hành vi khởi động: app không dựng verifier, issuer lúc khởi động và không dừng khi thiếu biến (phương án I1-B, không chọn — N9). Không đổi <code>/health</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run agent-core:test</code> → đạt (trên máy PO chạy pytest bằng trình thông dịch gốc của uv, ghi rõ trong <code>self-qc.md</code>)</li>
+<li>Test: <code>apps/agent-core/tests/test_config.py › test_service_token_roundtrip</code> (tạo mới; PID-00020-AC02; EC06): cấu hình test với khóa sinh trong bộ nhớ; issuer của agent-core ký token gửi <code>identity</code>, verifier phía <code>identity</code> (dựng từ cùng bộ khóa công khai) nhận, <code>sub</code> = <code>agent-core</code>; token có <code>kid</code> không có trong bộ khóa → <code>401 invalid_service_token</code></li>
+<li>Test <code>/health</code> có sẵn vẫn đạt</li>
+<li><code>pnpm nx run agent-core:lint</code>, <code>pnpm nx run agent-core:typecheck</code> → đạt</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Một chỗ cấu hình duy nhất cho agent-core; PID-00048, PID-00070, PID-00072 dựng verifier, issuer từ đó mà không thêm biến môi trường mới cho token; PID-00020-AC02 đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00020</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00020 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

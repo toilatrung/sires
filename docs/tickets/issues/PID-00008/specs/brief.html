@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00008.">
+<title>PID-00008 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00008</p><h1>PID-00008 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, gộp mục Làm rõ 17/11/2026 và câu trả lời H1–H4 của PO ngày 18/11/2026 (<a href="../index.html#phien-2">trang ticket, mục 5</a>). Không còn điểm chưa chốt; <a href="../others/issues.html">phiếu I1–I3</a> giữ làm biên bản. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng <code>contracts</code> làm một lệnh <code>check-drift</code> chạy được trong CI: sinh lại type từ <code>docs/api-design</code> rồi kiểm mã đang dùng type đó, báo lỗi và nêu đúng trường khi mã dùng trường không có trong hợp đồng. Cùng ticket, Dev lập danh sách kiểm baseline hợp đồng (DBQ-03, DBQ-04 đã có; sinh type không lỗi) và báo cáo để PO duyệt baseline ở cổng PH-01. Gắn lệnh vào workflow CI là việc của PID-00009.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Hợp đồng trước, code sau; CI kiểm code khớp spec — <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-14">ADR-14</a>; <a href="../../../../architecture/sections/03-system-context-and-containers.html#s-3-6">kiến trúc 3.6.1</a>; <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-3">quy tắc 1.4.3</a></li>
+<li>Service chỉ phụ thuộc <code>libs/</code> và type sinh từ hợp đồng, nên mã dùng trường ngoài spec lộ ra khi typecheck với type vừa sinh — <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-2">quy tắc 1.4.2</a></li>
+<li>Mã sinh không commit, không sửa tay; luôn sinh lại trước khi kiểm — AGENT.md; <code>libs/ts/contracts/README.md</code></li>
+<li><code>check-drift</code> chỉ báo; không sửa <code>docs/api-design</code> và không sửa mã service. Đổi hợp đồng: Dev báo PO, PO sửa bằng contract-updating-skill, Dev pull về — <a href="../../../sections/04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>; R-01</li>
+<li><code>check-drift</code> kiểm cả TypeScript (S01) và Python (S02): mã Python dùng client và mô hình sinh (<code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code>) chạy mypy, báo cùng mẫu với TypeScript; không kiểm tĩnh route controller và routing key — H1 (PO 18/11/2026)</li>
+<li>Lỗi typecheck không do type sinh: thoát lỗi, in nguyên văn, không gắn nhãn “trường không có trong spec” — H3</li>
+<li>Kiểm đổi phá vỡ không tăng phiên bản (spec 4.7) không thuộc PID này; PO thêm quy tắc phiên bản cho OpenAPI nội bộ rồi lập PID riêng hoặc thêm vào PID-00009 — H2</li>
+<li>PID-00007 chưa làm: ghi nhận, không chặn trạng thái Sẵn sàng; slice bắt đầu khi phần cần dùng của PID-00007 đã merge — H4 (quyết định chung D6)</li>
+<li>Cổng ra PH-01: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; PO duyệt baseline — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets 2, PH-01</a></li>
+<li>DBQ-03: sự kiện <code>usage.recorded</code> (knowledge → orchestration); DBQ-04: <code>EventEnvelope.aggregate</code> {<code>type</code>, <code>id</code>, <code>version</code>} bắt buộc, <code>reference.status_changed</code> có <code>metadataVersion</code> bắt buộc — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-03">database 13</a>; <code>docs/api-design/README.md</code> (PO 11/11/2026)</li>
+<li>Duyệt baseline là quyết định của PO; báo cáo chỉ nêu bằng chứng và mâu thuẫn còn mở — R-04; cổng PH-01</li>
+<li>PR vào <code>main</code> tới khi PID-00035 xong; một PR chạm một luồng (<code>libs/ts/contracts</code>) — <a href="../../../sections/04-dependencies-risks-and-questions.html#oq-111">OQ-111</a>; quy tắc 1.4.1</li>
+<li>Tự QC trước khi mở PR, gồm chạy spec-converge-skill trên PID này — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a></li>
+<li>Bất biến sản phẩm (agent đề xuất, System kiểm soát, Researcher quyết định; provenance; cách ly context): không áp dụng trực tiếp — ticket là công cụ build.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>libs/ts/contracts/scripts/generate.mjs</code> — có; hiện sinh <code>public.ts</code> từ <code>docs/api-design/dist/openapi.bundled.yaml</code> và 9 file <code>internal/&lt;service&gt;.yaml</code>; AsyncAPI và Python do PID-00007 thêm (chưa làm)</li>
+<li><code>libs/ts/contracts/package.json</code> — có; target <code>generate</code>, <code>build</code>, <code>typecheck</code>, <code>lint</code>; <strong>chưa có</strong> <code>test</code>, <code>check-drift</code> (S01 thêm)</li>
+<li><code>libs/ts/contracts/scripts/check-drift.mjs</code> — tạo mới</li>
+<li>Mã đang import type sinh: chỉ <code>libs/ts/testing/src/fakes/source-adapter.fake.ts</code> (<code>LibraryInternal</code>, <code>PublicApi</code>); 11 project khai phụ thuộc <code>@sires/contracts</code> trong <code>package.json</code> nhưng chưa import — vì vậy AC01 kiểm bằng fixture</li>
+<li>Project Python có target <code>typecheck</code> (mypy): <code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code> — có</li>
+<li><code>docs/api-design</code>: <code>openapi.yaml</code>, <code>dist/openapi.bundled.yaml</code>, <code>internal/*.yaml</code>, <code>events/asyncapi.yaml</code> — có; DBQ-03, DBQ-04 đã sửa 11/11/2026</li>
+<li>Lệnh gộp lại bản công khai: <code>npx @redocly/cli@2.11.1 bundle openapi.yaml -o …</code> — <code>docs/api-design/README.md</code></li>
+<li><a href="../../PID-00007/index.html">PID-00007</a> — Sẵn sàng, chưa làm (ghi nhận, không chặn — H4)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>libs/ts/contracts/scripts/check-drift.mjs</code>: kiểm lệch spec → S01 (TypeScript), S02 (Python, H1)</li>
+<li>Target Nx <code>check-drift</code>, <code>test</code> trong <code>libs/ts/contracts/package.json</code>, test và fixture của script → S01, S02</li>
+<li>Mục “Baseline hợp đồng” trong <code>agent/execution/PID-00008/report.md</code> (spec mục 6, AC02) → S03</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Lệch spec = mã dùng trường hoặc kiểu không có trong type sinh từ <code>docs/api-design</code> ở lần sinh mới nhất.</li>
+<li>Baseline hợp đồng = bộ <code>docs/api-design</code> phiên bản <code>0.1.0-mvp</code> mà PO duyệt ở cổng PH-01.</li>
+<li>Type sinh = <code>libs/ts/contracts/src/generated/</code> (TS) và <code>libs/py/sires_common/src/sires_common/generated/</code> (Python, PID-00007).</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00008</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00008 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00023.">
+<title>S03 — Dòng chuyển trạng thái Task sinh từ khai báo, trigger ở database | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00023</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00023</p><h1>S03 — Dòng chuyển trạng thái Task sinh từ khai báo, trigger ở database</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>DATA-STATE-001-AC01 (database), NFR-MAINT-003-AC01 (Task, database)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC11 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02; <strong>PID-00158</strong> (hàm sinh SQL nạp dòng, hàm so dòng — H2; chưa làm, ghi nhận không chặn Sẵn sàng).</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Sinh SQL nạp dòng <code>app.state_transition</code> cho machine <code>task</code> (gồm cột <code>code</code> = T-NN) từ khai báo của S02 bằng helper của PID-00158 (hàm sinh SQL hoặc lệnh in SQL của PID đó, đọc danh sách machine mà module domain xuất) và đặt vào một custom migration SQL mới của drizzle-kit, sau migration đầu của S01 (H1, H2); không chép tay, không sửa tay file sinh ra. Cách gọi (script trong <code>package.json</code> hay lệnh khác) Dev chọn, ghi README và <code>implement.md</code>.</li>
+<li>Viết <code>apps/planning/src/db/state-transition.spec.ts</code> (tạo mới): sau migration, dòng <code>task</code> trong bảng bằng khai báo (dùng hàm so dòng của PID-00158) và bằng dòng của database dựng từ DDL tham chiếu (EC11).</li>
+<li>Test trigger: với mỗi cặp trong 100 cặp, tạo Task ở trạng thái nguồn (chèn bằng vai trò có quyền, kèm <code>task_definition</code> và <code>replica.project_state</code> Active cần cho ràng buộc), UPDATE <code>status</code> sang đích bằng <code>_app</code>: 28 cặp qua, 72 cặp bị <code>task_state</code> từ chối; UPDATE giữ nguyên status không lỗi (EC06).</li></ol>
+
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/planning:test</code> → đạt</li>
+<li>Test: <code>apps/planning/src/db/state-transition.spec.ts › bảng khớp khai báo và DDL</code> (EC11); <code>› trigger task mọi cặp</code> (DATA-STATE-001-AC01, NFR-MAINT-003-AC01); <code>› cùng trạng thái</code> (EC06)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Bảng trong database sinh từ khai báo; trigger cho cùng kết quả với hàm kiểm ở 100 cặp</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00023</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00023 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

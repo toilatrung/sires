@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00158.">
+<title>S03 — TS: đối chiếu khối INSERT của DDL trên PostgreSQL 16 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>S03 — TS: đối chiếu khối INSERT của DDL trên PostgreSQL 16</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00158-AC04, PID-00158-AC05 (trên database)</td></tr>
+<tr><th scope="row">Output spec</th><td>O6 (devDependency, input test), O8</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC11–EC13, EC16, EC20 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02; Docker (Linux hoặc WSL2 với <code>DOCKER_HOST</code>)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thêm vào <code>libs/ts/platform/package.json</code> (có sẵn): devDependency <code>@sires/testing</code> (<code>workspace:*</code>), <code>pg</code>, <code>@types/pg</code> (<code>catalog:</code>); trong phần <code>nx</code>, input của target <code>test</code> gồm <code>default</code> và <code>{workspaceRoot}/docs/database/ddl/*.sql</code> để test chạy lại khi DDL đổi. Chạy <code>pnpm install</code> (lock file đổi theo, không sửa tay).</li>
+<li>Viết bộ đọc khối INSERT chỉ dùng cho test (trong <code>libs/ts/platform/src/state-machine/testdata/</code> hay trong file spec; tạo mới): tìm câu <code>INSERT INTO app.state_transition (…) VALUES …;</code> trong một file DDL, trả câu đó và danh sách dòng (3 hay 4 cột, <code>NULL</code> cho mã không có). Dạng không đọc được → lỗi nêu tên file (EC20). Thêm loại trừ <code>src/**/testdata/**</code> vào <code>tsconfig.build.json</code> nếu đặt mã TS ở đó.</li>
+<li>Viết <code>libs/ts/platform/src/state-machine/ddl.pg.spec.ts</code> (tạo mới) với <code>startPostgres({ extensions: [] })</code> và <code>pg</code>: chạy <code>docs/database/ddl/00-common.sql</code> một lần (đường dẫn tính từ gốc repo). Với từng file trong 8 file DDL ở <a href="../index.html#s-2-3">spec 2.3</a>: chạy câu INSERT của DDL, đọc dòng, <code>DELETE FROM app.state_transition</code>; dựng khai báo bằng <code>defineStateMachine</code> từ dòng đọc được (trạng thái = mọi giá trị xuất hiện trong cặp), chạy <code>renderStateTransitionSql</code>, đọc dòng, so; chạy lại SQL, so lần nữa. Ghi số đếm 8 file, 25 machine, 133 cặp và so ở cuối (EC20).</li>
+<li>Thêm ca “đồng bộ một machine”: nạp dòng của machine A lệch khai báo (bỏ một cặp, thêm một cặp lạ, đổi mã một cặp) và dòng của machine B; chạy SQL sinh cho riêng A; kiểm A bằng khai báo, B giữ nguyên (EC11, EC13); <code>compareStateTransitionRows</code> trên dòng trước và sau cho đúng kết quả.</li>
+<li>Dừng container sau test. Không có Docker → lỗi <code>DockerUnavailableError</code> của <code>@sires/testing</code>, không bỏ qua (EC16).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/platform:test</code> → đạt (cần Docker)</li>
+<li>Test: <code>ddl.pg.spec.ts › khớp mọi khối INSERT của docs/database/ddl</code> (PID-00158-AC04; EC20), <code>› chạy lần hai không đổi</code> (PID-00158-AC04; EC12)</li>
+<li>Test: <code>ddl.pg.spec.ts › đồng bộ một machine</code> (PID-00158-AC05; EC11, EC13)</li>
+<li>Thao tác tay (EC16): tắt Docker, chạy lại lệnh test, thấy lỗi rõ ở file <code>ddl.pg.spec.ts</code>, các file test khác vẫn đạt.</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Cả 8 file DDL: dòng sinh từ helper bằng dòng của DDL, kể cả <code>code</code>; chạy lại không đổi; đồng bộ chỉ chạm machine truyền vào; test chạy trong <code>nx affected</code> của CI.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00158</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

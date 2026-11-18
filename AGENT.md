@@ -21,7 +21,7 @@ Người quyết định duy nhất: **Product Owner (PO) Trịnh Quang Trung** 
 | API (OpenAPI, AsyncAPI) | [docs/api-design/README.md](docs/api-design/README.md). Thiếu hoặc sai hợp đồng: Dev báo PO, PO cập nhật bằng `agent/skills/po/contract-updating-skill`, Dev pull về (OQ-103) |
 | Giao diện | [docs/ui-design/design.md](docs/ui-design/design.md) và skill `agent/skills/dev/sires-ui-executor`, `agent/skills/qc/sires-ui-review` |
 | Code một service, ranh giới luồng, giai đoạn | [docs/tickets/index.html](docs/tickets/index.html) (quy tắc 1.4) và `apps/<service>/README.md` |
-| Làm một ticket `PID-NNNNN` | Dev: skill `agent/skills/dev/spec-execution-skill` (đọc `docs/tickets/issues/PID-NNNNN/`, làm, ghi kết quả vào `agent/execution/PID-NNNNN/`). PO chuẩn bị bằng `agent/skills/po/spec-docs-skill`, `agent/skills/po/spec-clarify-skill`. QC độc lập: `agent/skills/qc/spec-converge-skill` |
+| Làm một ticket `PID-NNNNN` | Dev: skill `agent/skills/dev/spec-execution-skill` (đọc `docs/tickets/issues/PID-NNNNN/`, làm, ghi kết quả vào `agent/execution/PID-NNNNN/`). PO chuẩn bị bằng `agent/skills/po/spec-docs-skill`, `agent/skills/po/spec-clarify-skill`. DEC-58: Dev làm liên tục các ticket được giao và tự QC toàn bộ trước khi mở PR (`self-qc.md`, gồm tự chạy `agent/skills/qc/spec-converge-skill`); PO review PR, QC độc lập bằng `spec-converge-skill` (`qc-report.md`) rồi merge |
 
 PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval-001"`) thay vì đọc cả trang; anchor có dạng `s-16-10`, `req-…`, `oq-096`, `asm-13`.
 
@@ -34,11 +34,11 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 | `libs/ts/{platform,contracts,testing}`, `libs/py/sires_common` | Thư viện dùng chung; `contracts` sinh type từ `docs/api-design` (`src/generated/` không commit) |
 | `e2e/`, `eval/`, `infra/` | Playwright; eval harness; compose cục bộ, Dockerfile, Helm, Terraform |
 | `agent/skills/` | Skill cho agent, chia theo vai trò ([agent/skills/README.md](agent/skills/README.md)): `po/` (dựng và giữ `docs/`, viết spec, làm rõ ticket), `dev/` (thực thi ticket, đọc spec, dựng UI), `ui-design/` (prototype UI, Animate UI), `qc/` (rà ticket và spec, đối chiếu mã với AC, review UI) |
-| `agent/execution/PID-NNNNN/` | Kết quả một ticket: `report.md`, `implement.md`, `self-qc.md` và tài liệu đi kèm do Dev ghi; `qc-report.md`, `checklists/` do QC độc lập ghi |
+| `agent/execution/PID-NNNNN/` | Kết quả một ticket: `report.md`, `implement.md`, `self-qc.md` và tài liệu đi kèm do Dev ghi; `qc-report.md`, `checklists/` do QC độc lập của PO ghi (DEC-58) |
 | `agent/execution/taskboard.html` | Taskboard: task đã đăng ký (sổ `task-registry`, chỉ PO ghi), đang chạy kèm tiến độ, chưa chạy; sinh bằng `node scripts/docs/update-index.mjs`, chỉ PO chạy |
 | `agent/execution/PID-Template/` | Khung mẫu của các file trên; chép sang `PID-NNNNN/` theo [agent/execution/README.md](agent/execution/README.md), không ghi kết quả vào đây |
 | `scripts/docs/` | `add-license.mjs` (gắn ghi chú giấy phép), `update-index.mjs` (đồng bộ `docs/index.html` và trang ticket), `update-tickets.mjs` (sinh `docs/tickets/issues/index.html`, `agent/execution/taskboard.html`; `update-index.mjs` gọi file này) |
-| `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1) |
+| `scripts/development/` | `check-tracks.mjs` (cảnh báo PR chạm nhiều luồng, quy tắc 1.4.1); `setup-windows.ps1`, `setup-wsl.sh` (cài môi trường: công cụ trên Windows, Docker Engine trong WSL), `clean-windows.ps1`, `clean-wsl.sh` (dọn môi trường thừa), `local-env.mjs` (`pnpm local:up`) — [README](scripts/development/README.md) |
 | `scripts/agent/`, `scripts/deployment/` | Chưa có nội dung |
 | `.github/CODEOWNERS`, `.github/workflows/ci.yml` | PO là code owner của `docs/`; CI pull request (`nx affected`, Python, giấy phép) |
 | `.claude/launch.json` | Máy chủ xem `ui-design` (cổng 5178) và `web` (cổng 5173) |
@@ -63,7 +63,8 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 
 ## Git
 
-- Nhánh chính `main`; mỗi việc làm trên nhánh riêng và vào `main` qua pull request. Thay đổi `docs/` cần PO review (CODEOWNERS).
+- Hai nhánh dài hạn (PO 12/11/2026): `develop` chứa code chạy staging, `main` chứa code production. Ở giai đoạn tài liệu hiện nay mỗi việc vẫn làm trên nhánh riêng tạo từ `main` mới nhất và vào `main` qua pull request; khi `PID-00035` (deploy staging) xong thì pull request tính năng chuyển sang `develop` và `develop` thành nhánh mặc định (OQ-111, PO chốt 16/11/2026).
+- Ruleset `protect-main-develop` bảo vệ `main` và `develop`: chỉ vào qua pull request, không force-push, không xóa; commit phải có chữ ký (cài khóa ký SSH hoặc GPG trước khi mở PR); check CI `tracks` và `build` phải đạt trên nhánh đã cập nhật với nhánh đích; file có code owner (`docs/`, taskboard, `CODEOWNERS`) cần code owner duyệt. Chỉ PO được bypass.
 - Chỉ commit, push, tạo PR khi được yêu cầu. Ngoại lệ: `spec-execution-skill` commit và push riêng `agent/execution/PID-NNNNN/report.md` trên nhánh của ticket khi đặt hoặc đổi trạng thái, để taskboard thấy task đang chạy (PO duyệt 05/11/2026).
 - Commit và PR ghi tác giả là người dùng; không thêm dòng ghi công cho agent (`Co-Authored-By` của AI, "Generated with …").
 

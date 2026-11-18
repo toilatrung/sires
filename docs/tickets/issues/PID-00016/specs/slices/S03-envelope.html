@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của PID-00016: Module envelope, lưu API key chỉ ở dạng mã hóa.">
+<title>PID-00016 — S03 Module envelope | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../../tickets/index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00016</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00016</p><h1>S03 — Module envelope</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00016-AC01, NFR-SECRETS-001-AC01 (phần identity)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B5 (khung module), B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC04 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (migration, lệnh migrate); <a href="../../../PID-00001/index.html">PID-00001</a> đã merge (helper tenancy, logger che dữ liệu) — chưa có trên <code>main</code> ngày 17/11/2026</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo <code>apps/identity/src/envelope/</code> (tạo mới) và gắn module vào <code>apps/identity/src/app.module.ts</code> (có sẵn): một cổng KMS chỉ có thao tác bọc DEK (Encrypt) trả wrapped DEK kèm id khóa đã dùng; không có thao tác giải mã (ADR-10; H2). Dùng Drizzle thì khai báo schema TypeScript của <code>app.provider_secret</code> ở module này (phần tính năng, D1).</li>
+<li>Hàm lưu key: sinh DEK 32 byte ngẫu nhiên và nonce 12 byte cho mỗi lần lưu; mã hóa key bằng AES-256-GCM với AAD là chuỗi <code>accountId|connectionId</code>; <code>ciphertext</code> = dữ liệu mã hóa rồi tag GCM 16 byte nối cuối (H4); bọc DEK qua cổng KMS; ghi một dòng <code>app.provider_secret</code> trong giao dịch có <code>app.account_id</code> (helper của PID-00001) bằng vai trò <code>_app</code>, với <code>kek_version</code> = id khóa mà cổng KMS trả về (H4). Không trả key rõ, không giữ key trong đối tượng sống lâu.</li>
+<li>Lỗi KMS hoặc lỗi database: ném lỗi riêng của module, thông điệp không chứa key; không ghi dòng nào (EC01, EC02). Ánh xạ lỗi sang HTTP thuộc PID-00042.</li>
+<li>Test dùng <code>LocalKms</code> của <code>@sires/testing</code> làm cổng KMS (có sẵn, devDependency): <code>kek_version</code> phải bằng <code>primaryKeyId</code> của nó; bắt mọi dòng log của logger PID-00001 trong lần chạy; dump dữ liệu <code>sires_identity</code> bằng kết nối quản trị; tìm <code>sk-test-KNOWN</code> ở dạng chuỗi và hex. Giải mã chỉ trong test (H2): tách tag 16 byte cuối <code>ciphertext</code>, mở bằng DEK lấy lại qua <code>LocalKms</code>, ra đúng key; EC03 với AAD khác thì thất bại.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/identity:test</code> → đạt (cần Docker)</li>
+<li><code>apps/identity/src/envelope/envelope.spec.ts › chỉ lưu bản mã, không log key</code> (PID-00016-AC01, NFR-SECRETS-001-AC01)</li>
+<li><code>apps/identity/src/envelope/envelope.spec.ts › KMS lỗi thì không lưu</code> (EC01), <code>› lỗi database không lộ key</code> (EC02), <code>› AAD khác không giải mã được</code> (EC03), <code>› hai lần lưu khác ciphertext</code> (EC04)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Test trên đạt; mã của identity không có đường nào trả key rõ hay giải mã; <code>kek_version</code> và vị trí tag đúng H4.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00016</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Slice PID-00016 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

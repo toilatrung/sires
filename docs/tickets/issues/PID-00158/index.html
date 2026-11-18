@@ -1,0 +1,144 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ticket PID-00158: Sinh bảng app.state_transition từ khai báo state machine (helper TS và Python).">
+<title>PID-00158 — Sinh bảng app.state_transition từ khai báo state machine (helper TS và Python) | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>PID-00158 — Sinh bảng app.state_transition từ khai báo state machine (helper TS và Python)</h1>
+<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 18/11/2026 theo quyết định chung D2 của PO · Làm rõ 18/11/2026 theo spec-clarify-skill (lô PH-01) · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
+<li><a href="#s-1">1. Ticket</a></li>
+<li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
+<li><a href="#s-3">3. Phụ thuộc</a></li>
+<li><a href="#s-4">4. Cổng sẵn sàng</a></li>
+<li><a href="#s-5">5. Làm rõ</a></li>
+<li><a href="#s-6">6. Slice</a></li>
+<li><a href="#s-7">7. Điểm dừng</a></li>
+<li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
+
+<p>Trang vào của ticket. Dev đọc file này trước, rồi <code>specs/</code>, rồi từng slice theo thứ tự. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00158/report.md</code>, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Luồng</th><td>platform</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-01</td></tr>
+<tr><th scope="row">Người làm (sổ đăng ký)</th><td>T1xNTH</td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td>Không (dùng mã đã merge của <code>libs/ts/testing</code> và <code>libs/py/sires_common</code>)</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Quyết định chung D2 (PO 18/11/2026); <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a> (<a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>); <a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a>; database <a href="../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">10.2</a>, <a href="../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">12.4</a>; <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-003">NFR-MAINT-003</a>, <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-004">NFR-MAINT-004</a>; <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-state-001">DATA-STATE-001</a>; kiến trúc <a href="../../../architecture/sections/06-data-architecture.html#s-6-10">6.10</a> (quy ước migration, PO chốt 18/11/2026)</td></tr>
+<tr><th scope="row">Làm rõ</th><td>18/11/2026 · spec-clarify-skill (lô PH-01, lập theo D1, D2 và các đề xuất PO đã chấp nhận; không hỏi PO trong phiên)</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO xác nhận</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Tài liệu trong hồ sơ</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent (spec-docs-skill)</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-declaration-check.html">S01</a></td><td>TS: khai báo machine và hàm kiểm chuyển</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-render-compare.html">S02</a></td><td>TS: sinh dòng, SQL xác định, so dòng; bộ mẫu dùng chung</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-ddl-postgres.html">S03</a></td><td>TS: đối chiếu mọi khối INSERT của DDL trên PostgreSQL 16</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S04-cli-readme.html">S04</a></td><td>TS: lệnh in SQL, export, README</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S05-python-core.html">S05</a></td><td>Python: module <code>sires_common.state_machine</code>, cùng bộ mẫu</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S06-python-postgres-cli.html">S06</a></td><td>Python: test PostgreSQL, lệnh in SQL, README</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt khi làm rõ</td></tr>
+</tbody></table></div>
+
+<h2 id="s-1">1. Ticket</h2>
+<ul><li><strong>Mục đích:</strong> <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a> bắt bảng <code>app.state_transition</code> của mỗi database là bản sinh từ khai báo state machine trong module domain, không viết tay (DBQ-09, DR-01). Tám PID migration của PH-01 (8 service, 25 machine, 133 cặp trạng thái) cần cùng một công cụ: khai báo dạng dữ liệu, một hàm kiểm chuyển dùng chung cho domain, SQL sinh ra xác định để đặt vào migration, và cách so dòng trong database với khai báo. Một helper ở luồng platform tránh tám cách làm khác nhau.</li>
+<li><strong>Gồm:</strong> TypeScript ở <code>libs/ts/platform</code>: kiểu khai báo machine (tên, trạng thái, cặp từ → đến kèm mã và actor tùy chọn) và hàm định nghĩa có kiểm khai báo; hàm kiểm chuyển với lỗi miền mang mã <code>invalid_transition</code>; hàm sinh dòng và SQL xác định dạng đồng bộ (chỉ chạm các machine truyền vào); hàm so dòng đọc từ database với khai báo; lệnh in SQL <code>sires-state-transition-sql</code>. Python ở <code>libs/py/sires_common</code>: module <code>sires_common.state_machine</code> tương đương, SQL giống từng byte bản TS, lệnh <code>python -m sires_common.state_machine</code>. Test đối chiếu mọi khối <code>INSERT INTO app.state_transition</code> của <code>docs/database/ddl</code> trên PostgreSQL 16. README hai thư viện.</li>
+<li><strong>Không gồm:</strong> khai báo machine của từng service, migration nạp dòng và test so dòng sau migration (8 PID migration, D2); guard, chọn đích, quyền theo trạng thái, APR, Audit Event (module domain của service, PID tính năng); ánh xạ lỗi sang HTTP 409 (service); sinh CHECK và trigger (giữ SQL chép từ DDL theo D1); thêm gói vào pnpm catalog (luồng infra).</li></ul>
+<p>Chi tiết phạm vi và edge case: <a href="specs/scope.html">specs/scope.html</a>.</p>
+<h3 id="dau-vao">Đầu vào</h3>
+<ul><li><strong>PID phải xong trước:</strong> không có. <code>startPostgres()</code> của <code>@sires/testing</code> (<a href="../PID-00004/index.html">PID-00004</a>) và fixture <code>sires_postgres</code> của <code>sires_common.testing</code> (<a href="../PID-00005/index.html">PID-00005</a>) đã có trên <code>main</code>.</li>
+<li><strong>Dữ liệu:</strong> bảng <code>app.state_transition</code> ở <a href="../../../database/ddl/00-common.sql"><code>docs/database/ddl/00-common.sql</code></a>; khối <code>INSERT INTO app.state_transition</code> của 8 file DDL service (bảng ở <a href="specs/index.html#s-2-3">spec 2.3</a>).</li></ul>
+<h3 id="dau-ra">Đầu ra</h3>
+<ul><li>Mã TS: <code>libs/ts/platform/src/state-machine/</code> (tạo mới) — khai báo, kiểm chuyển, sinh SQL, so dòng, lệnh in SQL; export ở <code>libs/ts/platform/src/index.ts</code>; <code>bin</code> trong <code>libs/ts/platform/package.json</code></li>
+<li>Mã Python: <code>libs/py/sires_common/src/sires_common/state_machine.py</code> (tạo mới)</li>
+<li>Bộ mẫu dùng chung: <code>libs/ts/platform/src/state-machine/testdata/golden-machines.json</code>, <code>golden.txt</code> (tạo mới)</li>
+<li>Test: <code>libs/ts/platform/src/state-machine/*.spec.ts</code>; <code>libs/py/sires_common/tests/test_state_machine*.py</code> (tạo mới)</li>
+<li>Tài liệu: <code>libs/ts/platform/README.md</code>, <code>libs/py/sires_common/README.md</code> — API và quy trình dùng trong migration</li></ul>
+
+<h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
+<ul><li><strong>PID-00158-AC01</strong> Given một machine khai báo bằng helper (tên, danh sách trạng thái, các cặp từ → đến kèm mã và actor tùy chọn), When kiểm một cặp bằng hàm kiểm chuyển của TS hoặc của Python, Then cặp có trong khai báo được nhận và trả về kèm mã; mọi cặp khác, kể cả cặp cùng trạng thái, bị từ chối bằng lỗi mang mã <code>invalid_transition</code>, tên machine và trạng thái hiện hành.</li>
+<li><strong>PID-00158-AC02</strong> Given khai báo sai — tên machine không đúng dạng <code>snake_case</code>, danh sách trạng thái hay danh sách cặp rỗng, trạng thái trùng, cặp trùng, cặp từ một trạng thái về chính nó, trạng thái không có trong danh sách, giá trị rỗng, có ký tự điều khiển hay khoảng trắng ở đầu, cuối — When định nghĩa machine, Then helper báo lỗi ngay lúc định nghĩa, nêu machine và giá trị sai; không có đối tượng machine nào được tạo.</li>
+<li><strong>PID-00158-AC03</strong> Given cùng một tập machine, When sinh SQL nhiều lần, hoặc sau khi đổi thứ tự machine, thứ tự trạng thái, thứ tự cặp, Then chuỗi SQL giống hệt nhau; Given bộ khai báo mẫu dùng chung <code>golden-machines.json</code>, When sinh SQL bằng TS và bằng Python, Then cả hai bằng đúng từng byte nội dung <code>golden.txt</code>.</li>
+<li><strong>PID-00158-AC04</strong> Given dòng của mọi khối <code>INSERT INTO app.state_transition</code> trong <code>docs/database/ddl</code> (8 file, 25 machine, 133 cặp ngày 18/11/2026), When khai báo lại bằng helper rồi chạy SQL sinh ra trên PostgreSQL 16 có bảng <code>app.state_transition</code> của <code>00-common.sql</code>, Then tập dòng (<code>machine</code>, <code>from_state</code>, <code>to_state</code>, <code>code</code>) bằng đúng tập dòng mà khối INSERT của DDL tạo ra; chạy SQL lần hai không đổi dòng nào.</li>
+<li><strong>PID-00158-AC05</strong> Given bảng có dòng lệch khai báo của một machine (thiếu cặp, thừa cặp, khác mã) và dòng của một machine khác, When chạy SQL sinh cho machine đó, Then dòng của machine đó bằng khai báo và dòng của machine kia giữ nguyên; Given dòng đọc từ database, When so bằng hàm so dòng, Then hàm trả đúng từng cặp thiếu, thừa, khác mã, và trả rỗng khi khớp.</li>
+<li><strong>PID-00158-AC06</strong> Given một module xuất danh sách machine (TS: export <code>stateMachines</code> của file JS đã build; Python: thuộc tính <code>STATE_MACHINES</code>), When chạy lệnh in SQL, Then stdout bằng đúng chuỗi của hàm sinh SQL và mã thoát 0; module không có, tên xuất không có, hay giá trị không phải danh sách machine hợp lệ thì mã thoát khác 0, thông báo ở stderr, stdout rỗng.</li>
+<li>AC requirement: không phủ trực tiếp. Helper là phương tiện để các PID migration phủ <a href="../../../overview/sections/18-data-and-state-specifications.html#req-data-state-001">DATA-STATE-001</a>-AC01 (lớp database) và <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-003">NFR-MAINT-003</a>-AC01 theo DEC-57.</li></ul>
+<p>Bảng AC → test → slice: <a href="specs/acceptance.html">specs/acceptance.html</a>.</p>
+
+<h2 id="s-3">3. Phụ thuộc</h2>
+<ul><li>PID phải xong trước: không có; bắt đầu được ngay. <a href="../PID-00004/index.html">PID-00004</a> (<code>startPostgres()</code>) và <a href="../PID-00005/index.html">PID-00005</a> (<code>sires_common.testing</code>) đã merge. <code>pg</code>, <code>@types/pg</code>, <code>vitest</code> đã có trong pnpm catalog; không cần gói mới.</li>
+<li>Cùng tệp với <a href="../PID-00001/index.html">PID-00001</a> (Sẵn sàng, chưa merge; nhánh <code>platform/ts-core-tenancy-logging</code>): cả hai sửa <code>libs/ts/platform/src/index.ts</code>, <code>package.json</code>, <code>README.md</code>. Không chờ; PID nào merge sau thì rebase.</li>
+<li>Ranh giới luồng: <code>libs/ts/platform</code> và <code>libs/py/sires_common</code> cùng thuộc luồng <code>platform</code> (<code>scripts/development/check-tracks.mjs</code>, <a href="../../sections/01-tracks-and-boundaries.html#trk-platform">1.3</a>), nên một ticket, một pull request; không phải tách phần Python.</li>
+<li>OQ, AQ, DBQ đang chặn: không có. Phiếu chưa chốt: không có.</li>
+<li>PID chờ PID này (slice dòng chuyển trạng thái, theo D2): <a href="../PID-00016/index.html">PID-00016</a> identity (2 machine, 10 cặp), <a href="../PID-00017/index.html">PID-00017</a> workspace (3, 6), <a href="../PID-00019/index.html">PID-00019</a> orchestration (7, 43), <a href="../PID-00023/index.html">PID-00023</a> planning (2, 32, có mã), <a href="../PID-00024/index.html">PID-00024</a> library (4, 18), <a href="../PID-00026/index.html">PID-00026</a> knowledge, Python (1, 7), <a href="../PID-00029/index.html">PID-00029</a> research (3, 9), <a href="../PID-00030/index.html">PID-00030</a> manuscript (3, 8). PID tính năng dùng lại khai báo của các PID đó.</li></ul>
+
+<h2 id="s-4">4. Cổng sẵn sàng</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
+<tr><td>Chưa: PID mới, PO chưa xem hồ sơ (R-04)</td><td>Có (spec-docs-skill, 18/11/2026)</td><td>Đạt: không có PID phải xong trước</td><td>Không có phiếu mở</td><td>Docker cho Testcontainers (Linux, hoặc WSL2 với <code>DOCKER_HOST=tcp://localhost:2375</code>); uv cho Python</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Làm rõ</h2>
+<h3 id="phien-1">Phiên 18/11/2026 (lập hồ sơ theo quyết định của PO)</h3>
+<p>PO không trả lời câu hỏi trong phiên. Căn cứ là các quyết định chung PO đưa ra ngày 18/11/2026 và các đề xuất PO đã chấp nhận ở phiếu của PID khác (“Chấp nhận tất cả”).</p>
+<ul><li>H1 (từ quyết định chung D2): Bảng <code>app.state_transition</code> sinh bằng công cụ nào, ai làm? → Đ: PID-00158, luồng platform, người làm T1xNTH, PH-01: helper sinh dòng <code>app.state_transition</code> từ state machine khai báo dạng dữ liệu trong domain; TypeScript ở <code>libs/ts/platform</code>, bản Python tương đương ở <code>libs/py/sires_common</code>; SQL sinh ra đặt vào migration của service. Mỗi PID migration khai báo machine của service mình (các cặp có trong DDL) và sinh dòng bằng helper; PID tính năng dùng lại khai báo. · Ảnh hưởng: toàn bộ ticket; P1–P8; S01–S06.</li>
+<li>H2 (từ <a href="../PID-00023/others/issues.html#i2">PID-00023 I2</a>, PO chấp nhận đề xuất A 18/11/2026; cùng câu với PID-00017 I2, PID-00016 I3, PID-00019 I1, PID-00024 I3, PID-00029 I1, PID-00030 I1): Helper gồm gì? → Đ: kiểu khai báo machine (mã, từ, đến, actor), hàm kiểm chuyển, hàm sinh câu SQL nạp dòng; service khai báo trong module domain, chạy script sinh SQL vào một migration; test so khớp dòng trong database với khai báo; không đổi DDL. · Ảnh hưởng: PID-00158-AC01, AC05, AC06; P1–P4, P6; S01, S02, S04.</li>
+<li>H3 (từ <a href="../PID-00026/others/issues.html#i1">PID-00026 I1</a>, PO chấp nhận đề xuất A 18/11/2026): Knowledge (Python) khai báo <code>indexing_job</code> ở đâu? → Đ: dạng dữ liệu (7 cặp, không điều kiện) trong mã domain của knowledge, có bước sinh SQL vào revision Alembic. · Ảnh hưởng: bản Python phải dùng được trong revision Alembic; P7, P8; S05, S06.</li>
+<li>H4 (từ quyết định chung D1): Migration viết thế nào? → Đ: migration đầu là SQL chép từ DDL, đặt làm custom migration của drizzle-kit, chạy bằng <code>migrate()</code> của drizzle-orm; Python: Alembic trên SQLAlchemy async và asyncpg; chỉ tiến. · Ảnh hưởng: SQL sinh ra là văn bản cố định dán vào migration, không sinh lúc migrate chạy; có dấu tách <code>--&gt; statement-breakpoint</code> giữa hai câu; có hàm trả từng câu cho <code>op.execute</code>; P3, P7; S02, S05; EC18, EC19.</li></ul>
+<p>Điểm suy từ nguồn (không phải câu trả lời của PO; Dev làm theo, sai thì báo PO):</p>
+<ul><li>Đếm ngày 18/11/2026: 8 file DDL có khối <code>INSERT INTO app.state_transition</code> (identity 10 cặp, workspace 6, planning 32, orchestration 43, library 18, knowledge 7, research 9, manuscript 8), tổng 25 machine, 133 cặp; khớp bảng ở database 10.2. <code>gateway.sql</code>, <code>audit.sql</code>, <code>agent-core.sql</code> không có khối này.</li>
+<li>Cột <code>code</code> chứa mã PRD khi có: 28 dòng <code>task</code> mang T-01–T-19 và dòng <code>plan_version</code> Proposed → Approved mang <code>APR-01</code>; mọi dòng khác là <code>NULL</code>. Helper coi mã là chuỗi tùy chọn, không giới hạn theo dạng.</li>
+<li>Trigger <code>app.tg_state_transition</code> bỏ qua UPDATE giữ nguyên trạng thái, nên cặp X → X không bao giờ được tra; helper từ chối khai báo cặp đó và hàm kiểm từ chối cặp đó.</li>
+<li>Actor kèm theo cặp dùng giá trị của <code>ActorRef.type</code> (<code>researcher</code>, <code>agent</code>, <code>system</code>; <code>docs/api-design/components/schemas/common.yaml</code>). Helper chỉ giữ actor như dữ liệu; kiểm actor, guard, APR là việc của module domain (database 10.2).</li>
+<li>Mã lỗi <code>invalid_transition</code> thuộc <code>ErrorCode</code>; service trả 409 theo <a href="../../../api-design/components/responses.yaml"><code>components/responses.yaml</code></a> (<code>Conflict</code>, có <code>currentState</code>). Helper không phụ thuộc lớp HTTP (NFR-MAINT-004).</li>
+<li><code>vector</code> 0.8.7 của image <code>pgvector/pgvector:pg16</code> không trusted (kiểm 18/11/2026): test PostgreSQL của helper chạy bằng superuser của container, không bị ảnh hưởng.</li></ul>
+<h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
+<ul><li><a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a> (database 13.2), cột cách giảm rủi ro: “Sinh cả hai từ một khai báo (<code>libs/ts/platform</code>); test so khớp trong CI” → thêm “; service Python dùng <code>libs/py/sires_common</code>; helper do PID-00158 làm”. PO sửa bằng scaffold-docs-skill. Không chặn.</li>
+<li><a href="../../sections/02-phases-and-gates.html#ph-01">PH-01</a> (dòng platform) và <a href="../../sections/03-track-plans.html#s-3-1">kế hoạch luồng 3.1</a> chưa liệt kê helper sinh bảng chuyển trạng thái → thêm một mục “helper sinh <code>app.state_transition</code> từ khai báo (PID-00158)”. Không chặn.</li>
+<li>Hồ sơ 8 PID migration ở mục 3: thêm PID-00158 vào “Phụ thuộc PID” và vào phụ thuộc của slice dòng chuyển trạng thái (D2). Các hồ sơ đó được cập nhật trong cùng lô làm rõ 18/11/2026; PO kiểm lại khi duyệt. Không chặn PID này.</li></ul>
+<h3 id="con-mo">Còn mở</h3>
+<ul><li>Không có.</li></ul>
+
+<h2 id="s-6">6. Slice</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-declaration-check.html">S01</a></td><td>TS: khai báo machine và hàm kiểm chuyển</td><td>PID-00158-AC01, PID-00158-AC02 (TS)</td><td>—</td></tr>
+<tr><td><a href="specs/slices/S02-render-compare.html">S02</a></td><td>TS: sinh dòng, SQL xác định, so dòng; bộ mẫu dùng chung</td><td>PID-00158-AC03 (TS), PID-00158-AC05 (so dòng)</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S03-ddl-postgres.html">S03</a></td><td>TS: đối chiếu mọi khối INSERT của DDL và đồng bộ trên PostgreSQL 16</td><td>PID-00158-AC04, PID-00158-AC05 (database)</td><td>S02; Docker</td></tr>
+<tr><td><a href="specs/slices/S04-cli-readme.html">S04</a></td><td>TS: lệnh in SQL, export, README</td><td>PID-00158-AC06 (TS)</td><td>S02</td></tr>
+<tr><td><a href="specs/slices/S05-python-core.html">S05</a></td><td>Python: khai báo, kiểm chuyển, sinh SQL, so dòng; khớp <code>golden.txt</code></td><td>PID-00158-AC01, PID-00158-AC02, PID-00158-AC03, PID-00158-AC05 (Python, không database)</td><td>S02 (bộ mẫu dùng chung)</td></tr>
+<tr><td><a href="specs/slices/S06-python-postgres-cli.html">S06</a></td><td>Python: test PostgreSQL, lệnh in SQL, README</td><td>PID-00158-AC04 (knowledge, planning), PID-00158-AC05 (database), PID-00158-AC06 (Python)</td><td>S05; Docker</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Điểm dừng</h2>
+<ul><li>Không được sửa (spec mục 7): thư mục ngoài luồng <code>platform</code> (<code>apps/</code>, <code>infra/</code>, <code>pnpm-workspace.yaml</code>, <code>docs/</code>); file sinh tự động; migration đã có. Không khai báo machine của service nào trong thư viện (trừ dữ liệu mẫu của test).</li>
+<li>Không đổi export hay hành vi hiện có của <code>@sires/platform</code> và <code>sires_common</code> (quy tắc <a href="../../sections/01-tracks-and-boundaries.html#rule-1-4-5">1.4.5</a>).</li>
+<li>Khối INSERT của một file DDL không đọc được theo dạng hiện có, hay dòng sinh ra khác dòng DDL mà không do lỗi của helper → dừng, ghi “Cần PO” trong <code>report.md</code> (DDL là chuẩn, DEC-57); không sửa DDL.</li>
+<li>Cần gói mới trong pnpm catalog hay ràng buộc uv → dừng, đề xuất PR cho luồng infra (quy tắc 1.4.7).</li>
+<li>Gặp điều spec và mục Làm rõ không nói tới mà đổi hành vi → dừng slice, ghi “Cần PO” trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
+<li>Cần sửa luồng khác → dừng, đề xuất ticket cho luồng đó (quy tắc 1.4).</li></ul>
+
+<h2 id="s-8">8. Kiểm tra hoàn thành</h2>
+<ul><li>Lệnh (spec mục 6): <code>pnpm nx run @sires/platform:test</code>; <code>pnpm nx run @sires/platform:lint</code>, <code>:typecheck</code>, <code>:build</code>; <code>pnpm nx run sires-common:test</code>, <code>sires-common:lint</code>, <code>sires-common:typecheck</code>; <code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
+<li>Tự kiểm theo <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a>: bảng AC → test của <code>self-qc.md</code> và spec-converge-skill chạy trên PID này trước khi đặt “Xong — chờ QC”; pull request vào <code>main</code> (OQ-111).</li>
+<li>Bảng AC → test: <a href="specs/acceptance.html">specs/acceptance.html</a>.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html">Kế hoạch triển khai</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

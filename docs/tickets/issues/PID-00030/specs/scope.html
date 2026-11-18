@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00030.">
+<title>PID-00030 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00030</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00030</p><h1>PID-00030 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc phiếu <code>I&lt;n&gt;</code>.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Migration đầu tiên trong <code>apps/manuscript/migrations/</code> — custom migration SQL của drizzle-kit (journal), chạy bằng <code>migrate()</code> của drizzle-orm — tạo schema của <code>sires_manuscript</code> đúng <code>00-common.sql</code> + <code>manuscript.sql</code>: extension, schema, hàm, bảng nền tảng, hai bảng <code>replica.*</code>, 6 bảng <code>app.*</code> nghiệp vụ, ràng buộc (kể cả khóa ngoại hoãn), index, trigger, RLS, quyền — trừ dòng dữ liệu <code>app.state_transition</code></td><td>ticket mục 1; PID-00030-AC01; spec O1, B1, B2; DBD-02; PID-00002 N5; H2 (D1)</td><td>S01</td></tr>
+<tr><td>P2</td><td>Test trên PostgreSQL 16 + pgvector (Testcontainers): so schema từ migration với schema từ DDL; test hành vi DDL</td><td>PID-00030-AC01; spec B4; database 12.4; tickets 2 PH-01; H3 (D3)</td><td>S01</td></tr>
+<tr><td>P3</td><td>Ba machine (<code>change_proposal</code>, <code>build</code>, <code>manuscript_file</code>) khai báo dạng dữ liệu trong mã domain của <code>manuscript</code> (các cặp from → to trong <code>manuscript.sql</code>); dòng <code>app.state_transition</code> sinh từ khai báo bằng helper của PID-00158, đặt vào migration; test chuyển trạng thái</td><td>DDL <code>manuscript.sql</code>; database 10.2; DR-01 (DEC-57); H1 (I1 phương án B, D2)</td><td>S02</td></tr>
+<tr><td>P4</td><td>Khung module NestJS của <code>manuscript</code> gắn vào <code>AppModule</code>; mã chạy migration</td><td>ticket mục 1; spec B3, O2</td><td>S03</td></tr>
+<tr><td>P5</td><td><code>apps/manuscript/README.md</code>: entity sở hữu; hai bảng sao chỉ đọc và sự kiện nguồn; cách chạy migration</td><td>ticket mục 1; spec O3; database 3.4</td><td>S03</td></tr>
+<tr><td>P6</td><td>Lệnh migrate của service (script <code>migrate</code> trong <code>apps/manuscript/package.json</code>, chạy mã migrate có trong image) và giá trị Helm <code>migration.enabled: true</code>, <code>migration.command</code> trong <code>apps/manuscript/deploy/values.yaml</code> (trước đây N4)</td><td>H3 (quyết định chung D3); kiến trúc 6.10; PID-00010 EC01; quy tắc 1.4.8</td><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>API revision; Manuscript, file, revision dạng cây, template Default và Blank</td><td>Ticket “Không gồm”</td><td><a href="../../PID-00053/index.html">PID-00053</a></td></tr>
+<tr><td>N2</td><td>Change Proposal, Bibliography và cổng citation, Build</td><td>PID sau của luồng</td><td><a href="../../PID-00079/index.html">PID-00079</a>, <a href="../../PID-00095/index.html">PID-00095</a>, <a href="../../PID-00108/index.html">PID-00108</a></td></tr>
+<tr><td>N3</td><td>Consumer ghi <code>replica.*</code> từ <code>reference.status_changed</code>, <code>reference.metadata_updated</code>, <code>reference.deleted</code>, <code>project.lifecycle_changed</code></td><td>Cần inbox của PID-00002; ticket không gồm</td><td>PID sau của luồng</td></tr>
+<tr><td>N5</td><td>Tạo vai trò database ở compose cục bộ</td><td>Thuộc luồng <code>infra</code> (database 3.2); không chặn — test tự tạo vai trò (H4, D4)</td><td><a href="../../PID-00159/index.html">PID-00159</a></td></tr>
+<tr><td>N6</td><td>Cấu hình và service token của <code>manuscript</code> (PH-01 liệt kê cho mỗi luồng service)</td><td>Ticket không gồm</td><td>PO xem có cần PID riêng</td></tr>
+<tr><td>N7</td><td>Phát sự kiện <code>manuscript.object_status_changed</code> (routing key còn mâu thuẫn trong hợp đồng)</td><td>Không có sự kiện ở PID này (spec 4.3)</td><td>PID sau; PO sửa hợp đồng (ghi ở PID-00008)</td></tr>
+<tr><td>N8</td><td>Schema Drizzle bằng TypeScript cho bảng của <code>manuscript</code></td><td>Do PID tính năng viết, không thuộc PID migration (H2, D1)</td><td><a href="../../PID-00053/index.html">PID-00053</a>, <a href="../../PID-00079/index.html">PID-00079</a>, <a href="../../PID-00108/index.html">PID-00108</a> và PID sau của luồng</td></tr>
+<tr><td>N9</td><td>Helper khai báo state machine và sinh SQL <code>app.state_transition</code> (<code>libs/ts/platform</code>, <code>libs/py/sires_common</code>)</td><td>Luồng <code>platform</code> (H1, D2); PID này chỉ khai báo machine của <code>manuscript</code> và gọi helper</td><td><a href="../../PID-00158/index.html">PID-00158</a></td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>DDL hoặc migration lỗi trên PostgreSQL 16 + pgvector (DDL mới chạy thử trên PGlite, PostgreSQL 17)</td><td>Dừng; ghi đề xuất DBQ; không tự đổi schema</td><td>spec 4.1; database 12.4</td><td><code>apps/manuscript/src/db/migration.spec.ts › chạy trên PostgreSQL 16</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Vai trò <code>sires_manuscript_*</code> chưa có</td><td>Migration thất bại rõ ràng, không tự tạo vai trò; test tạo vai trò trước (compose cục bộ tạo sau khi có PID-00159)</td><td>database 3.2; H4</td><td><code>apps/manuscript/src/db/migration.spec.ts › thiếu vai trò</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Chạy migration lần hai</td><td>Không đổi gì, không lỗi</td><td>database 12.4 (migration chỉ tiến)</td><td><code>apps/manuscript/src/db/migration.spec.ts › chạy lại</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Vai trò <code>_app</code> của tài khoản B đọc bảng <code>app.*</code>, <code>replica.*</code> của A; thiếu <code>app.account_id</code>; ghi dòng mang <code>account_id</code> khác</td><td>0 dòng; 0 dòng; bị từ chối</td><td>DDL <code>enable_tenant_rls</code>; database 11</td><td><code>apps/manuscript/src/db/migration.spec.ts › RLS</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td>Hai Manuscript cho một project</td><td>Ràng buộc duy nhất từ chối</td><td>spec 4.7; DDL <code>manuscript_project_uq</code>; PRD 5.8</td><td><code>apps/manuscript/src/db/migration.spec.ts › một Manuscript mỗi project</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Tạo Manuscript mà không có revision hiện hành trong cùng giao dịch</td><td>Khóa ngoại hoãn từ chối khi commit; tạo cả hai trong một giao dịch thì được</td><td>DDL <code>manuscript_current_revision_fk</code></td><td><code>apps/manuscript/src/db/migration.spec.ts › Manuscript cần revision hiện hành</code></td><td>S01</td></tr>
+<tr><td>EC07</td><td>Revision số 1 có revision cha, revision sau không có cha; revision <code>source = change_proposal</code> mà thiếu <code>change_proposal_id</code>; sửa một revision đã ghi</td><td>Bị từ chối; revision bất biến</td><td>DDL <code>manuscript_revision_*_ck</code>, <code>tg_immutable</code>; PRD 12.10</td><td><code>apps/manuscript/src/db/migration.spec.ts › ràng buộc revision</code></td><td>S01</td></tr>
+<tr><td>EC08</td><td>Đường dẫn file tuyệt đối, có <code>..</code> hoặc dài hơn 300 ký tự; hai file <code>Active</code> cùng đường dẫn trong một Manuscript</td><td>Bị từ chối; file <code>Deleted</code> không tính vào ràng buộc trùng đường dẫn</td><td>DDL <code>manuscript_file</code>, <code>manuscript_file_path_uq</code></td><td><code>apps/manuscript/src/db/migration.spec.ts › ràng buộc file</code></td><td>S01</td></tr>
+<tr><td>EC09</td><td>Đặt Change Proposal <code>Accepted</code> khi revision gốc khác revision hiện hành</td><td>Bị từ chối (proposal đã lỗi thời); nhánh chấp nhận khi revision gốc khớp kiểm ở S02 vì cần dòng chuyển trạng thái</td><td>DDL <code>tg_change_proposal_accept</code>; PRD 18.2</td><td><code>apps/manuscript/src/db/migration.spec.ts › proposal lỗi thời không chấp nhận được</code></td><td>S01</td></tr>
+<tr><td>EC10</td><td>Ghi Change Proposal <code>Accepted</code> mà citation check chưa đạt hoặc thiếu <code>approval</code></td><td>Bị từ chối</td><td>DDL <code>change_proposal_accept_ck</code>; APR-05</td><td><code>apps/manuscript/src/db/migration.spec.ts › Accepted cần citation check và phê duyệt</code></td><td>S01</td></tr>
+<tr><td>EC11</td><td>Thêm BibliographyEntry cho Reference không Trusted hoặc chưa có trong <code>replica.reference_state</code>; trùng BibTeX key hoặc trùng reference trong một Manuscript</td><td>Bị từ chối</td><td>DDL <code>tg_bibliography_requires_trusted</code>, ràng buộc duy nhất; PRD 18.5</td><td><code>apps/manuscript/src/db/migration.spec.ts › bibliography chỉ từ Reference Trusted</code></td><td>S01</td></tr>
+<tr><td>EC12</td><td>Hai Build cùng revision và cùng cấu hình build</td><td>Ràng buộc duy nhất từ chối</td><td>DATA-IDEMP-005; DDL <code>build_idem_uq</code></td><td><code>apps/manuscript/src/db/migration.spec.ts › build idempotent</code></td><td>S01</td></tr>
+<tr><td>EC13</td><td>Vai trò <code>_app</code> tạo revision khi project Archived, đã xóa mềm hoặc chưa có trong <code>replica.project_state</code></td><td>Bị từ chối; vai trò <code>_system</code> vẫn ghi được</td><td>DDL <code>tg_project_writable</code>; PRD 18.2</td><td><code>apps/manuscript/src/db/migration.spec.ts › chặn ghi theo vòng đời project</code></td><td>S01</td></tr>
+<tr><td>EC14</td><td>Chuyển trạng thái ngoài bảng (Change Proposal <code>Rejected</code> → <code>Accepted</code>; Build <code>Succeeded</code> → <code>Running</code>; ManuscriptFile <code>Deleted</code> → <code>Active</code>)</td><td>Bị từ chối; dòng trong bảng sinh từ khai báo bằng helper PID-00158 (H1)</td><td>DDL <code>tg_state_transition</code>; DATA-STATE-001; H1</td><td><code>apps/manuscript/src/db/state-transition.spec.ts › ngoài bảng bị từ chối</code></td><td>S02</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00030</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00030 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00026.">
+<title>PID-00026 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00026</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00026</p><h1>PID-00026 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này khi còn vấn đề <strong>chưa chốt</strong>. Lô làm rõ 17/11/2026 (PH-01) không hỏi PO trong phiên: hồ sơ vẫn được lập đủ, mỗi vấn đề là một phiếu <code>I&lt;n&gt;</code> (nhãn cục bộ của hồ sơ).</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00026</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
+<p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
+<p><strong>18/11/2026:</strong> PO trả lời “Chấp nhận tất cả” cho báo cáo lô PH-01 — mỗi phiếu nhận phương án đề xuất, kèm sáu quyết định chung D1–D6 (thắng đề xuất của phiếu khi khác nhau). Ba phiếu đã chuyển vào hồ sơ (H1–H3 ở <a href="../index.html#phien-2">mục 5 trang ticket</a>); trang này giữ làm biên bản.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Khai báo state machine <code>indexing_job</code> để sinh <code>app.state_transition</code> đặt ở đâu, PID nào viết?</td><td>đã gỡ (từng chặn S02)</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+<tr><td><a href="#i2">I2</a></td><td>Có thêm test hành vi DDL của knowledge vào PID này không?</td><td>không</td><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+<tr><td><a href="#i3">I3</a></td><td>Lệnh chạy revision trong image và giá trị <code>migration.*</code> của Helm có thuộc PID này không?</td><td>không</td><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Khai báo state machine indexing_job để sinh bảng app.state_transition của knowledge đặt ở đâu, và PID nào viết, khi revision (PID này, PH-01) chạy trước vòng đời job indexing (PID-00105, PH-05)?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Dữ liệu · Phạm vi</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>DEC-57 và DBQ-09 cho giữ trigger ở database với điều kiện bảng chuyển trạng thái được sinh từ khai báo của module domain, không viết tay. Revision đầu phải có 7 dòng của <code>indexing_job</code> để khớp DDL, nhưng chưa ticket nào nói khai báo nằm ở đâu và ai viết; bốn module con của knowledge (tickets 1.6) cũng không có module riêng cho job indexing.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">Database 10.2</a>: “bảng <code>state_transition</code> là bản sinh tự động từ khai báo đó bởi migration, không viết tay (DR-01)”; <code>indexing_job</code> là machine “Kỹ thuật (kiến trúc 7.1, 5.6)”. <code>docs/database/ddl/knowledge.sql</code>: khối <code>INSERT INTO app.state_transition</code> 7 dòng. <a href="../../PID-00105/index.html">PID-00105</a> Gồm “job indexing”.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>PID-00026-AC01 (phần dữ liệu), EC07, EC08, S02; phạm vi PID-00105. Cùng câu ở <a href="../../PID-00019/others/issues.html#i1">PID-00019 I1</a> (bảy machine của orchestration) và mọi PID migration của service có state machine.</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S02 (gỡ 18/11/2026 theo H1)</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H1)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>PID này viết khai báo dạng dữ liệu (7 cặp từ → đến, không điều kiện) trong mã domain của knowledge — một gói mới cho job indexing hoặc trong gói có sẵn, Dev chọn và ghi README — và bước sinh SQL vào revision; PID-00105 dùng lại khai báo</td><td>Thêm một file khai báo, một bước sinh, test đối chiếu ba nguồn. Database có đủ dòng từ revision đầu; AC01 so được cả dữ liệu.</td></tr>
+<tr><td>B</td><td>Revision của PID này tạo bảng và trigger nhưng không nạp dòng; PID-00105 viết khai báo và thêm revision nạp dòng</td><td>Tới khi PID-00105 xong, mọi <code>UPDATE … status</code> của <code>indexing_job</code> bị trigger từ chối (chưa có mã nào đổi trạng thái job trước PID-00105 thì không ảnh hưởng; nếu PID-00051 hoặc PID-00077 cần đổi trạng thái job thì bị chặn). S02 chuyển sang PID-00105.</td></tr>
+<tr><td>C</td><td>Chép tay khối <code>INSERT</code> từ DDL vào revision</td><td>Nhanh nhất nhưng trái DEC-57, DBQ-09. Không đề xuất.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — giữ đúng DEC-57 ngay từ revision đầu, khối lượng nhỏ (một machine), và PID pipeline làm trước PID-00105 không bị trigger chặn nếu cần cập nhật trạng thái job. Hồ sơ hiện lập theo: S02 bị chặn; S01 tạo bảng <code>app.state_transition</code> và trigger, không nạp dòng.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — PID này viết khai báo và bước sinh</label>
+<label><input type="radio" name="I1" value="B"> B — PID-00105 viết khai báo và nạp dòng</label>
+<label><input type="radio" name="I1" value="C"> C — Chép tay từ DDL</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — PID này viết khai báo dạng dữ liệu của <code>indexing_job</code>; theo quyết định chung D2, dòng <code>app.state_transition</code> sinh bằng helper Python của PID-00158 (<code>libs/py/sires_common</code>), PID này không tự viết bộ sinh SQL — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H1 (cùng H5 từ D2)</p>
+</article>
+
+<article class="issue" id="i2" data-issue="I2">
+<h2>I2 — Có thêm test hành vi DDL của knowledge (RLS, trigger, ràng buộc chạy trên database dựng từ revision) vào PID này không?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Phạm vi · Kiểm thử và eval</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>PH-01 yêu cầu mỗi luồng service “đưa test hành vi DDL vào CI”; PID-00017, PID-00018 có mục này, PID này thì không. Riêng knowledge, kiểu <code>vector</code> và index HNSW chưa từng chạy thử (PGlite không có pgvector), và RLS ở schema <code>vec</code> là điều kiện cách ly tài khoản của truy xuất.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../../sections/02-phases-and-gates.html#ph-01">Tickets PH-01</a>; <a href="../../PID-00017/index.html">PID-00017</a> Gồm “test hành vi DDL trong CI”; <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">database 12.4</a>: “Chưa kiểm: kiểu <code>vector</code> và index HNSW … Bộ kiểm thử hành vi nằm ngoài repo”.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>N4; nếu chọn A: thêm một AC (PO đặt mã) và slice S04.</td></tr>
+<tr><th scope="row">Chặn</th><td>không — từng ở Ngoài phạm vi (N4), nay là P6</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H2)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Thêm vào PID này: test bằng vai trò <code>_app</code>, <code>_system</code> trên database dựng từ revision cho các hành vi đã ghi trong DDL — RLS chặn đọc chéo tài khoản ở <code>app</code>, <code>replica</code>, <code>vec</code>; <code>chunk_text.tsv</code> tự tính khi ghi <code>text</code>; job trùng (<code>reference_id</code>, <code>content_hash</code>, <code>embedding_model</code>, <code>kind</code>) bị chặn (DATA-IDEMP-005); <code>_app</code>, <code>_system</code> không ghi được <code>embedding_model_catalog</code>; xóa <code>source_document</code> xóa theo <code>chunk</code>, <code>chunk_text</code>, vector; ghi và đọc một vector 1.536 chiều qua index HNSW</td><td>Thêm một slice, một AC; kỳ vọng lấy từ DDL, không cần số mới. Lỗi pgvector lộ ra ở PH-01 thay vì ở PID-00077.</td></tr>
+<tr><td>B</td><td>Không thêm; PID-00051, PID-00077, PID-00093 kiểm qua mã</td><td>PID này nhỏ hơn; lỗi DDL lẫn với lỗi pipeline.</td></tr>
+<tr><td>C</td><td>Một PID riêng cho test hành vi DDL của các service Python</td><td>PO cấp PID; thêm một PR.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — đúng PH-01; phần pgvector chưa từng chạy thử nên kiểm sớm có lợi nhất. Hồ sơ hiện lập theo: ngoài phạm vi (N4), không slice.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I2" value="A"> A — Thêm test hành vi DDL vào PID này</label>
+<label><input type="radio" name="I2" value="B"> B — Không thêm, kiểm qua mã ở PID sau</label>
+<label><input type="radio" name="I2" value="C"> C — PID riêng cho service Python</label>
+<label><input type="radio" name="I2" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Thêm test hành vi DDL vào PID này (cũng là quyết định chung D3) — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H2 (thêm PID-00026-AC02, slice S04)</p>
+</article>
+
+<article class="issue" id="i3" data-issue="I3">
+<h2>I3 — Lệnh chạy revision bằng mã trong image và giá trị migration.enabled, migration.command ở apps/knowledge/deploy/values.yaml có thuộc PID này không?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Phạm vi · Ranh giới luồng</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>PID-00010 dựng Job migration chạy trước Deployment, lấy lệnh từ <code>migration.command</code> trong values của service và để “lệnh migration của từng service” cho luồng service. Chưa PID nào của knowledge nhận việc này; luồng infra không được sửa <code>apps/knowledge</code> (quy tắc 1.4), nên deploy staging (PID-00035) không có lệnh để chạy.</td></tr>
+<tr><th scope="row">Nguồn</th><td><a href="../../PID-00010/index.html">PID-00010</a> Không gồm: “Lệnh migration của từng service: luồng service tự viết”; <a href="../../PID-00010/specs/slices/S02-chart.html">S02</a>: Job nhận <code>migration.enabled</code>, <code>migration.command</code>.</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>N5; nếu chọn A: thêm slice sau S01 (<code>alembic</code> là phụ thuộc chạy; <code>apps/knowledge/deploy/values.yaml</code>).</td></tr>
+<tr><th scope="row">Chặn</th><td>không — từng ở Ngoài phạm vi (N5), nay là P7; cần trước PID-00035</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H3)</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Thêm vào PID này: lệnh <code>alembic upgrade head</code> chạy được trong image của service, và <code>migration.enabled: true</code>, <code>migration.command</code> trong <code>deploy/values.yaml</code> theo khóa của PID-00010</td><td>Một slice nhỏ; PID-00035 dùng được ngay.</td></tr>
+<tr><td>B</td><td>Mở PID riêng của luồng knowledge, xong trước PID-00035</td><td>PO cấp PID; thêm một PR.</td></tr>
+<tr><td>C</td><td>Để tới khi làm PID-00035 mới quyết</td><td>Nguy cơ PID-00035 bị chặn.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — cùng chỗ với revision, nhỏ, và chỉ luồng knowledge sửa được thư mục này. Hồ sơ hiện lập theo: ngoài phạm vi (N5), không slice.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I3" value="A"> A — Thêm lệnh và values vào PID này</label>
+<label><input type="radio" name="I3" value="B"> B — PID riêng trước PID-00035</label>
+<label><input type="radio" name="I3" value="C"> C — Quyết khi làm PID-00035</label>
+<label><input type="radio" name="I3" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> A — Thêm lệnh <code>alembic upgrade head</code> trong image và <code>migration.enabled</code>, <code>migration.command</code> vào PID này (cũng là quyết định chung D1, D3) — PO chấp nhận đề xuất — Trịnh Quang Trung, 18/11/2026 → H3 (slice S03)</p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00026</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00026 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

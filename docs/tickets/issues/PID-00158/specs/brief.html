@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00158.">
+<title>PID-00158 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00158</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00158</p><h1>PID-00158 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H4). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng platform (người làm T1xNTH) viết một helper TypeScript trong <code>libs/ts/platform</code> và bản Python tương đương trong <code>libs/py/sires_common</code>. Service khai báo state machine của mình một lần, dạng dữ liệu, trong module domain; từ khai báo đó helper kiểm chuyển trạng thái ở domain và sinh SQL nạp bảng <code>app.state_transition</code> để dán vào migration của service. Tám PID migration của PH-01 dùng helper để database có đúng 133 cặp của DDL mà không chép tay (D2, DEC-57). Helper không chứa machine của service nào.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Bảng <code>app.state_transition</code> là bản sinh từ khai báo state machine trong module domain, không viết tay — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-57">DEC-57</a>, <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-09">DBQ-09</a>, database <a href="../../../../database/sections/10-integrity-state-and-versioning.html#s-10-2">10.2</a>.</li>
+<li>Sinh cả hàm kiểm ở domain và dòng ở database từ một khai báo; test so khớp trong CI — <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dr-01">DR-01</a>; H2.</li>
+<li>TS ở <code>libs/ts/platform</code>, Python tương đương ở <code>libs/py/sires_common</code>; SQL sinh ra vào migration của service; PID migration khai báo, PID tính năng dùng lại — H1 (D2).</li>
+<li>Khai báo gồm mã, từ, đến, actor; có hàm kiểm chuyển và hàm sinh SQL; service chạy script sinh SQL vào một migration; không đổi DDL — H2 (PID-00023 I2).</li>
+<li>Migration là văn bản SQL cố định (custom migration drizzle-kit chạy bằng <code>migrate()</code>; Alembic trên asyncpg); chỉ tiến; đổi khai báo về sau là migration mới — H4 (D1); database <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-4">12.4</a>.</li>
+<li>Knowledge khai báo <code>indexing_job</code> dạng dữ liệu trong mã domain, sinh SQL vào revision Alembic — H3 (PID-00026 I1).</li>
+<li>Trạng thái và chuyển trạng thái: helper chỉ kiểm cặp (từ, đến); cặp ngoài khai báo, kể cả X → X, bị từ chối với <code>invalid_transition</code> — PRD 18.2, DATA-STATE-001; guard, chọn đích, quyền theo trạng thái, APR ở module domain của service — database 10.2.</li>
+<li>Domain logic kiểm thử được không cần mạng — <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-maint-004">NFR-MAINT-004</a>. Thư viện chỉ đổi tương thích ngược — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-5">1.4.5</a>.</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định — helper không thay đổi; actor kèm cặp chỉ là dữ liệu cho module domain.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/00-common.sql</code> — bảng <code>app.state_transition</code>, trigger <code>app.tg_state_transition</code> — có.</li>
+<li>Khối <code>INSERT INTO app.state_transition</code> ở 8 file DDL: 25 machine, 133 cặp, mã chỉ ở <code>planning.sql</code> — có, đếm 18/11/2026.</li>
+<li><code>libs/ts/platform/src/index.ts</code> (chỉ có <code>bootstrapService</code>, <code>HealthModule</code> trên <code>main</code>); <code>libs/py/sires_common/src/sires_common/</code> (không có module state machine) — có, chưa có helper.</li>
+<li><code>startPostgres()</code> (<code>libs/ts/testing</code>, PID-00004), <code>sires_postgres</code> (<code>sires_common.testing.fixtures</code>, PID-00005) — có trên <code>main</code>.</li>
+<li><code>ErrorCode.invalid_transition</code>, <code>ActorRef.type</code> trong <code>docs/api-design/components/schemas/common.yaml</code> — có.</li>
+<li>PID phụ thuộc: không có. PID-00001 (chưa merge) sửa cùng file <code>index.ts</code>, <code>package.json</code>, README — không chặn.</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 khai báo, kiểm chuyển, lỗi (TS) → S01</li>
+<li>O2 dòng, câu, SQL đồng bộ, so dòng (TS) → S02</li>
+<li>O3 lệnh <code>sires-state-transition-sql</code>; O4 export → S04</li>
+<li>O5 bộ mẫu <code>golden-machines.json</code>, <code>golden.txt</code> → S02 (dùng lại ở S05)</li>
+<li>O6 cấu hình gói, input test → S03, S04, S06</li>
+<li>O7 test đơn vị TS → S01, S02, S04; O8 test PostgreSQL TS → S03</li>
+<li>O9 module Python → S05, S06; O10 test Python → S05, S06</li>
+<li>O11 README hai thư viện → S04, S06</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>machine = state machine của một entity (cột trạng thái), tên theo cột <code>machine</code> của <code>app.state_transition</code> (<code>task</code>, <code>plan_version</code>, <code>workflow</code>…)</li>
+<li>cặp, chuyển trạng thái = transition (từ <code>from_state</code> → đến <code>to_state</code>), PRD 18.2</li>
+<li>mã = <code>code</code>: mã PRD của chuyển trạng thái khi có (T-01–T-19, <code>APR-01</code>)</li>
+<li>actor = <code>ActorRef.type</code>: Researcher → <code>researcher</code>, agent → <code>agent</code>, System → <code>system</code> (PRD 1.5)</li>
+<li>SQL đồng bộ = câu DELETE cặp không còn khai báo cộng câu INSERT … ON CONFLICT cập nhật mã</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00158</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00158 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

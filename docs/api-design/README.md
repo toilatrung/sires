@@ -4,7 +4,30 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — hợp đồng baseline DBQ-03, DBQ-04 và khóa ký token nội bộ, PO chốt 11/11/2026
+### Thay đổi gần nhất — metadata nhập từ BibTeX, RIS, PO chốt 18/11/2026
+
+Parser BibTeX, RIS của library (PID-00024, H1) trả `ReferenceMetadata`, nhưng mục nhập tay có thể không có URL, DOI hay mã định danh trong khi `identifiers.sourceId`, `identifiers.url` đang bắt buộc với mọi nguồn.
+
+- `components/schemas/library.yaml#/ReferenceMetadata`: hai trường này chỉ bắt buộc khi `source` không phải `bibtex` hay `ris` (`if`/`then`/`else`); mô tả ghi cách parser điền (`sourceId` = citation key hoặc thẻ `ID`, `url` = `url`/`UR` hoặc `https://doi.org/` + DOI); thêm `ris` vào `source.examples`.
+- Nới ràng buộc, tương thích ngược với bên gửi; type sinh của `@sires/contracts` nay cho phép thiếu `sourceId`, `url`. Bundle `dist/openapi.bundled.yaml` dựng lại.
+
+### Token khi service gọi tiếp trong Agent Run, PO chốt 16/11/2026
+
+`knowledge.retrieveEvidence` (PID-00093) nhận token Agent Run nhưng phải gọi `library.getReferenceSelectionInternal` và `identity.getEmbeddingSettingsInternal`; hợp đồng chưa nói service trung gian dùng token nào (tickets OQ-110). Chỉ đổi mô tả, không đổi schema hay `x-callers`; tương thích ngược.
+
+- `internal/schemas.yaml#/ServiceTokenClaims`: lời gọi lấy dữ liệu sẽ trả cho agent thì chuyển tiếp nguyên token Agent Run (service đích phải có trong `aud`, `agent-core` có trong `x-callers`); lời gọi phục vụ việc riêng của service trung gian thì service tự ký token `act.type = system` và tự áp `agentScope` lên kết quả.
+- Ảnh hưởng: client token của PID-00003 (TS) và PID-00005 (Python) phải cho tự ký trong request Agent Run với loại lời gọi thứ hai.
+
+### Danh mục mã lỗi problem+json, PO chốt 11/11/2026
+
+PID-00001 S02 (bộ lọc problem+json) và PID-00005-AC02 cần danh mục mã để đạt NFR-OBS-005 ("100% lỗi trả về có mã thuộc danh mục"), nhưng `Problem.code` là chuỗi tự do và không có mã cho lỗi không khai báo. Chưa service nào trả lỗi theo hợp đồng, nên thu hẹp `code` thành enum ngay trong `0.1.0-mvp`.
+
+- Schema mới `ErrorCode` (enum, danh mục đóng) gom mọi mã đang có trong hợp đồng và thêm `unauthenticated` (401), `forbidden` (403), `not_found` (404), `method_not_allowed` (405), `precondition_failed` (412), `payload_too_large` (413), `internal_error` (500), `service_unavailable` (503). `Problem.code` trỏ tới `ErrorCode`.
+- Schema mới `FieldErrorCode` cho `Problem.errors[].code`: `required`, `invalid_type`, `invalid_format`, `too_small`, `too_big`, `invalid_value`, `unrecognized_field`. Thư viện nền ánh xạ lỗi của Zod, pydantic sang bộ này, không trả nguyên mã của thư viện.
+- `components/responses.yaml`: mỗi response lỗi chung ghi mã cố định kèm ví dụ; thêm `MethodNotAllowed` (405) và `InternalError` (500, không lộ stack trace). Hai response này không khai ở từng operation; `internal/responses.yaml` thêm tham chiếu.
+- Lỗi provider vẫn dùng `ProviderErrorCode` (8.6) trong payload riêng, không đặt vào `Problem.code`.
+
+### Hợp đồng baseline DBQ-03, DBQ-04 và khóa ký token nội bộ, PO chốt 11/11/2026
 
 Cổng PH-01 cần DBQ-03, DBQ-04 đã sửa vào hợp đồng. Chưa service nào phát hay nhận sự kiện, nên hai trường chuyển thành bắt buộc ngay trong `0.1.0-mvp` mà không cần phiên bản mới.
 
@@ -79,7 +102,7 @@ Các mục còn lại của PRD không sinh endpoint riêng; ràng buộc của 
 - **Idempotency:** header `Idempotency-Key` cho mọi lệnh có tác động (DATA-IDEMP-001).
 - **Concurrency:** `ETag`/`If-Match` theo `rowVersion`; lệch trả `412` (DATA-CONC-001).
 - **Tác vụ dài:** `202` + `Workflow`; theo dõi bằng `GET /workflows/{id}` hoặc SSE `GET /events`.
-- **Lỗi:** `application/problem+json` với `code` ổn định (danh sách trong `components/responses.yaml`).
+- **Lỗi:** `application/problem+json` với `code` thuộc danh mục `ErrorCode`, lỗi từng trường dùng `FieldErrorCode` (`components/schemas/common.yaml`); response lỗi dùng chung ở `components/responses.yaml`. Lỗi không khai báo trả `500 internal_error`.
 - **Tên trạng thái:** giữ nguyên chuỗi của PRD (`In Progress`, `Pending Approval`…) để khớp mục 5/18.
 - **Ngôn ngữ:** `summary`/`description` viết tiếng Việt; tên đường dẫn, trường, enum, `operationId` tiếng Anh.
 
@@ -147,7 +170,7 @@ gateway, audit và sandbox-runner không mở endpoint nội bộ: gateway chỉ
 ### Quy ước nội bộ
 
 - **Không qua Internet:** server là DNS nội bộ Kubernetes (`http://<service>.sires.svc.cluster.local:8080`); không có Ingress. Đường dẫn bắt đầu bằng `/internal/`.
-- **Xác thực:** `Authorization: Bearer <token nội bộ>` — JWT ký bằng KMS, hạn ≤ 5 phút, nội dung theo `internal/schemas.yaml#/ServiceTokenClaims` (ADR-20). Chỉ gateway phát token actor Researcher; token của Agent Run luôn có actor agent và `agentScope`.
+- **Xác thực:** `Authorization: Bearer <token nội bộ>` — JWT ký bằng KMS, hạn ≤ 5 phút, nội dung theo `internal/schemas.yaml#/ServiceTokenClaims` (ADR-20). Chỉ gateway phát token actor Researcher; token của Agent Run luôn có actor agent và `agentScope`. Service nhận request Agent Run mà gọi tiếp: chuyển tiếp token Agent Run khi lấy dữ liệu trả cho agent, tự ký `act.type = system` khi phục vụ việc riêng (PO 16/11/2026).
 - **`x-callers`:** danh sách service được phép gọi operation; service khác nhận `403 caller_not_allowed`. Entity ngoài phạm vi tài khoản hoặc phạm vi agent vẫn trả `404`.
 - **Ghi đầu ra của agent:** body có `meta: AgentWriteMeta` (agentRunId, outputIndex, provenance); `Idempotency-Key` = `agentRunId:outputIndex`; phản hồi `WriteAck`. Mục không hợp lệ nằm trong `rejected`, không làm hỏng cả lô (architecture 5.8).
 - **Context bundle:** mọi API đọc cho Context Assembler trả `ContextBundle` gồm mục có `TypedRef` có phiên bản và lớp context (PRD 14.2), để ghi context manifest.

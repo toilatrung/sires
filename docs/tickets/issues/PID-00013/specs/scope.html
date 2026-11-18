@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00013.">
+<title>PID-00013 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00013</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00013</p><h1>PID-00013 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn.</p>
+
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Bộ sinh mock từ OpenAPI công khai: đọc cùng file bundle với <code>@sires/contracts</code>, chọn operation, sinh handler và dữ liệu có type (ví dụ trong spec trước, không có thì theo schema), hàm trả phản hồi lỗi đã khai; phần sinh tách khỏi override viết tay</td><td>ticket mục 1, AC01; spec 4.7</td><td>S01</td></tr>
+<tr><td>P2</td><td>Cách bật mock khi chạy dev (mặc định tắt) và trong test; ghép mock của shell và của các khu vực; bản build production không có mock; mock của shell cho <code>/auth/session</code>, <code>/me</code> để khung chạy được</td><td>ticket mục 1; PID-00012 S04</td><td>S02</td></tr>
+<tr><td>P3</td><td>Mock mẫu cho <code>/events</code>: phát bản ghi <code>Event</code> có <code>id</code>, nối lại theo <code>Last-Event-ID</code>, test đẩy được sự kiện</td><td>ticket mục 1; <code>/events</code>; PID-00012 S05</td><td>S03</td></tr>
+<tr><td>P4</td><td>Kiểm lệch khi OpenAPI đổi (AC01) và README hướng dẫn khu vực sinh mock, viết override</td><td>ticket AC01; PID-00036, PID-00037, PID-00060 (chỗ đặt mock)</td><td>S04</td></tr>
+</tbody></table></div>
+
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Mock riêng của từng khu vực: chọn operation, override, kịch bản, dữ liệu có trạng thái</td><td>Ticket “Không gồm”; quy tắc 1.4.4</td><td>PID của khu vực (PID-00036, PID-00037, PID-00060…)</td></tr>
+<tr><td>N2</td><td>Mock API nội bộ (<code>internal/*.yaml</code>) và AsyncAPI</td><td><code>web</code> chỉ gọi gateway</td><td>Luồng service tự viết stub (quy tắc 1.4.4)</td></tr>
+<tr><td>N3</td><td>Mock trong bản build staging, production hay chế độ demo</td><td>Ticket chỉ nói dev và test</td><td>—</td></tr>
+<tr><td>N4</td><td>Giao diện chọn kịch bản mock khi chạy dev</td><td>Không có trong ticket</td><td>—</td></tr>
+<tr><td>N5</td><td>Kiểm <code>dist/openapi.bundled.yaml</code> khớp nguồn trong CI</td><td>Việc của CI; PO chốt làm ở PID-00009 S04 (PID-00009 H9, 18/11/2026)</td><td><a href="../../PID-00009/index.html#phien-2">PID-00009</a></td></tr>
+<tr><td>N6</td><td>Dùng mock cho E2E Playwright</td><td>Không có trong ticket; E2E chạy trên staging</td><td>Luồng <code>e2e</code> nếu PO muốn</td></tr>
+<tr><td>N7</td><td>Giả lập tín hiệu “không còn phát lại được” của SSE trong mock <code>/events</code></td><td>Hợp đồng chưa có tín hiệu; PO chốt sẽ thêm (PID-00012 H5, 18/11/2026); chưa PID nào nhận việc giả lập</td><td>Cần PO khi hợp đồng có tín hiệu (<a href="../../PID-00012/index.html#phien-2">PID-00012</a> S12)</td></tr>
+</tbody></table></div>
+
+<h2 id="edge-case">Edge case</h2>
+<p>Quét theo nhóm áp dụng cho mock: dữ liệu rỗng và biên (operation không có ví dụ, schema phức tạp, phản hồi không phải JSON); đồng thời (hai khu vực mock cùng operation); trạng thái (mock không giữ trạng thái); sự kiện (nối lại, id không bền); dữ liệu cũ (bundle OpenAPI chưa cập nhật); an toàn (mock lọt vào bản build). Nhóm giao diện, provider, provenance, phân quyền không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Operation không có ví dụ</td><td>Sinh theo schema, không lỗi</td><td>Spec 4.7</td><td><code>apps/web/src/shell/mock/mock.spec.ts › không có ví dụ</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Schema dùng <code>allOf</code>, <code>oneOf</code>, <code>enum</code>, kiểu <code>[type, 'null']</code>, <code>format</code> (<code>date-time</code>, <code>uuid</code>), <code>$ref</code> lồng</td><td>Dữ liệu sinh ra hợp lệ theo schema (kiểm bằng validator JSON Schema trong test)</td><td>Spec 4.7 (“sinh theo schema”); AC01</td><td><code>apps/web/src/shell/mock/mock.spec.ts › dữ liệu hợp lệ theo schema</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Sinh hai lần với cùng OpenAPI</td><td>Cùng dữ liệu, để test lặp lại được</td><td>AC01 (test phải ổn định)</td><td><code>apps/web/src/shell/mock/mock.spec.ts › ổn định</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Phản hồi không phải JSON: <code>302</code> (<code>/auth/login</code>, <code>/auth/callback</code>), <code>204</code>, <code>text/event-stream</code> (<code>/events</code>)</td><td>Không sinh body JSON; <code>302</code> không giả lập chuyển tới eTroy; <code>/events</code> dùng mock mẫu của S03</td><td>Hợp đồng (<code>paths/15</code>, <code>paths/14</code>)</td><td><code>apps/web/src/shell/mock/mock.spec.ts › phản hồi không phải JSON</code></td><td>S01, S03</td></tr>
+<tr><td>EC05</td><td>Cần giả lập lỗi</td><td>Trả response lỗi đã khai của operation, body problem+json có <code>code</code> thuộc <code>ErrorCode</code> (có type); không dùng mã ngoài danh mục</td><td><code>Problem</code>, <code>ErrorCode</code> (PO 11/11/2026)</td><td><code>apps/web/src/shell/mock/mock.spec.ts › lỗi có type</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Chạy dev mà không bật mock</td><td>Gọi gateway qua proxy như hiện tại</td><td>Ticket (“cách bật mock”); <code>vite.config.ts</code></td><td>Thao tác tay: <code>pnpm --filter @sires/web dev</code> không cờ mock → request tới proxy</td><td>S02</td></tr>
+<tr><td>EC07</td><td>Build production (<code>vite build</code>)</td><td>Bản build không chứa mã mock, không bật được mock</td><td>Ticket (mock khi dev và test)</td><td><code>apps/web/src/shell/mock/build.spec.ts › bản build không có mock</code> hoặc kiểm thư mục <code>dist</code> sau <code>pnpm nx run @sires/web:build</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Bật mock: shell kiểm phiên khi tải</td><td><code>GET /auth/session</code> trả phiên mẫu có <code>csrfToken</code>; <code>GET /me</code> trả tài khoản mẫu có <code>preferences.uiLanguage</code>; không chuyển tới eTroy</td><td>PID-00012 S04; <code>getSession</code>, <code>getMe</code></td><td><code>apps/web/src/shell/mock/mock.spec.ts › phiên mẫu</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>Khu vực cần hành vi riêng (luồng có trạng thái, <code>409</code>, <code>412</code>, phân trang)</td><td>Mock dùng chung không giữ trạng thái; khu vực viết override trong <code>features/&lt;khu vực&gt;/__mocks__/</code></td><td>Ticket “Không gồm”; quy tắc 1.4.4</td><td>README của <code>shell/mock</code>; <code>mock.spec.ts › override có type</code></td><td>S02, S04</td></tr>
+<tr><td>EC10</td><td>Hai khu vực khai mock cho cùng một operation</td><td>Báo lỗi rõ khi ghép, nêu operation và hai khu vực; không âm thầm ghi đè</td><td>Như test “no two feature areas claim the same path” hiện có ở <code>routes.spec.ts</code></td><td><code>apps/web/src/shell/mock/mock.spec.ts › trùng operation</code></td><td>S02</td></tr>
+<tr><td>EC11</td><td>Client SSE nối lại kèm <code>Last-Event-ID</code>; sự kiện <code>chat.delta</code></td><td>Mock phát tiếp từ sau id đó; <code>chat.delta</code> không có id. Tín hiệu “không còn phát lại được”: hợp đồng chưa có (PO chốt thêm, PID-00012 H5); mock chưa giả lập (N7)</td><td><code>/events</code>; <code>Event</code></td><td><code>apps/web/src/shell/mock/events.spec.ts › nối lại</code></td><td>S03</td></tr>
+<tr><td>EC12</td><td>OpenAPI đổi schema mà override của khu vực dùng trường cũ</td><td>Sinh lại thì phần sinh đổi theo; typecheck báo lỗi đúng chỗ dùng trường cũ</td><td>Ticket AC01</td><td><code>apps/web/src/shell/mock/mock.spec.ts › đổi schema thì typecheck báo lệch</code></td><td>S04</td></tr>
+<tr><td>EC13</td><td>PO sửa <code>docs/api-design/paths</code> mà chưa bundle lại</td><td>Bộ sinh đọc đúng file bundle mà <code>@sires/contracts</code> dùng, để mock và type không lệch nhau; kiểm bundle khớp nguồn thuộc CI (N5; PID-00009 S04, H9)</td><td><code>libs/ts/contracts/scripts/generate.mjs</code></td><td>Đọc mã: cùng đường dẫn nguồn với <code>generate.mjs</code></td><td>S01</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00013</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00013 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

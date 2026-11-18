@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00009.">
+<title>S04 — Nhóm hợp đồng: Redocly lint và kiểm lệch spec | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S04 — Nhóm hợp đồng: Redocly lint, kiểm bundle khớp nguồn, kiểm lệch spec</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (spec B3, B7)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B7; H9 (làm rõ 18/11/2026)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08, EC20 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <a href="../../../PID-00008/index.html">PID-00008</a> đã merge (<code>libs/ts/contracts/scripts/check-drift.mjs</code>) cho bước 3 — PID-00008 chưa làm, ghi nhận không chặn (H10); bước 1, 2 làm được ngay</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Job hợp đồng chạy khi nhóm hợp đồng đổi (chế độ lọc) và mọi lần ở chế độ toàn bộ: đúng ba lệnh Redocly lint ở <code>docs/api-design/README.md</code> (công khai <code>openapi.yaml</code>; chín file <code>internal/*.yaml</code>; <code>events/asyncapi.yaml</code>), cùng phiên bản <code>@redocly/cli@2.11.1</code>; lệnh lỗi → job thất bại. Không sửa <code>docs/api-design/redocly.yaml</code>, <code>.redocly.lint-ignore.yaml</code> (PO giữ).</li>
+<li>Cùng job: bundle OpenAPI công khai ra thư mục tạm bằng đúng lệnh bundle ở <code>docs/api-design/README.md</code> và cùng phiên bản <code>@redocly/cli@2.11.1</code>, rồi so với <code>docs/api-design/dist/openapi.bundled.yaml</code> đã commit, bỏ qua khác biệt ký tự xuống dòng; lệch nội dung → job thất bại, in lệnh bundle cần chạy. Không ghi vào <code>docs/api-design/dist/</code> (EC20, H9).</li>
+<li>Gắn lệnh kiểm lệch spec theo đúng cách PID-00008 hướng dẫn (README hoặc <code>implement.md</code> của PID-00008); không sửa script đó (luồng contracts).</li>
+<li>Nhóm hợp đồng làm <code>@sires/contracts</code> và project phụ thuộc thành bị ảnh hưởng, để job TS chạy cho chúng (EC08; quy tắc đã đặt ở S01).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Ba lệnh ở <code>docs/api-design/README.md</code> chạy cục bộ trong <code>docs/api-design</code> → “valid” (đã đạt ngày 17/11/2026)</li>
+<li>Thao tác tay: chạy lệnh lint trên bản sao <code>docs/api-design</code> trong thư mục tạm có một lỗi cố ý → thoát mã khác 0 (không sửa <code>docs/</code>)</li>
+<li>Chạy bước so bundle trên repo hiện tại → đạt (ngày 17/11/2026 bundle lại chỉ khác ký tự xuống dòng)</li>
+<li>Thao tác tay (EC20) trên bản sao trong thư mục tạm: sửa một mô tả trong <code>paths/</code> mà không bundle → bước so thất bại, in lệnh bundle; đổi xuống dòng của bản bundle sang CRLF → đạt</li>
+<li>Script kiểm thay đổi với <code>docs/api-design/internal/schemas.yaml</code> → nhóm hợp đồng, có <code>@sires/contracts</code> và project phụ thuộc (EC08)</li>
+<li>T4 — CI của PR PID-00009 vào <code>main</code>: job hợp đồng chạy (chế độ toàn bộ) và đạt</li>
+<li>PR thử T1: job hợp đồng skipped</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PR sửa spec có lint, kiểm bundle khớp nguồn và kiểm lệch spec; lỗi lint, bundle lệch nguồn hoặc lệch spec làm job và <code>build</code> thất bại</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

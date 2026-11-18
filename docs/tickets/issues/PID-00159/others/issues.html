@@ -1,0 +1,127 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu vấn đề chưa chốt của ticket PID-00159.">
+<title>PID-00159 — Vấn đề chưa chốt | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+<style>
+  .issue { border: 1px solid var(--line); padding: 4px 16px 16px; margin: 16px 0; }
+  .issue h2 { margin-top: 12px; }
+  .answer { background: var(--wash); padding: 12px; margin-top: 12px; }
+  .answer fieldset { border: 0; margin: 0; padding: 0; }
+  .answer legend { font-weight: 600; margin-bottom: 4px; }
+  .answer label { display: block; margin: 4px 0; }
+  .answer textarea, .answer input[type="text"] { width: 100%; max-width: 100%; font: inherit; padding: 6px; box-sizing: border-box; }
+  .answer .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-top: 8px; }
+  #out { width: 100%; min-height: 8em; font: 13px/1.4 ui-monospace, monospace; box-sizing: border-box; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>PID-00159 — Vấn đề chưa chốt · Phiếu trả lời</h1>
+
+<p>spec-clarify-skill lập trang này ngày 18/11/2026 khi lập hồ sơ PID-00159 theo quyết định chung D4: PO không trả lời câu hỏi trong phiên, nên điểm làm đổi mã mà D4 và nguồn chưa chốt được ghi thành phiếu (nhãn cục bộ của hồ sơ). Hồ sơ vẫn lập đủ theo phương án an toàn: slice bị ảnh hưởng ghi “chặn bởi I1”.</p>
+<ol><li>PO mở trang bằng trình duyệt, đánh dấu phương án, ghi điều kiện, người trả lời, ngày.</li>
+<li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00159</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
+<li>Agent chuyển mỗi câu trả lời thành <code>H3</code>… ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ”.</li></ol>
+<p>Phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống; đề xuất không được coi là câu trả lời.</p>
+
+<div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
+<tr><td><a href="#i1">I1</a></td><td>Migration ở cục bộ đăng nhập bằng vai trò nào để đối tượng thuộc <code>sires_&lt;svc&gt;_owner</code>?</td><td>có — S03</td><td>Mở</td></tr>
+</tbody></table></div>
+
+<article class="issue" id="i1" data-issue="I1">
+<h2>I1 — Ở môi trường cục bộ, migration của mỗi service đăng nhập bằng vai trò nào, để bảng, hàm do migration tạo thuộc <code>sires_&lt;svc&gt;_owner</code> như database 3.2, khi database 3.2 chỉ ghi owner “không LOGIN (migration đăng nhập bằng vai trò migrator là thành viên)” mà không đặt tên vai trò migrator?</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Nhóm</th><td>Cổng sẵn sàng · Ranh giới luồng · Mâu thuẫn tài liệu (thiếu tên)</td></tr>
+<tr><th scope="row">Vì sao quan trọng</th><td>Lệnh migrate của 11 PID migration đọc “DSN của vai trò migrator” từ biến môi trường (ví dụ PID-00020 S01, PID-00026 S01). Trên compose phải có một vai trò đăng nhập được, có quyền của owner, và để đối tượng thuộc owner. Lựa chọn quyết định PID này tạo thêm vai trò nào, README ghi DSN nào, và lỗi quyền có lộ ra ở máy hay chỉ lộ ở staging. D4 nói “vai trò <code>sires_&lt;service&gt;_*</code> như database 3.2”; các phiếu PO đã chấp nhận (PID-00023 I5, PID-00006 I2) nói “bốn vai trò mỗi database” mà không nhắc migrator.</td></tr>
+<tr><th scope="row">Nguồn</th><td>Database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a>, dòng <code>sires_&lt;svc&gt;_owner</code>: LOGIN “không (migration đăng nhập bằng vai trò migrator là thành viên)”, quyền “Sở hữu schema, bảng, hàm; chạy migration DDL”. <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-06">DBD-06</a>: “Bốn vai trò mỗi service”. Database <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a>: “Vai trò owner chỉ dùng cho migration; ứng dụng không bao giờ kết nối bằng owner.” Image <code>pgvector/pgvector:pg16</code>: <code>vector</code> 0.8.7 không trusted (owner không tự tạo được; init tạo sẵn ở <code>sires_knowledge</code>).</td></tr>
+<tr><th scope="row">Ảnh hưởng</th><td>S03; PID-00159-AC05; EC06, EC11, EC12; README (S04); DSN migrator của 11 PID migration</td></tr>
+<tr><th scope="row">Chặn</th><td>có — S03</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Mở</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
+<tr><td>A</td><td>Mỗi service thêm <code>sires_&lt;svc&gt;_migrator</code>: LOGIN, mật khẩu cục bộ, thành viên của <code>sires_&lt;svc&gt;_owner</code>, <code>ALTER ROLE … SET role = 'sires_&lt;svc&gt;_owner'</code> để mỗi phiên tự chuyển sang owner; CONNECT chỉ database của service. Owner giữ NOLOGIN.</td><td>Đúng chữ database 3.2 (owner NOLOGIN, migrator là thành viên); đối tượng thuộc owner mà migration không cần lệnh <code>SET ROLE</code>; quyền khi migrate đúng là quyền owner nên lỗi quyền lộ ngay trên máy. Thêm 11 vai trò (55 tổng); PO thêm tên vào database 3.2 để Terraform tạo giống vậy ở staging. DSN migrator: <code>postgres://sires_&lt;svc&gt;_migrator:sires-local@localhost:5432/sires_&lt;svc&gt;</code>.</td></tr>
+<tr><td>B</td><td>Ở cục bộ dùng superuser <code>sires</code> của compose làm migrator; lệnh migrate của từng service tự chạy <code>SET ROLE sires_&lt;svc&gt;_owner</code> đầu phiên.</td><td>Không thêm vai trò; một DSN cho mọi service. Mỗi PID migration phải tự nhớ <code>SET ROLE</code> trong mã; quên thì bảng thuộc <code>sires</code> và superuser bỏ qua mọi kiểm quyền, lỗi chỉ lộ ở staging. Cục bộ khác staging về cách đăng nhập.</td></tr>
+<tr><td>C</td><td>Cho <code>sires_&lt;svc&gt;_owner</code> LOGIN ở cục bộ; migration đăng nhập thẳng bằng owner.</td><td>Đơn giản nhất, đối tượng tự thuộc owner. Lệch database 3.2 (owner NOLOGIN) giữa cục bộ và staging; DSN cục bộ khác hình staging; staging vẫn phải có migrator.</td></tr>
+</tbody></table></div>
+<p><strong>Đề xuất:</strong> Phương án A — giữ đúng database 3.2 và DBD-06 (owner không LOGIN), mỗi service tự đủ, không cần thêm lệnh vào mã migration, và quyền khi migrate trên máy giống staging. Kèm theo: PO thêm tên <code>sires_&lt;svc&gt;_migrator</code> vào database 3.2 (mục “Phải sửa ở nguồn” của trang ticket). Hồ sơ hiện lập theo: S01, S02, S04 không tạo vai trò chạy migration; S03 và mục “áp DDL tham chiếu” của <code>check-db</code> chặn bởi I1.</p>
+<form class="answer no-print" onsubmit="return false">
+<fieldset><legend>Phiếu trả lời</legend>
+<label><input type="radio" name="I1" value="A"> A — <code>sires_&lt;svc&gt;_migrator</code> thành viên của owner, <code>SET role</code> mặc định</label>
+<label><input type="radio" name="I1" value="B"> B — Superuser <code>sires</code>, migration tự <code>SET ROLE</code></label>
+<label><input type="radio" name="I1" value="C"> C — Owner có LOGIN ở cục bộ</label>
+<label><input type="radio" name="I1" value="Khác"> Khác (ghi ở dưới)</label>
+</fieldset>
+<label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
+<div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
+</form>
+<p><strong>Câu trả lời đã ghi:</strong> —</p>
+</article>
+
+<section class="no-print">
+<h2 id="xuat">Sao chép câu trả lời</h2>
+<p><button type="button" id="copy">Sao chép câu trả lời</button> <button type="button" id="clear">Xoá phiếu đã điền</button></p>
+<textarea id="out" readonly aria-label="Câu trả lời để dán vào phiên agent"></textarea>
+</section>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00159</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · Vấn đề chưa chốt · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+// Gom phiếu đã điền thành văn bản để dán vào phiên agent. Lưu tạm trong trình duyệt của người điền.
+(function () {
+  var pkg = document.title.split(' ')[0];
+  var key = 'sires-issues-' + location.pathname;
+  var forms = Array.prototype.slice.call(document.querySelectorAll('article.issue form.answer'));
+  function state() {
+    return forms.map(function (f) {
+      var id = f.closest('article').getAttribute('data-issue');
+      var r = f.querySelector('input[type=radio]:checked');
+      return { id: id, choice: r ? r.value : '', label: r ? r.parentNode.textContent.trim() : '',
+        note: f.note.value.trim(), who: f.who.value.trim(), date: f.date.value.trim() };
+    });
+  }
+  function render() {
+    var lines = [pkg + ' — câu trả lời phiếu vấn đề'];
+    state().forEach(function (s) {
+      if (!s.choice && !s.note) return;
+      lines.push(s.id + ': ' + (s.label || 'Khác') + (s.note ? ' — ' + s.note : '') + ' — ' + (s.who || '(chưa ghi người trả lời)') + (s.date ? ', ' + s.date : ''));
+    });
+    document.getElementById('out').value = lines.length > 1 ? lines.join('\n') : '';
+  }
+  function save() { try { localStorage.setItem(key, JSON.stringify(state())); } catch (e) {} }
+  function load() {
+    var saved; try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { saved = []; }
+    (saved || []).forEach(function (s) {
+      var f = forms.filter(function (x) { return x.closest('article').getAttribute('data-issue') === s.id; })[0];
+      if (!f) return;
+      var r = f.querySelector('input[type=radio][value="' + s.choice + '"]'); if (r) r.checked = true;
+      f.note.value = s.note || ''; f.who.value = s.who || ''; f.date.value = s.date || '';
+    });
+  }
+  forms.forEach(function (f) { f.addEventListener('input', function () { save(); render(); }); f.addEventListener('change', function () { save(); render(); }); });
+  document.getElementById('copy').addEventListener('click', function () {
+    render(); var o = document.getElementById('out'); o.select();
+    try { navigator.clipboard.writeText(o.value); } catch (e) { document.execCommand('copy'); }
+  });
+  document.getElementById('clear').addEventListener('click', function () {
+    forms.forEach(function (f) { f.reset(); }); try { localStorage.removeItem(key); } catch (e) {} render();
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>

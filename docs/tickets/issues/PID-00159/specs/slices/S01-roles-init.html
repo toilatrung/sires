@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00159.">
+<title>S01 — Script vai trò và quyền database trong init | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00159</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00159</p><h1>S01 — Script vai trò và quyền database trong init</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00159-AC01, PID-00159-AC02, PID-00159-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (trừ vai trò chạy migration), O2, O3 (<code>check-db</code> mục 1–5), O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC03–EC08, EC13, EC16–EC18 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>— (compose cục bộ chạy được)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo <code>infra/local/postgres/init/02-roles.sql</code> (tạo mới) theo <a href="../index.html#s-4-4">spec 4.4</a>: danh sách 11 khóa service là một mảng; khối <code>DO</code> lặp: chưa có vai trò thì <code>CREATE ROLE</code>; luôn <code>ALTER ROLE</code> đặt thuộc tính ở <a href="../index.html#s-4-1">spec 4.1</a> (NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, INHERIT; LOGIN hay NOLOGIN; BYPASSRLS hay NOBYPASSRLS) và mật khẩu <code>sires-local</code> cho vai trò LOGIN (EC03, EC18). Database có thì đổi chủ sang owner, <code>REVOKE CONNECT … FROM PUBLIC</code>, <code>GRANT CONNECT</code> cho <code>_app</code>, <code>_system</code>, <code>_purge</code>; không có thì bỏ qua phần database (EC04). Cuối file: có <code>sires_knowledge</code> thì <code>\connect sires_knowledge</code> và <code>CREATE EXTENSION IF NOT EXISTS vector</code> (dùng <code>\gset</code>, <code>\if</code> của psql để kiểm database tồn tại; EC06). Không tạo vai trò cho sandbox-runner, web (EC13). Chạy <code>node scripts/docs/add-license.mjs</code> để gắn giấy phép.</li>
+<li>Sửa chú thích dòng 5–6 của <code>infra/local/postgres/init/01-databases.sql</code> (có sẵn): vai trò do <code>02-roles.sql</code> tạo theo database 3.2; schema, quyền bảng và extension trusted do migration của service tạo, bắt đầu từ <code>00-common.sql</code>; <code>vector</code> do init tạo. Không đổi tên database.</li>
+<li>Trong <code>scripts/development/local-env.mjs</code> (có sẵn), thêm hành động <code>check-db</code>: hàm chạy <code>docker compose exec -T postgres psql</code> (dùng lại cách gọi qua <code>wsl.exe</code> khi ở Windows); compose chưa chạy → thông báo chạy <code>pnpm local:up</code> trước, mã 1 (EC17). Mục kiểm 1–5 của spec 4.4, mỗi mục in <code>OK</code> hay <code>LỖI</code> kèm lý do: “vai trò”, “chủ database”, “kết nối” (ma trận <code>has_database_privilege</code> và một lần kết nối chéo thật bị từ chối; superuser <code>sires</code> vào được mọi database — EC07, EC08), “đăng nhập bằng mật khẩu” (TCP tới địa chỉ không phải loopback của container, EC16), “extension”.</li>
+<li>Thêm <code>"local:check-db": "node scripts/development/local-env.mjs check-db"</code> vào <code>scripts</code> của <code>package.json</code> gốc (có sẵn); cập nhật dòng “Dùng:” ở đầu <code>local-env.mjs</code>.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>node scripts/development/local-env.mjs down -v</code> (xóa volume cục bộ; chỉ khi chấp nhận mất dữ liệu), <code>pnpm local:up</code>, rồi <code>pnpm local:check-db</code> → mọi mục <code>OK</code>, mã 0</li>
+<li>Test: <code>local-env.mjs check-db › vai trò</code>, <code>› chủ database</code> (PID-00159-AC01; EC05, EC13)</li>
+<li>Test: <code>local-env.mjs check-db › kết nối</code>, <code>› đăng nhập bằng mật khẩu</code> (PID-00159-AC02; EC07, EC08, EC16, EC18)</li>
+<li>Test: <code>local-env.mjs check-db › extension</code> (PID-00159-AC04; EC06); thao tác tay trên volume mới: <code>\dx</code> ở 10 database còn lại chỉ thấy <code>plpgsql</code></li>
+<li>Thao tác tay (EC03): <code>ALTER ROLE sires_planning_system NOBYPASSRLS</code>, <code>pnpm local:check-db</code> thấy <code>LỖI</code>; chạy lại script, thấy <code>OK</code>. (EC04): chạy <code>02-roles.sql</code> trên một container PostgreSQL trống, không lỗi. (EC17): <code>pnpm local:down</code> rồi <code>pnpm local:check-db</code>, thấy thông báo và mã 1.</li>
+<li><code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Volume mới có đủ 44 vai trò đúng database 3.2, 11 database thuộc owner, mỗi vai trò chỉ kết nối database của service mình, <code>vector</code> có trong <code>sires_knowledge</code>; <code>pnpm local:check-db</code> báo đúng khi có lệch.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00159</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00159 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

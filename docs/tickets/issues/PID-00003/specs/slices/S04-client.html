@@ -34,7 +34,8 @@
 <h2 id="lam">Làm</h2>
 <ol><li>Viết helper cho lời gọi HTTP đi: phát token bằng hàm của S01 với <code>aud</code> = service đích, gắn <code>Authorization: Bearer</code>; dùng lại token tới gần hết hạn hay phát mới mỗi lời gọi do Dev chọn, ghi <code>report.md</code></li>
 <li><code>act</code>, <code>accountId</code>, <code>projectId</code> lấy từ ngữ cảnh request đang xử lý (S02); job và consumer không có request đầu vào dùng <code>act.type = system</code> kèm <code>component</code></li>
-<li>Không tự phát <code>act.type = agent</code> trong helper này: token Agent Run chỉ phát qua hàm riêng của S01 mà orchestration gọi</li></ol>
+<li>Không tự phát <code>act.type = agent</code> trong helper này: token Agent Run chỉ phát qua hàm riêng của S01 mà orchestration gọi</li>
+<li>Request đang xử lý mang token Agent Run (OQ-110, PO chốt 16/11/2026): bên gọi chọn chuyển tiếp nguyên token đó (lấy dữ liệu trả cho agent; service đích phải có trong <code>aud</code>) hoặc tự ký <code>act.type = system</code> kèm <code>component</code>, <code>accountId</code>, <code>projectId</code> từ token đến (việc riêng của service); helper không tự đoán thay bên gọi (<a href="../../designs/notes.html#api-va-su-kien">ghi chú thiết kế</a>)</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/platform:test</code> → đạt</li>
 <li><code>libs/ts/platform/src/service-auth/client.spec.ts › lời gọi đi qua guard</code> (PID-00003-AC06)</li>

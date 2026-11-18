@@ -32,7 +32,7 @@
 <tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Thêm Drizzle, node-postgres, <code>testcontainers</code> vào <code>libs/ts/platform/package.json</code></li>
+<ol><li>Thêm Drizzle, node-postgres, <code>testcontainers</code> vào <code>libs/ts/platform/package.json</code>; thêm <code>drizzle-orm</code>, <code>drizzle-kit</code> (devDependency) và driver PostgreSQL vào pnpm catalog để mọi PID migration NestJS dùng chung (PO 18/11/2026, quy ước migration ở kiến trúc 6)</li>
 <li>Viết helper giao dịch có <code>SET LOCAL app.account_id</code> trong <code>libs/ts/platform/src/tenancy/</code></li>
 <li>Viết sinh UUIDv7 và helper kiểm <code>If-Match</code></li>
 <li>Test dùng <code>testcontainers</code> trực tiếp với image PostgreSQL 16 + pgvector, tạo bảng có RLS bằng <code>app.enable_tenant_rls()</code> hoặc policy tương đương, đăng nhập bằng vai trò không có BYPASSRLS</li></ol>

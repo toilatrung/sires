@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của PID-00014.">
+<title>PID-00014 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00014</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00014</p><h1>PID-00014 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill. Làm rõ ngày 17/11/2026 trong lô PH-01 (phiếu I1–I4); ngày 18/11/2026 PO chấp nhận mọi đề xuất và sáu quyết định chung D1–D6, gộp thành H1–H6 ở <a href="../index.html#phien-2">trang ticket mục 5</a>. Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Gateway (BFF duy nhất ra Internet) giữ phiên đăng nhập của Researcher ở phía server. Mỗi request mang cookie <code>sires_session</code> được tra phiên trong database <code>sires_gateway</code>; phiên đã thu hồi, quá hạn tuyệt đối hoặc quá 12 giờ kể từ thao tác cuối do người dùng thực hiện thì request bị từ chối <code>401 unauthenticated</code>. Lệnh ghi phải mang <code>X-CSRF-Token</code> khớp phiên, sai hoặc thiếu thì <code>403 forbidden</code>. Ticket này dựng migration (kèm lệnh migrate và giá trị Helm), phần tra, kiểm và gia hạn phiên, kiểm CSRF, và các hàm tạo phiên, CSRF token, cookie để <a href="../../PID-00038/index.html">PID-00038</a> dùng; endpoint đăng nhập, <code>GET /auth/session</code>, đăng xuất thuộc PID-00038.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Trình duyệt chỉ giữ cookie <code>sires_session</code> (HttpOnly, Secure, SameSite=Lax, path <code>/</code>); token OIDC không xuống trình duyệt — <a href="../../../../architecture/sections/10-security-architecture.html#s-10-2">kiến trúc 10.2</a>, ADR-09. Cookie bền, <code>Expires</code> = <code>absolute_expires_at</code> của phiên; đóng trình duyệt không đăng xuất; server vẫn là nơi quyết định (12 giờ, thu hồi) — H3</li>
+<li>Database chỉ lưu <code>sid_hash</code> = sha256 của session id và <code>csrf_token_hash</code>, không lưu giá trị rõ — <code>docs/database/ddl/gateway.sql</code>, <a href="../../../../database/sections/04-identity-gateway-workspace.html#s-4-2">database 4.2</a></li>
+<li>CSRF token = HMAC-SHA256(khóa bí mật của gateway, session id): khi tạo phiên lưu sha256(token) vào <code>csrf_token_hash</code>; <code>GET /auth/session</code> tính lại token từ session id trong cookie; mọi tab của một phiên dùng cùng token; đổi khóa thì token cũ mất hiệu lực. Khóa là cấu hình của gateway (giá trị cục bộ không commit; secret ở staging) — H2</li>
+<li>Tra phiên trước khi có tenant context bằng <code>app.find_session(sid_hash)</code> (SECURITY DEFINER); hàm chỉ trả phiên chưa thu hồi, <code>idle_expires_at &gt; now()</code>, <code>absolute_expires_at &gt; now()</code>. Phiên quá hạn bị loại ngay ở bước tra, không cần ghi lại (cột <code>revoke_reason</code> không có giá trị cho hết hạn) — DDL</li>
+<li>Chỉ thao tác do người dùng thực hiện cập nhật <code>last_seen_at</code> và <code>idle_expires_at</code> = thao tác cuối + 12 giờ: lệnh ghi được chấp nhận và <code>GET /auth/session</code> (web gọi khi điều hướng, mở màn hình, không gọi theo chu kỳ). Kết nối SSE <code>/events</code>, polling và mọi GET khác không gia hạn; lệnh ghi bị từ chối (<code>401</code>, <code>403</code>) không gia hạn — <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-27">ADR-27</a>, kiến trúc 10.2, database 4.2, H1</li>
+<li>Ghi dòng <code>app.session</code> chạy trong giao dịch có <code>app.account_id</code> = <code>account_id</code> của phiên (bảng có RLS) — <code>00-common.sql</code> (<code>enable_tenant_rls</code>), helper tenancy của <a href="../../PID-00001/index.html">PID-00001</a></li>
+<li>Không có phiên, phiên quá hạn hoặc đã thu hồi → <code>401</code>, problem+json <code>code = unauthenticated</code> — <code>docs/api-design/components/responses.yaml#/Unauthorized</code>, NFR-AUTH-001-AC01, <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-003">INT-OIDC-003</a></li>
+<li>CSRF: synchronizer token ở header <code>X-CSRF-Token</code> cho mọi lệnh ghi (POST, PUT, PATCH, DELETE); thiếu hoặc sai → <code>403</code> <code>code = forbidden</code>; SameSite=Lax là lớp thứ hai — <a href="../../../../architecture/sections/10-security-architecture.html#s-10-5">kiến trúc 10.5</a>, <code>parameters.yaml#/CsrfToken</code>, <code>responses.yaml#/Forbidden</code>, <code>openapi.yaml</code> Quy ước chung</li>
+<li>Route công khai không đòi phiên: <code>/auth/login</code>, <code>/auth/callback</code> (<code>security: []</code> trong <code>paths/15-settings-and-sign-in.yaml</code>) và <code>/health</code></li>
+<li>Mã lỗi chỉ lấy từ <code>ErrorCode</code> của <code>components/schemas/common.yaml</code> (PO 11/11/2026)</li>
+<li>Cookie, session id, CSRF token không xuất hiện trong log — INT-OIDC-003 (“token lưu phía server, không lộ ra log”), chính sách che log chung TS và Python (<a href="../../PID-00005/designs/notes.html">PID-00005 ghi chú 12/11/2026</a>: cookie, set-cookie, csrf token, x-csrf-token)</li>
+<li>Migration theo kiến trúc 6.10 (PO chốt 18/11/2026): migration đầu là SQL chép từ <code>gateway.sql</code> cùng phần chung của <code>00-common.sql</code>, đặt làm custom migration SQL của drizzle-kit (có journal), chạy bằng <code>migrate()</code> của drizzle-orm qua lệnh migrate của service; chỉ tiến; schema Drizzle bằng TypeScript không thuộc migration. PID gồm test hành vi DDL của gateway, lệnh migrate và giá trị Helm <code>migration.enabled</code>, <code>migration.command</code> — <a href="../../../../architecture/sections/06-data-architecture.html#s-6-10">kiến trúc 6.10</a>, H4, H5</li>
+<li>Vai trò <code>sires_gateway_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> không nằm trong migration: Terraform tạo ở staging, production; compose tạo ở máy Dev (<a href="../../PID-00159/index.html">PID-00159</a>); tới khi có, test tự tạo vai trò cần dùng — <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">database 3.2</a>, H5 (D4)</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/database/ddl/gateway.sql</code> (<code>app.session</code>, <code>app.sse_event_log</code>, <code>app.find_session</code>; không có state machine) — có</li>
+<li><code>docs/api-design/components/responses.yaml</code> (Unauthorized, Forbidden), <code>parameters.yaml</code> (CsrfToken), <code>openapi.yaml</code> (<code>sessionCookie</code>), <code>paths/15-settings-and-sign-in.yaml</code> (<code>/auth/*</code>) — có</li>
+<li><code>apps/gateway/src/app.module.ts</code>, <code>main.ts</code>, <code>manifest.ts</code> — có (scaffold trên Express; PID-00001 chuyển <code>bootstrapService</code> sang Fastify trên nhánh của nó)</li>
+<li><code>apps/gateway/migrations/</code> — có (chỉ <code>.gitkeep</code>); <code>apps/gateway/README.md</code> — có; <code>apps/gateway/deploy/values.yaml</code> — có (chưa có <code>migration.*</code>)</li>
+<li><code>apps/gateway/package.json</code>: project Nx <code>@sires/gateway</code> — có</li>
+<li><a href="../../PID-00001/index.html">PID-00001</a> (helper tenancy, problem+json, logger che dữ liệu, Fastify, Drizzle, drizzle-kit trong catalog) — Sẵn sàng, chưa merge (nhánh <code>platform/ts-core-tenancy-logging</code>, S02 problem+json chưa xong); chặn S01–S03 tới khi merge</li>
+<li><a href="../../PID-00004/index.html">PID-00004</a> (<code>startPostgres</code>) — đã merge vào <code>main</code></li>
+<li><a href="../../PID-00010/index.html">PID-00010</a> (Job migration trong chart chung đọc <code>migration.*</code>; image production không có drizzle-kit) — chưa làm; không chặn</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 <code>apps/gateway/migrations/</code>: custom migration SQL đầu, lệnh migrate → S01</li>
+<li>O2 <code>apps/gateway/src/session/</code> (tạo mới): tra, kiểm, gia hạn phiên; kiểm CSRF; hàm tạo phiên, CSRF token, cookie cho PID-00038 → S02, S03, S04, S05</li>
+<li>O3 <code>apps/gateway/src/session/session.spec.ts</code>, <code>apps/gateway/src/migration.spec.ts</code> (tạo mới): test theo AC và test hành vi DDL → S01–S05</li>
+<li>O4 <code>apps/gateway/README.md</code>: entity sở hữu, bản sao chỉ đọc, cách chạy migration, tên cấu hình khóa CSRF → S01, S05</li>
+<li>O5 <code>apps/gateway/deploy/values.yaml</code>: <code>migration.enabled</code>, <code>migration.command</code> → S01</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>last_activity</code> (kiến trúc 10.2, ADR-27) = cột <code>last_seen_at</code> của <code>app.session</code> (DDL).</li>
+<li>Lệnh ghi = request POST, PUT, PATCH, DELETE (<code>openapi.yaml</code> Quy ước chung).</li>
+<li>Hạn tuyệt đối = <code>absolute_expires_at</code>; giá trị do <a href="../../PID-00038/index.html">PID-00038</a> đặt khi tạo phiên theo token eTroy (INT-OIDC-003); ticket này kiểm, và dùng làm <code>Expires</code> của cookie (H3).</li>
+<li>Khóa CSRF = khóa bí mật của gateway dùng tính HMAC cho CSRF token (H2); tên cấu hình do Dev đặt, ghi README.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00014</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Tóm tắt nghiệp vụ PID-00014 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

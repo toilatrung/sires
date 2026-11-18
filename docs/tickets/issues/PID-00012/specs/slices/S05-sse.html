@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00012.">
+<title>S05 — Client SSE | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00012</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00012</p><h1>S05 — Client SSE</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00012-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08, EC13, EC14, EC15 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Client SSE (tạo mới, ví dụ <code>apps/web/src/shell/sse.ts</code>): một kết nối <code>GET /events</code> cho phiên; đọc bản ghi <code>id</code>, <code>event</code>, <code>data</code>; <code>data</code> có type <code>Event</code> của <code>PublicApi</code>; cho khu vực đăng ký theo <code>Event.type</code> và <code>projectId</code>, hủy đăng ký khi unmount.</li>
+<li>Giữ <code>Last-Event-ID</code> = id của sự kiện bền cuối; bỏ qua id của <code>chat.delta</code> (EC13). Mất kết nối → nối lại kèm header <code>Last-Event-ID</code> (AC02); khoảng chờ nối lại là giá trị kỹ thuật Dev đặt, ghi <code>implement.md</code>. Cách đọc luồng (EventSource hay fetch đọc stream) Dev chọn, miễn gửi được header theo hợp đồng.</li>
+<li>Sau khi nối lại, phát tín hiệu “đã nối lại” cho nơi đăng ký (EC14). “Cần tải lại” chỉ phát khi server báo không còn phát lại được — làm ở S12 sau khi hợp đồng có tín hiệu (H5); slice này không tự phát “cần tải lại”.</li>
+<li>401 → không thử lại, gọi luồng phiên hết hạn của S04 (EC15, EC08). Phiên kết thúc hoặc ứng dụng unmount → đóng kết nối.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/shell/sse.spec.ts › gửi Last-Event-ID khi nối lại</code> (PID-00012-AC02)</li>
+<li><code>apps/web/src/shell/sse.spec.ts › chat.delta</code> (EC13); <code>› báo đã nối lại</code> (EC14); <code>› 401</code> (EC15)</li>
+<li><code>pnpm --filter @sires/web exec vitest run src/shell/sse.spec.ts</code> → đạt</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC02 đạt; khu vực đăng ký nhận sự kiện theo loại và project; 401 không gây vòng nối lại</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00012 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

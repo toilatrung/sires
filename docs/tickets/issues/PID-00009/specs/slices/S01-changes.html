@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00009.">
+<title>S01 — Kiểm thay đổi, chế độ theo nhánh đích, job tổng build | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00009</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00009</p><h1>S01 — Kiểm thay đổi, chế độ theo nhánh đích, job tổng build</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Các slice sau thêm job vào khung này.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00009-AC04; PID-00009-AC06 (phần chạy toàn bộ)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1</td></tr>
+<tr><th scope="row">Bước spec</th><td>B8 (phần kiểm thay đổi, chế độ theo nhánh đích); spec 4.4, 4.7; H7, H8 (làm rõ 18/11/2026)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC03, EC04, EC07, EC08 (phần nhận nhóm), EC09, EC10, EC11, EC15 (phần nhận nhóm), EC21, EC22 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>—</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết script kiểm thay đổi trong thư mục của luồng infra (tạo mới, ví dụ <code>scripts/development/ci-changes.mjs</code>; Dev chọn tên, ghi <code>implement.md</code>): so <code>HEAD</code> với merge-base của nhánh đích; xuất chế độ, danh sách project Nx bị ảnh hưởng, các nhóm thay đổi (TS, Python, hợp đồng, tài liệu, Dockerfile/Helm/Terraform, workflow và file dùng chung). Nên nhận danh sách file qua stdin như <code>check-tracks.mjs --stdin</code> để kiểm EC không cần PR.</li>
+<li>Quy tắc chế độ: lọc chỉ khi sự kiện là <code>pull_request</code> vào <code>develop</code> và tính được thay đổi; toàn bộ với PR vào <code>main</code>, push vào <code>main</code>, nhánh đích khác (EC10), không tính được thay đổi (EC07), có file dùng chung (EC04). Nhóm hợp đồng kéo theo <code>@sires/contracts</code> và project phụ thuộc (EC08). Nhóm Dockerfile/Helm/Terraform xuất thêm cờ “chart đổi” (chart chung <code>infra/helm/sires-service/</code> hoặc <code>apps/&lt;service&gt;/deploy/values.yaml</code>) và “Terraform đổi” (<code>infra/terraform/</code>) để S11, S12 đọc (EC15, H6).</li>
+<li>Trong <code>.github/workflows/ci.yml</code> (có sẵn): job đầu tiên chạy script, checkout <code>fetch-depth: 0</code>, đưa kết quả ra <code>outputs</code>; job khác <code>needs</code> job này và dùng <code>if:</code> ở mức job. Không thêm <code>paths</code>, <code>paths-ignore</code> ở mức workflow (EC02).</li>
+<li>Tách job tài liệu: <code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/docs/update-index.mjs --check</code> trên checkout sạch, chạy mọi lần, không khôi phục cache công cụ Python (EC09).</li>
+<li>Job TS (lint, typecheck, test, build cho project <code>lang:ts</code>) và job Python (lint, typecheck, test cho project <code>lang:python</code>): chế độ lọc dùng <code>nx affected</code> trên project bị ảnh hưởng và skipped khi nhóm không đổi; chế độ toàn bộ dùng <code>nx run-many</code> cho mọi project. Job Python cài bằng <code>uv sync --all-packages --locked</code> (bỏ ghi chú “Switch to --frozen…” trong <code>ci.yml</code>); lock lệch thì thất bại (EC21, H7).</li>
+<li>Sửa <code>scripts/development/check-tracks.mjs</code> (có sẵn, luồng infra): <code>pnpm-lock.yaml</code>, <code>uv.lock</code> không còn ánh xạ vào luồng <code>infra</code> mà không tính là luồng, như <code>docs</code>, <code>repo</code>; các file gốc khác giữ nguyên. Script kiểm thay đổi vẫn coi lock file là file dùng chung (EC04, EC22, H8).</li>
+<li>Giữ job <code>tracks</code> như hiện có. Đổi job <code>build</code> hiện có thành job tổng: <code>needs</code> mọi job, <code>if: always()</code>, đạt khi mọi job đạt hoặc skipped, thất bại khi có job thất bại hoặc bị hủy (EC03). Hai tên <code>tracks</code>, <code>build</code> không đổi.</li>
+<li>Ghi trong README của thư mục chứa script (hoặc <code>infra/README.md</code>) cách chạy script cục bộ và bảng nhóm → job.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>node scripts/development/check-tracks.mjs</code> → chỉ luồng infra</li>
+<li><code>node scripts/docs/add-license.mjs --check</code> → đạt (file mới có ghi chú giấy phép)</li>
+<li>Script kiểm thay đổi với danh sách file: <code>agent/execution/PID-00009/report.md</code> → chế độ lọc, không project, nhóm tài liệu; <code>uv.lock</code> → toàn bộ (EC04); <code>docs/api-design/internal/schemas.yaml</code> → nhóm hợp đồng, có <code>@sires/contracts</code> (EC08); <code>infra/helm/sires-service/values.yaml</code> → nhóm Dockerfile/Helm/Terraform (EC15); nhánh đích không tồn tại → toàn bộ (EC07); nhánh đích khác <code>main</code>, <code>develop</code> → toàn bộ (EC10)</li>
+<li><code>check-tracks.mjs --stdin</code> với hai dòng <code>apps/gateway/package.json</code>, <code>pnpm-lock.yaml</code> → chỉ luồng <code>gateway</code>; với <code>infra/helm/sires-service/values.yaml</code> → luồng <code>infra</code> (EC22)</li>
+<li>Thao tác tay trên nhánh thử (EC21): thêm phụ thuộc vào <code>pyproject.toml</code> của một project mà không chạy <code>uv lock</code> → job Python thất bại ở bước <code>uv sync --locked</code>; hoàn lại</li>
+<li>Thao tác tay trước PR thử: <code>git rev-list --count origin/develop..origin/main</code> = 0 (EC11)</li>
+<li>PR thử T1 vào <code>develop</code> (PID-00009-AC04; EC02, EC03)</li>
+<li>T4 — CI của PR PID-00009 vào <code>main</code>: chế độ toàn bộ, mọi job chạy (PID-00009-AC06, phần chạy toàn bộ)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>AC04 đạt trên T1; T4 chạy toàn bộ; <code>tracks</code>, <code>build</code> vẫn là tên check và đạt; script kiểm thay đổi cho đúng kết quả với mọi danh sách file ở mục Kiểm; job Python dùng <code>--locked</code>; lock file không làm <code>tracks</code> cảnh báo chạm luồng infra</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00009</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00009 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
