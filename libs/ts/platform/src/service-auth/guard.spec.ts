@@ -91,6 +91,9 @@ async function expect401(path: string, token: string | undefined, init: RequestI
   const { status, body, type } = await call(path, token, init);
   expect({ path, status, code: body['code'] }).toEqual({ path, status: 401, code: 'invalid_service_token' });
   expect(body['type']).toBe(`${PROBLEM_TYPE_BASE}invalid_service_token`);
+  // Title of the contract example; the body never says which check failed (QC Lần 1 G2, G3).
+  expect(body['title']).toBe('Token nội bộ không hợp lệ');
+  expect(body).not.toHaveProperty('detail');
   expect(type).toMatch(/^application\/problem\+json/);
   expect(handled).toBe(before);
 }
@@ -114,7 +117,7 @@ describe('ServiceAuthGuard', () => {
   it('service ngoài x-callers (PID-00003-AC02)', async () => {
     const library = await issueServiceToken(keys.signer('library'), { audience: 'planning', actor: { type: 'system', component: 'indexer' } });
     const refused = await call('/internal/only-planning', library);
-    expect(refused).toMatchObject({ status: 403, body: { code: 'caller_not_allowed', status: 403 } });
+    expect(refused).toMatchObject({ status: 403, body: { code: 'caller_not_allowed', status: 403, title: 'Service không được phép gọi endpoint này' } });
     expect(handled).toBe(0);
     const planning = await issueServiceToken(keys.signer('planning'), { audience: 'planning', actor: { type: 'system', component: 'readiness' } });
     expect(await call('/internal/only-planning', planning)).toMatchObject({ status: 200, body: { ok: true } });
@@ -231,8 +234,9 @@ describe('ServiceAuthGuard', () => {
     const forResearchAndKnowledge = await forge(orchestration, agentClaims(['research', 'knowledge']));
     await expect401('/internal/tasks', forResearchAndKnowledge);
     expect((await call('/internal/tasks', await forge(orchestration, agentClaims(['research', 'planning'])))).status).toBe(200);
-    // A single-value aud on an Agent Run token is read as a list of one.
-    expect((await call('/internal/tasks', await forge(orchestration, agentClaims('planning')))).status).toBe(200);
+    // An Agent Run token has an array aud, even for a single service (P5, EC08; QC Lần 1 G1).
+    await expect401('/internal/tasks', await forge(orchestration, agentClaims('planning')));
+    expect((await call('/internal/tasks', await forge(orchestration, agentClaims(['planning'])))).status).toBe(200);
     // Arrays are for Agent Run tokens only.
     await expect401('/internal/tasks', await forge(keys.signer('workspace'), researcherClaims('workspace', ['planning'])));
     await expect401('/internal/tasks/approve', await forge(gateway, researcherClaims('gateway', ['planning'])), POST);

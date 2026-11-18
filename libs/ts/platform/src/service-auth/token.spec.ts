@@ -203,6 +203,30 @@ describe('bộ khóa', () => {
     );
 
     expect(() => serviceAuthKeysFromEnv('gateway', {})).toThrow(/missing/);
+    // Half a configuration never falls back to the seed (QC Lần 1 G5).
+    const seed = 'sires-local-development-seed';
+    expect(() => serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_PRIVATE_KEY: privateJwk, SERVICE_AUTH_DEV_SEED: seed })).toThrow(
+      /SERVICE_AUTH_PUBLIC_KEYS is missing/,
+    );
+    expect(() => serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_PUBLIC_KEYS: jwks, SERVICE_AUTH_DEV_SEED: seed })).toThrow(
+      /SERVICE_AUTH_PRIVATE_KEY is missing/,
+    );
+    // A value that is not a JWK: the error names the variable, never quotes the value (QC Lần 1 G4).
+    const pasted = 'MHcCAQEEIBsecretsecretsecret';
+    for (const env of [
+      { SERVICE_AUTH_PRIVATE_KEY: pasted, SERVICE_AUTH_PUBLIC_KEYS: jwks },
+      { SERVICE_AUTH_PRIVATE_KEY: JSON.stringify({ kty: 'EC', crv: 'P-256', d: pasted }), SERVICE_AUTH_PUBLIC_KEYS: jwks },
+      { SERVICE_AUTH_PRIVATE_KEY: privateJwk, SERVICE_AUTH_PUBLIC_KEYS: pasted },
+    ]) {
+      let message = '';
+      try {
+        serviceAuthKeysFromEnv('gateway', env);
+      } catch (error) {
+        message = String(error);
+      }
+      expect(message).toMatch(/SERVICE_AUTH_(PRIVATE_KEY|PUBLIC_KEYS) is not/);
+      expect(message).not.toContain('MHcC');
+    }
     expect(() =>
       serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_DEV_SEED: 'sires-local-development-seed', NODE_ENV: 'production' }),
     ).toThrow(/refused/);

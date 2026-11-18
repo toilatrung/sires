@@ -36,6 +36,7 @@ export type ServiceTokenFailure =
   | 'subject_not_signer'
   | 'audience_mismatch'
   | 'audience_array_not_agent'
+  | 'agent_audience_not_array'
   | 'agent_not_signed_by_orchestration'
   | 'agent_subject_not_agent_core'
   | 'agent_run_fields_missing'
@@ -53,6 +54,7 @@ const FAILURE_DETAIL: Record<ServiceTokenFailure, string> = {
   subject_not_signer: 'sub khác service ký',
   audience_mismatch: 'aud không phải service này',
   audience_array_not_agent: 'Chỉ token Agent Run có aud là mảng',
+  agent_audience_not_array: 'Token Agent Run phải có aud là mảng',
   agent_not_signed_by_orchestration: 'Token agent không do orchestration ký',
   agent_subject_not_agent_core: 'Token agent phải có sub = agent-core',
   agent_run_fields_missing: 'Token agent thiếu agentRunId hoặc agentScope',
@@ -70,9 +72,15 @@ export class ServiceTokenError extends Error {
   }
 }
 
-/** `401 invalid_service_token` for a refused token. */
+/** Title of `401 invalid_service_token` (internal/responses.yaml#/InvalidServiceToken). */
+export const INVALID_SERVICE_TOKEN_TITLE = 'Token nội bộ không hợp lệ';
+
+/**
+ * `401 invalid_service_token` for a refused token. The body never says why (PO, QC Lần 1 G2): the reason is only in
+ * the `warn` log, so a caller cannot probe the checks one by one.
+ */
 export function toInvalidServiceToken(error: ServiceTokenError): ProblemException {
-  return new ProblemException('invalid_service_token', { detail: error.message, cause: error });
+  return new ProblemException('invalid_service_token', { title: INVALID_SERVICE_TOKEN_TITLE, cause: error });
 }
 
 /** A token that passed every check of {@link verifyServiceToken}. */
@@ -146,8 +154,8 @@ function checkSignerRules(signer: ServiceName, claims: ServiceTokenClaims, optio
       throw new ServiceTokenError('agent_run_fields_missing');
     }
     if (apr) throw new ServiceTokenError('apr_actor_not_gateway_researcher'); // NFR-AUTHZ-001: no agent approval
-    const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-    if (!audience.includes(service)) throw new ServiceTokenError('audience_mismatch');
+    if (!Array.isArray(claims.aud)) throw new ServiceTokenError('agent_audience_not_array'); // P5, EC08
+    if (!claims.aud.includes(service)) throw new ServiceTokenError('audience_mismatch');
     return;
   }
   if (claims.sub !== signer) throw new ServiceTokenError('subject_not_signer');

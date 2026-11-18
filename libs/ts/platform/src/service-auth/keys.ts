@@ -144,10 +144,12 @@ export function serviceAuthKeysFromEnv(
   const privateJwk = env[SERVICE_AUTH_ENV.privateKey];
   const jwks = env[SERVICE_AUTH_ENV.publicKeys];
   if (privateJwk && jwks) {
-    return {
-      signer: localServiceSigner(service, JSON.parse(privateJwk) as JsonWebKey),
-      publicKeys: servicePublicKeysFromJwks(jwks),
-    };
+    return { signer: signerFromEnv(service, privateJwk), publicKeys: publicKeysFromEnv(jwks) };
+  }
+  if (privateJwk || jwks) {
+    // Half a configuration is a deployment mistake: never fall back to the development seed (QC Lần 1 G5).
+    const missing = privateJwk ? SERVICE_AUTH_ENV.publicKeys : SERVICE_AUTH_ENV.privateKey;
+    throw new Error(`service auth keys incomplete: ${missing} is missing (the two variables go together)`);
   }
   const seed = env[SERVICE_AUTH_ENV.devSeed];
   if (seed) {
@@ -160,6 +162,25 @@ export function serviceAuthKeysFromEnv(
   throw new Error(
     `service auth keys missing: set ${SERVICE_AUTH_ENV.privateKey} and ${SERVICE_AUTH_ENV.publicKeys}, or ${SERVICE_AUTH_ENV.devSeed} for local development`,
   );
+}
+
+// Parse errors of V8 quote the start of the value: never let them reach a log (QC Lần 1 G4).
+function signerFromEnv(service: ServiceName, value: string): ServiceSigner {
+  try {
+    return localServiceSigner(service, JSON.parse(value) as JsonWebKey);
+  } catch {
+    throw new Error(`${SERVICE_AUTH_ENV.privateKey} is not a valid P-256 private JWK`);
+  }
+}
+
+function publicKeysFromEnv(value: string): ServicePublicKeys {
+  let document: unknown;
+  try {
+    document = JSON.parse(value);
+  } catch {
+    throw new Error(`${SERVICE_AUTH_ENV.publicKeys} is not valid JSON (expected a JWKS)`);
+  }
+  return servicePublicKeysFromJwks(document as ServiceJwks);
 }
 
 function keySet(privateKeys: Map<ServiceName, KeyObject>) {

@@ -35,7 +35,7 @@ Cấu hình qua biến môi trường: `PORT`, `LOG_LEVEL` (mặc định `info`
 | Token | `issueServiceToken`, `issueAgentRunToken` (chỉ orchestration), `verifyServiceToken` | JWS ES256, `kid` = tên service, `iss` = `sires-internal`, hạn mặc định 300 s, lệch đồng hồ cho phép 30 s |
 | Khóa | `ServiceSigner`, `localServiceSigner`, `servicePublicKeysFromJwks`, `generateServiceKeys` (test), `deriveDevServiceKeys` (dev) | Khóa KMS của staging và production thay `ServiceSigner` ở PID-00035, PID-00153 |
 
-Biến môi trường của service-auth: `SERVICE_AUTH_PRIVATE_KEY` (JWK khóa riêng của service) và `SERVICE_AUTH_PUBLIC_KEYS` (JWKS của môi trường); khi chạy cục bộ có thể thay cả hai bằng `SERVICE_AUTH_DEV_SEED` (mọi service cùng seed thì cùng bộ khóa; bị từ chối khi `NODE_ENV=production`).
+Biến môi trường của service-auth: `SERVICE_AUTH_PRIVATE_KEY` (JWK khóa riêng của service) và `SERVICE_AUTH_PUBLIC_KEYS` (JWKS của môi trường); khi chạy cục bộ có thể thay cả hai bằng `SERVICE_AUTH_DEV_SEED` (mọi service cùng seed thì cùng bộ khóa; bị từ chối khi `NODE_ENV=production`). Chỉ đặt một trong hai biến khóa thì service lỗi khi khởi động, không dùng seed thay. Body `401 invalid_service_token` không nêu lý do từ chối; lý do chỉ có ở log mức `warn`.
 
 Test tenancy chạy PostgreSQL 16 + pgvector thật qua Testcontainers, cần Docker (đặt `DOCKER_HOST` nếu Docker không ở socket mặc định).
 

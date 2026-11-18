@@ -27,6 +27,9 @@ export interface ServiceAuthOptions {
 const CALLERS_KEY = 'sires:service-auth:x-callers';
 const APR_KEY = 'sires:service-auth:x-apr';
 
+/** Title of `403 caller_not_allowed` (internal/responses.yaml#/CallerNotAllowed). */
+export const CALLER_NOT_ALLOWED_TITLE = 'Service không được phép gọi endpoint này';
+
 /**
  * `x-callers` of the operation: services allowed to call this route (method or controller; the method wins). Written
  * by the service from its contract (generation from the contract is PID-00007, PID-00008). A guarded route without
@@ -78,6 +81,7 @@ export class ServiceAuthGuard implements CanActivate {
     if (!callers?.includes(verified.claims.sub)) {
       this.logger.warn({ caller: verified.claims.sub, declared: callers !== undefined }, 'service không có trong x-callers');
       throw new ProblemException('caller_not_allowed', {
+        title: CALLER_NOT_ALLOWED_TITLE,
         detail: callers === undefined ? 'Endpoint chưa khai x-callers' : `${verified.claims.sub} không có trong x-callers`,
       });
     }
