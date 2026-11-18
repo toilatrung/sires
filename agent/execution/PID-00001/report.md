@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-core-tenancy-logging` (đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `platform/ts-core-tenancy-logging` (đã commit, đã push) · **PR:** [#30](https://github.com/toilatrung/sires/pull/30)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
