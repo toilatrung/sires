@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00001</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00001</p><h1>PID-00001 — Thư viện nền TS: tenancy, transaction, UUIDv7, problem+json, logger, OpenTelemetry</h1>
-<p class="meta">Xác nhận: PO duyệt 08/11/2026 · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: PO duyệt 08/11/2026 · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill; bổ sung 18/11/2026 theo QC độc lập (H3–H8) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -101,10 +101,18 @@
 <h3 id="phien-1">Phiên 06/11/2026</h3>
 <ul><li>H1: Dev chạy các PID đợt Đ1 ở đâu? → Đ: Linux hoặc WSL2 có Docker của từng Dev; SPK-06, SPK-07 chạy trên máy Linux thật hoặc GitHub Actions ubuntu cài runsc. · Ảnh hưởng: cổng Môi trường; spec mục 2.5</li>
 <li>H2 (từ I1): Service NestJS kiểm tra đầu vào bằng class-validator hay Zod? → Đ: Zod (<code>nestjs-zod</code>). · Ảnh hưởng: P3, S02, EC03, PID-00001-AC07; kiến trúc 2.3</li></ul>
+<h3 id="phien-2">Phiên 18/11/2026 (QC độc lập Lần 1, PO chốt theo đề xuất của QC)</h3>
+<p>Căn cứ: <code>agent/execution/PID-00001/qc-report.md</code> Lần 1, mục “Quyết định của PO”; PO trả lời trong phiên “Chốt theo đề xuất của bạn”.</p>
+<ul><li>H3 (G3): Thiếu <code>If-Match</code> và <code>If-Match</code> không chỉ ra một phiên bản xử lý thế nào? → Đ: Thiếu → <code>428 precondition_required</code>; <code>*</code>, ETag yếu <code>W/"…"</code>, danh sách nhiều ETag, giá trị không phải số → <code>412 precondition_failed</code>. · Ảnh hưởng: S01, EC06, EC07</li>
+<li>H4 (G4): Lỗi HTTP có status không có mã trong <code>ErrorCode</code> (415 của Fastify, 409/422 ném bằng exception trần) xử lý thế nào? → Đ: Trả <code>500 internal_error</code> (NFR-OBS-005); lỗi 4xx của framework ghi log mức <code>warn</code> kèm status gốc, lỗi không có status hoặc 5xx ghi mức <code>error</code>; README của platform ghi 409, 422 bắt buộc ném <code>ProblemException</code>. Mã cho 415, 429 thêm vào hợp đồng riêng (<code>unsupported_media_type</code>, <code>rate_limited</code>, PR #31); khi PR đó merge, <code>ERROR_STATUS</code> và mã mặc định theo status của platform thêm hai mã. · Ảnh hưởng: S02, EC08</li>
+<li>H5 (G6): Bốn điểm che log chưa chốt giữa bản TS và Python (I-A–I-D)? → Đ: Theo bản TS hiện có: I-A thiếu <code>LOG_ACCOUNT_HASH_KEY</code> → khóa ngẫu nhiên theo tiến trình và một cảnh báo; I-B duyệt tối đa 32 tầng, sâu hơn che cả nhánh; I-C key Google = <code>AIza</code> + từ 30 ký tự; I-D giữ mẫu <code>Bearer</code>/<code>Basic</code> hiện có. Bản Python (PID-00005) đổi theo ở lần sau của PID-00005. · Ảnh hưởng: S03, ghi chú thiết kế (Dữ liệu)</li>
+<li>H6 (G8): <code>bootstrapService</code> chuyển sang adapter Fastify? → Đ: Chấp nhận: Fastify (kiến trúc 2.3), nghe <code>0.0.0.0</code>, bộ lọc problem+json và pipe Zod đăng ký toàn cục trong <code>createServiceApp</code>; chữ ký hàm giữ nguyên. · Ảnh hưởng: S02, S04</li>
+<li>H7 (G7): Test trên bản build <code>tsc</code> cho DTO Zod (vitest không sinh metadata decorator)? → Đ: Không làm ở PID này; chuyển sang PID-00006 (service mẫu). · Ảnh hưởng: S02; PID-00006</li>
+<li>H8 (G9): Người làm? → Đ: Ghi nhận <code>T1xNTH</code> làm Lần 2 và Lần 3 của PID-00001. · Ảnh hưởng: ghi chú thiết kế (API và sự kiện)</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Không có.</li></ul>
+<ul><li>Hợp đồng: thêm <code>unsupported_media_type</code> (415), <code>rate_limited</code> (429) — PR #31 (H4). Sau khi merge: thêm hai mã vào <code>libs/ts/platform</code> (PID này) và <code>sires_common.errors</code> (PID-00005).</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có.</li></ul>
+<ul><li>PID-00006: thêm test trên bản build cho DTO Zod (H7) — PO ghi vào hồ sơ PID-00006 khi làm rõ lại.</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
