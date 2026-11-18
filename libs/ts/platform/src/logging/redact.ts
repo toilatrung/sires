@@ -9,22 +9,13 @@
 /** Replacement for a masked value. */
 export const REDACTED = '[REDACTED]';
 
-/** Field names whose value is always masked, compared lowercase without separators (`api_key` → `apikey`). */
-const SENSITIVE_FIELDS = new Set([
-  'authorization',
-  'proxyauthorization',
-  'password',
-  'secret',
-  'clientsecret',
-  'token',
-  'accesstoken',
-  'refreshtoken',
-  'idtoken',
-  'cookie',
-  'setcookie',
-  'csrftoken',
-  'xcsrftoken',
-]);
+/**
+ * Field names whose value is always masked, compared lowercase without separators (`api_key` → `apikey`): any name
+ * ending in one of these suffixes (`webhookSecret`, `sessionToken`, `dbPassword`, `x-api-key`, `private_key`, QC G5),
+ * plus the exact names below. Usage counts such as `maxTokens`, `inputTokens` end in `tokens` and are kept.
+ */
+const SENSITIVE_SUFFIXES = ['apikey', 'secret', 'token', 'password', 'privatekey'] as const;
+const SENSITIVE_FIELDS = new Set(['authorization', 'proxyauthorization', 'cookie', 'setcookie']);
 
 /** Field names holding an account id; logged only as `account_hash` (architecture 11, NFR-OBS-001). */
 const ACCOUNT_ID_FIELDS = new Set(['accountid']);
@@ -95,10 +86,10 @@ function normalizeField(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-/** True for `api_key`, `apiKey`, `x-api-key`, `openai_api_key`, `authorization` and the other listed fields. */
+/** True for names ending in `apikey`, `secret`, `token`, `password`, `privatekey`, and for `authorization`, cookies. */
 export function isSensitiveField(name: string): boolean {
   const normalized = normalizeField(name);
-  return normalized.endsWith('apikey') || SENSITIVE_FIELDS.has(normalized);
+  return SENSITIVE_FIELDS.has(normalized) || SENSITIVE_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
 }
 
 /** True for `accountId` and `account_id`. */

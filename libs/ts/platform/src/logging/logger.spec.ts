@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { uuidv7 } from '../tenancy/uuid';
 import { runWithLogContext, setLogContext } from './context';
 import { createLogger } from './logger';
-import { looksLikeSecret, REDACTED, redactString } from './redact';
+import { isSensitiveField, looksLikeSecret, REDACTED, redactString } from './redact';
 
 const HASH_KEY = 'test-hash-key';
 
@@ -74,6 +74,20 @@ describe('logger che dữ liệu', () => {
     expect(masked).toBe(`token=${REDACTED}; keys ${REDACTED} ${REDACTED}`);
     // A plain word starting with the same letters is not a secret.
     expect(redactString('eyJsonParser và AIzaTest')).toBe('eyJsonParser và AIzaTest');
+  });
+
+  it('che trường nhạy cảm theo hậu tố tên (QC G5)', () => {
+    for (const name of ['webhookSecret', 'privateKey', 'private_key', 'sessionToken', 'apiSecret', 'dbPassword',
+      'client_secret', 'x-api-key', 'refresh_token', 'Authorization', 'set-cookie']) {
+      expect({ name, sensitive: isSensitiveField(name) }).toEqual({ name, sensitive: true });
+    }
+    // Ordinary fields that only contain the words are kept, including token usage counts of the model calls.
+    for (const name of ['tokenCount', 'passwordPolicy', 'maxTokens', 'inputTokens', 'secretariat', 'keyId', 'tokenizer']) {
+      expect({ name, sensitive: isSensitiveField(name) }).toEqual({ name, sensitive: false });
+    }
+    const { logger, records } = captureLogger();
+    logger.info({ webhookSecret: 'w-1', config: { dbPassword: 'p-1', maxTokens: 4096 } }, 'cấu hình');
+    expect(records()[0]).toMatchObject({ webhookSecret: REDACTED, config: { dbPassword: REDACTED, maxTokens: 4096 } });
   });
 
   it('quét log bằng chuỗi mẫu không còn giá trị nhạy cảm (NFR-OBS-002-AC01)', () => {
