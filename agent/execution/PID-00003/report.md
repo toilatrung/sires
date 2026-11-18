@@ -1,10 +1,10 @@
 # PID-00003 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — sửa QC Lần 1 (Lần 2)
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-service-auth` (đã commit, đã push) · **PR:** [#34](https://github.com/toilatrung/sires/pull/34)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 18/11/2026 (Lần 2)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -55,6 +55,21 @@ Không có.
 - **Còn mở:** không có.
 - **Bước tiếp theo:** Dev commit mã và mở PR khi được yêu cầu; PO review, QC độc lập `spec-converge-skill PID-00003`, merge. PID chờ PID này: PID-00006, PID-00017 (cùng PID-00158) và các PID PH-02.
 - **Tài liệu đi kèm:** không có.
+
+## Lần 2 — 18/11/2026
+
+Sửa theo [qc-report.md](qc-report.md) Lần 1 và quyết định của PO (comment trên PR #34). Mã ở nhánh `platform/ts-service-auth`, cùng PR #34.
+
+| G | Quyết định PO | Đã làm | Test |
+| --- | --- | --- | --- |
+| G1 (MEDIUM) | Token agent có `aud` không phải mảng → 401 | `checkSignerRules` từ chối với lý do mới `agent_audience_not_array` (`token.ts:147`) | `guard.spec.ts › aud mảng`: `agentClaims('planning')` → 401, `agentClaims(['planning'])` → 200 |
+| G2 (LOW) | Body 401 không nêu lý do | `toInvalidServiceToken` không đặt `detail`; lý do chỉ ở log `warn` (`token.ts:82`) | `guard.spec.ts` (`expect401`): body không có `detail` |
+| G3 (LOW) | `title` theo ví dụ hợp đồng | `INVALID_SERVICE_TOKEN_TITLE` “Token nội bộ không hợp lệ”, `CALLER_NOT_ALLOWED_TITLE` “Service không được phép gọi endpoint này” | `expect401` kiểm `title`; `› service ngoài x-callers` kiểm `title` 403 |
+| G4 (LOW) | Lỗi parse khóa chỉ nêu tên biến | Bọc parse `SERVICE_AUTH_PRIVATE_KEY` (cả JWK sai) và `SERVICE_AUTH_PUBLIC_KEYS` (`keys.ts`) | `token.spec.ts › nạp khóa từ biến môi trường`: ba giá trị sai, thông báo không chứa giá trị |
+| G5 (LOW) | Chỉ đặt một biến khóa → lỗi khởi động | `serviceAuthKeysFromEnv` ném lỗi nêu biến thiếu, kể cả khi có `SERVICE_AUTH_DEV_SEED` | `token.spec.ts › nạp khóa từ biến môi trường` |
+| G6 (LOW) | Giữ luật `act.agentRunId = agentRunId` | Không đổi | — |
+
+Kiểm: `nx affected` 19 project đạt; service-auth 26/26; tắt từng sửa đổi (G1, G2, G3 ×2, G4, G5) đều có test lỗi. Chi tiết ở self-qc.md Lần 2. Đề xuất 1 ở mục 6 đã được PO chốt (G6). Phần Python (lệch đồng hồ 30 s, biến `SERVICE_AUTH_*`) PO giao PID-00005, không thuộc PR này.
 
 ---
 

@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 18/11/2026 (Lần 2)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -81,6 +81,27 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 | G2 | partial | LOW | Bộ khóa dev dẫn xuất từ seed (`SERVICE_AUTH_DEV_SEED`) chỉ có bản TS; service Python (agent-core, knowledge) chạy cục bộ cần cùng thuật toán | `keys.ts:104`; implement.md mục 2 | Đề xuất cho PID-00005 S03 (report.md mục 6) |
 | G3 | partial | LOW | Guard so `sub` với x-callers: token chuyển tiếp giữ `sub` gốc (`agent-core`, `gateway`), nên x-callers của route nhận token chuyển tiếp phải có các service này | `guard.ts:60`; `client.spec.ts` (route `whoami` khai `agent-core`) | Ghi cho PID-00065, PID-00007, PID-00008 (report.md mục 6) |
 | G4 | partial | LOW | Quy tắc 1.4.1: thêm `jose` vào catalog chạm `pnpm-workspace.yaml`, `pnpm-lock.yaml` (luồng infra) | `check-tracks.mjs`: `infra, platform, repo` | Đúng quy tắc 1.4.7; như PID-00001, PID-00015 |
+
+## Lần 2 — 18/11/2026
+
+Sửa QC Lần 1 (G1–G5; G6 PO giữ). Kết luận: **Đạt** — không còn CRITICAL, HIGH; G1 (contradicts) đã sửa.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | Đạt: “Successfully ran targets lint, typecheck, test, build for 19 projects and 2 tasks they depend on” |
+| `npx vitest run src/service-auth` | Đạt: 3 file, 26/26 |
+| Thử phá mã: bỏ kiểm `aud` mảng của token agent; đưa lại `detail` vào 401; bỏ `title` 401; bỏ `title` 403; bỏ chặn cấu hình nửa vời; để lỗi parse khóa riêng đi ra nguyên bản | 6/6 có test lỗi (1, 9, 9, 1, 1, 1 test) |
+
+| G (QC Lần 1) | Trạng thái | Bằng chứng |
+| --- | --- | --- |
+| G1 | đã sửa | `token.ts:147` (`agent_audience_not_array`); `guard.spec.ts › aud mảng (PID-00003-AC08, EC08)` |
+| G2 | đã sửa | `token.ts:82`; `guard.spec.ts` `expect401` kiểm body không có `detail` |
+| G3 | đã sửa | `token.ts` `INVALID_SERVICE_TOKEN_TITLE`, `guard.ts` `CALLER_NOT_ALLOWED_TITLE`; `expect401`, `› service ngoài x-callers (PID-00003-AC02)` |
+| G4 | đã sửa | `keys.ts` `signerFromEnv`, `publicKeysFromEnv`; `token.spec.ts › nạp khóa từ biến môi trường` |
+| G5 | đã sửa | `keys.ts` `serviceAuthKeysFromEnv`; `token.spec.ts › nạp khóa từ biến môi trường` |
+| G6 | giữ (PO) | `token.ts:147` |
+
+EC08 nay đúng P5: token Agent Run có `aud` một giá trị bị 401, cùng hành vi bản Python (`service_auth.py:331`).
 
 ---
 
