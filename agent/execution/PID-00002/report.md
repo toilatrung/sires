@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-outbox-inbox` (mã chưa commit) · **PR:** chưa mở
+- **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -58,7 +58,7 @@ Không có.
   4. Sau khi PR #34 (PID-00003) và PR của PID này vào main: gộp schema ActorRef, danh sách ServiceName về một chỗ (self-qc G3, cùng luồng platform).
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có.
-- **Bước tiếp theo:** Dev commit mã và mở PR khi được yêu cầu; PO review, QC độc lập `spec-converge-skill PID-00002`, merge. PID chờ PID này: PID-00006, PID-00038–PID-00047, PID-00049, PID-00050, PID-00052, PID-00053, PID-00056, PID-00074–PID-00076, PID-00080, PID-00106.
+- **Bước tiếp theo:** PO review PR #36, QC độc lập `spec-converge-skill PID-00002`, merge. PID chờ PID này: PID-00006, PID-00038–PID-00047, PID-00049, PID-00050, PID-00052, PID-00053, PID-00056, PID-00074–PID-00076, PID-00080, PID-00106.
 - **Tài liệu đi kèm:** không có.
 
 ---
