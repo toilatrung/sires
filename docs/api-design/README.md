@@ -10,9 +10,9 @@ QC độc lập PID-00001 (G4, `agent/execution/PID-00001/qc-report.md`): bộ l
 
 - `components/schemas/common.yaml#/ErrorCode`: thêm `unsupported_media_type` (415) và `rate_limited` (429; cùng tên, cùng nghĩa với `ProviderErrorCode.rate_limited` nhưng là `Problem.code` của SIRes). Mô tả theo HTTP status cập nhật.
 - `components/responses.yaml`: thêm `UnsupportedMediaType` (415) và `TooManyRequests` (429, header `Retry-After` số giây). Như `InternalError`, mọi operation có body (415) và mọi operation của `/api/v1` (429) có thể trả nên không khai ở từng operation.
-- Tương thích ngược với client (chỉ thêm giá trị enum, thêm response). **Thư viện dùng danh mục đóng phải thêm hai mã cùng lúc:** `sires_common.errors.ErrorCode` (test `test_catalogs_match_contract` so đúng thứ tự với enum) và `ERROR_STATUS` của `libs/ts/platform` (`satisfies Record<ErrorCode, number>`, PR #30) — không thêm thì test, build của hai thư viện lỗi sau khi sinh lại type.
+- Tương thích ngược với client (chỉ thêm giá trị enum, thêm response). **Thư viện dùng danh mục đóng thêm hai mã trong cùng PR #31** (PO chốt 18/11/2026, ngoại lệ của quy tắc “PR hợp đồng không chạm mã” vì hai danh mục phải đổi cùng lúc với enum): `sires_common.errors.ErrorCode` (test `test_catalogs_match_contract` so đúng thứ tự với enum) và `ERROR_STATUS` của `libs/ts/platform` (`satisfies Record<ErrorCode, number>`). Cùng PR, hai thư viện gán mã mặc định theo status: 415 → `unsupported_media_type`, 429 → `rate_limited` (TS `DEFAULT_CODE_BY_STATUS`, `DEFAULT_TITLE_BY_STATUS`; Python `_HTTP_PROBLEMS`), nên lỗi 415 của Fastify không còn thành `500 internal_error` (đóng G4 của QC PID-00001).
 - Ticket cập nhật mục 2.3: PID-00039 (khung rate limit), PID-00136 (rate limit đầy đủ).
-- `dist/openapi.bundled.yaml` phải dựng lại (`npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml`) trước khi merge: type công khai của `@sires/contracts` sinh từ file này.
+- `dist/openapi.bundled.yaml` đã dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint sạch); type công khai của `@sires/contracts` sinh từ file này.
 
 ### Metadata nhập từ BibTeX, RIS, PO chốt 18/11/2026
 

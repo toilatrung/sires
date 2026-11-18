@@ -55,6 +55,7 @@ ErrorCode = Literal[
     "stale_agent_run",
     "precondition_failed",
     "payload_too_large",
+    "unsupported_media_type",
     "idempotency_key_reused",
     "dependency_cycle",
     "reference_not_trusted",
@@ -72,6 +73,7 @@ ErrorCode = Literal[
     "deliberation_not_confirmed",
     "deliberation_mismatch",
     "precondition_required",
+    "rate_limited",
     "internal_error",
     "service_unavailable",
 ]
@@ -253,7 +255,9 @@ _HTTP_PROBLEMS: Final[Mapping[int, tuple[ErrorCode, str]]] = {
     405: ("method_not_allowed", "Method không được hỗ trợ"),
     412: ("precondition_failed", "Dữ liệu đã thay đổi"),
     413: ("payload_too_large", "Dữ liệu vượt giới hạn"),
+    415: ("unsupported_media_type", "Định dạng nội dung không được hỗ trợ"),
     428: ("precondition_required", "Thiếu If-Match"),
+    429: ("rate_limited", "Quá nhiều yêu cầu"),
     503: ("service_unavailable", "Dịch vụ tạm không khả dụng"),
 }
 
