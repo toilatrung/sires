@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00015](../../../docs/tickets/issues/PID-00015/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
-- **Nhánh:** `gateway/spk-02-oidc-stub` (đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `gateway/spk-02-oidc-stub` (đã commit, đã push) · **PR:** [#29](https://github.com/toilatrung/sires/pull/29)
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
