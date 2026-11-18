@@ -1,6 +1,6 @@
 # PID-00001 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — Lần 3 theo qc-report.md (G1, G2, G4, G5)
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00001](../../../docs/tickets/issues/PID-00001/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-core-tenancy-logging` (đã commit, đã push) · **PR:** [#30](https://github.com/toilatrung/sires/pull/30)
@@ -12,7 +12,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 ## 1. Tóm tắt
 
 - Slice: 4/4 xong. Bị chặn: không có (S02 gỡ chặn sau PR #22, làm ở Lần 2).
-- AC: 9/9 đạt (S01 trên PostgreSQL 16 + pgvector thật qua Testcontainers; S02, S03, S04 bằng test đơn vị và request HTTP thật trên Fastify). Edge case: 5/5 đã giải quyết; edge case mới ở self-qc.md.
+- AC: 9/9 đạt (S01 trên PostgreSQL 16 + pgvector thật qua Testcontainers; S02, S03, S04 bằng test đơn vị và request HTTP thật trên Fastify; AC06 thêm request POST có body ở Lần 3). Edge case: 5/5 đã giải quyết; edge case mới ở self-qc.md. Lần 3 xử lý G1, G2, G4, G5 của QC Lần 1.
 - Yêu cầu thêm: 4 (YC1–YC4 ở Lần 2, trong phạm vi).
 
 ## 2. Trạng thái công việc
@@ -101,6 +101,23 @@ Yêu cầu hợp đồng của Lần 1 (mục 6) đã có trên `main` qua PR #2
 - **Chuyển cho ticket khác (không chặn PID-00001):** điểm 5 (`LOG_ACCOUNT_HASH_KEY`, `OTEL_EXPORTER_OTLP_ENDPOINT` ở staging, production — luồng `infra`); điểm 7 (`traceparent` qua undici cho client nội bộ — PID-00003, nay giao T1xNTH); điểm 6 (gỡ `@nestjs/platform-express` ở từng service).
 - **Mới:** lỗi HTTP có status không thuộc danh mục (ví dụ 415 của Fastify khi `Content-Type` không hỗ trợ) đang trả `500 internal_error` để giữ NFR-OBS-005 (mọi mã thuộc danh mục). Nếu PO muốn 415 có mã riêng thì cần sửa hợp đồng (`contract-updating-skill`). Service ném 409, 422 phải dùng `ProblemException` với mã của danh mục; `ConflictException` trần sẽ thành `internal_error`.
 - **Bước tiếp theo:** T1xNTH (hoặc `toilatrung`) cài định danh git và khóa ký, commit merge và mã Lần 2, push `report.md` rồi mã; PO review, QC độc lập (`spec-converge-skill PID-00001`) và merge.
+
+## Lần 3 — 18/11/2026
+
+Người làm: Dev T1xNTH (agent Claude Code), theo `qc-report.md` Lần 1 (“Việc còn lại” 1–5) và quyết định của PO 18/11/2026 ghi ở đó. Không còn yêu cầu thêm ngoài danh sách của QC.
+
+| Việc QC | Kết quả | File | Test |
+| --- | --- | --- | --- |
+| G1 — AC06 với request có body | Test mới **đạt ngay trên mã cũ**: log context mở trong middleware vẫn sống qua bước Fastify đọc body (body 64 KB); `setLogContext` trả `true`, log của handler có `request_id` = `sires.request_id` của span, `trace_id`, `account_hash`, `project_id`. Không cần đổi chỗ mở context | `telemetry/telemetry.spec.ts` | `› POST có body giữ log context và mã tương quan (PID-00001-AC06, QC G1)` |
+| G2 — query string trong log và span | Log `request completed` ghi đường dẫn không kèm query (`withoutQuery`); span: instrumentation (semconv ổn định) gắn `url.query` trước `requestHook`, nên hook ghi đè `url.query` = `[REDACTED]` và cắt `?` khỏi `url.full`, `http.url`, `http.target` nếu có | `logging/request-id.ts`, `logging/logging.module.ts`, `telemetry/telemetry.ts` | `› không ghi query string vào log và span (NFR-OBS-002, QC G2)` |
+| G5 — tên trường nhạy cảm | So khớp theo hậu tố `apikey`, `secret`, `token`, `password`, `privatekey` (sau khi bỏ dấu phân cách, chữ thường) cộng tên chính xác `authorization`, `proxyauthorization`, `cookie`, `setcookie`. Không che nhầm `tokenCount`, `passwordPolicy`, `maxTokens`, `inputTokens`, `secretariat`, `keyId`, `tokenizer` | `logging/redact.ts` | `logger.spec.ts › che trường nhạy cảm theo hậu tố tên (QC G5)` |
+| G4 (a) — log mức `warn` cho 4xx không có mã | 415 của Fastify (Content-Type không hỗ trợ) → `500 internal_error`, log mức `warn` (40) có `status: 415`, không có dòng mức `error`; lỗi không khai báo thật vẫn `error` | `errors/problem.filter.ts` | `errors.spec.ts › lỗi 4xx của framework không có mã: 500 internal_error, log mức warn kèm status (QC G4)` |
+| G4 (b) — README | README của platform: bảng API thêm Lỗi, Kiểm đầu vào; mục “Trả lỗi trong service”: 409, 422 bắt buộc `ProblemException`, status nào bộ lọc tự gán mã, cách ghi log 4xx và 5xx | `libs/ts/platform/README.md` | — |
+| Việc 5 — chạy lại lệnh | Đạt hết, kết quả thật ở `self-qc.md` Lần 3 | — | — |
+
+Theo quyết định của PO trong `qc-report.md`: G3 (428/412), G6 (I-A–I-D theo bản TS), G8 (Fastify) không đổi mã; G7 chuyển sang PID-00006; G9 ghi nhận.
+
+**Cần PO:** ghi các quyết định G3, G4, G6, G8, G9 vào hồ sơ PID-00001 (QC đã đề xuất); yêu cầu hợp đồng mã 415, 429; phần Python của I-A, I-B, I-D và so khớp hậu tố G5 cho `sires_common` (PID-00005) để hai bản che log giống nhau. **Bước tiếp theo:** QC Lần 2 (`spec-converge-skill PID-00001`) trên PR #30.
 
 ---
 
