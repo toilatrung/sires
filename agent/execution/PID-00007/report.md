@@ -1,32 +1,38 @@
 # PID-00007 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00007](../../../docs/tickets/issues/PID-00007/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
-- **Nhánh:** `contracts/asyncapi-python-generation` · **PR:** chưa mở
+- **Nhánh:** `contracts/asyncapi-python-generation` (chỉ report.md commit/push theo skill; mã triển khai chưa commit) · **PR:** chưa mở
 - **Cập nhật:** 18/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
-- Slice: 0/2 xong. Bị chặn: không có.
-- AC: 0/3 đạt; chưa kiểm. Edge case: 0/3 đã kiểm.
+- Slice: 2/2 xong. Bị chặn: không có.
+- AC: 3/3 đạt trên hợp đồng hiện tại, không cần staging. Edge case: 3/3 đã giải quyết; lưu ý môi trường/công cụ ở self-qc.md.
 - Yêu cầu thêm: 0.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Type TS từ AsyncAPI, xuất type, kiểm đủ message, sinh qua thư mục tạm | Đang làm | `libs/ts/contracts/scripts/`, `libs/ts/contracts/src/` |
-| S02 | Client Python nội bộ, model Pydantic, test import, Nx, gitignore | Chưa làm | `libs/py/sires_common/`, `.gitignore`, cấu hình contracts |
+| S01 | Type TS từ AsyncAPI, xuất type, kiểm đủ message, sinh qua thư mục tạm | Xong | sửa `libs/ts/contracts/scripts/generate.mjs`; tạo `scripts/generate.spec.mjs`, `src/messages.check.ts`; sửa package.json, README.md của contracts |
+| S02 | Client Python nội bộ, model Pydantic, test import, Nx, gitignore | Xong | tạo `libs/py/sires_common/tests/test_contracts_import.py`; sửa project.json, pyproject.toml của sires-common; `.gitignore`, `uv.lock`; Python generator trong generate.mjs; cache hai thư mục trong package.json của contracts |
 
 ## 3. Kết quả
 
-Hồ sơ đạt check-pid (0 cảnh báo). Đang triển khai.
+- Sinh 42 payload message TypeScript, 42 model message Pydantic và 9 client OpenAPI nội bộ, đủ 55 operationId. API TS công khai/nội bộ đang có được giữ lại; không sinh client Python công khai.
+- Sinh vào staging, chỉ thay kết quả sau khi thành công; lỗi spec giữ đầu ra cũ. Có chế độ TS riêng khi thiếu uv. Mã sinh bị ignore và không commit.
+- Client generator cảnh báo là lỗi; schema alias chỉ có ref/annotation được gộp ở đầu vào tạm để tránh mất endpoint do model trùng tên. Không sửa hợp đồng nguồn.
+- WSL Ubuntu 24.04: affected lint/typecheck/test/build đạt trên 15 project. Kiểm cuối contracts + sires-common đạt, gồm 3 test generator và 79 test Python (13 test mới); sires-common:test chạy lại sau cấu hình testpaths đạt 79/79, chỉ còn 2 cảnh báo deprecation của dependency.
+- Wheel build đạt, có manifest/mã sinh, không có pyc; môi trường isolated import được 570 module. Runtime agent-core và knowledge không có dependency dev đều import được client/model. Nx cache khôi phục được cả hai thư mục generated.
+- Windows: generate trực tiếp đạt sau `pnpm nx reset`; lần affected trước đó lỗi EPERM được ghi nguyên kết quả trong self-qc.md. Nền tảng kiểm đầy đủ theo hồ sơ là WSL.
+- Dev đã tự chạy spec-converge-skill, không còn CRITICAL/HIGH; chưa có QC độc lập của PO.
 
 ## 4. Việc còn lại
 
-S01, S02 và Self-QC.
+Không còn việc triển khai trong phạm vi. Chưa commit/push mã hay mở PR vì phiên này chỉ yêu cầu triển khai; report.md được commit/push riêng theo quy trình skill. QC độc lập và nghiệm thu thuộc PO sau khi có PR chứa mã.
 
 ## 5. Yêu cầu thêm
 
@@ -34,10 +40,10 @@ Không có.
 
 ## 6. Cần PO và tài liệu đi kèm
 
-- **Đề xuất cho PO:** Không có.
+- **Đề xuất cho PO:** Công cụ license đang quét file cache; scanner luồng cảnh báo contracts/platform/infra dù ticket dùng chung được phép chạm các output này. Nếu chỉnh công cụ, giao luồng infra riêng; không chặn PID-00007.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** Không có.
-- **Bước tiếp theo:** Triển khai; Dev tự đối chiếu spec-converge-skill, PO QC độc lập sau PR.
+- **Còn mở:** Không có điều chưa rõ hoặc hợp đồng thiếu đang chặn. Naming hint của generator và cảnh báo dependency/môi trường ghi trong self-qc.md.
+- **Bước tiếp theo:** Dev commit/push mã và mở PR khi được yêu cầu; PO review, chạy QC độc lập bằng spec-converge-skill PID-00007 và merge.
 - **Tài liệu đi kèm:** Không có.
 
 ---
