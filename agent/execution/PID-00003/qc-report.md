@@ -1,6 +1,6 @@
 # PID-00003 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 0 HIGH, 1 MEDIUM (Lần 1, 18/11/2026) PO đã chốt các điểm mở (mục “Quyết định của PO”); Dev làm Lần 2 theo mục đó.
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 2, 18/11/2026). G1–G5 của Lần 1 đã đóng, G6 PO giữ; G7–G9 là LOW, không chặn merge PR #34.
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -99,6 +99,93 @@ PO Trịnh Quang Trung chốt trong phiên QC: “G6 giữ, còn lại chốt th
 | x-callers cho token chuyển tiếp | `gateway`, `agent-core` phải có trong x-callers của route nhận token chuyển tiếp (self-qc G3 của Dev) | PID-00065, PID-00007, PID-00008 — PO ghi vào hồ sơ |
 
 Việc của Dev PID-00003 Lần 2: G1 (bắt buộc trước merge), G2–G5; chạy lại lệnh spec mục 6, ghi kết quả thật ở `self-qc.md`, `report.md` Lần 2, đặt `Xong — chờ QC`.
+
+## Lần 2 — 18/11/2026 · spec-converge-skill
+
+Người chạy: agent QC độc lập do PO giao, không mang kết luận của Dev. Mã nguồn: nhánh `platform/ts-service-auth`, commit `da5fec5` (PR #34; Dev ghi lượt sửa ở `report.md`, `self-qc.md` mục “Lần 2”, trạng thái `Xong — chờ QC`; mã sửa ở `1ceecb5`). Nhánh đã chứa `origin/main` (`eb31e4d`); diff của PR so với `main` chỉ gồm `libs/ts/platform/` (README, `package.json`, `src/index.ts`, `src/service-auth/`), `pnpm-workspace.yaml`, `pnpm-lock.yaml` và `agent/execution/PID-00003/`.
+
+Phạm vi đọc: trạng thái hiện tại của toàn bộ `libs/ts/platform/src/service-auth/` (mã và test), `errors/problem.exception.ts`, `errors/problem.filter.ts`, `libs/ts/platform/README.md`; hồ sơ `docs/tickets/issues/PID-00003/` (`specs/index.html`, `acceptance.html`, `scope.html`, `designs/notes.html`); `docs/api-design/internal/schemas.yaml#/ServiceTokenClaims`, `internal/responses.yaml`; đối chiếu `libs/py/sires_common/src/sires_common/service_auth.py` (PID-00005); Lần 1 và mục “Quyết định của PO” ở trên.
+
+Rà bảo mật lần này: kiểm `aud` mảng của token agent đặt sau luật x-apr và trước `includes`, nên chuỗi `aud` không còn lọt qua `String.prototype.includes`; body 401 nay là hằng (cùng một body cho mọi lý do, QC dựng thử 4 lý do); log từ chối vẫn chỉ ghi `reason`; lỗi nạp khóa không giữ `cause`, không trích giá trị (QC thử 8 giá trị sai); cấu hình khóa nửa vời bị chặn kể cả khi có seed; seed vẫn bị chặn khi `NODE_ENV=production`. Không thấy lỗ hổng mới.
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G1 | P5, EC08, H3; ServiceTokenClaims.aud; quyết định PO G1 | — | đóng | `token.ts:157`: token `act.type = agent` có `aud` không phải mảng → `agent_audience_not_array` (401); nằm sau luật x-apr (`:156`), trước kiểm “mảng chứa service này” (`:158`). Test `guard.spec.ts:238` (`agentClaims('planning')` → 401), `:239` (`['planning']` → 200). QC thử trên bản build: `aud = "planning"` → `agent_audience_not_array`; cùng token ở route x-apr → `apr_actor_not_gateway_researcher`; `aud = []` → `bad_claims`; `issueAgentRunToken` một service vẫn phát mảng và qua. Bỏ dòng 157 thì `'planning'.includes('planning')` trả đúng nên test `:238` lỗi. Nay cùng hành vi bản Python (`service_auth.py:331`) | Không còn |
+| G2 | Quyết định PO G2 | — | đóng | `token.ts:82-84`: `toInvalidServiceToken` chỉ đặt `title`, `cause`; bộ lọc chỉ đưa `detail` khi có (`errors/problem.filter.ts:64`). QC dựng body cho `missing`, `bad_signature`, `agent_audience_not_array`, `apr_actor_not_gateway_researcher`: cả bốn giống hệt `{type, title, status, code, correlationId}`. Lý do chỉ ở log `warn` (`guard.ts:76`). `expect401` kiểm `not.toHaveProperty('detail')` cho mọi ca 401 (`guard.spec.ts:96`) | Không còn (chú thích cũ: G7) |
+| G3 | `internal/responses.yaml` | — | đóng | `token.ts:76` “Token nội bộ không hợp lệ”, `guard.ts:31` “Service không được phép gọi endpoint này”, khớp ví dụ hợp đồng (`responses.yaml:16`, `:29`). Test `guard.spec.ts:95`, `:120` | Không còn |
+| G4 | Quyết định PO G4; nguyên tắc khóa không vào log | — | đóng | `keys.ts:168-174`: mọi lỗi dựng khóa riêng (JSON, JWK, đường cong) thành lỗi chỉ nêu `SERVICE_AUTH_PRIVATE_KEY`, không giữ `cause`; `keys.ts:176-182` bọc `JSON.parse` của `SERVICE_AUTH_PUBLIC_KEYS`. QC thử 8 giá trị sai (DER base64, PEM, số JSON, JWK có `d` sai, JWK P-384, JWKS không phải JSON, `null`, `{"keys":[null]}`): không thông báo, stack nào chứa giá trị hay `d`. Test `token.spec.ts:214-229` | Không còn (lỗi cấu trúc JWKS không nêu tên biến: G9) |
+| G5 | Quyết định PO G5 | — | đóng | `keys.ts:149-153`: chỉ một trong hai biến khóa → “service auth keys incomplete: <biến> is missing”, kể cả khi có `SERVICE_AUTH_DEV_SEED`; biến rỗng coi như chưa đặt (cả hai rỗng + seed → dùng seed, đúng ý “chưa cấu hình khóa”). Seed bị chặn khi `NODE_ENV=production` (`:156`), như PO giữ. Test `token.spec.ts:206-213`, `:230-232` | Không còn |
+| G6 | Quyết định PO G6 | — | đóng (PO giữ) | `token.ts:153` không đổi. Phần Python thuộc PID-00005 | Không còn ở PID này |
+| G7 | Quyết định PO G2 | partial | LOW | `token.ts:26`: chú thích của `ServiceTokenFailure` vẫn ghi lý do “Logged and returned as `detail`”, trái hành vi mới (`token.ts:78-84`); `FAILURE_DETAIL` (`:45`) nay chỉ là thông điệp lỗi nội bộ | Sửa chú thích (lý do chỉ ghi log, không trả trong body); không đổi hành vi |
+| G8 | Nguyên tắc như G2 Lần 1; nhất quán với PID-00005 | partial | LOW | `guard.ts:85`: body `403 caller_not_allowed` có `detail` (“Endpoint chưa khai x-callers” hoặc “<sub> không có trong x-callers”); bản Python không có `detail` (`service_auth.py:59-62`), ví dụ hợp đồng cũng không (`responses.yaml:27-31`). Chỉ service đã có token hợp lệ mới thấy, rủi ro thấp; quyết định PO G2 chỉ nói body 401 | PO chốt: bỏ `detail` của 403 (log `warn` ở `guard.ts:82` đã đủ) hay giữ và ghi cho PID-00005 |
+| G9 | Quyết định PO G4 (“lỗi chỉ nêu tên biến”) | partial | LOW | `keys.ts:183` gọi `servicePublicKeysFromJwks` ngoài khối bọc: `SERVICE_AUTH_PUBLIC_KEYS` là JSON hợp lệ nhưng sai dạng thì lỗi không nêu tên biến — `null` → “servicePublicKeysFromJwks: expected {"keys": [...]}” (`:66`), `{"keys":[null]}` → “Cannot read properties of null (reading 'kid')” (`:68-69`). Không lộ giá trị (JWKS là khóa công khai), chỉ khó chẩn đoán | Nêu `SERVICE_AUTH_PUBLIC_KEYS` trong lỗi cấu trúc JWKS; từ chối phần tử không phải object bằng thông báo rõ |
+
+Không có CRITICAL, HIGH, MEDIUM.
+
+### AC
+
+Rà lại toàn bộ AC, EC trên mã hiện tại: lần sửa chỉ đổi `token.ts`, `guard.ts`, `keys.ts` và test tương ứng; không AC nào hỏng. Mọi test có tên trong `acceptance.html`, `scope.html` vẫn có (token 10, guard 12, client 4).
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00003-AC01 | đạt | stub (test đơn vị, HTTP thật trên Fastify) | `token.spec.ts › hết hạn và sai chữ ký (PID-00003-AC01)`; `guard.spec.ts › hết hạn và sai chữ ký qua guard: handler không chạy (PID-00003-AC01)` | Tại chỗ và CI: `token.spec.ts` 10/10, `guard.spec.ts` 12/12 |
+| PID-00003-AC02 | đạt | stub | `guard.spec.ts › service ngoài x-callers (PID-00003-AC02)` (nay kiểm cả `title` 403) | Đạt |
+| PID-00003-AC03 | đạt | stub | `token.spec.ts › sub khác service ký (PID-00003-AC03)` | Đạt |
+| PID-00003-AC04 | đạt | stub | `guard.spec.ts › luật token agent (PID-00003-AC04)`, `› token agent thiếu agentScope (EC01)` | Đạt |
+| PID-00003-AC05 | đạt | stub | `guard.spec.ts › luật x-apr (PID-00003-AC05, NFR-AUTHZ-001-AC01)`, `› researcher không do gateway ký ở x-apr (EC02)` | Đạt |
+| PID-00003-AC06 | đạt | stub (hai app Fastify) | `client.spec.ts › lời gọi đi qua guard (PID-00003-AC06)` | Tại chỗ và CI: `client.spec.ts` 4/4 |
+| PID-00003-AC07 | đạt | stub | `guard.spec.ts › token chuyển tiếp aud orchestration (PID-00003-AC07, EC07)`, `› aud orchestration không do gateway ký (EC11)` | Đạt |
+| PID-00003-AC08 | đạt; EC08 nay đạt đủ (G1 đóng) | stub | `guard.spec.ts › aud mảng (PID-00003-AC08, EC08)`; `token.spec.ts › phát token Agent Run (PID-00003-AC08)` | Đạt |
+| NFR-AUTHZ-001-AC01 (phần thư viện) | đạt | stub | `guard.spec.ts › luật x-apr` (token agent hợp lệ bị 401 ở route x-apr) | Đạt |
+| NFR-TRANSIT-001-AC01 | không áp dụng | — | — | Kiểm ở PID-00048, PID-00153 (acceptance.html) |
+
+Edge case EC01–EC11: 11/11 có test đúng tên trong `scope.html`, đều đạt.
+
+### Lệnh đã chạy
+
+Máy PO, Windows 11, Node 24.21.0, pnpm 10.34.9; Docker trong WSL (`DOCKER_HOST=tcp://localhost:2375`). Chạy trong worktree checkout ở `da5fec5`.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt: 881 gói, không đổi lockfile |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 11 file, 68/68 test (`token.spec.ts` 10, `guard.spec.ts` 12, `client.spec.ts` 4; test tenancy chạy PostgreSQL thật qua Testcontainers) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt (kèm `@sires/contracts:generate-ts`, `:build`) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | 19 project. Mọi tác vụ của 15 project TS đạt. 9 tác vụ Python lỗi vì môi trường: `uv run` không chạy được `ruff`, `mypy`, `pytest` trong `.venv` (Smart App Control của máy chặn) — `sires-common` lint/typecheck/test, `agent-core` lint/typecheck, `knowledge` lint/typecheck, `eval` lint/typecheck. PR không chạm mã Python. CI job `build` 134715393434 trên `da5fec5`: “Successfully ran targets lint, typecheck, test, build for 19 projects and 2 tasks they depend on”, gồm `sires-common:test` 79 passed |
+| `pytest` của `sires-common` qua trình thông dịch gốc của uv (nạp `site-packages` của `.venv`, cách vòng qua chặn của máy), 4 lần | 3 lần 79/79 đạt; 1 lần lỗi `tests/test_messaging.py::test_envelope_and_rollback` (`:215`, thứ tự outbox ra `['audit', 'event']`) — test chập chờn của PID-00005, không liên quan PID này (xem đề xuất) |
+| `ruff check .` của `sires-common` (cùng cách vòng) | “All checks passed!” |
+| Thử hành vi trên bản build `libs/ts/platform/dist` bằng script đọc nằm ngoài repo (không sửa mã) | Kết quả ghi ở G1, G2, G4, G5, G9 và đề xuất (khóa riêng không khớp JWKS) |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: infra, platform, repo`; cảnh báo 2 luồng (`infra` do `pnpm-workspace.yaml`, `pnpm-lock.yaml` thêm `jose`, quy tắc 1.4.7, như Lần 1); exit 0. CI job `tracks` 134715393814: success |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00003 --result` | “PID-00003: KẾT QUẢ ĐỦ (0 cảnh báo).”, trạng thái `Xong — chờ QC` |
+| `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép.” (sau khi xoá `.pytest_cache`, `.ruff_cache` do chính lượt QC này tạo khi chạy pytest, ruff) |
+| `node scripts/docs/update-index.mjs --check` | Khớp: 159 PID, taskboard, `docs/index.html` |
+| `gh api …/commits/da5fec5…/check-runs`; `gh pr view 34` | `tracks` success, `build` success; PR `MERGEABLE`, `mergeStateStatus = BLOCKED` theo ruleset `protect-main-develop`, `reviewDecision` trống |
+| Thử phá mã (tắt từng sửa đổi) | không chạy — QC không sửa mã. Đọc test thay: mỗi sửa G1–G5 có ít nhất một kiểm sẽ lỗi khi gỡ (G1 `guard.spec.ts:238`; G2 `:96`; G3 `:95`, `:120`; G4 `token.spec.ts:227-228` với giá trị không phải JSON; G5 `:208-213`) |
+
+### Lệch với Self-QC
+
+- Kết luận khớp: QC cũng thấy G1–G5 đã sửa, G6 giữ, không còn CRITICAL, HIGH.
+- Dẫn chứng dòng lệch nhẹ: `report.md`, `self-qc.md` Lần 2 ghi G1 ở `token.ts:147` (đó là dòng khai báo `checkSignerRules`; kiểm nằm ở `:157`), G6 ở `token.ts:147` (thực tế `:153`). Không ảnh hưởng kết luận.
+- Self-QC ghi `nx affected` 19 project đạt: khớp CI; tại chỗ QC chỉ xác nhận được phần TS (phần Python lỗi môi trường, ghi ở trên).
+- Self-QC khai thử phá mã 6/6 có test bắt: QC không tái hiện bằng lệnh, chỉ xác nhận bằng đọc test (bảng lệnh).
+- Self-QC không nêu G7–G9.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không có việc bắt buộc trước merge. Việc LOW, Dev làm cùng PR này hoặc để PR sau theo PO:
+
+1. Sửa chú thích `token.ts:26` cho đúng hành vi body 401 không nêu lý do (G7, quyết định PO G2).
+2. Lỗi cấu trúc `SERVICE_AUTH_PUBLIC_KEYS` nêu tên biến (G9, quyết định PO G4).
+3. Bỏ hoặc giữ `detail` của 403 sau khi PO chốt (G8).
+
+### Đề xuất cho PO
+
+- Có thể merge PR #34 và nghiệm thu PID-00003: 0 CRITICAL, 0 HIGH, 0 MEDIUM; CI `tracks`, `build` đạt trên `da5fec5`. GitHub báo PR `BLOCKED` theo ruleset (chưa có review), PO duyệt hoặc dùng quyền bypass khi merge.
+- Chốt G8 (body 403 có `detail` hay không) để TS và Python cùng hành vi; nếu giữ thì ghi cho PID-00005.
+- Hồ sơ `docs/tickets/issues/PID-00003/` vẫn chưa ghi các quyết định 18/11/2026 (G2 body 401, G3 title, G4, G5, G6); PO ghi khi tiện (R-01–R-07), kèm các việc đã giao cho PID-00005, PID-00008, PID-00065, PID-00007, PID-00020.
+- Kiểm khởi động không có trong hồ sơ, PO cân nhắc cho PID-00035 hoặc PID sau: (1) khóa riêng không khớp mục `kid = <service>` của JWKS hiện vẫn khởi động bình thường và mọi lời gọi đi bị bên nhận từ chối `bad_signature` (QC thử); (2) JWKS chứa JWK riêng (có `d`) được nhận lặng lẽ, phần `d` bị bỏ — an toàn khi kiểm nhưng che lỗi cấu hình làm lộ khóa riêng vào cấu hình dùng chung.
+- PID-00005: `tests/test_messaging.py:215` chập chờn (1/4 lần tại chỗ) vì `_outbox_rows` sắp `ORDER BY created_at, id` (`:113`) mà `app.outbox.created_at` là `DEFAULT now()` (`docs/database/ddl/00-common.sql:186`, thời điểm bắt đầu giao dịch), nên hai dòng ghi trong cùng giao dịch trùng `created_at` và thứ tự rơi vào `id`. Đề xuất sửa ở lượt sau của PID-00005 để CI không đỏ ngẫu nhiên.
 
 ---
 
