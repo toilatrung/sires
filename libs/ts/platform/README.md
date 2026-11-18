@@ -22,8 +22,8 @@ Cấu hình qua biến môi trường: `PORT`, `LOG_LEVEL` (mặc định `info`
 **Trả lỗi trong service** (NFR-OBS-005, PO 18/11/2026):
 
 - Lỗi nghiệp vụ **409 và 422 bắt buộc ném `new ProblemException('<mã>', { detail, currentState, … })`** với mã thuộc `ErrorCode`. Không dùng `ConflictException`, `UnprocessableEntityException` hay `HttpException` trần cho các status này: không có mã nên bộ lọc trả `500 internal_error`.
-- 400, 401, 403, 404, 405, 412, 413, 428, 503 dùng được exception của NestJS: bộ lọc gán mã cố định của status (`validation_failed`, `unauthenticated`, `forbidden`, `not_found`, …). Cần mã khác (ví dụ `invalid_service_token`) thì dùng `ProblemException`.
-- Lỗi không khai báo (không có status, hoặc 5xx) → `500 internal_error`, log mức `error` có stack. Lỗi 4xx của framework không có mã trong danh mục (415 của Fastify…) cũng trả `500 internal_error` nhưng chỉ log mức `warn` kèm `status` gốc. Mã cho 415, 429 chờ hợp đồng.
+- 400, 401, 403, 404, 405, 412, 413, 415, 428, 429, 503 dùng được exception của NestJS: bộ lọc gán mã cố định của status (`validation_failed`, `unauthenticated`, `forbidden`, `not_found`, `unsupported_media_type`, `rate_limited`, …). Cần mã khác (ví dụ `invalid_service_token`) thì dùng `ProblemException`. Lỗi 415 của Fastify (`Content-Type` không nhận) trả `415 unsupported_media_type`; khung rate limit trả `429 rate_limited` và tự đặt header `Retry-After` (hợp đồng PR #31).
+- Lỗi không khai báo (không có status, hoặc 5xx) → `500 internal_error`, log mức `error` có stack. Lỗi 4xx không có mã trong danh mục (ví dụ `ConflictException` trần) cũng trả `500 internal_error` nhưng chỉ log mức `warn` kèm `status` gốc.
 
 **Xác thực giữa service** (PID-00003, ADR-20; chi tiết ở `agent/execution/PID-00003/implement.md`):
 
