@@ -7,17 +7,16 @@ import argparse
 import hashlib
 import io
 import json
-import os
-from pathlib import Path
 import platform
 import queue
 import shutil
 import subprocess
-import tempfile
 import tarfile
+import tempfile
 import threading
 import time
 import uuid
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 MEMORY = 2 * 1024**3
@@ -50,8 +49,13 @@ def classify(timed_out, oom, result):
 def verdict(scenario, row):
     result = row.get('result') or {}
     status = row['status']
-    if scenario in ('article', 'thesis'):
-        return status == 'success' and result.get('pdf_created') is True
+    if scenario in ('default', 'article', 'thesis'):
+        compiled = status == 'success' and result.get('pdf_created') is True
+        if scenario in ('default', 'thesis'):
+            return compiled and all(result.get(key) is True for key in (
+                'bibtex_ran', 'bibliography_created', 'natbib_loaded',
+            ))
+        return compiled
     if scenario == 'shell':
         return status == 'success' and not result['shell_marker']
     if scenario == 'passwd':
@@ -95,8 +99,9 @@ def run_case(image, runtime, engine, scenario, output):
         input_dir = Path(temporary)
         input_dir.chmod(0o755)
         if source.exists():
-            shutil.copyfile(source / 'main.tex', input_dir / 'main.tex')
-            shutil.copyfile(ROOT / 'fixtures' / 'preamble.tex', input_dir / 'preamble.tex')
+            shutil.copytree(source, input_dir, dirs_exist_ok=True)
+            if scenario == 'article':
+                shutil.copyfile(ROOT / 'fixtures' / 'preamble.tex', input_dir / 'preamble.tex')
         command = [
             'create', '--name', name, '--runtime', runtime, '--network=none',
             '--read-only', '--user=65532:65532', '--cap-drop=ALL',
@@ -188,6 +193,8 @@ def run_case(image, runtime, engine, scenario, output):
                 filenames = ['build.log', 'main.log', 'time.txt']
                 if result.get('pdf_created'):
                     filenames.append('main.pdf')
+                if result.get('bibliography_created'):
+                    filenames.extend(('main.bbl', 'main.blg'))
                 # docker cp reads host mounts, which cannot see gVisor's guest tmpfs.
                 exported = subprocess.run(
                     ['docker', 'exec', name, 'tar', '-C', '/work', '-cf', '-', *filenames],
@@ -206,12 +213,17 @@ def run_case(image, runtime, engine, scenario, output):
                 else:
                     row['passed'] = False
                     row['artifact_error'] = exported.stderr.decode(errors='replace')
-            (artifact / 'result.json').write_text(json.dumps(row, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+            (artifact / 'result.json').write_text(
+                json.dumps(row, ensure_ascii=False, indent=2) + '\n', encoding='utf-8',
+            )
         finally:
             docker('rm', '-f', name, check=False)
             if attach:
                 attach.wait(timeout=15)
-        print(f'{runtime} {engine} {scenario}: {row["status"]}, pass={row["passed"]}, {row["wall_seconds"]}s', flush=True)
+        print(
+            f'{runtime} {engine} {scenario}: {row["status"]}, '
+            f'pass={row["passed"]}, {row["wall_seconds"]}s', flush=True,
+        )
         return row
 
 
@@ -242,7 +254,7 @@ def main():
         limits=dict(seconds=DEADLINE, memory_bytes=MEMORY, workspace_bytes=DISK),
         runsc=docker('info', '--format', '{{json .Runtimes.runsc}}').stdout.strip(),
         fixture_sha256={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
-                        for p in sorted((ROOT / 'fixtures').rglob('*.tex'))},
+                        for p in sorted((ROOT / 'fixtures').rglob('*')) if p.is_file()},
         source_sha256={name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
                        for name in ('Dockerfile', 'worker.py', 'spike.py', 'measure.sh', 'attack.sh')},
     )
@@ -256,7 +268,7 @@ def main():
             for repeat in range(args.repetitions):
                 folder = args.output / f'repeat-{repeat + 1}'
                 folder.mkdir()
-                for scenario in ('article', 'thesis'):
+                for scenario in ('default', 'article', 'thesis'):
                     for engine in ENGINES:
                         for runtime in (('runc', 'runsc') if repeat % 2 == 0 else ('runsc', 'runc')):
                             rows.append(run_case(image_id, runtime, engine, scenario, folder))
@@ -267,7 +279,9 @@ def main():
             for scenario in ('network-probe', 'memory-probe'):
                 rows.append(run_case(image_id, 'runsc', 'pdflatex', scenario, args.output))
     finally:
-        (args.output / 'results.json').write_text(json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        (args.output / 'results.json').write_text(
+            json.dumps(rows, ensure_ascii=False, indent=2) + '\n', encoding='utf-8',
+        )
     if not rows or not all(row['passed'] for row in rows):
         raise SystemExit(1)
 

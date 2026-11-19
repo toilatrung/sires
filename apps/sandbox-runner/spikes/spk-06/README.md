@@ -33,7 +33,8 @@ giữ cả `runsc` lẫn sidecar `gvisor-bin/`. Không tải package trong build
 
 ## Phép đo
 
-Hai mẫu × hai engine × hai runtime × ba lần = 24 build mặc định.
+Ba mẫu (Default tiếng Anh, bài báo tiếng Việt, luận văn mở) × hai engine ×
+hai runtime × ba lần = 36 build mặc định.
 Đảo thứ tự runtime sau mỗi lượt; cùng image ID và cấu hình tài nguyên.
 Mỗi build tạo container mới, không tái sử dụng `.aux` hay PDF; cache image/host
 không được flush nên không gọi đây là phép đo cold cache.
@@ -47,7 +48,10 @@ không được flush nên không gọi đây là phép đo cold cache.
   `null` nghĩa là chưa đo được, không được thay bằng 0.
 - `environment.json`: kernel, cấu hình runtime, image ID, phiên bản gVisor,
   giới hạn, hash fixture. `results.json` và từng `result.json`: kết quả thô.
-- `main.pdf`, `main.log`, `build.log`, `time.txt`: artifact từng build.
+- `main.pdf`, `main.log`, `build.log`, `time.txt`: artifact từng build;
+  Default và luận văn còn xuất `main.bbl`, `main.blg` để kiểm BibTeX thực chạy.
+- Fixture nhiều file được sao chép đầy đủ cùng cấu trúc thư mục. Hash bao gồm
+  mọi file fixture, kể cả `.bib`, class, ảnh PNG và giấy phép upstream.
 
 120 giây là deadline host dùng monotonic clock, tính cả runtime startup.
 Hết giờ xóa cưỡng bức container để dừng cả nhóm tiến trình. Mỗi job có
@@ -83,19 +87,39 @@ ngoài workspace ở cấp kernel. Kiểm chính thức NFR-SANDBOX-001 ở PID-
 
 ## Mẫu, nguồn và giới hạn đại diện
 
-Mẫu bài báo Default là fixture spike dựa trên cấu trúc article mở của
-[LaTeX2e sample2e.tex](https://github.com/latex3/latex2e/blob/develop/base/sample2e.tex).
-Mẫu luận văn dùng [LaTeX2e report class](https://github.com/latex3/latex2e/blob/develop/base/classes.dtx).
-LaTeX2e phát hành theo [LPPL](https://www.latex-project.org/lppl/).
-Phần tiếng Việt, nội dung lặp, phương trình, bảng và TikZ là dữ liệu tổng hợp
-của SIRes; không chứa dữ liệu cá nhân, không phải template luận văn của trường.
-Chưa có template sản phẩm trong scaffold manuscript; đây là baseline tái lập,
-cần đo lại template thật ở PID-00054. Các số 12/30/256/512 trong bảng PDF
-chỉ là nội dung mẫu; số đo thật chỉ nằm trong JSON kết quả.
+`fixtures/default/` hiện thực cấu trúc MS-TEMPLATE-001/OQ-056: class article,
+tiếng Anh, main.tex nạp năm file `sections/*.tex`, `figures/`,
+`bibliography/references.bib`, natbib, plainnat và citation thật. Đây là fixture
+kiểm hợp đồng template Default, không sửa service manuscript hoặc tạo dữ liệu
+Trusted Reference trong sản phẩm. Bib entry mẫu đại diện cho đầu ra System sinh.
+
+`fixtures/article/` là bài báo tiếng Việt tổng hợp dùng cấu trúc
+[LaTeX2e sample2e](https://github.com/latex3/latex2e/blob/develop/base/sample2e.tex),
+**không phải template Default**. Các số trong bảng của PDF là nội dung mẫu.
+
+`fixtures/thesis/` thích nghi từ template luận văn
+[CUED của Krishna Kumar](https://github.com/kks32/phd-thesis-template), revision
+`8d6c2d59790d93ef58e50f908d98d49e00b4fb1d`, MIT. Giữ class riêng của template,
+ba chương mẫu, ảnh raster PNG, BibTeX, natbib và thêm chương tiếng Việt.
+Nguồn, giấy phép, hash upstream và các thay đổi ở `fixtures/thesis/SOURCE.md`
+và `vendor/`. Đồ thị PNG được tạo bằng matplotlib, dùng dữ liệu tổng hợp thay
+ảnh nhân vật trong bản gốc; không dùng đồ thị đó làm số đo sandbox.
+
+Default và luận văn chỉ được tính đạt nếu có PDF, `main.bbl`, log xác nhận
+BibTeX chạy và natbib được nạp. Số đo thật chỉ nằm trong JSON evidence.
+Sau khi thay fixture theo QC, cần đo lại toàn bộ suite; số đo cũ ở hồ sơ
+Lần 1–3 không được dùng để kết luận cho các fixture mới.
 
 pdfLaTeX dùng T5/UTF-8; XeLaTeX dùng DejaVu Serif, không phụ thuộc font host.
+Riêng Default tiếng Anh dùng T1/Latin Modern; luận văn dùng class CUED với
+font của image thay XITS, không cần tải font lúc chạy.
 Thiếu package/font phải ghi từ log vào báo cáo và bổ sung image lúc build,
 không tải động trong sandbox.
+
+`package.json` của service chỉ đóng gói `dist` bằng trường `files`; thư mục
+spike không được đưa vào gói `pnpm deploy --legacy --prod` cho image sản phẩm.
+Giới hạn file 16 MiB của spike không được sao chép nguyên sang PID-00054;
+PDF luận văn nhiều ảnh có thể cần lớn hơn giới hạn đó.
 
 Tài liệu runtime: [cài gVisor](https://gvisor.dev/docs/user_guide/install/),
 [chọn platform](https://gvisor.dev/docs/user_guide/platforms/),

@@ -95,7 +95,8 @@ Sau suite không còn container có tiền tố `sires-spk06-`.
 ### Kết luận giả định và đề xuất PID-00031-AC04
 
 - **ASM-07:** được ủng hộ ở mức spike cho hai mẫu tổng hợp tiếng Việt:
-  12/12 build runsc đạt, tối đa 10,483 s và 218,8 MiB, dưới 120 s / 2 GiB.
+  12/12 build runsc đạt, tối đa 10,483 s, cgroup peak 218,8 MiB và RSS GNU time
+  237,7 MiB (hai định nghĩa khác nhau), dưới 120 s / 2 GiB.
   Trung vị wall runsc bằng khoảng 1,37–1,83 lần baseline tùy mẫu/engine.
   Chưa khái quát cho mọi luận văn/template hoặc production.
 - **ADR-11:** runsc KVM tương thích toolchain đã thử, có các biện pháp cô lập
@@ -235,3 +236,49 @@ fixture Default, luận văn mở, loại spike khỏi gói sản phẩm, ruff v
 G5/G9: giữ nguyên lịch sử đã push; PO xử lý bằng squash khi merge.
 Đã cấu hình khóa ký SSH cho repo, bật commit.gpgsign; các commit cập nhật
 sẽ dùng chữ ký hợp lệ và payload UTF-8, không viết lại lịch sử.
+
+### Đã sửa trong lúc chờ PO
+
+| QC | Thay đổi / kiểm chứng | Trạng thái |
+| --- | --- | --- |
+| G1 | Thêm fixtures/default theo MS-TEMPLATE-001/OQ-056: article tiếng Anh, năm sections qua input, figures, bibliography/references.bib, natbib + plainnat + cite. Bỏ nhãn Mẫu Default khỏi bài báo tiếng Việt cũ | Mã fixture xong; chờ đo đủ 3 lượt/runsc/runc |
+| G2 | Thay luận văn loop một file bằng template CUED MIT có class riêng, ba chương upstream, chương tiếng Việt, ba PNG raster và BibTeX. Revision và giấy phép ở SOURCE.md/vendor | Fixture xong; chờ đo đủ |
+| G4 | package.json thêm files=[dist]. Lệnh deploy --legacy --prod exit 0; dist/main.js tồn tại, spikes không tồn tại | Đã giải quyết |
+| G7 | Ruff sửa import thừa/thứ tự, ngắt dòng dài; ruff check sạch, 9/9 unit test | Đã giải quyết |
+| G8 | Dòng kết quả mới nhất trỏ Lần 4; bổ sung RSS GNU time 237,7 MiB cạnh cgroup peak 218,8 MiB trong số đo lịch sử | Đã giải quyết |
+| G5/G9 | Cấu hình khóa ký SSH và UTF-8 cho cập nhật mới; giữ lịch sử cũ để PO squash | Không viết lại lịch sử theo PO |
+| G6 | README nhắc PID-00054 không sao chép nguyên hạn mức file 16 MiB | Ghi chú đã bổ sung |
+
+Kiểm biên dịch riêng cho fixture mới (không đo benchmark hoặc chạy tấn công):
+Default và luận văn đều compile được bằng pdfLaTeX/XeLaTeX dưới runsc KVM,
+4/4 exit 0, PDF và main.bbl tồn tại; main.blg xác nhận BibTeX, main.log có
+natbib.sty. Đã sửa font TS1 và đuôi PNG của class upstream cho image cố định.
+Kiểm này chỉ kiểm chức năng, không thay phép đo runsc/runc 3 lượt của AC03.
+
+Harness sao chép fixture đệ quy, xuất main.bbl/main.blg, kiểm BibTeX/natbib
+thực chạy; hash fixture gồm cả class, BibTeX, ảnh và license. Ma trận lần tới
+là 36 build (Default tiếng Anh + bài báo tiếng Việt + luận văn mở).
+
+Nx lint/typecheck/test/build của sandbox-runner và bốn task phụ thuộc đã chạy
+không dùng cache, exit 0. Không đổi classify khi PO chưa chốt Đề xuất 1.
+Không chạy measure.sh hoặc attack.sh, không thay evidence số đo cũ hoặc
+kết luận AC03 bằng kết quả của fixture mới. Các số đo Lần 1–3 chỉ còn là
+bằng chứng của phiên bản tương ứng; chưa đủ để nghiệm thu fixture mới.
+
+### Còn chờ trước khi hoàn tất Lần 4
+
+- PO chốt mã cho TeX capacity: tex_capacity riêng, compile_error hay memory_limit.
+- PO chốt đưa startup container vào SPK-06 hay giao PID-00080/PID-00112;
+  không đồng nhất startup container với cold start pod Kubernetes.
+- Sau quyết định: sửa G3, chạy một đợt measure.sh/attack.sh, cập nhật số đo,
+  AC03, kết luận ASM-07 và danh sách package; rồi tự QC và chuyển Xong — chờ QC.
+- Các đề xuất về platform production, OCI seccomp, kịch bản escape mở rộng
+  và hạn mức file dành cho PID-00054/PID-00112/PID-00128, chưa tự chốt trong spike.
+
+### Tài liệu Lần 4
+
+- `evidence/qc4/checks.txt`: Ruff sạch và 9 unit test đạt.
+- `evidence/qc4/nx.txt`: gate sandbox-runner và bốn task phụ thuộc, không dùng cache, exit 0.
+- `evidence/qc4/deploy.txt`, `evidence/qc4/deploy-check.json`: đóng gói sản phẩm không có spikes.
+- `evidence/qc4/preflight-default-pdflatex.txt`, `evidence/qc4/preflight-default-xelatex.txt`: kiểm compile Default/BibTeX/natbib.
+- `evidence/qc4/preflight-thesis-pdflatex.txt`, `evidence/qc4/preflight-thesis-xelatex.txt`: kiểm compile luận văn mở/BibTeX/natbib.

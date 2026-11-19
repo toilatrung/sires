@@ -17,6 +17,7 @@ không thay NestJS service, hợp đồng, database hoặc image sản phẩm.
 4. `run_case` tạo container với giới hạn tài nguyên, input tạm chỉ đọc,
    tmpfs workspace riêng; chạy worker dưới UID 65532. Rootfs và `/tmp`
    chỉ đọc, TMPDIR nằm trong workspace; không mount tài nguyên host nhạy cảm.
+   Input được sao chép đệ quy để giữ sections, chapters, bibliography và ảnh.
 5. `worker.py:main` kiểm UID/quyền ghi, chạy latexmk `-norc` với flags đã chốt
    hoặc probe socket/allocator. GNU time thu thời gian và peak RSS; stdout
    chỉ trả kết quả JSON của worker, stdout của TeX đi vào log riêng.
@@ -25,6 +26,8 @@ không thay NestJS service, hợp đồng, database hoặc image sản phẩm.
    ghi JSON rồi xóa cưỡng bức container trong `finally`.
 7. Suite trả exit 1 nếu bất kỳ assertion/artifact export nào lỗi. Không coi
    runtime không khởi động được là tấn công đã bị chặn.
+   Fixture Default và luận văn còn cần có main.bbl/main.blg và bằng chứng
+   BibTeX/natbib thực chạy. Ma trận mới gồm 36 build, chưa chạy khi chờ PO.
 
 ## 2. Hàm, thuật toán, class ảnh hưởng cao
 
@@ -57,8 +60,11 @@ mỗi job tối đa 120 giây; suite chạy tuần tự.
 - `docker cp` không thấy guest tmpfs; dùng `docker exec tar`, chỉ đọc tên
   file cố định, không dùng tar extractall.
 - `/tmp` là mountpoint directory thật và bind read-only; TMPDIR=/work/tmp.
-- Fixture bài báo/luận văn dựa trên LaTeX2e mở, nội dung tổng hợp;
-  chưa có template sản phẩm trong scaffold. Nguồn và giới hạn ở README spike.
+- Fixture Default tuân MS-TEMPLATE-001/OQ-056; bài báo tiếng Việt cũ được giữ
+  làm mẫu riêng. Luận văn dùng class và chương của template CUED MIT, revision
+  cố định; giữ nguồn/giấy phép gốc, thay font và PNG phù hợp image. Nguồn và
+  các thay đổi ở fixtures/thesis/SOURCE.md. Không sửa service manuscript.
+- package.json chỉ đóng gói dist; deploy --legacy --prod đã kiểm không có spikes.
 - WSL2 dùng KVM do systrap lỗi seccomp notify. Hướng dẫn Linux/GitHub
   Actions giữ mặc định systrap theo upstream; chưa tuyên bố đã thử Actions.
 - Gate Nx chạy từ Windows dùng Docker TCP IPv4 127.0.0.1:2375,

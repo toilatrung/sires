@@ -5,12 +5,12 @@
 """Trusted in-container entry point. All fixture files are treated as untrusted."""
 import json
 import os
-from pathlib import Path
 import shutil
 import socket
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 
 def main():
@@ -41,9 +41,7 @@ def main():
             chunks.append(bytearray(32 * 1024 * 1024))
             time.sleep(0.01)
     else:
-        shutil.copyfile('/input/main.tex', '/work/main.tex')
-        if Path('/input/preamble.tex').exists():
-            shutil.copyfile('/input/preamble.tex', '/work/preamble.tex')
+        shutil.copytree('/input', '/work', dirs_exist_ok=True)
         command = [
             '/usr/bin/time', '-f', '%e %M', '-o', '/work/time.txt',
             'latexmk', '-norc', '-pdf' if engine == 'pdflatex' else '-xelatex',
@@ -54,6 +52,8 @@ def main():
             completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
                                        check=False)
         build_log = Path('/work/build.log').read_text(errors='replace')
+        tex_log = Path('/work/main.log').read_text(errors='replace')
+        bibtex_log = Path('/work/main.blg')
         result.update(
             exit_code=completed.returncode,
             pdf_created=Path('/work/main.pdf').is_file(),
@@ -61,6 +61,9 @@ def main():
             network_marker=Path('/work/NETWORK_EXECUTED').exists(),
             passwd_denied='Not reading from /etc/passwd' in build_log,
             capacity_exceeded='TeX capacity exceeded' in build_log,
+            bibtex_ran=bibtex_log.exists() and 'This is BibTeX' in bibtex_log.read_text(errors='replace'),
+            bibliography_created=Path('/work/main.bbl').is_file(),
+            natbib_loaded='natbib.sty' in tex_log,
             log_tail=build_log[-16000:],
         )
         timing = Path('/work/time.txt').read_text().splitlines()[-1].split()

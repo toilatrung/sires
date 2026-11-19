@@ -1,50 +1,40 @@
 % SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 % Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 % SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-% Uses the open LaTeX2e report class (see README sources).
-\documentclass[12pt,oneside]{report}
-\input{preamble}
-\title{Luận văn mẫu: Kiểm chứng môi trường nghiên cứu tái lập}
-\author{SIRes — SPK-06}
-\date{}
+% Adapted from Krishna Kumar's MIT-licensed CUED PhD template; see SOURCE.md.
+\makeatletter
+\def\input@path{{vendor/}}
+\makeatother
+\PassOptionsToPackage{T5}{fontenc}
+\documentclass[a4paper,12pt,oneside,customfont,authoryear]{PhDThesisPSnPDF}
+\usepackage{booktabs,subcaption}
+\DeclareGraphicsExtensions{.png,.jpg,.pdf}
+\ifxetex\else
+  \usepackage{lmodern}
+  \renewcommand{\encodingdefault}{T5}
+  \fontencoding{T5}\selectfont
+\fi
+\title{Reproducible research workflows: an open thesis template}
+\subtitle{SIRes SPK-06 compilation fixture}
+\author{SIRes}
+\dept{Research tooling experiment}
+\university{Open template adaptation for sandbox evaluation}
+\crest{}
+\degreetitle{Thesis template demonstration}
+\degreedate{2026}
+\subject{Sandbox compilation}
+\keywords{LaTeX, reproducibility, Vietnamese, BibTeX}
 \begin{document}
+\frontmatter
 \maketitle
 \tableofcontents
 \listoffigures
 \listoftables
-\newcount\chapternumber
-\newcount\sectionnumber
-\newcount\paragraphnumber
-\chapternumber=0
-\loop
-  \advance\chapternumber by 1
-  \chapter{Nghiên cứu và thực nghiệm \the\chapternumber}
-  \sectionnumber=0
-  {\loop
-    \advance\sectionnumber by 1
-    \section{Phân tích \the\sectionnumber}
-    \paragraphnumber=0
-    {\loop
-      \advance\paragraphnumber by 1
-      \sampleparagraph\sampleparagraph\par
-    \ifnum\paragraphnumber<8\repeat}
-    \begin{equation}
-      \mathcal{J}=\int_0^1\left(\sum_{i=1}^{n}x_i^2+\alpha\right)\,d\alpha
-    \end{equation}
-    \begin{figure}[ht]
-      \centering\begin{tikzpicture}
-        \draw[->] (0,0)--(5,0); \draw[->] (0,0)--(0,2);
-        \draw[thick] (0,0) parabola (4,1.8);
-      \end{tikzpicture}\caption{Kết quả mô phỏng tiếng Việt}
-    \end{figure}
-    \begin{table}[ht]\centering
-      \begin{tabular}{lrr}\toprule Phương pháp & Mẫu & Sai số \\
-      \midrule Cơ sở & 100 & 0.12 \\ Đề xuất & 100 & 0.08 \\ \bottomrule
-      \end{tabular}\caption{Bảng đánh giá phương pháp}
-    \end{table}
-  \ifnum\sectionnumber<4\repeat}
-\ifnum\chapternumber<6\repeat
-\begin{thebibliography}{9}
-\bibitem{latex} The LaTeX Project. LaTeX documentation. 2026.
-\end{thebibliography}
+\mainmatter
+\input{chapters/getting-started}
+\input{chapters/figures-and-layout}
+\input{chapters/structure-and-results}
+\input{chapters/vietnamese-evaluation}
+\bibliographystyle{plainnat}
+\bibliography{bibliography/references}
 \end{document}

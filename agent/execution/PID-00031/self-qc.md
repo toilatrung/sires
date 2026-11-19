@@ -1,8 +1,8 @@
 # PID-00031 — Self-QC của Dev
 
-**Kết luận:** Đạt — gate toàn repo chạy lại thành công với cấu hình Docker/Testcontainers rõ ràng
+**Kết luận:** Chưa đạt — đang sửa QC độc lập; chờ quyết định PO và đợt đo mới
 
-**Kết quả mới nhất:** Lần 2 ở cuối file. Giữ kết quả lần đầu để truy vết.
+**Kết quả mới nhất:** Lần 4 ở cuối file. Giữ các lần trước để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 19/11/2026
@@ -136,3 +136,43 @@ image, fixture hoặc JSON số đo. Kết quả kiểm ở Lần 2 giữ nguyê
 - Ranh giới staged: `repo, sandbox-runner`, chỉ một luồng mã.
 - [PR #39](https://github.com/toilatrung/sires/pull/39) vào `main`, chưa merge.
 - Commit triển khai do GitHub ký, signature VALID. Chưa có QC độc lập.
+
+## Lần 4 — 19/11/2026
+
+Đã đọc QC độc lập Lần 1 ở commit 5f94b20; không sửa qc-report.md.
+Kết luận Dev ở các lần trước đã đánh giá quá mức tính đại diện của fixture
+và phạm vi đóng gói. Lần này sửa phần độc lập trước, tuân thủ PO yêu cầu
+chưa chạy measure.sh/attack.sh trước hai quyết định.
+
+### Lệnh / kiểm đã chạy
+
+| Kiểm | Kết quả |
+| --- | --- |
+| ruff check --fix rồi ruff check apps/sandbox-runner/spikes/spk-06 | Ban đầu sửa 3 lỗi import, còn 3 E501; ngắt dòng rồi check sạch |
+| python -m unittest -v test_spike.py | 9/9 đạt, có test ngăn PDF thiếu BibTeX/natbib bị tính đạt |
+| pnpm nx affected -t lint typecheck test build --base=origin/main --head=HEAD --skip-nx-cache --outputStyle=stream | Exit 0; sandbox-runner và 4 task phụ thuộc đạt |
+| pnpm --filter @sires/sandbox-runner deploy --legacy --prod thư_mục_tạm | Exit 0; dist/main.js có, spikes không có |
+| Kiểm cấu trúc fixture | Default có 5 input sections, references.bib, natbib/plainnat; luận văn có class upstream MIT, 4 file chương, 3 PNG, license gốc |
+| Compile preflight runsc KVM, hai fixture Default/luận văn × hai engine | 4/4 exit 0; có PDF, bbl, blg ghi This is BibTeX, log có natbib.sty. Đây là kiểm compile, không thu benchmark |
+| add-license --check | File ticket đủ notice; 11 cache ignore ngoài ticket thiếu notice. Vendor MIT giữ license gốc, không đổi sang giấy phép SIRes |
+| measure.sh, attack.sh | Chưa chạy theo chỉ dẫn PO; số đo hiện có thuộc mã/fixture trước QC |
+
+### Tự đối chiếu spec-converge-skill
+
+| G | Loại / mức theo QC | Kết quả lần này |
+| --- | --- | --- |
+| G1 | partial / HIGH | Fixture Default và kiểm compile đã sửa; còn phép đo 3 lượt trên runsc/runc, chưa tự đóng G1 |
+| G2 | partial / MEDIUM | Thay bằng template CUED MIT có raster/BibTeX và nguồn cố định; còn đo đại diện mới |
+| G3 | partial / MEDIUM | Chờ PO chốt mã lỗi, giữ classify để không tự quyết hành vi |
+| G4 | partial / MEDIUM | Đã giải quyết bằng files=[dist] và deploy thực |
+| G5 | contradicts / MEDIUM | Lịch sử unsigned giữ nguyên theo PO; đã cấu hình ký SSH repo và payload UTF-8 cho cập nhật mới. PO xử lý khi squash |
+| G6 | unrequested / LOW | Bổ sung ghi chú hạn mức file cho PID-00054 |
+| G7 | partial / LOW | Đã giải quyết; Ruff sạch |
+| G8 | partial / LOW | Đã giải quyết; latest Lần 4 và bổ sung RSS 237,7 MiB |
+| G9 | LOW | Không rewrite commit cũ; payload UTF-8/commit mới có chữ ký, PO đặt thông điệp khi squash |
+
+AC01 và NFR-SANDBOX-001-AC01 chưa chạy lại, chỉ có bằng chứng phiên trước.
+AC02 còn chờ G3. AC03/AC04 chưa nghiệm thu lại do thay fixture, dù preflight
+đã xác nhận hai engine thực chạy BibTeX/natbib. EC01 dùng KVM như trước;
+EC02/EC03 đã kiểm compile mới và sửa font/image lookup, còn đánh giá theo
+đợt đo cuối. Không đặt Xong — chờ QC khi các việc trên còn mở.

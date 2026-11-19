@@ -34,6 +34,14 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(verdict('thesis', {'status': 'success', 'result': {'pdf_created': False}}))
         self.assertTrue(verdict('article', {'status': 'success', 'result': {'pdf_created': True}}))
 
+    def test_ac03_default_and_thesis_require_real_bibtex_and_natbib(self):
+        for scenario in ('default', 'thesis'):
+            evidence = dict(pdf_created=True, bibtex_ran=True, bibliography_created=True, natbib_loaded=True)
+            self.assertTrue(verdict(scenario, {'status': 'success', 'result': evidence}))
+            for key in ('bibtex_ran', 'bibliography_created', 'natbib_loaded'):
+                incomplete = dict(evidence, **{key: False})
+                self.assertFalse(verdict(scenario, {'status': 'success', 'result': incomplete}))
+
     def test_network_probe_requires_socket_evidence(self):
         self.assertFalse(verdict('network-probe', {'status': 'success', 'result': {'network_blocked': False}}))
 
