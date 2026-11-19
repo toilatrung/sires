@@ -1,6 +1,6 @@
 # PID-00008 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 1 HIGH, 1 MEDIUM, 2 LOW (Lần 2, 19/11/2026). G1, G3, G4b/c đã đóng. Còn G2 (HIGH): phía TypeScript không bắt trường lạ trong `data` của 37/42 message; PO đã chọn hướng 2 ngày 19/11/2026 (sửa bộ sinh TS trong PR này, hồ sơ ghi H5), chờ Dev làm. Mới: G5 (MEDIUM) — lỗi trên `string[]` cục bộ bị gắn nhãn “trường không có trong spec” (EC02); G6 (LOW) — mục baseline vẫn gắn commit `eb31e4d` dù hợp đồng đã đổi ở `f88adb4`. AC02 đạt; AC01 một phần (G2)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 1 LOW (Lần 3, 19/11/2026). G2 (H5), G5, G6 đã đóng; AC01, AC02 đạt. Còn G4a (LOW, tên lớp Python `Data29`), không chặn merge. Duyệt baseline (N7) vẫn là việc riêng của PO
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -178,6 +178,68 @@ Máy QC: Windows 11, Node 24.21.0, pnpm 10.34.9, uv 0.13.7; worktree tách ngoà
 - **Hồ sơ đã cũ (không chặn, như Lần 1):** trang ticket mục 3, 4 và S01–S03 vẫn ghi PID-00007 “chưa làm”; `specs/index.html` vẫn “Chờ duyệt”.
 
 **Quyết định của PO (19/11/2026, trong phiên):** G2 — “Hướng 2 trong PR”. Ghi vào hồ sơ thành H5 (trang ticket mục 5, phiên 19/11/2026), P5, EC10, AC01, S01; cùng lần cập nhật trạng thái PID-00007 đã merge ở mục 3, 4 và S01–S03. `specs/index.html` không sửa.
+
+## Lần 3 — 19/11/2026 · spec-converge-skill
+
+Người chạy: agent QC độc lập do PO giao. Mã nguồn: PR #35, nhánh `contracts/check-drift-baseline`, commit `54b7545` (`report.md`: `Xong — chờ QC`); nhánh đã gộp `main` `989d65f` (PR #37, hồ sơ H5, P5, EC10). Đọc lại AC01, AC02, EC01–EC10, P5, S01 theo hồ sơ mới; diff `652dcad..54b7545` của `generate.mjs`, `check-drift.mjs`, `check-drift.spec.mjs`, `generate.spec.mjs`, fixture `local-array.ts`, `README.md`; `report.md`, `self-qc.md` Lần 3 như lời khai. Thăm dò bằng fixture ngoài repo như Lần 2.
+
+### Việc của Lần 2
+
+| Mã | Lần 2 | Lần 3 | Bằng chứng QC tự chạy |
+| --- | --- | --- | --- |
+| G2 | HIGH | Đã đóng (H5) | `generate.mjs:71–121` (`messageDataTypes`) đổi type message thành `Omit<…, 'data'> & { data: <data của message> }`, theo `$ref`/`allOf`, giữ tính bắt buộc từ envelope; 37 message đổi (`src/generated/messages.ts`, ví dụ `:605` `UsageRecordedMessage`, `:524` `ReferenceStatusChangedMessage`); `EventEnvelope` (`:731`) giữ `data` mở. CLI trên hợp đồng thật: `message-data-extra.ts:5:78`, `:6:69`, `:8:37` (đọc, gán, thay `data`) → `— UsageRecordedMessage.data`, thoát 1; thăm dò `TaskStatusChangedMessage`, `ReferenceStatusChangedMessage` (data qua `allOf`/`StateChange`) → `….data`; `message-valid.ts` thoát 0. Test mới `message: trường không có trong data…(EC10/H5)`, `H5: message data through refs/allOf…` |
+| G5 | MEDIUM | Đã đóng | `check-drift.mjs:50–52` (`declared`) chỉ gắn tên cho kiểu có khai báo trong `src/generated`. Thăm dò Lần 2 chạy lại: `string[]`, `number[]`, `string`, `{ id }`, union chuỗi cục bộ trong file có import contracts → TS2339 nguyên văn, không nhãn. Tên schema vẫn đúng: `ResearchProject`, `ResearchProject.summary`, `EventEnvelope.aggregate`, `AgentRunAssignment` (alias của `AgentRunRequestedMessage`). Test EC02 thêm `local-array.ts` |
+| G6 | LOW | Đã đóng | `report.md` “Baseline hợp đồng — Lần 3, hiện hành”: nguồn `989d65f`, commit đổi hợp đồng gần nhất `f8c2eba`; số dòng sinh mới (`messages.ts:524`, `:605`, `:731`, `:753`) khớp bản QC vừa sinh; mâu thuẫn routing key vẫn ghi mở; không ghi “PO đã duyệt” |
+| G4a | LOW | Còn, không chặn | Python vẫn báo `— sires_common.generated.messages.Data29` cho trường trong `data` |
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G4a | PID-00008-AC01 (Python, tên mô hình) | partial | LOW | `sires_common/generated/messages.py:888` `class Data29` | Không chặn merge; xử lý cùng bộ sinh Python nếu PO muốn |
+
+Không có `missing`, `contradicts`, `unrequested`. Phạm vi đúng P1–P5; `check-tracks` chỉ `contracts`, `repo`; không sửa `docs/`, service, hợp đồng, đầu ra Python hay workflow CI.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00008-AC01 | đạt | test fixture + CLI trên hợp đồng thật | `check-drift.spec.mjs` 10 test (EC01–EC10, G1/G2/G4, H5), `generate.spec.mjs` 4 test | Đọc, ghi trường lạ ở schema công khai, nội bộ, cấp envelope và trong `data` của message đều thoát 1, nêu file:dòng:cột, tên trường, tên schema/message; bỏ trường thì thoát 0. Phía Python như Lần 2 (CI chạy EC06) |
+| PID-00008-AC02 | đạt | lệnh thật + đối chiếu file:dòng | `report.md › Baseline hợp đồng — Lần 3` | generate, typecheck, check-drift TS toàn repo đạt ở `54b7545`; bằng chứng baseline khớp; kết luận “Baseline sẵn sàng cho PO duyệt” |
+
+Edge case: EC01–EC10 đạt (EC06, EC07 qua test trên CI; EC10 qua test và CLI). Không có màn hình.
+
+### Lệnh đã chạy
+
+Máy QC: Windows 11, Node 24.21.0, pnpm 10.34.9; worktree ngoài repo ở `54b7545`.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt |
+| `pnpm nx run-many -t lint typecheck build -p @sires/contracts --skip-nx-cache` | Lượt đầu: `generate-ts` thoát 1, EPERM khi đổi tên `libs/ts/contracts/src/generated` sang thư mục backup — Nx daemon đang chạy giữ thư mục. Sau `pnpm nx daemon --stop`, chạy lại với `NX_DAEMON=false`: đạt cả ba target và `generate-ts` |
+| `node scripts/generate.mjs --ts-only` | Đạt: 9 API nội bộ, 42 message; 37 type message dạng `Omit<…>` |
+| `node --test scripts/generate.spec.mjs scripts/check-drift.spec.mjs` | 13/14 đạt; EC06 hỏng vì Smart App Control chặn `python.exe` của `.venv` (lỗi môi trường, như Lần 2) |
+| CI trên `54b7545` (run `44459289570`) | success; `contracts:test` 14/14 đạt, 0 skip, gồm EC06 Python chạy thật (45,5 s); `nx affected` 14 project và 1 tác vụ phụ thuộc đạt |
+| `node scripts/check-drift.mjs --ts-only` (toàn repo) | Đạt: 14 project TS; 1 phút 49 giây |
+| CLI `--ts-only` trên `message-data-extra.ts`, `local-array.ts`, `message-valid.ts`, `valid.ts` và thăm dò | Xem bảng “Việc của Lần 2” |
+| `check-pid.mjs PID-00008 --result` | KẾT QUẢ ĐỦ, 0 cảnh báo |
+| `check-tracks.mjs --base origin/main`; `git diff --check origin/main...HEAD` | `contracts, repo`; sạch |
+
+Phần Python không đổi mã ở lần này (`check-drift-python.py`, nhánh Python của `generate.mjs` giữ nguyên); kết quả Python dựa trên CI.
+
+### Lệch với Self-QC
+
+- `self-qc.md`, `report.md` Lần 3 ghi “lệnh generate chạy lại gặp EPERM”. QC tái hiện được và tìm ra nguyên nhân: Nx daemon giữ thư mục `src/generated` trên Windows; tắt daemon thì hết. Không phải lỗi mã của PID này.
+- Các kết quả khác khớp: G2, G5, G6 đã sửa; 14/14 test trên CI; baseline gắn commit hiện hành.
+
+### Việc còn lại
+
+Không còn việc chặn merge. G4a (LOW) để PO quyết.
+
+### Đề xuất cho PO
+
+- **Có thể merge PR #35.** Duyệt baseline (N7) là bước riêng của PO trước cổng ra PH-01; cần quyết hai mâu thuẫn routing key trước khi duyệt.
+- **EPERM trên Windows (ngoài PID này):** `generate.mjs` (PID-00007) đổi tên cả thư mục `src/generated`, nên thất bại khi Nx daemon hoặc IDE đang theo dõi thư mục đó. Trên Linux, WSL2 (môi trường ticket) không gặp. Nếu muốn Dev trên Windows chạy được: ghi vào `libs/ts/contracts/README.md` cách chạy với `NX_DAEMON=false`, hoặc lập PID cho luồng contracts đổi cách publish (ghi đè từng file thay vì đổi tên thư mục).
 
 ---
 
