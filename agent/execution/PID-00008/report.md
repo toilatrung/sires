@@ -1,33 +1,27 @@
 # PID-00008 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Đang làm — chờ PO G2
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
 - **Nhánh:** `contracts/check-drift-baseline` (mã: `3f7ca0f`, ký SSH) · **PR:** [#35](https://github.com/toilatrung/sires/pull/35)
 - **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
-## Lần 2 — 19/11/2026
-
-Sửa theo QC độc lập Lần 1 và comment PR #35: G1 tên schema/message allOf, G2 fixture AsyncAPI và giới hạn data cần PO, G3 nhãn constructor Python; kiểm thêm G4 khi có thể. Đang thực hiện và tự QC lại; kết quả Lần 1 bên dưới giữ để truy vết.
-
-**Cần PO (G2):** `EventEnvelope.data` cho phép `additionalProperties: true`; kiểu giao TS giữ index signature nên trường lạ trong data không gây lỗi. Chờ PO chọn chấp nhận giới hạn, sửa bộ sinh, hoặc sửa hợp đồng. Chưa thay hành vi này khi chưa có quyết định.
-
 ## 1. Tóm tắt
 
-- Slice: 3/3 xong. Bị chặn: không có.
-- AC: 2/2 đạt ở mức kiểm cục bộ bằng compiler/mypy và báo cáo baseline. Edge case: 9/9 đã kiểm/ghi bằng chứng.
+- Lần 2: S02 xong; S01 đã sửa G1 và thêm fixture message, còn quyết định G2; S03 bổ sung giới hạn vào baseline. Chi tiết lịch sử Lần 1 giữ bên dưới.
+- AC01: đã sửa tên schema/message allOf và nhãn constructor Python; phần TS message.data còn chờ PO. AC02: baseline có giới hạn G2, chưa được PO duyệt.
 - Yêu cầu thêm: 0.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Sinh lại type, kiểm project TS theo Nx, báo đúng trường/schema; fixture và test | Xong | tạo check-drift.mjs, check-drift.spec.mjs, fixture TS/YAML; sửa package.json, README của contracts |
+| S01 | Sinh lại type, kiểm project TS theo Nx, báo đúng trường/schema; fixture và test | Đang làm — chờ PO G2 | check-drift.mjs, check-drift.spec.mjs, fixture TS/YAML; README của contracts |
 | S02 | Kiểm project Python và fixture dùng model/client sinh; thiếu uv | Xong | tạo check-drift-python.py, fixture Python; mở rộng script/test trong contracts |
 | S03 | Kiểm baseline DBQ-03/04, bản gộp và mâu thuẫn hợp đồng | Xong | mục Baseline hợp đồng bên dưới |
 
-## 3. Kết quả
+## 3. Kết quả Lần 1 (18/11/2026, giữ lịch sử)
 
 - Hồ sơ check-pid đạt, không cảnh báo. PID-00007 đã merge qua PR #33 tại `eb31e4d`; nhánh xuất phát từ main này.
 - check-drift sinh lại TS/Python, kiểm 14 project TS từ đồ thị Nx và ba project Python; mọi lỗi thoát khác 0. Cờ --ts-only/--python-only và đường dẫn fixture hỗ trợ kiểm riêng.
@@ -38,7 +32,7 @@ Sửa theo QC độc lập Lần 1 và comment PR #35: G1 tên schema/message al
 
 ## 4. Việc còn lại
 
-Không còn việc triển khai trong phạm vi. PO review PR, QC độc lập và quyết baseline. Gắn lệnh vào pipeline là PID-00009; quy tắc version nội bộ và sửa routing key thuộc PO.
+G2 chờ PO chọn cách xử lý TS message.data. Sau quyết định, thực hiện phần phụ thuộc, tự QC lại và đặt Xong — chờ QC khi không còn HIGH. Gắn lệnh vào pipeline là PID-00009; duyệt baseline là việc của PO, không phải điều kiện merge riêng của PR này (N7).
 
 ## 5. Yêu cầu thêm
 
@@ -48,11 +42,11 @@ Không có.
 
 - **Đề xuất cho PO:** Giải quyết các điểm routing key ghi ở mục Baseline; thêm quy tắc version nội bộ trước khi bật kiểm thay đổi phá vỡ (ngoài scope, H2). Các đoạn ticket ghi PID-00007 “chưa làm” đã cũ so với main `eb31e4d`.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** Không có điểm mới đang chặn.
+- **Còn mở / Cần PO G2:** EventEnvelope.data cho phép additionalProperties; TS giữ index signature nên đọc/ghi trường lạ trong data vẫn đạt. Chờ PO chọn chấp nhận giới hạn, sửa bộ sinh, hoặc sửa hợp đồng; chưa có quyết định trong phiên. Fixture và test ghi nhận hành vi hiện tại, chưa coi G2 đóng.
 - **Bước tiếp theo:** Thực thi các slice, tự QC, commit/push và mở PR theo yêu cầu trong phiên; PO QC độc lập và duyệt baseline.
 - **Tài liệu đi kèm:** Không có.
 
-## Baseline hợp đồng
+## Baseline hợp đồng — Lần 1
 
 **Nguồn đã kiểm:** main `eb31e4d805daefd624aa1f83089ea39361b05e5a` (merge PID-00007); mã checker được ghi trong commit `3f7ca0f`. Thư mục docs/api-design không thay đổi trong PID-00008. Kiểm trên source của nhánh hiện tại sau khi sinh lại, không dựa vào file generated đã commit. Baseline chưa được PO duyệt.
 
@@ -95,7 +89,22 @@ Các đường dẫn nguồn API viết gọn trong bảng đều tương đối
 
 Các mục trên được hồ sơ ghi nhận không chặn S01/S02; S03 phải trình bằng chứng để PO quyết. Không tự sửa hợp đồng, không coi baseline đã được duyệt.
 
-**Kết luận: Baseline sẵn sàng cho PO duyệt.**
+**Kết luận Lần 1: Baseline sẵn sàng cho PO duyệt.** Phạm vi kết quả được làm rõ ở Lần 2 bên dưới.
+
+## Lần 2 — 19/11/2026
+
+Căn cứ: yêu cầu trong phiên “fix pr theo cmt”, QC độc lập Lần 1 ở PR #35; đã fast-forward nhánh lên `dd0a434` (gồm main `f88adb4`) trước khi sửa. Không sửa docs hoặc qc-report.md. Baseline Lần 1 giữ để truy vết; nguồn hợp đồng hiện tại có thêm mã lỗi 415/429 từ main.
+
+| Góp ý | Xử lý | Kết quả |
+| --- | --- | --- |
+| G1 HIGH | Lập bảng kiểu components.schemas và tra kiểu bao ngoài trước thành phần allOf; test spec tạm allOf và hợp đồng thật | ResearchProject và UsageRecordedMessage đúng tên khi đọc/ghi trường thừa |
+| G2 HIGH | Thêm fixture message envelope, data (đọc, gán property, thay object) và hợp lệ; test trên hợp đồng thật; README ghi giới hạn | Cấp envelope bị bắt; data vẫn đạt theo index signature hiện tại. Cần PO, chưa đóng |
+| G3 MEDIUM | Ghép lỗi call-arg theo span của lời gọi constructor; fixture một dòng/nhiều dòng, import alias và class local trùng tên | Hai lỗi có file:dòng:cột, fieldNotInSpec và model Aggregate; bản đúng đạt; class local giữ lỗi gốc |
+| G4 LOW | Tên object lồng có đường dẫn EventEnvelope.aggregate; Partial truy về ResearchProject | Đã kiểm TS. Python Data29 giữ tên model thực tế, chưa đổi bộ sinh |
+
+**Cần PO (G2):** Theo review và điểm dừng “Không đoán hành vi” của spec-execution-skill: (1) chấp nhận giới hạn, (2) giao sửa bộ sinh để thay data của envelope bằng schema riêng, hoặc (3) PO sửa hợp đồng qua contract-updating-skill. Chưa có câu trả lời nên không tự chốt, chưa đặt Xong — chờ QC.
+
+**Baseline Lần 2:** kết quả check-drift đạt (nếu có) không chứng minh TS chặn trường lạ trong data của message có index signature. Bằng chứng là test `real contracts: allOf names and current additionalProperties data limitation` và fixture `message-data-extra.ts`. Baseline chưa được PO duyệt; N7 không phải điều kiện merge PR này.
 
 ---
 
