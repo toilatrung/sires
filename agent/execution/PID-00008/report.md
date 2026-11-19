@@ -1,11 +1,17 @@
 # PID-00008 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
 - **Nhánh:** `contracts/check-drift-baseline` (mã: `3f7ca0f`, ký SSH) · **PR:** [#35](https://github.com/toilatrung/sires/pull/35)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
+
+## Lần 2 — 19/11/2026
+
+Sửa theo QC độc lập Lần 1 và comment PR #35: G1 tên schema/message allOf, G2 fixture AsyncAPI và giới hạn data cần PO, G3 nhãn constructor Python; kiểm thêm G4 khi có thể. Đang thực hiện và tự QC lại; kết quả Lần 1 bên dưới giữ để truy vết.
+
+**Cần PO (G2):** `EventEnvelope.data` cho phép `additionalProperties: true`; kiểu giao TS giữ index signature nên trường lạ trong data không gây lỗi. Chờ PO chọn chấp nhận giới hạn, sửa bộ sinh, hoặc sửa hợp đồng. Chưa thay hành vi này khi chưa có quyết định.
 
 ## 1. Tóm tắt
 
