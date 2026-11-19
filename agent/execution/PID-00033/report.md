@@ -1,10 +1,10 @@
 # PID-00033 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — Lần 2 (H3: nhận file tách bằng `;`; G1, G3–G5 của qc-report Lần 1)
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Luồng:** `eval` · **Giai đoạn:** PH-01
 - **Nhánh:** `eval/dataset-csv-format` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 19/11/2026 (Lần 2)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -57,6 +57,11 @@ Không có.
 - **Còn mở:** Excel và dấu `;` (đề xuất OQ đầu tiên ở trên) — mã đã làm đúng EC01 hiện hành; nếu PO chọn (b) thì làm thành “Lần 2” của ticket này.
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00033`; Dev commit mã và mở PR khi được yêu cầu (cần chạy `nx affected` trên CI vì cục bộ không dựng được graph); PO đọc thử `eval/datasets/README.md`, lưu thử một file bằng Excel rồi chạy `check`.
 - **Tài liệu đi kèm:** không có (kết quả thử Excel ghi ở `self-qc.md` mục 1).
+
+
+## Lần 2 — 19/11/2026
+
+Đang làm. Đầu việc: H3 (PO chọn phương án (b) cho EC01 ngày 19/11/2026; hồ sơ sửa ở nhánh `docs/pid-00033-ec01-semicolon`, chưa có trên main) và G1, G3, G4, G5 của `qc-report.md` Lần 1 (G2 giải quyết bằng H3; G6 để PO thử bằng Excel thật khi nghiệm thu).
 
 ---
 
