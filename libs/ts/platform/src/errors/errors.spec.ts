@@ -2,7 +2,16 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
-import { Body, Controller, Get, Module, NotFoundException, Post, PreconditionFailedException } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  Module,
+  NotFoundException,
+  Post,
+  PreconditionFailedException,
+} from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServiceApp } from '../bootstrap';
@@ -38,6 +47,12 @@ class ErrorController {
   @Get('not-found')
   notFound(): never {
     throw new NotFoundException('Project 42 thuộc tài khoản khác');
+  }
+
+  @Get('bare-conflict')
+  bareConflict(): never {
+    // 409 has several catalogue codes, so a bare NestJS exception has none (README: use ProblemException).
+    throw new ConflictException('Plan Version đã Approved');
   }
 
   @Get('crash')
@@ -130,6 +145,9 @@ describe('ProblemJsonFilter', () => {
       ['/err/crash', {}, 500, 'internal_error'],
       // Errors raised by Fastify before the handler go through the same filter.
       ['/err/echo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"a":' }, 400, 'validation_failed'],
+      // Content-Type the route does not accept (Fastify FST_ERR_CTP_INVALID_MEDIA_TYPE; PR #31).
+      ['/err/echo', { method: 'POST', headers: { 'content-type': 'text/x-unknown' }, body: 'abc' }, 415, 'unsupported_media_type'],
+      // Last: Fastify answers 413 before reading the body and closes the connection.
       [
         '/err/echo',
         { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: 'x'.repeat(2_000_000) }) },
@@ -148,24 +166,28 @@ describe('ProblemJsonFilter', () => {
     }
   });
 
-  it('lỗi 4xx của framework không có mã: 500 internal_error, log mức warn kèm status (QC G4)', async () => {
+  it('lỗi 4xx không có mã: 500 internal_error, log mức warn kèm status (QC G4)', async () => {
     const before = lines.length;
-    const { res, body, requestId } = await call('/err/echo', {
-      method: 'POST',
-      headers: { 'content-type': 'text/x-unknown' },
-      body: 'abc',
-    });
+    const { res, body, requestId } = await call('/err/bare-conflict');
     expect(res.status).toBe(500);
     expect(body).toMatchObject({ code: 'internal_error', correlationId: requestId });
     const logged = lines.slice(before).map((line) => JSON.parse(line) as Record<string, unknown>);
     const warn = logged.find((l) => l['msg'] === 'lỗi HTTP không có mã trong danh mục');
-    expect(warn).toMatchObject({ level: 40, status: 415, code: 'internal_error', request_id: requestId });
+    expect(warn).toMatchObject({ level: 40, status: 409, code: 'internal_error', request_id: requestId });
     expect(logged.some((l) => l['level'] === 50)).toBe(false);
   });
 
-  it('lỗi HTTP không có mã trong danh mục thành internal_error', () => {
-    const teapot = Object.assign(new Error('unsupported media type'), { statusCode: 415 });
-    expect(toProblem(teapot, 'r1')).toMatchObject({ status: 500, undeclared: true, body: { code: 'internal_error' } });
-    expect(toProblem(new ProblemException('internal_error'), 'r2')).toMatchObject({ status: 500, undeclared: true });
+  it('mã mặc định theo status: 415, 429 có mã riêng; status không có mã thành internal_error', () => {
+    const unsupported = Object.assign(new Error('unsupported media type'), { statusCode: 415 });
+    expect(toProblem(unsupported, 'r0')).toMatchObject({
+      status: 415,
+      undeclared: false,
+      body: { code: 'unsupported_media_type', title: 'Định dạng nội dung không được hỗ trợ' },
+    });
+    const limited = Object.assign(new Error('too many requests'), { statusCode: 429 });
+    expect(toProblem(limited, 'r1')).toMatchObject({ status: 429, undeclared: false, body: { code: 'rate_limited' } });
+    const teapot = Object.assign(new Error("I'm a teapot"), { statusCode: 418 });
+    expect(toProblem(teapot, 'r2')).toMatchObject({ status: 500, undeclared: true, body: { code: 'internal_error' } });
+    expect(toProblem(new ProblemException('internal_error'), 'r3')).toMatchObject({ status: 500, undeclared: true });
   });
 });

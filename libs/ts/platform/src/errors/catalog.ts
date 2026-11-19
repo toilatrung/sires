@@ -48,6 +48,7 @@ export const ERROR_STATUS = {
   stale_agent_run: 409,
   precondition_failed: 412,
   payload_too_large: 413,
+  unsupported_media_type: 415,
   idempotency_key_reused: 422,
   dependency_cycle: 422,
   reference_not_trusted: 422,
@@ -65,6 +66,7 @@ export const ERROR_STATUS = {
   deliberation_not_confirmed: 422,
   deliberation_mismatch: 422,
   precondition_required: 428,
+  rate_limited: 429,
   internal_error: 500,
   service_unavailable: 503,
 } as const satisfies Record<ErrorCode, number>;
@@ -93,7 +95,9 @@ export const DEFAULT_CODE_BY_STATUS: Readonly<Record<number, ErrorCode>> = {
   405: 'method_not_allowed',
   412: 'precondition_failed',
   413: 'payload_too_large',
+  415: 'unsupported_media_type',
   428: 'precondition_required',
+  429: 'rate_limited',
   500: 'internal_error',
   503: 'service_unavailable',
 };
@@ -108,8 +112,10 @@ export const DEFAULT_TITLE_BY_STATUS: Readonly<Record<number, string>> = {
   409: 'Xung đột trạng thái',
   412: 'Dữ liệu đã thay đổi',
   413: 'File vượt giới hạn',
+  415: 'Định dạng nội dung không được hỗ trợ',
   422: 'Không xử lý được yêu cầu',
   428: 'Thiếu If-Match',
+  429: 'Quá nhiều yêu cầu',
   500: 'Lỗi hệ thống',
   503: 'Dịch vụ tạm không khả dụng',
 };

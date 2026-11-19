@@ -22,8 +22,20 @@ Cấu hình qua biến môi trường: `PORT`, `LOG_LEVEL` (mặc định `info`
 **Trả lỗi trong service** (NFR-OBS-005, PO 18/11/2026):
 
 - Lỗi nghiệp vụ **409 và 422 bắt buộc ném `new ProblemException('<mã>', { detail, currentState, … })`** với mã thuộc `ErrorCode`. Không dùng `ConflictException`, `UnprocessableEntityException` hay `HttpException` trần cho các status này: không có mã nên bộ lọc trả `500 internal_error`.
-- 400, 401, 403, 404, 405, 412, 413, 428, 503 dùng được exception của NestJS: bộ lọc gán mã cố định của status (`validation_failed`, `unauthenticated`, `forbidden`, `not_found`, …). Cần mã khác (ví dụ `invalid_service_token`) thì dùng `ProblemException`.
-- Lỗi không khai báo (không có status, hoặc 5xx) → `500 internal_error`, log mức `error` có stack. Lỗi 4xx của framework không có mã trong danh mục (415 của Fastify…) cũng trả `500 internal_error` nhưng chỉ log mức `warn` kèm `status` gốc. Mã cho 415, 429 chờ hợp đồng.
+- 400, 401, 403, 404, 405, 412, 413, 415, 428, 429, 503 dùng được exception của NestJS: bộ lọc gán mã cố định của status (`validation_failed`, `unauthenticated`, `forbidden`, `not_found`, `unsupported_media_type`, `rate_limited`, …). Cần mã khác (ví dụ `invalid_service_token`) thì dùng `ProblemException`. Lỗi 415 của Fastify (`Content-Type` không nhận) trả `415 unsupported_media_type`; khung rate limit trả `429 rate_limited` và tự đặt header `Retry-After` (hợp đồng PR #31).
+- Lỗi không khai báo (không có status, hoặc 5xx) → `500 internal_error`, log mức `error` có stack. Lỗi 4xx không có mã trong danh mục (ví dụ `ConflictException` trần) cũng trả `500 internal_error` nhưng chỉ log mức `warn` kèm `status` gốc.
+
+**Xác thực giữa service** (PID-00003, ADR-20; chi tiết ở `agent/execution/PID-00003/implement.md`):
+
+| Phần | API | Ghi chú |
+| --- | --- | --- |
+| Module | `ServiceAuthModule.fromEnv('<service>')` hoặc `.forRoot({ service, publicKeys, signer })` | Toàn cục; cung cấp guard, client và ngữ cảnh người gọi theo request |
+| Endpoint nội bộ | `@UseGuards(ServiceAuthGuard)`, `@InternalCallers(...)` (x-callers), `@ApprovalEndpoint()` (x-apr), `@ServiceAuth()`, `currentServiceAuth()` | Token sai, hết hạn, hạn quá 5 phút, `aud` sai, không đạt luật người ký → `401 invalid_service_token`; `sub` ngoài x-callers hoặc route chưa khai x-callers → `403 caller_not_allowed` |
+| Lời gọi đi | `ServiceTokenClient.fetch(target, url, init, auth?)`, `.authorization(target, auth?)` | Mặc định giữ actor, `accountId`, `projectId` của request đang xử lý; job và consumer truyền `{ component }`; request mang token Agent Run phải chọn `{ forwardAgentRunToken: true }` hoặc `{ component }` (OQ-110) |
+| Token | `issueServiceToken`, `issueAgentRunToken` (chỉ orchestration), `verifyServiceToken` | JWS ES256, `kid` = tên service, `iss` = `sires-internal`, hạn mặc định 300 s, lệch đồng hồ cho phép 30 s |
+| Khóa | `ServiceSigner`, `localServiceSigner`, `servicePublicKeysFromJwks`, `generateServiceKeys` (test), `deriveDevServiceKeys` (dev) | Khóa KMS của staging và production thay `ServiceSigner` ở PID-00035, PID-00153 |
+
+Biến môi trường của service-auth: `SERVICE_AUTH_PRIVATE_KEY` (JWK khóa riêng của service) và `SERVICE_AUTH_PUBLIC_KEYS` (JWKS của môi trường); khi chạy cục bộ có thể thay cả hai bằng `SERVICE_AUTH_DEV_SEED` (mọi service cùng seed thì cùng bộ khóa; bị từ chối khi `NODE_ENV=production`). Chỉ đặt một trong hai biến khóa thì service lỗi khi khởi động, không dùng seed thay. Body `401 invalid_service_token` không nêu lý do từ chối; lý do chỉ có ở log mức `warn`.
 
 Test tenancy chạy PostgreSQL 16 + pgvector thật qua Testcontainers, cần Docker (đặt `DOCKER_HOST` nếu Docker không ở socket mặc định).
 
