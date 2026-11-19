@@ -5,7 +5,7 @@
 **Kết quả mới nhất:** xem Lần 2 ở cuối file; gate toàn repo đã đạt. Nội dung lần đầu được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
-- **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** đang chuẩn bị theo yêu cầu người dùng; commit/push mã, bằng chứng và hồ sơ triển khai.
+- **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** [#39](https://github.com/toilatrung/sires/pull/39) → `main`; mã, bằng chứng và hồ sơ triển khai đã được commit/push.
 - **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -211,3 +211,15 @@ theo quy tắc skill. Chưa mở PR.
 - `evidence/affected-configured-retry.txt`: gate toàn repo đạt, exit 0.
 - `evidence/license-retry.txt`: 9 file cache ignore thiếu notice, ngoài ticket.
 - `evidence/index-retry.txt`: kiểm chỉ mục đạt.
+
+## Lần 3 — 19/11/2026
+
+Người dùng yêu cầu “đẩy pr đi”. Đã commit/push mã spike, fixture, PDF,
+số đo, log và hồ sơ thực thi; mở [PR #39](https://github.com/toilatrung/sires/pull/39)
+vào `main`. Commit triển khai và chuẩn hóa log do GitHub ký, API xác nhận
+signature VALID. Log PowerShell được đổi từ UTF-16 sang UTF-8 và bỏ khoảng
+trắng cuối dòng để đọc diff; giữ nội dung kết quả và stack, không đổi code,
+image, fixture hoặc JSON số đo.
+
+`git diff origin/main...HEAD --check` đạt sau chuẩn hóa. Trạng thái vẫn
+Xong — chờ QC; chưa merge. QC độc lập và PO review thực hiện trên PR.

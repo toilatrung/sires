@@ -124,3 +124,15 @@ NFR-SANDBOX-001-AC01 giữ kết quả ở bảng lần đầu. EC01–EC03 gi�
 
 Không còn khoảng trống CRITICAL/HIGH hoặc việc còn lại trong phạm vi.
 Không tạo/sửa qc-report.md; QC độc lập do PO thực hiện sau.
+
+## Lần 3 — 19/11/2026
+
+Chuẩn bị PR theo yêu cầu người dùng: chỉ cập nhật metadata hồ sơ và mã hóa
+log PowerShell sang UTF-8, bỏ khoảng trắng cuối dòng; không đổi mã spike,
+image, fixture hoặc JSON số đo. Kết quả kiểm ở Lần 2 giữ nguyên.
+
+- `git diff origin/main...HEAD --check`: đạt sau chuẩn hóa log.
+- `check-pid.mjs PID-00031 --result`: đạt, 0 cảnh báo trước khi mở PR.
+- Ranh giới staged: `repo, sandbox-runner`, chỉ một luồng mã.
+- [PR #39](https://github.com/toilatrung/sires/pull/39) vào `main`, chưa merge.
+- Commit triển khai do GitHub ký, signature VALID. Chưa có QC độc lập.
