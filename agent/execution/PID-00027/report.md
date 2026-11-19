@@ -1,6 +1,6 @@
 # PID-00027 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm (Lần 2)
+**Trạng thái:** Xong — chờ QC (Lần 2)
 
 - **Ticket:** [PID-00027](../../../docs/tickets/issues/PID-00027/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
 - **Nhánh:** `knowledge/spk-04-pgvector` (mã chưa commit; chỉ `report.md` đã commit, đã push) · **PR:** chưa mở
@@ -15,7 +15,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 - AC: 3/3 đạt (đo trên máy Dev, sơ bộ; chỉ tiêu chốt trên staging ở cổng PH-05). Edge case: 3/3 đã xử lý theo hồ sơ (EC03 ghi “chưa đo” vì DDL chỉ có bảng 1.536 chiều); 2 cần lưu ý (EC01 ở cache lạnh và phạm vi toàn thư viện, EC02).
 - Yêu cầu thêm: 4 (từ phiên điều phối, đều trong phạm vi).
 - Số chính (project 500 reference = 46.154 chunk body, cache ấm, 200 truy vấn): p95 truy xuất lai `exact/vector` (DDL hiện tại) **1.040–1.083 ms**; `exact/vector_plain` **803 ms**; `exact/halfvec` 931–961 ms; `exact/halfvec_plain` 779 ms; HNSW `ef100 relaxed` 761–1.379 ms nhưng recall@50 TB 0,90, p5 0,40; 4 client đồng thời: 1.121–1.280 ms (quét chính xác). Cache lạnh hoàn toàn: trung vị 3,9–6,4 s (vượt 3 s, nhánh full-text ≈ 3,6 s). Cách ly: 0 chunk lọt ở 120 lượt (10 phương án × 6 truy vấn bẫy × 2 bộ dữ liệu).
-- Đề xuất (AC03): quét chính xác cho phạm vi project, ngưỡng chuyển 50.000 chunk body, HNSW `relaxed_order` ef 100 trên ngưỡng, `STORAGE PLAIN`, HNSW trên biểu thức halfvec; **kết luận ASM-05: đạt, mức tin cậy trung bình**; NFR-PERF-006 đạt khi cache ấm, chưa đạt khi lạnh hoàn toàn trên máy Dev — mục 3.11, 3.12.
+- Đề xuất (AC03): quét chính xác cho phạm vi project, ngưỡng chuyển 50.000 chunk body, HNSW `relaxed_order` ef 100 trên ngưỡng, `STORAGE PLAIN` có điều kiện số chiều (`vector` ≤ 2.020, `halfvec` ≤ 4.040; sửa ở Lần 2), HNSW trên biểu thức halfvec; **kết luận ASM-05: đạt, mức tin cậy trung bình**; NFR-PERF-006 đạt khi cache ấm, chưa đạt khi lạnh hoàn toàn trên máy Dev — mục 3.11, 3.12.
 
 ## 2. Trạng thái công việc
 
@@ -50,7 +50,7 @@ Một lượt truy xuất = một giao dịch của vai trò `sires_knowledge_ap
 | Docker | Docker Engine 29.8.2 trong WSL, **dùng chung** với các phiên khác: suốt buổi đo có `nutrimeal_services_db` (dự án khác, ~5 % CPU); khoảng 03:51–04:02 UTC (đầu pha A2) có thêm một container `uv` của phiên khác (~1 nhân) — xem `spk04/run-log.txt` |
 | PostgreSQL | 16.15 (Debian 16.15-1.pgdg12+2), image `pgvector/pgvector@sha256:0dd3149a06e4579a0d70d8fef9945636cd514005e7237deb27f9b67886f8dc4f` (bản `pgvector/pgvector:pg16` của `infra/local/compose.yaml`) |
 | pgvector | 0.8.7 (≥ 0.8 theo AQ-09; có `hnsw.iterative_scan`) |
-| Tham số máy chủ | `shared_buffers` 2 GB, `effective_cache_size` 6 GB, `work_mem` 64 MB, `jit` off, `max_parallel_workers_per_gather` 2, `random_page_cost` 1,1, `effective_io_concurrency` 200, `synchronous_commit` off (chỉ ảnh hưởng ghi khi nạp); dựng index: `maintenance_work_mem` 2.560 MB, 7 worker, `--shm-size` 4 GB |
+| Tham số máy chủ | `shared_buffers` 2 GB, `effective_cache_size` 6 GB, `work_mem` 64 MB, `jit` off, `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 16, `random_page_cost` 1,1, `effective_io_concurrency` 200, `synchronous_commit` off (chỉ ảnh hưởng ghi khi nạp); dựng index: `maintenance_work_mem` 2.560 MB (đặt trong phiên của `seed`; mặc định máy chủ 512 MB), 7 worker, `--shm-size` 4 GB. Bổ sung ở Lần 2 (G4 của QC): `max_wal_size` 8 GB, `checkpoint_timeout` 30 min (cho bước nạp), `track_io_timing` on (thời gian I/O trong EXPLAIN). Lệnh đầy đủ ở README của spike, bước 1 |
 | HNSW | Index của DDL: `m` 16, `ef_construction` 64 (mặc định); khi đo: `hnsw.max_scan_tuples` 20.000, `hnsw.scan_mem_multiplier` 1 |
 | Client | Python 3.12.16, asyncpg 0.32.0, numpy 2.5.5 trong container `ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim` (digest `sha256:d4a752dd52f42e0c508bb0b6a912f15922bb32e42f66af30671c3fdc0d759f21`), cùng docker network với PostgreSQL (mạng bridge, không qua Windows) |
 
@@ -157,7 +157,7 @@ Pha D (`spk04/measure-500-cold.json`, 04:41–04:54 UTC): project 500, mỗi lư
 
 ### 3.9. Cách ly (AC02)
 
-`test_isolation.py`: với mỗi truy vấn bẫy, cắm chunk có **đúng vector truy vấn** (khoảng cách 0) và lặp từ khóa truy vấn 5 lần ở những chỗ không được ra: tài khoản khác (reference của tài khoản đó còn được liệt kê dưới **chính id project** đang truy xuất), reference Trusted không chọn, selection Removed, selection Active của reference Revoked, vùng `references` và `appendix` của reference trong phạm vi; cùng một đối chứng dương trong phạm vi. Mỗi phương án chạy cả lượt truy xuất lai dưới vai trò `sires_knowledge_app`; mọi id trả về (nhánh vector, nhánh full-text, top 8, evidence) được so với tập cho phép tính từ bộ sinh dữ liệu, không từ SQL đang kiểm.
+`test_isolation.py`: với mỗi truy vấn bẫy, cắm chunk có **đúng vector truy vấn** (khoảng cách 0) và lặp từ khóa truy vấn 5 lần ở những chỗ không được ra: tài khoản khác (reference của tài khoản đó còn được liệt kê dưới **chính id project** đang truy xuất), reference Trusted không chọn, selection Removed, selection Active của reference Revoked, vùng `references` và `appendix` của reference trong phạm vi; cùng một đối chứng dương trong phạm vi. Mỗi phương án chạy cả lượt truy xuất lai dưới vai trò `sires_knowledge_app`; mọi id trả về (nhánh vector, nhánh full-text, top 8, evidence) được so với tập cho phép tính từ bộ sinh dữ liệu, không từ SQL đang kiểm. Lần 2 (G5 của QC) thêm 4 loại bẫy: chunk của tài khoản khác mang đúng `reference_id` của reference trong phạm vi, và ba reference Trusted được chọn Active nhưng Source Document `needs_reindex`, index bằng model khác, hoặc `indexed_at` rỗng (mục Lần 2). Bảng dưới là kết quả Lần 1.
 
 | Kiểm | SMALL (database mới) | FULL (database đo, rollback) |
 | --- | --- | --- |
@@ -180,7 +180,7 @@ Lệnh và kết quả ở self-qc.md mục 1. Ở dữ liệu FULL, HNSW `stric
 4. **Nhánh full-text là phần đắt nhất và tăng theo phạm vi.** `app.sires_simple` (simple + unaccent) không bỏ từ dừng; truy vấn nối `or` có một từ phổ biến khớp gần như mọi chunk trong phạm vi, planner bỏ GIN và phải tính `ts_rank_cd` cho ~46.000 tsvector (EXPLAIN: 822 ms, 395.000 buffer). Truy vấn `stopword` chiếm đuôi p95 ở mọi phương án. Cách ghép truy vấn (AND/OR, bỏ từ dừng, giới hạn số dòng xếp hạng) chưa có trong tài liệu → đề xuất OQ.
 5. **HNSW với bộ lọc: recall không ổn định, đuôi thời gian dài.** Ở project 500, `relaxed_order` ef100 có recall@50 trung bình 0,90 nhưng p5 0,40 và min 0,00; chẩn đoán một lần bằng script tạm (đã xóa, không thuộc spike; truy vấn 10–59 của project 500, `hnsw:vector:100` so với `exact:vector`): ở các truy vấn tệ nhất, HNSW tìm đúng chunk gần nhất (khoảng cách 0,171 như quét chính xác) rồi lan sang chunk của tài liệu khác (khoảng cách thứ 50 là 0,79 so với 0,42) thay vì các chunk cùng tài liệu. `strict_order` tệ hơn (p99 8 s, max 25 s). `iterative_scan = off` trả thiếu ở 200/200 truy vấn (ef 40 < 50 dòng cần). Dữ liệu tổng hợp có cụm theo tài liệu rõ hơn có thể; recall HNSW trên embedding thật phải đo lại bằng eval harness.
 6. **HNSW nhạy với cache hơn quét chính xác.** Index HNSW là index chung cho mọi tài khoản (2,3 GB cho 299.003 vector 1.536 chiều; halfvec 1,2 GB) và cần nằm trong RAM; ở A2 khi cache bị chia cho bản sao PLAIN, p95 nhánh vector của HNSW tăng từ 141 lên 1.087 ms, trong khi quét chính xác (chỉ đọc dữ liệu của phạm vi) giữ nguyên.
-7. **Số chiều > 2.000 (EC03, chưa đo).** DDL chỉ có bảng 1.536 chiều nên chưa đo bảng khác. Ghi nhận theo giới hạn của pgvector: index HNSW trên `vector` chỉ tối đa 2.000 chiều, trên `halfvec` tối đa 4.000; `app.embedding_model_catalog` cho phép tới 4.000 chiều, nên model 3.072 chiều (ví dụ `text-embedding-3-large`, mặc định của `gemini-embedding-001`) chỉ dùng được HNSW qua `halfvec` hoặc phải giảm chiều; quét chính xác không bị giới hạn này.
+7. **Số chiều > 2.000 (EC03, chưa đo).** DDL chỉ có bảng 1.536 chiều nên chưa đo bảng khác. Ghi nhận theo giới hạn của pgvector: index HNSW trên `vector` chỉ tối đa 2.000 chiều, trên `halfvec` tối đa 4.000; `app.embedding_model_catalog` cho phép tới 4.000 chiều, nên model 3.072 chiều (ví dụ `text-embedding-3-large`, mặc định của `gemini-embedding-001`) chỉ dùng được HNSW qua `halfvec` hoặc phải giảm chiều; quét chính xác không bị giới hạn này. Bổ sung ở Lần 2 (G1 của QC): `STORAGE PLAIN` (R4) còn bị giới hạn bởi cỡ hàng heap. Với cột của `vec.emb_<slug>`, `vector` chỉ tới 2.020 chiều, `halfvec` tới 4.040 chiều; vượt mức thì mỗi lần ghi lỗi `row is too big`.
 
 ### 3.11. Đề xuất cấu hình index và ngưỡng chuyển (AC03 — đề xuất, PO quyết)
 
@@ -189,7 +189,7 @@ Lệnh và kết quả ở self-qc.md mục 1. Ở dữ liệu FULL, HNSW `stric
 | R1 | Phạm vi project (≤ 500 reference, NFR-SCALE-001): **luôn quét chính xác**, viết tường minh (CTE `MATERIALIZED` như `retrieval.py › vector_sql`), không để planner chọn | Recall 1,00 ở mọi cỡ ≤ 500 reference; tổng p95 1,04–1,08 s (DDL hiện tại), 1,28 s với 4 client; planner tự đổi sang HNSW từ 1.000 reference mà không xét recall | PID-00093 |
 | R2 | **Ngưỡng chuyển = 50.000 chunk body trong phạm vi** (giữ giá trị ~50.000 của kiến trúc 7.4, nay có số đo); đưa vào `RetrievalConfig` như một tham số có phiên bản; đếm bằng `count(*)` trên `chunk_scope_idx` của phạm vi | 46.154 chunk: tổng p95 ≤ 1,1 s; 91.056 chunk: tổng p95 1,9–2,9 s, p99 10–16 s; 177.170 chunk: 3,7–5,6 s | Kiến trúc 7.4, 7.8 (rc mới); PID-00093 |
 | R3 | Trên ngưỡng: HNSW `hnsw.iterative_scan = relaxed_order`, `hnsw.ef_search = 100`, `hnsw.max_scan_tuples = 20000`, sắp lại 50 dòng trong CTE; không dùng `strict_order` (p99 8 s, max 25 s) và không dùng `off` khi có bộ lọc (thiếu dòng ở 200/200 truy vấn); chỉ bật sau khi eval harness đo recall trên embedding thật | Recall@50 HNSW: TB 0,89–0,94, p5 0,00–0,82 trên dữ liệu tổng hợp | Kiến trúc 7.4; eval (NFR-EVAL) |
-| R4 | Cột vector lưu **`STORAGE PLAIN`** (`ALTER TABLE vec.emb_<slug> ALTER COLUMN embedding SET STORAGE PLAIN` trong migration tạo bảng) | Nhánh vector p95 506 → 211 ms; tổng p95 1.083 → 803 ms (project 500); 4 client: 1.280 → 1.121 ms; dung lượng không đổi | `docs/database/ddl/knowledge.sql`, database 7.5 |
+| R4 (sửa ở Lần 2, G1 của QC) | Cột vector giữ **trong dòng heap** khi vừa một trang, **có điều kiện theo kiểu và số chiều**. Hàng heap tối đa 8.160 byte; với cột của `vec.emb_<slug>` (3 `uuid` + `embedding`) thì `STORAGE PLAIN` chỉ dùng được cho **`vector(D)`, D ≤ 2.020** hoặc **`halfvec(D)`, D ≤ 4.040**. Vượt mức này, `ALTER … SET STORAGE PLAIN` và tạo bảng vẫn chạy, nhưng **mỗi lần ghi lỗi** `row is too big`, tức là lỗi chỉ lộ ra khi indexing. `app.embedding_model_catalog` cho tới 4.000 chiều, nên model 2.021–4.000 chiều dùng cột `vector` cần một trong ba phương án, PO chọn: (a) giữ EXTERNAL như DDL hiện tại; (b) cột `halfvec(D)` PLAIN (R6); (c) `STORAGE MAIN` cho mọi bảng — giữ trong dòng khi vừa, tự đưa ra TOAST khi không vừa, không lỗi; **chưa đo hiệu năng** | 1.536 chiều PLAIN: nhánh vector p95 506 → 211 ms; tổng p95 1.083 → 803 ms (project 500); 4 client 1.280 → 1.121 ms; dung lượng không đổi. QC độc lập đo `vector(2048)`, `vector(3072)` PLAIN lỗi `row is too big` (8.272, 12.368 byte), còn `halfvec(3072)`, `halfvec(4000)` ghi được. Dev đo ranh giới ở Lần 2 (mục Lần 2): `vector(2020)` 8.160 byte ghi được, `vector(2021)` 8.168 byte lỗi; `halfvec(4040)` ghi được, `halfvec(4041)` lỗi. `MAIN`: `vector(1536)` 200 dòng → 200 trang heap, 0 trang TOAST (như PLAIN); `vector(2021)`, `vector(3072)` tự sang TOAST | `docs/database/ddl/knowledge.sql`, database 7.5 (điều kiện số chiều cho bảng của model mới) |
 | R5 | `halfvec`: index HNSW trên biểu thức `embedding::halfvec(D)` (`halfvec_cosine_ops`) thay index HNSW `vector_cosine_ops` hiện tại; giữ cột `vector` để quét chính xác đủ độ chính xác | Index 1.168 MB so với 2.336 MB (phải nằm trong RAM), dựng 173 s so với 347 s, recall bằng hoặc tốt hơn HNSW `vector` ở 500 reference (0,923 so với 0,902); bắt buộc cho model > 2.000 chiều | `knowledge.sql`; DBQ-05 |
 | R6 | Tùy chọn (chưa đề xuất áp dụng): cột lưu `halfvec(D)` PLAIN cho quét chính xác | Nhánh vector p95 120 ms (4× nhanh hơn DDL), recall@50 min 0,98, top 8 trùng 0,999; nhưng đổi kiểu cột, mất độ chính xác fp32 | PO quyết nếu cần thêm biên |
 | R7 | Mỗi giao dịch truy xuất `SET LOCAL plan_cache_mode = force_custom_plan` (hoặc không dùng prepared statement cho các câu này) | Generic plan làm sai phương án (3.10 mục 1) | PID-00093 |
@@ -236,11 +236,11 @@ Mọi yêu cầu ngoài hồ sơ ghi ở đây **trước khi làm**. Trong ph�
 - **Đề xuất cho PO** (không tự chốt, không cấp mã):
   - Kiến trúc 12.2, dòng SPK-04: ghi kết quả (3.12) và đề xuất trạng thái ASM-05 ở PRD 20.2 là “kiểm chứng sơ bộ trên máy Dev, chốt lại ở PH-05”.
   - Kiến trúc 7.4 và 7.8: R1–R3 (quét chính xác tường minh cho phạm vi project, ngưỡng 50.000 chunk body làm tham số của `RetrievalConfig`, tham số HNSW trên ngưỡng).
-  - `docs/database/ddl/knowledge.sql` và database 7.5: R4 (`STORAGE PLAIN` cho cột `embedding`), R5 (index HNSW trên biểu thức `halfvec`), R8 (câu mẫu lặp phạm vi trên `app.chunk` và join `app.source_document` cho “đã index bằng model hiện hành”).
+  - `docs/database/ddl/knowledge.sql` và database 7.5: R4 (`STORAGE PLAIN` cho cột `embedding` khi `vector` ≤ 2.020 chiều hoặc `halfvec` ≤ 4.040 chiều; model lớn hơn chọn EXTERNAL, `halfvec` PLAIN hay `STORAGE MAIN` — sửa ở Lần 2), R5 (index HNSW trên biểu thức `halfvec`), R8 (câu mẫu lặp phạm vi trên `app.chunk` và join `app.source_document` cho “đã index bằng model hiện hành”).
   - OQ đề xuất 1 — cách ghép truy vấn full-text (AND/OR, bỏ từ dừng của `app.sires_simple`, giới hạn số dòng đem xếp hạng): nhánh này chiếm phần lớn thời gian và tăng theo phạm vi (R9).
   - OQ đề xuất 2 — cache lạnh: lượt đầu sau khi PostgreSQL khởi động lại vượt 3 s trên máy đo (3.8); cần chốt yêu cầu RAM cho database knowledge, có hâm nóng phạm vi project (ví dụ `pg_prewarm`) hay không, và NFR-PERF-006 đo ở trạng thái cache nào.
   - OQ đề xuất 3 — phạm vi lớn hơn project (toàn thư viện 1.960 reference): không phương án nào ổn định dưới 3 s p95 trên máy đo; có cần chỉ tiêu riêng hay giới hạn phạm vi truy xuất về project không.
-  - OQ đề xuất 4 — model > 2.000 chiều (EC03, liên quan DBQ-05): HNSW chỉ dựng được qua `halfvec` (≤ 4.000 chiều) hoặc phải giảm chiều.
+  - OQ đề xuất 4 — model > 2.000 chiều (EC03, liên quan DBQ-05): HNSW chỉ dựng được qua `halfvec` (≤ 4.000 chiều) hoặc phải giảm chiều. Cột `vector` lưu PLAIN cũng chỉ tới 2.020 chiều (R4, Lần 2).
   - ASM đề xuất — trung bình ≤ ~100 chunk body/reference, để project 500 reference nằm dưới ngưỡng 50.000 chunk (kiến trúc 7.4 đã giả định ~100).
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có điều chặn PID này. EC03 chưa đo (DDL không có bảng số chiều khác).
@@ -254,6 +254,63 @@ Mọi yêu cầu ngoài hồ sơ ghi ở đây **trước khi làm**. Trong ph�
   - `spk04/measure-500-c4.json`, `spk04/measure-500-c4.md` — pha C: 4 client đồng thời — S02.
   - `spk04/measure-500-cold.json` — pha D: cache lạnh — S02, S03.
   - `spk04/run-log.txt` — tải nền và container trước/sau từng pha (EC02) — S02.
+
+## Lần 2 — 19/11/2026
+
+Đầu việc: QC độc lập Lần 1 (`qc-report.md`), theo phiên điều phối giao:
+
+- G1 MEDIUM: R4 (`STORAGE PLAIN`) thiếu giới hạn số chiều.
+- G4 LOW: lệnh `docker run` ở README của spike thiếu tham số máy chủ.
+- G5 LOW, tùy chọn: thêm bẫy cách ly.
+- G2 (git) và G3 (Dockerfile, luồng infra): không làm ở lần này, xem “Cần PO” bên dưới.
+
+Trạng thái: S01–S03 vẫn Xong. AC 3/3 đạt; số đo không đổi (không đo lại). Không đổi `retrieval.py`, `measure.py`, `seed.py`.
+
+| Việc | Đã làm | Kiểm bằng |
+| --- | --- | --- |
+| G1 — R4 thiếu giới hạn số chiều | Sửa R4 ở 3.11 thành đề xuất có điều kiện: `STORAGE PLAIN` chỉ cho `vector(D)`, D ≤ 2.020 hoặc `halfvec(D)`, D ≤ 4.040. Model 2.021–4.000 chiều có ba phương án để PO chọn: EXTERNAL như DDL hiện tại, cột `halfvec` PLAIN (R6), hoặc `STORAGE MAIN` (chưa đo hiệu năng). Bổ sung 3.10 mục 7, mục 1, mục 6 (`knowledge.sql`, OQ đề xuất 4). Không đổi mã | Đo trên PostgreSQL 16.15 + pgvector 0.8.7 (cùng image đo), bảng cùng cột như `vec.emb_<slug>` của DDL: bảng dưới. Khớp số của QC (`vector(2048)` 8.272 byte, `vector(3072)` 12.368 byte) |
+| G4 — README thiếu tham số máy chủ | `apps/knowledge/spikes/spk_04/README.md` bước 1 nay là đúng lệnh đã dùng cho database đo, kèm ghi chú tham số nào ảnh hưởng số đo. Report 3.2 thêm `max_parallel_workers`, `max_worker_processes`, `max_wal_size`, `checkpoint_timeout`, `track_io_timing` và `maintenance_work_mem` mặc định của máy chủ | So với `environment.settings` của JSON kết quả và lệnh trong nhật ký phiên đo |
+| G5 — bẫy cách ly | `test_isolation.py` thêm 4 loại bẫy, mỗi truy vấn bẫy cắm cả 4. Thứ nhất: chunk của tài khoản khác mang đúng `reference_id` của reference trong phạm vi. Ba loại còn lại: reference Trusted, được chọn Active, mà Source Document `needs_reindex`, index bằng model khác, hoặc `indexed_at` rỗng. Lớp RLS (`_rls_only`) cũng kiểm bẫy tài khoản khác mới | `test_isolation` đạt: 10 phương án × 6 truy vấn, 0 chunk lọt, phạm vi đúng. Kiểm đột biến trên bản sao trong container: bỏ `NOT d.needs_reindex`, bỏ `d.indexed_at IS NOT NULL`, hoặc bỏ điều kiện cùng model khỏi `SCOPE_SQL` → `test_isolation` lỗi “phạm vi sai” ở cả 3. Trước Lần 2, dữ liệu SMALL không có Source Document nào ở ba trạng thái này, nên test không bắt được ba lỗi đó |
+| G2 — git | Không làm: chờ PO cho commit mã. Commit báo cáo của Lần 2 đều có chữ ký (`4a4c9fd`: `%G?` = `G`) | — |
+| G3 — Dockerfile chép `spikes/` | Không làm: thuộc luồng infra | Đề xuất ở “Cần PO” |
+
+Giới hạn cỡ hàng khi lưu trong dòng (G1), đo ngày 19/11/2026. Bảng tạm có cột `chunk_id`, `account_id`, `reference_id` (`uuid`) và `embedding`; mỗi phép thử ghi 1 dòng (PLAIN) hoặc 200 dòng giá trị ngẫu nhiên (MAIN, EXTERNAL).
+
+| Kiểu, `STORAGE` | Số chiều | Kết quả |
+| --- | --- | --- |
+| `vector` PLAIN | 2.000 / **2.020** | ghi được, 8.080 / 8.160 byte/dòng |
+| `vector` PLAIN | **2.021** / 2.048 / 3.072 | lỗi `row is too big`: 8.168 / 8.272 / 12.368 byte, tối đa 8.160 |
+| `halfvec` PLAIN | 3.072 / 4.000 / **4.040** | ghi được, 6.224 / 8.080 / 8.160 byte/dòng |
+| `halfvec` PLAIN | **4.041** | lỗi `row is too big`: 8.168 byte |
+| `vector` EXTERNAL (DDL hiện tại) | 1.536 | 3 trang heap, 200 trang TOAST |
+| `vector` MAIN | 1.536 / 2.020 | trong dòng: 200 trang heap, 0 trang TOAST; giá trị không nén (6.152 byte ở 1.536 chiều) |
+| `vector` MAIN | 2.021 / 3.072 | tự sang TOAST, không lỗi: 3 trang heap, 204 / 334 trang TOAST |
+| `halfvec` MAIN | 4.000 | trong dòng, 0 trang TOAST |
+
+Cỡ hàng gồm: 24 byte đầu dòng, 3 × 16 byte `uuid`, 8 byte đầu của giá trị, rồi 4 byte/chiều (`vector`) hoặc 2 byte/chiều (`halfvec`). Tổng phải ≤ 8.160 byte, nên `vector` tối đa 2.020 chiều, `halfvec` tối đa 4.040. Thêm cột vào `vec.emb_<slug>` thì ngưỡng giảm. `STORAGE MAIN` thử nén trước khi đưa ra TOAST: với embedding thật (dữ liệu khó nén) giá trị giữ nguyên như PLAIN, còn hiệu năng chưa đo.
+
+Lệnh đã chạy ở Lần 2: xem `self-qc.md`, mục Lần 2.
+
+- Linux, container: ruff, mypy sạch; pytest `apps/knowledge` 8 đạt, 1 bỏ qua; kiểm đột biến 3/3.
+- Không chạy:
+  - `test_isolation_full_scale`: database FULL đã dọn từ Lần 1, dựng lại mất khoảng 35 phút; bẫy mới chỉ kiểm trên SMALL.
+  - Đường Testcontainers: runner không gắn Docker socket; QC Lần 1 đã chạy được đường này, và CI chạy.
+  - `pnpm nx`: Nx không dựng được graph khi có worktree.
+
+File sửa ở Lần 2:
+
+- `apps/knowledge/spikes/spk_04/test_isolation.py`, `apps/knowledge/spikes/spk_04/README.md`;
+- `agent/execution/PID-00027/report.md`, `implement.md`, `self-qc.md`.
+
+Không đổi `pyproject.toml`, `uv.lock`.
+
+**Cần PO (Lần 2):**
+
+- **R4:** PO chọn phương án lưu cho model 2.021–4.000 chiều trong catalog: (a) EXTERNAL; (b) `halfvec` PLAIN (R6); (c) `STORAGE MAIN` cho mọi bảng, sau khi đo. Model ≤ 2.020 chiều (như `text-embedding-3-small` 1.536 chiều) dùng `vector` PLAIN với số đo ở 3.5.
+- **G2:** khi PO cho commit mã, Dev commit mã và `uv.lock` có chữ ký. PO quyết cách xử lý `80c3796` (báo cáo “Đang làm” Lần 1, không chữ ký): ký lại hay gộp khi merge. Phiên điều phối xếp thứ tự merge `uv.lock` với PID-00020.
+- **G3, đề xuất cho luồng infra (quy tắc 1.4, không làm ở PID này):** `infra/docker/python/Dockerfile` chép cả `apps/knowledge` nên image mang theo `spikes/`, `tests/`. Đề xuất `.dockerignore` hoặc COPY có chọn lọc. Spike không chạy được trong image (không có `numpy`), nên việc này không chặn PID này.
+- **Còn mở:** không có.
+- **Bước tiếp theo:** PO hoặc QC độc lập xem Lần 2 rồi nghiệm thu. Dev commit mã và mở PR khi được yêu cầu.
 
 ---
 
