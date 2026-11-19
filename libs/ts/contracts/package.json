@@ -18,7 +18,8 @@
     "generate": "node scripts/generate.mjs",
     "generate:ts": "node scripts/generate.mjs --ts-only",
     "generate:python": "node scripts/generate.mjs --python-only",
-    "test": "node --test scripts/generate.spec.mjs",
+    "test": "node --test scripts/generate.spec.mjs scripts/check-drift.spec.mjs",
+    "check-drift": "node scripts/check-drift.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
@@ -35,6 +36,9 @@
       "scope:contracts"
     ],
     "targets": {
+      "check-drift": {
+        "cache": false
+      },
       "generate": {
         "executor": "nx:noop",
         "dependsOn": [
