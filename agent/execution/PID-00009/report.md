@@ -1,6 +1,6 @@
 # PID-00009 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — CI nghiệm thu, PID-00010, PID-00011
+**Trạng thái:** Bị chặn — dependency baseline, CI nghiệm thu, PID-00010, PID-00011
 
 - **Ticket:** [PID-00009](../../../docs/tickets/issues/PID-00009/index.html) · **Luồng:** infra · **Giai đoạn:** PH-01
 - **Người thực hiện:** congminh1705 · **Nhánh:** `infra/pid-00009-ci` · **PR:** chưa mở
@@ -23,7 +23,7 @@ Hồ sơ đạt kiểm tra đầu vào với 8 AC, 22 edge case và 0 cảnh bá
 | S03 | S03-speed | Đã viết mã, chờ kiểm CI | Xem implement.md |
 | S04 | S04-contract-spec | Đã viết mã, chờ kiểm CI | Xem implement.md |
 | S05 | S05-secret-scan | Đã viết mã, chờ kiểm CI | Xem implement.md |
-| S06 | S06-dependency-scan | Đã viết mã, chờ kiểm CI | Xem implement.md |
+| S06 | Quét phụ thuộc | Chặn — lock file có cảnh báo High/Critical đã có bản sửa | Xem implement.md |
 | S07 | S07-build-image | Đã viết mã, chờ kiểm CI | Xem implement.md |
 | S08 | S08-schemathesis | Đã viết mã, chờ kiểm CI | Xem implement.md |
 | S09 | S09-asyncapi | Đã viết mã, chờ kiểm CI | Xem implement.md |
@@ -50,6 +50,7 @@ Không có.
 ## 6. Cần PO và tài liệu đi kèm
 
 - **Cần PO:** Đồng bộ develop với main (EC11), sau đó chạy các PR thử T1–T3. PID-00010 và PID-00011 cần merge trước S11 và S12.
+- **Còn mở:** Quét hai lock file đã xác nhận CI sẽ chặn ở các dependency hiện có. Cần cập nhật theo luồng sở hữu hoặc có ngoại lệ được PO duyệt.
 
 ## Lần 2 — 20/11/2026
 
