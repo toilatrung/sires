@@ -1,7 +1,7 @@
 # PID-00020 — Triển khai
 
 - **Ticket:** [PID-00020](../../../docs/tickets/issues/PID-00020/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 19/11/2026 (Lần 2); Lần 1 18/11/2026
+- **Cập nhật:** 19/11/2026 (Lần 3: merge `main`, `types-pyyaml` ở nhóm dev; mã chạy không đổi so với Lần 2); Lần 1 18/11/2026
 
 File này mô tả mã **đang thật sự chạy**, đọc từ mã sau khi làm, để người sau hiểu nhanh và QC biết nên soi ở đâu. Không chép lại spec. Sửa mã thì sửa file này cho đúng.
 
@@ -47,7 +47,7 @@ Lần 2 (19/11/2026): mọi test đã chạy thật — 15/15 đạt trên Linux
 - So schema bằng truy vấn `pg_catalog`/`information_schema` (`tests/migration_support.py:48`), không dùng công cụ diff ngoài: mỗi khía cạnh của PID-00020-AC01 là một tập dòng; so tập nên không phụ thuộc thứ tự hay OID. Khía cạnh: extension, schema, bảng (kèm `relrowsecurity`, `relforcerowsecurity`), cột (kiểu, NULL, mặc định), ràng buộc (`pg_get_constraintdef`), index (`indexdef`, gồm partial), trigger, hàm (`pg_get_functiondef`), policy, quyền bảng, quyền schema, quyền hàm của vai trò `sires_*`, cấu hình tìm kiếm (`pg_ts_config_map`, cột `mapseqno`). Giá trị mảng (`pg_policies.roles`) đổi thành `tuple` (`_hashable`, `:99`) để dòng vào được `set`. Lần 2 thử tám đột biến trên database dựng từ revision: mỗi đột biến làm đúng khía cạnh tương ứng lệch; `triggers` và `function_grants` rỗng ở cả hai phía vì DDL không có (self-qc G9).
 - EC03 (thiếu vai trò): vai trò là đối tượng cấp cụm và các test khác đã tạo, nên test đổi tên `sires_agent_core_app` trong lúc chạy rồi đổi lại (quyền đi theo vai trò). Đã xác nhận Lần 2: đổi tên chạy được khi các pool của test khác đã đóng (test đạt trên Linux và Windows, chạy cùng cả bộ).
 - Alembic chạy trong luồng phụ (`anyio.to_thread.run_sync`) vì `env.py` gọi `asyncio.run()` mà test là async.
-- `test_migrate_command` đọc `migration.command` từ `deploy/values.yaml` (pyyaml, nhóm dev của app) và chạy đúng lệnh đó bằng `subprocess` từ gốc repo với `DATABASE_MIGRATOR_URL`; cần `uv` trên PATH (có khi chạy qua `agent-core:test`). Trên Windows có Smart App Control lệnh `uv run` bị chặn ở `.venv\Scripts\python.exe`, nên test này chỉ chạy được trên Linux (CI, WSL, container).
+- `test_migrate_command` đọc `migration.command` từ `deploy/values.yaml` (pyyaml và stub `types-pyyaml` cho mypy strict, nhóm dev của app) và chạy đúng lệnh đó bằng `subprocess` từ gốc repo với `DATABASE_MIGRATOR_URL`; cần `uv` trên PATH (có khi chạy qua `agent-core:test`). Trên Windows có Smart App Control lệnh `uv run` bị chặn ở `.venv\Scripts\python.exe`, nên test này chỉ chạy được trên Linux (CI, WSL, container).
 - Test AC02 dựng app phía identity trong hàm (`tests/test_config.py › _identity_app`): guard `Depends(auth.require([...]))` đặt ở giá trị mặc định của tham số, không trong `Annotated[...]`, vì file dùng `from __future__ import annotations` và FastAPI phân giải chú thích chuỗi trong globals của module, nơi không có biến cục bộ `auth` (Lần 1 viết trong `Annotated` → FastAPI coi `caller` là query param, 400).
 - `migrations/env.py` không gọi `logging.config.fileConfig`: phần `[loggers]` của `alembic.ini` hiện không dùng, Job migration không in log khi thành công (self-qc G7, để QC/PO quyết).
 - Khung agent: docstring của từng gói nêu PID làm nội dung theo taskboard; không có thuộc tính công khai nào (`test_skeleton.py` kiểm).

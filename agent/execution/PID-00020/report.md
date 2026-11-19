@@ -3,11 +3,11 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00020](../../../docs/tickets/issues/PID-00020/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
-- **Nhánh:** `agent-core/migration-skeleton` (mã Lần 1 đã commit, đã push). Lần 2 làm ở worktree `H:\Troy University\sires\.claude\worktrees\pid-00020-run2-7f459b`, nhánh cục bộ `agent-core/migration-skeleton-run2`; **mã Lần 2 và `uv.lock` chưa commit** (PO chưa yêu cầu) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026 (Lần 2); Lần 1 18/11/2026
-- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
+- **Nhánh:** `agent-core/migration-skeleton` — mã Lần 2, merge `main` và `uv.lock` đã commit (có chữ ký) và push ở Lần 3; làm ở worktree `H:\Troy University\sires\.claude\worktrees\pid-00020-run2-7f459b`, nhánh cục bộ `agent-core/migration-skeleton-run2` · **PR:** [toilatrung/sires#41](https://github.com/toilatrung/sires/pull/41) vào `main`, chưa merge
+- **Cập nhật:** 19/11/2026 (Lần 3); Lần 2 19/11/2026; Lần 1 18/11/2026
+- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md) · **QC độc lập:** [qc-report.md](qc-report.md)
 
-Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè. Mục 1–6 dưới là kết quả **Lần 1** (18/11/2026), giữ nguyên; trạng thái slice, kết quả và việc còn lại hiện tại ở mục [Lần 2](#lần-2--19112026) cuối file.
+Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè. Mục 1–6 dưới là kết quả **Lần 1** (18/11/2026), giữ nguyên; trạng thái slice, kết quả và việc còn lại hiện tại ở các mục [Lần 2](#lần-2--19112026) và [Lần 3](#lần-3--19112026) cuối file.
 
 Người làm Lần 1: agent Claude trong phiên của PO `toilatrung` (PID giao cho `toilatrung`). PO chọn trong phiên: “Viết PID-00020, chưa chạy test” — môi trường phiên không có mạng tới PyPI, npm và không có Docker.
 
@@ -112,6 +112,41 @@ Hồ sơ đi kèm: `agent/execution/PID-00020/report.md`, `implement.md`, `self-
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** EC05 (DBQ-01) chưa kiểm được trên PostgreSQL managed — Tech lead, trước PH-07.
 - **Tài liệu đi kèm:** không có (log và runner ở scratchpad của phiên; ghi chú bàn giao cho phiên QC ở thư mục ghi chú chung của lô).
+
+## Lần 3 — 19/11/2026
+
+Việc của lần này: các việc git của QC độc lập Lần 1 ([qc-report.md](qc-report.md): 0 CRITICAL, 0 HIGH; G1, G2 MEDIUM về git) và G5 tùy chọn, theo lệnh của phiên điều phối sau khi PO duyệt trong phiên đó (PO trả lời “Có, mở PR” cho câu hỏi “Cho phiên Dev PID-00020 commit mã và mở PR không?”). Không sửa mã hành vi.
+
+### Yêu cầu thêm
+
+Không có yêu cầu ngoài hồ sơ. G3 của QC (log của Job migration) chưa làm: chờ PO quyết.
+
+### Thay đổi
+
+| Commit | Nội dung |
+| --- | --- |
+| `c41fdd2` | Mã và kết quả Lần 2 (trước đây chưa commit): `uv.lock`, ba sửa test, kiểm `None` ở revision, README, `implement.md`, `self-qc.md`, `qc-report.md` của QC |
+| `3faab72` | Merge `origin/main` (`989d65f`) vào nhánh (QC G1). `uv.lock` git tự gộp, không xung đột; đã lấy lock của `main` rồi chạy `uv lock` (uv 0.13.7) — kết quả trùng bản tự gộp, thêm đúng 5 gói của Lần 2, không xóa dòng nào của `main` (87 gói). Không có xung đột nào khác |
+| `307b48b` | Thêm `types-pyyaml>=6` vào nhóm dev của `apps/agent-core/pyproject.toml` (QC G5), `uv lock` lại (88 gói, thêm `types-pyyaml 6.0.12.20261113`) |
+| commit này | `report.md`, `self-qc.md`, `implement.md` Lần 3 |
+
+Cả bốn commit do `toilatrung` tạo và ký SSH (`%G? = G`; GitHub `verified` cho `c41fdd2`, `3faab72`, `307b48b`). Push fast-forward `77bcc7f..307b48b` lên `agent-core/migration-skeleton`; mở PR [toilatrung/sires#41](https://github.com/toilatrung/sires/pull/41) vào `main`.
+
+### Kết quả sau merge
+
+Linux (container uv, Testcontainers): `uv sync --all-packages --locked` khớp; ruff, `mypy src`, `mypy src migrations tests` sạch; **pytest 15/15**. Windows (workaround): ruff, mypy sạch; pytest 14/15 (`test_migrate_command`, Smart App Control). Chi tiết: [self-qc.md Lần 3](self-qc.md).
+
+### Đính chính Lần 2
+
+Đề xuất 7 của Lần 2 ghi hai commit Lần 1 “cả hai chưa ký” — sai. GitHub báo `ddc0c8d`, `d4a97fc` có chữ ký hợp lệ (`verified`), chỉ tác giả không phải `toilatrung`; commit **không** ký là `77bcc7f` (commit `report.md` Lần 2, làm khi máy chưa bật ký). QC G2 đã chỉ ra.
+
+### Cần PO
+
+- **Merge PR #41 bằng squash** (QC G2): hai commit Lần 1 mang tác giả không phải `toilatrung`; `77bcc7f` không chữ ký, trái ruleset. Kiểm commit gộp không có trailer ghi công ngoài tác giả `toilatrung`.
+- G3 (log của Job migration): thêm `fileConfig` hay bỏ phần logging của `alembic.ini` — PO quyết.
+- PR [toilatrung/sires#40](https://github.com/toilatrung/sires/pull/40) (DEC-59, PR vào `develop`) đang mở: nếu merge trước thì có thể phải đổi nhánh đích của PR #41.
+- Các đề xuất 1–6 của Lần 2 và các đề xuất trong `qc-report.md` vẫn mở.
+- **Việc còn lại:** G4 (`check-charts.mjs` khi PID-00010 lên `main`), G6, G7 (ghi chú test), EC05 (DBQ-01); CI `nx affected` của PR #41.
 
 ---
 

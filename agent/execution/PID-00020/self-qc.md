@@ -1,9 +1,9 @@
 # PID-00020 — Self-QC của Dev
 
-**Kết luận:** Đạt (Lần 2, 19/11/2026) — 15/15 test của `apps/agent-core/tests/` đạt trên Linux (image uv, PostgreSQL 16 + pgvector qua Testcontainers); trên Windows qua runner 14/15, `test_migrate_command` lỗi vì Smart App Control (môi trường, không phải mã); EC07 kiểm tay trong image đạt; không còn CRITICAL, HIGH
+**Kết luận:** Đạt (Lần 3, 19/11/2026, sau khi merge `main` `989d65f`) — 15/15 test của `apps/agent-core/tests/` đạt trên Linux (image uv, PostgreSQL 16 + pgvector qua Testcontainers); trên Windows qua runner 14/15, `test_migrate_command` lỗi vì Smart App Control (môi trường, không phải mã); ruff, `mypy src`, `mypy src migrations tests` sạch; không còn CRITICAL, HIGH
 
-- **Ticket:** [PID-00020](../../../docs/tickets/issues/PID-00020/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 19/11/2026 (Lần 2); Lần 1 18/11/2026
+- **Ticket:** [PID-00020](../../../docs/tickets/issues/PID-00020/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md) · **QC độc lập:** [qc-report.md](qc-report.md)
+- **Cập nhật:** 19/11/2026 (Lần 3); Lần 2 19/11/2026; Lần 1 18/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -175,6 +175,62 @@ Chế độ Dev tự QC, 19/11/2026: đối chiếu `acceptance.html` (AC01–AC
 | G9 | partial | LOW | Hai khía cạnh của phép so (`triggers`, `function_grants` của vai trò `sires_*`) rỗng ở cả hai phía vì DDL không có trigger ở `app`, `replica` và không `GRANT EXECUTE` riêng cho vai trò service, nên chỉ chứng minh “cùng rỗng” | mục 1 (probe) | Ghi nhận; khi DDL thêm trigger hoặc quyền hàm, truy vấn đã có sẵn sẽ so |
 
 Không còn CRITICAL, HIGH → đặt `Xong — chờ QC` ở `report.md`.
+
+## Lần 3 — 19/11/2026
+
+Việc của lần này: QC độc lập Lần 1 (`qc-report.md`) G1 — merge `main`, sinh lại `uv.lock`, chạy lại kiểm, commit có chữ ký, mở PR; G5 tùy chọn — `types-pyyaml` ở nhóm dev. Không sửa mã hành vi. Nhánh ở `307b48b` (sau merge `989d65f` của `main`).
+
+Môi trường như Lần 2, thêm hai điểm Smart App Control: khi `.venv` đã có, `uv lock` và `uv sync` cũng đi hỏi `.venv\Scripts\python.exe` và bị chặn (`os error 4551`). Workaround: `uv lock` chạy với `UV_PROJECT_ENVIRONMENT=<scratchpad>\no-venv` và `--python <interpreter gốc>`. Thay cho `uv sync`, dựng venv mới ở `<scratchpad>\venv-merged` (`uv sync --all-packages --locked`, uv tạo mới thì chạy được); runner Windows nạp `site-packages` của venv đó. `.venv` của worktree giữ nguyên, là bản trước merge.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả Lần 3 |
+| --- | --- |
+| `git merge --no-ff origin/main` (`989d65f`) | Không xung đột; git tự gộp `uv.lock`. Merge commit `3faab72`, 93 file từ `main` |
+| `git show origin/main:uv.lock > uv.lock` rồi `uv lock` (uv 0.13.7, workaround ở trên) | `Resolved 87 packages`; thêm `alembic`, `greenlet`, `mako`, `markupsafe`, `sqlalchemy`; trùng từng byte (bỏ CR) với bản git tự gộp; so với lock của `main`: +110 dòng, 0 dòng bị xóa |
+| Thêm `types-pyyaml>=6` (nhóm dev của agent-core) rồi `uv lock` | `Resolved 88 packages`, thêm `types-pyyaml 6.0.12.20261113`; commit `307b48b` |
+| Linux: `uv sync --all-packages --locked` (container uv 0.9.30) | khớp: `Resolved 88 packages` |
+| Linux: `uv run ruff check .` | `All checks passed!` |
+| Linux: `uv run mypy src` / `uv run mypy src migrations tests` | `Success: no issues found in 27 source files` / `… in 36 source files` (G5 đã xử lý) |
+| Linux: `uv run pytest -rA -p no:cacheprovider` | **15 passed** (14 s) |
+| Windows, runner (venv mới): `ruff check --no-cache .` | `All checks passed!` |
+| Windows, runner: `mypy src` / `mypy src migrations tests` | `Success … 27 source files` / `Success … 36 source files` |
+| Windows, runner: `pytest -rA -p no:cacheprovider` | Lần chạy đầu: 7 passed, 8 error `docker.errors.DockerException: Error while fetching server API version` — Docker trong WSL chưa sẵn sàng lúc đó (môi trường). Sau khi giữ WSL sống: **14 passed, 1 failed** — `test_migrate_command`, `.venv\Scripts\python.exe` bị Smart App Control chặn (như Lần 2, QC G7) |
+| `pnpm nx affected -t lint typecheck test build` | không chạy — Nx không dựng được project graph khi có `.claude/worktrees/*`; chờ CI của PR #41 |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `(git diff --name-only origin/main; git ls-files --others --exclude-standard) \| node scripts/development/check-tracks.mjs --stdin` | `tracks touched: agent-core, infra, repo` — `infra` chỉ do `uv.lock`; CI `tracks` không chạy `--strict` nên chỉ cảnh báo |
+| `git log --format='%an %G?'`; GitHub API `commits/<sha>.commit.verification` | `c41fdd2`, `3faab72`, `307b48b`: `toilatrung`, `G`, GitHub `verified: true`. `ddc0c8d`, `d4a97fc`: chữ ký hợp lệ, tác giả không phải `toilatrung`; `77bcc7f`: `unsigned` |
+
+### 2. AC → test (sau merge)
+
+| AC | Test | Kết quả Lần 3 |
+| --- | --- | --- |
+| PID-00020-AC01 | `apps/agent-core/tests/test_migrations.py › test_schema_matches_ddl`, `› test_upgrade_twice`, `› test_missing_roles_rolls_back`, `› test_downgrade_refused` | Đạt — Linux 4/4, Windows 4/4 |
+| PID-00020-AC02 | `apps/agent-core/tests/test_config.py › test_service_token_roundtrip` (kèm 4 test cấu hình) | Đạt — Linux 5/5, Windows 5/5 |
+| PID-00020-AC03 | `apps/agent-core/tests/test_ddl_behaviour.py` (3 test) | Đạt — Linux 3/3, Windows 3/3 |
+| S04 | `apps/agent-core/tests/test_migrations.py › test_migrate_command` | Đạt trên Linux; Windows lỗi môi trường (G7) |
+
+### 3. Edge case
+
+Không đổi so với Lần 2: EC01–EC04, EC06, EC07 đã giải quyết; EC05 cần lưu ý (DBQ-01). Mới — Smart App Control chặn cả `uv lock`, `uv sync` khi `.venv` đã có: cần lưu ý cho máy PO (workaround ở trên).
+
+### 4. Tự kiểm
+
+- [x] Mọi lệnh “Kiểm” chạy lại sau merge `main`, kết quả ở trên (Nx chỉ chạy ở CI).
+- [x] Không sửa mã hành vi; chỉ `apps/agent-core/pyproject.toml` (nhóm dev), `uv.lock`, `agent/execution/PID-00020/`; không có `docs/`, không file luồng khác.
+- [x] Commit có chữ ký, tác giả `toilatrung`, message không có dòng ghi công cho agent.
+- [x] Không còn CRITICAL, HIGH.
+
+### 5. Tự đối chiếu — việc QC Lần 1
+
+| G (qc-report) | Mức | Đã xử lý |
+| --- | --- | --- |
+| G1 | MEDIUM | Đã xử lý: merge `main`, `uv.lock` sinh lại, kiểm lại đạt, commit có chữ ký, PR #41 |
+| G2 | MEDIUM | Không viết lại lịch sử đã push; đề nghị PO merge bằng squash (ghi ở PR #41 và `report.md` Lần 3) |
+| G3 | LOW | Chờ PO quyết; chưa làm |
+| G4 | LOW | Còn: `check-charts.mjs` khi PID-00010 lên `main` |
+| G5 | LOW | Đã xử lý: `types-pyyaml`; `mypy src migrations tests` sạch |
+| G6, G7 | LOW | Ghi chú, không sửa (như QC đề nghị) |
 
 ---
 
