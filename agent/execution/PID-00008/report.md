@@ -1,6 +1,6 @@
 # PID-00008 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — chờ PO G2
+**Trạng thái:** Đang làm
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
 - **Nhánh:** `contracts/check-drift-baseline` (mã: `3f7ca0f`, ký SSH) · **PR:** [#35](https://github.com/toilatrung/sires/pull/35)
@@ -8,6 +8,8 @@
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
+
+Lần 3 đang làm theo comment QC Lần 2: đã merge main `989d65f` (H5/P5/EC10). Sửa G2 bộ sinh TS và G5 nhãn kiểu dùng chung; cập nhật baseline hiện hành (G6). Kết quả các lần trước bên dưới giữ để truy vết.
 
 - Lần 2: S02 xong; S01 đã sửa G1 và thêm fixture message, còn quyết định G2; S03 bổ sung giới hạn vào baseline. Chi tiết lịch sử Lần 1 giữ bên dưới.
 - AC01: đã sửa tên schema/message allOf và nhãn constructor Python; phần TS message.data còn chờ PO. AC02: baseline có giới hạn G2, chưa được PO duyệt.
