@@ -1,6 +1,6 @@
 # PID-00025 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — dừng ở Lần 2: thiếu API key cho phép đo bổ sung
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
 - **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** chưa mở
@@ -9,10 +9,10 @@
 
 ## 1. Tóm tắt
 
-- Slice: 3/3 xong ở mức spike; Self-QC đạt với giới hạn mẫu nêu ở mục 3.2.
+- Slice: 3/3 xong ở mức spike Lần 1. Yêu cầu bổ sung Lần 2 chưa xong do thiếu key.
 - AC: đủ bằng chứng khảo sát cho 4/4 AC; AC01 ghi rõ mẫu thiếu do 429,
   completeness Semantic Scholar chưa đo được. Không gọi dịch vụ trung gian.
-- Yêu cầu thêm: 0.
+- Yêu cầu thêm: 1, xem Lần 2 bên dưới. Chưa kết luận ASM-01/ASM-14.
 
 ## 2. Trạng thái công việc
 
@@ -195,6 +195,53 @@ Không có.
 - **Tài liệu đi kèm:** `evidence/free-sources.json` (raw response và query),
   `free-sources-summary.json`, `parsers.json`, `parsers-0.0.24.json`, `parser-audit-summary.json`;
   fixture và manifest ở `apps/library/spikes/spk-03/fixtures/`.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 2 — 19/11/2026 · Đo tiếp và kiểm chứng giả định
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Đã làm / còn cần |
+| --- | --- | --- | --- | --- |
+| YC1 | Người dùng giao triển khai trong phiên | “làm nốt đi - Mẫu API còn thiếu do HTTP 429; ASM-01/ASM-14 vẫn chưa kết luận.” | Đo bổ sung S01; yêu cầu kiểm chứng vượt desk research H2 nếu có credential/quota hợp lệ; không suy ra quyền mua gói hoặc ký hợp đồng | Đo lại hai API miễn phí, chuẩn bị xác thực key; cần key để lấy mẫu và chọn tài khoản vendor có quota miễn phí trước thử tích hợp |
+
+### Kết quả thật
+
+- Lượt riêng lúc **03:53:52 UTC, 19/11/2026** (đã qua thời gian Retry-After
+  của Lần 1), cấu hình khoảng cách request 20 giây. **Cả hai nguồn trả 429 ở
+  request đầu tiên**, nên chưa có request thứ hai để đo khoảng cách thực tế.
+  Dừng từng nguồn ngay; không retry, đổi route hay IP để vượt giới hạn.
+- OpenAlex nêu anonymous search đang tải cao, Retry-After **36 giây**. Semantic
+  Scholar không có Retry-After, body đề nghị key. Đây là lỗi truy cập, không
+  phải query có 0 kết quả. Không cộng lượt lỗi này vào denominator paper Lần 1.
+- Không tìm thấy tên biến key trong process environment hoặc file `.env*` ở
+  root/library lúc kiểm tra. Không có credential để thử vendor hoặc quota có
+  thể xác nhận là miễn phí. Không tạo tài khoản, gửi email xin key, mua gói,
+  gọi Scholar trực tiếp hoặc tự chốt thay PO.
+- Bằng chứng mới:
+  [OpenAlex](evidence/free-sources-followup-2026-11-19T03-53-52-422Z-d0170586-openalex.json),
+  [Semantic Scholar](evidence/free-sources-followup-2026-11-19T03-53-52-422Z-d0170586-semantic-scholar.json),
+  [summary](evidence/free-sources-followup-2026-11-19T03-53-52-422Z-d0170586-summary.json).
+  Bản gốc Lần 1 giữ nguyên. `remeasure.mjs` hỗ trợ header key và ghi evidence mới mỗi lượt.
+
+### Điều cần để hoàn tất yêu cầu bổ sung
+
+1. Người dùng đặt key sẵn có vào `.env.spk03` ở root repo: `OPENALEX_API_KEY`,
+   `SEMANTIC_SCHOLAR_API_KEY`; không gửi giá trị key trong chat. File thuộc
+   `.gitignore`; có thể dùng `node --env-file=.env.spk03` trong WSL2/Windows.
+2. Cho biết vendor sẵn có cùng key `SERPAPI_API_KEY` hoặc `SEARCHAPI_API_KEY`.
+   Khi có, kiểm tài khoản/quota miễn phí trước khi thử; không dùng tài khoản
+   có thể phát sinh phí ngoài quota. Sau đó đo query/title/author và URL hồ sơ
+   công khai qua phương thức vendor hỗ trợ, lưu lỗi và số đo thật.
+3. **ASM-14** chỉ có bằng chứng kỹ thuật khi đọc được hồ sơ/công bố từ URL qua
+   vendor thật. **ASM-01** cần cả số đo hoạt động/tần suất và điều khoản/hợp đồng
+   áp dụng cách SIRes sử dụng được PO chấp nhận; không thể suy ra từ 429 của
+   API dự phòng hoặc ví dụ JSON trong tài liệu. Hai giả định vẫn mở, chưa có
+   bằng chứng để đổi thành đã xác minh.
+
+**Kết luận Lần 2:** phần đo tiếp đang chờ credential bên ngoài. Không đánh dấu
+yêu cầu bổ sung hoàn thành, không sửa kết quả lịch sử của Lần 1. Câu hỏi đầu vào
+đã gửi trong phiên; có key phù hợp thì chạy tiếp, không cần hỏi lại quyền đo.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
