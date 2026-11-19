@@ -1,6 +1,6 @@
 # PID-00033 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — Lần 3 (G7, G8 của qc-report Lần 2)
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Luồng:** `eval` · **Giai đoạn:** PH-01
 - **Nhánh:** `eval/dataset-csv-format` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
@@ -95,7 +95,22 @@ Kết quả kiểm chi tiết ở `self-qc.md`, mục Lần 2:
 
 ## Lần 3 — 19/11/2026
 
-Đang làm. Đầu việc: G7 (ô số dài hơn 4.300 chữ số làm trình kiểm dừng bằng traceback) và G8 (chú thích `LIST_SEPARATOR` chưa theo H3) của `qc-report.md` Lần 2.
+Đầu việc: G7, G8 (LOW) của `qc-report.md` Lần 2. Trạng thái: S01–S03 vẫn Xong. AC 4/4 đạt trên Windows (workaround) và Linux (container).
+
+| Việc | Đã làm | Kiểm bằng |
+| --- | --- | --- |
+| G7 — ô số dài hơn 4.300 chữ số làm trình kiểm dừng bằng traceback | `validate.py` (`_int_problem`): bắt `ValueError` của `int()` (giới hạn chuyển chuỗi của Python 3.12) thành lỗi `integer` đúng dòng, cột. Không đặt ngưỡng số chữ số riêng | `test_other_errors_by_row` (`year` 5.000 chữ số); đột biến trên Linux bị bắt |
+| G8 — chú thích `LIST_SEPARATOR` | `schema.py:37`–`38` ghi file tách bằng `,` hoặc `;` (H3) và ô tác giả trong file `;` phải có nháy kép | Đọc lại; ruff, mypy sạch |
+| Cùng loại G7, Dev tìm khi rà | Ô `file` quá dài: trên Linux, `Path.is_file()` ném `OSError` (`ENAMETOOLONG`), Dev đã thử trong container. Nay thành lỗi `path` (`_is_file`). Giá trị dài quá 40 ký tự bị cắt trong thông báo (`_shown`) | `test_other_errors_by_row` (tên tệp 304 ký tự); đột biến trên Linux bị bắt |
+
+File sửa ở Lần 3: `eval/src/sires_eval/datasets/validate.py`, `eval/src/sires_eval/datasets/schema.py`, `eval/tests/test_format.py`. `implement.md` đã cập nhật số dòng và quyết định Lần 3.
+
+Kiểm (chi tiết ở `self-qc.md` Lần 3):
+- 20 test đạt trên Windows (workaround) và Linux.
+- ruff, mypy strict, add-license, check-tracks (`eval`, `repo`), `check-pid --result` đều sạch.
+- Không chạy được: `pnpm nx`, vì Nx không dựng được graph khi có worktree. CI chạy.
+
+**Cần PO:** như Lần 2. Hồ sơ H3 (nhánh `docs/pid-00033-ec01-semicolon`) phải lên main trước hoặc cùng PR mã; xác nhận nghĩa của “ra đúng tên cột” ở H3; G6 PO thử bằng Excel khi nghiệm thu. Không còn mở.
 
 ---
 
