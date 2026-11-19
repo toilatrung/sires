@@ -102,5 +102,22 @@ sẵn; Nx cuối chạy đạt cả bốn target, không còn việc sửa mã t
   cấu hình. Xác thực đầy đủ giả định vẫn cần response thật và phần điều khoản
   áp dụng, không thể thay bằng output mocked, docs hoặc lỗi anonymous.
 
+## Lần 3 — 19/11/2026 · Chuẩn bị PR theo yêu cầu
+
+- Đã đưa mã, fixture và evidence vào Git. Kiểm whitespace trên toàn bộ diff
+  phát hiện hai dòng `ER  - ` có khoảng trắng cuối trong RIS nguồn Crossref;
+  đây là export nguyên byte cần giữ checksum, không sửa để làm sạch cảnh báo.
+  Các lượt `git diff --check` trước đó chỉ thấy file tracked khi fixture còn
+  untracked, nên chưa phát hiện hai dòng này. Các file khác kiểm riêng sạch.
+- Đã cập nhật nhánh từ `origin/main` bằng merge; thay đổi ở main chỉ thuộc
+  tài liệu PID-00008, không đổi mã/fixture/dependency của PID-00025. Không chạy
+  lại test đã đạt chỉ vì merge tài liệu không liên quan.
+- `update-index.mjs --check` đạt; `check-pid.mjs --result` đạt, 0 cảnh báo.
+  `check-tracks.mjs` cảnh báo library/infra do pnpm lockfile sinh tự động theo
+  quy tắc 1.4.7; không sửa tay lockfile hoặc catalog. License checker local vẫn
+  có 9 file cache ngoài ticket, không phải file được đưa vào PR.
+- Yêu cầu Lần 2 vẫn thiếu credential và số đo thật; mở PR nháp để review,
+  không đổi kết luận ASM-01/ASM-14, không đánh dấu toàn bộ yêu cầu đã xong.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
