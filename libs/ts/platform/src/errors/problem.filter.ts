@@ -94,8 +94,8 @@ export class ProblemJsonFilter implements ExceptionFilter {
     // The redacting logger masks secrets that may appear in the message or stack (NFR-OBS-002).
     const err = exception instanceof Error ? exception : new Error(String(exception));
     const status = httpStatusOf(exception);
-    // A 4xx without catalogue code (415 from Fastify…) is caused by the client: answered as internal_error to keep
-    // NFR-OBS-005, but logged as a warning with its status so that system-error alerts do not fire (PO, QC G4).
+    // A 4xx without catalogue code (a bare ConflictException…) is caused by the client: answered as internal_error to
+    // keep NFR-OBS-005, but logged as a warning with its status so that system-error alerts do not fire (PO, QC G4).
     if (status !== undefined && status < 500) {
       this.logger.warn({ err, code: result.body.code, status }, 'lỗi HTTP không có mã trong danh mục');
       return;

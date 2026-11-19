@@ -112,6 +112,18 @@ PayloadTooLarge:
         title: File vượt giới hạn
         status: 413
         code: payload_too_large
+UnsupportedMediaType:
+  description: |
+    `415 unsupported_media_type`: `Content-Type` của body không được endpoint nhận (ví dụ gửi `text/plain` cho endpoint
+    JSON). Mọi operation có body có thể trả mã này nên không khai ở từng operation (PO chốt 18/11/2026).
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/unsupported_media_type
+        title: Định dạng nội dung không được hỗ trợ
+        status: 415
+        code: unsupported_media_type
 UnprocessableEntity:
   description: |
     Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
@@ -127,6 +139,24 @@ UnprocessableEntity:
   content:
     application/problem+json:
       schema: { $ref: schemas/common.yaml#/Problem }
+TooManyRequests:
+  description: |
+    `429 rate_limited`: vượt rate limit của gateway (kiến trúc 3, 4: rate limit bằng PostgreSQL). `Retry-After` nêu số
+    giây phải chờ; client không tự gửi lại trước thời điểm đó. Mọi operation của `/api/v1` có thể trả mã này nên không
+    khai ở từng operation (PO chốt 18/11/2026). Cùng tên với `ProviderErrorCode.rate_limited` (lỗi của provider, 8.6)
+    và cùng nghĩa, nhưng nằm ở `Problem.code` của SIRes.
+  headers:
+    Retry-After:
+      description: Số giây chờ trước khi gửi lại (RFC 9110 10.2.3).
+      schema: { type: integer, minimum: 1 }
+  content:
+    application/problem+json:
+      schema: { $ref: schemas/common.yaml#/Problem }
+      example:
+        type: https://sires.etroy.local/problems/rate_limited
+        title: Quá nhiều yêu cầu
+        status: 429
+        code: rate_limited
 ServiceUnavailable:
   description: |
     `503 service_unavailable`: dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) —
