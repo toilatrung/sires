@@ -1,10 +1,10 @@
 # PID-00027 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm (Lần 2)
 
 - **Ticket:** [PID-00027](../../../docs/tickets/issues/PID-00027/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
 - **Nhánh:** `knowledge/spk-04-pgvector` (mã chưa commit; chỉ `report.md` đã commit, đã push) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 19/11/2026 (Lần 2: sửa theo QC độc lập Lần 1 — G1, G4, G5)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
