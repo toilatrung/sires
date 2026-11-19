@@ -106,6 +106,8 @@ Căn cứ: yêu cầu trong phiên “fix pr theo cmt”, QC độc lập Lần 
 
 **Baseline Lần 2:** kết quả check-drift đạt (nếu có) không chứng minh TS chặn trường lạ trong data của message có index signature. Bằng chứng là test `real contracts: allOf names and current additionalProperties data limitation` và fixture `message-data-extra.ts`. Baseline chưa được PO duyệt; N7 không phải điều kiện merge PR này.
 
+**Kiểm Lần 2:** contracts:test 12/12 đạt (0 skip), lint/Ruff/typecheck/build riêng contracts đạt. Lệnh affected và check-drift trực tiếp bị EPERM khi thay thư mục generated; không ghi đạt. Trong workspace tạm mới, generate TS/Python và cả ba project Python đạt; sau đồng bộ dependency bằng frozen lockfile, kiểm lại đủ 14 project TS đạt. Chi tiết và lỗi môi trường trong self-qc.md. check-pid --result đạt, 0 cảnh báo; diff sạch. Kiểm license toàn repo còn 9 file cache thiếu header, file source thay đổi đủ license.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
