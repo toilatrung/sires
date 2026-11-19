@@ -1,6 +1,8 @@
 # PID-00031 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — gate Self-QC toàn repo: sires-common pytest treo
+**Trạng thái:** Xong — chờ QC
+
+**Kết quả mới nhất:** xem Lần 2 ở cuối file; gate toàn repo đã đạt. Nội dung lần đầu được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
 - **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** chưa mở; mã và bằng chứng chưa commit, chỉ report được commit/push theo skill.
@@ -159,3 +161,53 @@ Không có.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+
+## Lần 2 — 19/11/2026
+
+Người dùng yêu cầu “chạy lại đi”. Đã chạy lại gate toàn repo, không sửa mã
+spike hoặc mã luồng khác. S01–S03 đều Xong; gate Self-QC đã được gỡ chặn.
+
+Lần chạy với môi trường cũ tiếp tục chờ tại
+`tests/test_fake_gateway.py::test_minio_fixture`. Stack do pytest xuất sau
+60 giây cho thấy đang chờ kết nối Docker SDK/requests trong bước tự tìm
+socket Docker cho Ryuk (`get_docker_socket`), trước khi MinIO được tạo.
+Đã dừng đúng cây tiến trình lần chạy này để thử lại với cấu hình rõ ràng.
+
+Thiết lập chỉ trong tiến trình kiểm tra, không ghi cấu hình hệ thống/repo:
+
+```powershell
+$env:NX_DAEMON='false'
+$env:DOCKER_HOST='tcp://127.0.0.1:2375'
+$env:TESTCONTAINERS_HOST_OVERRIDE='127.0.0.1'
+$env:TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE='/var/run/docker.sock'
+$env:PYTHONUNBUFFERED='1'
+$env:PYTEST_ADDOPTS='-vv -o faulthandler_timeout=60'
+pnpm nx affected -t lint typecheck test build --outputStyle=stream
+```
+
+Kết quả:
+
+- Test MinIO riêng: **1 passed**, 4,58 giây.
+- Gate Nx: **exit 0**, lint/typecheck/test/build đạt cho **19 project** và
+  2 task phụ thuộc; **70/71 task lấy từ cache**.
+- `sires-common`: **79 passed**, 43,75 giây; 2 cảnh báo deprecation.
+- Ranh giới: `repo, sandbox-runner`, chỉ một luồng mã.
+- `update-index --check`: đạt, không ghi tài liệu/taskboard.
+- License check vẫn báo 9 file cache ignore thiếu notice; không có file
+  PID-00031 trong danh sách. Theo skill chỉ tính file của ticket, không chặn
+  kết quả Self-QC của PID-00031.
+- Kết quả spike trước đó giữ nguyên: 24/24 build, 12/12 probe, 8/8 unit test;
+  không chạy lại benchmark vì không đổi code, image hoặc fixture.
+
+**Còn mở trong phạm vi:** không có. **Bước tiếp theo:** QC độc lập theo
+spec-converge-skill; mã và bằng chứng vẫn ở local, chỉ report được commit/push
+theo quy tắc skill. Chưa mở PR.
+
+**Tài liệu bổ sung:**
+
+- `evidence/affected-retry.txt`: lần chạy môi trường cũ và stack chờ Docker;
+  có đánh dấu dừng để thử cấu hình mới, không ghi đạt.
+- `evidence/minio-retry.txt`: test MinIO riêng đạt.
+- `evidence/affected-configured-retry.txt`: gate toàn repo đạt, exit 0.
+- `evidence/license-retry.txt`: 9 file cache ignore thiếu notice, ngoài ticket.
+- `evidence/index-retry.txt`: kiểm chỉ mục đạt.
