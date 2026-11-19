@@ -1,6 +1,6 @@
 # PID-00008 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Luồng:** `contracts` · **Giai đoạn:** PH-01
 - **Nhánh:** `contracts/check-drift-baseline` (mã: `3f7ca0f`, ký SSH) · **PR:** [#35](https://github.com/toilatrung/sires/pull/35)
@@ -9,17 +9,16 @@
 
 ## 1. Tóm tắt
 
-Lần 3 đang làm theo comment QC Lần 2: đã merge main `989d65f` (H5/P5/EC10). Sửa G2 bộ sinh TS và G5 nhãn kiểu dùng chung; cập nhật baseline hiện hành (G6). Kết quả các lần trước bên dưới giữ để truy vết.
-
-- Lần 2: S02 xong; S01 đã sửa G1 và thêm fixture message, còn quyết định G2; S03 bổ sung giới hạn vào baseline. Chi tiết lịch sử Lần 1 giữ bên dưới.
-- AC01: đã sửa tên schema/message allOf và nhãn constructor Python; phần TS message.data còn chờ PO. AC02: baseline có giới hạn G2, chưa được PO duyệt.
+- Lần 3: 3/3 slice xong. Đã merge main `989d65f` (H5/P5/EC10), sửa G2/G5 và cập nhật baseline hiện hành (G6). Contracts 14/14 test đạt; check-drift toàn repo đạt. Giới hạn lệnh generate/affected trên Windows ghi rõ bên dưới, platform:test chạy riêng một worker đạt 68/68.
+- Slice: 3/3 xong. Không còn việc triển khai chặn trong phạm vi; G4a LOW còn lưu ý.
+- AC01: test mới bắt đủ đọc, gán và thay data với trường lạ, nêu đúng message; string[] cục bộ giữ chẩn đoán TS gốc. AC02: baseline Lần 3 gắn main `989d65f`; chưa được PO duyệt.
 - Yêu cầu thêm: 0.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Sinh lại type, kiểm project TS theo Nx, báo đúng trường/schema; fixture và test | Đang làm — chờ PO G2 | check-drift.mjs, check-drift.spec.mjs, fixture TS/YAML; README của contracts |
+| S01 | Sinh lại type, kiểm project TS theo Nx, báo đúng trường/schema; fixture và test | Xong | generate.mjs, generate.spec.mjs, check-drift.mjs, check-drift.spec.mjs, fixture TS/YAML; README của contracts |
 | S02 | Kiểm project Python và fixture dùng model/client sinh; thiếu uv | Xong | tạo check-drift-python.py, fixture Python; mở rộng script/test trong contracts |
 | S03 | Kiểm baseline DBQ-03/04, bản gộp và mâu thuẫn hợp đồng | Xong | mục Baseline hợp đồng bên dưới |
 
@@ -34,7 +33,7 @@ Lần 3 đang làm theo comment QC Lần 2: đã merge main `989d65f` (H5/P5/EC1
 
 ## 4. Việc còn lại
 
-G2 chờ PO chọn cách xử lý TS message.data. Sau quyết định, thực hiện phần phụ thuộc, tự QC lại và đặt Xong — chờ QC khi không còn HIGH. Gắn lệnh vào pipeline là PID-00009; duyệt baseline là việc của PO, không phải điều kiện merge riêng của PR này (N7).
+Không còn việc triển khai trong phạm vi sau H5/G5. PO QC độc lập Lần 3 và quyết baseline. Gắn lệnh vào pipeline là PID-00009; duyệt baseline là việc của PO, không phải điều kiện merge riêng của PR này (N7).
 
 ## 5. Yêu cầu thêm
 
@@ -44,7 +43,7 @@ Không có.
 
 - **Đề xuất cho PO:** Giải quyết các điểm routing key ghi ở mục Baseline; thêm quy tắc version nội bộ trước khi bật kiểm thay đổi phá vỡ (ngoài scope, H2). Các đoạn ticket ghi PID-00007 “chưa làm” đã cũ so với main `eb31e4d`.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở / Cần PO G2:** EventEnvelope.data cho phép additionalProperties; TS giữ index signature nên đọc/ghi trường lạ trong data vẫn đạt. Chờ PO chọn chấp nhận giới hạn, sửa bộ sinh, hoặc sửa hợp đồng; chưa có quyết định trong phiên. Fixture và test ghi nhận hành vi hiện tại, chưa coi G2 đóng.
+- **Còn mở:** G2 đã triển khai H5, test và check-drift đạt; không còn HIGH/MEDIUM sau tự QC. Routing key/version nội bộ vẫn là việc ngoài phạm vi của PO; G4a Data29 không chặn merge.
 - **Bước tiếp theo:** Thực thi các slice, tự QC, commit/push và mở PR theo yêu cầu trong phiên; PO QC độc lập và duyệt baseline.
 - **Tài liệu đi kèm:** Không có.
 
@@ -109,6 +108,38 @@ Căn cứ: yêu cầu trong phiên “fix pr theo cmt”, QC độc lập Lần 
 **Baseline Lần 2:** kết quả check-drift đạt (nếu có) không chứng minh TS chặn trường lạ trong data của message có index signature. Bằng chứng là test `real contracts: allOf names and current additionalProperties data limitation` và fixture `message-data-extra.ts`. Baseline chưa được PO duyệt; N7 không phải điều kiện merge PR này.
 
 **Kiểm Lần 2:** contracts:test 12/12 đạt (0 skip), lint/Ruff/typecheck/build riêng contracts đạt. Lệnh affected và check-drift trực tiếp bị EPERM khi thay thư mục generated; không ghi đạt. Trong workspace tạm mới, generate TS/Python và cả ba project Python đạt; sau đồng bộ dependency bằng frozen lockfile, kiểm lại đủ 14 project TS đạt. Chi tiết và lỗi môi trường trong self-qc.md. check-pid --result đạt, 0 cảnh báo; diff sạch. Kiểm license toàn repo còn 9 file cache thiếu header, file source thay đổi đủ license.
+
+## Lần 3 — 19/11/2026
+
+Căn cứ: comment PO/QC Lần 2 ở PR #35 và hồ sơ H5/P5/EC10 đã vào main qua PR #37. Đã merge main trước khi triển khai. Không còn chờ quyết định G2; không sửa docs hoặc qc-report.md. Làm ở worktree riêng, không đụng thay đổi PID-00025 trong workspace chính.
+
+| Góp ý | Triển khai / bằng chứng | Kết quả |
+| --- | --- | --- |
+| G2 HIGH, H5 | generate.mjs biến đổi AST type message: dùng Omit bỏ data gốc rồi ghép data riêng, theo ref/allOf; giữ required và các trường envelope. Test EC10 và CLI trên hợp đồng thật | Đọc, gán thuộc tính và thay data có fieldNotInSpec đều lỗi, nêu UsageRecordedMessage.data; payload đúng đạt |
+| G5 MEDIUM, EC02 | Chỉ gắn nhãn cho type có declaration generated; thêm local-array.ts, spec tạm có array property và test trên hợp đồng thật | string[] cục bộ trong file import contracts giữ TS2339 nguyên văn, không nhãn hợp đồng |
+| G6 LOW | Baseline hiện hành ở mục dưới, thay nguồn cũ bằng main 989d65f / lần đổi API f8c2eba | Đã dựng lại bundle, kiểm DBQ-03/04 và nguồn/type/model mới |
+| G4a LOW | Giữ tên model Python Data29, không đổi generator Python | QC xác nhận không chặn merge |
+
+### Baseline hợp đồng — Lần 3, hiện hành
+
+**Nguồn đã kiểm:** main `989d65f5589fb28eed77bc8cf4ada4701e2cf938` đã merge vào nhánh này; commit gần nhất đổi `docs/api-design` là `f8c2eba1b2ee460f44157ae4637af609a0e5f75f` (415/429). `eb31e4d` ở Baseline Lần 1 chỉ là lịch sử. Hợp đồng hiện hành vẫn có info.version `0.1.0-mvp` cho public, 9 API nội bộ và AsyncAPI; không thay hợp đồng trong lần sửa này.
+
+| Mục | Kết quả / bằng chứng hiện hành |
+| --- | --- |
+| DBQ-03 usage.recorded và producer/consumer | events/asyncapi.yaml:1234–1246; knowledge → orchestration, không đổi |
+| DBQ-04 aggregate bắt buộc với type/id/version | internal/schemas.yaml:399, :409, :422; assertion TS và model_json_schema Python đạt |
+| DBQ-04 metadataVersion bắt buộc | events/asyncapi.yaml:1133, :1138; assertion TS và model_json_schema Python đạt |
+| TS mới sinh | generated/messages.ts:605 UsageRecordedMessage; :524 ReferenceStatusChangedMessage; :731 EventEnvelope, :753 aggregate. Type message dùng data riêng; EventEnvelope vẫn giữ data mở. Kiểm trường bắt buộc qua compiler đạt |
+| Model Python | generated/messages.py:903 UsageRecordedMessage, :854 ReferenceStatusChangedMessage, :320 EventEnvelope, :314 Aggregate; messages.py giống từng byte với generator 652dcad trên cùng hợp đồng |
+| Đầu ra Python giữ nguyên nghĩa | 572 file .py/.json so với generator 652dcad; 45 client chỉ khác thứ tự import do generator, AST sau chuẩn hóa nhóm import bằng nhau; schema message và manifest không đổi |
+| Public bundle khớp nguồn | Redocly 2.11.1 bundle ra file tạm; so YAML với dist đã commit bằng nhau, không sửa dist |
+| check-drift toàn repo | Đạt: sinh mới cả hai ngôn ngữ; kiểm 14 project TS và 3 project Python |
+| Test contracts / lint / typecheck / build | 14/14 test, 0 skip; lint/typecheck/build của contracts đạt trong lượt affected |
+| Giới hạn môi trường | Lệnh generate chạy lại gặp EPERM rename thư mục Python đã sinh; hai lượt affected gặp timeout/ECONNRESET tại platform:test ngoài contracts. Platform chạy riêng một worker đạt 68/68, 11/11 file; các target khác của affected đạt. Chi tiết ghi self-qc.md, không ghi lệnh affected ban đầu đạt |
+
+Mâu thuẫn routing key và thiếu quy tắc version nội bộ ở Baseline Lần 1 vẫn mở, không đổi: internal/schemas.yaml:398 với events/asyncapi.yaml:12–14; suffix objectType tại :1273/:1296 với quy tắc suffix trạng thái. PO xử lý nguồn bằng việc riêng. Duyệt baseline (N7) không phải điều kiện merge riêng của PR này.
+
+**Kết luận baseline: Baseline sẵn sàng cho PO duyệt.** Chưa ghi PO đã duyệt. Giới hạn G2 “trường lạ trong data vẫn đạt” ở Lần 2 đã được H5 khắc phục trong Lần 3.
 
 ---
 
