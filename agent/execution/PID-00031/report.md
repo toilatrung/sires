@@ -5,7 +5,7 @@
 **Kết quả mới nhất:** xem Lần 2 ở cuối file; gate toàn repo đã đạt. Nội dung lần đầu được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
-- **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** chưa mở; mã và bằng chứng chưa commit, chỉ report được commit/push theo skill.
+- **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** đang chuẩn bị theo yêu cầu người dùng; commit/push mã, bằng chứng và hồ sơ triển khai.
 - **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
