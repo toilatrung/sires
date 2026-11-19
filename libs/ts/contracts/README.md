@@ -36,6 +36,8 @@ pnpm --filter @sires/contracts generate:ts
 pnpm --filter @sires/contracts generate:python
 ```
 
+**Giới hạn AsyncAPI đang cần PO chốt (PID-00008, QC G2):** `EventEnvelope.data` có `additionalProperties: true`. Type message TS giao với envelope giữ index signature nên đọc/ghi trường lạ trong `data` hiện vẫn đạt; trường lạ ở cấp envelope bị bắt. Test trên hợp đồng thật ghi nhận cả hai hành vi, không có nghĩa phần `data` đã được kiểm kín. Python vẫn bắt trường lạ trên model data cụ thể. Xem `agent/execution/PID-00008/report.md` trước khi dùng kết quả đạt làm baseline.
+
 Type AsyncAPI xuất qua package, map đủ payload theo tên message:
 
 ```ts

@@ -9,7 +9,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { checkDrift, checkPython, contractProjects, ROOT } from './check-drift.mjs';
+import { checkDrift, checkPython, checkTypeScript, contractProjects, ROOT } from './check-drift.mjs';
 import { generate } from './generate.mjs';
 
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));
@@ -19,12 +19,23 @@ function fixture(t) {
   const specRoot = path.join(workspace, 'docs/api-design');
   for (const name of ['dist', 'internal', 'events']) fs.mkdirSync(path.join(specRoot, name), { recursive: true });
   const api = { openapi: '3.1.0', info: { title: 'Fixture', version: '1' }, paths: {}, components: { schemas: {
-    ResearchProject: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+    EntityMeta: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+    ResearchProject: { allOf: [{ $ref: '#/components/schemas/EntityMeta' },
+      { type: 'object', properties: { title: { type: 'string' } } }] },
   } } };
   fs.writeFileSync(path.join(specRoot, 'dist/openapi.bundled.yaml'), JSON.stringify(api));
   fs.writeFileSync(path.join(specRoot, 'internal/test.yaml'), JSON.stringify(api));
   fs.writeFileSync(path.join(specRoot, 'events/asyncapi.yaml'), JSON.stringify({
-    asyncapi: '3.0.0', info: api.info, components: { messages: { sample: { payload: { type: 'object' } } } },
+    asyncapi: '3.0.0', info: api.info, components: {
+      schemas: { EventEnvelope: { type: 'object', required: ['data'], properties: {
+        data: { type: 'object', additionalProperties: true },
+        aggregate: { type: 'object', properties: { id: { type: 'string' } } },
+      } } },
+      messages: { usage_recorded: { payload: { allOf: [
+        { $ref: '#/components/schemas/EventEnvelope' },
+        { type: 'object', properties: { data: { type: 'object', properties: { provider: { type: 'string' } } } } },
+      ] } } },
+    },
   }));
   fs.writeFileSync(path.join(workspace, 'tsconfig.base.json'), JSON.stringify({
     compilerOptions: { strict: true, target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', types: [], skipLibCheck: true },
@@ -60,6 +71,39 @@ test('trường không có trong spec: read and object literal report field, sch
     assert.match(output, new RegExp(`${name.replace('.', '\\.')}:[0-9]+:[0-9]+`));
   }
   assert.equal(await checkDrift({ ...options, fixtures: [options.file('ts/valid.ts')] }), true);
+});
+
+test('AsyncAPI allOf: envelope read/write names, nested paths and Partial (G1/G2/G4)', async (t) => {
+  const options = fixture(t);
+  await generate(options);
+  for (const [file, expected] of [
+    ['message-extra.ts', ['UsageRecordedMessage', 'UsageRecordedMessage']],
+    ['nested-extra.ts', ['ResearchProject', 'EventEnvelope.aggregate']],
+  ]) {
+    options.logs.length = 0;
+    assert.equal(checkTypeScript({ ...options, fixtures: [options.file(`ts/${file}`)] }), false);
+    const errors = options.logs.filter((line) => line.includes('trường không có trong spec'));
+    assert.equal(errors.length, expected.length, options.logs.join('\n'));
+    expected.forEach((name, index) => assert.ok(errors[index].includes(`— ${name} (TypeScript)`), errors[index]));
+  }
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-valid.ts')] }), true);
+});
+
+test('real contracts: allOf names and current additionalProperties data limitation (G1/G2)', async (t) => {
+  const options = fixture(t);
+  await generate({ ...options, specRoot: path.join(ROOT, 'docs/api-design') });
+  for (const [file, name] of [['read-extra.ts', 'ResearchProject'], ['write-extra.ts', 'ResearchProject'],
+    ['message-extra.ts', 'UsageRecordedMessage']]) {
+    options.logs.length = 0;
+    assert.equal(checkTypeScript({ ...options, fixtures: [options.file(`ts/${file}`)] }), false);
+    const errors = options.logs.filter((line) => line.includes('trường không có trong spec'));
+    assert.equal(errors.length, file === 'message-extra.ts' ? 2 : 1, options.logs.join('\n'));
+    for (const error of errors) assert.ok(error.includes(`— ${name} (TypeScript)`), error);
+  }
+  options.logs.length = 0;
+  // G2: characterization of the current contract, pending a PO decision (report.md).
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-data-extra.ts')] }), true);
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-valid.ts')] }), true);
 });
 
 test('lỗi không thuộc hợp đồng: original diagnostics, including a same-named local model (EC02)', async (t) => {
@@ -112,6 +156,14 @@ test('Python: trường không có trong mô hình sinh, valid payload and clien
     env: { ...process.env, MYPYPATH: [source, process.env.MYPYPATH].filter(Boolean).join(path.delimiter) } };
   options.fixtures = [path.join(FIXTURES, 'python/valid.py')];
   assert.equal(checkPython(options), true, logs.join('\n'));
+  assert.equal(checkPython({ ...options, fixtures: [path.join(FIXTURES, 'python/write-valid.py')] }), true, logs.join('\n'));
+  logs.length = 0;
+  assert.equal(checkPython({ ...options, fixtures: [path.join(FIXTURES, 'python/write-extra.py')] }), false);
+  const constructors = logs.filter((line) => line.includes('trường không có trong spec'));
+  assert.equal(constructors.length, 2, logs.join('\n'));
+  for (const [index, number] of [9, 10].entries()) {
+    assert.match(constructors[index], new RegExp(`write-extra.py:${number}:[0-9]+: trường không có trong spec: 'fieldNotInSpec' — sires_common.generated.messages.Aggregate`));
+  }
   for (const [file, model] of [['read-extra.py', 'AgentRunAssignment'], ['client-extra.py', 'AuthenticatedClient']]) {
     logs.length = 0;
     assert.equal(checkPython({ ...options, fixtures: [path.join(FIXTURES, 'python', file)] }), false);

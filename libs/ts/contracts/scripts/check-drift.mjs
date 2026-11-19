@@ -45,9 +45,50 @@ export function contractProjects(graph) {
   ).map(([name, node]) => ({ name, root: node.data.root })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function generatedSchema(type, generated, seen = new Set()) {
+function generatedSchemas(program, checker, generated) {
+  const names = new Map();
+  for (const file of program.getSourceFiles()) {
+    if (!path.resolve(file.fileName).startsWith(generated + path.sep)) continue;
+    for (const node of file.statements) {
+      if (!ts.isInterfaceDeclaration(node) || node.name.text !== 'components') continue;
+      const components = checker.getTypeAtLocation(node);
+      const schemas = components.getProperty('schemas');
+      if (!schemas) continue;
+      for (const schema of checker.getTypeOfSymbolAtLocation(schemas, node).getProperties()) {
+        const type = checker.getTypeOfSymbolAtLocation(schema, node);
+        if (type.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection | ts.TypeFlags.Union)) {
+          names.set(type, schema.name);
+        }
+      }
+    }
+  }
+  // Add paths for inline objects after roots, so named schemas keep their own names.
+  const visit = (type, name) => {
+    if (!(type.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection | ts.TypeFlags.Union))) return;
+    if (names.has(type)) return;
+    names.set(type, name);
+    descend(type, name);
+  };
+  const descend = (type, name) => {
+    for (const member of type.isUnion() ? type.types : []) visit(member, name);
+    for (const property of type.getProperties()) {
+      const declaration = property.valueDeclaration ?? property.declarations?.[0];
+      if (declaration) visit(checker.getTypeOfSymbolAtLocation(property, declaration), `${name}.${property.name}`);
+    }
+  };
+  for (const [type, name] of [...names]) descend(type, name);
+  return names;
+}
+
+function generatedSchema(type, generated, names, seen = new Set()) {
   if (!type || seen.has(type)) return undefined;
   seen.add(type);
+  if (names.has(type)) return names.get(type);
+  // Mapped utility types retain their generated argument, e.g. Partial<ResearchProject>.
+  for (const argument of (type.objectFlags & ts.ObjectFlags.Mapped ? type.aliasTypeArguments : []) ?? []) {
+    const name = generatedSchema(argument, generated, names, seen);
+    if (name) return name;
+  }
   for (const symbol of [type.getSymbol(), type.aliasSymbol]) {
     for (const declaration of symbol?.declarations ?? []) {
       const file = path.resolve(declaration.getSourceFile().fileName);
@@ -59,7 +100,7 @@ function generatedSchema(type, generated, seen = new Set()) {
     }
   }
   for (const member of type.types ?? []) {
-    const name = generatedSchema(member, generated, seen);
+    const name = generatedSchema(member, generated, names, seen);
     if (name) return name;
   }
   return undefined;
@@ -69,6 +110,7 @@ export function typescriptDiagnostics(files, options, workspace) {
   const program = ts.createProgram(files, { ...options, noEmit: true, rootDir: undefined });
   const checker = program.getTypeChecker();
   const generated = path.join(workspace, 'libs/ts/contracts/src/generated');
+  const names = generatedSchemas(program, checker, generated);
   return ts.getPreEmitDiagnostics(program).filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)
     .map((diagnostic) => {
       const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
@@ -78,9 +120,9 @@ export function typescriptDiagnostics(files, options, workspace) {
         const token = ts.getTokenAtPosition(diagnostic.file, diagnostic.start);
         for (let node = token; node && !schema; node = node.parent) {
           if (ts.isPropertyAccessExpression(node)) {
-            schema = generatedSchema(checker.getTypeAtLocation(node.expression), generated);
+            schema = generatedSchema(checker.getTypeAtLocation(node.expression), generated, names);
           } else if (ts.isObjectLiteralExpression(node)) {
-            schema = generatedSchema(checker.getContextualType(node), generated);
+            schema = generatedSchema(checker.getContextualType(node), generated, names);
           }
         }
       }

@@ -132,8 +132,10 @@ def generated_accesses(file, inventory):
             if owner in inventory:
                 for keyword in node.keywords:
                     if keyword.arg:
-                        accesses.append((keyword.lineno, keyword.end_lineno, keyword.col_offset,
-                                         keyword.end_col_offset, keyword.arg, owner))
+                        # mypy reports call-arg at the callee, including multiline calls,
+                        # rather than at the keyword. Match the call's span and field name.
+                        accesses.append((node.lineno, node.end_lineno, node.col_offset,
+                                         node.end_col_offset, keyword.arg, owner))
         for child in ast.iter_child_nodes(node):
             walk(child, scope)
 

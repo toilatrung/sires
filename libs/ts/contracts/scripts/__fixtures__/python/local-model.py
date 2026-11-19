@@ -11,3 +11,15 @@ class AgentRunAssignment:
 def inspect(local: AgentRunAssignment, generated: AgentRunRequestedMessage) -> None:
     print(generated.root.attempt)
     print(local.fieldNotInSpec)
+
+
+class Aggregate:
+    def __init__(self, version: int) -> None:
+        self.version = version
+
+
+single = Aggregate(version=1, fieldNotInSpec=True)
+multiline = Aggregate(
+    version=1,
+    fieldNotInSpec=True,
+)
