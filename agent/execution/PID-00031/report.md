@@ -1,8 +1,8 @@
 # PID-00031 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — sửa QC Lần 1; chờ PO chốt TeX capacity và cold start trước khi đo lại
 
-**Kết quả mới nhất:** xem Lần 2 ở cuối file; gate toàn repo đã đạt. Nội dung lần đầu được giữ để truy vết.
+**Kết quả mới nhất:** xem Lần 4 ở cuối file; đang khắc phục QC độc lập. Các lần trước được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
 - **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** [#39](https://github.com/toilatrung/sires/pull/39) → `main`; mã, bằng chứng và hồ sơ triển khai đã được commit/push.
@@ -223,3 +223,15 @@ image, fixture hoặc JSON số đo.
 
 `git diff origin/main...HEAD --check` đạt sau chuẩn hóa. Trạng thái vẫn
 Xong — chờ QC; chưa merge. QC độc lập và PO review thực hiện trên PR.
+
+## Lần 4 — 19/11/2026
+
+Người dùng yêu cầu sửa comment mới trên PR #39. Đã nạp QC độc lập ở commit
+`5f94b20`; không sửa qc-report.md. Theo comment PO, chưa chạy lại measure.sh
+và attack.sh cho tới khi chốt Đề xuất 1 (mã lỗi TeX capacity) và Đề xuất 2
+(cold start). Đã hỏi hai quyết định này trong phiên, đang làm phần độc lập:
+fixture Default, luận văn mở, loại spike khỏi gói sản phẩm, ruff và báo cáo.
+
+G5/G9: giữ nguyên lịch sử đã push; PO xử lý bằng squash khi merge.
+Đã cấu hình khóa ký SSH cho repo, bật commit.gpgsign; các commit cập nhật
+sẽ dùng chữ ký hợp lệ và payload UTF-8, không viết lại lịch sử.
