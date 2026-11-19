@@ -1,10 +1,10 @@
 # PID-00002 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — sửa theo QC Lần 1 (G1–G3)
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
