@@ -21,7 +21,9 @@ function fixture(t) {
   const api = { openapi: '3.1.0', info: { title: 'Fixture', version: '1' }, paths: {}, components: { schemas: {
     EntityMeta: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
     ResearchProject: { allOf: [{ $ref: '#/components/schemas/EntityMeta' },
-      { type: 'object', properties: { title: { type: 'string' } } }] },
+      { type: 'object', properties: { title: { type: 'string' }, requiredCapabilities: {
+        type: 'array', items: { type: 'string' },
+      } } }] },
   } } };
   fs.writeFileSync(path.join(specRoot, 'dist/openapi.bundled.yaml'), JSON.stringify(api));
   fs.writeFileSync(path.join(specRoot, 'internal/test.yaml'), JSON.stringify(api));
@@ -89,7 +91,7 @@ test('AsyncAPI allOf: envelope read/write names, nested paths and Partial (G1/G2
   assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-valid.ts')] }), true);
 });
 
-test('real contracts: allOf names and current additionalProperties data limitation (G1/G2)', async (t) => {
+test('real contracts: allOf schema and envelope names (G1/G2)', async (t) => {
   const options = fixture(t);
   await generate({ ...options, specRoot: path.join(ROOT, 'docs/api-design') });
   for (const [file, name] of [['read-extra.ts', 'ResearchProject'], ['write-extra.ts', 'ResearchProject'],
@@ -101,19 +103,35 @@ test('real contracts: allOf names and current additionalProperties data limitati
     for (const error of errors) assert.ok(error.includes(`— ${name} (TypeScript)`), error);
   }
   options.logs.length = 0;
-  // G2: characterization of the current contract, pending a PO decision (report.md).
-  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-data-extra.ts')] }), true);
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-data-extra.ts')] }), false);
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-valid.ts')] }), true);
+});
+
+test('message: trường không có trong data reports field, location and message (EC10/H5)', async (t) => {
+  const options = fixture(t);
+  assert.equal(await checkDrift({ ...options, specRoot: path.join(ROOT, 'docs/api-design'),
+    fixtures: [options.file('ts/message-data-extra.ts')] }), false);
+  const errors = options.logs.filter((line) => line.includes('trường không có trong spec'));
+  assert.equal(errors.length, 3, options.logs.join('\n'));
+  for (const error of errors) {
+    assert.match(error, /message-data-extra.ts:[0-9]+:[0-9]+: trường không có trong spec: 'fieldNotInSpec' — UsageRecordedMessage.data \(TypeScript\)/);
+  }
   assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/message-valid.ts')] }), true);
 });
 
 test('lỗi không thuộc hợp đồng: original diagnostics, including a same-named local model (EC02)', async (t) => {
   const options = fixture(t);
-  for (const file of ['internal-error.ts', 'local-model.ts']) {
+  for (const file of ['internal-error.ts', 'local-model.ts', 'local-array.ts']) {
     options.logs.length = 0;
     assert.equal(await checkDrift({ ...options, fixtures: [options.file(`ts/${file}`)] }), false);
     assert.match(options.logs.join('\n'), /error TS/);
     assert.doesNotMatch(options.logs.join('\n'), /trường không có trong spec/);
   }
+  await generate({ ...options, specRoot: path.join(ROOT, 'docs/api-design') });
+  options.logs.length = 0;
+  assert.equal(checkTypeScript({ ...options, fixtures: [options.file('ts/local-array.ts')] }), false);
+  assert.match(options.logs.join('\n'), /error TS2339: Property 'fieldNotInSpec' does not exist on type 'string\[\]'/);
+  assert.doesNotMatch(options.logs.join('\n'), /trường không có trong spec/);
 });
 
 test('spec lỗi cú pháp: fail and report the spec file (EC03)', async (t) => {

@@ -1,6 +1,6 @@
 # PID-00008 — Self-QC của Dev
 
-**Kết luận:** Lần 2 — còn G2 HIGH chờ PO quyết về TS message.data. G1/G3 đã sửa và test đạt; G4b/c đã cải thiện, G4a còn lưu ý. Không đặt Xong — chờ QC. Lịch sử Lần 1 bên dưới giữ để truy vết.
+**Kết luận:** Đạt trong phạm vi Lần 3 — H5/G2, G5/G6 đã sửa; contracts 14/14 test, check-drift toàn repo và platform chạy riêng một worker 68/68 đạt. Không còn CRITICAL/HIGH/MEDIUM sau tự QC; G4a LOW còn lưu ý. Giới hạn generate/affected trên Windows ghi rõ ở Lần 3, không đổi lỗi thành đạt. Lịch sử Lần 1/Lần 2 giữ để truy vết.
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 19/11/2026
@@ -54,6 +54,7 @@ Trong quá trình làm, test EC03 ban đầu trỏ sai vị trí fixture; đã s
 | Mới: CI chạy song song | Đã giải quyết | Test Python sinh vào workspace tạm riêng, không thay output của sires-common:test |
 | Mới: chẩn đoán không chứng minh được provenance | Cần lưu ý | Giữ chẩn đoán checker gốc và vẫn thoát lỗi; không đoán schema theo tên class. Ví dụ kiểu động hoặc alias đi qua module tùy ý có thể không được gắn nhãn bổ sung |
 | Mới: môi trường Windows | Cần lưu ý | Lượt kiểm repo đầu tiên thiếu link dependency platform; đã pnpm install --frozen-lockfile. Kiểm đầy đủ theo hồ sơ thực hiện trong WSL |
+| EC10 (bổ sung Lần 3, H5 ngày 19/11/2026) | Đã giải quyết | Test message: trường không có trong data trên hợp đồng thật và CLI: đọc/gán/thay data có fieldNotInSpec thoát 1, cả ba nhãn UsageRecordedMessage.data; đúng trường thoát 0 |
 
 ## 4. Tự kiểm
 
@@ -121,6 +122,49 @@ Fixture Python ban đầu dùng str thay cho model Id nên bản đúng lỗi ar
 | G4a | partial / LOW, còn lưu ý | Nhãn Data29 là tên model Python thật từ generator; chưa đổi tên model hoặc bộ sinh |
 
 Không có thay đổi ngoài phạm vi, service, CI hoặc docs. Bước tiếp theo: PO chọn G2 trong phiên; Dev thực hiện phần phụ thuộc rồi tự QC lại trước trạng thái Xong — chờ QC. Giới hạn môi trường của lượt kiểm repo được ghi riêng, không dùng kết quả Lần 1 thay cho Lần 2.
+
+## Lần 3 — 19/11/2026 · spec-execution-skill / Dev tự QC
+
+Nguồn hiện hành: đã merge main `989d65f5589fb28eed77bc8cf4ada4701e2cf938` (H5/P5/EC10, PR #37); lần đổi thực sự gần nhất của `docs/api-design` là `f8c2eba1b2ee460f44157ae4637af609a0e5f75f` (415/429). QC độc lập Lần 2 tại `652dcad` là đầu việc; không sửa qc-report.md. Làm trong worktree riêng để giữ nguyên thay đổi PID-00025 ở workspace chính.
+
+### 1. Lệnh và bằng chứng
+
+| Kiểm | Kết quả thật |
+| --- | --- |
+| check-pid PID-00008 | Đủ hồ sơ; 1 cảnh báo nhắc đọc qc-report.md, đã đọc Lần 2 |
+| Test TS tập trung allOf, EC10, EC02 | 4/4 đạt; ba lỗi message.data có field, vị trí, UsageRecordedMessage.data; local string[] giữ TS2339 |
+| generate.spec.mjs | 4/4 đạt; H5 qua ref/allOf (envelope đứng sau trường riêng) giữ id/data bắt buộc và EventEnvelope.data mở; không sửa nguồn fixture |
+| `pnpm nx run @sires/contracts:check-drift` | Đạt: sinh lại 9 API nội bộ/42 message TS và Python; kiểm đủ 14 project TS, agent-core/knowledge/sires-common; không còn EPERM trong worktree mới |
+| CLI --ts-only: message-data-extra.ts + local-array.ts; message-valid.ts + valid.ts | Sai thoát 1 với 3 nhãn UsageRecordedMessage.data và TS2339 nguyên văn của string[]; đúng thoát 0 |
+| `pnpm --filter @sires/contracts lint`; Ruff helper/fixture Python | Đạt |
+| Redocly 2.11.1 bundle public OpenAPI ra file tạm, so YAML | Đạt, khớp dist đã commit; cache npm offline không có nên tải đúng phiên bản, không đổi dependency/lockfile của repo |
+| Assertion DBQ-03/04 TS và model_json_schema Python | Đạt: usage.recorded, aggregate và type/id/version bắt buộc, metadataVersion bắt buộc |
+| So đầu ra Python với generator ở 652dcad, cùng hợp đồng hiện hành | 572 file tương đương: messages.py giống từng byte; 45 file client chỉ khác thứ tự import, AST giống sau sắp các nhóm import liên tiếp. Không đổi schema hoặc pipeline Python |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=3` | Chỉ platform:test lỗi timeout 5000ms tại telemetry.spec.ts; các task còn lại đạt, contracts 14/14 test và 0 skip. Không ghi lượt đầu đạt |
+| affected kiểm lại với parallel=1 | Telemetry đạt, platform:test gặp ECONNRESET ở errors.spec.ts; các target khác đạt (cache kết quả đúng source). Không ghi lệnh tổng hợp đạt |
+| `pnpm --filter @sires/platform exec vitest run --maxWorkers=1 --no-file-parallelism` | Đạt 68/68 test, 11/11 file; không sửa source hoặc test platform |
+| `pnpm nx run @sires/contracts:generate --skip-nx-cache` (chạy lại sau lần sinh đầu đạt) | TS đạt; Python sinh thành công trong staging nhưng publish gặp EPERM rename thư mục generated đã tồn tại. Không ghi target này đạt; lần sinh mới TS/Python qua check-drift trước đó đã đạt đầy đủ |
+| update-index --check; diff --check; check-tracks theo diff origin/main | Đạt: 159 PID; diff sạch; contracts, repo; không có thay đổi docs/service/CI của Dev |
+| add-license --check | Thoát 1: 4 file .gitignore trong cache Ruff/mypy, giới hạn công cụ đã ghi từ Lần 1; source mới local-array.ts đủ header |
+
+### 2. AC và 3. Edge case
+
+- AC01 TS / EC01, EC10: message data cụ thể thay data chung bằng AST Omit; test và CLI bắt cả đọc, gán và thay object. Message hợp lệ đạt. Giữ required và tên message. H5 có test ref/allOf, không đòi sửa hợp đồng hoặc service.
+- AC01 / EC02 (G5): chỉ kiểu có declaration generated mới vào bảng nhãn; array chuẩn không được gắn schema vì từng xuất hiện trong generated. Fixture có import contracts và string[] cục bộ, kiểm cả spec tạm có array property lẫn hợp đồng thật, giữ TS2339 nguyên văn.
+- AC01 Python / EC06: helper và pipeline Python không đổi; kiểm ba project và fixture Python thuộc bộ test contracts. Data29 vẫn là tên model thật (G4a LOW, không chặn).
+- AC02 / EC08, EC09: baseline Lần 3 có nguồn 989d65f và commit đổi API f8c2eba, số dòng generated hiện hành, bundle đã dựng lại. Routing key/version vẫn ngoài phạm vi; chưa tự ghi PO đã duyệt.
+- EC03–EC07: test hồi quy, thiếu uv, spec hỏng, sinh lại đầu ra và đồ thị dự án giữ yêu cầu cũ; không thêm skip hoặc bỏ lỗi compiler.
+
+### 5. Tự đối chiếu (spec-converge-skill, DEC-58)
+
+| G từ QC độc lập | Loại / mức | Đối chiếu |
+| --- | --- | --- |
+| G2 | partial / HIGH, đã sửa | H5 đã vào main; messageDataTypes thay data chung bằng kiểu riêng; test EC10/CLI/ref/allOf đạt; EventEnvelope giữ nguyên |
+| G5 | partial / MEDIUM, đã sửa | Gắn nhãn cần symbol/alias declaration generated, không nhận array chuẩn; test local-array trên hợp đồng thật giữ lỗi gốc |
+| G6 | partial / LOW, đã sửa | Baseline Lần 3 ghi main 989d65f, API f8c2eba, kiểm bundle và DBQ mới; không dùng eb31e4d làm nguồn hiện hành |
+| G4a | partial / LOW, còn lưu ý | Data29 giữ tên model Python thật, QC xác nhận không chặn merge |
+
+Không thấy thay đổi ngoài hồ sơ sau H5, không sửa nguồn hợp đồng, mypy service, CI hoặc qc-report.md. Tự đối chiếu lại O1/B1/B2, AC01/AC02 và S01–S03: không còn HIGH/MEDIUM trong mã của ticket; G4a LOW và các hạn chế môi trường đã ghi rõ. Đặt Xong — chờ QC; PO QC độc lập Lần 3. Không dùng kết quả Lần 2 thay cho lần này.
 
 ---
 

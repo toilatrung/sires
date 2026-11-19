@@ -47,6 +47,9 @@ export function contractProjects(graph) {
 
 function generatedSchemas(program, checker, generated) {
   const names = new Map();
+  const declared = (type) => [type.getSymbol(), type.aliasSymbol].some((symbol) =>
+    symbol?.declarations?.some((node) => path.resolve(node.getSourceFile().fileName).startsWith(generated + path.sep)))
+    || (type.types ?? []).some(declared);
   for (const file of program.getSourceFiles()) {
     if (!path.resolve(file.fileName).startsWith(generated + path.sep)) continue;
     for (const node of file.statements) {
@@ -56,7 +59,7 @@ function generatedSchemas(program, checker, generated) {
       if (!schemas) continue;
       for (const schema of checker.getTypeOfSymbolAtLocation(schemas, node).getProperties()) {
         const type = checker.getTypeOfSymbolAtLocation(schema, node);
-        if (type.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection | ts.TypeFlags.Union)) {
+        if (declared(type)) {
           names.set(type, schema.name);
         }
       }
@@ -64,7 +67,7 @@ function generatedSchemas(program, checker, generated) {
   }
   // Add paths for inline objects after roots, so named schemas keep their own names.
   const visit = (type, name) => {
-    if (!(type.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection | ts.TypeFlags.Union))) return;
+    if (!declared(type)) return;
     if (names.has(type)) return;
     names.set(type, name);
     descend(type, name);

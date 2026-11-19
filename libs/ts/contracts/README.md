@@ -36,7 +36,7 @@ pnpm --filter @sires/contracts generate:ts
 pnpm --filter @sires/contracts generate:python
 ```
 
-**Giới hạn AsyncAPI đang cần PO chốt (PID-00008, QC G2):** `EventEnvelope.data` có `additionalProperties: true`. Type message TS giao với envelope giữ index signature nên đọc/ghi trường lạ trong `data` hiện vẫn đạt; trường lạ ở cấp envelope bị bắt. Test trên hợp đồng thật ghi nhận cả hai hành vi, không có nghĩa phần `data` đã được kiểm kín. Python vẫn bắt trường lạ trên model data cụ thể. Xem `agent/execution/PID-00008/report.md` trước khi dùng kết quả đạt làm baseline.
+**AsyncAPI data (PID-00008 H5, PO 19/11/2026):** type message TS dùng schema `data` riêng của message thay cho `data` chung của `EventEnvelope`, kể cả qua `$ref`/`allOf`. Bộ sinh biến đổi AST TypeScript thành `Omit<kiểu gốc, 'data'> & { data: kiểu riêng }`, giữ tính bắt buộc của trường từ envelope. Trường lạ trong data cụ thể bị compiler bắt khi đọc/ghi; nếu schema data riêng cho phép trường động thì vẫn giữ quyền đó. Type `EventEnvelope`, hợp đồng nguồn và đầu ra Python giữ nguyên.
 
 Type AsyncAPI xuất qua package, map đủ payload theo tên message:
 

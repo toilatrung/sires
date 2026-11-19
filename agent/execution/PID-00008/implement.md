@@ -1,7 +1,7 @@
 # PID-00008 — Triển khai
 
 - **Ticket:** [PID-00008](../../../docs/tickets/issues/PID-00008/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 19/11/2026 (Lần 2)
+- **Cập nhật:** 19/11/2026 (Lần 3)
 
 ## 1. Luồng đã triển khai
 
@@ -18,11 +18,12 @@
 
 | Thành phần | Loại | Vị trí | Làm gì | Vì sao ảnh hưởng cao | Bất biến | Test |
 | --- | --- | --- | --- | --- | --- | --- |
-| checkDrift | Điều phối | `scripts/check-drift.mjs:200` | Sinh lại rồi kiểm hai ngôn ngữ, tổng hợp mã lỗi | Điểm vào AC01/AC02 | Không báo đạt nếu có lỗi hoặc thiếu uv | check-drift.spec.mjs › EC03/EC04/EC07, lệnh toàn repo |
+| checkDrift | Điều phối | `scripts/check-drift.mjs:203` | Sinh lại rồi kiểm hai ngôn ngữ, tổng hợp mã lỗi | Điểm vào AC01/AC02 | Không báo đạt nếu có lỗi hoặc thiếu uv | check-drift.spec.mjs › EC03/EC04/EC07, lệnh toàn repo |
 | contractProjects | Duyệt graph | `scripts/check-drift.mjs:36` | Tìm consumer trực tiếp/gián tiếp qua graph Nx | Không bỏ sót project chỉ khai phụ thuộc | Chống vòng lặp, không quét project ngoài dependency | test Nx graph |
 | generatedSchemas | Compiler API | `scripts/check-drift.mjs:48` | Tra kiểu schema bao ngoài và object lồng | Tên schema/message allOf trong AC01 | Ưu tiên kiểu schema đầy đủ trước các thành phần giao | Test allOf tạm và hợp đồng thật, Partial, nested |
-| typescriptDiagnostics | Compiler API | `scripts/check-drift.mjs:109` | Kiểm semantic và xác nhận declaration của kiểu | Báo đúng trường/schema cho AC01 | Không gán lỗi nội bộ thành lệch hợp đồng chỉ vì tên giống nhau | EC01 đọc/ghi object; EC02 lỗi nội bộ và class trùng tên |
-| checkPython | Adapter | `scripts/check-drift.mjs:172` | Chạy helper tại project/fixture, tổng hợp lỗi | Nối Node CLI với mypy | Giữ mã lỗi, stdout/stderr của checker | EC06, lệnh toàn repo |
+| typescriptDiagnostics | Compiler API | `scripts/check-drift.mjs:112` | Kiểm semantic và xác nhận declaration của kiểu | Báo đúng trường/schema cho AC01 | Không gán lỗi nội bộ thành lệch hợp đồng chỉ vì tên giống nhau | EC01 đọc/ghi object; EC02 lỗi nội bộ và class trùng tên |
+| checkPython | Adapter | `scripts/check-drift.mjs:175` | Chạy helper tại project/fixture, tổng hợp lỗi | Nối Node CLI với mypy | Giữ mã lỗi, stdout/stderr của checker | EC06, lệnh toàn repo |
+| messageDataTypes | Biến đổi AST TS | `scripts/generate.mjs:71` | Thay data chung bằng data riêng cho type message | H5, AC01/EC10 | Giữ required, EventEnvelope, nguồn schema và đầu ra Python | Test ref/allOf, giữ id/data bắt buộc, CLI và fixture data thật |
 | generated_accesses | Phân tích AST | `scripts/check-drift-python.py:78` | Xác nhận kiểu receiver từ import/annotation, theo root/nested field | Gắn model chuẩn cho lỗi Python | Phân biệt generated với class nội bộ | model root, client, local-model và project skip imports |
 | main | Mypy adapter | `scripts/check-drift-python.py:146` | Giữ project check, thêm consumer check, xuất JSON | Không bỏ qua model vì cấu hình follow_imports=skip | Không sửa config hay file sinh | Python valid/invalid, fixture project có override skip |
 
@@ -40,7 +41,9 @@
 - Fixture cố ý sai nằm trong scripts/__fixtures__, không nằm trong src hoặc service thật; không bị đưa vào build TypeScript của contracts. Test Python sinh model vào workspace tạm riêng để không đụng đầu ra của sires-common:test khi CI chạy song song.
 - Không gắn check-drift vào workflow: thuộc PID-00009. Không kiểm thay đổi phá vỡ/phiên bản, route controller hoặc routing key tĩnh (N2–N4, N6); mâu thuẫn nguồn chỉ ghi trong baseline.
 - Mọi đường gọi checker đều kiểm lại sau generate; không có --skip-generate hoặc cache kết quả có thể che type cũ.
-- G2: chưa đổi bộ sinh hoặc hợp đồng; TS vẫn cho trường lạ trong data có index signature. Test thật ghi nhận giới hạn và kiểm cấp envelope; quyết định thuộc PO, theo report Lần 2. G4a: nhãn Python Data29 giữ tên model thực tế do bộ sinh đặt, chưa đổi tên model.
+- H5/G2 (Lần 3): `messageDataTypes()` trong generate.mjs đọc AST components.schemas của đầu ra openapi-typescript. Hàm duyệt property data, intersection và tham chiếu indexed-access, có tập seen chống vòng lặp; bỏ kiểu data đến từ EventEnvelope khỏi tập data cụ thể, giữ cờ required từ mọi thành phần. Chỉ schema message được biến đổi thành `Omit<kiểu gốc, 'data'> & { data: kiểu riêng }`. Data cụ thể qua nhiều allOf vẫn giao với nhau, không giao với chỉ mục index của envelope; thứ tự allOf không quyết định envelope có ghi đè schema riêng hay không. EventEnvelope và AST schema dùng cho Python không đổi. Test bảo toàn id/data bắt buộc, data qua ref/allOf, envelope mở và file nguồn không thay đổi.
+- G5 (Lần 3): bảng nhãn chỉ nhận type có symbol/alias declaration nằm trong generated, hoặc union/intersection chứa kiểu như vậy. Array chuẩn có symbol Array trong lib.d.ts bị loại khỏi bảng và đường dẫn object lồng; vì thế string[] cục bộ không nhận nhãn từ requiredCapabilities. Test trên spec tạm có array property và hợp đồng thật đều giữ TS2339 nguyên văn.
+- G4a: nhãn Python Data29 giữ tên model thực tế do bộ sinh đặt, không chặn merge; chưa đổi tên model.
 
 ---
 
