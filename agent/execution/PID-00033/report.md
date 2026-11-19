@@ -1,6 +1,6 @@
 # PID-00033 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — Lần 2 (H3: nhận file tách bằng `;`; G1, G3–G5 của qc-report Lần 1)
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Luồng:** `eval` · **Giai đoạn:** PH-01
 - **Nhánh:** `eval/dataset-csv-format` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
@@ -61,7 +61,37 @@ Không có.
 
 ## Lần 2 — 19/11/2026
 
-Đang làm. Đầu việc: H3 (PO chọn phương án (b) cho EC01 ngày 19/11/2026; hồ sơ sửa ở nhánh `docs/pid-00033-ec01-semicolon`, chưa có trên main) và G1, G3, G4, G5 của `qc-report.md` Lần 1 (G2 giải quyết bằng H3; G6 để PO thử bằng Excel thật khi nghiệm thu).
+Đầu việc:
+- **H3:** PO chọn phương án (b) cho EC01 ngày 19/11/2026. Hồ sơ sửa ở worktree `docs-pid-00033-ec01`, nhánh `docs/pid-00033-ec01-semicolon`, **chưa có trên main**; Dev đọc hồ sơ từ đó.
+- **QC Lần 1:** G1, G3, G4, G5 của `qc-report.md`. G2 được giải quyết bằng H3; G6 để PO thử khi nghiệm thu.
+
+Trạng thái: S01–S03 vẫn Xong. AC: 4/4 đạt, trên cả Windows (workaround) và Linux (container).
+
+| Việc | Đã làm | Kiểm bằng |
+| --- | --- | --- |
+| H3 — nhận file tách bằng `;` | `reader.py` (`_delimiter`): dấu ngăn nhận riêng từng file theo dòng tiêu đề. `;` chỉ được nhận khi tiêu đề tách bằng `;` ra đủ cột bắt buộc của file. Tiêu đề `;` sai tên cột → lỗi `header_mismatch` ở dòng 1, không đọc dữ liệu. Mã hóa không phải UTF-8 vẫn là lỗi kèm hướng dẫn lưu lại; dấu tab vẫn là lỗi `separator`. `template/`, `sample/` giữ dấu phẩy. README nêu rằng Excel vi-VN lưu “CSV UTF-8” bằng `;` và trình kiểm nhận | `test_semicolon_header`: bộ `;` cho cùng kết quả và cùng JSONL (từng byte) như bộ `,`; nhận dạng theo từng file; tiêu đề `;` sai tên cột vẫn là lỗi. `test_wrong_encoding`. `test_excel_saved_file`: file chính Excel 16 lưu trên máy PO (BOM, `;`, CRLF) qua `check` 0 lỗi, `convert` ra cùng claims với bộ mẫu |
+| G1 — chữ số Unicode làm dừng bằng traceback | `validate.py:121`: số chỉ nhận chữ số ASCII; `2021²`, `①` thành lỗi `integer` đúng dòng, cột | `test_other_errors_by_row` |
+| G3 — README nói khác mã về cột không bắt buộc | Spec không nói cột không bắt buộc bỏ khỏi tiêu đề được hay không, nên **giữ hành vi mã**: thiếu bất kỳ cột nào của định dạng là lỗi. Sửa README mục 2, mục 4 cho khớp; thông báo lỗi của cột không bắt buộc nói rõ “mọi cột phải có, để trống được” | `test_other_errors_by_row` (`topic.csv` thiếu `note`) |
+| G4 — chữ cột của `duplicate_topic` | Lấy chữ cột từ tiêu đề thật | `test_incomplete_set` (`topic_id` ở cột B → `(B)`) |
+| G5 — `Topic.csv` khi trỏ thẳng vào một đề tài | `discover_topics` so tên theo danh sách thư mục, không phân biệt hoa thường; Windows và Linux cùng báo `file_name_case` | `test_file_name_case`. Kiểm đột biến trên Linux: mã Lần 1 làm test lỗi |
+| G6 — file do Excel lưu | Dev lưu một file bằng Excel 16 thật trên máy PO, đưa qua trình kiểm và giữ làm fixture. PO vẫn tự thử khi nghiệm thu | `test_excel_saved_file` |
+
+File tạo / sửa ở Lần 2 (từ `eval/`):
+- Sửa: `src/sires_eval/datasets/reader.py`, `src/sires_eval/datasets/validate.py`, `tests/test_format.py`, `datasets/README.md`.
+- Tạo: `tests/fixtures/excel-vi-VN-claims.csv`, `tests/fixtures/.gitattributes`.
+
+Kết quả kiểm chi tiết ở `self-qc.md`, mục Lần 2:
+- 20 test đạt trên Windows (workaround) và trên Linux (container `uv:python3.12-bookworm-slim`, Docker WSL).
+- ruff, mypy strict sạch; add-license sạch; `check-tracks` chỉ ra `eval`, `repo`.
+- Không chạy được: `pnpm nx`, vì Nx không dựng được graph khi có worktree. CI chạy.
+
+**Cần PO:**
+- **Merge hồ sơ trước hoặc cùng mã.** Mã Lần 2 theo hồ sơ ở nhánh `docs/pid-00033-ec01-semicolon`. Nhánh đó cần lên main trước, hoặc cùng PR mã của ticket này, để QC độc lập đối chiếu được trên main.
+- **Đề xuất ASM (chưa cấp mã) — nghĩa của “ra đúng tên cột” ở H3.** Dev hiểu là tiêu đề tách bằng `;` có đủ **cột bắt buộc** của file. Cột không bắt buộc bị thiếu thì vẫn nhận `;` và báo `missing_column`, như file dấu phẩy. PO xác nhận khi review.
+- **Đề xuất (không bắt buộc) — mẫu dấu `;` cho máy vi-VN.** Mẫu giữ dấu phẩy theo H3, nên trên máy vi-VN, nhấp đúp file mẫu thì cả tiêu đề nằm ở ô A1. README hướng dẫn tách một lần bằng Data > Text to Columns; Dev đã thử bằng Excel 16 trên máy PO: tách đúng, lưu ra `;`. Nếu PO muốn bỏ bước này, có thể thêm bản mẫu tách bằng `;` (cần sửa H3, vì H3 ghi mẫu giữ `,`).
+- **Còn mở:** không có. Mục “Còn mở” Excel và dấu `;` của Lần 1 đã đóng bằng H3.
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00033` cho Lần 2. Dev commit mã và mở PR khi được yêu cầu. PO lưu thử một file bằng Excel của mình rồi chạy `check` (G6), và đọc thử README.
+- **Tài liệu đi kèm:** `eval/tests/fixtures/excel-vi-VN-claims.csv`, file Excel 16 lưu trên máy PO ngày 19/11/2026; dùng cho S02 (H3) và AC03.
 
 ---
 
