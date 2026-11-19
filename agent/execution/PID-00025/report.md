@@ -3,7 +3,7 @@
 **Trạng thái:** Đang làm — dừng ở Lần 2: thiếu API key cho phép đo bổ sung
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
-- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** chưa mở
+- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, chờ key và số đo bổ sung
 - **Cập nhật:** 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -190,7 +190,7 @@ Không có.
 - **Còn mở:** chất lượng Semantic Scholar và hai lĩnh vực chưa lấy được mẫu
   OpenAlex; phải đo lại khi nguồn khả dụng/key miễn phí trước khi chốt adapter.
   ASM-01/ASM-14 chưa kết luận theo H2, không có thay đổi hành vi sản phẩm.
-- **Bước tiếp theo:** QC độc lập bằng `spec-converge-skill PID-00025`;
+- **Bước tiếp theo (ghi nhận Lần 1):** QC độc lập bằng `spec-converge-skill PID-00025`;
   mã và các attachment chưa commit, chưa mở PR, chờ yêu cầu của PO.
 - **Tài liệu đi kèm:** `evidence/free-sources.json` (raw response và query),
   `free-sources-summary.json`, `parsers.json`, `parsers-0.0.24.json`, `parser-audit-summary.json`;
@@ -242,6 +242,19 @@ Không có.
 **Kết luận Lần 2:** phần đo tiếp đang chờ credential bên ngoài. Không đánh dấu
 yêu cầu bổ sung hoàn thành, không sửa kết quả lịch sử của Lần 1. Câu hỏi đầu vào
 đã gửi trong phiên; có key phù hợp thì chạy tiếp, không cần hỏi lại quyền đo.
+
+## Lần 3 — 19/11/2026 · Mở PR theo yêu cầu
+
+- Yêu cầu trong phiên: “đẩy pr lên, ghi rõ còn thiếu gì”.
+- Đã commit và push mã spike, dependency, fixture, bằng chứng và hồ sơ thực thi
+  lên nhánh `library/pid-00025-sources-parsers`, cập nhật nhánh từ `origin/main`.
+- PR nháp [#38](https://github.com/toilatrung/sires/pull/38), base `main`, ghi
+  rõ danh sách key còn thiếu, mẫu chưa đo đủ, chưa thử vendor thật và điều kiện
+  để kết luận ASM-01/ASM-14. Chưa chuyển Ready hoặc yêu cầu merge.
+- Kiểm tra mã gần nhất: 9/9 test, lint, typecheck, build đều đạt. Mở PR không
+  thay thế credential hoặc dữ liệu thật; yêu cầu bổ sung Lần 2 vẫn chưa xong.
+- Bước tiếp theo hiện tại: review mã trong PR nháp; cung cấp key/quota hợp lệ
+  để đo đủ, cập nhật bằng chứng và tự QC rồi mới chuyển Ready cho QC độc lập.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
