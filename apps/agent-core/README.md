@@ -92,7 +92,7 @@ pnpm nx run agent-core:test        # cần Docker (Testcontainers, PostgreSQL 16
 | `tests/test_config.py` | Token agent-core ký được verifier phía identity chấp nhận; `kid` lạ → 401 `invalid_service_token`; `/health` không đổi |
 | `tests/test_skeleton.py` | Chín gói agent ở `agents/` và `prompts/` |
 
-Máy có Smart App Control chặn `python.exe` trong `.venv`: target Nx (`uv run …`) không chạy, chạy pytest bằng trình thông dịch gốc của uv như [PID-00005 report.md Lần 3](../../agent/execution/PID-00005/report.md).
+Máy có Smart App Control chặn `python.exe` trong `.venv`: target Nx (`uv run …`) không chạy, chạy pytest bằng trình thông dịch gốc của uv như [PID-00005 report.md Lần 3](../../agent/execution/PID-00005/report.md). Trên máy đó còn hai điểm: SAC chặn cả các `.pyd` Cython của SQLAlchemy 2.1 (`sqlalchemy/**/_*_cy`), nên runner phải nạp bản `.py` đi kèm của chính các module đó ([PID-00020 self-qc.md Lần 2](../../agent/execution/PID-00020/self-qc.md)); `test_migrate_command` gọi `uv run` nên vẫn lỗi ở `.venv\Scripts\python.exe` — test này chỉ chạy được trên Linux (CI, WSL, container).
 
 ## Ranh giới
 

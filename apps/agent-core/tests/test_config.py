@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Annotated
 
 import httpx
 import pytest
@@ -51,11 +50,14 @@ def _pem_pair() -> tuple[str, str]:
 def _identity_app(keys: PublicKeySet) -> FastAPI:
     """What identity will do (PID-00048 side): verifier and guard from sires_common with the same key set."""
     auth = ServiceAuth(TokenVerifier("identity", keys))
+    # `from __future__ import annotations` turns annotations into strings that FastAPI resolves in the module's
+    # globals, where the local `auth` does not exist: the guard goes in the default value, evaluated here.
+    guard = Depends(auth.require(["agent-core"]))
     app = FastAPI()
     install_problem_handlers(app)
 
     @app.get("/internal/ping")
-    async def ping(caller: Annotated[ServiceCaller, Depends(auth.require(["agent-core"]))]) -> dict[str, str]:
+    async def ping(caller: ServiceCaller = guard) -> dict[str, str]:
         return {"sub": caller.service}
 
     return app

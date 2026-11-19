@@ -87,13 +87,20 @@ _SNAPSHOT_QUERIES: dict[str, str] = {
         FROM information_schema.role_routine_grants
         WHERE routine_schema = ANY($1::text[]) AND grantee LIKE 'sires\\_%'""",
     "text_search": """
-        SELECT n.nspname, c.cfgname, m.maptokentype, m.mapseq, d.dictname
+        SELECT n.nspname, c.cfgname, m.maptokentype, m.mapseqno, d.dictname
         FROM pg_ts_config c
         JOIN pg_namespace n ON n.oid = c.cfgnamespace
         JOIN pg_ts_config_map m ON m.mapcfg = c.oid
         JOIN pg_ts_dict d ON d.oid = m.mapdict
         WHERE n.nspname = ANY($1::text[])""",
 }
+
+
+def _hashable(value: Any) -> Any:
+    # Array columns (pg_policies.roles) come back as lists; a row must be hashable to go into a set.
+    if isinstance(value, list):
+        return tuple(_hashable(item) for item in value)
+    return value
 
 
 async def schema_snapshot(dsn: str) -> dict[str, set[tuple[Any, ...]]]:
@@ -104,7 +111,7 @@ async def schema_snapshot(dsn: str) -> dict[str, set[tuple[Any, ...]]]:
         for aspect, query in _SNAPSHOT_QUERIES.items():
             args = [] if aspect == "extensions" else [list(SCHEMAS)]
             rows = await conn.fetch(query, *args)
-            snapshot[aspect] = {tuple(row.values()) for row in rows}
+            snapshot[aspect] = {tuple(_hashable(value) for value in row.values()) for row in rows}
         return snapshot
     finally:
         await conn.close()

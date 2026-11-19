@@ -40,6 +40,8 @@ def upgrade() -> None:
     # prepared statement through SQLAlchemy does not. Same connection, same transaction as the version stamp.
     bind.exec_driver_sql("SELECT 1")
     driver_connection = bind.connection.driver_connection
+    if driver_connection is None:  # typed Optional by SQLAlchemy; fail clearly instead of an AttributeError
+        raise RuntimeError("revision 0001: không lấy được kết nối asyncpg của Alembic")
     await_only(driver_connection.execute(SQL.read_text(encoding="utf-8")))
 
 
