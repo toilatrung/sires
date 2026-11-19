@@ -35,6 +35,7 @@
 <li><code>check-drift</code> chỉ báo; không sửa <code>docs/api-design</code> và không sửa mã service. Đổi hợp đồng: Dev báo PO, PO sửa bằng contract-updating-skill, Dev pull về — <a href="../../../sections/04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>; R-01</li>
 <li><code>check-drift</code> kiểm cả TypeScript (S01) và Python (S02): mã Python dùng client và mô hình sinh (<code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code>) chạy mypy, báo cùng mẫu với TypeScript; không kiểm tĩnh route controller và routing key — H1 (PO 18/11/2026)</li>
 <li>Lỗi typecheck không do type sinh: thoát lỗi, in nguyên văn, không gắn nhãn “trường không có trong spec” — H3</li>
+<li>Type message TS dùng <code>data</code> khai trong message, không giao với <code>data</code> chung của envelope (chỉ mục index), nên trường không khai báo trong <code>data</code> cũng bị bắt; sửa bộ sinh trong PID này, hợp đồng giữ nguyên — H5</li>
 <li>Kiểm đổi phá vỡ không tăng phiên bản (spec 4.7) không thuộc PID này; PO thêm quy tắc phiên bản cho OpenAPI nội bộ rồi lập PID riêng hoặc thêm vào PID-00009 — H2</li>
 <li>PID-00007 chưa làm: ghi nhận, không chặn trạng thái Sẵn sàng; slice bắt đầu khi phần cần dùng của PID-00007 đã merge — H4 (quyết định chung D6)</li>
 <li>Cổng ra PH-01: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; PO duyệt baseline — <a href="../../../sections/02-phases-and-gates.html#ph-01">tickets 2, PH-01</a></li>
@@ -44,18 +45,19 @@
 <li>Tự QC trước khi mở PR, gồm chạy spec-converge-skill trên PID này — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a></li>
 <li>Bất biến sản phẩm (agent đề xuất, System kiểm soát, Researcher quyết định; provenance; cách ly context): không áp dụng trực tiếp — ticket là công cụ build.</li></ul>
 <h2 id="input-da-kiem">Input đã kiểm</h2>
-<ul><li><code>libs/ts/contracts/scripts/generate.mjs</code> — có; hiện sinh <code>public.ts</code> từ <code>docs/api-design/dist/openapi.bundled.yaml</code> và 9 file <code>internal/&lt;service&gt;.yaml</code>; AsyncAPI và Python do PID-00007 thêm (chưa làm)</li>
+<ul><li><code>libs/ts/contracts/scripts/generate.mjs</code> — có; hiện sinh <code>public.ts</code> từ <code>docs/api-design/dist/openapi.bundled.yaml</code> và 9 file <code>internal/&lt;service&gt;.yaml</code>; AsyncAPI (<code>messages.ts</code>) và Python do PID-00007 thêm (đã merge 18/11/2026, PR #33); H5 sửa phần sinh type message TS</li>
 <li><code>libs/ts/contracts/package.json</code> — có; target <code>generate</code>, <code>build</code>, <code>typecheck</code>, <code>lint</code>; <strong>chưa có</strong> <code>test</code>, <code>check-drift</code> (S01 thêm)</li>
 <li><code>libs/ts/contracts/scripts/check-drift.mjs</code> — tạo mới</li>
 <li>Mã đang import type sinh: chỉ <code>libs/ts/testing/src/fakes/source-adapter.fake.ts</code> (<code>LibraryInternal</code>, <code>PublicApi</code>); 11 project khai phụ thuộc <code>@sires/contracts</code> trong <code>package.json</code> nhưng chưa import — vì vậy AC01 kiểm bằng fixture</li>
 <li>Project Python có target <code>typecheck</code> (mypy): <code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code> — có</li>
 <li><code>docs/api-design</code>: <code>openapi.yaml</code>, <code>dist/openapi.bundled.yaml</code>, <code>internal/*.yaml</code>, <code>events/asyncapi.yaml</code> — có; DBQ-03, DBQ-04 đã sửa 11/11/2026</li>
 <li>Lệnh gộp lại bản công khai: <code>npx @redocly/cli@2.11.1 bundle openapi.yaml -o …</code> — <code>docs/api-design/README.md</code></li>
-<li><a href="../../PID-00007/index.html">PID-00007</a> — Sẵn sàng, chưa làm (ghi nhận, không chặn — H4)</li></ul>
+<li><a href="../../PID-00007/index.html">PID-00007</a> — đã merge 18/11/2026 (PR #33); lúc làm rõ chưa làm (ghi nhận, không chặn — H4)</li></ul>
 <h2 id="output-phai-tao">Output phải tạo</h2>
 <ul><li>O1 <code>libs/ts/contracts/scripts/check-drift.mjs</code>: kiểm lệch spec → S01 (TypeScript), S02 (Python, H1)</li>
 <li>Target Nx <code>check-drift</code>, <code>test</code> trong <code>libs/ts/contracts/package.json</code>, test và fixture của script → S01, S02</li>
-<li>Mục “Baseline hợp đồng” trong <code>agent/execution/PID-00008/report.md</code> (spec mục 6, AC02) → S03</li></ul>
+<li>Mục “Baseline hợp đồng” trong <code>agent/execution/PID-00008/report.md</code> (spec mục 6, AC02) → S03</li>
+<li>Sửa <code>libs/ts/contracts/scripts/generate.mjs</code>: type message TS theo H5 → S01</li></ul>
 <h2 id="thuat-ngu">Thuật ngữ</h2>
 <ul><li>Lệch spec = mã dùng trường hoặc kiểu không có trong type sinh từ <code>docs/api-design</code> ở lần sinh mới nhất.</li>
 <li>Baseline hợp đồng = bộ <code>docs/api-design</code> phiên bản <code>0.1.0-mvp</code> mà PO duyệt ở cổng PH-01.</li>
