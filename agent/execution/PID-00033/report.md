@@ -1,10 +1,10 @@
 # PID-00033 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Đang làm — Lần 3 (G7, G8 của qc-report Lần 2)
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Luồng:** `eval` · **Giai đoạn:** PH-01
 - **Nhánh:** `eval/dataset-csv-format` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026 (Lần 2)
+- **Cập nhật:** 19/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -92,6 +92,10 @@ Kết quả kiểm chi tiết ở `self-qc.md`, mục Lần 2:
 - **Còn mở:** không có. Mục “Còn mở” Excel và dấu `;` của Lần 1 đã đóng bằng H3.
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00033` cho Lần 2. Dev commit mã và mở PR khi được yêu cầu. PO lưu thử một file bằng Excel của mình rồi chạy `check` (G6), và đọc thử README.
 - **Tài liệu đi kèm:** `eval/tests/fixtures/excel-vi-VN-claims.csv`, file Excel 16 lưu trên máy PO ngày 19/11/2026; dùng cho S02 (H3) và AC03.
+
+## Lần 3 — 19/11/2026
+
+Đang làm. Đầu việc: G7 (ô số dài hơn 4.300 chữ số làm trình kiểm dừng bằng traceback) và G8 (chú thích `LIST_SEPARATOR` chưa theo H3) của `qc-report.md` Lần 2.
 
 ---
 
