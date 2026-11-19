@@ -147,14 +147,16 @@ def test_framework_http_errors_use_catalog_codes() -> None:
         (403, "forbidden"),
         (412, "precondition_failed"),
         (413, "payload_too_large"),
+        (415, "unsupported_media_type"),
         (428, "precondition_required"),
+        (429, "rate_limited"),
         (503, "service_unavailable"),
     ):
         body = _problem(client.get(f"/raise/{status}"), status, code)
         assert "detail" not in body  # Starlette's English reason phrase is not echoed
 
     # No generic code for these statuses: the service must raise ProblemError with a specific code.
-    for status in (409, 415, 422, 429, 500, 502):
+    for status in (409, 418, 422, 500, 502):
         _problem(client.get(f"/raise/{status}"), 500, "internal_error")
 
 
