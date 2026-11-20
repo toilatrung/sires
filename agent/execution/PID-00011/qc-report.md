@@ -1,6 +1,6 @@
 # PID-00011 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH; còn 2 MEDIUM, 4 LOW (Lần 1, 20/11/2026)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH; còn 1 MEDIUM, 4 LOW (Lần 1, 20/11/2026; G1 đã xử lý cùng ngày theo yêu cầu PO, xem “Cập nhật sau Lần 1”)
 
 - **Ticket:** [PID-00011](../../../docs/tickets/issues/PID-00011/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -25,6 +25,8 @@ Phạm vi đã soi: `infra/terraform/` (6 module, `envs/staging`, `envs/producti
 | G6 | DEC-58; khung `agent/execution/PID-Template/report.md`, `self-qc.md` | partial | LOW | `agent/execution/PID-00011/report.md:6` còn “**PR:** chưa mở” trong khi PR #43 đã mở (taskboard đọc dòng này); `report.md:27` “Chờ GitHub Actions” trong khi CI đã đạt; `report.md:33-35` mục 6 thiếu các dòng của khung. `self-qc.md:28-34` không có mục 4 “Tự kiểm” và mục 5 không có bảng G như `PID-Template/self-qc.md:51-57`, nên G1, G2, G4 không được ghi | Dev cập nhật khi chạy Lần 2: dòng PR, mục 4, mục 6 của `report.md`; mục 4 và bảng G mục 5 của `self-qc.md` |
 
 Không có `missing`. Không có CRITICAL, HIGH.
+
+**Cập nhật sau Lần 1 — 20/11/2026 (PO yêu cầu trong phiên):** G1 đã xử lý: ba commit của Dev được ký lại bằng khóa của PO (giữ tác giả, thông điệp, nội dung; viết lại nhánh, force-push có lease): `3212f11` → `89e9a59`, `40bcba0` → `6f7940f`, `2a1470b` → `ad0f267`; commit QC `bffd6ae` → `a978632`. Tree giống hệt trước khi ký lại. Các SHA cũ trong báo cáo này là SHA trước khi ký lại. Merge kiểu nào cũng được; vẫn cần PO bypass vì điều kiện code owner review.
 
 ### AC
 
