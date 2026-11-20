@@ -48,7 +48,7 @@
 <li>Nx affected và remote cache là công cụ đã chốt — <a href="../../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-21">ADR-21</a>. Cache Nx trong CI chỉ dùng cache của GitHub Actions: không dịch vụ ngoài, không tài khoản hay secret, <code>nx.json</code> giữ <code>neverConnectToCloud</code>, PR không ghi vào cache của <code>main</code> — H1</li>
 <li>Cài phụ thuộc Python trong CI bằng <code>uv sync --all-packages --locked</code> (lock lệch thì thất bại, như <code>pnpm install --frozen-lockfile</code>) — H7</li>
 <li><code>pnpm-lock.yaml</code>, <code>uv.lock</code> không tính là luồng trong <code>check-tracks.mjs</code> (như <code>docs</code>, <code>repo</code>); job kiểm thay đổi vẫn coi lock file là file dùng chung — H8</li>
-<li>CI chạy trên runner của GitHub, repo private — kiến trúc 11.3 (AQ-02, ADR-28)</li>
+<li>CI chạy trên runner của GitHub, repo public (PO 20/11/2026) — kiến trúc 11.3 (AQ-02, ADR-28)</li>
 <li>Một PR một luồng: PID này chỉ sửa thư mục của luồng <code>infra</code> (<code>.github/workflows/</code>, <code>scripts/development/</code>, <code>infra/</code>, file cấu hình gốc); không sửa <code>project.json</code>, <code>package.json</code> của luồng khác — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-1">1.4.1</a>, mục 1.3</li>
 <li>Dev tự QC trước khi đặt “Xong — chờ QC”: <code>self-qc.md</code> và spec-converge-skill trên chính ticket; PO QC độc lập và merge — <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a></li></ul>
 
