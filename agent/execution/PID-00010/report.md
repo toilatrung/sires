@@ -1,6 +1,6 @@
 ﻿# PID-00010 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00010](../../../docs/tickets/issues/PID-00010/index.html) · **Luồng:** infra · **Giai đoạn:** PH-01
 - **Người thực hiện:** congminh1705 · **Nhánh:** `infra/pid-00010-docker-helm` · **PR:** chưa mở
@@ -9,23 +9,25 @@
 
 ## 1. Tóm tắt
 
-- Slice: 0/3 xong. Hồ sơ đạt kiểm tra với 0 cảnh báo.
+- Slice: 3/3 xong. AC: 3/3 đạt cục bộ. Edge case: 3/3 đã kiểm.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Dockerfile và kiểm image | Đang làm | — |
-| S02 | Chart và Job migration | Chưa làm | — |
-| S03 | Kiểm chart và tích hợp CI | Chưa làm | — |
+| S01 | Dockerfile và kiểm image | Xong | `infra/docker/` |
+| S02 | Chart và Job migration | Xong | `infra/helm/sires-service/` |
+| S03 | Kiểm chart và tích hợp CI | Xong | `scripts/development/check-charts.mjs`, `.github/workflows/ci.yml`, `package.json`, `pnpm-lock.yaml`, `infra/README.md` |
 
 ## 3. Kết quả
 
-Đã kiểm hồ sơ và tạo nhánh từ origin/main.
+Đã build và chạy gateway ở cổng theo values và agent-core ở 8101. Cả hai trả HTTP 200 tại /health và PID 1 chạy non-root. Helm lint và template đạt cho 12 service.
+
+Nx lint, typecheck, test và build thành công cho 19 project trên bản sao sạch. Kiểm giấy phép, ranh giới luồng và actionlint đạt.
 
 ## 4. Việc còn lại
 
-Triển khai và kiểm ba slice.
+Chờ chạy workflow trên GitHub và PO thực hiện QC độc lập khi mở PR.
 
 ## 5. Yêu cầu thêm
 
