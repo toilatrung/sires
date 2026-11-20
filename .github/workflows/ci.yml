@@ -27,6 +27,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,4 +46,15 @@ jobs:
       # Switch to --frozen once uv.lock is committed.
       - run: uv sync --all-packages
       - uses: nrwl/nx-set-shas@v4
+      - name: Detect chart changes
+        id: chart-changes
+        run: |
+          files=$(git diff --name-only "$NX_BASE" "$NX_HEAD" -- infra ':(glob)apps/*/deploy/**' scripts/development/check-charts.mjs)
+          if [[ -n "$files" ]]; then echo "check=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: azure/setup-helm@v4
+        if: steps.chart-changes.outputs.check == 'true'
+        with:
+          version: v3.19.0
+      - run: node scripts/development/check-charts.mjs
+        if: steps.chart-changes.outputs.check == 'true'
       - run: pnpm nx affected -t lint typecheck test build

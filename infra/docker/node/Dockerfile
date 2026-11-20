@@ -5,6 +5,7 @@
 # Image for any NestJS service: docker build -f infra/docker/node/Dockerfile --build-arg SERVICE=identity .
 FROM node:22-slim AS build
 ARG SERVICE
+ENV CI=true NX_DAEMON=false
 WORKDIR /repo
 RUN corepack enable
 COPY . .
