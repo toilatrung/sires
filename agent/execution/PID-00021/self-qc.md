@@ -20,6 +20,8 @@ Máy: Windows 11, Smart App Control bật; Docker Engine trong WSL Ubuntu-24.04 
 | `node scripts/docs/add-license.mjs --check` | 0 file thiếu (sau khi chạy `add-license.mjs` cho 16 file mới) |
 | `node scripts/docs/update-index.mjs --check` | khớp (159 PID, taskboard khớp) |
 | `node scripts/development/check-tracks.mjs --base origin/main` | `agent-core, infra, repo` — cảnh báo 2 luồng (agent-core, infra): sau merge phần infra chỉ còn YC1 (`scripts/development/`), PO yêu cầu trong phiên (report mục 5); `repo` là `AGENT.md` (YC1). `Dockerfile.dockerignore` không còn trong diff (dòng `apps/*/spikes` đến từ #51 trên `main`) |
+| PR không sửa `infra/` (quyết định B của PO): `git diff --name-only origin/main...HEAD -- infra` | 0 file |
+| Mã spike không import được: `uv run --no-sync python -I -c "importlib.util.find_spec(...)"` trong `apps/agent-core` cho `adapters`, `capabilities`, `base_url`, `errors`, `frameworks`, `loop`, `common`, `scan_secrets`, `spikes`, `agent_core.spikes`; `git grep -i spike -- apps/agent-core/src` | không module nào tìm thấy; `sys.path` không có đường dẫn `spikes`; `.pth` editable chỉ trỏ `apps/agent-core/src`; `src/` 0 chỗ nhắc spike. (Không có `-I`, chạy từ chính `apps/agent-core` thì `spikes` hiện thành namespace package vì thư mục hiện hành vào `sys.path`; service không chạy kiểu đó) |
 | Spike không vào gói: `uv build --package sires-agent-core --wheel --sdist` | wheel 30 file, 0 file spike; sdist 46 file, 0 file spike (trước khi thêm `exclude = ["spikes"]` sdist có 14 file spike) |
 | Spike không vào image: dựng thử `FROM ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim` + `COPY apps/agent-core apps/agent-core` (đúng lệnh của `infra/docker/python/Dockerfile`) với đúng `Dockerfile.dockerignore` | trước: 14 file trong `/repo/apps/agent-core/spikes/spk-01`; với bản của `main` sau merge (#51): `spike files: 0` |
 | `uv lock --check` | đạt (spike không đổi lockfile của workspace) |
@@ -77,7 +79,7 @@ Chạy theo `agent/skills/qc/spec-converge-skill/SKILL.md`, chế độ Dev tự
 | G3 | partial | LOW | 429 thật không gây được | `evidence/errors/results.jsonl` (`rate_limit_burst`: 50/50 đạt) | Theo EC03: dùng định dạng tài liệu qua proxy |
 | G4 | partial | MEDIUM | Ánh xạ “model không có” qua cổng ra `provider_unavailable` (503) thay vì `model_not_found`; HTTP 400 khác chưa có mã chuẩn (`unmapped`) | `adapters.py:214` (`map_exception` xét status trước mã trong thân); `evidence/errors/summary.md` | Giữ nguyên để đúng số đo; đề xuất quy tắc cho PID-00070 và câu hỏi cho PO (report mục 6, ý 4–5) |
 | G5 | unrequested | LOW | Thêm biến thể OpenAI Responses, biến thể `fake`, `run.ps1`, `scan_secrets.py`, `README.md` trong thư mục O1 | `implement.md` mục 3 | Công cụ đo trong O1, không đổi hành vi sản phẩm; nêu để PO biết |
-| G6 | unrequested | LOW | PR chạm luồng infra và `AGENT.md` | `check-tracks.mjs`: 2 luồng | YC1, YC2 có lời đồng ý của PO (report mục 5) nên không tính; YC1 commit riêng `0d1d4c5`; YC2 nay trùng #51 trên `main`, diff của PR không còn file đó |
+| G6 | unrequested | LOW | PR chạm luồng infra và `AGENT.md` | `check-tracks.mjs`: 2 luồng | YC1 có lời PO trong phiên (report mục 5) nên không tính, commit riêng `0d1d4c5`; YC2 theo quyết định B của PO làm ở PR infra riêng #51, diff của PR với `main` ở `infra/` là 0 file |
 | G7 | partial | LOW | Chi phí ước tính chưa cộng 32 lời gọi probe của `base_url.py` và lượt (a) đầu bị lỗi mã spike | `report.md` mục 3, Chi phí | Ghi rõ trong báo cáo; tổng vẫn dưới 0,01 USD |
 
 ---
