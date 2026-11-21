@@ -1,6 +1,6 @@
 # PID-00021 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — EC01: chưa có key chính thức Anthropic, Google; key cổng trung gian không có kênh Claude, cổng không giữ structured output của Gemini
+**Trạng thái:** Bị chặn — EC01: chưa có key chính thức Anthropic, Google, OpenAI; key cổng trung gian không có kênh Claude, cổng không giữ structured output của Gemini. PO cho merge kết luận một phần (21/11/2026, Lần 2)
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
 - **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main`
@@ -13,14 +13,14 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 - Slice: 1/3 xong. Bị chặn: S01 cho Claude và Gemini (EC01), S02 phần so với endpoint chính thức (AC03) — cùng lý do: key PO cấp là key của một cổng trung gian, không phải key chính thức của ba hãng.
 - AC: 2/5 đạt (AC04, AC05); AC01, AC02, AC03 đạt một phần (OpenAI đo thật qua cổng; Claude, Gemini, endpoint chính thức chưa đo được). Edge case: 3/4 đã giải quyết (EC02, EC03, EC04); EC01 đang áp dụng.
-- Kết luận: ASM-02 đạt với OpenAI, chưa kết luận cho Claude, Gemini; ASM-10 đạt phần token, phần chi phí không có trong phản hồi; ASM-03 đạt phần cơ chế base URL, “tương thích API chính thức” của một cổng không đủ bảo đảm năng lực. Đề xuất framework: **Pydantic AI**. Chi phí đã tiêu: ước tính dưới 0,01 USD.
+- Kết luận: ASM-02 đạt với OpenAI khi đo qua cổng trung gian (`gpt-4.1-nano`), chưa xác nhận trên endpoint chính thức; chưa kết luận cho Claude, Gemini; ASM-10 đạt phần token (cũng qua cổng), phần chi phí không có trong phản hồi; ASM-03 đạt phần cơ chế base URL, “tương thích API chính thức” của một cổng không đủ bảo đảm năng lực. Đề xuất framework: **Pydantic AI**. Chi phí đã tiêu: ước tính dưới 0,01 USD.
 - Yêu cầu thêm: 2 (YC1 quy tắc cài môi trường; YC2 loại spike khỏi image — theo quyết định B của PO làm ở PR infra riêng #51, PR này không sửa `infra/`).
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Năng lực ba provider | Chặn — OpenAI xong; Claude: cổng không có kênh Claude (HTTP 503); Gemini: cổng bỏ structured output, hết giờ chập chờn; chờ key chính thức (EC01) | tạo: `apps/agent-core/spikes/spk-01/` (`adapters.py`, `loop.py`, `common.py`, `capabilities.py`, `run.ps1`, `README.md`, `requirements.in`, `requirements.txt`); sửa: `apps/agent-core/pyproject.toml` (sdist loại `spikes`); evidence `capabilities/` |
+| S01 | Năng lực ba provider | Chặn — OpenAI xong qua cổng, chưa xác nhận trên endpoint chính thức; Claude: cổng không có kênh Claude (HTTP 503); Gemini: cổng bỏ structured output, hết giờ chập chờn; chờ key chính thức (EC01) | tạo: `apps/agent-core/spikes/spk-01/` (`adapters.py`, `loop.py`, `common.py`, `capabilities.py`, `run.ps1`, `README.md`, `requirements.in`, `requirements.txt`); sửa: `apps/agent-core/pyproject.toml` (sdist loại `spikes`); evidence `capabilities/` |
 | S02 | Base URL và ánh xạ lỗi | Chặn một phần — bảng ánh xạ lỗi (AC04) xong; base URL qua cổng và proxy cục bộ xong; chưa so với endpoint chính thức (AC03) vì không có key chính thức | tạo: `base_url.py`, `errors.py`; evidence `base_url/`, `errors/` |
 | S03 | Đề xuất framework và báo cáo | Xong — đề xuất Pydantic AI, chi phí đã tiêu; kết luận ASM đủ cho phần đo được (phần chặn ghi rõ) | tạo: `frameworks.py`, `scan_secrets.py`; `report.md`, `implement.md`, `self-qc.md`; evidence `frameworks/` |
 
@@ -59,9 +59,9 @@ Cùng schema `ResearchAnswer` (model Pydantic, lồng `Finding`, enum, số th�
 
 Đọc kết quả:
 
-- **OpenAI đạt đủ** trên cả Chat Completions và Responses: tool calling, nhiều tool một lượt, structured output strict với cả ba biến thể schema (kể cả `$ref`, `anyOf` null, mảng kiểu), output tool, vòng tool + schema, streaming, usage. Đo qua cổng: cổng chuyển nguyên tham số tới OpenAI.
+- **OpenAI đạt đủ khi đo qua cổng** trên cả Chat Completions và Responses: tool calling, nhiều tool một lượt, structured output strict với cả ba biến thể schema (kể cả `$ref`, `anyOf` null, mảng kiểu), output tool, vòng tool + schema, streaming, usage. Mọi phép đo đi qua cổng trung gian; endpoint chính thức của OpenAI từ chối key này (401 `invalid_api_key`), nên kết quả chưa được xác nhận trên OpenAI chính thức (EC01). Không có phép đo nào cho thấy cổng chuyển nguyên tham số tới OpenAI; kết quả chỉ cho thấy các tham số đã thử không bị bỏ ở đường này.
 - **Claude chưa đo được** (EC01): key không có kênh Claude. Đường mã của adapter Anthropic (SDK `anthropic` 2.12, Messages API, `output_config.format = json_schema`, `tool_choice`, stream event) đã chạy thật qua API dạng Anthropic của cổng ở lượt (c), nhưng đó là model OpenAI sau lớp dịch của cổng, không nói gì về năng lực Claude.
-- **Gemini chưa đo được trên API chính thức** (EC01): qua cổng, tool calling và output tool chạy được trên API gốc, nhưng cổng bỏ cấu hình structured output và có lời gọi hết 60 s. Đây là hành vi của cổng, không phải của Gemini.
+- **Gemini chưa đo được trên API chính thức** (EC01): qua cổng, tool calling và output tool chạy được trên API gốc, nhưng structured output không được giữ và có lời gọi hết 60 s. Kết quả này đo qua cổng, nên chưa nói được gì về Gemini chính thức; cũng như với OpenAI, chưa có phép đo nào tách được phần của cổng với phần của provider.
 - **EC02, năng lực không có**: khi đường native structured output không dùng được (ở đây do cổng), **output tool** (ép gọi một tool có `input_schema` là schema đầu ra) chạy được ở cả bốn adapter đo được. Đề xuất cho adapter: native là mặc định khi kiểm tra kết nối xác nhận được; output tool là đường dự phòng cho mọi provider, không chỉ Anthropic như kiến trúc 8.2 đang ghi.
 
 Usage đọc được (AC02):
@@ -164,13 +164,13 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
 
 | Giả định | Kết luận | Căn cứ |
 | --- | --- | --- |
-| ASM-02 (tool calling và structured output đủ cho Orchestrator, Specialist Agent; khác biệt chuẩn hóa được qua adapter) | **Đạt với OpenAI** (Chat và Responses: mọi phép thử, cả ba biến thể schema). **Chưa kết luận cho Claude và Gemini** (EC01). Adapter chuẩn hóa được ba định dạng API về một `ModelResult` (đã chạy thật cả ba qua cổng); output tool là đường dự phòng chung | S01 lượt a–e; `evidence/capabilities/` |
-| ASM-10 (usage token, chi phí đọc được từ phản hồi) | **Token: đạt** với OpenAI. Định dạng usage của Messages và `generateContent` đọc được qua cổng; chưa xác nhận trên endpoint chính thức. **Chi phí: không** provider nào trả trong phản hồi; phải tính từ bảng giá theo model và luôn ghi là ước tính (NFR-USAGE-003). Thiếu usage thì ghi `no_data` (đã kiểm) | S01 bảng usage; errors `no_usage` |
+| ASM-02 (tool calling và structured output đủ cho Orchestrator, Specialist Agent; khác biệt chuẩn hóa được qua adapter) | **Đạt với OpenAI khi đo qua cổng trung gian** (`gpt-4.1-nano`; Chat và Responses: mọi phép thử, cả ba biến thể schema); **chưa xác nhận trên endpoint chính thức OpenAI** (EC01). **Chưa kết luận cho Claude và Gemini** (EC01). Adapter chuẩn hóa được ba định dạng API về một `ModelResult` (đã chạy thật cả ba qua cổng); output tool là đường dự phòng chung | S01 lượt a–e; `evidence/capabilities/` |
+| ASM-10 (usage token, chi phí đọc được từ phản hồi) | **Token: đạt** với OpenAI khi đo qua cổng trung gian, chưa xác nhận trên endpoint chính thức. Định dạng usage của Messages và `generateContent` đọc được qua cổng; chưa xác nhận trên endpoint chính thức. **Chi phí: không** provider nào trả trong phản hồi; phải tính từ bảng giá theo model và luôn ghi là ước tính (NFR-USAGE-003). Thiếu usage thì ghi `no_data` (đã kiểm) | S01 bảng usage; errors `no_usage` |
 | ASM-03 (base URL tùy chỉnh trỏ tới endpoint tương thích API chính thức) | **Cơ chế đạt**: ba SDK nhận base URL có tiền tố đường dẫn, gọi qua proxy cho kết quả tương đương đích của nó. **Chưa so với endpoint chính thức** (không có key chính thức). Cổng “tương thích” không bảo đảm năng lực: liệt kê 173 model nhưng không có Claude, bỏ structured output với API dạng Anthropic và Gemini, từ chối `strict`, đổi ngữ nghĩa lỗi (503 cho model không có). Kiểm tra kết nối chỉ bằng liệt kê model là chưa đủ | S02; `evidence/base_url/`, `evidence/errors/` |
 
 ## 4. Việc còn lại
 
-- S01 cho Claude và Gemini, AC03 phần endpoint chính thức: cần PO cấp key chính thức của Anthropic và Google AI Studio (và OpenAI nếu muốn so cổng với endpoint chính thức), hoặc nhóm key của cổng có kênh Claude. Có key thì chạy lại theo mục 3 thành **Lần 2**: không cần sửa mã.
+- S01 cho Claude và Gemini, xác nhận OpenAI trên endpoint chính thức, AC03 phần endpoint chính thức: cần PO cấp key chính thức của Anthropic, Google AI Studio và OpenAI (với Claude có thể thay bằng nhóm key của cổng có kênh Claude, nhưng vẫn là phép đo qua cổng). Có key thì chạy lại theo mục 3 thành **Lần 3**: không cần sửa mã.
 - 429 thật chưa gây được (EC03): mã lỗi dựa trên tài liệu. Muốn kiểm thật cần key của tài khoản bậc thấp; không nên thử trên key dùng chung.
 
 ## 5. Yêu cầu thêm
@@ -197,8 +197,8 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
   5. Câu hỏi đề xuất (chưa cấp mã): HTTP 400 không thuộc 11 mã chuẩn (tham số không hợp lệ, schema bị từ chối) ánh xạ về mã nào — thêm mã mới (ví dụ `invalid_request`) hay gộp vào mã có sẵn? PO quyết, cập nhật PRD 8.6.
   6. Luồng infra: `infra/docker/python/Dockerfile` chép nguyên `apps/agent-core`, nên mã trong `apps/<service>/spikes/` vào image nếu không bị loại ở dockerignore. Đề xuất loại `apps/*/spikes` khỏi build context của mọi image service — đã làm ở **#51** (`infra/docker/python/Dockerfile.dockerignore`, `infra/docker/node/Dockerfile.dockerignore`, đã merge vào `main` tại `1fe6d66`); PR này không sửa `infra/` (YC2, quyết định B của PO).
 - **Yêu cầu hợp đồng:** không có.
-- **Còn mở:** S01 (Claude, Gemini) và AC03 (endpoint chính thức) chờ key chính thức — PO cấp key hoặc chấp nhận kết luận một phần; câu hỏi đề xuất ở mục 5 của Đề xuất.
-- **Bước tiếp theo:** PO xem PR, QC độc lập (`spec-converge-skill PID-00021`); khi có key chính thức Dev chạy Lần 2 (S01, AC03), không cần sửa mã.
+- **Còn mở:** S01 (Claude, Gemini; OpenAI trên endpoint chính thức) và AC03 (endpoint chính thức) chờ key chính thức — PO đã chấp nhận merge kết luận một phần (Lần 2); câu hỏi đề xuất ở mục 5 của Đề xuất.
+- **Bước tiếp theo:** khi có key chính thức Dev chạy Lần 3 (S01, AC03), không cần sửa mã.
 - **Tài liệu đi kèm** (mỗi thư mục: `results.jsonl` từng lời gọi, `summary.md` bảng, `environment.json` phiên bản Python và gói). Key và host của cổng đã che; `scan_secrets.py` quét 0 chỗ khớp (EC04).
   - `evidence/capabilities/openai-gpt-4.1-nano/` — S01 lượt a (AC01, AC02); `anthropic-claude-haiku-4-5/` — lượt b, bằng chứng bị chặn (EC01); `anthropic-api-gpt-4.1-nano/` — lượt c; `google-gemini-2.5-flash-lite/` — lượt d; `openai-api-gemini-2.5-flash-lite/` — lượt e.
   - `evidence/base_url/` — S02, AC03. `evidence/errors/` — S02, AC04, EC03. `evidence/frameworks/` — S03, AC05.
@@ -227,6 +227,29 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
     - `evidence/frameworks/environment.json`
     - `evidence/frameworks/results.jsonl`
     - `evidence/frameworks/summary.md`
+
+## Lần 2 — 21/11/2026
+
+Người làm: phiên do PO `toilatrung` giao, theo G3 của [qc-report.md](qc-report.md) Lần 1 và quyết định của PO bên dưới. Không sửa mã, không chạy lại phép đo, không gọi provider.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC3 | PO, 21/11/2026, trả lời câu hỏi “PR #55 (PID-00021) xử lý thế nào?” sau QC độc lập Lần 1 | “Sửa G3 rồi merge” | Trong phạm vi: sửa chữ kết luận cho đúng mức bằng chứng (G3); không đổi mã, số đo, AC. PO chấp nhận merge kết luận một phần trong khi EC01 còn áp dụng | Làm | Các dòng sửa liệt kê dưới; diff Lần 2 chỉ chạm `report.md` |
+
+### Sửa theo G3
+
+- Trạng thái đầu file và mục 4: thêm OpenAI vào danh sách chờ key chính thức (endpoint chính thức OpenAI cũng từ chối key, `evidence/base_url/results.jsonl`); lần chạy lại khi có key đổi thành Lần 3.
+- Mục 1 và mục 3 (Đọc kết quả; Kết luận theo giả định ASM-02, ASM-10): ghi OpenAI đạt **khi đo qua cổng trung gian** (`gpt-4.1-nano`), chưa xác nhận trên endpoint chính thức. Bỏ câu “cổng chuyển nguyên tham số tới OpenAI” vì không có phép đo nào chứng minh. Câu về Gemini viết theo cùng chuẩn: kết quả qua cổng không nói được gì về Gemini chính thức.
+- Không đổi: số đo, evidence, bảng S01, S02, mã spike. `self-qc.md` Lần 1 giữ nguyên làm lịch sử; chỗ lệch với QC đã ghi ở `qc-report.md` mục “Lệch với Self-QC”.
+
+### Trạng thái sau Lần 2
+
+- Vẫn **Bị chặn — EC01**. G1, G2 (HIGH, EC01) còn mở; PO cho merge PR #55 với kết luận một phần (YC3).
+- Lần này không xử lý G4 (MEDIUM, chờ PO quyết mã lỗi cho HTTP 400) và G5–G10 (LOW) của QC Lần 1.
+- Khi PO ghi ASM-02, ASM-10 vào kiến trúc 12.2: ghi đúng mức “đạt qua cổng trung gian, chưa xác nhận trên endpoint chính thức”.
+- Việc còn lại: Lần 3 khi có key chính thức (mục 4), không cần sửa mã.
 
 ---
 
