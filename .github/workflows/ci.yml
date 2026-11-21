@@ -1,7 +1,6 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# Pull request CI (architecture 11.3): affected projects only. Staging and production deploys are added in PH-02 and PH-08.
 name: CI
 
 on:
@@ -12,10 +11,57 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NX_DAEMON: 'false'
+  NX_CACHE_DIRECTORY: .nx/cache
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      mode: ${{ steps.changes.outputs.mode }}
+      base: ${{ steps.changes.outputs.base }}
+      head: ${{ steps.changes.outputs.head }}
+      affected: ${{ steps.changes.outputs.affected }}
+      ts: ${{ steps.changes.outputs.ts }}
+      python: ${{ steps.changes.outputs.python }}
+      contracts: ${{ steps.changes.outputs.contracts }}
+      dependencies: ${{ steps.changes.outputs.dependencies }}
+      docs: ${{ steps.changes.outputs.docs }}
+      workflow: ${{ steps.changes.outputs.workflow }}
+      shared: ${{ steps.changes.outputs.shared }}
+      docker: ${{ steps.changes.outputs.docker }}
+      chart: ${{ steps.changes.outputs.chart }}
+      terraform: ${{ steps.changes.outputs.terraform }}
+      node_docker: ${{ steps.changes.outputs.node_docker }}
+      python_docker: ${{ steps.changes.outputs.python_docker }}
+      images: ${{ steps.changes.outputs.images }}
+      has_images: ${{ steps.changes.outputs.has_images }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: changes
+        run: node scripts/development/ci-changes.mjs --head "$GITHUB_WORKFLOW_HEAD"
+        env:
+          GITHUB_WORKFLOW_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+
   tracks:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,57 +69,337 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: node scripts/development/check-tracks.mjs --base origin/${{ github.base_ref }}
+      - run: node scripts/development/check-tracks.mjs --base "origin/$GITHUB_BASE_REF"
 
-  build:
+  docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/docs/add-license.mjs --check
+      - run: node scripts/docs/update-index.mjs --check
+
+  typescript:
+    needs: changes
+    if: needs.changes.outputs.ts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: |
+            .nx/cache
+            .nx/ci-cache
+          key: nx-ts-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            nx-ts-${{ runner.os }}-main-
+      - run: bash infra/ci/nx-cache-db.sh restore
+        continue-on-error: true
+      - run: |
+          if [[ "$MODE" == full ]]; then
+            pnpm nx run-many -t lint typecheck test build --projects=tag:lang:ts
+          else
+            pnpm nx affected -t lint typecheck test build --base="$BASE" --head="$HEAD_SHA" --exclude=tag:lang:python
+          fi
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+          BASE: ${{ needs.changes.outputs.base }}
+          HEAD_SHA: ${{ needs.changes.outputs.head }}
+      - run: bash infra/ci/nx-cache-db.sh save
+        continue-on-error: true
+
+  python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.changes.outputs.head }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
           cache: pnpm
       - uses: astral-sh/setup-uv@v6
-      - run: node scripts/docs/add-license.mjs --check
-      - run: node scripts/docs/update-index.mjs --check
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
       - run: pnpm install --frozen-lockfile
-      # Switch to --frozen once uv.lock is committed.
-      - run: uv sync --all-packages
-      - uses: nrwl/nx-set-shas@v4
-      - name: Detect Terraform changes
-        id: terraform-changes
+      - run: uv sync --all-packages --locked
+      - uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: |
+            .nx/cache
+            .nx/ci-cache
+          key: nx-python-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            nx-python-${{ runner.os }}-main-
+      - run: bash infra/ci/nx-cache-db.sh restore
+        continue-on-error: true
+      - run: |
+          if [[ "$MODE" == full ]]; then
+            pnpm nx run-many -t lint typecheck test --projects=tag:lang:python
+          else
+            pnpm nx affected -t lint typecheck test --base="$BASE" --head="$HEAD_SHA" --exclude=tag:lang:ts
+          fi
+        env:
+          MODE: ${{ needs.changes.outputs.mode }}
+          BASE: ${{ needs.changes.outputs.base }}
+          HEAD_SHA: ${{ needs.changes.outputs.head }}
+      - run: bash infra/ci/nx-cache-db.sh save
+        continue-on-error: true
+
+  contracts:
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --all-packages --locked
+      - working-directory: docs/api-design
         run: |
-          files=$(git diff --name-only "$NX_BASE" "$NX_HEAD" -- infra/terraform)
-          if [[ -n "$files" ]]; then echo "check=true" >> "$GITHUB_OUTPUT"; fi
+          npx @redocly/cli@2.11.1 lint openapi.yaml
+          npx @redocly/cli@2.11.1 lint internal/identity.yaml internal/orchestration.yaml internal/agent-core.yaml internal/workspace.yaml internal/planning.yaml internal/library.yaml internal/research.yaml internal/manuscript.yaml internal/knowledge.yaml
+          npx @redocly/cli@2.11.1 lint events/asyncapi.yaml
+          npx @redocly/cli@2.11.1 bundle openapi.yaml -o "$RUNNER_TEMP/openapi.bundled.yaml"
+          if ! diff --strip-trailing-cr dist/openapi.bundled.yaml "$RUNNER_TEMP/openapi.bundled.yaml"; then
+            echo 'Chạy từ docs/api-design: npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml'
+            exit 1
+          fi
+      - run: pnpm nx run @sires/contracts:check-drift
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Quét các commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ -n "$BASE" && "$BASE" != 0000000000000000000000000000000000000000 ]]; then
+            git cat-file -e "$BASE^{commit}" || git fetch --no-tags origin "$BASE"
+            range="$BASE..HEAD"
+          else
+            range="HEAD"
+          fi
+          docker run --rm --network none -v "$PWD:/repo:ro" -w /repo \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            ghcr.io/gitleaks/gitleaks:v8.24.3 git --redact=100 --no-color --verbose \
+            --config /repo/infra/ci/gitleaks.toml --log-opts="$range" /repo
+
+  dependencies:
+    needs: changes
+    if: needs.changes.outputs.dependencies == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: |
+          scan_root="$RUNNER_TEMP/dependency-inputs"
+          mkdir -p "$scan_root"
+          git ls-files -z | while IFS= read -r -d '' file; do
+            case "$file" in
+              package.json|*/package.json|pyproject.toml|*/pyproject.toml|pnpm-workspace.yaml|pnpm-lock.yaml|uv.lock)
+                install -D "$file" "$scan_root/$file"
+                ;;
+            esac
+          done
+          docker run --rm -v "$scan_root:/repo:ro" aquasec/trivy:0.76.0 \
+            fs --scanners vuln --include-dev-deps --list-all-pkgs --format json /repo > "$RUNNER_TEMP/trivy.json"
+          node infra/ci/dependency-policy.mjs "$RUNNER_TEMP/trivy.json"
+
+  images:
+    needs: changes
+    if: needs.changes.outputs.has_images == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.images) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/${{ matrix.language }}/Dockerfile
+          push: false
+          tags: sires-ci/${{ matrix.service }}:${{ github.run_id }}
+          load: ${{ needs.changes.outputs.chart == 'true' && (matrix.service == 'gateway' || matrix.service == 'agent-core') }}
+          build-args: ${{ matrix.args }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }},ignore-error=true
+      - name: Export image for Helm checks
+        if: needs.changes.outputs.chart == 'true' && (matrix.service == 'gateway' || matrix.service == 'agent-core')
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: docker save "sires-ci/$SERVICE:$GITHUB_RUN_ID" | gzip > "$RUNNER_TEMP/$SERVICE.tar.gz"
+      - uses: actions/upload-artifact@v4
+        if: needs.changes.outputs.chart == 'true' && (matrix.service == 'gateway' || matrix.service == 'agent-core')
+        with:
+          name: helm-smoke-${{ matrix.service }}
+          path: ${{ runner.temp }}/${{ matrix.service }}.tar.gz
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+  helm:
+    needs: [changes, images]
+    if: always() && !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.chart == 'true' && (needs.images.result == 'success' || needs.images.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/development/check-charts.mjs
+      - uses: actions/download-artifact@v4
+        id: smoke-artifacts
+        if: needs.images.result == 'success' && (contains(fromJSON(needs.changes.outputs.images).include.*.service, 'gateway') || contains(fromJSON(needs.changes.outputs.images).include.*.service, 'agent-core'))
+        with:
+          pattern: helm-smoke-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/helm-smoke
+      - run: bash infra/ci/check-helm-images.sh
+        if: steps.smoke-artifacts.outcome == 'success'
+        env:
+          IMAGE_MATRIX: ${{ needs.changes.outputs.images }}
+
+  terraform:
+    needs: changes
+    if: needs.changes.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
       - uses: hashicorp/setup-terraform@v3
-        if: steps.terraform-changes.outputs.check == 'true'
         with:
           terraform_version: 1.13.5
           terraform_wrapper: false
-      - name: Validate Terraform configuration
-        if: steps.terraform-changes.outputs.check == 'true'
-        working-directory: infra/terraform
+      - working-directory: infra/terraform
         run: |
           terraform fmt -check -recursive -diff
           for dir in modules/* envs/staging envs/production; do
             terraform -chdir="$dir" init -backend=false -input=false -no-color
             terraform -chdir="$dir" validate -no-color
           done
-      - name: Detect chart changes
-        id: chart-changes
-        run: |
-          files=$(git diff --name-only "$NX_BASE" "$NX_HEAD" -- infra ':(glob)apps/*/deploy/**' scripts/development/check-charts.mjs)
-          if [[ -n "$files" ]]; then echo "check=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: azure/setup-helm@v4
-        if: steps.chart-changes.outputs.check == 'true'
+
+  contract-test:
+    needs: changes
+    if: needs.changes.outputs.mode == 'full' || needs.changes.outputs.affected != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
         with:
-          version: v3.19.0
-      - run: node scripts/development/check-charts.mjs
-        if: steps.chart-changes.outputs.check == 'true'
-      - run: pnpm nx affected -t lint typecheck test build
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+      - run: pnpm install --frozen-lockfile
+      - run: uv run --locked python infra/ci/openapi_selftest.py
+      - run: node infra/ci/run-project-target.mjs contract-test "$AFFECTED"
+        env:
+          AFFECTED: ${{ needs.changes.outputs.affected }}
+
+  asyncapi-payload:
+    needs: changes
+    if: needs.changes.outputs.mode == 'full' || needs.changes.outputs.affected != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.changes.outputs.head }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+      - run: pnpm install --frozen-lockfile
+      - run: uv run --locked --all-packages python infra/ci/asyncapi_selftest.py
+      - run: node infra/ci/run-project-target.mjs asyncapi-payload "$AFFECTED"
+        env:
+          AFFECTED: ${{ needs.changes.outputs.affected }}
+
+  build:
+    needs: [changes, tracks, docs, typescript, python, contracts, secrets, dependencies, images, helm, terraform, contract-test, asyncapi-payload]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      JOB_RESULTS: ${{ toJSON(needs) }}
+    steps:
+      - name: Tổng hợp kết quả
+        run: |
+          if ! gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" --paginate \
+            --jq '.jobs[] | [.name, (.conclusion // .status), (if .started_at and .completed_at then ((.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601) | tostring) else "—" end)] | @tsv' > "$RUNNER_TEMP/jobs.tsv"; then
+            echo '::warning::Không đọc được thời gian job qua API.'
+            jq -r 'to_entries[] | [.key, .value.result, "—"] | @tsv' <<< "$JOB_RESULTS" > "$RUNNER_TEMP/jobs.tsv"
+          fi
+          {
+            echo '| Job | Kết quả | Giây |'
+            echo '| --- | --- | ---: |'
+            while IFS=$'\t' read -r name result duration; do
+              printf '| %s | %s | %s |\n' "$name" "$result" "$duration"
+            done < "$RUNNER_TEMP/jobs.tsv"
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"
