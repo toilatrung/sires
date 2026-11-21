@@ -32,6 +32,8 @@ export interface TenantTestDatabase {
   adminUrl: string;
   /** Connection string of `sires_test_app`: LOGIN, NOBYPASSRLS, not the table owner. */
   appUrl: string;
+  /** Connection string of `sires_test_system`: LOGIN, BYPASSRLS — relay, consumer, jobs (database 11.2). */
+  systemUrl: string;
   /** Runs SQL as the superuser. */
   admin<R extends Record<string, unknown> = Record<string, unknown>>(text: string, values?: unknown[]): Promise<R[]>;
   stop(): Promise<void>;
@@ -39,7 +41,7 @@ export interface TenantTestDatabase {
 
 const SETUP_SQL = `
   CREATE ROLE sires_test_app LOGIN PASSWORD 'sires-test-app' NOBYPASSRLS;
-  CREATE ROLE sires_test_system NOLOGIN BYPASSRLS;
+  CREATE ROLE sires_test_system LOGIN PASSWORD 'sires-test-system' BYPASSRLS;
   CREATE ROLE sires_test_purge NOLOGIN BYPASSRLS;
   CREATE TABLE app.note (
     id           uuid PRIMARY KEY DEFAULT app.uuid_v7(),
@@ -65,6 +67,7 @@ export async function startTenantDatabase(): Promise<TenantTestDatabase> {
   const port = container.getMappedPort(5432);
   const adminUrl = `postgres://sires:sires-test@${host}:${port}/sires_test`;
   const appUrl = `postgres://sires_test_app:sires-test-app@${host}:${port}/sires_test`;
+  const systemUrl = `postgres://sires_test_system:sires-test-system@${host}:${port}/sires_test`;
 
   const admin = async <R extends Record<string, unknown>>(text: string, values?: unknown[]): Promise<R[]> => {
     const client = new Client({ connectionString: adminUrl });
@@ -82,6 +85,7 @@ export async function startTenantDatabase(): Promise<TenantTestDatabase> {
   return {
     adminUrl,
     appUrl,
+    systemUrl,
     admin,
     stop: async () => {
       await container.stop();
