@@ -9,7 +9,7 @@
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
-Người làm: agent Claude trong phiên PO `toilatrung` giao, làm thay assignee `T1xNTH` (sổ đăng ký). Lúc bắt đầu, hồ sơ ở trạng thái “Chưa sẵn sàng — chờ PO xác nhận”; PO bảo làm thẳng trong phiên (mục 5, YC1). Trong lúc làm, PO đã merge #49 (hồ sơ Sẵn sàng) vào `main`.
+Người làm: phiên do PO `toilatrung` giao, làm thay assignee `T1xNTH` (sổ đăng ký). Lúc bắt đầu, hồ sơ ở trạng thái “Chưa sẵn sàng — chờ PO xác nhận”; PO bảo làm thẳng trong phiên (mục 5, YC1). Trong lúc làm, PO đã merge #49 (hồ sơ Sẵn sàng) vào `main`.
 
 ## 1. Tóm tắt
 
