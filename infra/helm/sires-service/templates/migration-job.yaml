@@ -1,0 +1,29 @@
+{{- if .Values.migration.enabled }}
+{{- if not .Values.migration.command }}
+{{- fail "migration.command is required when migration.enabled is true" }}
+{{- end }}
+{{- if not (kindIs "slice" .Values.migration.command) }}
+{{- fail "migration.command must be an array of arguments" }}
+{{- end }}
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.service }}-migration
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- include "sires-service.podSecurity" . | nindent 6 }}
+      containers:
+        - name: migration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command:
+            {{- toYaml .Values.migration.command | nindent 12 }}
+          {{- include "sires-service.containerConfig" (dict "resources" .Values.resources "secretName" .Values.migration.secretName) | nindent 10 }}
+{{- end }}

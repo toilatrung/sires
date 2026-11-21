@@ -57,6 +57,51 @@ test('AC01: adding a message produces an exported payload type after regeneratio
   'the actual messages.check.ts must still compile after adding a message to the contract');
 });
 
+test('H5: message data through refs/allOf replaces envelope data while preserving required fields', async (t) => {
+  const options = fixture(t);
+  const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
+  options.events.components.schemas = {
+    EventEnvelope: { type: 'object', required: ['id', 'data'], properties: {
+      id: { type: 'string' }, data: { type: 'object', additionalProperties: true },
+    } },
+    Envelope: { allOf: [ref('EventEnvelope')] },
+    Data: { allOf: [{ type: 'object', required: ['provider'], properties: { provider: { type: 'string' } } },
+      { type: 'object', required: ['model'], properties: { model: { type: 'string' } } }] },
+    Fields: { type: 'object', properties: { data: ref('Data') } },
+    Payload: { allOf: [ref('Fields'), ref('Envelope')] },
+  };
+  options.events.components.messages.composed = { payload: ref('Payload') };
+  const input = path.join(options.specRoot, 'events/asyncapi.yaml');
+  const source = JSON.stringify(options.events);
+  fs.writeFileSync(input, source);
+  await generate(options);
+  assert.equal(fs.readFileSync(input, 'utf8'), source);
+  const directory = path.join(options.workspace, 'libs/ts/contracts/src/generated');
+  const consumer = path.join(directory, 'consumer.ts');
+  fs.writeFileSync(consumer, `import type { ComposedMessage, components } from './messages';
+declare const message: ComposedMessage;
+export const valid: ComposedMessage = { id: 'one', data: { provider: 'p', model: 'm' } };
+export const provider: string = message.data.provider;
+export const model: string = message.data.model;
+declare const envelope: components['schemas']['EventEnvelope'];
+export const generic: unknown = envelope.data.anyField;
+message.data.fieldNotInSpec;
+message.data.fieldNotInSpec = true;
+message.data = { provider: 'p', model: 'm', fieldNotInSpec: true };
+export const missingData: ComposedMessage = { id: 'one' };
+export const missingId: ComposedMessage = { data: { provider: 'p', model: 'm' } };
+`);
+  const program = ts.createProgram([consumer], { strict: true, noEmit: true, skipLibCheck: true, types: [] });
+  const errors = ts.getPreEmitDiagnostics(program).map((error) => ({
+    line: error.file?.getLineAndCharacterOfPosition(error.start).line + 1,
+    message: ts.flattenDiagnosticMessageText(error.messageText, '\n'),
+  }));
+  assert.deepEqual(errors.map(({ line }) => line), [8, 9, 10, 11, 12], JSON.stringify(errors));
+  for (const { message } of errors.slice(0, 3)) assert.match(message, /fieldNotInSpec/);
+  assert.match(errors[3].message, /data.*missing/);
+  assert.match(errors[4].message, /id.*missing/);
+});
+
 test('EC01: invalid spec preserves the entire previous output and reports the source file', async (t) => {
   const options = fixture(t);
   await generate(options);

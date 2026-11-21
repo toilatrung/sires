@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00008</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00008</p><h1>PID-00008 — Kiểm tra code lệch spec và baseline hợp đồng</h1>
-<p class="meta">Xác nhận: PO duyệt 18/11/2026 · Soạn 05/11/2026 · Làm rõ 17/11/2026, nhận câu trả lời 18/11/2026 theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: PO duyệt 18/11/2026 · Soạn 05/11/2026 · Làm rõ 17/11/2026, nhận câu trả lời 18/11/2026 theo spec-clarify-skill; bổ sung 19/11/2026 theo QC độc lập Lần 2 (H5) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -38,7 +38,7 @@
 <tr><th scope="row">Đợt song song</th><td>Đ2</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00007/index.html">PID-00007</a></td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#adr-14">ADR-14</a>, <a href="../../../architecture/sections/03-system-context-and-containers.html#s-3-6">kiến trúc 3.6</a>, <a href="../../sections/02-phases-and-gates.html#ph-01">cổng ra PH-01</a></td></tr>
-<tr><th scope="row">Làm rõ</th><td>17/11/2026 · spec-clarify-skill (lô PH-01, không hỏi PO trong phiên); 18/11/2026 · PO chấp nhận đề xuất I1–I3 (H1–H4)</td></tr>
+<tr><th scope="row">Làm rõ</th><td>17/11/2026 · spec-clarify-skill (lô PH-01, không hỏi PO trong phiên); 18/11/2026 · PO chấp nhận đề xuất I1–I3 (H1–H4); 19/11/2026 · PO chốt G2 của QC độc lập Lần 2 (H5)</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
 </tbody></table></div>
 
@@ -64,7 +64,8 @@
 <li><strong>Điều kiện ngoài:</strong> <a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-03">DBQ-03</a>, <a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-04">DBQ-04</a> (PO đóng 11/11/2026, hợp đồng đã sửa)</li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Tệp: <code>libs/ts/contracts/scripts/check-drift.mjs</code> — Kiểm lệch spec</li>
-<li>Báo cáo: mục baseline hợp đồng trong <code>agent/execution/PID-00008/report.md</code> (spec mục 6)</li></ul>
+<li>Báo cáo: mục baseline hợp đồng trong <code>agent/execution/PID-00008/report.md</code> (spec mục 6)</li>
+<li>Sửa tệp: <code>libs/ts/contracts/scripts/generate.mjs</code> — type message TS dùng <code>data</code> của message thay cho <code>data</code> chung của envelope (H5)</li></ul>
 <p>Chi tiết phạm vi và edge case: <a href="specs/scope.html">specs/scope.html</a>.</p>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
@@ -74,14 +75,14 @@
 <p>Bảng AC → test → slice: <a href="specs/acceptance.html">specs/acceptance.html</a>.</p>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
-<ul><li>PID phải xong trước: <a href="../PID-00007/index.html">PID-00007</a> Sinh type TS từ AsyncAPI và client Python từ hợp đồng — Sẵn sàng từ 08/11/2026 nhưng <strong>chưa làm</strong> (chưa có <code>agent/execution/PID-00007/</code>; <code>libs/ts/contracts/scripts/generate.mjs</code> hiện chỉ sinh OpenAPI công khai và 9 file <code>internal/*.yaml</code>). S01 bắt đầu được trên type OpenAPI đang có nhưng chỉ xong khi PID-00007 S01 (type AsyncAPI) đã merge; S02 cần PID-00007 S02 (client, mô hình Python); S03 cần PID-00007 xong. Phụ thuộc này được ghi nhận, không chặn trạng thái Sẵn sàng (H4, quyết định chung D6).</li>
+<ul><li>PID phải xong trước: <a href="../PID-00007/index.html">PID-00007</a> Sinh type TS từ AsyncAPI và client Python từ hợp đồng — <strong>đã merge</strong> 18/11/2026 (PR #33, <code>eb31e4d</code>). Lúc làm rõ 17/11/2026 PID này chưa làm; phụ thuộc được ghi nhận, không chặn trạng thái Sẵn sàng (H4, quyết định chung D6). H5 (19/11/2026) đổi cách <code>generate.mjs</code> của PID-00007 sinh type message TS; việc sửa làm trong PID này.</li>
 <li>OQ, AQ, DBQ: <a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-03">DBQ-03</a> (đã đóng 11/11/2026: <code>usage.recorded</code>), <a href="../../../database/sections/13-decisions-risks-and-open-issues.html#dbq-04">DBQ-04</a> (đã đóng 11/11/2026: <code>aggregate</code> bắt buộc, <code>reference.status_changed</code> có <code>metadataVersion</code>) — không chặn. Phiếu I1–I3 đã trả lời 18/11/2026 (H1–H3); không còn phiếu chặn.</li>
 <li>Hợp đồng luồng khác: không gọi service nào; chỉ đọc <code>docs/api-design</code> (PO giữ, đổi theo <a href="../../sections/04-dependencies-risks-and-questions.html#oq-103">OQ-103</a>).</li>
 <li>PID chờ PID này: <a href="../PID-00009/index.html">PID-00009</a> (gắn <code>check-drift</code> vào CI).</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Đạt: PO xác nhận 18/11/2026</td><td>Có; làm rõ 17/11/2026, câu trả lời 18/11/2026</td><td>Ghi nhận, không chặn (H4): PID-00007 chưa làm — S01 phần message, S02, S03 chờ PID-00007 merge</td><td>Không còn: I1–I3 đã chuyển vào H1–H3</td><td>Linux hoặc WSL2 (PO 06/11/2026, <a href="../PID-00007/index.html#s-5">PID-00007 H1</a>); cần Node 22, pnpm, uv; Dev kiểm bằng spec mục 2.5</td></tr>
+<tr><td>Đạt: PO xác nhận 18/11/2026</td><td>Có; làm rõ 17/11/2026, câu trả lời 18/11/2026</td><td>Đạt: PID-00007 đã merge 18/11/2026 (PR #33); lúc làm rõ ghi nhận, không chặn (H4)</td><td>Không còn: I1–I3 đã chuyển vào H1–H3; G2 của QC độc lập Lần 2 đã chốt (H5)</td><td>Linux hoặc WSL2 (PO 06/11/2026, <a href="../PID-00007/index.html#s-5">PID-00007 H1</a>); cần Node 22, pnpm, uv; Dev kiểm bằng spec mục 2.5</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
@@ -96,15 +97,18 @@
 <li>H3 (từ <a href="others/issues.html#i3">I3</a>): Lỗi typecheck không do type sinh thì <code>check-drift</code> có thoát lỗi không? → Đ: Phương án A — thoát lỗi với mọi lỗi typecheck; chỉ lỗi thuộc type sinh được gắn nhãn “trường không có trong spec”, lỗi khác in nguyên văn. · Ảnh hưởng: EC02, S01 (giữ như đã lập), S02 bước 2</li>
 <li>H4 (từ quyết định chung D6): PID phụ thuộc chưa làm có chặn trạng thái Sẵn sàng không? → Đ: Không; phụ thuộc được ghi rõ, Dev bắt đầu slice khi PID trước đã merge. · Ảnh hưởng: cổng “Phụ thuộc”; PID-00007 chưa làm ghi ở mục 3 và dòng Phụ thuộc của S01–S03</li>
 <li>PO xác nhận Sẵn sàng 18/11/2026.</li></ul>
+<h3 id="phien-3">Phiên 19/11/2026 (QC độc lập Lần 2, PO chọn hướng đề xuất của QC)</h3>
+<p>Căn cứ: <code>agent/execution/PID-00008/qc-report.md</code> Lần 2, G2 và mục “Đề xuất cho PO”; PO trả lời trong phiên “Hướng 2 trong PR”.</p>
+<ul><li>H5 (G2): Type message TS sinh từ AsyncAPI giao <code>EventEnvelope</code> với phần riêng của message; <code>EventEnvelope.data</code> có <code>additionalProperties: true</code> (<code>internal/schemas.yaml</code>) nên <code>data</code> của message mang chỉ mục index, đọc hay ghi trường không khai báo trong <code>data</code> vẫn đạt <code>check-drift</code> (37/42 message dạng envelope; phía Python bắt được). Xử lý thế nào? → Đ: Hướng 2 — sửa bộ sinh TS trong PID này, làm trong PR #35: type message dùng <code>data</code> khai trong message (kể cả qua <code>$ref</code>, <code>allOf</code> như <code>StateChange</code>) thay cho <code>data</code> chung của envelope, không giao với chỉ mục index. Hợp đồng giữ nguyên; type <code>EventEnvelope</code> dùng chung giữ nguyên; đầu ra Python giữ nguyên. Đọc hoặc ghi trường không khai báo trong <code>data</code> của message → <code>check-drift</code> thoát lỗi, nêu file:dòng:cột, tên trường và tên message. Cách hiện thực (ví dụ <code>Omit</code>, hay gộp <code>allOf</code> trước khi gọi <code>openapi-typescript</code>) Dev tự quyết, ghi ở <code>implement.md</code>. · Ảnh hưởng: P5, EC10, S01 (Làm, Kiểm, Xong khi), PID-00008-AC01; đầu ra <code>messages.ts</code> của PID-00007 (hợp đồng không đổi); test <code>check-drift.spec.mjs › real contracts …</code> đổi kỳ vọng cho <code>message-data-extra.ts</code> thành thoát lỗi</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
 <ul><li><strong>Routing key của sự kiện mâu thuẫn trong hợp đồng</strong> (QC độc lập PID-00005 phát hiện): <code>internal/schemas.yaml</code>, mô tả <code>EventEnvelope</code>: “Routing key = <code>type</code>”; <code>events/asyncapi.yaml</code> dòng 12–14: sự kiện đổi trạng thái (data là <code>StateChange</code> hoặc có <code>change</code>) thêm một đoạn con = trạng thái đích; dòng 1273 và 1296: <code>research.object_status_changed.&lt;objectType&gt;</code>, <code>manuscript.object_status_changed.&lt;objectType&gt;</code> dù data là <code>StateChange</code>. PO sửa bằng contract-updating-skill (OQ-103). Không chặn S01, S02; S03 ghi mục này vào báo cáo baseline như mâu thuẫn chưa sửa để PO quyết trước khi duyệt baseline.</li>
 <li><strong>Quy tắc phiên bản cho OpenAPI nội bộ</strong> (H2, khi PO muốn bật kiểm đổi phá vỡ): <code>docs/api-design/README.md</code> hiện chỉ có <code>/api/v2</code> cho API công khai và <code>schemaVersion</code> cho sự kiện; PO thêm quy tắc cho <code>internal/*.yaml</code> rồi lập PID riêng (hoặc thêm vào PID-00009) cho kiểm “đổi phá vỡ không tăng phiên bản”. Không chặn slice nào của PID này.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có. Phiếu <a href="others/issues.html">I1–I3</a> đã chuyển vào H1–H3 (18/11/2026); file phiếu giữ làm biên bản.</li></ul>
+<ul><li>Không có. Phiếu <a href="others/issues.html">I1–I3</a> đã chuyển vào H1–H3 (18/11/2026); file phiếu giữ làm biên bản. G2 của QC độc lập Lần 2 chốt thành H5 (19/11/2026).</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
-<tr><td><a href="specs/slices/S01-ts-drift.html">S01</a></td><td>Kiểm lệch phía TypeScript, target Nx <code>check-drift</code>, <code>test</code></td><td>PID-00008-AC01 (TS)</td><td>PID-00007 S01 đã merge</td></tr>
+<tr><td><a href="specs/slices/S01-ts-drift.html">S01</a></td><td>Kiểm lệch phía TypeScript, target Nx <code>check-drift</code>, <code>test</code>; type message TS theo H5</td><td>PID-00008-AC01 (TS)</td><td>PID-00007 S01 đã merge (PR #33)</td></tr>
 <tr><td><a href="specs/slices/S02-python-drift.html">S02</a></td><td>Kiểm lệch phía Python</td><td>PID-00008-AC01 (Python)</td><td>S01; PID-00007 S02 đã merge</td></tr>
 <tr><td><a href="specs/slices/S03-baseline-report.html">S03</a></td><td>Danh sách kiểm baseline và báo cáo cho PO</td><td>PID-00008-AC02</td><td>S01, S02; PID-00007 xong</td></tr>
 </tbody></table></div>

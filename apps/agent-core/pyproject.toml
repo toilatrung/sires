@@ -11,6 +11,18 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
   "sires-common",
+  # Migration runs in the production image (uv sync --no-dev): Alembic on SQLAlchemy async + asyncpg (H3, H4).
+  "alembic>=1.13",
+  "sqlalchemy[asyncio]>=2.0",
+]
+
+[dependency-groups]
+# Fixtures of sires_common.testing (PostgreSQL 16 + pgvector in Testcontainers); pyyaml reads deploy/values.yaml,
+# types-pyyaml types it for mypy strict.
+dev = [
+  "sires-common[testing]",
+  "pyyaml>=6",
+  "types-pyyaml>=6",
 ]
 
 [tool.uv.sources]
