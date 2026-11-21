@@ -1,10 +1,10 @@
 # PID-00002 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — sửa theo QC Lần 1 (G1–G3)
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026 (Lần 2: sửa G1–G3 của QC độc lập Lần 1, phiên do PO giao)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -59,6 +59,53 @@ Không có.
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có.
 - **Bước tiếp theo:** PO review PR #36, QC độc lập `spec-converge-skill PID-00002`, merge. PID chờ PID này: PID-00006, PID-00038–PID-00047, PID-00049, PID-00050, PID-00052, PID-00053, PID-00056, PID-00074–PID-00076, PID-00080, PID-00106.
+- **Tài liệu đi kèm:** không có.
+
+## Lần 2 — 21/11/2026
+
+Sửa theo [qc-report.md](qc-report.md) Lần 1 (18/11/2026: 0 CRITICAL, 1 HIGH, 1 MEDIUM, 1 LOW). Phiên do PO giao làm thay Dev `T1xNTH` (mục 5 dưới); Dev đã ghi “Đang làm — sửa theo QC Lần 1” từ 19/11 nhưng chưa push bản sửa, nhánh không có commit mới của Dev sau `e49466b`. Mã ở nhánh `platform/ts-outbox-inbox`, cùng PR #36: merge `origin/main` `8c95931` (commit `647b7d6`), sửa ở commit `5086f30`.
+
+### 1. Tóm tắt
+
+- G: 3/3 đã sửa (G1 HIGH, G2 MEDIUM, G3 LOW). Slice: 5/5 xong (S02, S04 sửa thêm). Bị chặn: không có.
+- AC: 15/15 đạt, test tích hợp trên PostgreSQL 16 + pgvector và RabbitMQ 4 thật (Testcontainers). Edge case: 18/18 đã giải quyết, thêm 3 tình huống mất kết nối (self-qc.md Lần 2 mục 3).
+- Yêu cầu thêm: 1 (YC1, PO giao phiên sửa).
+
+### 2. Đã sửa theo G
+
+| G | Việc QC yêu cầu | Đã làm | Test |
+| --- | --- | --- | --- |
+| G1 (HIGH) | Consumer tự kết nối lại khi connection hoặc channel đóng, có backoff, log, khai báo lại topology; `stop()` dừng hẳn; trạng thái sẵn sàng | `inbox/consumer.ts`: mất connection, channel hoặc consumer (broker hủy) → log `warn`, kết nối lại backoff mũ 2 từ 1 s tới 30 s (±20 %), khai báo lại exchange, queue cùng `queueArguments`, binding, prefetch, log `info` khi consume tiếp; `stop()` hủy vòng kết nối lại; getter `isConsuming` cho health; message chưa ack được broker giao lại và inbox bỏ trùng | `inbox.spec.ts › kết nối lại sau khi broker đóng kết nối (G1, P3)` (`rabbitmqctl close_all_connections` giữa lúc xử lý → `applied` rồi `duplicate`, consume tiếp), `› chờ broker khởi động lại rồi consume tiếp (G1, kiến trúc 11.6)` (`stop_app`/`start_app`: lệnh ghi vẫn commit, sự kiện chờ ở outbox, consume tiếp; consumer đã `stop()` không kết nối lại) |
+| G2 (MEDIUM) | Consumer khôi phục trace từ header `traceparent`, chạy handler trong span CONSUMER | `inbox/consumer.ts` `handle()`: span `consume <routing key>` kind CONSUMER, parent từ header (propagator của `startTelemetry`), thuộc tính `messaging.*`, không ghi payload | `inbox.spec.ts › handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)`: `writeEvent` cùng trace id, `emitAudit` `correlationId` = trace id, log có `trace_id` |
+| G3 (LOW) | Cách (a): giao dịch có `app.account_id` thì `writeEvent`, `emitAudit` kiểm `accountId`, lệch thì ném lỗi trước INSERT | `outbox/outbox.ts` `insertOutboxRow` → `assertTransactionAccount`: `SELECT app.current_account_id()`, lệch → `TypeError` trước INSERT; áp cho `writeEvent`, `emitAudit` và `writeCommand` có `accountId`; giao dịch `_system` không kiểm | `outbox.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)`, `audit.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)` |
+
+`libs/ts/platform/README.md` cập nhật dòng Ghi outbox, Consumer, Audit. Không đổi cách tính `request_hash`. Không thêm, đổi tên hay tách file ở Output (quy tắc 1.4.13).
+
+### 3. Kết quả kiểm
+
+`pnpm install --frozen-lockfile` đạt; `@sires/platform` `lint`, `typecheck` đạt; `test` 104/104 (16 file; 36 test của PID-00002); 3 lần chạy lặp 36/36; test mới chạy trên mã cũ đều lỗi, trên mã mới đạt; `check-tracks` `infra, platform, repo` (như Lần 1); `add-license --check`, `update-index --check` sạch. Chi tiết ở self-qc.md Lần 2.
+
+### 4. Việc còn lại
+
+Không có trong phạm vi. Span cho mỗi lượt relay và job dọn (QC Lần 1 ghi là tùy chọn) không làm ở lần này.
+
+### 5. Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC1 | PO (Trịnh Quang Trung, trong phiên điều phối, 21/11/2026) | “36 - Gọi một phiên sửa luôn đi” | Trong phạm vi: sửa G1–G3 của QC Lần 1 trên PR #36; phiên agent do PO giao làm thay Dev `T1xNTH` (PO đã comment trên PR #36 báo Dev tạm không push lên nhánh) | Làm | Commit `5086f30`; self-qc.md Lần 2 |
+
+### 6. Cần PO và tài liệu đi kèm
+
+- **Đề xuất cho PO:**
+  1. Xác nhận G3 áp cả `writeCommand` khi lệnh có `accountId` (QC nêu `writeEvent`, `emitAudit`; cả ba cùng ghi qua `insertOutboxRow` và cùng cột `account_id`).
+  2. Xác nhận `start()` lần đầu vẫn ném lỗi khi broker không tới được hoặc topology lệch (service lỗi khi khởi động, Kubernetes khởi động lại pod); tự kết nối lại chỉ áp sau lần đầu thành công.
+  3. Cho PID-00005 (bản Python, cùng luồng platform): consumer Python nhận connection từ service gọi (`EventConsumer.start(connection)`), tự phục hồi chỉ khi service dùng kết nối robust; `emit_event`, `emit_audit` chưa kiểm `accountId` như G3. Nên giữ hai bản cùng hành vi.
+  4. Span cho mỗi lượt relay và job dọn (kiến trúc 11.4 “span cho … job”, QC Lần 1 ghi tùy chọn): nếu PO muốn, làm ở lượt sau cùng luồng platform.
+  5. Các đề xuất 1–4 của Lần 1 (`request_hash`, publish `mandatory`, `queueArguments` của PID-00057, gộp ActorRef, ServiceName) vẫn chờ PO.
+- **Yêu cầu hợp đồng:** không có.
+- **Còn mở:** không có.
+- **Bước tiếp theo:** PO cho chạy QC độc lập Lần 2 (`spec-converge-skill PID-00002`); không còn CRITICAL, HIGH thì PO merge PR #36. Dev `T1xNTH` đồng bộ lại nhánh cục bộ (`git fetch origin`, `git merge --ff-only origin/platform/ts-outbox-inbox`; có commit cục bộ chưa push thì merge rồi đối chiếu với bản sửa này) trước khi làm tiếp.
 - **Tài liệu đi kèm:** không có.
 
 ---
