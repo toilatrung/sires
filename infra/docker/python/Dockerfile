@@ -14,5 +14,6 @@ COPY apps/knowledge apps/knowledge
 COPY libs/py libs/py
 COPY eval eval
 RUN uv sync --frozen --no-dev --package ${PACKAGE}
-ENV APP_MODULE=${MODULE}
-CMD ["sh", "-c", "uv run --no-sync uvicorn ${APP_MODULE}:app --host 0.0.0.0 --port 8000"]
+ENV APP_MODULE=${MODULE} PORT=8000 HOME=/tmp
+USER 1000:1000
+CMD ["sh", "-c", "exec /repo/.venv/bin/uvicorn \"$APP_MODULE:app\" --host 0.0.0.0 --port \"$PORT\""]
