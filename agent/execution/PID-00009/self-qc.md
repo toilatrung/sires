@@ -1,6 +1,6 @@
 ﻿# PID-00009 — Self-QC
 
-**Kết luận:** Chưa đạt. Còn thiếu chạy nghiệm thu trên GitHub Actions và S11–S12.
+**Kết luận:** Chưa đạt nghiệm thu hoàn toàn. CI toàn bộ tại HEAD, S11 và S12 đã đạt; còn các PR thử T1–T3, T5, T7.
 
 ## 1. Lệnh và kết quả
 
@@ -26,9 +26,9 @@
 | PID-00009-AC03 | T7 Gitleaks | Đã kiểm phát hiện, file, dòng và che log với fixture cục bộ. Chưa chạy PR thử. |
 | PID-00009-AC04 | T1 docs-only | Phân loại cục bộ đúng; chưa chạy PR thử. |
 | PID-00009-AC05 | T2 sires-common | Nx chọn đúng bốn project Python và ma trận chỉ agent-core, knowledge. Chưa chạy PR thử. |
-| PID-00009-AC06 | T4/T5 chạy toàn bộ và cache | Chế độ toàn bộ đúng cục bộ; chưa có bằng chứng cache trên GitHub. |
+| PID-00009-AC06 | T4/T5 chạy toàn bộ và cache | T4 tại HEAD đạt trên GitHub; chưa có bằng chứng cache hit của T5. |
 | PID-00009-AC07 | T1/T5 concurrency | Có cấu hình theo PR và push. Chưa chạy cặp lần chạy. |
-| PID-00009-AC08 | T1/T4 job summary | Có mã lấy thời gian và trạng thái; chưa xem summary thật trên GitHub. |
+| PID-00009-AC08 | T1/T4 job summary | T4 tại HEAD đạt; còn cần T1 để xác nhận cả job skipped. |
 
 ## 3. Edge case
 
@@ -76,6 +76,11 @@ Các file nghiệp vụ của service và hợp đồng ở docs giữ theo upst
 - Terraform fmt, init với backend tắt và validate đạt cho sáu module và hai root.
 - Actionlint, frozen install, kiểm chỉ mục tài liệu và phân loại thay đổi Helm/Terraform/Python đạt.
 - G01 còn mở: cần kết quả GitHub Actions PR #57 và develop hiện thiếu 109 commit. G02 đã xử lý: hai ticket phụ thuộc đã merge và hai job CI đã tích hợp.
+
+## Lần 5 — 22/11/2026
+
+- Rerun [44931193323](https://github.com/toilatrung/sires/actions/runs/44931193323), attempt 2, đã đạt trên commit HEAD `51befc7`.
+- G01 thu hẹp: T4 đã có bằng chứng; còn T1–T3, T5, T7 và điều kiện EC11 (`develop` phải được đồng bộ từ `main`).
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).
