@@ -3,11 +3,12 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00034](../../../docs/tickets/issues/PID-00034/index.html) · **Luồng:** `e2e` · **Giai đoạn:** PH-01
-- **Nhánh:** `e2e/pid-00034-playwright-fixtures` · **PR:** chưa mở
+- **Nhánh:** `e2e/pid-00034-playwright-fixtures` · **PR:** [#59](https://github.com/toilatrung/sires/pull/59)
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
-Kết quả mới nhất ở **Lần 2** cuối file: 2/2 slice và YC1 hoàn tất, kiểm tổng thể đạt.
+Kết quả triển khai ở **Lần 2**, thông tin bàn giao PR ở **Lần 3** cuối file.
+2/2 slice và YC1 hoàn tất; CI PR trên nền main mới đã đạt.
 Các mục 1–6 giữ bằng chứng của lượt trước, gồm lỗi đã được xử lý ở Lần 2.
 
 ## 1. Tóm tắt
@@ -77,3 +78,20 @@ chạy lại kiểm tra và ghi kết quả mới ở Self-QC, không sửa lị
   nhiều luồng được giải thích, không sửa docs/taskboard hoặc mã infra.
 - **Còn lại:** PO QC độc lập và review; Dev commit mã/PR khi được yêu cầu.
   Mã E2E và bản sửa test platform chưa commit; chỉ báo cáo trạng thái được ký và push.
+
+## Lần 3 — 21/11/2026 · bàn giao PR
+
+Người dùng yêu cầu “đẩy pr đi”. Đã commit mã và hồ sơ bằng chữ ký SSH:
+`651eb32`; merge `origin/main` tại `ae1ac60` bằng commit `5e1c897`, không có xung đột.
+Cả commit triển khai và merge được GitHub xác nhận Verified. Đã push nhánh và mở
+[PR #59](https://github.com/toilatrung/sires/pull/59) vào `main`.
+
+- `pnpm install --frozen-lockfile --ignore-scripts` và `uv sync --all-packages`: đạt.
+- Kiểm index tài liệu, hồ sơ PID và whitespace diff sau đồng bộ: đạt.
+- CI cho commit `5e1c897` sau đồng bộ main: cả `tracks` và `build` đạt,
+  [run 44926033938](https://github.com/toilatrung/sires/actions/runs/44926033938).
+  Build gồm cài lockfile, giấy phép/index và `pnpm nx affected -t lint typecheck test build`.
+- Lượt Nx local sau merge được dừng khi CI cùng mã đã hoàn tất thành công;
+  không ghi lượt local chưa kết thúc là đạt. Các kiểm tra local trước merge giữ nguyên ở Lần 2.
+- Phần mã và hồ sơ đã commit; các ghi chú “chưa commit” ở Lần 2 là lịch sử.
+- Chờ PO review và QC độc lập; không tự merge PR.

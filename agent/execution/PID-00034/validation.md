@@ -112,3 +112,25 @@ Platform trong lượt tổng thể: **105 passed (49.13s)**; agent-core **15 pa
 file nguồn thay đổi đạt; công cụ toàn repo vẫn liệt kê 14 file cache/report được sinh,
 không phải nguồn mới thiếu giấy phép. Công cụ ranh giới báo e2e/infra/platform:
 infra chỉ lockfile; platform là YC1 người dùng cho phép, được ghi trong report.
+
+## Lần 3 — 21/11/2026 · kiểm CI sau đồng bộ main
+
+Commit triển khai `651eb32`; merge main `ae1ac60` bằng commit `5e1c897`.
+GitHub verification của cả hai: `verified: true`, `reason: valid`.
+PR: https://github.com/toilatrung/sires/pull/59.
+
+CI run https://github.com/toilatrung/sires/actions/runs/44926033938 trên `5e1c897`:
+
+| Check | Trạng thái | Thời gian UTC |
+| --- | --- | --- |
+| tracks | SUCCESS | 16:42:31–16:42:37 |
+| build | SUCCESS | 16:42:32–16:45:40 |
+
+Build đã chạy kiểm giấy phép, index, pnpm frozen-lockfile, uv sync và Nx affected
+lint/typecheck/test/build. Đây là bằng chứng kiểm trên main mới sau merge.
+Lượt Nx local `--base=origin/main --parallel=2` được dừng khi CI cùng mã đã đạt;
+không ghi lượt local chưa hoàn tất là đạt. `@sires/contracts:test` (14 test) và
+`@sires/testing:test` (13 test) đã đạt trong phần local đã chạy.
+
+`pnpm install --frozen-lockfile --ignore-scripts` và `uv sync --all-packages` sau
+merge đạt; kiểm hồ sơ PID, index tài liệu và whitespace diff đạt.
