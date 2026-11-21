@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00032](../../../docs/tickets/issues/PID-00032/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
-- **Nhánh:** `sandbox-runner/pid-00032-mermaid` · **PR:** chưa mở; mã và evidence chưa commit/push, chỉ report lên nhánh theo quy tắc skill
+- **Nhánh:** `sandbox-runner/pid-00032-mermaid` · **PR:** đang mở theo yêu cầu người dùng; mã và evidence được commit/push cùng hồ sơ
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -124,10 +124,10 @@ Không tự đổi trạng thái giả định trong docs; PO xem xét cập nh�
 
 ## 4. Việc còn lại
 
-Không còn việc triển khai trong phạm vi. Chờ yêu cầu commit mã/evidence và tạo
-PR để PO QC độc lập. GitHub trả unknown_key cho commit report dù chữ ký SSH
-hợp lệ cục bộ: dev cần thêm khóa công khai hiện tại dưới loại Signing Key
-trên GitHub trước khi PR có thể đạt yêu cầu Verified. Không đọc khóa riêng.
+Không còn việc triển khai trong phạm vi. Người dùng yêu cầu “đẩy pr đi”;
+commit mã/evidence và mở PR để PO QC độc lập. Signing Key đã được người dùng
+đăng ký; GitHub xác nhận commit report `218e42b` có verified=true, reason=valid.
+Lỗi unknown_key ghi nhận trước đó đã được gỡ, không cần viết lại lịch sử.
 
 ## 5. Yêu cầu thêm
 
@@ -137,8 +137,8 @@ Không có.
 
 - **Đề xuất cho PO:** cập nhật kiến trúc 12.2 theo kết luận và giới hạn ASM-08 ở trên; không ghi docs trong ticket này.
 - **Yêu cầu hợp đồng:** không có.
-- **Còn mở:** Signing Key GitHub chưa đăng ký (unknown_key); môi trường spike không thay nghiệm thu production.
-- **Bước tiếp theo:** Dev commit mã và tạo PR khi được yêu cầu; PO chạy spec-converge-skill độc lập và xem kết luận ASM-08. Chỉ report được commit/push khi đổi trạng thái theo skill.
+- **Còn mở:** QC độc lập của PO; môi trường spike không thay nghiệm thu production.
+- **Bước tiếp theo:** PO review PR, chạy spec-converge-skill độc lập và xem kết luận ASM-08. Không tự merge.
 - **Tài liệu đi kèm:** evidence/run-1 (18 ca, source/output/metrics/inspect/requests); evidence/run-2 (4 ca hồi quy); evidence/checks (Nx, supervisor, package manifest, PDF inspection, hash source image); preflight–preflight-3 giữ lỗi và sửa harness ban đầu. Preflight-4 không đầy đủ được lưu cục bộ trong .nx, không dùng làm bằng chứng AC.
 
 ### Danh mục tệp bằng chứng
