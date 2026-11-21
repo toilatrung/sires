@@ -36,7 +36,7 @@
 </tbody></table></div>
 <h2 id="edge-case">Edge case</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
-<tr><td>EC01</td><td>Excel lưu bằng dấu <code>;</code> hoặc mã hóa cũ</td><td>Báo rõ cách lưu lại thành “CSV UTF-8”, không đoán</td><td>Spec mục 4.7</td><td><code>eval/tests/test_format.py › test_wrong_encoding</code></td><td>S02</td></tr>
+<tr><td>EC01</td><td>Excel lưu bằng dấu <code>;</code> (Windows vi-VN) hoặc mã hóa cũ</td><td>Dấu <code>;</code>: nhận khi dòng tiêu đề tách bằng <code>;</code> ra đúng tên cột của file, nhận dạng theo từng file; không ra đúng tên cột theo cả <code>,</code> lẫn <code>;</code> thì báo lỗi như hiện hành (H3). Mã hóa không phải UTF-8: báo rõ cách lưu lại thành “CSV UTF-8”, không đoán</td><td>Spec mục 4.7; H3</td><td><code>eval/tests/test_format.py › test_wrong_encoding</code>, <code>test_semicolon_header</code></td><td>S02</td></tr>
 <tr><td>EC02</td><td>Chưa đủ 5 đề tài hoặc 3 lĩnh vực</td><td>Cảnh báo, không chặn</td><td>Spec mục 4.7</td><td><code>eval/tests/test_format.py › test_incomplete_set</code></td><td>S02</td></tr>
 <tr><td>EC03</td><td>Chỉ một đề tài có <code>evidence.csv</code></td><td>Hợp lệ theo DEC-45; thiếu ở cả 5 thì cảnh báo</td><td>Spec mục 4.7</td><td><code>eval/tests/test_format.py › test_evidence_optional</code></td><td>S02</td></tr>
 <tr><td>EC04</td><td>Claim có nội dung xuống dòng, dấu phẩy</td><td>Đọc đúng theo chuẩn CSV</td><td>Spec mục 4.7</td><td><code>eval/tests/test_format.py › test_quoted_cells</code></td><td>S02</td></tr>
