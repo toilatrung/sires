@@ -1,5 +1,32 @@
 # SPK-03 — spike nguồn học thuật và parser (PID-00025)
 
+Thử SerpApi theo yêu cầu bổ sung ngày 21/11/2026:
+
+```bash
+node --env-file=.env.spk03 apps/library/spikes/spk-03/serpapi.mjs
+```
+
+Cần `SERPAPI_API_KEY` do người dùng xác nhận thuộc SerpApi. Script chỉ gọi
+`https://serpapi.com/account.json` và `/search.json`, không theo redirect.
+Trước khi search, Account API phải xác nhận Active, Free Plan, giá tháng bằng
+0, đủ ít nhất 7 lượt miễn phí và quota giờ. Nếu không xác minh được thì không
+gọi search. Tối đa 7 search/lượt; `no_cache=true` dùng quota cho kết quả mới.
+Không nâng gói hoặc mua credit. Account API trước/sau không tiêu quota search.
+
+Corpus gồm keyword, title, author; hai trang hồ sơ công khai Cliff Meyer lấy
+từ ví dụ tài liệu SerpApi; lặp lại keyword/title. Có thể đặt URL hồ sơ khác qua
+`SPK03_SCHOLAR_PROFILE_URL` (HTTPS, đúng host Scholar, một user ID). Mặc định
+20 bài/trang, offset 0/20. Hai trang phải cùng tác giả và có publication ID mới
+mới tính đạt phần kỹ thuật ASM-14. Đây không phải đăng nhập Google hoặc xác
+minh Settings/đồng danh của người dùng thật. Khoảng cách request tối thiểu 15
+giây và tăng theo quota giờ; gặp lỗi provider thì dừng, không retry.
+
+Evidence `serpapi-trial-*.json` giữ response search đã che key, quota trước/sau,
+latency và kết luận sample. Account chỉ giữ trường plan/quota, bỏ key, email,
+account ID. URL ghi log không có api_key; key chỉ được thêm khi fetch tới host
+SerpApi đã xác nhận. Secret nằm ngoài Git. Kết quả 7/7 trong sample ngắn không
+thay thế quyết định PO về điều khoản áp dụng hoặc đo ổn định dài hạn.
+
 Đo tiếp sau HTTP 429 (yêu cầu bổ sung của PO ngày 19/11/2026):
 
 Từ 21/11, có thể chọn nguồn/query còn thiếu để không gọi lại phần đã đo được:

@@ -4,9 +4,9 @@
 - **Cập nhật:** 21/11/2026
 - **Môi trường:** Ubuntu 24.04 trong WSL2, Node 22.23.3, pnpm 10.34.9;
   Docker Engine 29.8.2 có sẵn, spike HTTP/parser không cần compose.
-- **Kết luận:** Chưa hoàn tất yêu cầu bổ sung: đã có hai key API dự phòng;
-  OpenAlex đủ 9/9 query, Semantic Scholar 3/9 query và vẫn 429. Còn đo phần
-  bị giới hạn và kiểm chứng ASM-01/ASM-14 qua vendor; mã bổ sung đã đạt kiểm tra.
+- **Kết luận:** SerpApi 7/7 search thật đã đạt, ASM-14 URL hồ sơ có bằng chứng
+  kỹ thuật; ASM-01 sample ngắn đạt, còn quyết định PO về điều khoản/ổn định.
+  OpenAlex đủ 9/9 query; S2 vẫn thiếu mẫu sau 429. PR tiếp tục nháp.
 
 ## 1. Lệnh đã chạy
 
@@ -169,6 +169,35 @@ sẵn; Nx cuối chạy đạt cả bốn target, không còn việc sửa mã t
   quét 8 file đổi không có giá trị key trước commit kết quả.
 - Tự đối chiếu: G3/G4 vẫn còn HIGH cho yêu cầu bổ sung. Không đổi trạng thái
   thành Xong hoặc chuyển PR Ready; key OA/S2 không còn là blocker.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 6 — 21/11/2026 · Thử SerpApi bằng key người dùng xác nhận
+
+| Kiểm | Kết quả |
+| --- | --- |
+| Nguồn credential / endpoint | Chỉ sau khi người dùng xác nhận SerpApi mới gọi Account API SerpApi. Không gửi key sang provider khác; key ngoài Git |
+| Account preflight, trước và sau search | Active / Free Plan / 0 USD. Trước 250, sau 243 lượt còn lại, usage tháng tăng đúng 7; không mua gói/credit |
+| Live `serpapi.mjs` | 7/7 search HTTP 200/Success, 5 case paper search có 25 occurrence, 2 trang profile có 40 bài. Đúng profile ID, cùng Cliff Meyer, trang 2 có 20 citation ID mới |
+| `vitest run --dir spikes/spk-03` | Đạt: 14 test trên 3 file; 5 test SerpApi mới kiểm quota/cost gate, URL, budget, pacing, redaction/identity, 429 và phân trang bị lặp |
+| `pnpm --filter @sires/library lint` | Đạt |
+| `nx affected -t lint typecheck test build --files=…` | Đạt cả bốn target của library và 4 dependency task; 15/15 test trên 4 file; 4 dependency task dùng cache |
+| License / index / PID / diff | Đạt: license 0 file thiếu notice, index khớp, check-pid 0 cảnh báo, diff sạch |
+| Secret / account identity | Đã quét 8 file đổi, không có giá trị ba key. Evidence account/trial không có account_email/account_id; không lưu identity tài khoản |
+
+**Tự đối chiếu Lần 6:**
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G3 (còn mở) | partial | HIGH | S2 còn 6 query chưa có mẫu thành công | Lần 4/5 raw response và coverage | Giữ đúng trạng thái, không dùng SerpApi thay số đo S2 |
+| G4 (phần kỹ thuật đã giải quyết) | missing trước đây | Đã xử lý | Không còn thiếu key/quota vendor; profile URL đã thử thật | `serpapi-account-2026-11-21T13-41-24-267Z.json`, `serpapi-trial-2026-11-21T13-46-24-058Z-b071a8ef.json` | ASM-14 khả năng tích hợp trên mẫu đạt; không suy ra danh tính hồ sơ người dùng hoặc danh mục đầy đủ |
+| G6 | partial | MEDIUM | ASM-01: sample khoảng 2 phút không phải kiểm dài hạn hoặc quyết định điều khoản/phương án của PO | Trial 7/7; report Lần 6 và nguồn legal | Ghi giới hạn, đề xuất PO xem xét SerpApi; không tự ký/chốt hợp đồng, không claim SLA bằng số đo |
+
+Không dùng mock để chốt hai giả định: test chỉ kiểm mã, evidence live là căn cứ
+thử tích hợp. Account response chỉ lưu plan/quota; danh tính account và key bị
+bỏ, error/body search được che key. Không tải PDF hay gọi model/Google trực tiếp.
+User giao bổ sung vượt desk research H2: đã ghi YC2 trong report, chỉ quota free.
+Không đổi spec/AC trong docs hoặc phần adapter sản phẩm; PO cập nhật nguồn khi
+nhận kết quả theo quy trình. Mọi kết luận cũ về “chưa có key vendor” là lịch sử.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

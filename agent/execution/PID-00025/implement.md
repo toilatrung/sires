@@ -76,4 +76,25 @@ API, database, sự kiện, migration hay thay đổi service sản phẩm.
   tiếp tục dùng cơ chế đã kiểm ở Lần 2, không đưa secret vào tracked files.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## 6. Bổ sung Lần 6 — thử SerpApi
+
+Entry point mới `serpapi.mjs`: parse URL hồ sơ công khai, gọi Account API để
+xác nhận gói miễn phí/quota, chạy plan cố định 7 search có pacing rồi đọc lại
+quota. Chỉ dùng hai endpoint cố định tại `https://serpapi.com`, từ chối redirect.
+Không có dependency mới hoặc tích hợp vào NestJS/src.
+
+| Thành phần | Vai trò | Bất biến / kiểm |
+| --- | --- | --- |
+| `assertFreeQuota` | Gate trước search | Active/Free/giá 0, quota tháng và giờ đủ 7; thiếu hoặc không rõ thì không search |
+| `SerpApiClient.request` | Pacing, timeout, chặn quá 7 search, giữ evidence | Key private; chỉ thêm khi fetch tới host cố định, URL log không có key; account chỉ giữ plan/quota; lỗi provider dừng trial |
+| `profileAuthorId` | URL → user ID | HTTPS, đúng Scholar host/path, đúng một user hợp lệ; không fetch URL tùy ý |
+| `trialPlan` | Ba loại search, hai trang profile, hai search lặp | Plan 7 case, no_cache; account trước/sau là call không tiêu quota |
+| `summarizeTrial` | Đánh giá sample và phân trang | Profile phải cùng identity và có citation ID mới; không tính profile vào paper-search signals; không suy completeness có cấu trúc từ chuỗi summary |
+
+`serpapi.spec.ts` kiểm giả lập 5 tình huống quan trọng: URL giả/ID trùng bị
+loại; không search nếu quota/plan không đạt; giữ budget/pacing/redaction và bỏ
+identity account; dừng toàn lượt khi 429; không coi hai trang bị lặp là đạt ASM-14.
+Kết quả live chỉ lấy từ evidence thật, không dùng mock làm bằng chứng assumption.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

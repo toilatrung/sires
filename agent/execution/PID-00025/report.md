@@ -1,9 +1,9 @@
 # PID-00025 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — còn thiếu mẫu Semantic Scholar sau 429 và kiểm chứng ASM-01/ASM-14
+**Trạng thái:** Đang làm — SerpApi đạt thử kỹ thuật ASM-01/ASM-14; còn mẫu Semantic Scholar và quyết định PO cho ASM-01
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
-- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, đã có key nguồn dự phòng; còn mẫu bị giới hạn và kiểm chứng vendor
+- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, đã thử SerpApi 7/7; ASM-14 kỹ thuật có bằng chứng, còn S2/ASM-01 tổng thể
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -12,10 +12,11 @@
 - Slice: 3/3 xong ở mức spike Lần 1. Lần 5 chạy lại: OpenAlex vẫn đủ 9/9 query,
   34/45 paper đủ trường; S2 không có mẫu mới vì cả hai lượt dừng ở request đầu.
   Mẫu S2 trước đó vẫn giữ nguyên 3/9 query, còn 6 query chưa có mẫu thành công.
-- AC: bằng chứng khảo sát cho 4/4 AC; completeness hiện đo được ở cả hai nguồn
-  (OpenAlex 34/45, Semantic Scholar 15/15 trên mẫu lấy được), chưa chốt chất lượng
-  toàn corpus hoặc ASM-01/ASM-14. Chưa gọi dịch vụ trung gian.
-- Yêu cầu thêm: 1, xem Lần 2 bên dưới. Chưa kết luận ASM-01/ASM-14.
+- AC: bằng chứng khảo sát cho 4/4 AC theo phạm vi spike ban đầu. Lần 6 bổ sung
+  thử SerpApi thật theo chỉ định người dùng: 7/7 search thành công, hồ sơ mẫu
+  đọc được 40 công bố/2 trang. ASM-14 khả năng tích hợp đã kiểm chứng trên mẫu;
+  ASM-01 đạt sample kỹ thuật nhưng chưa chốt điều khoản/ổn định dài hạn.
+- Yêu cầu thêm: 2, xem Lần 2 và Lần 6; không còn thiếu key/quota SerpApi.
 
 ## 2. Trạng thái công việc
 
@@ -376,6 +377,95 @@ Bằng chứng mới (giữ nguyên tất cả lượt cũ):
 API trung gian thiếu key để giả lập một lần kiểm chứng. Hai key OA/S2 đã có,
 không yêu cầu cung cấp lại. PR giữ nháp; phần còn thiếu vẫn là mẫu S2 và hai
 giả định liên quan Google Scholar, không phải thiếu key API dự phòng.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 6 — 21/11/2026 · Thử Google Scholar qua SerpApi
+
+### Yêu cầu và phạm vi được bổ sung
+
+YC2: người dùng cung cấp `[key đã che] dùng key này đi`, sau đó xác nhận
+`SerpApi`. Đây là chỉ định thử tích hợp thật tiếp nối yêu cầu chạy ASM-01/14,
+vượt phần desk research H2 của hồ sơ ban đầu; **chỉ dùng quota miễn phí**.
+Không sửa docs, không mua gói, không làm adapter sản phẩm của PID-00050.
+Các đoạn “chưa gọi vendor” ở Lần 1–5 là lịch sử trước lần chạy này.
+
+Đã lưu key đúng `SERPAPI_API_KEY` ngoài Git. Chỉ sau khi người dùng xác nhận
+nhà cung cấp mới gửi key tới endpoint chính thức SerpApi; không thử key vào
+nhà cung cấp khác. Account API là read-only, không tiêu quota search theo
+[tài liệu chính thức](https://serpapi.com/account-api).
+
+### Quota và dữ liệu thực nghiệm
+
+- [Account preflight](evidence/serpapi-account-2026-11-21T13-41-24-267Z.json):
+  HTTP 200, Active, Free Plan, giá tháng **0 USD**, quota tháng **250**, còn
+  **250** lượt, hạn giờ tài khoản công bố **250**, đã dùng trong giờ **0**.
+- `serpapi.mjs` kiểm lại account trước search, chỉ chạy nếu xác nhận free quota
+  tháng/giờ đủ 7. Không tự chọn gói hoặc thêm credit. Ghi log URL không có key,
+  che key trong response/lỗi, chỉ lưu trường account plan/quota, bỏ identity.
+- [Trial đầy đủ](evidence/serpapi-trial-2026-11-21T13-46-24-058Z-b071a8ef.json):
+  bắt đầu account 13:44:23 UTC, search từ 13:44:38 tới 13:46:09 UTC; 7/7 search
+  đều HTTP 200 và `search_metadata.status=Success`, search ID khác nhau.
+  Khoảng cách bắt đầu tối thiểu 15 giây; `no_cache=true` ở cả 7 request.
+- Account sau lượt chạy vẫn Free Plan/0 USD; còn **243/250**, usage tháng **7**,
+  đúng 7 lượt miễn phí đã dùng. Không suy ra SLA dài hạn từ sample khoảng 2 phút.
+
+| Case | Thao tác | Kết quả thật |
+| --- | --- | --- |
+| keyword | `graph neural networks` | 5 kết quả, 3387 ms |
+| title | `"Attention Is All You Need"` | 5 kết quả, 2309 ms |
+| author | `author:"Yoshua Bengio"` | 5 kết quả, 2312 ms |
+| profile-0 | URL hồ sơ → author_id, offset 0, num 20 | 20 bài, Cliff Meyer, 4084 ms |
+| profile-20 | Cùng author_id, offset 20, num 20 | 20 bài mới, cùng Cliff Meyer, 7275 ms |
+| keyword-repeat | Lặp keyword, yêu cầu không dùng cache | 5 kết quả, 1830 ms |
+| title-repeat | Lặp title, yêu cầu không dùng cache | 5 kết quả, 722 ms |
+
+Năm case paper search cho 25 lần xuất hiện; cả 25 có title, link, snippet,
+publication summary, danh sách tác giả có liên kết và citation count. Năm
+được tìm thấy trong summary của 25/25; **không khẳng định venue/year là trường
+cấu trúc riêng hoặc danh sách tác giả liên kết là đầy đủ**. Không cộng 40 bài
+hồ sơ vào denominator 25 paper-search occurrence hoặc coi là deduplicate.
+
+### Kết luận ASM-14
+
+**Đã kiểm chứng khả năng đọc hồ sơ qua URL trên mẫu thật.** URL công khai từ
+[ví dụ SerpApi](https://serpapi.com/google-scholar-author-api):
+`https://scholar.google.com/citations?user=LSsXyncAAAAJ` → ID `LSsXyncAAAAJ` →
+engine `google_scholar_author`. Hai trang trả cùng tác giả **Cliff Meyer**;
+trang sau có **20 citation ID mới**, tổng 40 công bố quan sát được.
+
+Không đăng nhập Google. Không xác minh đây là hồ sơ của người dùng hiện tại,
+không khẳng định đã lấy hết danh mục hoặc đã xây Settings/Discovery sản phẩm.
+Không còn blocker “thiếu key hoặc chưa thử đọc hồ sơ” cho phần kỹ thuật ASM-14.
+
+### Kết luận ASM-01 và đề xuất cho PO
+
+**Đạt sample kỹ thuật cho tìm keyword/title/author ở nhịp thử một người dùng.**
+Cả tìm lần đầu và hai phép lặp mới đều trả kết quả; có phương thức SerpApi có
+key hoạt động thật. Chưa đo dài ngày, chưa thử tải tới hạn và không chứng minh
+mọi metadata đều đủ ở mọi query.
+
+Đã đọc lại [điều khoản SerpApi](https://serpapi.com/legal) ngày 21/11/2026:
+cấm sử dụng trái pháp luật/trái phép; phần khai thác/bán lại dịch vụ cần văn
+bản cho phép; dịch vụ/giá có thể đổi. Mục 21 công bố SLA 99,95% nhưng đây là
+nội dung hợp đồng của nhà cung cấp, không phải số đo của spike. PO cần quyết
+định phương án và điều khoản áp dụng cho cách SIRes lưu/sử dụng dữ liệu; báo
+cáo không tự kết luận tính hợp pháp ở mọi bối cảnh hoặc thay người ký hợp đồng.
+
+Đề xuất PO xem xét SerpApi làm ứng viên ưu tiên cho PID-00050 dựa trên sample
+7/7 và hồ sơ URL đã đọc được. Nếu nhận kết quả, PO cập nhật H2/AC04 của hồ sơ
+để phản ánh phép thử được giao thêm trong phiên; Dev không sửa docs.
+
+### Phần còn mở hiện tại
+
+- Semantic Scholar vẫn thiếu 6 query có mẫu thành công do 429; SerpApi thành
+  công không chẩn đoán nguyên nhân lỗi của một dịch vụ khác.
+- ASM-01: quyết định PO về điều khoản/phương án và mức ổn định cần kiểm tiếp.
+- ASM-14: phần kỹ thuật URL → hồ sơ → công bố trên mẫu đã đạt; tích hợp Settings
+  và kiểm hồ sơ người dùng thật thuộc ticket xây sản phẩm, không phải spike.
+
+Kiểm tra mã Lần 6: **15/15 test**, lint, typecheck, build đều đạt; license/index
+checks đạt và hồ sơ PID đủ với 0 cảnh báo. Đã quét 8 file đổi không chứa giá trị
+ba key; evidence không lưu email/account ID của tài khoản SerpApi.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
