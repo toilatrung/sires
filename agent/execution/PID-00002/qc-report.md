@@ -1,6 +1,6 @@
 # PID-00002 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 1 HIGH, 1 MEDIUM, 1 LOW (Lần 1, 18/11/2026). G1 (consumer không tự kết nối lại sau khi RabbitMQ đóng kết nối) chặn merge theo DEC-58; 15/15 AC và 18/18 EC đạt khi chạy thật trên PostgreSQL và RabbitMQ
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 2 LOW (Lần 2, 21/11/2026). G1, G2, G3 của Lần 1 đã xử lý, QC kiểm bằng test và probe trên PostgreSQL, RabbitMQ thật; 15/15 AC và 18/18 EC đạt; G4, G5 (LOW) không chặn merge theo DEC-58
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -91,6 +91,101 @@ Chạy trong worktree `.claude/worktrees/qc-pid-00002` (detached ở `a8f0324`),
 - **Cho hồ sơ luồng research:** `writeCommand` không đặt được `replyTo`, header `correlation_id`, nên lời gọi RPC Mermaid `sandbox.build` → `sandbox.reply` (`researchSendsSandboxJob`, `sandboxJobCompleted` trong AsyncAPI) không đi qua API này được; ghi khi làm rõ PID của research.
 - **Test PID-00001 chập chờn trên Windows:** `errors/errors.spec.ts › mã lỗi thuộc danh mục (NFR-OBS-005-AC01)` lỗi `ECONNRESET` một lần khi chạy song song; CI Linux đạt. Không thuộc PID này; theo dõi nếu lặp lại.
 - Gộp schema ActorRef, ServiceName với `service-auth` sau khi PR #34 và PR này vào main (self-qc G3, cùng luồng platform).
+
+## Lần 2 — 21/11/2026 · spec-converge-skill
+
+Người chạy: agent QC độc lập do PO giao, không mang kết luận của bên sửa. Mã nguồn: PR #36, nhánh `platform/ts-outbox-inbox`, commit `a8c81a4` (đã chứa `origin/main` `8c95931`). Bản sửa G1–G3 nằm ở commit `5086f30` do phiên PO giao làm thay Dev; `720deea`, `a8c81a4` chỉ sửa `agent/execution/PID-00002/`.
+
+Phạm vi đã đọc: `libs/ts/platform/src/inbox/consumer.ts`, `inbox.spec.ts` (toàn bộ); `outbox/outbox.ts`, `outbox.spec.ts`, `audit/audit.ts`, `audit.spec.ts`, `outbox/relay.ts` (mở kết nối, dừng), `outbox/messaging.testkit.ts`, `tenancy/transaction.ts`, `tenancy/postgres.testkit.ts`, `idempotency/idempotency.ts` (`request_hash`), `inbox/index.ts`, `src/index.ts`, `README.md`; amqplib 2.2.0 `lib/connect.js`, `lib/connection.js` (hạn `timeout` chỉ áp lúc mở rồi tắt; client không đặt heartbeat thì nhận giá trị của broker). Đối chiếu lại ticket, `acceptance.html`, `scope.html` (P1–P8, N1–N9, EC01–EC18), spec mục 3 (O1–O11), 6, 7, slice S02, S04, `docs/database/ddl/00-common.sql` (`app.current_account_id`), kiến trúc 11.4, 11.6, mục Lần 1 của file này; lời khai Lần 2 trong `report.md`, `implement.md`, `self-qc.md`.
+
+### Kiểm các G của Lần 1
+
+| G Lần 1 | Mức | Kết luận Lần 2 | Bằng chứng |
+| --- | --- | --- | --- |
+| G1 | HIGH | Đã xử lý | `inbox/consumer.ts:173–212` `connectAndConsume`: mở kết nối có hạn 10 s (`:86`, `:175`), gắn `error`, `close` cho connection và channel (`:178–188`), khai báo lại exchange, queue cùng `queueArguments`, binding, prefetch (`:189–192`) rồi consume; callback nhận `null` (broker hủy consumer) cũng tính là mất (`:199`). `lose()` `:215–224`: chỉ `Link` hiện hành gây kết nối lại, log `warn`; `scheduleReconnect`, `reconnect` `:226–251`: backoff mũ 2 từ 1 s tới 30 s, ±20 %, log `info` khi consume lại. `stop()` `:150–160` hủy hẹn giờ, chờ lần mở đang dở, hủy consumer, chờ message đang xử lý, đóng kết nối. `isConsuming` `:126`. Hai test G1 của bên sửa (`inbox.spec.ts:346`, `:406`) đạt cả 6 lượt QC chạy (toàn bộ + 5 lượt lặp). Probe QC A, B, C (mục Lệnh) phủ thêm: nhiều message đang xử lý khi mất kết nối, broker hủy consumer, mất mạng im lặng — đều consume tiếp, không áp trùng |
+| G2 | MEDIUM | Đã xử lý | `inbox/consumer.ts:271–294`: span `consume <routing key>` kind CONSUMER, parent trích từ header bằng `propagation.extract` (`:274`, getter `:89–97`), thuộc tính `messaging.*`, không ghi payload. `inbox.spec.ts › handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)` đạt 6/6 lượt: cùng trace id với header, parent là span id của header; `writeEvent` trong handler có `traceparent` của span consumer, `emitAudit` có `correlationId` = trace id, log có `trace_id`, hai dòng outbox lưu `traceparent` đó. Span cho relay và job dọn (Lần 1 ghi tùy chọn) chưa làm — không tính G |
+| G3 | LOW | Đã xử lý theo cách (a) | `outbox/outbox.ts:152–153`, `:167–173` `assertTransactionAccount`: `SELECT app.current_account_id()` (hàm của DDL `00-common.sql:47–50`, trả NULL khi chưa đặt hoặc rỗng), lệch thì `TypeError` trước INSERT. `emitAudit` ghi qua `insertOutboxRow` (`audit/audit.ts:88`) nên cũng bị kiểm; `writeCommand` có `accountId` cũng vậy. `outbox.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)`, `audit.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)` đạt 6/6: lệch → rollback cả thay đổi, không có dòng của tài khoản khác; giao dịch `_system` vẫn ghi được |
+
+Không đổi `request_hash`: `idempotency/idempotency.ts:61–63` vẫn là SHA-256 của operationId và body; `libs/ts/platform/src/idempotency/` không có commit nào sau `6ac974a` (S01–S05 của Dev). Đường dẫn, tên file khớp Output O1–O11, Lần 2 không thêm, đổi tên hay tách file (quy tắc 1.4.13); PR không chạm `docs/`.
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G4 | P3 · O2 · S02 (consumer chung của mọi service) | partial | LOW | `inbox/consumer.ts:263` gọi `onOutcome` không bắt lỗi; `:202` `void work.finally(…)` nên khi `onOutcome` ném lỗi, promise bị từ chối không ai bắt. Probe E của QC: `onOutcome` ném `metrics down` → `unhandledRejection` “Error: metrics down” (message đã ack, consumer vẫn chạy vì vitest bắt). Với Node mặc định (`--unhandled-rejections=throw`) tiến trình service dừng chỉ vì callback đo đếm lỗi. Có từ Lần 1, Lần 1 không nêu | Bọc `onOutcome` trong try/catch và log `warn` (hoặc `.catch` ở `:202`); test: `onOutcome` ném lỗi → message vẫn ack, không có unhandled rejection |
+| G5 | Kiến trúc 11.6 (“RabbitMQ gián đoạn: lệnh ghi vẫn thành công …”) · self-qc Lần 2 G7 | partial | LOW | `inbox/consumer.ts:134–147`: `start()` lần đầu ném lỗi khi broker không tới được và không tự thử lại; vòng kết nối lại chỉ chạy sau lần đầu thành công. Service nào `await consumer.start()` lúc khởi động thì pod mới (scale-out, rolling deploy, pod khởi động lại) trong lúc RabbitMQ gián đoạn không lên được, kéo theo cả phần HTTP; pod đang chạy vẫn phục hồi (probe C). Kèm theo: `stop()` khi đang có lần thử kết nối chờ lần đó hết hạn `CONNECT_TIMEOUT_MS` 10 s (`:86`), probe C đo 8,7 s — vẫn dưới thời gian chờ dừng mặc định 30 s của Kubernetes | PO chọn: (a) giữ hành vi, ghi vào README rằng service không chặn khởi động HTTP vào `start()` (gọi không `await`, tự thử lại; readiness của consumer dùng `isConsuming`); hoặc (b) thư viện thêm tùy chọn thử lại lần đầu: lỗi mạng thì vào vòng kết nối lại, lệch topology (`PRECONDITION_FAILED`) vẫn ném. Không chặn merge |
+
+### AC
+
+Mức kiểm: ô Xây, test tích hợp thật trên PostgreSQL 16 + pgvector (nạp `00-common.sql`) và RabbitMQ 4 qua Testcontainers (Docker Engine trong WSL); QC tự chạy 1 lượt toàn `@sires/platform:test` và 5 lượt 36 test của PID-00002. Lượt 3 lỗi do môi trường (mục Lệnh), không lặp lại ở lượt 4, 5 và CI.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00002-AC01 | đạt | Xây · thật | `libs/ts/platform/src/audit/audit.spec.ts › rollback không để lại outbox và Audit Event (PID-00002-AC01, DATA-PERSIST-001-AC01, NFR-DUR-001-AC01)` | Đạt 6/6 lượt (toàn bộ + 5 lượt lặp) |
+| PID-00002-AC02 | đạt | Xây · thật | `libs/ts/platform/src/inbox/inbox.spec.ts › sự kiện trùng chỉ áp một lần (PID-00002-AC02, DATA-IDEMP-005-AC01)`; thêm `› kết nối lại sau khi broker đóng kết nối (G1, P3)` | Đạt 5/6 lượt (lượt lặp 3: “only 0/2 outcomes” sau 10 s, môi trường). Nay đúng cả khi mất kết nối: message đã commit mà chưa ack được giao lại trên kết nối mới → `duplicate`, 1 tác động (test G1); probe A: 40 sự kiện qua 2 lần đóng kết nối → 40 `applied`, 4 `duplicate`, mỗi sự kiện đúng 1 tác động |
+| PID-00002-AC03 | đạt | Xây · thật | `inbox.spec.ts › bản cũ đến sau bị bỏ (PID-00002-AC03)` | Đạt 6/6 |
+| PID-00002-AC04 | đạt | Xây · thật (Nest + Fastify) | `libs/ts/platform/src/idempotency/idempotency.spec.ts › gửi lại trả kết quả lần đầu (PID-00002-AC04)` | Đạt 5/6 (lượt lặp 3: quá 30 s — test chỉ dùng PostgreSQL, không dính phần sửa Lần 2; môi trường) |
+| PID-00002-AC05 | đạt | Xây · thật | `idempotency.spec.ts › cùng khóa khác nội dung (PID-00002-AC05)` | Đạt 6/6 |
+| PID-00002-AC06 | đạt | Xây · thật | `libs/ts/platform/src/outbox/outbox.spec.ts › relay publish có confirm (PID-00002-AC06)`; `› phát lại sau khi relay dừng (EC01)` | Test AC06 đạt 6/6; EC01 đạt 5/6 (lượt lặp 3 quá 30 s) |
+| DATA-PERSIST-001-AC01 (phần thư viện) | đạt | Xây · thật | `audit.spec.ts › rollback không để lại outbox và Audit Event` | Như AC01 |
+| NFR-DUR-001-AC01 (phần thư viện) | đạt | Xây · thật | `audit.spec.ts › rollback không để lại outbox và Audit Event`; `inbox.spec.ts › chờ broker khởi động lại rồi consume tiếp (G1, kiến trúc 11.6)` | Như AC01; thêm: broker `stop_app` → lệnh ghi vẫn commit, sự kiện chờ ở outbox, `start_app` → relay phát, consumer áp đúng 1 lần (6/6). Kịch bản duyệt Plan rồi khởi động lại thuộc PID-00049 |
+| CTX-AUDIT-001-AC01 (phần thư viện) | đạt | Xây · thật | `audit.spec.ts › đủ trường AuditEvent (CTX-AUDIT-001-AC01)`, `› aggregate là chính Audit Event (H3, P6)`; `inbox.spec.ts › handler giữ trace của message (G2, …)` | Đạt 6/6; `correlationId` nay có cả khi `emitAudit` chạy trong handler của consumer (G2 Lần 1 đã hết) |
+| CTX-AUDIT-001-AC02 (phần thư viện) | đạt | Xây · thật | `audit.spec.ts › actor không hợp lệ (EC16, CTX-AUDIT-001-AC02)` | Đạt 6/6 |
+| CTX-AUDIT-001-AC03 (phần thư viện) | đạt | Xây · thật | `audit.spec.ts › che key trong summary (EC17, CTX-AUDIT-001-AC03)` | Đạt 6/6 |
+| CTX-AUDIT-001-AC04 (phần thư viện) | đạt | Xây · đọc mã + test | `audit.spec.ts › chỉ ghi thêm: không có API sửa hay xóa Audit Event (CTX-AUDIT-001-AC04)`; `outbox.spec.ts › vai trò _app chỉ ghi outbox, không đọc được` | Đạt 6/6; `audit/` vẫn chỉ xuất `emitAudit`, hai hằng, ba type |
+| CTX-AUDIT-001-AC05 (phần thư viện) | đạt | Xây · thật | `libs/ts/platform/src/jobs/jobs.spec.ts › không xóa dòng chưa publish (EC18, CTX-AUDIT-001-AC05, NFR-RET-008-AC01)` | Đạt 6/6 |
+| NFR-RET-008-AC01 (phần thư viện) | đạt | Xây · thật | `jobs.spec.ts › không xóa dòng chưa publish`, `› dọn đúng hạn từng bảng (P7)` | Đạt 6/6 |
+| DATA-IDEMP-005-AC01 (phần thư viện) | đạt | Xây · thật | `inbox.spec.ts › sự kiện trùng chỉ áp một lần` | Như AC02 |
+
+Edge case: EC01–EC18 vẫn có test đúng tên ở `scope.html`, đạt ở mọi lượt trừ lượt lặp 3 (EC01 quá giờ, kéo EC02–EC06 lỗi theo — xem mục Lệnh). EC07 (nack giao lại), EC08 (dead-letter) không đổi hành vi; ghi chú “chỉ đúng khi kết nối sống” của Lần 1 nay hết: probe A với prefetch 10 qua 2 lần đóng kết nối không có `failed`, không áp trùng. P1–P8 có trong mã; N1–N9 không bị làm lấn (topology vẫn do `queueArguments`, PID-00057). Không có giao diện nên không chạy `sires-ui-review`.
+
+### Lệnh đã chạy
+
+Chạy trong worktree riêng (detached ở `a8c81a4`) ở scratchpad của phiên QC, Windows 11, Node 24.21.0, pnpm 10.34.9, `DOCKER_HOST=tcp://localhost:2375` (Docker Engine 29.8.2 trong WSL `Ubuntu-24.04`, giữ sống bằng `wsl.exe -d Ubuntu-24.04 -e sleep`). Chỉ dùng image có sẵn (`pgvector/pgvector:pg16`, `rabbitmq:4-management`, `testcontainers/ryuk`).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt: 881 gói, 27,4 s; cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `pnpm nx run @sires/platform:lint --skip-nx-cache` | Đạt (kèm 3 tác vụ phụ thuộc) |
+| `pnpm nx run @sires/platform:typecheck --skip-nx-cache` | Đạt |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 16 file, 104/104 test, 56,6 s. Của PID-00002: outbox 9, inbox 8 (gồm 2 test G1: 1,9 s và 8,6 s), idempotency 8, audit 7, jobs 4 = 36 |
+| `npx vitest run src/outbox src/inbox src/idempotency src/audit src/jobs --reporter=verbose` (trong `libs/ts/platform`), 5 lượt | Lượt 1, 2, 4, 5: 36/36 (36,0 s; 49,9 s; 39,8 s; 42,8 s). Lượt 3: 28/36, 79,5 s — `inbox › sự kiện trùng chỉ áp một lần` “only 0/2 outcomes” sau 10 s, `idempotency › gửi lại trả kết quả lần đầu` và `outbox › phát lại sau khi relay dừng (EC01)` quá 30 s; EC01 hết giờ khi `_system` đang bị thu quyền UPDATE nên EC02, EC03, EC04, EC06 lỗi “permission denied for table outbox” và EC05 lệch số dòng; 4 lỗi “Unexpected close” không bắt từ kết nối AMQP của test (`recordQueue`, `admin` không gắn `error`) bị bỏ lại khi test lỗi. Ba test lỗi đầu là test đầu của ba file chạy song song, một test không dùng broker, nên QC đánh giá là máy hoặc Docker trong WSL treo, không do phần sửa Lần 2; không lặp lại ở lượt 4, 5 và CI |
+| Probe G1 của QC: `vitest run --root <scratchpad>/qc-probe-l2` (file `consumer-recovery.probe.spec.ts` tạm của QC, không thuộc repo; nhập thẳng `src/inbox/consumer.ts`, `src/outbox/messaging.testkit.ts` của worktree; PostgreSQL và RabbitMQ thật) | **A** — queue `burst.events`, prefetch 10, handler 150 ms, 40 sự kiện; `close_all_connections` khi đã xử lý 5 và lần nữa khi đã 20: 40 `applied`, 4 `duplicate`, 0 `failed`, 40 dòng inbox, mỗi sự kiện đúng 1 tác động, 2 log `warn` mất kết nối, 2 log `info` kết nối lại, 4 log “không ack được message”, queue `{messageCount: 0, consumerCount: 1}`. **B** — xóa queue khi đang consume: log `warn` reason “broker hủy consumer”, khai báo lại queue và binding, sự kiện sau `applied`, `consumerCount: 1`. **C** — URL `?heartbeat=2`, `docker pause` container RabbitMQ đúng lúc handler đang xử lý sự kiện thứ hai, 15 s rồi `unpause`: phát hiện mất sau 5,9 s (“Heartbeat timeout”), lần thử lại lỗi “connect ETIMEDOUT”, consume lại 50 ms sau `unpause`; 3 sự kiện mỗi cái 1 tác động; consumer thứ hai `stop()` khi đang thử kết nối mất 8,7 s, sau `unpause` không quay lại (`consumerCount: 0`, sự kiện mới nằm trong queue). **D** — `container.restart()`: cổng host đổi 33016 → 33023, URL cố định của consumer không còn đúng — không thử được, `stop_app`/`start_app` của test bên sửa phủ broker khởi động lại. **E** — `onOutcome` ném lỗi: sự kiện `applied`, có `unhandledRejection` “Error: metrics down” (G4). Lượt đầu C báo sai do probe dùng chung routing key giữa các consumer; QC sửa probe, chạy lại đạt |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --skip-nx-cache` | Không đạt tại chỗ, 6 phút 23 giây, 19 project. Mọi tác vụ TS đạt trừ `@sires/platform:test` 102/104: hai test của PID-00001 lỗi khi chạy song song — `errors/errors.spec.ts › ProblemJsonFilter > mã lỗi thuộc danh mục (NFR-OBS-005-AC01)` “fetch failed / ECONNRESET” (như Lần 1) và `telemetry/telemetry.spec.ts › OpenTelemetry cho HTTP > span và log cùng mã yêu cầu` quá 5 s; PR không sửa `errors/`, `telemetry/`; cả 36 test PID-00002 đạt, gồm 2 test G1. `@sires/contracts:test` 14/14 (Nx đánh dấu flaky cùng `platform:test`). Python lỗi môi trường: `knowledge:test`, `knowledge:typecheck`, `agent-core:typecheck`, `agent-core:test`, `eval:typecheck` “Failed to spawn: pytest/mypy — An Application Control policy has blocked this file (os error 4551)”; `sires-common:test` 75 passed, 4 failed ở `test_contracts_import.py` (`ModuleNotFoundError: sires_common.generated…` — mô hình Python sinh không có trong worktree này). PR không đổi Python; CI trên `a8c81a4` đạt đủ 19 project |
+| `pnpm nx run sires-common:test` | Không chạy tại chỗ — máy này chặn `python.exe` của `.venv` (Smart App Control); PR không đổi Python. CI trên `a8c81a4`: 79 passed, 2 warnings |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: infra, platform, repo`; cảnh báo 2 luồng (infra, platform). Như Lần 1: `infra` chỉ do `pnpm-lock.yaml` (commit sửa `5086f30` không đổi lockfile), đúng quy tắc 1.4.7; `repo` do `agent/execution/PID-00002/` |
+| `node scripts/docs/update-index.mjs --check` | Khớp: 159 PID, 15 đợt; taskboard khớp 159 task; `docs/index.html` khớp |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)`, trạng thái `Xong — chờ QC`, có `qc-report.md` |
+| `gh pr checks 36 --repo toilatrung/sires` | `build` pass (2m46s), `tracks` pass (6s); run `44895493132`, `headSha` = `a8c81a4`. Log `build`: “Successfully ran targets lint, typecheck, test, build for 19 projects and 2 tasks they depend on”, `@sires/platform:test` 16 file 104/104, `sires-common:test` 79 passed, 2 warnings |
+| `gh api repos/toilatrung/sires/pulls/36/commits` | 12 commit, 11 `verified: true`; `fef647d` (toilatrung, “PID-00002: QC độc lập Lần 1 — qc-report”) `unsigned` — commit QC cũ của PO, không thuộc bên sửa. `647b7d6`, `5086f30`, `720deea`, `a8c81a4` đã ký (`valid`). `gh pr view`: `OPEN`, `MERGEABLE`, `mergeStateStatus: BLOCKED`, chưa có review |
+| `node scripts/docs/add-license.mjs --check` | Trước khi xóa cache: thiếu thông báo ở `.ruff_cache`, `libs/py/sires_common/.pytest_cache`, `.mypy_cache`, `.ruff_cache` do lần chạy `nx affected` của QC sinh (bị `.gitignore` bỏ qua); QC xóa các thư mục cache đó. Sau khi ghi file này: `0 file chưa có thông báo giấy phép.` File này giữ khối giấy phép ba dòng ở cuối |
+
+### Lệch với Self-QC
+
+- Self-QC Lần 2 ghi 3 lượt lặp 36/36. QC chạy 5 lượt: 4 lượt 36/36, lượt 3 lỗi 8/36 do môi trường (mục Lệnh). Không tính G vì không do mã của PR, nhưng cho thấy test outbox đổ dây chuyền khi EC01 hết giờ (xem Đề xuất).
+- Self-QC Lần 2 G7 (LOW, chờ PO): QC đồng ý mức LOW, ghi thành G5 kèm hệ quả cụ thể với kiến trúc 11.6 và thời gian `stop()` khi broker không tới được.
+- Self-QC không nêu lỗi `onOutcome` không được bắt (G4); có từ Lần 1, QC Lần 1 cũng không nêu.
+- Self-QC ghi “test mới chạy trên mã cũ đều lỗi”: QC không chạy lại phép thử này (không sửa mã trong worktree); probe Lần 1 đã cho thấy mã cũ không phục hồi, và QC đọc test G1 thấy test đi đúng nhánh mất kết nối, giao lại, `duplicate`.
+- Self-QC G6 (`unrequested`: hạn kết nối 10 s, `reconnectDelayMs`, `reconnectMaxDelayMs`, `isConsuming`): QC không tính G — phục vụ trực tiếp G1, `isConsuming` do QC Lần 1 gợi ý.
+- Self-QC ghi `nx affected` tại chỗ loại Python và `@sires/contracts:test` 13/14 do Smart App Control: QC tại chỗ cũng chỉ xác nhận được phần TS (Python bị Smart App Control chặn); `@sires/contracts:test` lượt này 14/14; `platform:test` có 2 test PID-00001 lỗi khi chạy song song mà self-qc không gặp. CI trên `a8c81a4` xác nhận đủ 19 project
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không còn việc chặn merge. Hai việc LOW, làm ở PR này hoặc lượt sau của luồng platform tùy PO:
+
+1. G4: bắt lỗi của `onOutcome` (`inbox/consumer.ts:263`), thêm test `onOutcome` ném lỗi.
+2. G5: theo lựa chọn (a) hoặc (b) của PO; chọn (b) thì sửa `start()`, README và thêm test broker chưa sẵn khi `start()`.
+
+### Đề xuất cho PO
+
+- **Merge được theo DEC-58:** 0 CRITICAL, 0 HIGH; G4, G5 LOW không chặn. Trước khi merge: ruleset yêu cầu commit có chữ ký mà `fef647d` (commit QC Lần 1 của PO) chưa ký; GitHub đang báo `BLOCKED`, PR chưa có review.
+- **Cần PO quyết G5** (cũng là đề xuất 2 ở `report.md` Lần 2): `start()` lần đầu ném lỗi hay tự thử lại khi broker chưa tới được.
+- **Xác nhận G3 áp cho `writeCommand` có `accountId`** (đề xuất 1 ở `report.md` Lần 2): QC thấy hợp lý — cùng cột `account_id`, cùng rủi ro gắn lệnh vào tài khoản khác.
+- **Heartbeat AMQP cho PID-00057:** consumer không đặt heartbeat nên dùng giá trị của broker (RabbitMQ mặc định 60 s); mất mạng im lặng được phát hiện sau khoảng hai chu kỳ (probe C với 2 s: 5,9 s). Môi trường nên chốt giá trị qua `?heartbeat=` của URL AMQP.
+- **Test chập chờn (luồng platform, không chặn):** EC01 thu quyền UPDATE của `sires_test_system` ngay trên stack dùng chung của file; test hết giờ thì mọi test outbox sau lỗi “permission denied”. `recordQueue` (`outbox/messaging.testkit.ts`) và kết nối `admin` trong `outbox.spec.ts` không gắn `error`, nên test lỗi để lại lỗi “Unexpected close” không bắt. Gợi ý: khôi phục quyền ở `afterEach`, gắn `on('error')` cho kết nối của test.
+- **Span cho mỗi lượt relay và job dọn** (kiến trúc 11.4; đề xuất 4 ở `report.md` Lần 2): không chặn; nếu làm thì cùng luồng platform.
+- **PID-00005 (bản Python):** bên sửa nêu consumer Python chỉ phục hồi khi service dùng kết nối robust, `emit_event`, `emit_audit` chưa kiểm `accountId` như G3. QC Lần 2 không đọc mã Python — ghi lại như lời khai để PO đưa vào hồ sơ PID-00005.
+- Các đề xuất của Lần 1 vẫn chờ PO: sửa slice S03 — `request_hash` (mã vẫn chưa đổi, đúng dặn); publish `mandatory`; tên lease `outbox-relay` (TS) và `outbox_relay` (Python); `writeCommand` chưa đặt được `replyTo`, `correlation_id` cho RPC Mermaid; gộp ActorRef, ServiceName sau PR #34.
 
 ---
 
