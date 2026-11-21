@@ -176,6 +176,7 @@ export {
   type VerifiedServiceToken,
   type VerifyServiceTokenOptions,
 } from './service-auth';
+export * from './state-machine';
 export {
   currentTelemetry,
   exporterFromEnv,
