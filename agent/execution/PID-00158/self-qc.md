@@ -16,6 +16,7 @@ Môi trường: Windows 11, Node 24.21, pnpm 10.34.9; Docker Engine 29.8.2 trong
 | `pnpm nx run @sires/platform:lint` | đạt (`run-many` và trong `nx affected`) |
 | `pnpm nx run @sires/platform:typecheck` | đạt |
 | `pnpm nx run @sires/platform:test` | 16 file, 131 test đạt (`--skip-nx-cache`), gồm `ddl.pg.spec.ts` 6 test trên PostgreSQL 16 thật; test mới của ticket: define 43, check 3, sql 8, cli 3, ddl.pg 6 |
+| Sau khi gộp `origin/main` `1fe6d66` (PID-00002 #36, #49, #51) vào nhánh: `pnpm install --frozen-lockfile`; `pnpm nx run-many -t lint typecheck test build -p @sires/platform` | lock file khớp; lint, typecheck, build đạt; test 21 file, 167 đạt (gồm test outbox, inbox của PID-00002). `--skip-nx-cache` lỗi ở `@sires/contracts:generate-ts` (`EPERM … rename … src/generated`, khóa file trên Windows, hai lần) nên lần đạt dùng cache cho `contracts`, `testing` |
 | `pnpm nx run @sires/platform:build` | đạt; có `dist/state-machine/cli.js` (giữ shebang), không có `dist/state-machine/testdata` |
 | `pnpm nx run sires-common:lint` | đạt trong `nx affected` (`uv run ruff check .`: All checks passed); `ruff format --check` 4 file mới: đã định dạng |
 | `pnpm nx run sires-common:typecheck` | đạt trong `nx affected` (`uv run python -m mypy src`: 16 file, không lỗi); trước đó mypy thuần Python cũng không lỗi |
