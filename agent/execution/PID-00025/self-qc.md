@@ -200,4 +200,53 @@ Không đổi spec/AC trong docs hoặc phần adapter sản phẩm; PO cập nh
 nhận kết quả theo quy trình. Mọi kết luận cũ về “chưa có key vendor” là lịch sử.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 7 — 21/11/2026 · Kiểm tra đầu việc còn lại (Dev tự đối chiếu)
+
+Yêu cầu: “kiểm tra lại PID này xem còn đầu việc nào chưa hoàn thành xong”.
+Đối chiếu trực tiếp acceptance/scope/ba slice, mã, fixture và raw evidence.
+Không sửa code hoặc docs; đây là Dev tự QC, không phải QC độc lập của PO.
+
+### Kết quả tự chạy và xác minh
+
+- `pnpm nx run @sires/library:test`: **15/15 test**, 4 file đạt; 4 dependency
+  task dùng cache, target test chạy thật. Không gọi API live hoặc dùng quota.
+- Kiểm evidence độc lập: OA 9/9 query, 45 paper, 34 đủ trường; S2 3 query/15
+  paper thành công trước đó khớp các capture theo query ID; SerpApi 7 search
+  ID khác nhau đều Success, hai trang cùng identity và 40 citation ID duy nhất,
+  gói giá 0/quota giảm đúng 7. Bốn fixture khớp cả hash đóng gói và hash nguồn.
+- `check-pid.mjs --result`: đạt, 0 cảnh báo. License check đạt (0 file thiếu),
+  index check đạt, không ghi docs/taskboard. Track check exit 0, còn cảnh báo
+  library/infra do lockfile dependency sinh tự động, đã ghi theo quy tắc 1.4.7.
+- CI commit `5d44a38`: **tracks/build đều SUCCESS**; PR #38 vẫn OPEN/Draft,
+  chưa có reviewDecision, chưa có `qc-report.md` độc lập trong hồ sơ.
+
+### Đối chiếu tiêu chí gốc và yêu cầu bổ sung
+
+| Căn cứ | Đánh giá hiện tại | Còn phải làm gì |
+| --- | --- | --- |
+| AC01, S01 | Có mã đo, corpus đa lĩnh vực, số đo cả hai nguồn, completeness và giới hạn quan sát, xử lý 429 đúng EC01/02 | Không có ngưỡng bắt buộc 9/9 thành công hoặc 100% metadata trong spec. S01 chỉ yêu cầu “Có số đo cho cả hai nguồn”; acceptance dặn không tự đặt số |
+| AC02, S02 | Có bảng vendor, capability/profile URL, giá/quota, terms, nguồn/ngày đọc, phần chưa rõ | Không thấy thiếu đầu ra bắt buộc |
+| AC03, S03 | Có export BibTeX/RIS thật, manifest/hash, hai ứng viên và MIT, lỗi thực tế, đề xuất Citation.js cho PID-00024 | Parser sản phẩm/validation nhập thật là PID-00024, không phải phần code còn thiếu của spike |
+| AC04/H2 so với chỉ định mới | Hồ sơ gốc yêu cầu ghi ASM chưa kết luận vì chưa thử vendor; user đã giao thêm và cấp key, report Lần 6 ghi thử SerpApi thật | PO xác nhận/cập nhật cách nghiệm thu H2/AC04 để không yêu cầu kết luận trái với bằng chứng mới. Không tự sửa docs hoặc bỏ kết quả thử |
+| Yêu cầu bổ sung S2 | Còn 6 query chưa có mẫu thành công, chưa chẩn đoán được nguyên nhân 429 cụ thể | Nếu vẫn yêu cầu lấy đủ mẫu, cần nguồn khả dụng/hỗ trợ nhà cung cấp hoặc quyết định chấp nhận hạn chế. Đây là phần đo bổ sung chưa hoàn tất, không tự nâng thành điều kiện code của AC01 gốc |
+| ASM-01 tổng thể | Sample kỹ thuật 7/7 đã đạt; report có terms và giới hạn quan sát | PO quyết định provider/điều khoản và nhu cầu đo ổn định thêm. Ký hợp đồng nằm ngoài phạm vi Dev của PID này |
+| ASM-14 khả năng tích hợp | Đã có bằng chứng URL hồ sơ mẫu → ID → 40 bài/2 trang | Không còn thiếu phép thử kỹ thuật; Settings/hồ sơ người dùng thật và adapter sản phẩm thuộc các PID xây chức năng |
+
+### Khoảng trống / bước đóng ticket
+
+| G | Phân loại | Mức / phạm vi | Bằng chứng / kết luận | Việc tiếp theo |
+| --- | --- | --- | --- | --- |
+| G3 (làm rõ phạm vi) | partial | Yêu cầu đo bổ sung; không tự coi HIGH của spec gốc | Sáu query S2 còn thiếu; acceptance.html:22 không cho tự đặt số, AC01:24 không yêu cầu 100%; S01:43 chỉ cần số đo hai nguồn, spec:93 yêu cầu dừng khi giới hạn | Chốt với PO việc tiếp tục đo hoặc ghi nhận hạn chế 429; không đổi/né endpoint để ép đủ |
+| G6 (còn mở) | partial | Quyết định PO, không thiếu implementation spike | ASM-01 sample kỹ thuật có, không có quyết định chọn provider/điều khoản áp dụng được ghi nhận | PO chốt; thử dài hạn chỉ nếu cần làm căn cứ quyết định, không tự đặt thời lượng chưa có trong spec |
+| G7 | partial | MEDIUM — hồ sơ nghiệm thu | AC04/H2 gốc chưa phản ánh thử vendor được giao bổ sung; report đã có YC2/Lần 6 | PO cập nhật/ghi xác nhận phạm vi, Dev không sửa docs trong lần kiểm này |
+| G8 | missing | Thủ tục QC/nghiệm thu | Chưa có qc-report độc lập, PR Draft/Open dù CI xanh | QC độc lập của PO review, xử lý kết quả, chốt trạng thái/Ready và nghiệm thu/merge khi được yêu cầu |
+
+**Kết luận tự đối chiếu:** không thấy phần mã spike bắt buộc nào còn thiếu
+trong S01–S03/O1–O2. Không nên coi 11 abstract null ở OpenAlex là lỗi phải sửa
+hoặc tự viết abstract để đạt 100%. Hai việc đó cùng S2 chưa đủ corpus không
+tự tạo thêm ngưỡng nghiệm thu ngoài spec. Ticket chưa hoàn tất thủ tục đóng:
+cần ghi nhận yêu cầu bổ sung/điều kiện nghiệm thu, quyết định PO và QC độc lập.
+Không tự chuyển trạng thái report/PR hoặc tạo qc-report mang danh độc lập.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
