@@ -65,7 +65,7 @@ Không có.
 
 ## Lần 2 — 18/11/2026
 
-Người làm: Dev T1xNTH (agent Claude Code trong phiên của T1xNTH), theo yêu cầu “gỡ trạng thái block, chuyển sang hoàn thành”. Ticket giao cho `toilatrung`; làm trong worktree riêng của nhánh này; commit (có chữ ký, tác giả T1xNTH) và push 18/11/2026. “Hoàn thành” ở đây là `Xong — chờ QC`; PO QC độc lập và nghiệm thu.
+Người làm: Dev T1xNTH, theo yêu cầu “gỡ trạng thái block, chuyển sang hoàn thành”. Ticket giao cho `toilatrung`; làm trong worktree riêng của nhánh này; commit (có chữ ký, tác giả T1xNTH) và push 18/11/2026. “Hoàn thành” ở đây là `Xong — chờ QC`; PO QC độc lập và nghiệm thu.
 
 ### Gỡ chặn
 
@@ -104,7 +104,7 @@ Yêu cầu hợp đồng của Lần 1 (mục 6) đã có trên `main` qua PR #2
 
 ## Lần 3 — 18/11/2026
 
-Người làm: Dev T1xNTH (agent Claude Code), theo `qc-report.md` Lần 1 (“Việc còn lại” 1–5) và quyết định của PO 18/11/2026 ghi ở đó. Không còn yêu cầu thêm ngoài danh sách của QC.
+Người làm: Dev T1xNTH, theo `qc-report.md` Lần 1 (“Việc còn lại” 1–5) và quyết định của PO 18/11/2026 ghi ở đó. Không còn yêu cầu thêm ngoài danh sách của QC.
 
 | Việc QC | Kết quả | File | Test |
 | --- | --- | --- | --- |
