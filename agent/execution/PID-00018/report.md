@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — EC09 ActorRef trong DDL chung
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Luồng:** `audit` · **Giai đoạn:** PH-01
-- **Nhánh:** `audit/pid-00018-migration` · **PR:** chưa mở
+- **Nhánh:** `audit/pid-00018-migration` · **PR:** [#66 — Draft](https://github.com/toilatrung/sires/pull/66)
 - **Cập nhật:** 22/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -12,7 +12,7 @@
 - Slice: 2/3 xong (S01, S03); S02 bị chặn EC09 do DDL chung.
 - PostgreSQL thật: 22/23 test đạt; chỉ ca Analysis Agent thiếu instance vẫn INSERT thành công.
 - Hai AC được phủ phần schema/chỉ ghi thêm; 12/13 EC đạt, EC09 còn một ca lỗi. Chưa đủ nghiệm thu.
-- Yêu cầu thêm: không có.
+- Yêu cầu thêm: giữ phạm vi audit, ghi blocker cho PO; đẩy PR.
 
 ## 2. Trạng thái công việc
 
@@ -43,6 +43,7 @@ Chạy migration trên Compose chờ PID-00159 (H2). Máy hiện thiếu Helm đ
 | Mã | Người yêu cầu | Nguyên văn | Phân loại | Đã làm |
 | --- | --- | --- | --- | --- |
 | YC1 | Người dùng trong phiên | “Giữ phạm vi audit, ghi blocker cho PO” | Giữ nguyên phạm vi; không sửa DDL/service khác | Giữ test EC09 đỏ, ghi blocker, hoàn tất S01/S03 độc lập |
+| YC2 | Người dùng trong phiên | “day pr” | Commit, push và mở PR | Đã push mã ở `39d2ddc`, mở draft PR #66 do EC09 còn chặn |
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -54,7 +55,7 @@ Chạy migration trên Compose chờ PID-00159 (H2). Máy hiện thiếu Helm đ
 - **Còn mở:** G1 HIGH ở EC09; kiểm tổng thể lỗi relpath D:/C: của agent-core trên Windows;
   thiếu Helm; Compose chờ PID-00159, DBQ-01 không chặn mã.
 - **Bước tiếp theo:** PO xử lý nguồn; Dev làm tiếp test đỏ sau khi nguồn được chốt.
-  Chưa commit mã hoặc tạo PR; chỉ báo cáo trạng thái được ký/push theo skill.
+  Mã và kết quả đã commit/push ở `39d2ddc`; draft PR #66 giữ nguyên blocker và test đỏ.
 - **Tài liệu đi kèm:** `blocker-ec09.md` — nguồn lỗi, tái hiện và việc PO cần xử lý;
   `validate-production.cjs`, `production-validation.json` — kiểm gói production và health;
   `validate-cache.cjs`, `cache-validation.json` — kiểm EC05 trên bản sao cô lập.
