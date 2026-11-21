@@ -9,8 +9,9 @@
 
 ## 1. Tóm tắt
 
-- Slice: 3/3 xong ở mức spike Lần 1. Lần 4 đã đo có key: OpenAlex đủ 9/9 query;
-  Semantic Scholar có mẫu thành công cho 3/9 query, còn 6 query chưa đủ mẫu do 429.
+- Slice: 3/3 xong ở mức spike Lần 1. Lần 5 chạy lại: OpenAlex vẫn đủ 9/9 query,
+  34/45 paper đủ trường; S2 không có mẫu mới vì cả hai lượt dừng ở request đầu.
+  Mẫu S2 trước đó vẫn giữ nguyên 3/9 query, còn 6 query chưa có mẫu thành công.
 - AC: bằng chứng khảo sát cho 4/4 AC; completeness hiện đo được ở cả hai nguồn
   (OpenAlex 34/45, Semantic Scholar 15/15 trên mẫu lấy được), chưa chốt chất lượng
   toàn corpus hoặc ASM-01/ASM-14. Chưa gọi dịch vụ trung gian.
@@ -337,6 +338,44 @@ muốn liên hệ. Không tự gửi email.
    thật; chưa có xác nhận PO về điều khoản/hợp đồng áp dụng. Không tự mua gói.
 3. PR tiếp tục là nháp. Cập nhật số đo và phần còn thiếu, không gắn nhãn hoàn
    tất yêu cầu bổ sung chỉ vì key đã được cấp hoặc test offline chạy đạt.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 5 — 21/11/2026 · Chạy lại bốn mục theo yêu cầu
+
+Yêu cầu trong phiên: “chạy lại 4 cái trên”. Đã chạy lại hai API nguồn bằng key
+đã lưu và kiểm tra điều kiện chạy ASM-01/ASM-14; không đánh dấu hai giả định
+đã chạy thật khi thiếu credential vendor. Bản ghi bốn mục:
+[four-checks-2026-11-21T13-22-41Z.json](evidence/four-checks-2026-11-21T13-22-41Z.json).
+
+| Mục | Kết quả mới | Điều chưa đủ |
+| --- | --- | --- |
+| OpenAlex | Lượt 13:22:41 UTC: 9/9 query, 12 request đều 200, 45 paper; 34/45 đủ trường, khoảng cách nhỏ nhất 20004 ms | 11 paper vẫn thiếu description/abstract; 2 thiếu venue tùy chọn |
+| Semantic Scholar | 13:22:41 UTC: 429 ở request đầu; sau 103 giây mở lượt riêng lúc 13:24:24 UTC chọn 6 query thiếu, vẫn 429 ở request đầu; đã gửi x-api-key | Không có paper mới; mẫu số completeness lượt này = 0 nên tỷ lệ N/A. Mẫu 15 paper từ 3 query Lần 4 giữ nguyên |
+| ASM-01 | Đã kiểm cấu hình: không có SERPAPI_API_KEY hoặc SEARCHAPI_API_KEY trong process/file secret; **chưa chạy API vendor**, 0 request vendor | Cần credential/quota vendor Google Scholar, thử thực tế và PO xác nhận điều khoản/hợp đồng áp dụng |
+| ASM-14 | Cùng kết quả preflight: **chưa chạy đọc hồ sơ qua vendor**, 0 request vendor | Cần credential/quota tích hợp để thử URL hồ sơ → tác giả → công bố qua vendor thật |
+
+Đã đối chiếu 11 paper thiếu description với raw response của OpenAlex:
+**cả 11 đều có `abstract_inverted_index: null` từ nguồn**. Danh sách query ID,
+work ID, title và trạng thái raw nằm trong `four-checks-…json`; không phải
+parser làm mất abstract, không tự viết hoặc lấy từ nguồn khác để làm đẹp tỷ lệ.
+Venue là trường tùy chọn nên hai trường hợp thiếu venue không làm giảm tỷ lệ đủ
+trường bắt buộc. Không khẳng định các dữ liệu này tồn tại ở nguồn nhưng bị bỏ qua.
+
+Hai lượt S2 đều dừng ngay khi 429, không retry trong lượt. Lượt thứ hai cấu hình
+60000 ms nhưng chỉ có một request nên **không đo được khoảng cách thực tế**;
+không mô tả là đã thử hai request cách 60 giây trong lượt này. Body lỗi không
+giải thích nguyên nhân cụ thể, không có Retry-After. Không kết luận key sai hay
+do gửi quá nhanh; không đổi key/IP hoặc endpoint để né giới hạn.
+
+Bằng chứng mới (giữ nguyên tất cả lượt cũ):
+
+- Lượt đủ corpus: [OpenAlex](evidence/free-sources-followup-2026-11-21T13-22-41-602Z-aba72cb8-openalex.json), [S2](evidence/free-sources-followup-2026-11-21T13-22-41-602Z-aba72cb8-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T13-22-41-602Z-aba72cb8-summary.json).
+- Lượt S2 chọn query thiếu: [S2](evidence/free-sources-followup-2026-11-21T13-24-24-670Z-2d9b4a9b-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T13-24-24-670Z-2d9b4a9b-summary.json).
+
+Đã hỏi đầu vào vendor trong phiên; không đăng ký tài khoản, mua gói hoặc gọi
+API trung gian thiếu key để giả lập một lần kiểm chứng. Hai key OA/S2 đã có,
+không yêu cầu cung cấp lại. PR giữ nháp; phần còn thiếu vẫn là mẫu S2 và hai
+giả định liên quan Google Scholar, không phải thiếu key API dự phòng.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

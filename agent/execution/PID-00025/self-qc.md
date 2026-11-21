@@ -149,4 +149,26 @@ sẵn; Nx cuối chạy đạt cả bốn target, không còn việc sửa mã t
   key API dự phòng, không chuyển PR sang Ready khi yêu cầu bổ sung chưa hoàn tất.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 5 — 21/11/2026 · Chạy lại bốn mục
+
+- Không đổi code hoặc dependency: chỉ thêm evidence live và kết quả kiểm điều
+  kiện vendor. Không chạy lại unit/lint/typecheck/build đã đạt ở Lần 4 chỉ vì
+  bổ sung dữ liệu. CI của commit f493221 cũng đã đạt `tracks` và `build` trước
+  lượt chạy này, không coi đó là bằng chứng mới cho API hoặc ASM.
+- OA: 9/9 query, 45 paper, đủ trường 34/45, 12 request 200. Đối chiếu raw cho
+  11 paper thiếu description: tất cả `abstract_inverted_index` là null; không
+  phải normalization bỏ sót dữ liệu. Venue thiếu ở hai paper vẫn là tùy chọn.
+- S2: hai lượt riêng đều 429 ở request đầu, đã dừng; lượt chọn query thiếu mở
+  sau khoảng 103 giây. Không có paper mới, completeness N/A; không ghi đè 15
+  paper thành công trước đó. Không suy nguyên nhân cụ thể từ body lỗi chung.
+- ASM-01/ASM-14: preflight ghi thiếu cả hai loại key vendor, API request = 0,
+  quota/integration chưa xác minh. Không tạo kết quả mock hoặc dùng docs để
+  khẳng định đã chạy integration thật; không mua gói.
+- `add-license.mjs --check` và `update-index.mjs --check` đã chạy đạt, không
+  ghi docs/taskboard. `check-pid.mjs --result` đạt với 0 cảnh báo; diff sạch,
+  quét 8 file đổi không có giá trị key trước commit kết quả.
+- Tự đối chiếu: G3/G4 vẫn còn HIGH cho yêu cầu bổ sung. Không đổi trạng thái
+  thành Xong hoặc chuyển PR Ready; key OA/S2 không còn là blocker.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
