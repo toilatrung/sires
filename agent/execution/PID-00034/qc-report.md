@@ -1,6 +1,6 @@
 # PID-00034 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 1 HIGH (G1), 4 MEDIUM (G2–G5), 4 LOW (G6–G9). Mã e2e đạt 4/4 AC ở mức khung, chạy cục bộ. Chưa merge được: PR sửa test của luồng platform mà không có lời PO (G1). PO cần quyết G1 và xác nhận người làm PID (G2) (Lần 1, 22/11/2026)
+**Kết luận mới nhất:** Có thể merge — 0 CRITICAL, 0 HIGH. G1 đóng theo quyết định PO 22/11/2026 (“Tách ra PR platform”): thay đổi `errors.spec.ts` đã bỏ khỏi PR ở `fafa1b6`, chuyển sang PR #64 của luồng platform. Còn 4 MEDIUM (G2 người làm khác người được giao, PO xác nhận; G3 media type upload; G4, G5 chờ PO quyết) và 4 LOW (G6–G9), không chặn merge. Mã e2e đạt 4/4 AC ở mức khung, chạy cục bộ (Lần 2, 22/11/2026)
 
 - **Ticket:** [PID-00034](../../../docs/tickets/issues/PID-00034/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -90,6 +90,21 @@ Máy PO, Windows 11, Node 24.21.0, pnpm 10.34.9, Playwright 1.64.1. Kiểm trong
 - Câu hỏi đề xuất (chưa cấp mã; lấy mã OQ tiếp theo ở `docs/docs_context.md`): (1) Ngôn ngữ giao diện của kịch bản E2E chọn theo Preferences của tài khoản kiểm thử hay theo project Playwright, và PID nào làm cơ chế đó (G4)? (2) Test khung, smoke và test không phải kịch bản PRD 19 có mang mã `TS-NN-MM` không; nếu có thì dùng dải nào (G5)?
 - Spec mục 2.5 ghi `pnpm install`, `pnpm local:up`, `pnpm --filter @sires/e2e e2e`. Nhưng `local:up` không khởi động web, nên smoke sẽ fail nếu không chạy `pnpm --filter @sires/web dev` riêng (`e2e/README.md:7` có ghi bước này). Nên bổ sung spec khi làm `spec-clarify-skill` cho PID-00055.
 - CI không chạy Playwright: e2e không có target `test`, nên TS-00-02 đến TS-00-07 (không cần trình duyệt) không được CI kiểm hồi quy. Có thể đưa vào PID infra hoặc e2e sau, khi có staging (kiến trúc 11.3).
+
+## Lần 2 — 22/11/2026 · kiểm G1 sau quyết định PO
+
+Người chạy: phiên do PO giao; cũng là phiên đã tách thay đổi theo lệnh PO, nên lần này chỉ kiểm G1 và ghi quyết định, không chạy lại các phép kiểm của Lần 1. Mã nguồn: nhánh `e2e/pid-00034-playwright-fixtures`, commit `fafa1b6` (so với `d49cec6` của Lần 1 chỉ đổi `libs/ts/platform/src/errors/errors.spec.ts` về như `main`).
+
+Quyết định PO áp dụng: trả lời câu hỏi “G1 của #59: xử lý thay đổi ở errors.spec.ts thế nào?” bằng “Tách ra PR platform” (22/11/2026).
+
+| G Lần 1 | Trạng thái | Kiểm |
+| --- | --- | --- |
+| G1 | Đóng | `git diff origin/main...HEAD` không còn file nào dưới `libs/ts/platform/`; `errors.spec.ts` trùng `main`. Thay đổi chuyển sang PR #64 (nhánh `platform/errors-spec-413-inject`, tác giả giữ là Dev, nhờ code owner `T1xNTH` duyệt); `vitest run src/errors/errors.spec.ts` trên nhánh đó 5/5 đạt |
+| G2 | Còn mở (MEDIUM) | PO xác nhận người làm PID-00034 và cập nhật sổ task-registry nếu đã giao lại |
+| G3–G5 | Còn mở (MEDIUM) | Như Lần 1; G4, G5 chờ PO quyết |
+| G6–G9 | Còn mở (LOW) | Không xử lý ở lần này |
+
+YC1 trong `report.md` (sửa test platform theo “sửa đi” của người dùng trong phiên Dev) không còn hiệu lực trong PR này; `report.md` là file của Dev nên QC không sửa (G7).
 
 ---
 
