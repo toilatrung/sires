@@ -1,6 +1,6 @@
 # PID-00018 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — chờ xử lý sai lệch DDL chung ở EC09
+**Trạng thái:** Bị chặn — EC09 ActorRef trong DDL chung
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Luồng:** `audit` · **Giai đoạn:** PH-01
 - **Nhánh:** `audit/pid-00018-migration` · **PR:** chưa mở
@@ -9,41 +9,55 @@
 
 ## 1. Tóm tắt
 
-- Slice: S01 xong, S02 có 1 test lỗi EC09 do DDL chung, S03 đang kiểm.
-- PostgreSQL thật: migration 3/3 test đạt; hành vi DDL 14/15 đạt, Analysis Agent thiếu instance vẫn INSERT được.
+- Slice: 2/3 xong (S01, S03); S02 bị chặn EC09 do DDL chung.
+- PostgreSQL thật: 22/23 test đạt; chỉ ca Analysis Agent thiếu instance vẫn INSERT thành công.
+- Hai AC được phủ phần schema/chỉ ghi thêm; 12/13 EC đạt, EC09 còn một ca lỗi. Chưa đủ nghiệm thu.
 - Yêu cầu thêm: không có.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Migration và so schema với DDL | Xong (EC05 kiểm cache còn cần xác nhận) | `apps/audit/migrations/`, `src/db/migrate.ts`, `src/db/migration.spec.ts`, `drizzle.config.ts`, `package.json` |
+| S01 | Migration và so schema với DDL | Xong | `apps/audit/migrations/`, `src/db/migrate.ts`, `src/db/migration.spec.ts`, `drizzle.config.ts`, `package.json` |
 | S02 | Chỉ ghi thêm, quyền, CHECK, RLS | Chặn EC09 — sai lệch DDL chung | `apps/audit/src/db/ddl-behaviour.spec.ts` |
-| S03 | Cấu hình, module DB, migrate CLI, README | Đang kiểm | `apps/audit/src/`, `deploy/values.yaml`, `README.md` |
+| S03 | Cấu hình, module DB, migrate CLI, README | Xong | `apps/audit/src/`, `deploy/values.yaml`, `README.md`; test/SQL có trong gói production |
 
 ## 3. Kết quả
 
-Đã kiểm hồ sơ bằng `check-pid.mjs PID-00018`: 2 AC, 13 edge case, 0 cảnh báo.
+Migration khớp schema DDL, chỉ tiến, rollback khi thiếu role. Test xác nhận quyền,
+append-only, RLS, KPI và export. Có module hai pool DB, helper transaction tài khoản,
+cấu hình kiểm khi khởi động, CLI và giá trị Helm. Build/lint/typecheck đạt.
+Gói production không có drizzle-kit: migrate áp 1 rồi 0, HTTP health 200.
+Kiểm Nx cache trong bản sao cô lập đạt; DDL nguồn không đổi.
+Test audit: 22 passed, 1 failed. Kiểm tổng thể còn lỗi Windows relpath của agent-core
+ngoài audit, xem Self-QC. Không ghi các lượt lỗi là đạt.
 
 ## 4. Việc còn lại
 
-Thực hiện ba slice, Self-QC và tự đối chiếu spec-converge-skill.
-Chạy migration trên Compose chờ PID-00159, không chặn mã/test (H2).
+PO cần xử lý nguồn is_actor_ref của DDL chung và các migration bị ảnh hưởng,
+sau đó đồng bộ nguồn, chạy lại schema/EC09 và kiểm tổng thể. Không sửa nguồn trong lượt này.
+Chạy migration trên Compose chờ PID-00159 (H2). Máy hiện thiếu Helm để render chart.
 
 ## 5. Yêu cầu thêm
 
-Không có.
+| Mã | Người yêu cầu | Nguyên văn | Phân loại | Đã làm |
+| --- | --- | --- | --- | --- |
+| YC1 | Người dùng trong phiên | “Giữ phạm vi audit, ghi blocker cho PO” | Giữ nguyên phạm vi; không sửa DDL/service khác | Giữ test EC09 đỏ, ghi blocker, hoàn tất S01/S03 độc lập |
 
 ## 6. Cần PO và tài liệu đi kèm
 
 - **Đề xuất cho PO:** EC09 yêu cầu Analysis Agent thiếu instance bị CHECK từ chối.
   `app.is_actor_ref` trong `00-common.sql` trả NULL cho trường hợp này; CHECK nhận NULL là đạt,
   nên INSERT thành công. Test audit đã tái hiện trên PostgreSQL thật. Cần sửa DDL nguồn
-  và thêm migration tiến cho các service đã có snapshot của hàm cũ; đang hỏi phạm vi trong phiên.
+  và thêm migration tiến cho các service đã có snapshot của hàm cũ. Người dùng đã chọn giữ phạm vi audit.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** Chạy migration trên Compose chờ PID-00159; DBQ-01 không chặn mã.
-- **Bước tiếp theo:** Hoàn tất S01–S03, tự QC, PO QC độc lập khi có PR.
-- **Tài liệu đi kèm:** Chưa có.
+- **Còn mở:** G1 HIGH ở EC09; kiểm tổng thể lỗi relpath D:/C: của agent-core trên Windows;
+  thiếu Helm; Compose chờ PID-00159, DBQ-01 không chặn mã.
+- **Bước tiếp theo:** PO xử lý nguồn; Dev làm tiếp test đỏ sau khi nguồn được chốt.
+  Chưa commit mã hoặc tạo PR; chỉ báo cáo trạng thái được ký/push theo skill.
+- **Tài liệu đi kèm:** `blocker-ec09.md` — nguồn lỗi, tái hiện và việc PO cần xử lý;
+  `validate-production.cjs`, `production-validation.json` — kiểm gói production và health;
+  `validate-cache.cjs`, `cache-validation.json` — kiểm EC05 trên bản sao cô lập.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
