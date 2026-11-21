@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00032](../../../docs/tickets/issues/PID-00032/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
-- **Nhánh:** `sandbox-runner/pid-00032-mermaid` · **PR:** đang mở theo yêu cầu người dùng; mã và evidence được commit/push cùng hồ sơ
+- **Nhánh:** `sandbox-runner/pid-00032-mermaid` · **PR:** [#45](https://github.com/toilatrung/sires/pull/45) → `main`; mã và evidence đã commit/push (`e56c04d`, Verified)
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -125,7 +125,7 @@ Không tự đổi trạng thái giả định trong docs; PO xem xét cập nh�
 ## 4. Việc còn lại
 
 Không còn việc triển khai trong phạm vi. Người dùng yêu cầu “đẩy pr đi”;
-commit mã/evidence và mở PR để PO QC độc lập. Signing Key đã được người dùng
+đã commit mã/evidence và mở PR #45 để PO QC độc lập. Signing Key đã được người dùng
 đăng ký; GitHub xác nhận commit report `218e42b` có verified=true, reason=valid.
 Lỗi unknown_key ghi nhận trước đó đã được gỡ, không cần viết lại lịch sử.
 
