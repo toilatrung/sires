@@ -92,6 +92,8 @@ Cả commit triển khai và merge được GitHub xác nhận Verified. Đã pu
   [run 44926033938](https://github.com/toilatrung/sires/actions/runs/44926033938).
   Build gồm cài lockfile, giấy phép/index và `pnpm nx affected -t lint typecheck test build`.
 - Lượt Nx local sau merge được dừng khi CI cùng mã đã hoàn tất thành công;
-  không ghi lượt local chưa kết thúc là đạt. Các kiểm tra local trước merge giữ nguyên ở Lần 2.
+  output cuối cho thấy platform có 6 suite timeout chờ PostgreSQL trên Docker Windows
+  (129 passed, 39 skipped), không ghi lượt này là đạt. Bản kiểm Linux CI cùng mã đã đạt.
+  Các kiểm tra local trước merge giữ nguyên ở Lần 2.
 - Phần mã và hồ sơ đã commit; các ghi chú “chưa commit” ở Lần 2 là lịch sử.
 - Chờ PO review và QC độc lập; không tự merge PR.

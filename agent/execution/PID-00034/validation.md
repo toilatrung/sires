@@ -132,5 +132,11 @@ Lượt Nx local `--base=origin/main --parallel=2` được dừng khi CI cùng 
 không ghi lượt local chưa hoàn tất là đạt. `@sires/contracts:test` (14 test) và
 `@sires/testing:test` (13 test) đã đạt trong phần local đã chạy.
 
+Output cuối nhận lúc dừng lượt local cho thấy `@sires/platform:test` có 6 suite
+timeout chờ log “database system is ready to accept connections” sau 60 giây,
+129 test passed, 39 skipped; 6 file failed, 15 passed, 177,24 giây. Đây là lượt
+Windows/Docker sau cập nhật main và Testcontainers 12.2.1, không được ghi đạt.
+Không tắt test hoặc đổi timeout để che lỗi; CI Linux cùng mã đã hoàn tất thành công.
+
 `pnpm install --frozen-lockfile --ignore-scripts` và `uv sync --all-packages` sau
 merge đạt; kiểm hồ sơ PID, index tài liệu và whitespace diff đạt.

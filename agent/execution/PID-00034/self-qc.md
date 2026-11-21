@@ -113,5 +113,7 @@ Self-QC không thay thế QC độc lập của PO.
 - `pnpm install --frozen-lockfile --ignore-scripts`, `uv sync --all-packages`,
   kiểm hồ sơ/index/whitespace sau merge: đạt.
 - Lượt Nx local trùng với CI được dừng sau khi CI đã đạt; không dùng lượt chưa
-  kết thúc làm bằng chứng đạt. Lần 2 là bằng chứng local trước merge.
+  kết thúc làm bằng chứng đạt. Output cuối có 6 suite platform lỗi timeout chờ log
+  PostgreSQL trong Docker Windows: 129 passed, 39 skipped. Không đổi test để bỏ qua
+  các lỗi này; CI Linux cùng mã đạt. Lần 2 là bằng chứng local trước merge.
 - Commit bàn giao tiếp theo chỉ cập nhật report, self-qc và validation; không đổi mã chạy.
