@@ -1,11 +1,11 @@
 # PID-00031 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — đang sửa QC độc lập; chờ quyết định PO và đợt đo mới
+**Kết luận:** Đã chạy lại đầy đủ — AC03 có bằng chứng mới; G3 và phạm vi cold start còn chờ PO
 
-**Kết quả mới nhất:** Lần 4 ở cuối file. Giữ các lần trước để truy vết.
+**Kết quả mới nhất:** Lần 5 ở cuối file. Giữ các lần trước để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026
 
 ## 1. Lệnh
 
@@ -176,3 +176,47 @@ AC02 còn chờ G3. AC03/AC04 chưa nghiệm thu lại do thay fixture, dù pref
 đã xác nhận hai engine thực chạy BibTeX/natbib. EC01 dùng KVM như trước;
 EC02/EC03 đã kiểm compile mới và sửa font/image lookup, còn đánh giá theo
 đợt đo cuối. Không đặt Xong — chờ QC khi các việc trên còn mở.
+
+## Lần 5 — 21/11/2026
+
+Theo yêu cầu mới “kiểm tra và chạy lại”, đã pull nhánh PR và đồng bộ main
+cd25a65 qua merge bd79e8e; không sửa code spike hoặc quyết định hành vi G3.
+Giữ nguyên toàn bộ kết quả trước, ghi evidence/qc5 riêng. Không có thay đổi
+ngoài luồng do Dev thực hiện; các thay đổi agent-core/contracts là merge từ main.
+
+### Lệnh và kết quả thật
+
+| Kiểm | Kết quả |
+| --- | --- |
+| git pull --ff-only nhánh PR; đồng bộ main qua GitHub update-branch | Thành công; main là ancestor HEAD, merge commit verified |
+| docker build -t sires/spk-06:qc5 | Exit 0; image f535ce7c9dae…; worker mới nằm trong image |
+| uv run ruff check apps/sandbox-runner/spikes/spk-06 | Exit 0 |
+| python3 -m unittest -v test_spike.py | 9/9 đạt |
+| bash -n measure.sh attack.sh setup-runsc.sh | Exit 0 |
+| pnpm nx affected -t lint typecheck test build --base=origin/main --head=HEAD --skip-nx-cache --outputStyle=stream | Exit 0; sandbox-runner và 4 task phụ thuộc đạt |
+| attack.sh, sau đó tiếp tục các ca thiếu vì server gián đoạn | 8 ca giữ nguyên + 4 ca tiếp tục cùng run_case/image/source = 12 ca hoàn tất; attack-resume.json ghi rõ. Không coi exit 129 của lượt bị cắt là pass |
+| measure.sh --image sires/spk-06:qc5 --output /tmp/sires-spk06-qc5-measure --repetitions 3 | Exit 0; 36/36 đạt; 18 runsc, 18 runc, 3 fixture × 2 engine × 3 lượt |
+| Đối chiếu hash source/fixture/PDF/bbl/blg | Tất cả khớp; metadata gồm mọi file fixture |
+| pdfinfo, pdftotext, kiểm main.log cuối | 6 PDF có 2/2/4/4/19/19 trang; Default tiếng Anh, article/thesis có tiếng Việt; không thiếu glyph, package, citation/reference |
+| pdfimages -list luận văn hai engine | Ảnh raster 960×560 nhúng thật; 3 ảnh khác nhau, convergence được dùng hai lần |
+| update-index --check; check-tracks --base origin/main --strict | Đạt; chỉ repo và sandbox-runner |
+| add-license --check | Chỉ 11 file cache ignore ngoài ticket thiếu notice; file ticket đủ giấy phép |
+
+### AC và tự đối chiếu spec-converge-skill
+
+| AC / G | Kết quả Lần 5 |
+| --- | --- |
+| PID-00031-AC01 | Đạt các probe shell/passwd cho cả hai engine, source hash khớp evidence mới |
+| PID-00031-AC02 / G3 | Một phần: timeout đúng 120 s, cgroup allocator OOM đúng 2 GiB; mã cho TeX capacity vẫn chờ PO, chưa coi là đạt toàn bộ |
+| PID-00031-AC03 / G1 / G2 | Đã có phép đo đủ 36 lượt, gồm Default đúng cấu trúc và template luận văn mở CUED MIT, runsc/runc 3 lần; không còn thiếu bằng chứng ở G1/G2 |
+| PID-00031-AC04 / G8 | Báo cáo Lần 5 có số đo mới, ASM-07 có giới hạn, cả RSS/cgroup peak, package đã dùng thật, latest trỏ đúng |
+| NFR-SANDBOX-001-AC01 | Đạt mức spike; không thay nghiệm thu PID-00128 |
+| G4 / G7 | Giữ kết quả đã sửa và kiểm Lần 4; gate mới/Ruff vẫn đạt, package files=[dist] không đổi |
+| G5 / G9 | Không rewrite lịch sử. Merge/update mới dùng chữ ký verified, UTF-8; PO xử lý các commit cũ khi squash |
+| Đề xuất 2 | Chỉ báo ước lượng outside-worker min/median/max từ dữ liệu hiện có; chưa tuyên bố cold start pod/Queued → Running đã nghiệm thu |
+
+EC01 vẫn dùng runsc KVM trên WSL2; chưa có dữ liệu systrap production.
+EC02/EC03: 36 build không thiếu package/font, 24 build Default/luận văn xác nhận
+BibTeX/natbib. Raw metrics và sáu PDF được lưu riêng với hash khớp.
+Không còn HIGH về fixture/đo mẫu theo tự đối chiếu của Dev; G3 MEDIUM và quyết
+định cold start vẫn chưa chốt. Chưa chuyển Xong — chờ QC và không sửa báo cáo QC độc lập.

@@ -27,7 +27,8 @@ không thay NestJS service, hợp đồng, database hoặc image sản phẩm.
 7. Suite trả exit 1 nếu bất kỳ assertion/artifact export nào lỗi. Không coi
    runtime không khởi động được là tấn công đã bị chặn.
    Fixture Default và luận văn còn cần có main.bbl/main.blg và bằng chứng
-   BibTeX/natbib thực chạy. Ma trận mới gồm 36 build, chưa chạy khi chờ PO.
+   BibTeX/natbib thực chạy. Ma trận 36 build đã được chạy ở Lần 5, cùng 12
+   probe; dữ liệu/metadata ở evidence/qc5. Classify vẫn giữ nguyên khi chờ PO chốt G3.
 
 ## 2. Hàm, thuật toán, class ảnh hưởng cao
 

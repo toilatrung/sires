@@ -1,8 +1,8 @@
 # PID-00031 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — chạy lại sau đồng bộ main; G3 còn chờ quyết định PO
+**Trạng thái:** Đang làm — đo lại hoàn tất; chờ PO chốt G3 và phạm vi cold start
 
-**Kết quả mới nhất:** xem Lần 5 ở cuối file; đang kiểm và đo lại theo yêu cầu mới. Các lần trước được giữ để truy vết.
+**Kết quả mới nhất:** xem Lần 5 ở cuối file; 36 build và 12 probe đã hoàn tất. G3 chưa được PO chốt. Các lần trước được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
 - **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** [#39](https://github.com/toilatrung/sires/pull/39) → `main`; mã, bằng chứng và hồ sơ triển khai đã được commit/push.
@@ -292,6 +292,122 @@ TeX capacity/cold start. Theo yêu cầu chạy lại trực tiếp trong phiên
 chạy suite trên code/fixture hiện tại, giữ nguyên classify và không coi
 việc chạy lại là PO đã duyệt cách ánh xạ TeX capacity.
 
-Đang dựng image qc5, chạy attack.sh và gate không cache; sau đó measure.sh
-36 build (3 mẫu × 2 engine × 2 runtime × 3 lượt). Evidence Lần 4 và các
-phiên trước giữ nguyên, kết quả mới ghi riêng vào evidence/qc5.
+Đã dựng image qc5 và hoàn tất measure.sh 36 build (3 mẫu × 2 engine ×
+2 runtime × 3 lượt), 12 probe tấn công và gate không cache. Evidence Lần 4
+và các phiên trước giữ nguyên; kết quả mới ghi riêng vào evidence/qc5.
+
+### Kết quả chạy lại
+
+- Image `sha256:f535ce7c9daef39d3792f9ca1c9b7231183f0aad4c097f85670bc3ab1ebe6a67`,
+  cùng TeX Live 2022/snapshot, runsc release-20261116.0 KVM trên WSL2.
+- Measure exit 0, 36/36 build đạt. Mỗi nhóm có 3 lượt; cùng image ID và hạn mức.
+  Không chạy benchmark đồng thời với suite tấn công hoặc gate Nx.
+- Default 2 trang, bài báo tiếng Việt 4 trang, luận văn CUED 19 trang ở cả hai
+  engine. Cả 24 build Default/luận văn đều thực chạy BibTeX/natbib, có bbl/blg.
+- Sáu PDF xuất ra khớp hash trong results; không thiếu glyph/package/citation
+  hoặc reference ở log cuối. Bài báo/luận văn giữ được tiếng Việt. pdfimages
+  xác nhận ảnh raster 960×560 được nhúng trong luận văn ở cả hai engine.
+- Ruff sạch, 9/9 unit test và Bash syntax đạt. Nx lint/typecheck/test/build
+  sandbox-runner và 4 task phụ thuộc chạy không cache, exit 0.
+- Index và ranh giới một luồng đạt. License check vẫn chỉ báo 11 cache ignore
+  ngoài ticket; không có file PID-00031 trong danh sách thiếu.
+
+Server công cụ gián đoạn khi attack.sh đang chạy: đã giữ nguyên 8 kết quả
+hoàn tất, bỏ lượt XeLaTeX loop bị cắt giữa chừng khỏi kết quả nghiệm thu,
+và chạy tiếp 4 ca thiếu bằng cùng run_case/image ID/source. `attack-resume.json`
+ghi rõ nguồn gốc này. Cả 12 assertion của harness hiện tại đạt; không ghi
+exit 0 cho tiến trình attack.sh đã bị gián đoạn. Không còn container sires-spk06.
+
+### Bảng AC03 mới
+
+Thời gian giây; wall ghi trung vị (min–max), RSS/cgroup là giá trị lớn nhất
+trong 3 lượt, đơn vị MiB. GNU time RSS bên trong guest và cgroup peak của host
+có định nghĩa khác nhau, không cộng hoặc coi là cùng metric.
+
+| Mẫu | Engine | Runtime | Wall | latexmk trung vị | RSS max | Cgroup peak max |
+| --- | --- | --- | --- | --- | --- | --- |
+| Default | pdfLaTeX | runc | 1.819 (1.679–1.842) | 1.38 | 39.0 | 57.3 |
+| Default | pdfLaTeX | runsc | 2.414 (2.283–2.995) | 1.89 | 52.7 | 72.0 |
+| Default | XeLaTeX | runc | 1.940 (1.776–2.435) | 1.45 | 183.1 | 194.2 |
+| Default | XeLaTeX | runsc | 3.983 (3.651–5.014) | 3.48 | 229.3 | 215.2 |
+| Bài báo tiếng Việt | pdfLaTeX | runc | 2.024 (2.011–2.131) | 1.56 | 39.2 | 56.8 |
+| Bài báo tiếng Việt | pdfLaTeX | runsc | 2.567 (2.433–2.885) | 2.05 | 53.7 | 71.4 |
+| Bài báo tiếng Việt | XeLaTeX | runc | 2.426 (2.385–2.493) | 2.00 | 188.1 | 196.6 |
+| Bài báo tiếng Việt | XeLaTeX | runsc | 4.452 (4.293–5.473) | 3.93 | 238.0 | 217.5 |
+| Luận văn CUED | pdfLaTeX | runc | 3.069 (3.033–3.615) | 2.65 | 41.0 | 58.5 |
+| Luận văn CUED | pdfLaTeX | runsc | 3.984 (3.846–4.200) | 3.35 | 55.5 | 73.6 |
+| Luận văn CUED | XeLaTeX | runc | 4.929 (4.828–5.040) | 4.49 | 200.6 | 202.5 |
+| Luận văn CUED | XeLaTeX | runsc | 7.748 (7.548–7.961) | 7.22 | 260.9 | 223.3 |
+
+### Tấn công và G3
+
+Shell, passwd, mạng và các probe trực tiếp đều cho kết quả như mong đợi.
+Hai vòng lặp dừng ở 120.0034 s và 120.0051 s. Allocator Python bị cgroup OOM
+ở đúng 2.147.483.648 byte, Docker OOMKilled=true, 6.913 s.
+
+Hai bom expansion TeX hết capacity bên trong engine, cgroup peak khoảng
+86.3 MiB và 232.1 MiB; không phải đã chạm 2 GiB. Harness hiện vẫn trả
+memory_limit với limit_reason=tex_capacity, vì PO chưa chọn mã mới.
+Do đó 12/12 assertion của harness **không đồng nghĩa G3 đã được giải quyết**;
+AC02 còn một phần về cách phân loại capacity. Chưa sửa classify hoặc tự chốt
+tex_capacity/compile_error thay PO. G1/G2 đã có phép đo tương ứng fixture mới.
+
+### ASM-07, package và startup
+
+ASM-07 được ủng hộ với workload đã thử: Default theo MS-TEMPLATE-001, bài báo
+tiếng Việt và template luận văn CUED MIT có nhiều chương, ảnh raster và BibTeX.
+18/18 build runsc thành công; wall lớn nhất 7.9614 s, cgroup peak 223.3 MiB,
+RSS GNU time 260.9 MiB, đều dưới hạn mức đã cấu hình. Trung vị runsc khoảng
+1.27–2.05 lần runc. Luận văn mẫu chỉ 19 trang; đây không phải bằng chứng cho
+mọi bản thảo lớn hoặc platform production. Không tự đóng các quyết định PO.
+
+Đã xác nhận BibTeX 0.99d (TeX Live 2022/Debian), plainnat.bst,
+bibliography/references.bib trong blg; natbib.sty được nạp. Giữ đề xuất
+texlive-latex-base/recommended/extra, science, pictures, xetex, lang-other,
+latexmk, lmodern, fonts-dejavu-core. Manifest mới xác nhận latexmk 4.79,
+texlive-latex-recommended 2022.20230122-3 và texlive-binaries
+2022.20220321.62855-5.1+deb12u2. Không tải package/font khi build.
+
+Để PO đánh giá Đề xuất 2, từ các trường đã đo có thể suy ra phần ngoài worker:
+wall_seconds − worker_seconds của 18 lượt runsc có min/trung vị/max
+0.4669 / 0.5017 / 0.6910 s. Đây chỉ là ước lượng gồm startup runtime/Python,
+kiểm quyền ghi, truyền/nhận kết quả và polling controller; không phải phép đo
+cold start pod Kubernetes hoặc thời gian Queued → Running. Chưa tuyên bố đã
+nghiệm thu cold start khi PO chưa chốt phạm vi.
+
+### Còn lại và tài liệu
+
+G3 và quyết định phạm vi cold start vẫn chờ PO; G5/G9 giữ lịch sử cũ để PO
+squash theo comment. Không sửa qc-report.md và không tự ghi kết luận QC độc lập.
+Các bằng chứng mới sau đây thuộc Lần 5; dữ liệu cũ không bị thay thế:
+
+- `evidence/qc5/article-pdflatex.pdf`
+- `evidence/qc5/article-xelatex.pdf`
+- `evidence/qc5/attack-resume.json`
+- `evidence/qc5/attacks-environment.json`
+- `evidence/qc5/attacks.json`
+- `evidence/qc5/checks.json`
+- `evidence/qc5/default-pdflatex.bbl`
+- `evidence/qc5/default-pdflatex.blg`
+- `evidence/qc5/default-pdflatex.pdf`
+- `evidence/qc5/default-xelatex.bbl`
+- `evidence/qc5/default-xelatex.blg`
+- `evidence/qc5/default-xelatex.pdf`
+- `evidence/qc5/image-build.txt`
+- `evidence/qc5/index.txt`
+- `evidence/qc5/license.txt`
+- `evidence/qc5/measure-console.txt`
+- `evidence/qc5/measurements-environment.json`
+- `evidence/qc5/measurements.json`
+- `evidence/qc5/nx.txt`
+- `evidence/qc5/packages.tsv`
+- `evidence/qc5/pdf-checks.json`
+- `evidence/qc5/summary.json`
+- `evidence/qc5/thesis-pdflatex-images.txt`
+- `evidence/qc5/thesis-pdflatex.bbl`
+- `evidence/qc5/thesis-pdflatex.blg`
+- `evidence/qc5/thesis-pdflatex.pdf`
+- `evidence/qc5/thesis-xelatex-images.txt`
+- `evidence/qc5/thesis-xelatex.bbl`
+- `evidence/qc5/thesis-xelatex.blg`
+- `evidence/qc5/thesis-xelatex.pdf`

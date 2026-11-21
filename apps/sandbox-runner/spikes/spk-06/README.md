@@ -109,6 +109,9 @@ Default và luận văn chỉ được tính đạt nếu có PDF, `main.bbl`, l
 BibTeX chạy và natbib được nạp. Số đo thật chỉ nằm trong JSON evidence.
 Sau khi thay fixture theo QC, cần đo lại toàn bộ suite; số đo cũ ở hồ sơ
 Lần 1–3 không được dùng để kết luận cho các fixture mới.
+Đợt đo 36 build cho fixture mới đã hoàn tất ngày 21/11/2026, xem report Lần 5
+và evidence/qc5. Mã lỗi cho TeX capacity vẫn chờ PO chốt G3; kết quả assertion
+memory của harness hiện tại không đồng nghĩa đã nghiệm thu cách ánh xạ đó.
 
 pdfLaTeX dùng T5/UTF-8; XeLaTeX dùng DejaVu Serif, không phụ thuộc font host.
 Riêng Default tiếng Anh dùng T1/Latin Modern; luận văn dùng class CUED với
