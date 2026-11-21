@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC (Lần 2)
 
 - **Ticket:** [PID-00027](../../../docs/tickets/issues/PID-00027/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
-- **Nhánh:** `knowledge/spk-04-pgvector` (mã chưa commit; chỉ `report.md` đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `knowledge/spk-04-pgvector` (mã và kết quả đã commit, có chữ ký; đã merge `main` `8c95931`, 21/11/2026) · **PR:** [#48](https://github.com/toilatrung/sires/pull/48) vào `main`
 - **Cập nhật:** 19/11/2026 (Lần 2: sửa theo QC độc lập Lần 1 — G1, G4, G5)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
