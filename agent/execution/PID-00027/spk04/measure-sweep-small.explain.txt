@@ -1,0 +1,1471 @@
+-- plan exact/vector, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.914..6.920 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.913..6.916 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.856..6.864 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.785..5.974 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.852 ms
+Execution Time: 6.954 ms
+-- vector branch
+Limit  (cost=383.87..383.88 rows=1 width=40) (actual time=6.844..6.858 rows=50 loops=1)
+  Buffers: shared hit=3591 read=1
+  I/O Timings: shared read=0.030
+  CTE cand
+    ->  Hash Join  (cost=182.85..383.84 rows=1 width=40) (actual time=0.921..6.509 rows=865 loops=1)
+          Hash Cond: (c.id = v.chunk_id)
+          Buffers: shared hit=3588 read=1
+          I/O Timings: shared read=0.030
+          ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..200.45 rows=371 width=16) (actual time=0.042..0.385 rows=865 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                Buffers: shared hit=55
+          ->  Hash  (cost=178.25..178.25 rows=333 width=50) (actual time=0.330..0.332 rows=950 loops=1)
+                Buckets: 1024  Batches: 1  Memory Usage: 85kB
+                Buffers: shared hit=51
+                ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..178.25 rows=333 width=50) (actual time=0.012..0.214 rows=950 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                      Buffers: shared hit=51
+  ->  Sort  (cost=0.03..0.04 rows=1 width=40) (actual time=6.843..6.849 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=3591 read=1
+        I/O Timings: shared read=0.030
+        ->  CTE Scan on cand  (cost=0.00..0.02 rows=1 width=40) (actual time=0.924..6.713 rows=865 loops=1)
+              Buffers: shared hit=3588 read=1
+              I/O Timings: shared read=0.030
+Planning:
+  Buffers: shared hit=116 read=3
+  I/O Timings: shared read=0.033
+Planning Time: 1.492 ms
+Execution Time: 6.924 ms
+
+-- plan exact/vector_plain, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.472..6.479 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.471..6.475 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.480..6.427 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.416..5.551 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.204 ms
+Execution Time: 6.507 ms
+-- vector branch
+Limit  (cost=576.54..576.55 rows=1 width=40) (actual time=3.184..3.195 rows=50 loops=1)
+  Buffers: shared hit=1038
+  CTE cand
+    ->  Hash Join  (cost=205.52..576.51 rows=1 width=40) (actual time=0.465..2.889 rows=865 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=1035
+          ->  Index Scan using emb_vector_plain_scope_idx on emb_vector_plain v  (cost=0.43..370.54 rows=334 width=6184) (actual time=0.025..1.818 rows=950 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                Buffers: shared hit=980
+          ->  Hash  (cost=200.45..200.45 rows=371 width=16) (actual time=0.433..0.434 rows=865 loops=1)
+                Buckets: 1024  Batches: 1  Memory Usage: 49kB
+                Buffers: shared hit=55
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..200.45 rows=371 width=16) (actual time=0.037..0.340 rows=865 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                      Buffers: shared hit=55
+  ->  Sort  (cost=0.03..0.04 rows=1 width=40) (actual time=3.184..3.189 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=1038
+        ->  CTE Scan on cand  (cost=0.00..0.02 rows=1 width=40) (actual time=0.467..3.081 rows=865 loops=1)
+              Buffers: shared hit=1035
+Planning:
+  Buffers: shared hit=72 read=3
+  I/O Timings: shared read=0.031
+Planning Time: 0.603 ms
+Execution Time: 3.255 ms
+
+-- plan exact/halfvec_plain, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.923..6.930 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.922..6.925 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.506..6.874 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.446..5.946 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.225 ms
+Execution Time: 6.961 ms
+-- vector branch
+Limit  (cost=573.72..573.72 rows=1 width=40) (actual time=2.667..2.675 rows=50 loops=1)
+  Buffers: shared hit=568
+  CTE cand
+    ->  Hash Join  (cost=205.52..573.69 rows=1 width=40) (actual time=0.465..2.386 rows=865 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=565
+          ->  Index Scan using emb_halfvec_plain_scope_idx on emb_halfvec_plain v  (cost=0.43..367.42 rows=450 width=3112) (actual time=0.016..1.379 rows=950 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                Buffers: shared hit=510
+          ->  Hash  (cost=200.45..200.45 rows=371 width=16) (actual time=0.442..0.442 rows=865 loops=1)
+                Buckets: 1024  Batches: 1  Memory Usage: 49kB
+                Buffers: shared hit=55
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..200.45 rows=371 width=16) (actual time=0.033..0.350 rows=865 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                      Buffers: shared hit=55
+  ->  Sort  (cost=0.03..0.04 rows=1 width=40) (actual time=2.666..2.669 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=568
+        ->  CTE Scan on cand  (cost=0.00..0.02 rows=1 width=40) (actual time=0.466..2.570 rows=865 loops=1)
+              Buffers: shared hit=565
+Planning:
+  Buffers: shared hit=73 read=2
+  I/O Timings: shared read=0.022
+Planning Time: 0.602 ms
+Execution Time: 2.727 ms
+
+-- plan hnsw/vector/ef40/relaxed, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.598..6.606 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.598..6.601 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.411..6.550 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.355..5.607 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.482 ms
+Execution Time: 6.636 ms
+-- vector branch
+Sort  (cost=10000344290.78..10000344290.78 rows=1 width=40) (actual time=5.512..5.517 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1042 read=202
+  I/O Timings: shared read=2.053
+  CTE r
+    ->  Limit  (cost=827.52..344290.75 rows=1 width=40) (actual time=4.499..5.451 rows=50 loops=1)
+          Buffers: shared hit=1042 read=202
+          I/O Timings: shared read=2.053
+          ->  Nested Loop  (cost=827.52..344290.75 rows=1 width=40) (actual time=4.498..5.444 rows=50 loops=1)
+                Buffers: shared hit=1042 read=202
+                I/O Timings: shared read=2.053
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=827.07..343451.63 rows=333 width=50) (actual time=4.249..4.676 rows=58 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=587 read=202
+                      I/O Timings: shared read=2.053
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.52 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..0.02 rows=1 width=40) (actual time=4.503..5.497 rows=50 loops=1)
+        Buffers: shared hit=1042 read=202
+        I/O Timings: shared read=2.053
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.729 ms
+Execution Time: 5.577 ms
+
+-- plan hnsw/vector/ef100/relaxed, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.456..6.464 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.455..6.459 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.403..6.408 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.345..5.470 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.283 ms
+Execution Time: 6.492 ms
+-- vector branch
+Sort  (cost=10000344290.78..10000344290.78 rows=1 width=40) (actual time=3.117..3.121 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1305
+  CTE r
+    ->  Limit  (cost=1652.74..344290.75 rows=1 width=40) (actual time=2.599..3.087 rows=50 loops=1)
+          Buffers: shared hit=1305
+          ->  Nested Loop  (cost=1652.74..344290.75 rows=1 width=40) (actual time=2.598..3.082 rows=50 loops=1)
+                Buffers: shared hit=1305
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=1652.29..343451.63 rows=333 width=50) (actual time=2.458..2.505 rows=58 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=850
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.52 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..0.02 rows=1 width=40) (actual time=2.602..3.106 rows=50 loops=1)
+        Buffers: shared hit=1305
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.782 ms
+Execution Time: 3.177 ms
+
+-- plan hnsw/halfvec/ef100/relaxed, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=6.455..6.462 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=6.454..6.457 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.458..6.408 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.392..5.534 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.155 ms
+Execution Time: 6.491 ms
+-- vector branch
+Sort  (cost=10000179839.68..10000179839.69 rows=1 width=40) (actual time=3.450..3.453 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1122
+  CTE r
+    ->  Limit  (cost=832.20..179839.65 rows=1 width=40) (actual time=2.307..3.401 rows=50 loops=1)
+          Buffers: shared hit=1122
+          ->  Nested Loop  (cost=832.20..179839.65 rows=1 width=40) (actual time=2.306..3.395 rows=50 loops=1)
+                Buffers: shared hit=1122
+                ->  Index Scan using spk04_emb_halfvec_expr_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=831.76..179000.53 rows=333 width=50) (actual time=2.175..2.225 rows=58 loops=1)
+                      Order By: ((embedding)::halfvec(1536) <=> '[1536 số]'::halfvec(1536))
+                      Filter: ((reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=667
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.52 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..0.02 rows=1 width=40) (actual time=2.310..3.437 rows=50 loops=1)
+        Buffers: shared hit=1122
+Planning:
+  Buffers: shared hit=120
+Planning Time: 0.676 ms
+Execution Time: 3.512 ms
+
+-- plan auto/vector/ef100/relaxed, project 10, query 0 (specific): vynhde or phuaptyp or cianyt
+-- keyword branch
+Limit  (cost=193.50..193.50 rows=1 width=36) (actual time=7.010..7.017 rows=50 loops=1)
+  Buffers: shared hit=4741
+  ->  Sort  (cost=193.50..193.50 rows=1 width=36) (actual time=7.009..7.012 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)) DESC, t.chunk_id
+        Sort Method: quicksort  Memory: 32kB
+        Buffers: shared hit=4741
+        ->  Nested Loop  (cost=0.88..193.49 rows=1 width=36) (actual time=1.662..6.943 rows=100 loops=1)
+              Buffers: shared hit=4735
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..180.05 rows=5 width=50) (actual time=1.585..5.959 rows=110 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''vynhde'' | ''phuaptyp'' | ''cianyt'''::tsquery)
+                    Rows Removed by Filter: 840
+                    Buffers: shared hit=3895
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.45..2.69 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=110)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{10 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=440
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.530 ms
+Execution Time: 7.067 ms
+-- vector branch
+Sort  (cost=383.89..383.89 rows=1 width=40) (actual time=6.721..6.726 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=3592
+  CTE r
+    ->  Limit  (cost=383.85..383.86 rows=1 width=40) (actual time=6.683..6.693 rows=50 loops=1)
+          Buffers: shared hit=3589
+          ->  Sort  (cost=383.85..383.86 rows=1 width=40) (actual time=6.681..6.688 rows=50 loops=1)
+                Sort Key: ((v.embedding <=> '[1536 số]'::vector))
+                Sort Method: top-N heapsort  Memory: 30kB
+                Buffers: shared hit=3589
+                ->  Hash Join  (cost=182.85..383.84 rows=1 width=40) (actual time=0.633..6.508 rows=865 loops=1)
+                      Hash Cond: (c.id = v.chunk_id)
+                      Buffers: shared hit=3589
+                      ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..200.45 rows=371 width=16) (actual time=0.045..0.414 rows=865 loops=1)
+                            Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                            Buffers: shared hit=55
+                      ->  Hash  (cost=178.25..178.25 rows=333 width=50) (actual time=0.462..0.463 rows=950 loops=1)
+                            Buckets: 1024  Batches: 1  Memory Usage: 85kB
+                            Buffers: shared hit=51
+                            ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..178.25 rows=333 width=50) (actual time=0.014..0.339 rows=950 loops=1)
+                                  Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{10 uuid}'::uuid[])))
+                                  Buffers: shared hit=51
+  ->  CTE Scan on r  (cost=0.00..0.02 rows=1 width=40) (actual time=6.686..6.701 rows=50 loops=1)
+        Buffers: shared hit=3589
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.734 ms
+Execution Time: 6.793 ms
+
+-- plan exact/vector, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=28.446..28.453 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=28.445..28.448 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=7.325..28.358 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=7.250..26.110 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.268 ms
+Execution Time: 28.480 ms
+-- vector branch
+Limit  (cost=1693.15..1693.18 rows=10 width=40) (actual time=34.496..34.505 rows=50 loops=1)
+  Buffers: shared hit=18766
+  CTE cand
+    ->  Hash Join  (cost=835.69..1692.79 rows=10 width=40) (actual time=2.109..32.693 rows=4548 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=18763
+          ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..852.52 rows=1900 width=50) (actual time=0.021..1.522 rows=4997 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                Buffers: shared hit=264
+          ->  Hash  (cost=814.74..814.74 rows=1641 width=16) (actual time=1.996..1.997 rows=4548 loops=1)
+                Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 278kB
+                Buffers: shared hit=284
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..814.74 rows=1641 width=16) (actual time=0.035..1.488 rows=4548 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                      Buffers: shared hit=284
+  ->  Sort  (cost=0.37..0.39 rows=10 width=40) (actual time=34.495..34.499 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=18766
+        ->  CTE Scan on cand  (cost=0.00..0.20 rows=10 width=40) (actual time=2.111..33.918 rows=4548 loops=1)
+              Buffers: shared hit=18763
+Planning:
+  Buffers: shared hit=119
+Planning Time: 0.721 ms
+Execution Time: 34.576 ms
+
+-- plan exact/vector_plain, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=28.083..28.090 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=28.082..28.085 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=7.140..27.994 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=7.069..25.804 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.463 ms
+Execution Time: 28.118 ms
+-- vector branch
+Limit  (cost=2805.04..2805.06 rows=10 width=40) (actual time=15.931..15.941 rows=50 loops=1)
+  Buffers: shared hit=5435
+  CTE cand
+    ->  Hash Join  (cost=835.69..2804.67 rows=10 width=40) (actual time=2.229..14.237 rows=4548 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=5432
+          ->  Index Scan using emb_vector_plain_scope_idx on emb_vector_plain v  (cost=0.43..1964.72 rows=1780 width=6184) (actual time=0.020..7.454 rows=4997 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                Buffers: shared hit=5148
+          ->  Hash  (cost=814.74..814.74 rows=1641 width=16) (actual time=2.199..2.200 rows=4548 loops=1)
+                Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 278kB
+                Buffers: shared hit=284
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..814.74 rows=1641 width=16) (actual time=0.033..1.675 rows=4548 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                      Buffers: shared hit=284
+  ->  Sort  (cost=0.37..0.39 rows=10 width=40) (actual time=15.930..15.934 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=5435
+        ->  CTE Scan on cand  (cost=0.00..0.20 rows=10 width=40) (actual time=2.231..15.474 rows=4548 loops=1)
+              Buffers: shared hit=5432
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.622 ms
+Execution Time: 16.017 ms
+
+-- plan exact/halfvec_plain, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=28.193..28.199 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=28.192..28.195 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=7.763..28.104 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=7.693..25.990 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.238 ms
+Execution Time: 28.226 ms
+-- vector branch
+Limit  (cost=2482.93..2482.96 rows=11 width=40) (actual time=13.061..13.069 rows=50 loops=1)
+  Buffers: shared hit=2960
+  CTE cand
+    ->  Hash Join  (cost=835.69..2482.52 rows=11 width=40) (actual time=2.257..11.567 rows=4548 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=2957
+          ->  Index Scan using emb_halfvec_plain_scope_idx on emb_halfvec_plain v  (cost=0.43..1641.96 rows=2013 width=3112) (actual time=0.031..5.732 rows=4997 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                Buffers: shared hit=2673
+          ->  Hash  (cost=814.74..814.74 rows=1641 width=16) (actual time=2.211..2.211 rows=4548 loops=1)
+                Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 278kB
+                Buffers: shared hit=284
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..814.74 rows=1641 width=16) (actual time=0.040..1.611 rows=4548 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                      Buffers: shared hit=284
+  ->  Sort  (cost=0.41..0.44 rows=11 width=40) (actual time=13.059..13.062 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=2960
+        ->  CTE Scan on cand  (cost=0.00..0.22 rows=11 width=40) (actual time=2.261..12.665 rows=4548 loops=1)
+              Buffers: shared hit=2957
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.811 ms
+Execution Time: 13.157 ms
+
+-- plan hnsw/vector/ef40/relaxed, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=28.137..28.145 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=28.136..28.140 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=7.196..28.045 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=7.128..25.951 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.519 ms
+Execution Time: 28.179 ms
+-- vector branch
+Sort  (cost=10000347520.42..10000347520.45 rows=10 width=40) (actual time=5.727..5.731 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=3001
+  CTE r
+    ->  Limit  (cost=827.72..347520.06 rows=10 width=40) (actual time=5.081..5.703 rows=50 loops=1)
+          Buffers: shared hit=3001
+          ->  Nested Loop  (cost=827.72..347520.06 rows=10 width=40) (actual time=5.080..5.698 rows=50 loops=1)
+                Buffers: shared hit=3001
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=827.17..343451.73 rows=1900 width=50) (actual time=4.948..5.190 rows=55 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 160
+                      Buffers: shared hit=2558
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.14 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=55)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=220
+  ->  CTE Scan on r  (cost=0.00..0.20 rows=10 width=40) (actual time=5.083..5.718 rows=50 loops=1)
+        Buffers: shared hit=3001
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.777 ms
+Execution Time: 5.784 ms
+
+-- plan hnsw/vector/ef100/relaxed, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=27.823..27.830 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=27.822..27.825 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=7.037..27.708 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=6.957..25.566 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.274 ms
+Execution Time: 27.858 ms
+-- vector branch
+Sort  (cost=10000347520.42..10000347520.45 rows=10 width=40) (actual time=6.372..6.375 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=3229
+  CTE r
+    ->  Limit  (cost=1652.94..347520.06 rows=10 width=40) (actual time=5.912..6.346 rows=50 loops=1)
+          Buffers: shared hit=3229
+          ->  Nested Loop  (cost=1652.94..347520.06 rows=10 width=40) (actual time=5.911..6.341 rows=50 loops=1)
+                Buffers: shared hit=3229
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=1652.39..343451.73 rows=1900 width=50) (actual time=5.680..5.728 rows=55 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 100
+                      Buffers: shared hit=2786
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.14 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=55)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=220
+  ->  CTE Scan on r  (cost=0.00..0.20 rows=10 width=40) (actual time=5.914..6.362 rows=50 loops=1)
+        Buffers: shared hit=3229
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.782 ms
+Execution Time: 6.427 ms
+
+-- plan hnsw/halfvec/ef100/relaxed, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=32.186..32.197 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=32.185..32.190 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=9.366..32.083 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=9.281..29.599 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.339 ms
+Execution Time: 32.282 ms
+-- vector branch
+Sort  (cost=10000183069.35..10000183069.37 rows=10 width=40) (actual time=8.540..8.543 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1792
+  CTE r
+    ->  Limit  (cost=832.40..183068.98 rows=10 width=40) (actual time=7.453..8.460 rows=50 loops=1)
+          Buffers: shared hit=1792
+          ->  Nested Loop  (cost=832.40..183068.98 rows=10 width=40) (actual time=7.450..8.453 rows=50 loops=1)
+                Buffers: shared hit=1792
+                ->  Index Scan using spk04_emb_halfvec_expr_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=831.86..179000.63 rows=1900 width=50) (actual time=7.088..7.143 rows=55 loops=1)
+                      Order By: ((embedding)::halfvec(1536) <=> '[1536 số]'::halfvec(1536))
+                      Filter: ((reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=1349
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.14 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=55)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=220
+  ->  CTE Scan on r  (cost=0.00..0.20 rows=10 width=40) (actual time=7.455..8.486 rows=50 loops=1)
+        Buffers: shared hit=1792
+Planning:
+  Buffers: shared hit=120
+Planning Time: 1.209 ms
+Execution Time: 8.628 ms
+
+-- plan auto/vector/ef100/relaxed, project 50, query 0 (specific): tremliacvaop or traivun or veotsaoc
+-- keyword branch
+Limit  (cost=942.68..942.69 rows=1 width=36) (actual time=33.818..33.826 rows=50 loops=1)
+  Buffers: shared hit=22449
+  ->  Sort  (cost=942.68..942.69 rows=1 width=36) (actual time=33.817..33.820 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=22449
+        ->  Nested Loop  (cost=0.98..942.67 rows=1 width=36) (actual time=8.385..33.651 rows=251 loops=1)
+              Buffers: shared hit=22443
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..864.68 rows=28 width=50) (actual time=8.312..30.218 rows=277 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tremliacvaop'' | ''traivun'' | ''veotsaoc'''::tsquery)
+                    Rows Removed by Filter: 4720
+                    Buffers: shared hit=20329
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.55..2.79 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=277)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{50 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1108
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.672 ms
+Execution Time: 33.934 ms
+-- vector branch
+Sort  (cost=1693.35..1693.37 rows=10 width=40) (actual time=32.263..32.267 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=18766
+  CTE r
+    ->  Limit  (cost=1692.95..1692.98 rows=10 width=40) (actual time=32.231..32.239 rows=50 loops=1)
+          Buffers: shared hit=18763
+          ->  Sort  (cost=1692.95..1692.98 rows=10 width=40) (actual time=32.230..32.235 rows=50 loops=1)
+                Sort Key: ((v.embedding <=> '[1536 số]'::vector))
+                Sort Method: top-N heapsort  Memory: 31kB
+                Buffers: shared hit=18763
+                ->  Hash Join  (cost=835.69..1692.79 rows=10 width=40) (actual time=2.124..31.359 rows=4548 loops=1)
+                      Hash Cond: (v.chunk_id = c.id)
+                      Buffers: shared hit=18763
+                      ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..852.52 rows=1900 width=50) (actual time=0.020..1.527 rows=4997 loops=1)
+                            Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                            Buffers: shared hit=264
+                      ->  Hash  (cost=814.74..814.74 rows=1641 width=16) (actual time=1.993..1.994 rows=4548 loops=1)
+                            Buckets: 8192 (originally 2048)  Batches: 1 (originally 1)  Memory Usage: 278kB
+                            Buffers: shared hit=284
+                            ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..814.74 rows=1641 width=16) (actual time=0.035..1.481 rows=4548 loops=1)
+                                  Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{50 uuid}'::uuid[])))
+                                  Buffers: shared hit=284
+  ->  CTE Scan on r  (cost=0.00..0.20 rows=10 width=40) (actual time=32.234..32.246 rows=50 loops=1)
+        Buffers: shared hit=18763
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.773 ms
+Execution Time: 32.315 ms
+
+-- plan exact/vector, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.570..53.577 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.569..53.572 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=0.915..53.469 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=0.862..50.964 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.515 ms
+Execution Time: 53.607 ms
+-- vector branch
+Limit  (cost=2976.26..2976.37 rows=42 width=40) (actual time=62.605..62.617 rows=50 loops=1)
+  Buffers: shared hit=37882
+  CTE cand
+    ->  Hash Join  (cost=1486.76..2974.29 rows=42 width=40) (actual time=3.564..58.883 rows=9189 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=37879
+          ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..1477.57 rows=3920 width=50) (actual time=0.030..3.057 rows=10098 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                Buffers: shared hit=529
+          ->  Hash  (cost=1446.19..1446.19 rows=3211 width=16) (actual time=3.439..3.440 rows=9189 loops=1)
+                Buckets: 16384 (originally 4096)  Batches: 1 (originally 1)  Memory Usage: 559kB
+                Buffers: shared hit=571
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..1446.19 rows=3211 width=16) (actual time=0.032..2.286 rows=9189 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                      Buffers: shared hit=571
+  ->  Sort  (cost=1.97..2.08 rows=42 width=40) (actual time=62.604..62.609 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=37882
+        ->  CTE Scan on cand  (cost=0.00..0.84 rows=42 width=40) (actual time=3.566..61.508 rows=9189 loops=1)
+              Buffers: shared hit=37879
+Planning:
+  Buffers: shared hit=119
+Planning Time: 0.960 ms
+Execution Time: 62.759 ms
+
+-- plan exact/vector_plain, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=56.700..56.707 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=56.699..56.702 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=0.878..56.582 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=0.815..53.528 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.008..0.008 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.464 ms
+Execution Time: 56.735 ms
+-- vector branch
+Limit  (cost=5412.74..5412.84 rows=38 width=40) (actual time=28.667..28.677 rows=50 loops=1)
+  Buffers: shared hit=10973
+  CTE cand
+    ->  Hash Join  (cost=1486.76..5410.99 rows=38 width=40) (actual time=3.798..25.406 rows=9189 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=10970
+          ->  Index Scan using emb_vector_plain_scope_idx on emb_vector_plain v  (cost=0.43..3915.21 rows=3561 width=6184) (actual time=0.047..13.202 rows=10098 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                Buffers: shared hit=10399
+          ->  Hash  (cost=1446.19..1446.19 rows=3211 width=16) (actual time=3.734..3.734 rows=9189 loops=1)
+                Buckets: 16384 (originally 4096)  Batches: 1 (originally 1)  Memory Usage: 559kB
+                Buffers: shared hit=571
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..1446.19 rows=3211 width=16) (actual time=0.036..2.540 rows=9189 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                      Buffers: shared hit=571
+  ->  Sort  (cost=1.76..1.85 rows=38 width=40) (actual time=28.665..28.670 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=10973
+        ->  CTE Scan on cand  (cost=0.00..0.76 rows=38 width=40) (actual time=3.802..27.801 rows=9189 loops=1)
+              Buffers: shared hit=10970
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.906 ms
+Execution Time: 28.808 ms
+
+-- plan exact/halfvec_plain, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.625..53.632 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.624..53.627 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=0.880..53.512 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=0.845..50.934 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.364 ms
+Execution Time: 53.658 ms
+-- vector branch
+Limit  (cost=4689.68..4689.79 rows=42 width=40) (actual time=23.100..23.111 rows=50 loops=1)
+  Buffers: shared hit=5968
+  CTE cand
+    ->  Hash Join  (cost=1486.76..4687.71 rows=42 width=40) (actual time=3.435..20.105 rows=9189 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=5965
+          ->  Index Scan using emb_halfvec_plain_scope_idx on emb_halfvec_plain v  (cost=0.43..3190.95 rows=3934 width=3112) (actual time=0.032..9.819 rows=10098 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                Buffers: shared hit=5394
+          ->  Hash  (cost=1446.19..1446.19 rows=3211 width=16) (actual time=3.391..3.392 rows=9189 loops=1)
+                Buckets: 16384 (originally 4096)  Batches: 1 (originally 1)  Memory Usage: 559kB
+                Buffers: shared hit=571
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..1446.19 rows=3211 width=16) (actual time=0.033..2.275 rows=9189 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                      Buffers: shared hit=571
+  ->  Sort  (cost=1.97..2.08 rows=42 width=40) (actual time=23.100..23.104 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=5968
+        ->  CTE Scan on cand  (cost=0.00..0.84 rows=42 width=40) (actual time=3.438..22.377 rows=9189 loops=1)
+              Buffers: shared hit=5965
+Planning:
+  Buffers: shared hit=75
+Planning Time: 0.742 ms
+Execution Time: 23.213 ms
+
+-- plan hnsw/vector/ef40/relaxed, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.397..53.404 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=53.396..53.399 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=1.181..53.287 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=1.112..50.790 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.548 ms
+Execution Time: 53.446 ms
+-- vector branch
+Sort  (cost=10000350763.63..10000350763.74 rows=42 width=40) (actual time=6.585..6.589 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1667
+  CTE r
+    ->  Limit  (cost=827.97..350761.66 rows=42 width=40) (actual time=5.345..6.550 rows=50 loops=1)
+          Buffers: shared hit=1667
+          ->  Nested Loop  (cost=827.97..350761.66 rows=42 width=40) (actual time=5.344..6.543 rows=50 loops=1)
+                Buffers: shared hit=1667
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=827.30..343451.86 rows=3920 width=50) (actual time=5.197..5.853 rows=54 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=1228
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..1.86 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=54)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=216
+  ->  CTE Scan on r  (cost=0.00..0.84 rows=42 width=40) (actual time=5.348..6.572 rows=50 loops=1)
+        Buffers: shared hit=1667
+Planning:
+  Buffers: shared hit=123
+Planning Time: 2.750 ms
+Execution Time: 6.656 ms
+
+-- plan hnsw/vector/ef100/relaxed, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=57.887..57.894 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=57.886..57.889 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=1.080..57.736 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=1.027..54.162 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.009..0.009 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.528 ms
+Execution Time: 57.930 ms
+-- vector branch
+Sort  (cost=10000350763.63..10000350763.74 rows=42 width=40) (actual time=5.621..5.626 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1901 read=3
+  I/O Timings: shared read=0.041
+  CTE r
+    ->  Limit  (cost=1653.19..350761.66 rows=42 width=40) (actual time=5.115..5.595 rows=50 loops=1)
+          Buffers: shared hit=1901 read=3
+          I/O Timings: shared read=0.041
+          ->  Nested Loop  (cost=1653.19..350761.66 rows=42 width=40) (actual time=5.113..5.589 rows=50 loops=1)
+                Buffers: shared hit=1901 read=3
+                I/O Timings: shared read=0.041
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=1652.51..343451.86 rows=3920 width=50) (actual time=4.909..4.961 rows=54 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=1462 read=3
+                      I/O Timings: shared read=0.041
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..1.86 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=54)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=216
+  ->  CTE Scan on r  (cost=0.00..0.84 rows=42 width=40) (actual time=5.117..5.613 rows=50 loops=1)
+        Buffers: shared hit=1901 read=3
+        I/O Timings: shared read=0.041
+Planning:
+  Buffers: shared hit=123
+Planning Time: 1.059 ms
+Execution Time: 5.699 ms
+
+-- plan hnsw/halfvec/ef100/relaxed, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=54.897..54.904 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=54.896..54.899 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=0.883..54.754 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=0.847..51.947 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.660 ms
+Execution Time: 54.935 ms
+-- vector branch
+Sort  (cost=10000186312.64..10000186312.74 rows=42 width=40) (actual time=4.357..4.361 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1163 read=2
+  I/O Timings: shared read=0.036
+  CTE r
+    ->  Limit  (cost=832.65..186310.67 rows=42 width=40) (actual time=3.266..4.329 rows=50 loops=1)
+          Buffers: shared hit=1163 read=2
+          I/O Timings: shared read=0.036
+          ->  Nested Loop  (cost=832.65..186310.67 rows=42 width=40) (actual time=3.263..4.321 rows=50 loops=1)
+                Buffers: shared hit=1163 read=2
+                I/O Timings: shared read=0.036
+                ->  Index Scan using spk04_emb_halfvec_expr_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=831.98..179000.76 rows=3920 width=50) (actual time=2.952..3.013 rows=55 loops=1)
+                      Order By: ((embedding)::halfvec(1536) <=> '[1536 số]'::halfvec(1536))
+                      Filter: ((reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=720 read=2
+                      I/O Timings: shared read=0.036
+                ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..1.86 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=55)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=220
+  ->  CTE Scan on r  (cost=0.00..0.84 rows=42 width=40) (actual time=3.269..4.344 rows=50 loops=1)
+        Buffers: shared hit=1163 read=2
+        I/O Timings: shared read=0.036
+Planning:
+  Buffers: shared hit=120
+Planning Time: 1.168 ms
+Execution Time: 4.452 ms
+
+-- plan auto/vector/ef100/relaxed, project 100, query 0 (specific): tamvym or nainhlonh or muangbiampaim
+-- keyword branch
+Limit  (cost=1652.54..1652.55 rows=1 width=36) (actual time=55.607..55.614 rows=50 loops=1)
+  Buffers: shared hit=42460
+  ->  Sort  (cost=1652.54..1652.55 rows=1 width=36) (actual time=55.606..55.609 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 30kB
+        Buffers: shared hit=42460
+        ->  Nested Loop  (cost=1.10..1652.53 rows=1 width=36) (actual time=0.929..55.483 rows=163 loops=1)
+              Buffers: shared hit=42454
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..1493.58 rows=55 width=50) (actual time=0.880..52.598 rows=177 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''tamvym'' | ''nainhlonh'' | ''muangbiampaim'''::tsquery)
+                    Rows Removed by Filter: 9921
+                    Buffers: shared hit=41093
+              ->  Index Scan using chunk_pkey on chunk c  (cost=0.67..2.89 rows=1 width=16) (actual time=0.007..0.007 rows=1 loops=177)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{100 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=708
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.881 ms
+Execution Time: 55.649 ms
+-- vector branch
+Sort  (cost=2977.50..2977.61 rows=42 width=40) (actual time=61.993..61.998 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=37882
+  CTE r
+    ->  Limit  (cost=2975.42..2975.53 rows=42 width=40) (actual time=61.961..61.970 rows=50 loops=1)
+          Buffers: shared hit=37879
+          ->  Sort  (cost=2975.42..2975.53 rows=42 width=40) (actual time=61.960..61.965 rows=50 loops=1)
+                Sort Key: ((v.embedding <=> '[1536 số]'::vector))
+                Sort Method: top-N heapsort  Memory: 31kB
+                Buffers: shared hit=37879
+                ->  Hash Join  (cost=1486.76..2974.29 rows=42 width=40) (actual time=3.651..60.249 rows=9189 loops=1)
+                      Hash Cond: (v.chunk_id = c.id)
+                      Buffers: shared hit=37879
+                      ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..1477.57 rows=3920 width=50) (actual time=0.048..3.253 rows=10098 loops=1)
+                            Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                            Buffers: shared hit=529
+                      ->  Hash  (cost=1446.19..1446.19 rows=3211 width=16) (actual time=3.490..3.491 rows=9189 loops=1)
+                            Buckets: 16384 (originally 4096)  Batches: 1 (originally 1)  Memory Usage: 559kB
+                            Buffers: shared hit=571
+                            ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..1446.19 rows=3211 width=16) (actual time=0.100..2.385 rows=9189 loops=1)
+                                  Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{100 uuid}'::uuid[])))
+                                  Buffers: shared hit=571
+  ->  CTE Scan on r  (cost=0.00..0.84 rows=42 width=40) (actual time=61.962..61.977 rows=50 loops=1)
+        Buffers: shared hit=37879
+Planning:
+  Buffers: shared hit=123
+Planning Time: 0.856 ms
+Execution Time: 62.047 ms
+
+-- plan exact/vector, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=149.448..149.456 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=149.447..149.451 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=8.631..149.235 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=8.559..144.452 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.419 ms
+Execution Time: 149.492 ms
+-- vector branch
+Limit  (cost=5388.83..5388.96 rows=50 width=40) (actual time=169.958..169.971 rows=50 loops=1)
+  Buffers: shared hit=95835
+  CTE cand
+    ->  Hash Join  (cost=2450.01..5374.99 rows=260 width=40) (actual time=11.517..158.779 rows=23275 loops=1)
+          Hash Cond: (c.id = v.chunk_id)
+          Buffers: shared hit=95832
+          ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..2902.69 rows=8410 width=16) (actual time=0.050..7.733 rows=23275 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                Buffers: shared hit=1419
+          ->  Hash  (cost=2333.87..2333.87 rows=9257 width=50) (actual time=11.337..11.339 rows=25572 loops=1)
+                Buckets: 32768 (originally 16384)  Batches: 1 (originally 1)  Memory Usage: 2304kB
+                Buffers: shared hit=1290
+                ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..2333.87 rows=9257 width=50) (actual time=0.045..6.602 rows=25572 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                      Buffers: shared hit=1290
+  ->  Sort  (cost=13.84..14.49 rows=260 width=40) (actual time=169.957..169.963 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=95835
+        ->  CTE Scan on cand  (cost=0.00..5.20 rows=260 width=40) (actual time=11.519..167.042 rows=23275 loops=1)
+              Buffers: shared hit=95832
+Planning:
+  Buffers: shared hit=119
+Planning Time: 1.251 ms
+Execution Time: 170.233 ms
+
+-- plan exact/vector_plain, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=144.107..144.115 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=144.106..144.109 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=8.771..143.921 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=8.629..139.424 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.942 ms
+Execution Time: 144.146 ms
+-- vector branch
+Limit  (cost=13630.18..13630.31 rows=50 width=40) (actual time=76.911..76.922 rows=50 loops=1)
+  Buffers: shared hit=27749
+  CTE cand
+    ->  Hash Join  (cost=3008.24..13615.60 rows=274 width=40) (actual time=8.915..68.337 rows=23275 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=27746
+          ->  Index Scan using emb_vector_plain_scope_idx on emb_vector_plain v  (cost=0.43..10581.54 rows=9737 width=6184) (actual time=0.049..37.107 rows=25572 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                Buffers: shared hit=26327
+          ->  Hash  (cost=2902.69..2902.69 rows=8410 width=16) (actual time=8.846..8.846 rows=23275 loops=1)
+                Buckets: 32768 (originally 16384)  Batches: 1 (originally 1)  Memory Usage: 1348kB
+                Buffers: shared hit=1419
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..2902.69 rows=8410 width=16) (actual time=0.048..5.897 rows=23275 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                      Buffers: shared hit=1419
+  ->  Sort  (cost=14.58..15.27 rows=274 width=40) (actual time=76.910..76.915 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=27749
+        ->  CTE Scan on cand  (cost=0.00..5.48 rows=274 width=40) (actual time=8.918..74.928 rows=23275 loops=1)
+              Buffers: shared hit=27746
+Planning:
+  Buffers: shared hit=75
+Planning Time: 1.235 ms
+Execution Time: 77.274 ms
+
+-- plan exact/halfvec_plain, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=143.874..143.881 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=143.873..143.876 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=9.091..143.686 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=8.977..139.261 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.466 ms
+Execution Time: 143.911 ms
+-- vector branch
+Limit  (cost=11185.15..11185.27 rows=50 width=40) (actual time=83.813..83.823 rows=50 loops=1)
+  Buffers: shared hit=15068
+  CTE cand
+    ->  Hash Join  (cost=3008.24..11169.87 rows=287 width=40) (actual time=10.247..61.017 rows=23275 loops=1)
+          Hash Cond: (v.chunk_id = c.id)
+          Buffers: shared hit=15065
+          ->  Index Scan using emb_halfvec_plain_scope_idx on emb_halfvec_plain v  (cost=0.43..8134.51 rows=10221 width=3112) (actual time=0.062..31.340 rows=25572 loops=1)
+                Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                Buffers: shared hit=13646
+          ->  Hash  (cost=2902.69..2902.69 rows=8410 width=16) (actual time=10.163..10.164 rows=23275 loops=1)
+                Buckets: 32768 (originally 16384)  Batches: 1 (originally 1)  Memory Usage: 1348kB
+                Buffers: shared hit=1419
+                ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..2902.69 rows=8410 width=16) (actual time=0.047..6.507 rows=23275 loops=1)
+                      Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                      Buffers: shared hit=1419
+  ->  Sort  (cost=15.27..15.99 rows=287 width=40) (actual time=83.812..83.817 rows=50 loops=1)
+        Sort Key: cand.distance
+        Sort Method: top-N heapsort  Memory: 31kB
+        Buffers: shared hit=15068
+        ->  CTE Scan on cand  (cost=0.00..5.74 rows=287 width=40) (actual time=10.250..81.753 rows=23275 loops=1)
+              Buffers: shared hit=15065
+Planning:
+  Buffers: shared hit=75
+Planning Time: 1.286 ms
+Execution Time: 84.051 ms
+
+-- plan hnsw/vector/ef40/relaxed, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=149.108..149.116 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=149.107..149.110 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=9.617..148.911 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=9.532..144.482 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.083 ms
+Execution Time: 149.158 ms
+-- vector branch
+Sort  (cost=10000069992.21..10000069992.33 rows=50 width=40) (actual time=6.096..6.099 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1908 read=8
+  I/O Timings: shared read=1.585
+  CTE r
+    ->  Limit  (cost=828.72..69989.80 rows=50 width=40) (actual time=5.358..6.072 rows=50 loops=1)
+          Buffers: shared hit=1908 read=8
+          I/O Timings: shared read=1.585
+          ->  Nested Loop  (cost=828.72..360466.33 rows=260 width=40) (actual time=5.357..6.067 rows=50 loops=1)
+                Buffers: shared hit=1908 read=8
+                I/O Timings: shared read=1.585
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=827.67..343452.23 rows=9257 width=50) (actual time=5.227..5.566 rows=58 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 40
+                      Buffers: shared hit=1453 read=8
+                      I/O Timings: shared read=1.585
+                ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..1.84 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..1.00 rows=50 width=40) (actual time=5.360..6.087 rows=50 loops=1)
+        Buffers: shared hit=1908 read=8
+        I/O Timings: shared read=1.585
+Planning:
+  Buffers: shared hit=123
+Planning Time: 1.535 ms
+Execution Time: 6.167 ms
+
+-- plan hnsw/vector/ef100/relaxed, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=145.743..145.750 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=145.742..145.745 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=8.917..145.545 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=8.804..140.963 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.516 ms
+Execution Time: 145.797 ms
+-- vector branch
+Sort  (cost=10000070658.73..10000070658.85 rows=50 width=40) (actual time=4.815..4.818 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1918 read=17
+  I/O Timings: shared read=0.144
+  CTE r
+    ->  Limit  (cost=1653.94..70656.32 rows=50 width=40) (actual time=4.141..4.733 rows=50 loops=1)
+          Buffers: shared hit=1918 read=17
+          I/O Timings: shared read=0.144
+          ->  Nested Loop  (cost=1653.94..360466.33 rows=260 width=40) (actual time=4.139..4.726 rows=50 loops=1)
+                Buffers: shared hit=1918 read=17
+                I/O Timings: shared read=0.144
+                ->  Index Scan using emb_openai_text_embedding_3_small_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=1652.89..343452.23 rows=9257 width=50) (actual time=3.948..4.038 rows=58 loops=1)
+                      Order By: (embedding <=> '[1536 số]'::vector)
+                      Filter: ((reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=1463 read=17
+                      I/O Timings: shared read=0.144
+                ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..1.84 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..1.00 rows=50 width=40) (actual time=4.144..4.755 rows=50 loops=1)
+        Buffers: shared hit=1918 read=17
+        I/O Timings: shared read=0.144
+Planning:
+  Buffers: shared hit=123
+Planning Time: 1.345 ms
+Execution Time: 4.877 ms
+
+-- plan hnsw/halfvec/ef100/relaxed, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=143.829..143.837 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=143.828..143.832 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=9.592..143.602 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=9.523..139.350 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.003..0.003 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 2.063 ms
+Execution Time: 143.873 ms
+-- vector branch
+Sort  (cost=10000038370.91..10000038371.03 rows=50 width=40) (actual time=10.978..10.982 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=1131 read=214
+  I/O Timings: shared read=6.434
+  CTE r
+    ->  Limit  (cost=833.40..38368.49 rows=50 width=40) (actual time=9.949..10.953 rows=50 loops=1)
+          Buffers: shared hit=1131 read=214
+          I/O Timings: shared read=6.434
+          ->  Nested Loop  (cost=833.40..196015.88 rows=260 width=40) (actual time=9.948..10.947 rows=50 loops=1)
+                Buffers: shared hit=1131 read=214
+                I/O Timings: shared read=6.434
+                ->  Index Scan using spk04_emb_halfvec_expr_hnsw_idx on emb_openai_text_embedding_3_small v  (cost=832.36..179001.13 rows=9257 width=50) (actual time=9.804..9.862 rows=58 loops=1)
+                      Order By: ((embedding)::halfvec(1536) <=> '[1536 số]'::halfvec(1536))
+                      Filter: ((reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Buffers: shared hit=676 read=214
+                      I/O Timings: shared read=6.434
+                ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..1.84 rows=1 width=16) (actual time=0.002..0.002 rows=1 loops=58)
+                      Index Cond: (id = v.chunk_id)
+                      Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                      Rows Removed by Filter: 0
+                      Buffers: shared hit=232
+  ->  CTE Scan on r  (cost=0.00..1.00 rows=50 width=40) (actual time=9.951..10.967 rows=50 loops=1)
+        Buffers: shared hit=1131 read=214
+        I/O Timings: shared read=6.434
+Planning:
+  Buffers: shared hit=120
+Planning Time: 1.414 ms
+Execution Time: 11.069 ms
+
+-- plan auto/vector/ef100/relaxed, project 250, query 0 (specific): noaplaopbuang or vexypnonh or putlenhlic
+-- keyword branch
+Limit  (cost=3126.67..3126.68 rows=4 width=36) (actual time=148.998..149.005 rows=50 loops=1)
+  Buffers: shared hit=107208
+  ->  Sort  (cost=3126.67..3126.68 rows=4 width=36) (actual time=148.996..149.000 rows=50 loops=1)
+        Sort Key: (ts_rank_cd(t.tsv, '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)) DESC, t.chunk_id
+        Sort Method: top-N heapsort  Memory: 29kB
+        Buffers: shared hit=107208
+        ->  Nested Loop  (cost=1.48..3126.63 rows=4 width=36) (actual time=9.473..148.797 rows=380 loops=1)
+              Buffers: shared hit=107202
+              ->  Index Scan using chunk_text_scope_idx on chunk_text t  (cost=0.43..2653.63 rows=147 width=50) (actual time=9.393..143.868 rows=418 loops=1)
+                    Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                    Filter: (tsv @@ '''noaplaopbuang'' | ''vexypnonh'' | ''putlenhlic'''::tsquery)
+                    Rows Removed by Filter: 25154
+                    Buffers: shared hit=104003
+              ->  Index Scan using chunk_pkey on chunk c  (cost=1.05..3.22 rows=1 width=16) (actual time=0.004..0.004 rows=1 loops=418)
+                    Index Cond: (id = t.chunk_id)
+                    Filter: ((region = 'body'::text) AND (reference_id = ANY ('{250 uuid}'::uuid[])) AND (account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=1672
+Planning:
+  Buffers: shared hit=233
+Planning Time: 1.749 ms
+Execution Time: 149.035 ms
+-- vector branch
+Sort  (cost=5386.17..5386.29 rows=50 width=40) (actual time=163.465..163.470 rows=50 loops=1)
+  Sort Key: r.distance
+  Sort Method: quicksort  Memory: 28kB
+  Buffers: shared hit=95835
+  CTE r
+    ->  Limit  (cost=5383.63..5383.76 rows=50 width=40) (actual time=163.430..163.440 rows=50 loops=1)
+          Buffers: shared hit=95832
+          ->  Sort  (cost=5383.63..5384.28 rows=260 width=40) (actual time=163.429..163.435 rows=50 loops=1)
+                Sort Key: ((v.embedding <=> '[1536 số]'::vector))
+                Sort Method: top-N heapsort  Memory: 31kB
+                Buffers: shared hit=95832
+                ->  Hash Join  (cost=2450.01..5374.99 rows=260 width=40) (actual time=13.147..159.198 rows=23275 loops=1)
+                      Hash Cond: (c.id = v.chunk_id)
+                      Buffers: shared hit=95832
+                      ->  Index Scan using chunk_scope_idx on chunk c  (cost=0.43..2902.69 rows=8410 width=16) (actual time=0.074..7.239 rows=23275 loops=1)
+                            Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                            Buffers: shared hit=1419
+                      ->  Hash  (cost=2333.87..2333.87 rows=9257 width=50) (actual time=12.821..12.822 rows=25572 loops=1)
+                            Buckets: 32768 (originally 16384)  Batches: 1 (originally 1)  Memory Usage: 2304kB
+                            Buffers: shared hit=1290
+                            ->  Index Scan using emb_openai_text_embedding_3_small_scope_idx on emb_openai_text_embedding_3_small v  (cost=0.43..2333.87 rows=9257 width=50) (actual time=0.069..7.177 rows=25572 loops=1)
+                                  Index Cond: ((account_id = (NULLIF(current_setting('app.account_id'::text, true), ''::text))::uuid) AND (reference_id = ANY ('{250 uuid}'::uuid[])))
+                                  Buffers: shared hit=1290
+  ->  CTE Scan on r  (cost=0.00..1.00 rows=50 width=40) (actual time=163.432..163.446 rows=50 loops=1)
+        Buffers: shared hit=95832
+Planning:
+  Buffers: shared hit=123
+Planning Time: 1.321 ms
+Execution Time: 163.546 ms
