@@ -1,10 +1,10 @@
 # PID-00006 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — dừng ở S07: cần PR chứa mã và xử lý EC11
+**Trạng thái:** Đang làm — S07: mở PR và đo năm lần CI
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/pid-00006-sample-service` · **PR:** chưa mở
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 22/11/2026 (Lần 2)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
@@ -21,7 +21,7 @@
 | S04 | RLS và chạy không mạng ngoài | Xong | `src/sample.spec.ts`, `validation-offline.txt` |
 | S05 | 12 DDL, 11 database PostgreSQL 16 | Xong | `src/ddl-pg16.spec.ts`, `src/database.testkit.ts` |
 | S06 | Endpoint có service-auth guard | Xong | `src/sample.module.ts`, `src/sample.spec.ts`, `README.md` |
-| S07 | SPK-10, năm lần CI trên cùng PR | Chặn — chưa có PR chứa mã; EC11 | `report.md` |
+| S07 | SPK-10, năm lần CI trên cùng PR | Đang làm — Lần 2 | `report.md` |
 
 ## 3. Kết quả
 
@@ -92,6 +92,15 @@ Không có.
 - **Còn mở:** chưa có số đo SPK-10; chưa có PR chứa mã; EC11. Kiểm diện rộng gặp timeout khởi động container ở test nền platform, không ghi đạt toàn repo.
 - **Bước tiếp theo:** Dev commit mã và tạo PR khi được yêu cầu; hoàn thành S07 trước khi đặt Xong — chờ QC; PO QC độc lập bằng spec-converge-skill.
 - **Tài liệu đi kèm:** `implement.md` — luồng thực thi; `self-qc.md` — kiểm tra và đối chiếu spec; `check-migrate.cjs` — kiểm target migrate hai lần; `linux-qc.sh` và `linux-qc.Dockerfile` — tái lập kiểm không mạng ngoài; `validation-offline.txt` — stdout lần chạy đạt trên runner chặn Internet.
+
+## Lần 2 — 22/11/2026
+
+Người dùng yêu cầu “triển khai nốt” sau khi đã nhận thông tin S07 cần PR, EC11 chọn 20 project
+và kiểm toàn repo timeout. Tiếp tục commit mã, mở PR và đo năm lần CI của chính PR theo H5;
+giữ nguyên workflow và phương pháp, ghi EC11 trước khi kết luận. Không cần đổi spec: EC11 yêu
+cầu báo danh sách và báo PO trước kết luận, không yêu cầu thu hẹp affected hoặc đổi PR.
+
+Baseline `origin/main` vẫn ae1ac60. Mã S01–S06 không đổi so với lần kiểm trước.
 
 ---
 
