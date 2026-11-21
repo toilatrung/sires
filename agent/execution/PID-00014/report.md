@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
-- **Nhánh:** `gateway/pid-00014-session` · **PR:** chưa mở
+- **Nhánh:** `gateway/pid-00014-session` · **PR:** [#63](https://github.com/toilatrung/sires/pull/63) vào `main`
 - **Cập nhật:** 22/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -40,7 +40,7 @@ ngày 22/11/2026; mã và báo cáo được commit/push trên nhánh ticket the
 
 ## 4. Việc còn lại
 
-Trong phạm vi triển khai: không còn. PO QC độc lập trước merge; đang chuẩn bị PR theo yêu cầu người dùng.
+Trong phạm vi triển khai: không còn. Mã đã commit/push, PR #63 đã mở; chờ CI và PO QC độc lập trước merge.
 
 Kết quả lượt đầu (đã được giải quyết ở Lần 2): `nx affected` chọn 19 project do lockfile, dừng ở
 `apps/knowledge/spikes/spk_05/test_text_layer.py:152` (`test_corrupt_never_hangs`: expected `exited`, actual `timeout`).
@@ -77,6 +77,16 @@ Kết quả cuối:
 Log đầy đủ: `.nx/pid00014-full-check.log` (tái hiện trước sửa),
 `.nx/pid00014-final-check.log` (sau sửa, đạt), trong worktree của PID này.
 
+## Lần 3 — 22/11/2026 · Đẩy PR
+
+Theo yêu cầu “đẩy pr đi”: đã commit mã và kết quả, đồng bộ `origin/main` a2e7bf6 (PR #61),
+giải quyết xung đột worker bằng cách giữ chờ exit trong ngân sách timeout còn lại và kiểm tra
+worker đóng pipe rồi treo. Kiểm affected sau merge đạt 19 project, 72/72 task (toàn bộ dùng cache
+của các lượt kiểm mã tương ứng). Hồ sơ kết quả và update-index đạt; working tree sạch trước cập nhật link PR.
+
+PR [#63](https://github.com/toilatrung/sires/pull/63), base `main`, đã mở. Mọi commit đã push được
+GitHub xác nhận `verified: true`. Chưa merge; PO review và QC độc lập là bước tiếp theo.
+
 ## 6. Cần PO và tài liệu đi kèm
 
 - **Đề xuất cho PO:** Các mục “Phải sửa ở nguồn” của hồ sơ vẫn do PO xử lý (mô tả getSession, PID-00012,
@@ -85,7 +95,7 @@ Log đầy đủ: `.nx/pid00014-full-check.log` (tái hiện trước sửa),
 - **Còn mở:** Không có chặn triển khai hoặc target affected lỗi sau Lần 2. Hai test knowledge cần dữ liệu
   FULL/bộ PDF vẫn skip có điều kiện như thiết kế; không tính là đã chạy. Ranh giới mới gồm gateway,
   agent-core và knowledge theo YC1; infra chỉ là 12 dòng lockfile tự sinh cho importer gateway, không đổi catalog.
-- **Bước tiếp theo:** Người dùng đã yêu cầu đẩy PR ngày 22/11/2026; PO review và chạy spec-converge-skill độc lập trước merge.
+- **Bước tiếp theo:** Theo dõi CI PR #63; PO review và chạy spec-converge-skill độc lập trước merge.
 - **Tài liệu đi kèm:** Không có.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
