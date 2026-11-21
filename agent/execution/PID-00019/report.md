@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — PID-00158 (S02 và phần S05 cần dòng app.state_transition sinh bằng helper chưa có trên main); phần làm được đã QC độc lập, PO cho merge trước (21/11/2026)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
-- **Nhánh:** `orchestration/migration-skeleton` (đã commit mã phần làm được, đã push) · **PR:** đang mở
+- **Nhánh:** `orchestration/migration-skeleton` (đã commit mã phần làm được, đã push) · **PR:** [#50](https://github.com/toilatrung/sires/pull/50) (vào `main`, chưa merge)
 - **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
