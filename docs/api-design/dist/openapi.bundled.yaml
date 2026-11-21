@@ -181,7 +181,14 @@ paths:
         - Auth
       operationId: getSession
       summary: Trạng thái phiên hiện tại
-      description: Trả thông tin phiên và CSRF token. Không bao giờ trả access/ID token.
+      description: |
+        Trả thông tin phiên và CSRF token. Không bao giờ trả access/ID token.
+
+        Web gọi operation này mỗi lần điều hướng hoặc mở màn hình, không gọi theo chu kỳ hay hẹn giờ.
+        Lời gọi được tính là thao tác của người dùng: gateway cập nhật `last_activity` và tính lại hạn
+        không hoạt động 12 giờ (ADR-27, INT-OIDC-003-AC02). Ngoài operation này chỉ lệnh ghi được chấp
+        nhận mới gia hạn phiên; GET khác (polling, `/events`) và lệnh ghi bị từ chối (`401`, `403`) không
+        gia hạn. Không có header riêng để đánh dấu thao tác của người dùng.
       x-requirements:
         - INT-OIDC-003
       x-priority: P0
