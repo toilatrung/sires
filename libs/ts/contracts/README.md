@@ -17,12 +17,26 @@ Giới hạn tái lập: hiện chỉ ghim phiên bản hai generator, chưa kh�
 
 Khi PID-00010 dựng image Python dùng client sinh, pipeline phải chạy `generate-python` trước docker build, hoặc Dockerfile Python phải sinh mã; Dockerfile Python hiện chưa làm việc đó (QC G4). Khi PID-00048/PID-00070 bắt đầu dùng client, cần chạy typecheck của service với import thật; kiểm import runtime ở PID này không chứng minh strict mypy của consumer đã đạt (QC G5).
 
+`pnpm nx run @sires/contracts:check-drift` luôn sinh lại hợp đồng trước khi kiểm, không cache kết quả. Lệnh lấy project TypeScript phụ thuộc trực tiếp hoặc gián tiếp vào contracts từ đồ thị Nx, kiểm theo tsconfig của từng project với noEmit. Workspace package được trỏ về source để không dùng nhầm type cũ trong dist; không sửa tsconfig của service. Python kiểm agent-core, knowledge, sires-common bằng mypy: giữ lần kiểm theo cấu hình project và thêm lần kiểm theo cấu hình strict ở gốc với follow-imports=silent để giữ type của model sinh ngay khi cấu hình project thường skip chúng. Lần kiểm bổ sung không báo lỗi implementation của dependency import, nhưng vẫn kiểm consumer và giữ mọi lỗi từ lần kiểm project.
+
+```sh
+# Chỉ TS khi máy không có uv:
+pnpm --filter @sires/contracts check-drift --ts-only
+# Kiểm một fixture (đường dẫn tương đối thư mục libs/ts/contracts):
+pnpm --filter @sires/contracts check-drift --ts-only scripts/__fixtures__/ts/read-extra.ts
+pnpm --filter @sires/contracts check-drift --python-only scripts/__fixtures__/python/read-extra.py
+```
+
+Mỗi lỗi xác định thuộc hợp đồng ghi file:dòng:cột, trường và schema/model. TypeScript lấy nguồn khai báo qua compiler API; Python ghép chẩn đoán mypy với import, annotation và truy cập trong AST cùng inventory model sinh. Nếu không chứng minh được nguồn kiểu, giữ chẩn đoán gốc thay vì gán nhãn hợp đồng bằng tên class; mọi lỗi typecheck vẫn làm lệnh thoát khác 0. Helper dùng uv run --all-packages để có runtime/type dependency trên máy mới. Với fixture Python, follow-imports=silent chỉ giữ chẩn đoán consumer, vẫn giữ kiểu model import. Thiếu uv không chặn phần TS chạy, nhưng toàn lệnh vẫn thất bại và không báo Python đạt. Fixture/tests nằm trong scripts/__fixtures__, không sửa service thật. Việc gắn check-drift vào workflow CI thuộc PID-00009.
+
 ```sh
 # Chỉ sinh TS, dùng được khi không có uv:
 pnpm --filter @sires/contracts generate:ts
 # Chỉ sinh Python:
 pnpm --filter @sires/contracts generate:python
 ```
+
+**AsyncAPI data (PID-00008 H5, PO 19/11/2026):** type message TS dùng schema `data` riêng của message thay cho `data` chung của `EventEnvelope`, kể cả qua `$ref`/`allOf`. Bộ sinh biến đổi AST TypeScript thành `Omit<kiểu gốc, 'data'> & { data: kiểu riêng }`, giữ tính bắt buộc của trường từ envelope. Trường lạ trong data cụ thể bị compiler bắt khi đọc/ghi; nếu schema data riêng cho phép trường động thì vẫn giữ quyền đó. Type `EventEnvelope`, hợp đồng nguồn và đầu ra Python giữ nguyên.
 
 Type AsyncAPI xuất qua package, map đủ payload theo tên message:
 
