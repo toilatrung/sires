@@ -23,23 +23,24 @@
 <li><a href="#kiem">Kiểm</a></li>
 <li><a href="#xong-khi">Xong khi</a></li></ul></details>
 
-<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H6 (PO chấp nhận phương án B của <a href="../../others/issues.html#i6">I6</a> ngày 18/11/2026). <strong>Chưa làm được:</strong> H6 mâu thuẫn với đề xuất B của PID-00014 I1 (PO cũng chấp nhận); cơ chế chờ PO trả lời <a href="../../others/issues.html#i10">I10</a>.</p>
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice thêm theo H6 (PO chấp nhận phương án B của <a href="../../others/issues.html#i6">I6</a> ngày 18/11/2026). Cơ chế theo H11 (PO chọn phương án B của <a href="../../others/issues.html#i10">I10</a> ngày 21/11/2026): không thêm header, dùng <code>GET /auth/session</code> như <a href="../../../PID-00014/index.html">PID-00014</a> H1.</p>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">AC</th><td>INT-OIDC-003-AC02 (phần shell)</td></tr>
 <tr><th scope="row">Output spec</th><td>O1</td></tr>
-<tr><th scope="row">Bước spec</th><td>B5; H6; ADR-27; kiến trúc 10.2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5; H6, H11; ADR-27; kiến trúc 10.2; mô tả <code>getSession</code></td></tr>
 <tr><th scope="row">Edge case</th><td>EC32 (từ <code>specs/scope.html</code>)</td></tr>
-<tr><th scope="row">Phụ thuộc</th><td>S04, S05, S07; chặn bởi I10; nếu I10 chọn header thì thêm chờ nguồn: header trong <code>docs/api-design</code></td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04, S05, S07</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Theo phương án PO chọn ở I10. A (header): client API nhận cờ “do người dùng”; router của shell và thao tác của khu vực gắn header theo hợp đồng mới; request không có cờ thì không gắn. B (<code>GET /auth/session</code>): router của shell gọi <code>getSession</code> mỗi lần điều hướng, mở màn hình; không bao giờ gọi định kỳ.</li>
-<li>Với cả hai phương án: kết nối và nối lại SSE (S05), các lần gọi lại GET sau sự kiện SSE (S07, S12) là request chạy nền, không mang dấu hiệu hoạt động (EC32); lệnh ghi do người dùng gửi tính là hoạt động (gateway xử lý).</li>
-<li>README của client API ghi cách khu vực đánh dấu thao tác của người dùng.</li></ol>
+<ol><li>Router của shell gọi <code>getSession</code> (<code>GET /auth/session</code>) mỗi lần điều hướng tới một route, mở màn hình; không bao giờ gọi theo chu kỳ hay hẹn giờ. Không thêm header nào vào request (H11).</li>
+<li>Kết nối và nối lại SSE (S05), các lần gọi lại GET sau sự kiện SSE (S07, S12) là request chạy nền: không gọi <code>getSession</code> (EC32). Lệnh ghi do người dùng gửi đi như bình thường; gateway tính lệnh ghi được chấp nhận là hoạt động.</li>
+<li>Kết quả <code>getSession</code> lúc điều hướng cập nhật <code>csrfToken</code>, <code>expiresAt</code> của S04; <code>401</code> đi vào luồng “phiên hết hạn” của S04.</li>
+<li>README của client API ghi: thao tác không đổi route (ví dụ mở panel) chỉ được tính khi màn đó gọi hàm làm mới phiên của shell (gọi <code>getSession</code>) hoặc gửi lệnh ghi; không gọi hàm này theo hẹn giờ.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/web:test</code> → đạt; <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
-<li><code>apps/web/src/shell/activity.spec.ts › request chạy nền không tính</code> (INT-OIDC-003-AC02 phần shell; EC32); <code>› điều hướng có dấu hiệu</code></li></ul>
+<li><code>apps/web/src/shell/activity.spec.ts › request chạy nền không tính</code> (INT-OIDC-003-AC02 phần shell; EC32); <code>› điều hướng gọi getSession</code></li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Request chạy nền không bao giờ mang dấu hiệu hoạt động; điều hướng và thao tác của người dùng có dấu hiệu, theo phương án PO chọn ở I10</li></ul>
+<ul><li>Request chạy nền không bao giờ gọi <code>GET /auth/session</code>; mỗi lần điều hướng, mở màn hình gọi đúng một lần; không có lời gọi theo chu kỳ (H11)</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00012</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Ticket PID-00012 · Slice S13 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>

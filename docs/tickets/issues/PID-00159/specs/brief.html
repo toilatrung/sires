@@ -35,20 +35,20 @@
 <li>Không service nào kết nối database của service khác — database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-1">3.1</a>.</li>
 <li>Quyền trên bảng do DDL cấp bằng <code>app.grant_standard</code>; owner chỉ dùng cho migration — database <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a>.</li>
 <li><code>vector</code> chỉ ở <code>sires_knowledge</code> — database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-3">3.3</a>; <code>vector</code> 0.8.7 của image không trusted nên superuser tạo lúc init (kiểm 18/11/2026).</li>
-<li>Migration của service: SQL chép từ DDL, lệnh migrate riêng mỗi service (D1, D3); vai trò chạy migration ở cục bộ chưa chốt — phiếu <a href="../others/issues.html#i1">I1</a>.</li>
+<li>Migration của service: SQL chép từ DDL, lệnh migrate riêng mỗi service (D1, D3); vai trò chạy migration ở cục bộ là <code>sires_&lt;svc&gt;_migrator</code> (LOGIN, thành viên của owner, <code>SET role</code> mặc định là owner, CONNECT chỉ database của service) — H3 (từ phiếu <a href="../others/issues.html#i1">I1</a>); database 3.2.</li>
 <li>Luồng infra giữ <code>infra/</code>, <code>scripts/development/</code>, <code>package.json</code> gốc — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#trk-infra">1.3</a>.</li></ul>
 <h2 id="input-da-kiem">Input đã kiểm</h2>
 <ul><li><code>infra/local/compose.yaml</code> — image <code>pgvector/pgvector:pg16</code> (PostgreSQL 16.15), người dùng <code>sires</code>, mật khẩu <code>sires-local</code>, init mount — có.</li>
 <li><code>infra/local/postgres/init/01-databases.sql</code> — 11 database, chú thích sai về vai trò — có.</li>
 <li><code>scripts/development/local-env.mjs</code> — <code>up</code>, <code>down</code>, <code>ps</code>, <code>logs</code>; qua WSL khi ở Windows — có.</li>
 <li>DDL: <code>app.grant_standard(p_svc)</code> cấp cho <code>sires_&lt;svc&gt;_app</code>, <code>_system</code>, <code>_purge</code>; <code>agent-core.sql</code> dùng <code>agent_core</code> — có.</li>
-<li>PID phụ thuộc: không có. Vai trò chạy migration: thiếu tên ở database 3.2 → I1.</li></ul>
+<li>PID phụ thuộc: không có. Vai trò chạy migration: database 3.2 thiếu tên → I1 → H3; database 3.2 đã thêm dòng <code>sires_&lt;svc&gt;_migrator</code> ngày 21/11/2026.</li></ul>
 <h2 id="output-phai-tao">Output phải tạo</h2>
 <ul><li>O1 <code>02-roles.sql</code> (vai trò, chủ, CONNECT, <code>vector</code>) → S01; phần vai trò chạy migration → S03</li>
 <li>O2 chú thích <code>01-databases.sql</code> → S01</li>
 <li>O3 <code>local-env.mjs</code>: <code>check-db</code> → S01 (mục 1–5), S02 (mục 6, bước áp ở <code>up</code>), S03 (mục 7)</li>
 <li>O4 script <code>local:check-db</code> → S01</li>
-<li>O5 vai trò chạy migration → S03 (chặn bởi I1)</li>
+<li>O5 vai trò chạy migration <code>sires_&lt;svc&gt;_migrator</code> → S03 (H3)</li>
 <li>O6 README → S04</li></ul>
 <h2 id="thuat-ngu">Thuật ngữ</h2>
 <ul><li><code>&lt;svc&gt;</code> = khóa service trong tên database và vai trò: gateway, identity, workspace, planning, orchestration, library, research, manuscript, audit, agent_core, knowledge</li>

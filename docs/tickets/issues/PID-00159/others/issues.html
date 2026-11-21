@@ -37,9 +37,10 @@
 <li>Bấm <em>Sao chép câu trả lời</em> rồi dán vào phiên agent kèm lệnh <code>spec-clarify-skill PID-00159</code> (hoặc sửa thẳng dòng “Câu trả lời đã ghi” trong file).</li>
 <li>Agent chuyển mỗi câu trả lời thành <code>H3</code>… ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ”.</li></ol>
 <p>Phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống; đề xuất không được coi là câu trả lời.</p>
+<p><strong>21/11/2026:</strong> PO nhận đề xuất của I1 (phương án A) trong phiên. Câu trả lời đã chuyển vào <a href="../index.html#phien-2">mục 5 của trang ticket</a> thành H3; phiếu giữ làm biên bản.</p>
 
 <div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="#i1">I1</a></td><td>Migration ở cục bộ đăng nhập bằng vai trò nào để đối tượng thuộc <code>sires_&lt;svc&gt;_owner</code>?</td><td>có — S03</td><td>Mở</td></tr>
+<tr><td><a href="#i1">I1</a></td><td>Migration ở cục bộ đăng nhập bằng vai trò nào để đối tượng thuộc <code>sires_&lt;svc&gt;_owner</code>?</td><td>có — S03</td><td>Đã chuyển vào hồ sơ (H3)</td></tr>
 </tbody></table></div>
 
 <article class="issue" id="i1" data-issue="I1">
@@ -50,7 +51,7 @@
 <tr><th scope="row">Nguồn</th><td>Database <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a>, dòng <code>sires_&lt;svc&gt;_owner</code>: LOGIN “không (migration đăng nhập bằng vai trò migrator là thành viên)”, quyền “Sở hữu schema, bảng, hàm; chạy migration DDL”. <a href="../../../../database/sections/13-decisions-risks-and-open-issues.html#dbd-06">DBD-06</a>: “Bốn vai trò mỗi service”. Database <a href="../../../../database/sections/11-security-and-tenancy.html#s-11-2">11.2</a>: “Vai trò owner chỉ dùng cho migration; ứng dụng không bao giờ kết nối bằng owner.” Image <code>pgvector/pgvector:pg16</code>: <code>vector</code> 0.8.7 không trusted (owner không tự tạo được; init tạo sẵn ở <code>sires_knowledge</code>).</td></tr>
 <tr><th scope="row">Ảnh hưởng</th><td>S03; PID-00159-AC05; EC06, EC11, EC12; README (S04); DSN migrator của 11 PID migration</td></tr>
 <tr><th scope="row">Chặn</th><td>có — S03</td></tr>
-<tr><th scope="row">Trạng thái</th><td>Mở</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H3)</td></tr>
 </tbody></table></div>
 <div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
 <tr><td>A</td><td>Mỗi service thêm <code>sires_&lt;svc&gt;_migrator</code>: LOGIN, mật khẩu cục bộ, thành viên của <code>sires_&lt;svc&gt;_owner</code>, <code>ALTER ROLE … SET role = 'sires_&lt;svc&gt;_owner'</code> để mỗi phiên tự chuyển sang owner; CONNECT chỉ database của service. Owner giữ NOLOGIN.</td><td>Đúng chữ database 3.2 (owner NOLOGIN, migrator là thành viên); đối tượng thuộc owner mà migration không cần lệnh <code>SET ROLE</code>; quyền khi migrate đúng là quyền owner nên lỗi quyền lộ ngay trên máy. Thêm 11 vai trò (55 tổng); PO thêm tên vào database 3.2 để Terraform tạo giống vậy ở staging. DSN migrator: <code>postgres://sires_&lt;svc&gt;_migrator:sires-local@localhost:5432/sires_&lt;svc&gt;</code>.</td></tr>
@@ -68,7 +69,7 @@
 <label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
 <div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
 </form>
-<p><strong>Câu trả lời đã ghi:</strong> —</p>
+<p><strong>Câu trả lời đã ghi:</strong> A — <code>sires_&lt;svc&gt;_migrator</code> thành viên của owner, SET role mặc định; kèm theo PO thêm tên vai trò vào database 3.2 — PO nhận đề xuất — Trịnh Quang Trung, 21/11/2026 → <a href="../index.html#phien-2">H3</a></p>
 </article>
 
 <section class="no-print">
