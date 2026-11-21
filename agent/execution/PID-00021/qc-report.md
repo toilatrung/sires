@@ -1,6 +1,6 @@
 # PID-00021 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 2 HIGH. Cả hai HIGH (G1, G2) là chặn ngoài theo EC01: chưa có key chính thức nên chưa đo được Claude, Gemini và endpoint chính thức; sửa mã không gỡ được. Ngoài EC01 không có CRITICAL hay HIGH. Còn 2 MEDIUM: G3 là lỗi của Dev, kết luận “ASM-02, ASM-10 đạt với OpenAI” chỉ dựa trên phép đo qua cổng trung gian, chỉ cần sửa chữ trong báo cáo; G4 là ánh xạ lỗi còn một tín hiệu chưa có mã chuẩn, cần PO quyết. Còn 6 LOW. Merge khi kết luận mới có một phần là quyết định của PO (Lần 1, 21/11/2026).
+**Kết luận mới nhất:** Merge được theo quyết định PO với kết luận một phần — 0 CRITICAL; G1, G2 (HIGH, EC01: chưa có key chính thức) còn mở, PO chấp nhận merge trong khi EC01 còn áp dụng (“Sửa G3 rồi merge”, 21/11/2026). G3 đã sửa ở `e326279`. Còn G4 (MEDIUM, PO quyết mã lỗi cho HTTP 400) và 6 LOW (G5–G10), không chặn merge. Ticket giữ “Bị chặn — EC01” tới Lần 3 khi có key (Lần 2, 21/11/2026).
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` và `evidence/` trong thư mục này
@@ -128,6 +128,21 @@ Edge case: EC01 xử lý đúng (xem tóm tắt; phần OpenAI ở G3). EC02 đ�
 - **Câu hỏi đề xuất ở `report.md` mục 6, ý 5** (HTTP 400 không thuộc 11 mã chuẩn) cần PO cấp mã OQ theo `docs/docs_context.md` (G4).
 - **Spec mục 2.5, H1** ghi chạy trên Linux hoặc WSL2. Dev chạy trên Windows theo quy tắc YC1 PO vừa chốt, và đường chạy Linux trong `README.md` của spike chưa ai chạy. PO xem có cần ghi lại H1 cho spike không cần Docker.
 - **Đề xuất của Dev cho kiến trúc 8.2, 8.3, 8.4, 12.2 và PRD AGENT-PROVIDER-002** (`report.md` mục 6) có căn cứ trong evidence. Ghi vào `docs/` là việc của PO.
+
+## Lần 2 — 21/11/2026 · kiểm G3 và ghi quyết định PO
+
+Người chạy: phiên do PO giao; cũng là phiên đã sửa G3 theo lệnh PO, nên lần này không phải QC độc lập đầy đủ: chỉ kiểm G3 và ghi quyết định PO, không chạy lại các phép kiểm của Lần 1. Mã nguồn: nhánh `agent-core/spk-01-providers`, commit `e326279` (chỉ đổi `report.md` so với `741fd48` của Lần 1; mã spike, evidence, `self-qc.md`, `implement.md` không đổi).
+
+Quyết định PO áp dụng: trả lời câu hỏi “PR #55 (PID-00021) xử lý thế nào?” bằng “Sửa G3 rồi merge” (21/11/2026), tức chấp nhận merge kết luận một phần trong khi EC01 còn áp dụng; ghi ở `report.md` Lần 2, YC3.
+
+| G Lần 1 | Trạng thái | Kiểm |
+| --- | --- | --- |
+| G1, G2 | Còn mở (HIGH, EC01), PO chấp nhận merge | Không đổi được bằng sửa mã; chờ key chính thức, Lần 3 của Dev |
+| G3 | Đã sửa | (1) Trạng thái đầu file và mục 4 thêm OpenAI vào danh sách chờ key chính thức. (2) Mục 1, bảng ASM-02, ASM-10 ghi “đạt khi đo qua cổng trung gian, chưa xác nhận trên endpoint chính thức”. (3) Bỏ câu “cổng chuyển nguyên tham số tới OpenAI”; câu về Gemini (mục 3) viết theo cùng chuẩn. `grep` trong `report.md` không còn kết luận “đạt với OpenAI” nào thiếu “qua cổng” |
+| G4 | Còn mở (MEDIUM) | PO cấp mã OQ cho HTTP 400 ngoài 11 mã chuẩn |
+| G5–G10 | Còn mở (LOW) | Không xử lý ở lần này |
+
+Lệnh đã chạy: `git diff --check` sạch. Lần chạy lại khi có key đổi tên thành Lần 3 trong `report.md`; mục “Đề xuất cho PO” của Lần 1 nhắc “Lần 2 làm trên nhánh mới khi có key” nay hiểu là Lần 3.
 
 ---
 
