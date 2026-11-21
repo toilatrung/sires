@@ -10,6 +10,11 @@ metadata:
     app.kubernetes.io/name: {{ .Values.service }}
 spec:
   replicas: {{ .Values.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ .Values.service }}
@@ -18,9 +23,13 @@ spec:
       labels:
         app.kubernetes.io/name: {{ .Values.service }}
     spec:
+      serviceAccountName: {{ .Values.service }}
+      automountServiceAccountToken: false
+      {{- include "sires-service.podSecurity" . | nindent 6 }}
       containers:
         - name: {{ .Values.service }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- include "sires-service.containerConfig" .Values | nindent 10 }}
           env:
             - name: PORT
               value: "{{ .Values.port }}"

@@ -25,7 +25,7 @@
 <li><a href="#agent-va-model">Agent và model</a></li>
 <li><a href="#cong-cu">Công cụ check-drift</a></li></ul></details>
 
-<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ (<code>H&lt;n&gt;</code>). PO trả lời ba phiếu I1–I3 ngày 18/11/2026 (H1–H3, <a href="../index.html#phien-2">trang ticket mục 5</a>); điều đã chốt ghi ở mục “Công cụ check-drift”. Chi tiết hiện thực Dev tự quyết (cách gọi tsc và mypy, đọc đồ thị Nx, nhận diện lỗi thuộc type sinh) ghi ở <code>implement.md</code>.</p>
+<p>Chỉ ghi điều spec mục 4 chưa nói và đã chốt khi làm rõ (<code>H&lt;n&gt;</code>). PO trả lời ba phiếu I1–I3 ngày 18/11/2026 (H1–H3, <a href="../index.html#phien-2">trang ticket mục 5</a>) và chốt G2 của QC độc lập Lần 2 ngày 19/11/2026 (H5, <a href="../index.html#phien-3">phiên 19/11/2026</a>); điều đã chốt ghi ở mục “Công cụ check-drift”. Chi tiết hiện thực Dev tự quyết (cách gọi tsc và mypy, đọc đồ thị Nx, nhận diện lỗi thuộc type sinh) ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
 <p>Không có.</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
@@ -37,7 +37,8 @@
 <h2 id="cong-cu">Công cụ check-drift</h2>
 <ul><li>Phủ hai ngôn ngữ: TypeScript (tsc trên mọi project phụ thuộc <code>@sires/contracts</code>) và Python (mypy trên <code>agent-core</code>, <code>knowledge</code>, <code>sires-common</code> dùng client và mô hình sinh); cùng một mẫu báo lỗi: file:dòng, tên trường, schema/message (TS) hoặc mô hình (Python). Không kiểm tĩnh route controller, routing key — H1.</li>
 <li>Mã thoát: mọi lỗi typecheck, kể cả lỗi không do type sinh, đều làm lệnh thoát khác 0; chỉ lỗi thuộc type sinh được gắn nhãn “trường không có trong spec” — H3.</li>
-<li>Không kiểm “đổi phá vỡ không tăng phiên bản”; việc đó chờ PO thêm quy tắc phiên bản cho OpenAPI nội bộ — H2.</li></ul>
+<li>Không kiểm “đổi phá vỡ không tăng phiên bản”; việc đó chờ PO thêm quy tắc phiên bản cho OpenAPI nội bộ — H2.</li>
+<li>Type message TS: dùng <code>data</code> khai trong message thay cho <code>data</code> chung của <code>EventEnvelope</code> (<code>additionalProperties: true</code>), không giao với chỉ mục index; trường không khai báo trong <code>data</code> bị <code>check-drift</code> bắt như phía Python. Sửa ở <code>generate.mjs</code> trong PID này; hợp đồng, type <code>EventEnvelope</code> và đầu ra Python giữ nguyên — H5.</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00008</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Ticket PID-00008 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

@@ -33,7 +33,7 @@
 <tr><th scope="row">Mục đích</th><td>Dựng production bằng module đã chạy ở <a href="../../PID-00134/index.html">PID-00134</a> và chart chung, theo đúng thứ tự deploy đầu tiên.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>infra</code> · PH-08</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Triển khai, trực · Production</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00153-AC01</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00153-AC01, PID-00153-AC02</td></tr>
 <tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
 <tr><th scope="row">Không làm ở spec này</th><td>Client OIDC (<a href="../../PID-00156/index.html">PID-00156</a>); Web lên CDN (<a href="../../PID-00155/index.html">PID-00155</a>)</td></tr>
 </tbody></table></div>
@@ -44,6 +44,7 @@
 <li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-08">Giai đoạn PH-08, cổng ra</a></li>
 <li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
 <li><a href="../../../../architecture/sections/11-deployment-and-operations.html">Kiến trúc 11.2, 11.3</a></li>
+<li><a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">Database 3.2, vai trò đăng nhập</a></li>
 <li>Requirement: <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-avail-001">NFR-AVAIL-001</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-backup-001">NFR-BACKUP-001</a>, <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-transit-001">NFR-TRANSIT-001</a></li></ul>
 <h3 id="s-2-2">2.2. Mã nguồn</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
@@ -77,7 +78,7 @@ pnpm local:up</pre>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li>Hạ tầng theo kiến trúc 11.2</li>
+<ul><li>Hạ tầng theo kiến trúc 11.2, dùng module đã hoàn thiện ở <a href="../../PID-00134/index.html">PID-00134</a>: node pool <code>app</code> và <code>sandbox</code> (gVisor RuntimeClass), cụm trải ≥ 3 zone, PostgreSQL HA có PITR, pooler kết nối (PgBouncer chế độ transaction hoặc pooler managed) với giới hạn kết nối theo service, RabbitMQ 3 node với quorum queue, workload identity theo service, bốn vai trò <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> cho mỗi database (database 3.2, DBD-06)</li>
 <li>Thứ tự: hạ tầng → migration từng database → backend → gateway → web</li>
 <li>Phê duyệt thủ công, rolling update, rollback bằng image trước</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
@@ -91,7 +92,7 @@ pnpm local:up</pre>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
-<li id="b1"><strong>B1</strong> Hạ tầng theo kiến trúc 11.2 — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
+<li id="b1"><strong>B1</strong> Hạ tầng theo kiến trúc 11.2 bằng module của PID-00134 (node pool, zone, PostgreSQL HA và PITR, pooler, RabbitMQ quorum, workload identity, vai trò database) — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b2"><strong>B2</strong> Thứ tự: hạ tầng → migration từng database → backend → gateway → web — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 <li id="b3"><strong>B3</strong> Phê duyệt thủ công, rolling update, rollback bằng image trước — Kết quả: Phần này hoạt động và có test hoặc lệnh kiểm — Kiểm tra: pnpm nx affected -t lint typecheck test build</li>
 </ol>
@@ -102,6 +103,7 @@ node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
 <tr><td>PID-00153-AC01</td><td><code>.github/workflows/deploy-production.yml</code></td><td>Given production, When deploy một service lỗi, Then rollback bằng image trước trong runbook.</td></tr>
+<tr><td>PID-00153-AC02</td><td><code>infra/terraform/envs/production/</code></td><td>Given production, When dựng hạ tầng, Then có đủ thành phần kiến trúc 11.2 như PID-00134-AC02 và PID-00134-AC03, kiểm trên môi trường thật: cụm trải ≥ 3 zone, PITR bật và khôi phục thử được, queue là quorum, mỗi service chỉ có quyền của mình.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>

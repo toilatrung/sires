@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import openapiTS, { astToString } from 'openapi-typescript';
+import ts from 'typescript';
 
 // Reuse the resolver bundled with the pinned openapi-typescript toolchain.
 const require = createRequire(import.meta.url);
@@ -65,6 +66,58 @@ function foldAliases(document) {
   visit(document);
   for (const alias of aliases.keys()) delete schemas[alias.split('/').at(-1)];
   return document;
+}
+
+function messageDataTypes(ast, messageNames) {
+  const components = ast.find((node) => ts.isInterfaceDeclaration(node) && node.name.text === 'components');
+  const schemas = components?.members.find((node) => node.name?.text === 'schemas')?.type;
+  if (!schemas || !ts.isTypeLiteralNode(schemas)) throw new Error('Missing generated event schemas');
+  const members = new Map(schemas.members.map((member) => [member.name.text, member]));
+  const data = (type, envelope = false, seen = new Set()) => {
+    const result = { types: [], required: false };
+    if (!type || seen.has(type)) return result;
+    seen = new Set(seen).add(type);
+    if (ts.isTypeLiteralNode(type)) {
+      const property = type.members.find((member) => member.name?.text === 'data');
+      if (property) {
+        result.required = !property.questionToken;
+        if (!envelope) result.types.push(property.type);
+      }
+    } else if (ts.isIntersectionTypeNode(type)) {
+      for (const member of type.types) {
+        const found = data(member, envelope, seen);
+        result.types.push(...found.types);
+        result.required ||= found.required;
+      }
+    } else if (ts.isIndexedAccessTypeNode(type) && ts.isLiteralTypeNode(type.indexType)) {
+      const name = type.indexType.literal.text;
+      return data(members.get(name)?.type, envelope || name === 'EventEnvelope', seen);
+    }
+    return result;
+  };
+  const replacements = new Map();
+  for (const name of messageNames) {
+    const member = members.get(name);
+    if (!member) throw new Error(`Missing generated message: ${name}`);
+    const found = data(member.type);
+    if (!found.types.length) continue;
+    // Replace inherited data instead of intersecting it with the envelope's index signature.
+    const type = ts.factory.createIntersectionTypeNode([
+      ts.factory.createTypeReferenceNode('Omit', [member.type,
+        ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral('data'))]),
+      ts.factory.createTypeLiteralNode([ts.factory.createPropertySignature(undefined, 'data',
+        found.required ? undefined : ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+        found.types.length === 1 ? found.types[0] : ts.factory.createIntersectionTypeNode(found.types))]),
+    ]);
+    replacements.set(member, ts.factory.updatePropertySignature(member, member.modifiers,
+      member.name, member.questionToken, type));
+  }
+  const result = ts.transform(ast, [(context) => {
+    const visit = (node) => replacements.get(node) ?? ts.visitEachChild(node, visit, context);
+    return (node) => ts.visitNode(node, visit);
+  }]);
+  try { return astToString(result.transformed); }
+  finally { result.dispose(); }
 }
 
 // Restore all previous outputs if publishing either language fails.
@@ -129,7 +182,7 @@ export async function generate({ specRoot = path.join(root, 'docs/api-design'), 
       await emit('dist/openapi.bundled.yaml', 'public.ts');
       for (const file of services) await emit(`internal/${file}`, `internal/${file.replace('.yaml', '.ts')}`);
       fs.writeFileSync(path.join(ts, 'messages.ts'), header('events/asyncapi.yaml')
-        + astToString(await openapiTS(eventSchema))
+        + messageDataTypes(await openapiTS(eventSchema), messages.map(([name]) => `${pascal(name)}Message`))
         + '\nexport interface MessagePayloads {\n'
         + messages.map(([name]) => `  ${JSON.stringify(name)}: components['schemas']['${pascal(name)}Message'];`).join('\n')
         + '\n}\n'

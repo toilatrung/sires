@@ -50,16 +50,19 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> k6 cần môi trường cấu hình như production để kết quả có ý nghĩa, không ảnh hưởng staging chung.</li>
-<li><strong>Gồm:</strong> Môi trường load test từ cùng module Terraform; Nạp dữ liệu mẫu 16.4; Diễn tập lại PITR đã làm trên Home Lab (OQ-109).</li>
+<li><strong>Gồm:</strong> Hoàn thiện module Terraform (<a href="../PID-00011/index.html">PID-00011</a>) theo kiến trúc 11.2 để môi trường load tương đương production: node pool <code>app</code> và <code>sandbox</code> (gVisor RuntimeClass), cụm trải ≥ 3 zone, PostgreSQL HA có PITR, pooler kết nối (PgBouncer chế độ transaction hoặc pooler managed) với giới hạn kết nối theo service, RabbitMQ 3 node với quorum queue, workload identity theo service; Tạo bốn vai trò <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> cho mỗi database (database 3.2, DBD-06), mật khẩu hoặc chứng chỉ ở secret manager; Môi trường load test từ cùng module Terraform; Nạp dữ liệu mẫu 16.4; Diễn tập lại PITR đã làm trên Home Lab (OQ-109).</li>
 <li><strong>Không gồm:</strong> Kịch bản k6 (<a href="../PID-00150/index.html">PID-00150</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00130/index.html">PID-00130</a>, <a href="../PID-00011/index.html">PID-00011</a></li>
 <li><strong>Điều kiện ngoài:</strong> <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">AQ-12</a></li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
-<ul><li>Tệp: <code>infra/terraform/envs/load/</code> — Môi trường load</li></ul>
+<ul><li>Tệp: <code>infra/terraform/envs/load/</code> — Môi trường load</li>
+<li>Tệp: <code>infra/terraform/modules/</code> — Module hoàn thiện theo kiến trúc 11.2 (có sẵn từ PID-00011)</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
-<ul><li><strong>PID-00134-AC01</strong> Given môi trường load, When dựng, Then cấu hình tương đương production và có dữ liệu mẫu 16.4.</li></ul>
+<ul><li><strong>PID-00134-AC01</strong> Given môi trường load, When dựng, Then cấu hình tương đương production và có dữ liệu mẫu 16.4.</li>
+<li><strong>PID-00134-AC02</strong> Given module Terraform và môi trường load, When dựng, Then có node pool <code>app</code> và <code>sandbox</code> (gVisor RuntimeClass) trải ≥ 3 zone, PostgreSQL HA có PITR, pooler với giới hạn kết nối theo service, RabbitMQ 3 node dùng quorum queue, và workload identity theo service chỉ có quyền trên database, prefix object storage, thao tác KMS mà service cần.</li>
+<li><strong>PID-00134-AC03</strong> Given mỗi database service, When dựng, Then có bốn vai trò <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> với thuộc tính, quyền và giới hạn kết nối theo database 3.2; mật khẩu hoặc chứng chỉ ở secret manager, chỉ cấp cho pod của đúng service.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: <a href="../PID-00130/index.html">PID-00130</a> Kịch bản lát 5 và kiểm cổng PH-06; <a href="../PID-00011/index.html">PID-00011</a> Module Terraform trung lập nhà cloud.</li>

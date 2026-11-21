@@ -50,7 +50,7 @@
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Dựng production bằng module đã chạy ở <a href="../PID-00134/index.html">PID-00134</a> và chart chung, theo đúng thứ tự deploy đầu tiên.</li>
-<li><strong>Gồm:</strong> Hạ tầng theo kiến trúc 11.2; Thứ tự: hạ tầng → migration từng database → backend → gateway → web; Phê duyệt thủ công, rolling update, rollback bằng image trước.</li>
+<li><strong>Gồm:</strong> Hạ tầng theo kiến trúc 11.2, dùng module đã hoàn thiện ở <a href="../PID-00134/index.html">PID-00134</a>: node pool <code>app</code> và <code>sandbox</code> (gVisor RuntimeClass), cụm trải ≥ 3 zone, PostgreSQL HA có PITR, pooler kết nối (PgBouncer chế độ transaction hoặc pooler managed) với giới hạn kết nối theo service, RabbitMQ 3 node với quorum queue, workload identity theo service, bốn vai trò <code>sires_&lt;svc&gt;_owner</code>, <code>_app</code>, <code>_system</code>, <code>_purge</code> cho mỗi database (database 3.2, DBD-06); Thứ tự: hạ tầng → migration từng database → backend → gateway → web; Phê duyệt thủ công, rolling update, rollback bằng image trước.</li>
 <li><strong>Không gồm:</strong> Client OIDC (<a href="../PID-00156/index.html">PID-00156</a>); Web lên CDN (<a href="../PID-00155/index.html">PID-00155</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00152/index.html">PID-00152</a></li>
@@ -61,6 +61,7 @@
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00153-AC01</strong> Given production, When deploy một service lỗi, Then rollback bằng image trước trong runbook.</li>
+<li><strong>PID-00153-AC02</strong> Given production, When dựng hạ tầng, Then có đủ thành phần kiến trúc 11.2 như PID-00134-AC02 và PID-00134-AC03, kiểm trên môi trường thật: cụm trải ≥ 3 zone, PITR bật và khôi phục thử được, queue là quorum, mỗi service chỉ có quyền của mình.</li>
 <li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-avail-001">NFR-AVAIL-001</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-backup-001">NFR-BACKUP-001</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-transit-001">NFR-TRANSIT-001</a> (AC01).</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
