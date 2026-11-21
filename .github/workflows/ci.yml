@@ -27,6 +27,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,4 +46,34 @@ jobs:
       # Switch to --frozen once uv.lock is committed.
       - run: uv sync --all-packages
       - uses: nrwl/nx-set-shas@v4
+      - name: Detect Terraform changes
+        id: terraform-changes
+        run: |
+          files=$(git diff --name-only "$NX_BASE" "$NX_HEAD" -- infra/terraform)
+          if [[ -n "$files" ]]; then echo "check=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: hashicorp/setup-terraform@v3
+        if: steps.terraform-changes.outputs.check == 'true'
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - name: Validate Terraform configuration
+        if: steps.terraform-changes.outputs.check == 'true'
+        working-directory: infra/terraform
+        run: |
+          terraform fmt -check -recursive -diff
+          for dir in modules/* envs/staging envs/production; do
+            terraform -chdir="$dir" init -backend=false -input=false -no-color
+            terraform -chdir="$dir" validate -no-color
+          done
+      - name: Detect chart changes
+        id: chart-changes
+        run: |
+          files=$(git diff --name-only "$NX_BASE" "$NX_HEAD" -- infra ':(glob)apps/*/deploy/**' scripts/development/check-charts.mjs)
+          if [[ -n "$files" ]]; then echo "check=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: azure/setup-helm@v4
+        if: steps.chart-changes.outputs.check == 'true'
+        with:
+          version: v3.19.0
+      - run: node scripts/development/check-charts.mjs
+        if: steps.chart-changes.outputs.check == 'true'
       - run: pnpm nx affected -t lint typecheck test build
