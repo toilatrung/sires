@@ -1,0 +1,41 @@
+-- SQL sinh từ khai báo state machine; không sửa tay (DR-01, DEC-57).
+-- Machine (số cặp): entry (3), sample_note (6), sample_task (7).
+DELETE FROM app.state_transition
+WHERE machine IN ('entry', 'sample_note', 'sample_task')
+  AND (machine, from_state, to_state) NOT IN (VALUES
+    ('entry', 'draft', 'final'),
+    ('entry', 'draft', 'retracted'),
+    ('entry', 'final', 'retracted'),
+    ('sample_note', 'Nháp', 'Đã duyệt'),
+    ('sample_note', 'Researcher''s Draft', 'Nháp'),
+    ('sample_note', 'Đã duyệt', 'Ｚ cuối'),
+    ('sample_note', 'Đã duyệt', '𝐀 đầu'),
+    ('sample_note', 'Ｚ cuối', 'Lưu\trữ'),
+    ('sample_note', '𝐀 đầu', 'Researcher''s Draft'),
+    ('sample_task', 'Completed', 'Ready'),
+    ('sample_task', 'Draft', 'Ready'),
+    ('sample_task', 'In Progress', 'Completed'),
+    ('sample_task', 'In Progress', 'Waiting for User'),
+    ('sample_task', 'Ready', 'Cancelled'),
+    ('sample_task', 'Ready', 'In Progress'),
+    ('sample_task', 'Waiting for User', 'In Progress'));
+--> statement-breakpoint
+INSERT INTO app.state_transition (machine, from_state, to_state, code) VALUES
+  ('entry', 'draft', 'final', NULL),
+  ('entry', 'draft', 'retracted', NULL),
+  ('entry', 'final', 'retracted', NULL),
+  ('sample_note', 'Nháp', 'Đã duyệt', 'APR-01'),
+  ('sample_note', 'Researcher''s Draft', 'Nháp', NULL),
+  ('sample_note', 'Đã duyệt', 'Ｚ cuối', 'N''02'),
+  ('sample_note', 'Đã duyệt', '𝐀 đầu', NULL),
+  ('sample_note', 'Ｚ cuối', 'Lưu\trữ', NULL),
+  ('sample_note', '𝐀 đầu', 'Researcher''s Draft', NULL),
+  ('sample_task', 'Completed', 'Ready', NULL),
+  ('sample_task', 'Draft', 'Ready', 'T-02'),
+  ('sample_task', 'In Progress', 'Completed', NULL),
+  ('sample_task', 'In Progress', 'Waiting for User', 'T-08'),
+  ('sample_task', 'Ready', 'Cancelled', 'T-18'),
+  ('sample_task', 'Ready', 'In Progress', 'T-06'),
+  ('sample_task', 'Waiting for User', 'In Progress', 'T-09')
+ON CONFLICT (machine, from_state, to_state) DO UPDATE SET code = EXCLUDED.code
+  WHERE app.state_transition.code IS DISTINCT FROM EXCLUDED.code;

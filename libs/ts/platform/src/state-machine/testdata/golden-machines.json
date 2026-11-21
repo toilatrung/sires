@@ -1,0 +1,36 @@
+[
+  {
+    "machine": "sample_task",
+    "states": ["Draft", "Ready", "In Progress", "Waiting for User", "Completed", "Cancelled"],
+    "transitions": [
+      { "from": "Waiting for User", "to": "In Progress", "code": "T-09", "actors": ["researcher"] },
+      { "from": "Draft", "to": "Ready", "code": "T-02" },
+      { "from": "In Progress", "to": "Waiting for User", "code": "T-08", "actors": ["agent"] },
+      { "from": "Ready", "to": "In Progress", "code": "T-06", "actors": ["system"] },
+      { "from": "In Progress", "to": "Completed" },
+      { "from": "Ready", "to": "Cancelled", "code": "T-18", "actors": ["researcher", "system"] },
+      { "from": "Completed", "to": "Ready", "code": null }
+    ]
+  },
+  {
+    "machine": "sample_note",
+    "states": ["Nháp", "Đã duyệt", "Researcher's Draft", "Ｚ cuối", "𝐀 đầu", "Lưu\\trữ"],
+    "transitions": [
+      { "from": "Researcher's Draft", "to": "Nháp" },
+      { "from": "Nháp", "to": "Đã duyệt", "code": "APR-01", "actors": ["researcher"] },
+      { "from": "Đã duyệt", "to": "𝐀 đầu", "actors": ["system"] },
+      { "from": "Đã duyệt", "to": "Ｚ cuối", "code": "N'02" },
+      { "from": "𝐀 đầu", "to": "Researcher's Draft" },
+      { "from": "Ｚ cuối", "to": "Lưu\\trữ", "actors": [] }
+    ]
+  },
+  {
+    "machine": "entry",
+    "states": ["draft", "final", "retracted"],
+    "transitions": [
+      { "from": "final", "to": "retracted" },
+      { "from": "draft", "to": "final" },
+      { "from": "draft", "to": "retracted" }
+    ]
+  }
+]

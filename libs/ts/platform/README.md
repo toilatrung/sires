@@ -39,6 +39,54 @@ Biến môi trường của service-auth: `SERVICE_AUTH_PRIVATE_KEY` (JWK khóa 
 
 Test tenancy chạy PostgreSQL 16 + pgvector thật qua Testcontainers, cần Docker (đặt `DOCKER_HOST` nếu Docker không ở socket mặc định).
 
+**State machine và bảng `app.state_transition`** (PID-00158, DEC-57, DR-01; chi tiết ở `agent/execution/PID-00158/implement.md`). Service khai báo state machine một lần, dạng dữ liệu, trong module domain; cùng khai báo đó cho hàm kiểm chuyển ở domain và dòng `app.state_transition` dán vào migration. Bản Python cùng API, cùng SQL từng byte: `sires_common.state_machine`.
+
+| Phần | API | Ghi chú |
+| --- | --- | --- |
+| Khai báo | `defineStateMachine({ machine, states, transitions: [{ from, to, code?, actors? }] })` → `StateMachine<S>` | `S` suy ra từ `states` (mảng literal hoặc `as const`). Từ chối ngay (`StateMachineDefinitionError`, có `machine`, `reason` nêu giá trị sai): tên không khớp `^[a-z][a-z0-9_]*$`; `states` hay `transitions` rỗng; trạng thái trùng; cặp trùng (kể cả khác mã); cặp X → X; trạng thái ngoài `states`; giá trị rỗng, có ký tự U+0000–U+001F, U+007F, khoảng trắng đầu cuối; actor ngoài `researcher`, `agent`, `system` (`STATE_MACHINE_ACTORS`). Đối tượng trả về đóng băng sâu |
+| Kiểm chuyển | `findTransition(m, from, to)`, `assertTransition(m, from, to)` | Trả cặp `{ from, to, code, actors }` (`code` là `null` khi không có, `actors` rỗng khi không khai báo). Cặp không khai báo, kể cả X → X, → `InvalidTransitionError` (`code = 'invalid_transition'`, `machine`, `currentState`, `targetState`). Không đọc database, không gọi mạng; guard, chọn đích, quyền theo trạng thái, APR, actor được phép, Audit Event là việc của module domain (database 10.2). Service tự đổi lỗi sang `ProblemException('invalid_transition', { currentState })` (409) |
+| Dòng, SQL | `stateTransitionRows(machines)`, `stateTransitionStatements(machines)`, `renderStateTransitionSql(machines)` | Dòng sắp theo machine, `from_state`, `to_state` theo code point; thứ tự khai báo không đổi đầu ra. SQL đồng bộ chỉ chạm các machine truyền vào: `DELETE` cặp không còn khai báo, `--> statement-breakpoint` (dấu tách của drizzle-kit), `INSERT … ON CONFLICT DO UPDATE` cập nhật `code`; chạy lại không đổi dòng nào. `stateTransitionStatements` trả riêng hai câu (không chú thích, không dấu tách) |
+| So dòng | `compareStateTransitionRows(rows, machines)` → `{ missing, unexpected, codeMismatch }` | Nhận dòng `StateTransitionRow` hoặc cột của bảng (`from_state`, `to_state`); bỏ qua dòng của machine không truyền vào; cả ba rỗng khi khớp |
+| Lệnh | `sires-state-transition-sql <module.js> [export]`, `runCli(argv, io)` | Nạp module JS đã build, đọc export (mặc định `stateMachines`): mỗi phần tử là machine của `defineStateMachine` hoặc khai báo dạng dữ liệu cùng hình. In SQL ra stdout, mã thoát 0; module, export không có, không phải danh sách machine hợp lệ → lý do ở stderr, stdout rỗng, mã thoát 1. Chỉ in, không ghi file |
+
+Danh sách machine rỗng hay có hai machine trùng tên → `StateMachineDefinitionError` ở mọi hàm nhận danh sách.
+
+Dùng trong migration của service NestJS (kiến trúc 6.10, PID migration làm):
+
+1. Khai báo trong module domain, xuất danh sách `stateMachines`, ví dụ `apps/<service>/src/domain/state-machines.ts`:
+
+   ```ts
+   import { defineStateMachine } from '@sires/platform';
+
+   export const planVersionMachine = defineStateMachine({
+     machine: 'plan_version',
+     states: ['Draft', 'Proposed', 'Approved', 'Rejected', 'Superseded'],
+     transitions: [
+       { from: 'Draft', to: 'Proposed' },
+       { from: 'Proposed', to: 'Approved', code: 'APR-01', actors: ['researcher'] },
+       { from: 'Proposed', to: 'Rejected' },
+       { from: 'Approved', to: 'Superseded' },
+     ],
+   });
+
+   export const stateMachines = [planVersionMachine];
+   ```
+
+   Domain gọi `assertTransition(planVersionMachine, row.status, 'Approved')` trước khi ghi.
+2. Build service (kéo theo build `@sires/platform`): `pnpm nx run @sires/<service>:build`.
+3. Trong thư mục `apps/<service>`: `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` để xem SQL. Tạo custom migration (`pnpm exec drizzle-kit generate --custom --name state_transition`) rồi dán đúng SQL đó vào file vừa tạo; `migrate()` của drizzle-orm tách câu theo `--> statement-breakpoint`.
+4. `node scripts/docs/add-license.mjs` gắn giấy phép cho file `.sql` mới (khối chú thích `--` ở đầu, SQL không đổi).
+5. Test database của service, sau khi áp mọi migration:
+
+   ```ts
+   const { rows } = await client.query('SELECT machine, from_state, to_state, code FROM app.state_transition');
+   expect(compareStateTransitionRows(rows, stateMachines)).toEqual({ missing: [], unexpected: [], codeMismatch: [] });
+   ```
+
+Đổi khai báo về sau: không sửa migration đã có. Sửa khai báo, build, chạy lại lệnh cho các machine đổi và đặt SQL vào một migration mới; thêm trạng thái thì cùng migration đó sửa CHECK của cột trạng thái (database 12.4). SQL đồng bộ xóa cặp đã bỏ, thêm cặp mới, cập nhật `code`, nên dùng được cho cả migration đầu và migration sửa. Bỏ hẳn một machine thì SQL sinh ra không chạm machine đó: migration mới tự thêm `DELETE FROM app.state_transition WHERE machine = '<tên>'`. Migration không import khai báo lúc chạy: nội dung phải cố định (kiến trúc 6.10).
+
+Test `src/state-machine/ddl.pg.spec.ts` đối chiếu mọi khối `INSERT INTO app.state_transition` của `docs/database/ddl` (8 file, 25 machine, 133 cặp) trên PostgreSQL 16 qua Testcontainers, cần Docker; số đếm ghi trong test, DDL đổi thì cập nhật cùng PR. Bộ mẫu dùng chung với Python: `src/state-machine/testdata/golden-machines.json`, `golden.txt`.
+
 Chỉ đổi tương thích ngược (quy tắc 1.4.5): đổi phá vỡ thì thêm API mới và đánh dấu API cũ deprecated; luồng service tự chuyển.
 
 ---
