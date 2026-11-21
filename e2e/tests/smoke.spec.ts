@@ -4,8 +4,13 @@
 
 import { expect, test } from '@playwright/test';
 
-test('web shell loads and redirects to the dashboard', async ({ page }) => {
-  await page.goto('/');
+test('TS-00-01 web shell loads and redirects to the dashboard', async ({ page, baseURL }, testInfo) => {
+  try {
+    await page.goto('/');
+  } catch {
+    throw new Error(`Không mở được môi trường E2E: ${baseURL}`);
+  }
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page).toHaveTitle('SIRes');
+  expect(await page.evaluate(() => navigator.language)).toBe(testInfo.project.use.locale);
 });
