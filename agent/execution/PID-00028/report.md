@@ -1,9 +1,9 @@
 # PID-00028 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00028](../../../docs/tickets/issues/PID-00028/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
-- **Nhánh:** `knowledge/spk-05-pdf-extraction` (chỉ `report.md` đã commit) · **PR:** chưa mở
+- **Nhánh:** `knowledge/spk-05-pdf-extraction` (đã commit, đã push) · **PR:** [#54](https://github.com/toilatrung/sires/pull/54)
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -230,7 +230,7 @@ Mọi yêu cầu ngoài hồ sơ ghi ở đây **trước khi làm**. Trong ph�
 - **Còn mở:**
   - Câu hỏi đề xuất (chưa cấp mã): PDF ảnh quét có lớp OCR (render mode 3) thì xử lý thế nào? (a) nhận như PDF có lớp văn bản (quy tắc 7.1 hiện tại); (b) nhận nhưng đánh dấu hạn chế theo ASM-06, dựa trên `scan_like`; (c) từ chối như INT-DOC-001 “PDF scan bị từ chối”, dựa trên `scan_like`. Dev nghiêng về (b): giữ được tài liệu cũ có OCR mà vẫn báo người dùng chất lượng văn bản thấp hơn; PO quyết.
   - Câu hỏi đề xuất (chưa cấp mã): “50 MB” ở INT-DOC-001 là 50 MiB (52.428.800 byte, spike đang dùng) hay 50.000.000 byte?
-- **Bước tiếp theo:** PO review PR và QC độc lập (`spec-converge-skill PID-00028`); PID-00051 dùng N = 200 và cách phát hiện ở 3.7 sau khi PO chốt các mục trên.
+- **Bước tiếp theo:** PO review PR [#54](https://github.com/toilatrung/sires/pull/54) và QC độc lập (`spec-converge-skill PID-00028`); PID-00051 dùng N = 200 và cách phát hiện ở 3.7 sau khi PO chốt các mục trên.
 - **Tài liệu đi kèm** (`agent/execution/PID-00028/spk05/`, dùng cho S02, S03):
   - `spk05/results.json` — kết quả cổng từng mẫu (ký tự mỗi trang, ảnh phủ, OCR ẩn) và trích xuất từng PDF (4 cách, so đáp án, cột, References, thời gian), quét N.
   - `spk05/tables.md` — bảng sinh từ `results.json` (theo tài liệu, so đáp án, theo nhóm, mẫu dẫn xuất, quét N, nhật ký tải).
