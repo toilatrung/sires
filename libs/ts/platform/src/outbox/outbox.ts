@@ -142,11 +142,32 @@ export interface OutboxRow {
   traceparent?: string;
 }
 
-/** INSERT of one app.outbox row (no RETURNING: `_app` has INSERT only). */
+/** Public function that writes each kind of row, for error messages. */
+const WRITER_BY_KIND: Readonly<Record<OutboxRow['kind'], string>> = { event: 'writeEvent', audit: 'emitAudit', command: 'writeCommand' };
+
+/**
+ * INSERT of one app.outbox row (no RETURNING: `_app` has INSERT only). A row with an account must belong to the
+ * account of the transaction when it has one (see {@link assertTransactionAccount}); it throws before the INSERT.
+ */
 export async function insertOutboxRow(tx: SqlExecutor, row: OutboxRow): Promise<void> {
+  if (row.accountId !== undefined) await assertTransactionAccount(tx, row.kind, row.accountId);
   await tx.execute(sql`
     INSERT INTO app.outbox (id, account_id, kind, routing_key, aggregate_type, aggregate_id, aggregate_version, payload, traceparent)
     VALUES (${row.id}, ${row.accountId ?? null}, ${row.kind}, ${row.routingKey}, ${row.aggregate?.type ?? null},
             ${row.aggregate?.id ?? null}, ${row.aggregate?.version ?? null}, ${JSON.stringify(row.payload)}::jsonb,
             ${row.traceparent ?? null})`);
+}
+
+/**
+ * Account boundary of the outbox (S04: `accountId` from the context). app.outbox has no RLS, so in a transaction
+ * scoped to an account — `app.account_id` set by withAccountTransaction, role `_app` — a row of another account would
+ * be written and then audited and streamed as that account's. Such a row throws a TypeError instead. Transactions
+ * without the setting (role `_system`: consumers, jobs) write rows of the account of the event they handle.
+ */
+async function assertTransactionAccount(tx: SqlExecutor, kind: OutboxRow['kind'], accountId: string): Promise<void> {
+  const { rows } = await tx.execute(sql`SELECT app.current_account_id() AS account_id`);
+  const current = (rows[0] as { account_id: string | null } | undefined)?.account_id ?? null;
+  if (current !== null && current.toLowerCase() !== accountId.toLowerCase()) {
+    throw new TypeError(`${WRITER_BY_KIND[kind]}: accountId is not the account of the transaction (app.account_id)`);
+  }
 }

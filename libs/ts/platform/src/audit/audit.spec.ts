@@ -196,6 +196,19 @@ describe('audit-emit qua outbox trên PostgreSQL và RabbitMQ thật (PID-00002 
     expect(JSON.stringify(row.payload)).not.toContain(jwt);
   });
 
+  it('accountId khác tài khoản của giao dịch (G3, S04)', async () => {
+    const other = uuidv7();
+    const objectId = uuidv7();
+    await expect(
+      withAccountTransaction(stack.appDb, ACCOUNT, async (tx) => {
+        await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${objectId}, ${ACCOUNT}, 'x')`);
+        await emitAudit(tx, approval({ objectId, accountId: other }));
+      }),
+    ).rejects.toThrow('emitAudit: accountId is not the account of the transaction (app.account_id)');
+    expect(await stack.database.admin('SELECT 1 FROM app.note WHERE id = $1', [objectId])).toEqual([]);
+    expect(await stack.database.admin('SELECT 1 FROM app.outbox WHERE account_id = $1', [other])).toEqual([]);
+  });
+
   it('chỉ ghi thêm: không có API sửa hay xóa Audit Event (CTX-AUDIT-001-AC04)', () => {
     const functions = Object.entries(auditApi)
       .filter(([, value]) => typeof value === 'function')

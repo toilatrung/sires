@@ -2,6 +2,14 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+import {
+  propagation,
+  ROOT_CONTEXT,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+  type TextMapGetter,
+} from '@opentelemetry/api';
 import { connect, type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
 import { sql } from 'drizzle-orm';
 import type { Logger } from 'pino';
@@ -17,6 +25,16 @@ import type { TenantDatabase, TenantTransaction } from '../tenancy/transaction';
 // runs the handlers; ack after commit, nack with requeue after rollback (EC07). A message that is not an
 // EventEnvelope is nacked without requeue, to the dead-letter of the queue (EC08). The inbox does not compare versions:
 // replica tables do, through applyReplica (H1).
+//
+// Recovery (architecture 11.6: work waits in the queue until the broker is back): once started, losing the
+// connection, the channel or the consumer (broker restart, failover, network, queue deleted) is logged and followed by
+// reconnect attempts with exponential backoff until one succeeds or stop() is called; each attempt declares the
+// exchange, queue, bindings and prefetch again. Messages unacked on the lost channel come back from the broker and
+// the inbox drops the ones already applied.
+//
+// Tracing (architecture 11.4, NFR-OBS-004): each message runs in a CONSUMER span `consume <routing key>` whose parent
+// is the W3C `traceparent` header set by the relay, so events and Audit Events written by handlers, and their logs,
+// stay on the trace of the request that caused them.
 
 export interface EventHandler {
   /** Routing-key patterns bound on `sires.events` (`task.activated`, `workflow.status_changed.*`, `reference.#`). */
@@ -44,6 +62,10 @@ export interface EventConsumerOptions {
   queueArguments?: Record<string, unknown>;
   /** Messages processed at once; default 10. */
   prefetch?: number;
+  /** Wait before the first reconnect attempt after the connection is lost, doubled at each failed attempt; default 1 s. */
+  reconnectDelayMs?: number;
+  /** Longest wait between two reconnect attempts; default 30 s. */
+  reconnectMaxDelayMs?: number;
   logger?: Pick<Logger, 'info' | 'warn' | 'error'>;
   /** Called after each message is acked or nacked, e.g. for metrics. */
   onOutcome?: (outcome: ConsumeOutcome, messageId: string | undefined) => void;
@@ -51,18 +73,48 @@ export interface EventConsumerOptions {
 
 export type ConsumeOutcome = 'applied' | 'duplicate' | 'unhandled' | 'rejected' | 'failed';
 
+/** One connection, its channel and its consumer; replaced as a whole when any of them is lost. */
+interface Link {
+  connection: ChannelModel;
+  channel?: Channel;
+  consumerTag?: string;
+  lost: boolean;
+  error?: unknown;
+}
+
+/** Longest wait for the TCP connection and AMQP handshake of one attempt. */
+const CONNECT_TIMEOUT_MS = 10_000;
+
+/** AMQP headers as a W3C carrier: names in lower case, string or byte values. */
+const headerGetter: TextMapGetter<Record<string, unknown>> = {
+  keys: (carrier) => Object.keys(carrier),
+  get: (carrier, key) => {
+    const name = Object.keys(carrier).find((candidate) => candidate.toLowerCase() === key);
+    const value = name === undefined ? undefined : carrier[name];
+    if (typeof value === 'string') return value;
+    return Buffer.isBuffer(value) ? value.toString('utf8') : undefined;
+  },
+};
+
 export class EventConsumer {
   readonly queue: string;
   private readonly logger: Pick<Logger, 'info' | 'warn' | 'error'>;
-  private connection?: ChannelModel;
-  private channel?: Channel;
-  private consumerTag?: string;
+  private readonly reconnectDelayMs: number;
+  private readonly reconnectMaxDelayMs: number;
   private readonly inFlight = new Set<Promise<ConsumeOutcome>>();
+  /** True between start() and stop(): a lost link is replaced. */
+  private running = false;
+  private link?: Link;
+  private opening?: Promise<void>;
+  private reconnectTimer?: NodeJS.Timeout;
+  private failedAttempts = 0;
 
   constructor(private readonly options: EventConsumerOptions) {
     if (options.handlers.length === 0) throw new TypeError('EventConsumer: at least one handler');
     this.queue = `${options.service}.events`;
     this.logger = options.logger ?? createLogger({ service: options.service });
+    this.reconnectDelayMs = options.reconnectDelayMs ?? 1_000;
+    this.reconnectMaxDelayMs = Math.max(this.reconnectDelayMs, options.reconnectMaxDelayMs ?? 30_000);
   }
 
   /** Routing-key patterns bound to the queue. */
@@ -70,36 +122,132 @@ export class EventConsumer {
     return [...new Set(this.options.handlers.flatMap((handler) => handler.routingKeys))];
   }
 
-  /** Declares the exchange, the queue and its bindings, then consumes with manual ack. */
-  async start(): Promise<void> {
-    if (this.channel) return;
-    const connection = await connect(this.options.amqpUrl);
-    connection.on('error', (error: Error) => this.logger.warn({ err: error }, 'consumer: lỗi kết nối AMQP'));
-    const channel = await connection.createChannel();
-    channel.on('error', (error: Error) => this.logger.warn({ err: error }, 'consumer: kênh AMQP bị đóng'));
-    await channel.assertExchange(EVENTS_EXCHANGE, 'topic', { durable: true, autoDelete: false });
-    await channel.assertQueue(this.queue, { durable: true, arguments: this.options.queueArguments });
-    for (const pattern of this.routingKeys) await channel.bindQueue(this.queue, EVENTS_EXCHANGE, pattern);
-    await channel.prefetch(this.options.prefetch ?? 10);
-    this.connection = connection;
-    this.channel = channel;
-    const { consumerTag } = await channel.consume(this.queue, (message) => {
-      if (!message) return;
-      const work = this.process(channel, message);
-      this.inFlight.add(work);
-      void work.finally(() => this.inFlight.delete(work));
-    });
-    this.consumerTag = consumerTag;
+  /** True while the consumer is registered on a live channel; false while reconnecting or stopped (for health). */
+  get isConsuming(): boolean {
+    return this.link !== undefined;
   }
 
-  /** Stops consuming, waits for the messages in flight, closes the connection. */
+  /**
+   * Declares the exchange, the queue and its bindings, then consumes with manual ack. Rejects when this first
+   * connection fails (the consumer stays stopped); after it, a lost connection is reconnected until {@link stop}.
+   */
+  async start(): Promise<void> {
+    if (this.running) {
+      await this.opening;
+      return;
+    }
+    this.running = true;
+    this.failedAttempts = 0;
+    try {
+      await this.open();
+    } catch (error) {
+      this.running = false;
+      throw error;
+    }
+  }
+
+  /** Stops consuming and reconnecting, waits for the messages in flight, closes the connection. */
   async stop(): Promise<void> {
-    const { channel, connection, consumerTag } = this;
-    this.channel = undefined;
-    this.connection = undefined;
-    if (channel && consumerTag) await channel.cancel(consumerTag).catch(() => undefined);
+    this.running = false;
+    clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = undefined;
+    await this.opening?.catch(() => undefined);
+    const link = this.link;
+    this.link = undefined;
+    if (link?.channel && link.consumerTag) await link.channel.cancel(link.consumerTag).catch(() => undefined);
     await Promise.allSettled([...this.inFlight]);
-    await connection?.close().catch(() => undefined);
+    await link?.connection.close().catch(() => undefined);
+  }
+
+  /** One connection attempt; the link becomes current only once its consumer is registered and still alive. */
+  private async open(): Promise<void> {
+    const opening = this.connectAndConsume();
+    this.opening = opening;
+    try {
+      await opening;
+    } finally {
+      if (this.opening === opening) this.opening = undefined;
+    }
+  }
+
+  private async connectAndConsume(): Promise<void> {
+    // The timeout bounds the TCP and AMQP opening only, so an attempt on a dead network fails and is retried.
+    const connection = await connect(this.options.amqpUrl, { timeout: CONNECT_TIMEOUT_MS });
+    const link: Link = { connection, lost: false };
+    // 'error' comes before 'close': keep it for the log of the loss (an unhandled 'error' would crash the process).
+    connection.on('error', (error: unknown) => {
+      link.error = error;
+    });
+    connection.on('close', (error?: unknown) => this.lose(link, 'kết nối AMQP đóng', error));
+    try {
+      const channel = await connection.createChannel();
+      link.channel = channel;
+      channel.on('error', (error: unknown) => {
+        link.error = error;
+      });
+      channel.on('close', () => this.lose(link, 'kênh AMQP đóng'));
+      await channel.assertExchange(EVENTS_EXCHANGE, 'topic', { durable: true, autoDelete: false });
+      await channel.assertQueue(this.queue, { durable: true, arguments: this.options.queueArguments });
+      for (const pattern of this.routingKeys) await channel.bindQueue(this.queue, EVENTS_EXCHANGE, pattern);
+      await channel.prefetch(this.options.prefetch ?? 10);
+      if (!this.running) {
+        await connection.close().catch(() => undefined);
+        return;
+      }
+      const { consumerTag } = await channel.consume(this.queue, (message) => {
+        // null: the broker cancelled the consumer (queue deleted, failover).
+        if (!message) return this.lose(link, 'broker hủy consumer');
+        const work = this.process(channel, message);
+        this.inFlight.add(work);
+        void work.finally(() => this.inFlight.delete(work));
+      });
+      link.consumerTag = consumerTag;
+      if (link.lost) throw link.error instanceof Error ? link.error : new Error('consumer: AMQP đóng trong lúc khai báo');
+      this.link = link;
+    } catch (error) {
+      link.lost = true;
+      await connection.close().catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /** Marks a link lost; when it was the current one, closes it and schedules the reconnect. */
+  private lose(link: Link, reason: string, error?: unknown): void {
+    if (link.lost) return;
+    link.lost = true;
+    if (this.link !== link) return;
+    this.link = undefined;
+    void link.connection.close().catch(() => undefined);
+    if (!this.running) return;
+    this.logger.warn({ queue: this.queue, reason, err: error ?? link.error }, 'consumer: mất kết nối AMQP, sẽ kết nối lại');
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (!this.running || this.reconnectTimer) return;
+    const base = Math.min(this.reconnectMaxDelayMs, this.reconnectDelayMs * 2 ** this.failedAttempts);
+    // ±20 % so that the pods of a service do not reconnect in step after a broker restart.
+    const delay = Math.min(this.reconnectMaxDelayMs, Math.round(base * (0.8 + Math.random() * 0.4)));
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined;
+      void this.reconnect();
+    }, delay);
+  }
+
+  private async reconnect(): Promise<void> {
+    if (!this.running) return;
+    try {
+      await this.open();
+    } catch (error) {
+      this.failedAttempts += 1;
+      if (!this.running) return;
+      this.logger.warn({ queue: this.queue, attempt: this.failedAttempts, err: error }, 'consumer: kết nối lại AMQP chưa được, thử lại');
+      this.scheduleReconnect();
+      return;
+    }
+    if (!this.link) return;
+    this.logger.info({ queue: this.queue, failed_attempts: this.failedAttempts }, 'consumer: đã kết nối lại AMQP, consume tiếp');
+    this.failedAttempts = 0;
   }
 
   private async process(channel: Channel, message: ConsumeMessage): Promise<ConsumeOutcome> {
@@ -109,17 +257,43 @@ export class EventConsumer {
       else if (outcome === 'rejected') channel.nack(message, false, false);
       else channel.ack(message);
     } catch (error) {
-      // Channel closed meanwhile: the broker gives the message again.
+      // Channel closed meanwhile: the broker gives the message again and the inbox drops it if it was applied.
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: không ack được message');
     }
     this.options.onOutcome?.(outcome, messageId(message));
     return outcome;
   }
 
-  /** Validates, deduplicates and applies one message; never throws. */
+  /**
+   * Validates, deduplicates and applies one message in a CONSUMER span continuing its `traceparent` header; never
+   * throws.
+   */
   async handle(message: ConsumeMessage): Promise<ConsumeOutcome> {
-    const id = messageId(message);
     const routingKey = message.fields.routingKey;
+    const id = messageId(message);
+    const parent = propagation.extract(ROOT_CONTEXT, message.properties.headers ?? {}, headerGetter);
+    const attributes = {
+      'messaging.system': 'rabbitmq',
+      'messaging.operation.type': 'process',
+      'messaging.destination.name': message.fields.exchange,
+      'messaging.rabbitmq.destination.routing_key': routingKey,
+      ...(id ? { 'messaging.message.id': id } : {}),
+    };
+    // Looked up per message: a tracer taken at load time would keep a provider replaced since (tests, restarts).
+    const tracer = trace.getTracer('@sires/platform');
+    return tracer.startActiveSpan(`consume ${routingKey}`, { kind: SpanKind.CONSUMER, attributes }, parent, async (span) => {
+      try {
+        const outcome = await this.apply(message, id, routingKey);
+        span.setAttribute('sires.consume.outcome', outcome);
+        if (outcome === 'failed' || outcome === 'rejected') span.setStatus({ code: SpanStatusCode.ERROR });
+        return outcome;
+      } finally {
+        span.end();
+      }
+    });
+  }
+
+  private async apply(message: ConsumeMessage, id: string | undefined, routingKey: string): Promise<ConsumeOutcome> {
     const event = parseEnvelope(message.content);
     if (!event) {
       // Never the payload (NFR-OBS-002): it may hold user data.

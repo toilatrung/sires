@@ -2,12 +2,19 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+import { SpanKind, trace } from '@opentelemetry/api';
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { connect, type Channel, type ChannelModel } from 'amqplib';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { EventEnvelope } from '../outbox/envelope';
-import { recordQueue, startMessagingStack, type MessagingTestStack } from '../outbox/messaging.testkit';
-import { buildEnvelope } from '../outbox/outbox';
+import { emitAudit, type AuditEvent } from '../audit/audit';
+import { correlationFields, createAccountHasher } from '../logging/context';
+import { eventRoutingKey, type EventEnvelope } from '../outbox/envelope';
+import { recordQueue, settle, startMessagingStack, type MessagingTestStack } from '../outbox/messaging.testkit';
+import { buildEnvelope, writeEvent } from '../outbox/outbox';
+import { OutboxRelay } from '../outbox/relay';
+import { startTelemetry } from '../telemetry/telemetry';
+import { withAccountTransaction } from '../tenancy/transaction';
 import { uuidv7 } from '../tenancy/uuid';
 import { EventConsumer, type ConsumeOutcome, type EventHandler } from './consumer';
 import { applyReplica, type ReplicaOutcome } from './replica';
@@ -25,6 +32,43 @@ const REPLICA_SQL = `
   );
   GRANT SELECT, INSERT, UPDATE, DELETE ON replica.task_mirror TO sires_test_system;
 `;
+
+const silent = { info: () => undefined, warn: () => undefined, error: () => undefined };
+
+function projectEvent(toState = 'Active', id = uuidv7()): EventEnvelope {
+  const projectId = uuidv7();
+  return buildEnvelope({
+    id,
+    producer: 'workspace',
+    type: 'project.lifecycle_changed',
+    accountId: ACCOUNT,
+    projectId,
+    aggregate: { type: 'project', id: projectId, version: 1 },
+    data: { objectType: 'project', objectId: projectId, toState },
+  });
+}
+
+interface LogEntry {
+  level: 'info' | 'warn' | 'error';
+  msg: string;
+  fields: Record<string, unknown>;
+}
+
+/** Logger that records what the consumer logs. */
+function recordingLogger(entries: LogEntry[]) {
+  const at = (level: LogEntry['level']) => (fields: unknown, msg?: string) => {
+    entries.push({ level, msg: msg ?? '', fields: fields as Record<string, unknown> });
+  };
+  return { info: at('info'), warn: at('warn'), error: at('error') };
+}
+
+async function waitUntil(condition: () => boolean | Promise<boolean>, what: string, timeoutMs = 30_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await condition())) {
+    if (Date.now() > deadline) throw new Error(`timeout: ${what}`);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
 
 function taskEvent(taskId: string, version: number, toState: string, id = uuidv7()): EventEnvelope {
   return buildEnvelope({
@@ -77,14 +121,24 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
     return outcomes.slice(0, count).map((entry) => entry.outcome);
   };
-  const publish = (routingKey: string, body: unknown, messageId: string) =>
+  const publish = (routingKey: string, body: unknown, messageId: string, headers: Record<string, string> = {}) =>
     publisher.publish('sires.events', routingKey, Buffer.from(typeof body === 'string' ? body : JSON.stringify(body)), {
       persistent: true,
       messageId,
-      headers: { message_id: messageId },
+      headers: { message_id: messageId, ...headers },
     });
-  const publishEvent = (event: EventEnvelope) =>
-    publish(`task.status_changed.${String(event.data['toState']).toLowerCase()}`, event, event.id);
+  const publishEvent = (event: EventEnvelope, headers: Record<string, string> = {}) =>
+    publish(eventRoutingKey(event.type, event.data), event, event.id, headers);
+  /** The publisher connection of the test; the broker closes it in the G1 tests, which open it again. */
+  const openPublisher = async () => {
+    connection = await connect(stack.rabbit.amqpUrl);
+    connection.on('error', () => undefined);
+    publisher = await connection.createChannel();
+  };
+  const rabbitmqctl = async (...args: string[]) => {
+    const result = await stack.rabbit.container.exec(['rabbitmqctl', ...args]);
+    expect(result.exitCode, result.output).toBe(0);
+  };
   const notesFor = async (eventId: string) =>
     (await stack.database.admin<{ total: number }>('SELECT count(*)::int AS total FROM app.note WHERE body = $1', [eventId]))[0].total;
   const mirror = async (taskId: string) =>
@@ -110,14 +164,13 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
   beforeAll(async () => {
     stack = await startMessagingStack();
     await stack.database.admin(REPLICA_SQL);
-    connection = await connect(stack.rabbit.amqpUrl);
-    publisher = await connection.createChannel();
+    await openPublisher();
     await startConsumer('planning');
   }, 300_000);
 
   afterAll(async () => {
     await Promise.all(consumers.map((consumer) => consumer.stop()));
-    await connection?.close();
+    await connection?.close().catch(() => undefined);
     await stack?.stop();
   }, 60_000);
 
@@ -209,5 +262,212 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     expect(warnings.map((fields) => fields['message_id']).sort()).toEqual([noAggregate.id, notJsonId].sort());
     expect(JSON.stringify(warnings)).not.toContain('nội dung riêng');
     await dead.close();
+  });
+
+  it('handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)', async () => {
+    const exporter = new InMemorySpanExporter();
+    const telemetry = startTelemetry({ serviceName: 'orchestration', spanProcessor: new SimpleSpanProcessor({ exporter }) });
+    const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+    const parentSpanId = '00f067aa0ba902b7';
+    const seen: { event?: EventEnvelope; audit?: AuditEvent; logTraceId?: string; outcome?: ConsumeOutcome } = {};
+    try {
+      await startConsumer('tracing', {
+        handlers: [
+          {
+            routingKeys: ['plan_version.status_changed.*'],
+            handle: async (event, tx) => {
+              const workflowId = uuidv7();
+              seen.logTraceId = correlationFields(createAccountHasher('k').hash)['trace_id'];
+              seen.event = await writeEvent(tx, {
+                producer: 'orchestration',
+                type: 'workflow.status_changed',
+                accountId: event.accountId,
+                aggregate: { type: 'workflow', id: workflowId, version: 1 },
+                data: { objectType: 'workflow', objectId: workflowId, toState: 'Running' },
+              });
+              seen.audit = await emitAudit(tx, {
+                producer: 'orchestration',
+                accountId: event.accountId,
+                actor: { type: 'system', component: 'orchestrator' },
+                action: 'workflow.started',
+                objectType: 'workflow',
+                objectId: workflowId,
+              });
+            },
+          },
+        ],
+        onOutcome: (outcome) => {
+          seen.outcome = outcome;
+        },
+      });
+      const planId = uuidv7();
+      const approved = buildEnvelope({
+        producer: 'planning',
+        type: 'plan_version.status_changed',
+        accountId: ACCOUNT,
+        aggregate: { type: 'plan_version', id: planId, version: 2 },
+        data: { objectType: 'plan_version', objectId: planId, toState: 'Approved' },
+      });
+      publishEvent(approved, { traceparent: `00-${traceId}-${parentSpanId}-01` });
+      await waitUntil(() => seen.outcome !== undefined, 'tracing outcome');
+      expect(seen.outcome).toBe('applied');
+
+      // One CONSUMER span, child of the producer's span, on the same trace.
+      const span = exporter.getFinishedSpans().find((finished) => finished.name === 'consume plan_version.status_changed.approved');
+      expect(span).toBeDefined();
+      expect(span?.kind).toBe(SpanKind.CONSUMER);
+      expect(span?.spanContext().traceId).toBe(traceId);
+      expect(span?.parentSpanContext?.spanId).toBe(parentSpanId);
+      expect(span?.attributes).toMatchObject({
+        'messaging.system': 'rabbitmq',
+        'messaging.rabbitmq.destination.routing_key': 'plan_version.status_changed.approved',
+        'messaging.message.id': approved.id,
+        'sires.consume.outcome': 'applied',
+      });
+      const consumerTraceparent = `00-${traceId}-${span?.spanContext().spanId}-01`;
+      // What the handler writes stays on the trace: event traceparent, Audit Event correlationId, logs' trace_id.
+      expect(seen.event?.traceparent).toBe(consumerTraceparent);
+      expect(seen.audit?.correlationId).toBe(traceId);
+      expect(seen.logTraceId).toBe(traceId);
+      const rows = await stack.database.admin<{ traceparent: string }>(
+        'SELECT traceparent FROM app.outbox WHERE id = ANY($1::uuid[])',
+        [[seen.event?.id, seen.audit?.id]],
+      );
+      expect(rows.map((row) => row.traceparent)).toEqual([consumerTraceparent, consumerTraceparent]);
+      expect(trace.getActiveSpan()).toBeUndefined();
+    } finally {
+      await telemetry.shutdown();
+      // The relay of a G1 test below publishes every unpublished row: leave none behind.
+      const ids = [seen.event?.id, seen.audit?.id].filter((id): id is string => id !== undefined);
+      await stack.database.admin('DELETE FROM app.outbox WHERE id = ANY($1::uuid[])', [ids]);
+    }
+  });
+
+  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', { timeout: 60_000 }, async () => {
+    const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
+    const logs: LogEntry[] = [];
+    const closeWhileHandling = new Set<string>();
+    const handled: { id: string; redelivered: boolean }[] = [];
+    const consumer = await startConsumer('recovery', {
+      handlers: [
+        {
+          routingKeys: ['project.lifecycle_changed.*'],
+          handle: async (event, tx, delivery) => {
+            handled.push({ id: event.id, redelivered: delivery.redelivered });
+            await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${uuidv7()}, ${event.accountId}, ${event.id})`);
+            // The broker closes every connection while this message is applied and not yet acked.
+            if (closeWhileHandling.delete(event.id)) await rabbitmqctl('close_all_connections', 'test G1');
+          },
+        },
+      ],
+      reconnectDelayMs: 100,
+      reconnectMaxDelayMs: 500,
+      onOutcome: (outcome, id) => results.push({ outcome, id }),
+      logger: recordingLogger(logs),
+    });
+    const outcomesOf = (id: string) => results.filter((entry) => entry.id === id).map((entry) => entry.outcome);
+
+    const first = projectEvent();
+    publishEvent(first);
+    await waitUntil(() => outcomesOf(first.id).length === 1, 'first event');
+    expect(outcomesOf(first.id)).toEqual(['applied']);
+
+    // Applied and committed, then the connection is gone before the ack: the broker gives the message again on the
+    // new connection and the inbox drops it.
+    const cut = projectEvent();
+    closeWhileHandling.add(cut.id);
+    publishEvent(cut);
+    await waitUntil(() => outcomesOf(cut.id).length === 2, 'redelivery after reconnect');
+    expect(outcomesOf(cut.id)).toEqual(['applied', 'duplicate']);
+    expect(await notesFor(cut.id)).toBe(1);
+    expect(await stack.database.admin('SELECT 1 FROM app.inbox WHERE consumer = $1 AND event_id = $2', ['recovery', cut.id])).toHaveLength(1);
+    expect(handled.filter((entry) => entry.id === cut.id)).toEqual([{ id: cut.id, redelivered: false }]);
+
+    await waitUntil(() => consumer.isConsuming, 'consumer back');
+    await openPublisher();
+    const after = projectEvent('Archived');
+    publishEvent(after);
+    await waitUntil(() => outcomesOf(after.id).length === 1, 'event after reconnect');
+    expect(outcomesOf(after.id)).toEqual(['applied']);
+    expect(await publisher.checkQueue('recovery.events')).toMatchObject({ messageCount: 0, consumerCount: 1 });
+
+    const lost = logs.filter((entry) => entry.msg === 'consumer: mất kết nối AMQP, sẽ kết nối lại');
+    expect(lost.map((entry) => entry.level)).toEqual(['warn']);
+    expect(lost[0]?.fields).toMatchObject({ queue: 'recovery.events' });
+    const back = logs.filter((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp');
+    expect(back.map((entry) => entry.level)).toEqual(['info']);
+
+    // stop() after a recovery: no consumer left on the queue.
+    await consumer.stop();
+    expect(consumer.isConsuming).toBe(false);
+    expect(await publisher.checkQueue('recovery.events')).toMatchObject({ consumerCount: 0 });
+  });
+
+  it('chờ broker khởi động lại rồi consume tiếp (G1, kiến trúc 11.6)', { timeout: 180_000 }, async () => {
+    const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
+    const logs: LogEntry[] = [];
+    const quitterLogs: LogEntry[] = [];
+    const handler: EventHandler = {
+      routingKeys: ['project.lifecycle_changed.*'],
+      handle: async (event, tx) => {
+        await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${uuidv7()}, ${event.accountId}, ${event.id})`);
+      },
+    };
+    const reconnect = { reconnectDelayMs: 200, reconnectMaxDelayMs: 1_000 };
+    const consumer = await startConsumer('restart', {
+      handlers: [handler],
+      ...reconnect,
+      onOutcome: (outcome, id) => results.push({ outcome, id }),
+      logger: recordingLogger(logs),
+    });
+    // Stopped during the outage: it must not come back.
+    const quitter = await startConsumer('quitter', {
+      handlers: [handler],
+      ...reconnect,
+      onOutcome: () => undefined,
+      logger: recordingLogger(quitterLogs),
+    });
+    const relay = new OutboxRelay({ db: stack.systemDb, amqpUrl: stack.rabbit.amqpUrl, service: 'workspace', logger: silent });
+
+    try {
+      await rabbitmqctl('stop_app');
+      await waitUntil(() => !consumer.isConsuming && !quitter.isConsuming, 'both consumers lose the broker');
+
+      // The broker is down: the command still commits and its event waits in the outbox (architecture 11.6).
+      const projectId = uuidv7();
+      const written = await withAccountTransaction(stack.appDb, ACCOUNT, (tx) =>
+        writeEvent(tx, {
+          producer: 'workspace',
+          type: 'project.lifecycle_changed',
+          accountId: ACCOUNT,
+          projectId,
+          aggregate: { type: 'project', id: projectId, version: 2 },
+          data: { objectType: 'project', objectId: projectId, toState: 'Archived' },
+        }),
+      );
+      await expect(relay.runOnce()).rejects.toThrow();
+      await quitter.stop();
+      await settle(2_000);
+      expect(consumer.isConsuming).toBe(false);
+      expect(logs.some((entry) => entry.level === 'warn' && entry.msg === 'consumer: kết nối lại AMQP chưa được, thử lại')).toBe(true);
+
+      await rabbitmqctl('start_app');
+      await waitUntil(() => consumer.isConsuming, 'consumer back after start_app', 120_000);
+      expect(await relay.runOnce()).toEqual({ leader: true, published: 1, failed: 0 });
+      await waitUntil(() => results.some((entry) => entry.id === written.id), 'event after broker restart');
+      expect(results.filter((entry) => entry.id === written.id).map((entry) => entry.outcome)).toEqual(['applied']);
+      expect(await notesFor(written.id)).toBe(1);
+      expect(await stack.database.admin('SELECT consumer FROM app.inbox WHERE event_id = $1', [written.id])).toEqual([{ consumer: 'restart' }]);
+      expect(logs.filter((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp')).toHaveLength(1);
+
+      // The stopped consumer stayed down: its queue kept the event and has no consumer.
+      await settle(1_500);
+      await openPublisher();
+      expect(quitter.isConsuming).toBe(false);
+      expect(await publisher.checkQueue('quitter.events')).toMatchObject({ messageCount: 1, consumerCount: 0 });
+      expect(quitterLogs.some((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp')).toBe(false);
+    } finally {
+      await relay.stop();
+    }
   });
 });

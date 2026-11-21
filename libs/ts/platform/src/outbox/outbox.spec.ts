@@ -229,6 +229,32 @@ describe('outbox và relay trên PostgreSQL và RabbitMQ thật (PID-00002 S01)'
     await Promise.all([commands.close(), everyEvent.close(), sandbox.close()]);
   });
 
+  it('accountId khác tài khoản của giao dịch (G3, S04)', async () => {
+    const other = uuidv7();
+    const noteId = uuidv7();
+    await expect(
+      withAccountTransaction(stack.appDb, ACCOUNT, async (tx) => {
+        await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${noteId}, ${ACCOUNT}, 'x')`);
+        await writeEvent(tx, taskActivated({ accountId: other, actor: { type: 'researcher', accountId: other } }));
+      }),
+    ).rejects.toThrow('writeEvent: accountId is not the account of the transaction (app.account_id)');
+    await expect(
+      withAccountTransaction(stack.appDb, ACCOUNT, (tx) =>
+        writeCommand(tx, { queue: 'knowledge.index', accountId: other, payload: { accountId: other, referenceId: uuidv7(), reason: 'new' } }),
+      ),
+    ).rejects.toThrow('writeCommand: accountId is not the account of the transaction (app.account_id)');
+    // Rolled back before any INSERT: neither the change nor a row of the other account.
+    expect(await stack.database.admin('SELECT 1 FROM app.note WHERE id = $1', [noteId])).toEqual([]);
+    expect(await stack.database.admin('SELECT 1 FROM app.outbox WHERE account_id = $1', [other])).toEqual([]);
+
+    // A `_system` transaction (consumer, job) has no app.account_id: it writes the account of the event it handles.
+    const fromConsumer = await stack.systemDb.transaction((tx) =>
+      writeEvent(tx, taskActivated({ accountId: other, actor: { type: 'system', component: 'consumer' } })),
+    );
+    expect(await stack.database.admin('SELECT account_id FROM app.outbox WHERE id = $1', [fromConsumer.id])).toEqual([{ account_id: other }]);
+    await stack.database.admin('DELETE FROM app.outbox WHERE id = $1', [fromConsumer.id]);
+  });
+
   it('vai trò _app chỉ ghi outbox, không đọc được', async () => {
     const denied = await withAccountTransaction(stack.appDb, ACCOUNT, (tx) => tx.execute(sql`SELECT 1 FROM app.outbox`)).catch(
       (error: Error) => error,
