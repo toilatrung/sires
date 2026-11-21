@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — EC01: chưa có key chính thức Anthropic, Google; key cổng trung gian không có kênh Claude, cổng không giữ structured output của Gemini
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
-- **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** chưa mở
+- **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main`
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
