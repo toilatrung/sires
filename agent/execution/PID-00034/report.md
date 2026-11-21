@@ -1,6 +1,6 @@
 # PID-00034 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — kiểm tra toàn repo ngoài phạm vi e2e
+**Trạng thái:** Đang làm — sửa lỗi kiểm tra nền tảng theo yêu cầu
 
 - **Ticket:** [PID-00034](../../../docs/tickets/issues/PID-00034/index.html) · **Luồng:** `e2e` · **Giai đoạn:** PH-01
 - **Nhánh:** `e2e/pid-00034-playwright-fixtures` · **PR:** chưa mở
@@ -34,7 +34,9 @@ Không nạp thật lên staging hoặc production; đó là phần ngoài phạ
 
 ## 5. Yêu cầu thêm
 
-Không có.
+| Mã | Người yêu cầu | Nguyên văn | Phân loại | Quyết định |
+| --- | --- | --- | --- | --- |
+| YC1 | Người dùng trong phiên | “sửa đi” | Mở rộng phạm vi để sửa lỗi platform đã nêu đang chặn kiểm tra | Thực hiện sửa và kiểm lại; giữ nguyên mã E2E đã làm |
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -53,3 +55,8 @@ Không có.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
+
+## Lần 2 — 21/11/2026
+
+Người dùng yêu cầu sửa lỗi đang chặn bằng “sửa đi”. Thực hiện YC1 tại platform,
+chạy lại kiểm tra và ghi kết quả mới ở Self-QC, không sửa lịch sử lần 1.
