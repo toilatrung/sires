@@ -14,7 +14,7 @@ Môi trường kiểm: máy PO (Windows 11). Smart App Control chặn `.venv/Scr
 | Lệnh | Kết quả |
 | --- | --- |
 | `pnpm nx run agent-core:test` (spec mục 6) | Trên Windows: không chạy — target là `uv run pytest`, bị Smart App Control chặn. Tương đương trong container Linux, từ `apps/agent-core`: `python -m pytest` → **21 passed, 2 warnings in 55.39s** (15 test có sẵn gồm migration, DDL qua Testcontainers, và 6 smoke test spike). Riêng `spikes/spk-08` → `6 passed`; khi bỏ `sires_common.generated` → `5 passed, 1 skipped` (S02 skip đúng thiết kế) |
-| `pnpm nx affected -t lint typecheck test build --base=origin/main` | Kết quả ở mục 6 (chạy sau commit mã) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` | Windows, sau commit `07dd874`: chỉ `agent-core` bị ảnh hưởng (không có target `build`); `agent-core:lint` → `All checks passed!`; `agent-core:typecheck`, `agent-core:test` **không chạy** — `Failed to spawn: mypy` / `pytest`: “An Application Control policy has blocked this file” (Smart App Control chặn shim của uv). Tương đương của hai target trong container Linux ở các dòng dưới; CI chạy lại trên PR |
 | Lint của `agent-core` (`ruff check .` trong `apps/agent-core`, gồm `spikes/`) | Container: `All checks passed!`; Windows (runner): `All checks passed!` |
 | Typecheck của `agent-core` (`mypy src`) | Container: `Success: no issues found in 27 source files` |
 | `mypy --config-file pyproject.toml .` trong `spikes/spk-08` (strict; ngoài target Nx) | Container: lần đầu 8 lỗi (thiếu stub jsonschema, alias attrs của `Registry`, 3 chú thích kiểu, 1 import qua module khác) → sửa → `Success: no issues found in 7 source files` |
@@ -22,7 +22,7 @@ Môi trường kiểm: máy PO (Windows 11). Smart App Control chặn `.venv/Scr
 | `node scripts/docs/update-index.mjs --check` | `docs/tickets/issues: khớp (159 thư mục PID); agent/execution/taskboard.html: khớp`; `docs/index.html đã khớp` |
 | `check-tracks.mjs --stdin` trên file đã đổi (`git diff origin/main...HEAD` + đang sửa + chưa theo dõi) | `tracks touched: agent-core, repo` — một luồng; `repo` là `agent/execution/PID-00022/`; không có `docs/`, `infra/`, `uv.lock` |
 | `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00022` | `PID-00022: ĐỦ để thực thi (0 cảnh báo).` |
-| `check-pid.mjs PID-00022 --result` | Kết quả ở mục 6 |
+| `check-pid.mjs PID-00022 --result` | Lần đầu 2 cảnh báo (`data/context_size.json`, `data/read_latency.json` chưa liệt kê riêng ở report.md mục 6) → sửa → `PID-00022: KẾT QUẢ ĐỦ (0 cảnh báo).` |
 | `context_size.py --out agent/execution/PID-00022/data` (AC01, chạy tay) | Windows (runner): xong trong ~5 s; chạy lại cho `context_size.json` giống hệt byte (tất định) |
 | `read_latency.py --iterations 200 --warmup 10 --out …` (AC02, chạy tay) | Container Linux, 21/11/2026 12:04–12:34 UTC: `exit=0`; 60 ô đo + EC03 25 lượt; số ở report.md 3.3 |
 | `uv build --package sires-agent-core --wheel`; `docker build -f infra/docker/python/Dockerfile …` (YC1) | Wheel 30 file, 0 file spike; image trước #51 có `spikes/spk-08`, sau khi gộp `main` có #51 thì không (report.md 3.4) |
