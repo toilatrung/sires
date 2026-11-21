@@ -60,7 +60,7 @@ Không có. (Chỉ dẫn của phiên điều phối về nhánh, phụ thuộc 
 
 ## Lần 2 — 21/11/2026
 
-Người làm: agent Claude trong phiên Dev dev-pid-00019 (worktree `.claude/worktrees/pid-00019-e754b0`), theo yêu cầu của phiên “Kiểm tra và merge PR” chuyển quyết định của PO. Việc của lần này: commit và mở PR cho phần đã làm, không làm thêm slice. QC độc lập Lần 1 ([qc-report.md](qc-report.md), 19/11/2026) đã chạy trên mã này; commit nguyên trạng.
+Người làm: phiên Dev dev-pid-00019 (worktree `.claude/worktrees/pid-00019-e754b0`), theo yêu cầu của phiên “Kiểm tra và merge PR” chuyển quyết định của PO. Việc của lần này: commit và mở PR cho phần đã làm, không làm thêm slice. QC độc lập Lần 1 ([qc-report.md](qc-report.md), 19/11/2026) đã chạy trên mã này; commit nguyên trạng.
 
 ### Yêu cầu thêm
 
