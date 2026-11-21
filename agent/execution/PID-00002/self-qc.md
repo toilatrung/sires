@@ -1,9 +1,9 @@
 # PID-00002 — Self-QC của Dev
 
-**Kết luận:** Đạt
+**Kết luận:** Đạt (Lần 2, 21/11/2026) — đã sửa G1, G2, G3 của QC độc lập Lần 1; tự đối chiếu không còn CRITICAL, HIGH
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 21/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -93,6 +93,62 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 | G3 | partial | LOW | Schema ActorRef và danh sách ServiceName có ở cả `outbox/envelope.ts` và `service-auth/claims.ts` (PR #34, chưa merge) | `outbox/envelope.ts` | Gộp sau khi hai PR vào main (cùng luồng platform) |
 | G4 | partial | LOW | Consumer không mở span theo `traceparent` của message; trace id chỉ đi trong vỏ và header | `inbox/consumer.ts:120` | Hồ sơ không yêu cầu (P3); ghi cho luồng dùng consumer cần trace liền mạch |
 | G5 | partial | LOW | Quy tắc 1.4.1: `pnpm-lock.yaml` thuộc luồng infra | `check-tracks.mjs`: `infra, platform, repo` | Đúng quy tắc 1.4.7; như PID-00001, PID-00003 |
+
+## Lần 2 — 21/11/2026
+
+Sửa G1, G2, G3 của [QC độc lập Lần 1](qc-report.md) (18/11/2026). Phiên do PO giao làm thay Dev `T1xNTH` (report.md mục 5). Mã: nhánh `platform/ts-outbox-inbox`, đã merge `origin/main` `8c95931` (commit `647b7d6`), sửa ở commit `5086f30`. Chạy trong worktree riêng, Windows 11, Docker Engine trong WSL `Ubuntu-24.04` (`DOCKER_HOST=tcp://localhost:2375`), Testcontainers PostgreSQL 16 + pgvector và RabbitMQ 4.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt (trước và sau khi merge `origin/main`); cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `pnpm nx run @sires/platform:lint --skip-nx-cache` | Đạt (kèm 3 tác vụ phụ thuộc) |
+| `pnpm nx run @sires/platform:typecheck --skip-nx-cache` | Đạt |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 16 file, 104/104 test (sau merge `main` có thêm test của PID khác); 36 test của PID-00002: outbox 9, inbox 8, idempotency 8, audit 7, jobs 4 |
+| `npx vitest run src/outbox src/inbox src/idempotency src/audit src/jobs` (trong `libs/ts/platform`), 3 lần liên tiếp | 3/3 lần 36/36 (49,9 s; 29,7 s; 33,8 s) |
+| Test mới chạy trên mã cũ (`consumer.ts`, `outbox.ts` của `e49466b`), rồi trả mã mới | Đều lỗi như mong đợi: G2 “expected undefined to be defined” (không có span CONSUMER); G1 đóng kết nối “timeout: redelivery after reconnect” (consumer không nhận lại); G1 khởi động lại broker lỗi ở `isConsuming`; G3 hai test “promise resolved "undefined" instead of rejecting”. Với mã mới: đạt |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --exclude=sires-common,knowledge,agent-core,eval --skip-nx-cache` | 15 project TS (`audit`, `contracts`, `e2e`, `gateway`, `identity`, `library`, `manuscript`, `orchestration`, `planning`, `platform`, `research`, `sandbox-runner`, `testing`, `web`, `workspace`): mọi tác vụ đạt trừ `@sires/contracts:test` 13/14 — `check-drift.spec.mjs › Python: trường không có trong mô hình sinh … (EC06)` lỗi “Failed to spawn: python — An Application Control policy has blocked this file (os error 4551)”: lỗi môi trường của máy này (test Python của PID-00008, PR không chạm `libs/ts/contracts`). Python loại khỏi lệnh vì cùng lý do. CI `build` là kết quả đủ |
+| `pnpm nx run sires-common:test` | Không chạy — máy này chặn `python.exe` của `.venv` (Smart App Control); Lần 2 không đổi Python. CI `build` chạy |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: infra, platform, repo`; cảnh báo 2 luồng. `infra` chỉ do `pnpm-lock.yaml` của Lần 1 (Lần 2 không đổi lockfile); `repo` do `agent/execution/PID-00002/` — như G5 |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `node scripts/docs/update-index.mjs --check` | Khớp: 159 PID, 15 đợt; taskboard khớp 159 task; `docs/index.html` khớp |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)`, trạng thái `Xong — chờ QC` |
+
+### 2. Test mới theo G
+
+| G | Test | Kết quả |
+| --- | --- | --- |
+| G1 | `libs/ts/platform/src/inbox/inbox.spec.ts › kết nối lại sau khi broker đóng kết nối (G1, P3)` | Đạt: sự kiện đầu `applied`; sự kiện thứ hai, handler chạy `rabbitmqctl close_all_connections` giữa giao dịch → `applied` (commit, ack lỗi) rồi giao lại trên kết nối mới → `duplicate`; 1 tác động, 1 dòng inbox; sau đó `isConsuming`, sự kiện mới `applied`, queue `recovery.events` `{messageCount: 0, consumerCount: 1}`; đúng 1 log `warn` “mất kết nối” (`queue: recovery.events`), 1 log `info` “đã kết nối lại”; `stop()` xong thì `consumerCount: 0` |
+| G1 | `inbox.spec.ts › chờ broker khởi động lại rồi consume tiếp (G1, kiến trúc 11.6)` | Đạt: `rabbitmqctl stop_app` → hai consumer `isConsuming = false`; lệnh ghi vẫn commit, sự kiện nằm ở outbox, relay lỗi; consumer thứ hai `stop()` lúc broker ngừng; log `warn` “kết nối lại AMQP chưa được”; `start_app` → consumer consume lại, relay `{published: 1}`, sự kiện `applied` một lần, inbox `consumer = restart`; consumer đã dừng không kết nối lại: queue `quitter.events` `{messageCount: 1, consumerCount: 0}` |
+| G2 | `inbox.spec.ts › handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)` | Đạt: span `consume plan_version.status_changed.approved` kind CONSUMER, cùng trace id với header, parent là span id của header, thuộc tính `messaging.*`, `sires.consume.outcome = applied`; `writeEvent` trong handler có `traceparent` = span consumer, `emitAudit` có `correlationId` = trace id, log có `trace_id`; hai dòng outbox lưu `traceparent` đó |
+| G3 | `libs/ts/platform/src/outbox/outbox.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)` | Đạt: `writeEvent`, `writeCommand` với tài khoản khác trong `withAccountTransaction` → `TypeError`, rollback cả thay đổi, không có dòng outbox; giao dịch `_system` ghi được tài khoản của sự kiện |
+| G3 | `libs/ts/platform/src/audit/audit.spec.ts › accountId khác tài khoản của giao dịch (G3, S04)` | Đạt: `emitAudit` với tài khoản khác → `TypeError`, rollback, không có Audit Event |
+
+### 3. AC và edge case
+
+Bảng mục 2, 3 của Lần 1 giữ nguyên, mọi test đã nêu vẫn đạt (36/36). EC07, EC08 nay đúng cả sau khi mất kết nối (G1); AC02 đúng cả với message giao lại sau kết nối lại. Edge case mới: mất kết nối khi handler đã commit mà chưa ack → giao lại, inbox trả `duplicate` (test G1 thứ nhất); broker ngừng hẳn → lệnh ghi vẫn commit, sự kiện chờ ở outbox tới khi broker trở lại (test G1 thứ hai); `stop()` lúc đang chờ kết nối lại → không kết nối lại nữa.
+
+### 4. Tự kiểm
+
+- [x] Chỉ sửa `libs/ts/platform/src/inbox/consumer.ts`, `inbox.spec.ts`, `outbox/outbox.ts`, `outbox.spec.ts`, `audit/audit.spec.ts`, `libs/ts/platform/README.md` và `agent/execution/PID-00002/`; không thêm, đổi tên, gộp hay tách file ở Output O1–O11 (quy tắc 1.4.13); không sửa `docs/`, `qc-report.md`, luồng khác.
+- [x] Không đổi cách tính `request_hash` (đề xuất sửa slice S03 chưa được PO chốt).
+- [x] Không log payload: log mất kết nối chỉ có `queue`, `reason`, `err`; span chỉ có metadata (`messaging.*`, outcome).
+- [x] Context cách ly theo tài khoản: G3 chặn dòng outbox của tài khoản khác trong giao dịch `_app`.
+- [x] Không còn mã gỡ lỗi; test mới có tên theo G và nguồn.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+Đối chiếu mã hiện tại với `acceptance.html` (15 AC), `scope.html` (P1–P8, N1–N9, EC01–EC18), slice S01–S05, spec mục 3 (Output O1–O11), kiến trúc 11.4, 11.6 và các việc còn lại của QC Lần 1. 15/15 AC, 18/18 EC có test đạt; G1, G2, G3 của QC Lần 1 đã xử lý. Không có `contradicts`; đường dẫn, tên file đúng Output.
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| QC-G1 | partial | HIGH → hết | Consumer không tự kết nối lại sau khi mất kết nối | `inbox/consumer.ts:173` (`connectAndConsume`), `:215` (`lose`), `:226`, `:237` (backoff, kết nối lại), `:126` (`isConsuming`); 2 test G1 | Đã sửa |
+| QC-G2 | partial | MEDIUM → hết | Consumer không nối tiếp trace từ header `traceparent` | `inbox/consumer.ts:271`, `:284`; test G2 | Đã sửa; span cho relay và job dọn (tùy chọn ở QC Lần 1) chưa làm, ghi report.md mục 6 |
+| QC-G3 | partial | LOW → hết | `accountId` không đối chiếu `app.account_id` | `outbox/outbox.ts:152`, `:167`; 2 test G3 | Đã sửa theo cách (a) của QC; áp cả `writeCommand` có `accountId` — PO xác nhận (report.md mục 6) |
+| G6 | unrequested | LOW | `connect` của consumer có hạn 10 s cho lúc mở; tham số `reconnectDelayMs`, `reconnectMaxDelayMs`; getter `isConsuming` | `inbox/consumer.ts:86`, `:66`, `:68`, `:126` | Chi tiết kỹ thuật phục vụ G1 (QC gợi ý `isConsuming`); ghi implement.md mục 3 |
+| G7 | partial | LOW | Lần `start()` đầu vẫn ném lỗi khi broker không tới được (không tự thử lại); chỉ sau lần đầu thành công mới tự kết nối lại | `inbox/consumer.ts:134` | Giữ hành vi cũ (lỗi khi khởi động, Kubernetes khởi động lại pod); PO xác nhận (report.md mục 6) |
+| G1, G3, G5 (Lần 1) | — | LOW | `request_hash`; ActorRef trùng service-auth; cảnh báo `infra` | như Lần 1 | Không đổi; vẫn chờ PO |
 
 ---
 
