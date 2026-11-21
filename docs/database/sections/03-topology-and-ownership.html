@@ -48,11 +48,12 @@ sandbox-runner: không có database (trạng thái build ở manuscript, job qua
 <p>Không service nào có quyền kết nối database của service khác; không có <code>dblink</code>/<code>postgres_fdw</code>. Khi một service tải cao (knowledge) cần cụm riêng, tách database đó sang cụm khác không đổi schema (ADR-22).</p>
 
 <h2 id="s-3-2">3.2. Vai trò đăng nhập</h2>
-<p>Mỗi database có bốn vai trò (DBD-06). Vai trò do hạ tầng (Terraform) tạo; mật khẩu hoặc chứng chỉ ở secret manager, cấp cho pod của đúng service.</p>
+<p>Mỗi database có bốn vai trò (DBD-06), cộng một vai trò đăng nhập để chạy migration là <code>sires_&lt;svc&gt;_migrator</code> (tên đặt ngày 21/11/2026, PO trả lời PID-00159 I1 thành H3). Vai trò do hạ tầng (Terraform) tạo; mật khẩu hoặc chứng chỉ ở secret manager, cấp cho pod của đúng service.</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Vai trò</th><th>LOGIN</th><th>RLS</th><th>Dùng cho</th><th>Quyền</th></tr></thead>
 <tbody>
-<tr><td><code>sires_&lt;svc&gt;_owner</code></td><td>không (migration đăng nhập bằng vai trò migrator là thành viên)</td><td>—</td><td>Sở hữu schema, bảng, hàm; chạy migration</td><td>DDL</td></tr>
+<tr><td><code>sires_&lt;svc&gt;_owner</code></td><td>không (migration đăng nhập bằng <code>sires_&lt;svc&gt;_migrator</code>, thành viên của owner)</td><td>—</td><td>Sở hữu schema, bảng, hàm; chạy migration</td><td>DDL</td></tr>
+<tr><td><code>sires_&lt;svc&gt;_migrator</code></td><td>có</td><td>—</td><td>Đăng nhập để chạy migration. <code>ALTER ROLE … SET role = 'sires_&lt;svc&gt;_owner'</code> nên mỗi phiên chạy bằng quyền owner và đối tượng do migration tạo thuộc owner; mã migration không cần <code>SET ROLE</code></td><td>Không có quyền riêng; thành viên của <code>sires_&lt;svc&gt;_owner</code>; CONNECT chỉ database của service; không SUPERUSER, CREATEDB, CREATEROLE, REPLICATION, BYPASSRLS</td></tr>
 <tr><td><code>sires_&lt;svc&gt;_app</code></td><td>có</td><td>áp dụng</td><td>Request của người dùng và lời gọi nội bộ có tenant (token nội bộ mang <code>account_id</code>)</td><td>SELECT/INSERT/UPDATE trên <code>app.*</code>, DELETE chỉ bảng được liệt kê; INSERT <code>outbox</code>; SELECT <code>replica.*</code></td></tr>
 <tr><td><code>sires_&lt;svc&gt;_system</code></td><td>có</td><td>BYPASSRLS</td><td>Outbox relay, consumer sự kiện, sweeper, job định kỳ quét nhiều tài khoản</td><td>Như <code>_app</code> + đọc/ghi <code>outbox</code>, <code>inbox</code>, <code>job_lock</code>, ghi <code>replica.*</code></td></tr>
 <tr><td><code>sires_&lt;svc&gt;_purge</code></td><td>có</td><td>BYPASSRLS</td><td>Purge project/tài khoản, dọn theo retention (debug transcript, idempotency key, outbox đã publish)</td><td>SELECT/DELETE mọi bảng</td></tr>

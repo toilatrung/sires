@@ -45,6 +45,7 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | `sections/NN-slug.html` | 21 section, số `01`–`21` (mục MVP Delivery Plan cũ bỏ ngày 01/11/2026, DEC-49); anchor dạng `s-16-10`, `req-nfr-eval-001`, `oq-096` |
 | `back-log.html` | Nguồn theo dõi chính: trạng thái section, việc `BL-NN-MM`, sổ OQ, việc đồng bộ `SYNC-NN`, nhật ký |
 | `phieu-chot-backlog.html` | Phiếu chốt để PO trả lời OQ và duyệt hàng loạt |
+| `phieu-chot-spk-01.html` | Phiếu chốt sau SPK-01 (PID-00021): key proxy, OQ-113, G5–G10, PID-00070; lập 21/11/2026, chờ PO chốt (đề nghị PC-02) |
 | `figures/` | Nguồn sơ đồ Mermaid `FIG-0NN-*.mmd`; [hướng dẫn](overview/figures/README.md) |
 | `assets/` | `styles.css` dùng chung cho mọi bộ tài liệu HTML; logo ở `assets/brand/` |
 
