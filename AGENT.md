@@ -52,6 +52,7 @@ PRD là HTML tĩnh. Để đọc nhanh, tìm theo mã ID (`grep -n "req-nfr-eval
 - **Mã ID không tái sử dụng** (PRD 1.6). Lấy mã tiếp theo từ `docs/docs_context.md`.
 - **Ghi vết sau mỗi thay đổi tài liệu:** nhật ký trong `docs/docs_context.md`; với PRD, cập nhật thêm backlog và, khi là quyết định mới, PRD 20.1.
 - **Giấy phép:** file mới chạy `node scripts/docs/add-license.mjs`; kiểm tra bằng `--check`.
+- **Môi trường máy Dev** (PO chốt 21/11/2026): gói, công cụ cài được trên Windows (PowerShell) thì cài trên Windows; chỉ cài trong WSL khi cần Linux. Thêm gói hay công cụ môi trường mới thì cập nhật `scripts/development/setup-windows.ps1` hoặc `setup-wsl.sh` trong cùng PR ([scripts/development/README.md](scripts/development/README.md)).
 - **Ngôn ngữ:** nội dung tiếng Việt; giữ thuật ngữ tiếng Anh và nhãn đã chốt (glossary ở PRD 1.5).
 
 ## Kiểm tra sau khi sửa
