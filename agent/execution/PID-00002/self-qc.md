@@ -150,6 +150,17 @@ Bảng mục 2, 3 của Lần 1 giữ nguyên, mọi test đã nêu vẫn đạt
 | G7 | partial | LOW | Lần `start()` đầu vẫn ném lỗi khi broker không tới được (không tự thử lại); chỉ sau lần đầu thành công mới tự kết nối lại | `inbox/consumer.ts:134` | Giữ hành vi cũ (lỗi khi khởi động, Kubernetes khởi động lại pod); PO xác nhận (report.md mục 6) |
 | G1, G3, G5 (Lần 1) | — | LOW | `request_hash`; ActorRef trùng service-auth; cảnh báo `infra` | như Lần 1 | Không đổi; vẫn chờ PO |
 
+## Lần 3 — 22/11/2026
+
+Sửa G4 của QC độc lập Lần 2.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run src/inbox -t "G4"` trên mã trước khi sửa | Lỗi như mong đợi: test mới bắt được unhandled rejection |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/platform --skip-nx-cache` | Đạt cả bốn; 105/105 test |
+
+G5 (LOW) giữ nguyên, chờ PO.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
