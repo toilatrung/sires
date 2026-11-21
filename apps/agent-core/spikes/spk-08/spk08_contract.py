@@ -116,7 +116,11 @@ def inline_schema(ref: str, depth: int = 6) -> Any:
 
 def markdown_footer(directory: Path) -> str:
     """License notice of scripts/docs/add-license.mjs for a Markdown file written into ``directory``."""
-    licenses = Path(os.path.relpath(REPO / "LICENSES.md", directory.resolve())).as_posix()
+    try:
+        licenses = Path(os.path.relpath(REPO / "LICENSES.md", directory.resolve())).as_posix()
+    except ValueError:
+        # Windows cannot form a relative path between drives (e.g. repo on D:, report in TEMP on C:).
+        licenses = "https://github.com/toilatrung/sires/blob/main/LICENSES.md"
     return (
         "\n---\n\n<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->\n"
         "SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh "

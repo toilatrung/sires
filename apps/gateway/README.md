@@ -11,7 +11,9 @@ BFF duy nhất ra Internet: OIDC RP của eTroy OIDC (PKCE), phiên server-side,
 | Database | `sires_gateway` (DDL tham chiếu: `docs/database/ddl/gateway.sql`) |
 | Cổng cục bộ | 3000 (ghi đè bằng biến `PORT`) |
 | Hợp đồng | `docs/api-design/openapi.yaml` (định tuyến), `paths/15-settings-and-sign-in.yaml` (`/auth/*`) |
-| Bản sao chỉ đọc | Chưa có. Ghi ở đây khi service giữ bản sao dữ liệu của service khác (kiến trúc 3.6.2). |
+| Bảng sở hữu | `app.session` (phiên server-side), `app.sse_event_log` (phát lại SSE 24 giờ) |
+| Entity nghiệp vụ | Không có |
+| Bản sao chỉ đọc | Không có |
 
 ## Chạy
 
@@ -20,6 +22,68 @@ pnpm --filter @sires/gateway dev
 ```
 
 Kiểm tra: `curl http://localhost:3000/health`.
+
+## Cấu hình phiên (PID-00014)
+
+- `DATABASE_URL`: DSN của vai trò `sires_gateway_app`, không có SUPERUSER hay BYPASSRLS.
+- `GATEWAY_CSRF_KEY`: khóa ngẫu nhiên 32 byte, biểu diễn bằng 64 ký tự hex. Tạo cục bộ bằng
+  `node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('hex'))"`
+  và đặt trong môi trường riêng; không commit giá trị. PID-00035 cấp secret staging theo tên này.
+- `DATABASE_MIGRATOR_URL`: DSN migrator riêng cho lệnh migration; không dùng DSN này cho service.
+
+Thiếu DSN hoặc khóa CSRF hợp lệ thì service dừng lúc khởi động, không dùng khóa mặc định.
+Các endpoint OIDC và `/auth/session` chưa được triển khai ở PH-01 (PID-00038);
+định tuyến nghiệp vụ và SSE thuộc PID-00039, PID-00040.
+
+Module `src/session/` đăng ký guard toàn cục: `/health`, `/auth/login`, `/auth/callback`
+được công khai; route còn lại cần cookie `sires_session`. `SessionRequest.accountId` và
+`SessionRequest.session` chứa danh tính đã tra bằng `app.find_session(sha256(session id))`.
+Không có, bị thu hồi hoặc hết hạn → `401 unauthenticated`. POST/PUT/PATCH/DELETE
+cần `X-CSRF-Token` đúng → nếu không, `403 forbidden` trước khi handler chạy.
+
+Chỉ lệnh ghi thành công và GET `/auth/session` gia hạn `last_seen_at`,
+`idle_expires_at` thêm 12 giờ; SSE, polling, các GET khác không gia hạn.
+Lệnh ghi bị handler từ chối cũng không gia hạn. Hạn tuyệt đối luôn được kiểm độc lập.
+
+PID-00038 dùng `SessionService.create({ accountId, absoluteExpiresAt, oidcSid?,
+refreshTokenEnc?, userAgentHash? })` để nhận `sessionId`, `csrfToken`, `cookie` và dòng
+phiên đã ghi. `absoluteExpiresAt` do OIDC tính theo token; module không tự đặt hạn đó.
+`SessionService.getCsrfToken(sessionId)` tính lại token cho GET `/auth/session` từ id
+trong cookie; `sessionCookie(sessionId, absoluteExpiresAt)` dựng cookie độc lập khi cần.
+Cookie có HttpOnly, Secure, SameSite=Lax, Path=/ và Expires bằng hạn tuyệt đối,
+nên đóng trình duyệt không đăng xuất; dùng HTTPS ở trình duyệt để gửi cookie Secure.
+
+CSRF token là HMAC-SHA256 của session id bằng khóa gateway; database chỉ giữ SHA-256
+của session id và CSRF token. Kiểm CSRF đối chiếu cả hash đã lưu và HMAC bằng khóa hiện tại
+(so sánh thời gian hằng). Đổi khóa làm token cũ mất hiệu lực; phiên cũ cần đăng nhập lại
+để được cấp phiên/token mới. Quy trình vận hành xoay khóa nằm ngoài PID-00014.
+Không log cookie, session id, CSRF token hoặc khóa.
+
+## Migration
+
+Custom SQL và journal của drizzle-kit nằm trong `migrations/`; migration đầu chép
+nguyên văn `00-common.sql` rồi `gateway.sql`. Chỉ tiến; không sửa migration đã áp.
+Vai trò `sires_gateway_owner`, `_app`, `_system`, `_purge` phải được cấp trước:
+Terraform ở staging/production; PID-00159 cho compose; test tự cấp vai trò trong Testcontainers.
+Migration không tự tạo vai trò hoặc cấp BYPASSRLS.
+
+```bash
+# Đặt DATABASE_MIGRATOR_URL riêng trong môi trường trước khi chạy.
+pnpm nx run @sires/gateway:migrate
+# Trong image production, /app:
+node dist/migrate.js
+# Tạo custom migration mới lúc phát triển:
+pnpm --filter @sires/gateway exec drizzle-kit generate --custom --name <ten>
+```
+
+Target Nx build service trước khi chạy. Image mang `dist/`, `migrations/` qua trường
+`files` của package; lệnh runtime dùng `migrate()` của drizzle-orm, không cần drizzle-kit.
+`deploy/values.yaml` bật Job migration với `node dist/migrate.js`; Job phải được cấp
+`DATABASE_MIGRATOR_URL` bằng secret. Chạy lại lệnh không áp lại migration đã ghi sổ.
+
+Kiểm: `pnpm nx run @sires/gateway:test` (Docker, PostgreSQL 16 + pgvector thật),
+`pnpm nx affected -t lint typecheck test build`. Test so schema migration với DDL
+tham chiếu, RLS bằng vai trò `_app` và HTTP Fastify qua module thực.
 
 ## Ranh giới
 
