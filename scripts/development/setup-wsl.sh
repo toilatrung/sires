@@ -14,6 +14,8 @@
 # Các bước: WSL2 và systemd → Docker Engine từ kho apt chính thức của Docker → nhóm docker → (WSL) Docker API
 # ở 127.0.0.1:2375 để test trên Windows (Testcontainers) gọi được qua DOCKER_HOST=tcp://localhost:2375.
 # Cổng chỉ nghe trên localhost, không có xác thực: mọi tiến trình trên máy đều điều khiển được Docker.
+# Quy tắc (PO, 21/11/2026): chỉ cài trong WSL thứ cần Linux; thêm gói hay công cụ môi trường mới thì cập nhật file này
+# hoặc setup-windows.ps1 trong cùng PR (scripts/development/README.md).
 
 set -euo pipefail
 
