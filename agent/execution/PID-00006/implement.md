@@ -59,6 +59,19 @@ thắng, sau đó `ON CONFLICT DO NOTHING` bỏ qua. Nếu giao dịch đầu ro
   dùng để truy cập container test cục bộ. Không đổi mạng hoặc firewall máy chủ.
 - S07 giữ workflow CI và Nx cache như hiện có; không đổi cấu hình đo để né ảnh hưởng lockfile.
 
+## 4. Thu số đo S07
+
+`agent/execution/PID-00006/measure-spk10.cjs` đọc metadata attempt, jobs/steps và timing qua GitHub
+CLI. Sau mỗi attempt hoàn tất, ghi JSON snapshot trước khi yêu cầu chạy lại toàn bộ job, giữ cùng
+run và SHA; không ghi đè snapshot khi tiếp tục. `--collect-only` chỉ thu các attempt đã được chạy,
+không khởi tạo thêm. Mặc định dừng khi CI lỗi để kiểm tra nguyên nhân; `--allow-failures` dùng cho
+bộ khảo sát trước sửa, giữ đầy đủ lần lỗi thay vì chọn bỏ.
+
+Bộ chính run 44929131563 dùng SHA d900765 sau khi nhận bản sửa knowledge đã merge trên main.
+Năm attempt cùng SHA đều đạt và dưới 600 giây. Bộ trước sửa giữ riêng ở run 44927856447; không
+trộn hai phiên bản. Report có thời gian từng job/step, danh sách 20 affected project theo EC11,
+cấu hình cache/workflow và liên kết JSON. Mọi số đo là kết quả Actions thực, không suy từ test local.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
