@@ -1,11 +1,14 @@
 # PID-00034 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — sửa lỗi kiểm tra nền tảng theo yêu cầu
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00034](../../../docs/tickets/issues/PID-00034/index.html) · **Luồng:** `e2e` · **Giai đoạn:** PH-01
 - **Nhánh:** `e2e/pid-00034-playwright-fixtures` · **PR:** chưa mở
 - **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
+
+Kết quả mới nhất ở **Lần 2** cuối file: 2/2 slice và YC1 hoàn tất, kiểm tổng thể đạt.
+Các mục 1–6 giữ bằng chứng của lượt trước, gồm lỗi đã được xử lý ở Lần 2.
 
 ## 1. Tóm tắt
 
@@ -60,3 +63,17 @@ SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. No
 
 Người dùng yêu cầu sửa lỗi đang chặn bằng “sửa đi”. Thực hiện YC1 tại platform,
 chạy lại kiểm tra và ghi kết quả mới ở Self-QC, không sửa lịch sử lần 1.
+
+- **Kết quả:** S01/S02 xong, 4/4 AC E2E đạt; YC1 đã sửa ca kiểm 413 trong
+  `libs/ts/platform/src/errors/errors.spec.ts`. Chỉ đổi test, không đổi runtime API.
+- **Kiểm tra:** platform 105/105; agent-core 15/15; sires-common 79/79.
+  `pnpm nx affected -t lint typecheck test build --parallel=2` đạt cho 19 project
+  và 2 tác vụ phụ thuộc; 72 tác vụ hoàn tất, 35 dùng cache. Exit 0.
+- **Môi trường:** Docker IPv4 `127.0.0.1:2375`, socket `/var/run/docker.sock`,
+  chỉ đặt env ở tiến trình chạy kiểm; lệnh đầy đủ trong `validation.md` Lần 2.
+- **Self-QC:** đã tự đối chiếu lại theo spec-converge-skill; G1 HIGH đã giải quyết,
+  không còn CRITICAL/HIGH. G2 về UI locale ngoài phạm vi và G3 về lockfile vẫn được ghi nhận.
+- **Ranh giới:** phần sửa platform đã được người dùng cho phép ở YC1; cảnh báo
+  nhiều luồng được giải thích, không sửa docs/taskboard hoặc mã infra.
+- **Còn lại:** PO QC độc lập và review; Dev commit mã/PR khi được yêu cầu.
+  Mã E2E và bản sửa test platform chưa commit; chỉ báo cáo trạng thái được ký và push.
