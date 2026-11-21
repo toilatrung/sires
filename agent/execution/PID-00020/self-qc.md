@@ -78,7 +78,7 @@ Chế độ Dev tự QC, 18/11/2026: đối chiếu `acceptance.html`, `scope.ht
 
 ## Lần 2 — 19/11/2026
 
-Người làm: agent Claude trong phiên Dev do phiên điều phối của PO `toilatrung` khởi động (PID giao cho `toilatrung`). Worktree `H:\Troy University\sires\.claude\worktrees\pid-00020-run2-7f459b`, nhánh cục bộ `agent-core/migration-skeleton-run2` (từ xa: `agent-core/migration-skeleton`), mã ở `d4a97fc` cộng thay đổi chưa commit của Lần 2.
+Người làm: phiên Dev do phiên điều phối của PO `toilatrung` khởi động (PID giao cho `toilatrung`). Worktree `H:\Troy University\sires\.claude\worktrees\pid-00020-run2-7f459b`, nhánh cục bộ `agent-core/migration-skeleton-run2` (từ xa: `agent-core/migration-skeleton`), mã ở `d4a97fc` cộng thay đổi chưa commit của Lần 2.
 
 Môi trường Lần 2 — máy PO, Windows 11, có mạng:
 

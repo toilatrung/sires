@@ -6,14 +6,18 @@
 Dựng môi trường phát triển SIRes trên Windows.
 Cách chia: công cụ không cần Docker (Git, Node, pnpm, uv, Python) cài trên Windows; Docker Engine cài trong WSL2
 (scripts/development/setup-wsl.sh), test trên Windows gọi nó qua DOCKER_HOST=tcp://localhost:2375.
+Quy tắc (PO, 21/11/2026): cài được trên Windows thì cài ở đây; chỉ cài trong WSL khi cần Linux. Thêm gói hay công cụ
+môi trường mới thì cập nhật file này hoặc setup-wsl.sh trong cùng PR (scripts/development/README.md).
 
 Dùng (PowerShell, từ gốc repo):
-  powershell -ExecutionPolicy Bypass -File scripts\development\setup-windows.ps1 [-Check] [-Yes] [-Distro Ubuntu-24.04] [-SkipWsl] [-SkipDeps]
+  powershell -ExecutionPolicy Bypass -File scripts\development\setup-windows.ps1 [-Check] [-Yes] [-Distro Ubuntu-24.04] [-SkipWsl] [-SkipDeps] [-Spikes]
     -Check     chỉ kiểm và báo, không cài gì
     -Yes       không hỏi lại trước mỗi bước
     -Distro    distro WSL dùng cho Docker (mặc định Ubuntu-24.04)
     -SkipWsl   bỏ qua WSL và Docker
     -SkipDeps  không chạy pnpm install, uv sync
+    -Spikes    thêm gói của spike: apps\*\spikes\*\requirements.txt cài vào %LOCALAPPDATA%\sires\spikes\<spike> (ngoài
+               repo, không vào venv của workspace)
 
 Bước cần quyền admin (bật WSL) mở hộp thoại UAC; bước cần sudo trong WSL hỏi mật khẩu Linux của bạn.
 Phiên bản lấy từ repo: Node theo .nvmrc, pnpm theo packageManager trong package.json, Python theo .python-version.
@@ -23,7 +27,8 @@ param(
   [switch]$Yes,
   [string]$Distro = 'Ubuntu-24.04',
   [switch]$SkipWsl,
-  [switch]$SkipDeps
+  [switch]$SkipDeps,
+  [switch]$Spikes
 )
 
 $ErrorActionPreference = 'Stop'
@@ -170,6 +175,33 @@ if (-not $SkipDeps) {
     if ((Has 'uv') -and (Confirm-Step 'uv sync --all-packages?')) { & uv sync --all-packages; if ($LASTEXITCODE -ne 0) { throw 'uv sync lỗi' }; Ok 'uv sync --all-packages' }
     elseif ($Check) { Todo 'uv sync --all-packages (chạy không kèm -Check)' }
   } finally { Pop-Location }
+}
+
+# ---------------------------------------------------------------- Gói của spike (-Spikes)
+# Mỗi spike có requirements.txt (ghim kèm hash) được cài bằng Python gốc của uv vào một thư mục riêng ngoài repo;
+# script của spike chạy bằng Python đó với PYTHONPATH trỏ thư mục này (xem README của spike).
+if ($Spikes) {
+  Step 'Gói của spike trên Windows'
+  $pyExe = $null
+  if (Has 'uv') { $pyExe = (& uv python find --system $pyVersion 2>$null) }
+  if (-not $pyExe) { Todo "chưa có Python $pyVersion do uv cài (bước Python ở trên)" } else {
+    foreach ($req in @(Get-ChildItem (Join-Path $Repo 'apps\*\spikes\*\requirements.txt') -ErrorAction SilentlyContinue)) {
+      $spike = $req.Directory.Name
+      $target = Join-Path $env:LOCALAPPDATA "sires\spikes\$spike"
+      $stamp = Join-Path $target '.requirements.sha256'
+      $hash = (Get-FileHash $req.FullName -Algorithm SHA256).Hash
+      if ((Test-Path $stamp) -and ((Get-Content $stamp -Raw).Trim() -eq $hash)) { Ok "$spike → $target" } else {
+        Todo "$spike`: cài $($req.FullName.Substring($Repo.Length + 1)) vào $target"
+        if ((Has 'uv') -and (Confirm-Step "Cài gói của $spike (tải từ PyPI)?")) {
+          if (Test-Path $target) { Remove-Item -Recurse -Force $target }
+          & uv pip install --python $pyExe --target $target --require-hashes -r $req.FullName
+          if ($LASTEXITCODE -ne 0) { throw "cài gói của $spike lỗi" }
+          Set-Content -Path $stamp -Value $hash -Encoding ascii
+          Ok "$spike → $target"
+        }
+      }
+    }
+  }
 }
 
 Write-Host ''

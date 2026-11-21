@@ -5,6 +5,9 @@
   "description": "SIRes platform library for NestJS services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "sires-state-transition-sql": "bin/sires-state-transition-sql.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,6 +15,7 @@
     }
   },
   "files": [
+    "bin",
     "dist"
   ],
   "scripts": {
@@ -35,6 +39,7 @@
     "@opentelemetry/sdk-trace": "catalog:",
     "@opentelemetry/semantic-conventions": "catalog:",
     "@sires/contracts": "workspace:*",
+    "amqplib": "catalog:",
     "drizzle-orm": "catalog:",
     "jose": "catalog:",
     "nestjs-pino": "catalog:",
@@ -48,6 +53,7 @@
   },
   "devDependencies": {
     "@nestjs/testing": "catalog:",
+    "@sires/testing": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "testcontainers": "catalog:",
@@ -59,6 +65,15 @@
       "type:lib",
       "lang:ts",
       "scope:platform"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/docs/database/ddl/*.sql"
+        ]
+      }
+    }
   }
 }

@@ -2,6 +2,14 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+export {
+  AUDIT_AGGREGATE_TYPE,
+  AUDIT_RECORDED,
+  emitAudit,
+  type AprCode,
+  type AuditEvent,
+  type AuditInput,
+} from './audit';
 export { bootstrapService, createServiceApp, type ServiceAppOptions } from './bootstrap';
 export {
   DEFAULT_CODE_BY_STATUS,
@@ -28,6 +36,52 @@ export {
 } from './errors';
 export { HealthController, HealthModule, SERVICE_MANIFEST, type HealthStatus } from './health';
 export {
+  IDEMPOTENCY_KEY_HEADER,
+  IDEMPOTENCY_KEY_MAX_LENGTH,
+  IDEMPOTENCY_KEY_MIN_LENGTH,
+  IDEMPOTENCY_OPTIONS,
+  Idempotent,
+  IdempotencyInterceptor,
+  IdempotencyModule,
+  idempotencyRequestHash,
+  idempotentTransaction,
+  parseIdempotencyKey,
+  runIdempotent,
+  type IdempotencyOptions,
+  type IdempotentHttpRequest,
+  type IdempotentRequest,
+  type IdempotentResponse,
+  type IdempotentResult,
+} from './idempotency';
+export {
+  applyReplica,
+  EventConsumer,
+  type ConsumeOutcome,
+  type EventConsumerOptions,
+  type EventDelivery,
+  type EventHandler,
+  type ReplicaOutcome,
+  type ReplicaWrite,
+} from './inbox';
+export {
+  acquireLease,
+  CLEANUP_DAILY_LEASE,
+  CLEANUP_HOURLY_LEASE,
+  leaseOwner,
+  oldestUnpublishedOutboxAgeSeconds,
+  OUTBOX_AGE_METRIC,
+  registerOutboxAgeMetric,
+  releaseLease,
+  runDailyCleanup,
+  runHourlyCleanup,
+  startCleanupJobs,
+  type CleanupOptions,
+  type CleanupScheduleOptions,
+  type DailyCleanup,
+  type HourlyCleanup,
+  type LeaseRequest,
+} from './jobs';
+export {
   correlationFields,
   createAccountHasher,
   createLogger,
@@ -52,6 +106,28 @@ export {
   type RequestLike,
 } from './logging';
 export type { ServiceManifest } from './manifest';
+// ActorRef and ServiceName types come from @sires/contracts (also exported by service-auth).
+export {
+  buildEnvelope,
+  COMMAND_QUEUES,
+  currentTraceparent,
+  eventEnvelopeSchema,
+  eventRoutingKey,
+  EVENTS_EXCHANGE,
+  OUTBOX_RELAY_LEASE,
+  OutboxRelay,
+  topicMatches,
+  writeCommand,
+  writeEvent,
+  type CommandQueue,
+  type EventAggregate,
+  type EventEnvelope,
+  type OutboxCommandInput,
+  type OutboxEventInput,
+  type OutboxRelayOptions,
+  type RelayRunResult,
+  type SqlExecutor,
+} from './outbox';
 export {
   ApprovalEndpoint,
   bearerToken,
@@ -100,6 +176,7 @@ export {
   type VerifiedServiceToken,
   type VerifyServiceTokenOptions,
 } from './service-auth';
+export * from './state-machine';
 export {
   currentTelemetry,
   exporterFromEnv,

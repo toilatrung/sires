@@ -9,7 +9,7 @@ QC chạy độc lập với Dev, không sửa mã, không sửa `docs/`. Mỗi 
 
 ## Lần 1 — 18/11/2026 · spec-converge-skill
 
-Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #30, nhánh `platform/ts-core-tenancy-logging`, commit `406d2ca`.
+Người chạy: agent QC do PO giao, không mang kết luận của Dev. Mã nguồn: PR #30, nhánh `platform/ts-core-tenancy-logging`, commit `406d2ca`.
 
 Phạm vi đã đọc: `libs/ts/platform/src/` (`bootstrap.ts`, `index.ts`, `tenancy/`, `errors/`, `logging/`, `telemetry/` gồm cả test), `package.json`, `pnpm-workspace.yaml`. Đối chiếu với `acceptance.html`, `scope.html` (P1–P5, N1–N4, EC01–EC05), spec mục 3–7, `designs/notes.html` (12/11, 18/11), hợp đồng `components/schemas/common.yaml › Problem, ErrorCode, FieldErrorCode`.
 
@@ -91,7 +91,7 @@ Dev chạy `spec-execution-skill PID-00001`, ghi “Lần 3” trong `report.md`
 
 ## Lần 2 — 18/11/2026 · spec-converge-skill
 
-Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #30, nhánh `platform/ts-core-tenancy-logging`, commit `1a02018` (Lần 3 của Dev T1xNTH: `32a1927` G1, G2; `c162ef6` G5; `ef77167` G4; `bbeb3a8`, `1a02018` kết quả). Nhánh đã chứa `origin/main` mới nhất (`de98a18`).
+Người chạy: agent QC do PO giao, không mang kết luận của Dev. Mã nguồn: PR #30, nhánh `platform/ts-core-tenancy-logging`, commit `1a02018` (Lần 3 của Dev T1xNTH: `32a1927` G1, G2; `c162ef6` G5; `ef77167` G4; `bbeb3a8`, `1a02018` kết quả). Nhánh đã chứa `origin/main` mới nhất (`de98a18`).
 
 Phạm vi đã đọc: mọi thay đổi mã từ `406d2ca` (`libs/ts/platform/README.md`, `errors/problem.filter.ts`, `errors/errors.spec.ts`, `logging/redact.ts`, `logging/request-id.ts`, `logging/logging.module.ts`, `logging/logger.spec.ts`, `telemetry/telemetry.ts`, `telemetry/telemetry.spec.ts`), cộng `errors/catalog.ts`, `logging/context.ts`. Để kiểm lời khai về thư viện, QC đọc mã nguồn đúng phiên bản trong `pnpm-lock.yaml`: `fastify@5.11.3` (`lib/content-type-parser.js`) và `@opentelemetry/instrumentation-http@0.223.0` (`src/http.ts`, `src/utils.ts`), lấy từ GitHub theo tag.
 

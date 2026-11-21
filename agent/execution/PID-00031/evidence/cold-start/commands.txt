@@ -1,0 +1,104 @@
+# Lệnh điều phối lượt đo cuối (chạy trong WSL Ubuntu-24.04, ngoài repo)
+# <repo> là thư mục gốc của checkout; đường dẫn trên máy đo đã được thay.
+
+#!/usr/bin/env bash
+# Driver for the PID-00031 Lần 6 final run (not part of the repo). Runs in WSL Ubuntu-24.04.
+# Working tree uses LF (same bytes as the git blobs), so image content and hashes match the commit.
+set -uo pipefail
+spike="<repo>/apps/sandbox-runner/spikes/spk-06"
+out="$HOME/sires-coldstart/final"
+node=sires-spk06-control-plane
+image=sires/spk-06:texlive-2022
+export PATH="$HOME/.local/bin:$PATH"
+K="docker exec $node kubectl --kubeconfig=/etc/kubernetes/admin.conf"
+mkdir -p "$out"
+cd "$spike"
+
+docker image inspect "$image" --format '{{.Id}} {{.Size}}'
+
+others() { docker ps --format '{{.Names}}' | grep -v -e '^sires-spk06' -e '^nutrimeal_services_db$' | wc -l; }
+wait_quiet() {
+  local quiet=0 load
+  while (( quiet < 120 )); do
+    load=$(cut -d' ' -f1 /proc/loadavg)
+    if [[ $(others) == 0 ]] && awk "BEGIN{exit !($load < 1.5)}"; then quiet=$((quiet + 5)); else quiet=0; fi
+    sleep 5
+  done
+  echo "quiet 120 s at $(date -Is), load $(cut -d' ' -f1-3 /proc/loadavg)"
+}
+# A phase is clean when no other container ran and load1 stayed <= 3 (this harness alone stays near 1-2).
+clean() {
+  awk -F'|' '{split($1,a," "); if (a[2] > 3.0) bad=1; if ($2 ~ /[^ ]/ && $2 !~ /^ *nutrimeal_services_db *$/) bad=1} END {exit bad}' "$1"
+}
+sample() {
+  while true; do
+    printf '%s %s | %s\n' "$(date -Is)" "$(cut -d' ' -f1-4 /proc/loadavg)" \
+      "$(docker ps --format '{{.Names}}' | grep -v '^sires-spk06' | tr '\n' ' ')"
+    sleep 2
+  done
+}
+
+for attempt in 1 2 3; do
+  echo "== wait quiet (container, attempt $attempt) $(date -Is)"
+  wait_quiet
+  rm -rf "$out/container"
+  sample > "$out/load-container.txt" 2>&1 &
+  sampler=$!
+  docker pause "$node"
+  echo "== container $(date -Is)"
+  bash cold-start.sh container --output "$out/container" --repetitions 20 --warmup 1     --runtimes runc,runsc,runsc-systrap > "$out/container-console.txt" 2>&1
+  echo "container exit=$?"
+  kill "$sampler"
+  docker unpause "$node"
+  if clean "$out/load-container.txt"; then echo "container phase clean"; break; fi
+  echo "container phase contaminated, keeping as $out/container-contaminated-$attempt"
+  mv "$out/container" "$out/container-contaminated-$attempt"; mv "$out/load-container.txt" "$out/load-container-contaminated-$attempt.txt"
+done
+for _ in $(seq 1 60); do
+  ready=$($K get node "$node" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)
+  taints=$($K get node "$node" -o jsonpath='{.spec.taints}' 2>/dev/null)
+  [[ "$ready" == True && -z "$taints" ]] && break
+  sleep 5
+done
+echo "node ready=$ready taints=$taints"
+
+for attempt in 1 2 3; do
+  echo "== wait quiet (pod, attempt $attempt) $(date -Is)"
+  wait_quiet
+  rm -rf "$out/pod"
+  sample > "$out/load-pod.txt" 2>&1 &
+  sampler=$!
+  echo "== pod $(date -Is)"
+  bash cold-start.sh pod --output "$out/pod" --repetitions 20 --warmup 1 > "$out/pod-console.txt" 2>&1
+  echo "pod exit=$?"
+  kill "$sampler"
+  if clean "$out/load-pod.txt"; then echo "pod phase clean"; break; fi
+  echo "pod phase contaminated, keeping as $out/pod-contaminated-$attempt"
+  mv "$out/pod" "$out/pod-contaminated-$attempt"; mv "$out/load-pod.txt" "$out/load-pod-contaminated-$attempt.txt"
+done
+echo "== done $(date -Is)"
+
+# Log điều phối
+
+sha256:d5af9bea706bc9eacb74fefa3a045351704489c1e2343033f5760569f60378d4 1298749346
+== wait quiet (container, attempt 1) 2026-11-21T12:27:36+00:00
+quiet 120 s at 2026-11-21T12:55:30+00:00, load 0.25 0.83 1.70
+sires-spk06-control-plane
+== container 2026-11-21T12:55:30+00:00
+container exit=0
+sires-spk06-control-plane
+container phase contaminated, keeping as ~/sires-coldstart/final/container-contaminated-1
+== wait quiet (container, attempt 2) 2026-11-21T13:02:37+00:00
+quiet 120 s at 2026-11-21T13:19:08+00:00, load 0.38 1.22 1.53
+sires-spk06-control-plane
+== container 2026-11-21T13:19:09+00:00
+container exit=0
+sires-spk06-control-plane
+container phase clean
+node ready=True taints=
+== wait quiet (pod, attempt 1) 2026-11-21T13:24:36+00:00
+quiet 120 s at 2026-11-21T13:27:58+00:00, load 0.79 1.04 1.33
+== pod 2026-11-21T13:27:58+00:00
+pod exit=0
+pod phase clean
+== done 2026-11-21T13:34:23+00:00

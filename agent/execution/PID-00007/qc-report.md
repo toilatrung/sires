@@ -9,7 +9,7 @@ QC chạy độc lập với Dev, không sửa mã, không sửa `docs/`. Mỗi 
 
 ## Lần 1 — 18/11/2026 · spec-converge-skill
 
-Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #33, nhánh `contracts/asyncapi-python-generation`, commit `db2655d`.
+Người chạy: agent QC do PO giao, không mang kết luận của Dev. Mã nguồn: PR #33, nhánh `contracts/asyncapi-python-generation`, commit `db2655d`.
 
 Phạm vi đã đọc: `libs/ts/contracts/scripts/generate.mjs`, `generate.spec.mjs`, `src/messages.check.ts`, `package.json` (target Nx), `libs/py/sires_common/pyproject.toml`, `project.json`, `tests/test_contracts_import.py`, `.gitignore`; đối chiếu `acceptance.html`, `scope.html` (P1–P2, N1–N3, EC01–EC03), spec mục 3–7, ghi chú thiết kế. Đối chiếu thêm `nx.json › targetDefaults`, `infra/docker/node/Dockerfile`, `infra/docker/python/Dockerfile` (đường dựng image có sẵn trên `main`).
 
@@ -59,7 +59,7 @@ Edge case: EC01 có test `generate.spec.mjs › EC01` (lỗi nêu tên file, đ�
 
 ## Lần 2 — 18/11/2026 · spec-converge-skill
 
-Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #33, nhánh `contracts/asyncapi-python-generation`, commit `9a7136a` (Dev ghi lượt sửa QC Lần 1 ở `report.md` và `self-qc.md` mục “Lần 3”, trạng thái `Xong — chờ QC`; mã sửa ở `9bca2ff`). Nhánh đã chứa `origin/main` (`b370462`).
+Người chạy: agent QC do PO giao, không mang kết luận của Dev. Mã nguồn: PR #33, nhánh `contracts/asyncapi-python-generation`, commit `9a7136a` (Dev ghi lượt sửa QC Lần 1 ở `report.md` và `self-qc.md` mục “Lần 3”, trạng thái `Xong — chờ QC`; mã sửa ở `9bca2ff`). Nhánh đã chứa `origin/main` (`b370462`).
 
 Phạm vi đã đọc: trạng thái hiện tại của `libs/ts/contracts/package.json` (target Nx), `scripts/generate.mjs`, `scripts/generate.spec.mjs`, `src/messages.check.ts`, `src/index.ts`, `tsconfig.json`, `README.md`; `libs/py/sires_common/project.json`; `nx.json › targetDefaults`; `apps/*/package.json`, `libs/ts/*/package.json` (phụ thuộc `@sires/contracts`); `infra/docker/node/Dockerfile` (không có `.dockerignore`); `.github/workflows/ci.yml`; `eslint.config.mjs`. Đối chiếu `acceptance.html`, `scope.html` (EC01–EC03) và qc-report Lần 1.
 

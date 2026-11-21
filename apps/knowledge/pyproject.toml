@@ -13,6 +13,17 @@ dependencies = [
   "sires-common",
 ]
 
+[dependency-groups]
+# Spike SPK-04 (spikes/spk_04, PID-00027): numpy for synthetic vectors; its tests run PostgreSQL in Testcontainers.
+# Spike SPK-05 (spikes/spk_05, PID-00028): PDF extraction measured with the ADR-15 libraries, pinned to the measured versions.
+# Development only: the service wheel packages src/knowledge alone (see tool.hatch below); uv sync --no-dev skips this group.
+dev = [
+  "numpy>=2.1",
+  "pdfplumber==0.11.10",
+  "pypdfium2==5.15.0",
+  "sires-common[testing]",
+]
+
 [tool.uv.sources]
 sires-common = { workspace = true }
 
