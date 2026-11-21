@@ -1,12 +1,12 @@
 # PID-00031 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — sửa QC Lần 1; chờ PO chốt TeX capacity và cold start trước khi đo lại
+**Trạng thái:** Đang làm — chạy lại sau đồng bộ main; G3 còn chờ quyết định PO
 
-**Kết quả mới nhất:** xem Lần 4 ở cuối file; đang khắc phục QC độc lập. Các lần trước được giữ để truy vết.
+**Kết quả mới nhất:** xem Lần 5 ở cuối file; đang kiểm và đo lại theo yêu cầu mới. Các lần trước được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
 - **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** [#39](https://github.com/toilatrung/sires/pull/39) → `main`; mã, bằng chứng và hồ sơ triển khai đã được commit/push.
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
@@ -282,3 +282,16 @@ bằng chứng của phiên bản tương ứng; chưa đủ để nghiệm thu 
 - `evidence/qc4/deploy.txt`, `evidence/qc4/deploy-check.json`: đóng gói sản phẩm không có spikes.
 - `evidence/qc4/preflight-default-pdflatex.txt`, `evidence/qc4/preflight-default-xelatex.txt`: kiểm compile Default/BibTeX/natbib.
 - `evidence/qc4/preflight-thesis-pdflatex.txt`, `evidence/qc4/preflight-thesis-xelatex.txt`: kiểm compile luận văn mở/BibTeX/natbib.
+
+## Lần 5 — 21/11/2026
+
+Người dùng yêu cầu “kiểm tra và chạy lại” và “nhớ pull code mới về nhé”.
+Đã pull nhánh PR, đồng bộ main mới nhất bằng merge `bd79e8e`, gồm base
+`cd25a65`; working tree sạch trước khi kiểm. PR chưa có quyết định mới về
+TeX capacity/cold start. Theo yêu cầu chạy lại trực tiếp trong phiên này,
+chạy suite trên code/fixture hiện tại, giữ nguyên classify và không coi
+việc chạy lại là PO đã duyệt cách ánh xạ TeX capacity.
+
+Đang dựng image qc5, chạy attack.sh và gate không cache; sau đó measure.sh
+36 build (3 mẫu × 2 engine × 2 runtime × 3 lượt). Evidence Lần 4 và các
+phiên trước giữ nguyên, kết quả mới ghi riêng vào evidence/qc5.
