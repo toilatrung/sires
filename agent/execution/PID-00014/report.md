@@ -4,14 +4,16 @@
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
 - **Nhánh:** `gateway/pid-00014-session` · **PR:** chưa mở
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 22/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
 5/5 slice xong. 3/3 AC trong acceptance và 17/17 edge case đã kiểm. Gateway đạt 29/29 test,
-lint, typecheck và build. Bộ affected toàn repo chưa đạt do test knowledge ngoài phạm vi (mục 4).
-Mã và kết quả thực thi nằm trong worktree `D:/sires/.nx/pid00014`; chỉ báo cáo được commit/push theo skill.
+lint, typecheck và build. Sau YC1 (22/11), đã sửa hai lỗi knowledge/agent-core và bộ affected
+19 project đạt toàn bộ 72 task (66 dùng cache). Chi tiết mới nhất ở Lần 2.
+Mã và kết quả thực thi nằm trong worktree `D:/sires/.nx/pid00014`. Người dùng yêu cầu đẩy PR
+ngày 22/11/2026; mã và báo cáo được commit/push trên nhánh ticket theo yêu cầu này.
 
 ## 2. Trạng thái công việc
 
@@ -38,9 +40,9 @@ Mã và kết quả thực thi nằm trong worktree `D:/sires/.nx/pid00014`; ch�
 
 ## 4. Việc còn lại
 
-Trong phạm vi triển khai: không còn. PO QC độc lập trước merge; mã chưa commit và chưa mở PR.
+Trong phạm vi triển khai: không còn. PO QC độc lập trước merge; đang chuẩn bị PR theo yêu cầu người dùng.
 
-Kiểm toàn repo: `nx affected` chọn 19 project do lockfile, dừng ở
+Kết quả lượt đầu (đã được giải quyết ở Lần 2): `nx affected` chọn 19 project do lockfile, dừng ở
 `apps/knowledge/spikes/spk_05/test_text_layer.py:152` (`test_corrupt_never_hangs`: expected `exited`, actual `timeout`).
 Knowledge 21 đạt, 1 lỗi, 2 skip; platform 167/167 đạt. Các target bị Nx bail không tính là đạt.
 Không có diff knowledge so với origin/main. Kiểm giấy phép sau pytest còn 2 cảnh báo trên cache tự sinh
@@ -48,16 +50,42 @@ Không có diff knowledge so với origin/main. Kiểm giấy phép sau pytest c
 
 ## 5. Yêu cầu thêm
 
-Không có.
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC1 | Người dùng trong phiên | “test nốt đi”, “tìm lỗi và sửa luôn” | Mở rộng ngoài gateway: kiểm affected đầy đủ và sửa lỗi test tìm thấy, gồm knowledge và agent-core | Được yêu cầu trực tiếp ngày 22/11/2026; sửa nguồn ngoài gateway được phép theo yêu cầu này | Xong: hai lỗi đã sửa, có test hồi quy, affected 72/72 task đạt; xem Lần 2 |
+
+## Lần 2 — 22/11/2026
+
+Người dùng yêu cầu kiểm nốt rồi tìm và sửa lỗi. Đã tái hiện riêng test knowledge:
+`test_corrupt_never_hangs` thất bại khi worker chết bị báo timeout. Đang sửa race giữa EOF
+của pipe và trạng thái tiến trình con; giữ nguyên phân loại lỗi và ngân sách timeout đã có.
+Bộ affected đang chạy không `--nxBail` để kiểm hết target còn lại.
+
+Lượt này phát hiện thêm `agent-core:test` lỗi khi xuất báo cáo SPK-08 vào TEMP trên C:,
+trong khi LICENSES.md ở D:. Đang sửa fallback liên kết giấy phép khi không thể tạo đường dẫn
+tương đối giữa hai ổ, kèm test hồi quy; thuộc YC1 “tìm lỗi và sửa luôn”.
+
+Kết quả cuối:
+
+- `knowledge:test`: 24 đạt, 2 skip (test FULL cần SPK04_SCALE_DB và bộ PDF mẫu chưa tải), 39.32 giây.
+- `agent-core:test`: 23 đạt, 47.15 giây.
+- `pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=2 --output-style=static`:
+  exit 0; 19 project, 72 task đạt, 66 dùng cache; không còn failed target.
+- `ruff check` cho bốn file Python sửa: đạt. Không hạ assertion, tăng timeout hoặc bỏ test lỗi.
+- Mã và báo cáo lần này chưa commit/push; không mở PR theo yêu cầu hiện tại.
+
+Log đầy đủ: `.nx/pid00014-full-check.log` (tái hiện trước sửa),
+`.nx/pid00014-final-check.log` (sau sửa, đạt), trong worktree của PID này.
 
 ## 6. Cần PO và tài liệu đi kèm
 
 - **Đề xuất cho PO:** Các mục “Phải sửa ở nguồn” của hồ sơ vẫn do PO xử lý (mô tả getSession, PID-00012,
   kiến trúc cookie/CSRF, secret PID-00035, điểm nối PID-00038 và job dọn phiên); không sửa docs ở lần này.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** Không có chặn triển khai gateway; kiểm toàn repo có lỗi knowledge như mục 4. Scanner tracks
-  báo gateway + infra do 12 dòng lockfile tự sinh cho đúng importer gateway (quy tắc 1.4.7), không đổi catalog.
-- **Bước tiếp theo:** Commit mã/mở PR khi được yêu cầu; PO review và chạy spec-converge-skill độc lập trước merge.
+- **Còn mở:** Không có chặn triển khai hoặc target affected lỗi sau Lần 2. Hai test knowledge cần dữ liệu
+  FULL/bộ PDF vẫn skip có điều kiện như thiết kế; không tính là đã chạy. Ranh giới mới gồm gateway,
+  agent-core và knowledge theo YC1; infra chỉ là 12 dòng lockfile tự sinh cho importer gateway, không đổi catalog.
+- **Bước tiếp theo:** Người dùng đã yêu cầu đẩy PR ngày 22/11/2026; PO review và chạy spec-converge-skill độc lập trước merge.
 - **Tài liệu đi kèm:** Không có.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
