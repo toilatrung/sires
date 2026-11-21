@@ -1,6 +1,6 @@
 # PID-00031 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 1 HIGH, 4 MEDIUM, 4 LOW. Chưa merge được vì G1 (HIGH): phép đo chưa chạy trên template Default, chưa lần nào chạy BibTeX/natbib. QC không chạy lại được suite gVisor (máy QC không có runsc, CI không chạy suite này), nên AC01–AC03 được đánh giá trên bằng chứng của Dev; QC đã đối chiếu hash mã nguồn và PDF với bằng chứng đó (Lần 1, 19/11/2026)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH. G1–G4, G6–G8 của Lần 1 đã xử lý (G3 theo quyết định PO); G5, G9 còn mở, PO xử lý khi squash. Lần này có thêm 1 MEDIUM (G10: XeLaTeX thiếu kiểu nghiêng DejaVu Serif, danh sách package chưa phản ánh) và 4 LOW (G11–G14). QC đã tự chạy `attack.sh` (12/12) và `measure.sh` một lượt (12/12) dưới runsc KVM. Trước khi merge: cập nhật nhánh theo `main` (PR đang BEHIND) để CI chạy lại; nên sửa G10 trong report trước khi PID-00054 dùng danh sách package (Lần 2, 21/11/2026)
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -109,6 +109,120 @@ Chạy trong worktree tách riêng ở commit `dc81960` (Windows 11; Python ch�
 5. **Bổ sung kịch bản cho PID-00128** (spike này chỉ thử `\write18` và `\input{/etc/passwd}`): `\pdffiledump`, `\pdfobj file`, `\includegraphics` hoặc `\XeTeXpicfile` với đường dẫn tuyệt đối, `\input|"lệnh"`, đường dẫn `..`, bom đĩa 500 MB, BibTeX làm phình bộ nhớ.
 6. **Cho PID-00054.** Workspace tmpfs được tính vào hạn mức 2 GB RAM (`report.md:52-54`), nên dùng tmpfs thì quota đĩa 500 MB sẽ ăn vào RAM. PDF không giống nhau từng byte giữa các lượt (hash khác nhau mỗi lượt); nếu cần kết quả tái lập thì đặt `SOURCE_DATE_EPOCH` và `FORCE_SOURCE_DATE`. Không chép nguyên giới hạn file 16 MiB (G6).
 7. **Mẫu spec cho spike.** Spec mục 6 chỉ có `pnpm nx run @sires/sandbox-runner:test`, mà lệnh này không phủ mã spike; CI cũng không chạy `test_spike.py` hay lint Python của spike. Các ticket spike sau nên ghi lệnh kiểm riêng trong spec mục 6 (ví dụ `python3 -m unittest`, `ruff check`).
+
+## Lần 2 — 21/11/2026 · spec-converge-skill
+
+Người chạy: agent QC do PO giao, không mang kết luận của Dev hay của phiên đo Lần 6. Mã nguồn: PR #39, nhánh `sandbox-runner/pid-00031-gvisor`, commit `36c53b3` (đúng head của PR), worktree tách riêng.
+
+Phạm vi đã đọc: toàn bộ `apps/sandbox-runner/spikes/spk-06/` ở `36c53b3` (gồm `cold_start.py`, `cold-start.sh`, `cold-start-kind.yaml`, `cold-start-k8s.yaml`, `test_cold_start.py`, fixture `default/`, `thesis/` với `SOURCE.md`, `vendor/`), `apps/sandbox-runner/package.json`, `infra/docker/node/Dockerfile`; `report.md` (Lần 4–6, mục 5 YC1), `implement.md`, `self-qc.md` (Lần 4–6); evidence `qc4/`, `qc5/`, `cold-start/`. Đối chiếu lại với `index.html`, `specs/acceptance.html`, `specs/scope.html`, `specs/index.html` mục 3–7, slice S01–S03, PRD MS-TEMPLATE-001, ASM-07, kiến trúc 9.5, quy tắc 1.4.13 (trên `origin/main`).
+
+Quyết định PO áp dụng cho lần này: G3 giữ `memory_limit` kèm `limit_reason=tex_capacity`, không sửa `classify`; cold start đo trong PID-00031 bởi phiên PO giao (`report.md:139`, YC1), nên phần đo cold start không tính `unrequested`; phương án B (spike không sửa `infra/`, PR #51 đã loại `apps/*/spikes` khỏi build context); G5, G9 PO xử lý khi squash.
+
+### Khoảng trống của Lần 1
+
+| Mã | Trạng thái | Bằng chứng QC |
+| --- | --- | --- |
+| G1 | Đã xử lý | `fixtures/default/` đúng cấu trúc MS-TEMPLATE-001: `main.tex` class `article`, tiếng Anh, `\input` năm file `sections/*.tex` có chú thích hướng dẫn, `figures/`, `bibliography/references.bib` có chú thích “do not edit by hand”, natbib + `plainnat`, `\cite`/`\citet` (`fixtures/default/main.tex:5-24`). Bài báo tiếng Việt không còn nhãn “Mẫu Default” (`fixtures/article/main.tex:4`, `README.md:96-98`). Lần 5: 24/24 build Default/luận văn có `bibtex_ran`, `main.bbl`, `natbib_loaded`; QC chạy lại 8/8 đạt |
+| G2 | Đã xử lý | Luận văn thích nghi từ template CUED MIT: QC kiểm qua GitHub API, commit `8d6c2d5` tồn tại, repo khai báo MIT; sha256 của 5 file upstream trùng `vendor/upstream.json`; `vendor/LICENSE` trùng nguyên văn LICENSE upstream; class chỉ khác upstream ở khối font XeLaTeX (`vendor/PhDThesisPSnPDF.cls:558-561`) và khoảng trắng; ba PNG 960×560 có metadata Matplotlib “SIRes synthetic fixture”. 19 trang, 4 chương, BibTeX; giới hạn đại diện đã ghi (`report.md:363-364`) |
+| G3 | Đóng theo quyết định PO | `spike.py:44-45` trả `memory_limit` khi TeX hết capacity, `spike.py:184-185` ghi `limit_reason=tex_capacity`, khác `cgroup_oom`. QC chạy lại: hai bom TeX `memory_limit`/`tex_capacity` (cgroup 88,9 và 234,0 MiB), allocator `memory_limit`/`cgroup_oom`, `OOMKilled=true` |
+| G4 | Đã xử lý | `apps/sandbox-runner/package.json:6` `"files": ["dist"]`. QC chạy `pnpm --filter @sires/sandbox-runner deploy --legacy --prod`: đầu ra chỉ có `README.md`, `dist/`, `node_modules/`, `package.json`, không có `spikes/`. PR #51 trên `main` loại thêm `apps/*/spikes` khỏi build context |
+| G5 | Còn mở, PO xử lý khi squash | Vẫn 3 commit chưa ký `f9673fa`, `dd89668`, `3ce87dc`; 10 commit sau đều `verified=true` (GitHub API). Không có commit chưa ký mới |
+| G6 | Đã xử lý | `README.md:124-125` ghi chú không chép giới hạn 16 MiB sang PID-00054 |
+| G7 | Đã xử lý | `ruff check` (0.17.4) sạch trên toàn thư mục spike, gồm mã cold start |
+| G8 | Đã xử lý | `report.md:5` trỏ Lần 6; `report.md:98-99` ghi cả cgroup peak và RSS |
+| G9 | Còn mở, PO xử lý khi squash | Ba thông điệp `14de994`, `51fb2ec`, `dc81960` vẫn hỏng dấu |
+
+### Khoảng trống mới
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G10 | EC03 “Font tiếng Việt lỗi với XeLaTeX → ghi font thử và đề xuất font cho image” · PID-00031-AC04 (danh sách package) | partial | MEDIUM | Image chỉ có `DejaVuSerif.ttf` và `DejaVuSerif-Bold.ttf` (gói `fonts-dejavu-core`, `Dockerfile:13`; QC kiểm `fc-list` trong image). Luận văn XeLaTeX dùng DejaVu Serif (`vendor/PhDThesisPSnPDF.cls:559`, cũng như `fixtures/preamble.tex:10`), nên cả 6/6 build luận văn XeLaTeX của Lần 5 (`evidence/qc5/measurements.json`, `log_tail`) và 2/2 build QC chạy lại đều có `LaTeX Font Warning: Font shape 'TU/DejaVuSerif(0)/m/it' undefined` và “Some font shapes were not available”: chữ nghiêng (`\emph`, `\textit`, trang bìa) in thành chữ đứng. `evidence/qc5/pdf-checks.json` không kiểm thay font. Vậy mà `report.md:309-310` ghi “không thiếu glyph/package…”, `report.md:366-371` vẫn đề xuất `fonts-dejavu-core` cho PID-00054 | Ghi cảnh báo này vào report (EC03). Sửa danh sách package: thêm gói font có đủ bốn kiểu và tiếng Việt, ví dụ `fonts-dejavu-extra` (có DejaVuSerif-Italic, BoldItalic), hoặc chọn họ font khác. Nếu đổi `Dockerfile` thì dựng lại image và chạy một lượt luận văn XeLaTeX để xác nhận hết cảnh báo; không cần đo lại 36 build. Hoặc PO chấp nhận ghi đây là giới hạn chuyển cho PID-00054 |
+| G11 | O1 “Chạy lại được theo hướng dẫn” · PID-00031-AC03 (độ tin của số `latexmk`) | partial | LOW | `latexmk_seconds` lấy từ GNU time `%e` (`worker.py:46,69-70`), tính theo đồng hồ thực; `spike.py` không phát hiện đồng hồ thực nhảy, khác `cold_start.py:89-118` (`ClockWatch`). QC chạy `measure.sh` trên máy PO (WSL2 kernel 6.18, đồng hồ nhảy lùi khoảng 2–3 s như `report.md:453-457`): 2/12 lượt có `latexmk_seconds` thấp hơn `worker_seconds` (monotonic) khoảng 2,2 s (runc XeLaTeX bài báo 0,23 s so với 2,47 s; runsc XeLaTeX luận văn 6,83 s so với 9,02 s). Số Lần 5 không bị ảnh hưởng: ở cả 36 lượt `worker_seconds − latexmk_seconds` ≤ 0,034 s | Trong `spike.py`: đánh dấu và loại hoặc đo lại lượt có bước nhảy (ví dụ `worker_seconds − latexmk_seconds` > 0,2 s, hoặc dùng `ClockWatch` như `cold_start.py`). Tối thiểu ghi giới hạn này trong README mục “Phép đo” |
+| G12 | Quy tắc giấy phép (`AGENT.md`: file mới chạy `add-license.mjs`) · khối ba dòng của `scripts/docs/add-license.mjs:19-23` | partial | LOW | 17 file mới chỉ có một dòng `SPDX-License-Identifier`, thiếu hai dòng bản quyền và PO: `.dockerignore:1`, `fixtures/default/sections/*.tex:1` (5 file), `fixtures/default/bibliography/references.bib:1`, `fixtures/{loop,memory,network,passwd,shell}/main.tex:1`, `fixtures/thesis/chapters/*.tex:1` (4 file), `fixtures/thesis/bibliography/references.bib:1`. `add-license --check` vẫn exit 0 vì chỉ tìm chuỗi định danh (`add-license.mjs:98`). Trong các file `.tex`, `.bib`, `.py`, `.sh`, `.ts`, `.yaml` ngoài PR này, chỉ một file sinh tự động dùng kiểu một dòng. Riêng 3 chương và `.bib` thích nghi từ MIT ghi định danh eTroy, còn MIT chỉ nằm ở dòng chú thích thứ hai | Thay dòng một-SPDX bằng khối ba dòng cho file của SIRes. Với file thích nghi từ MIT: chờ PO chọn cách ghi (giữ như hiện tại, hoặc `MIT AND LicenseRef-eTroy-NC-1.0`), xem Đề xuất 2 |
+| G13 | Chất lượng PR (Lần 3 của Dev đã làm `git diff --check` đạt) | partial | LOW | `git diff origin/main...HEAD --check` exit 2: 532 dòng có khoảng trắng cuối ở `evidence/cold-start/container/load.txt` (151), `pod/load.txt` (182), `container-discarded/load.txt` (198), `kind-up.txt` (1). `self-qc.md` Lần 6 không chạy lệnh này | Bỏ khoảng trắng cuối dòng ở bốn file, nội dung giữ nguyên; chạy lại `git diff origin/main...HEAD --check` |
+| G14 | Quy tắc Git của PO (không gắn nhãn công cụ AI vào nội dung đẩy lên Git; `CLAUDE.md` cá nhân, không commit) · kiểm evidence không lộ đường dẫn máy | contradicts | LOW | `report.md:420-421` và `self-qc.md:226` ghi “phiên Claude Code”. `evidence/cold-start/commands.txt:7` còn đường dẫn checkout trên máy PO (`/mnt/h/…/sires/.claude/worktrees/pid-00031-cold-start-…`), trong khi `report.md:633` nói tên máy và thư mục home đã được thay. Ngoài ra evidence không có khóa, token, chứng chỉ hay tên người dùng; cổng duy nhất là loopback `127.0.0.1:2375`, đã có từ Lần 2 của Dev | PO quyết. Đề xuất: thay bằng “phiên đo do PO giao”; trong `commands.txt` thay đường dẫn bằng `<repo>/apps/sandbox-runner/spikes/spk-06` |
+
+Đã kiểm, không thấy khoảng trống:
+
+- Đầu ra đúng spec (quy tắc 1.4.13): O1 là thư mục `apps/sandbox-runner/spikes/spk-06/`, mọi mã mới (cả cold start) nằm trong đó; O2 đúng `agent/execution/PID-00031/report.md`. Không đổi tên, gộp hay tách.
+- Ranh giới: PR chạm `apps/sandbox-runner/spikes/spk-06/`, `apps/sandbox-runner/package.json` (G4, PO đã duyệt) và `agent/execution/PID-00031/`. Không sửa `infra/`, `docs/`, file sinh, migration hay luồng khác. Commit `36c53b3` chỉ thêm mã và evidence cold start, cập nhật đầu `report.md`, `self-qc.md`, `implement.md`, README; không sửa `spike.py`, `worker.py`, `Dockerfile`, fixture (so `ff16f5e..36c53b3`). Các file này không đổi từ `6172ec5`, nên evidence Lần 5 vẫn ứng với mã hiện tại.
+- Hash: bản LF xuất bằng `git -c core.autocrlf=false archive` khớp blob 42/42 file. `source_sha256`/`fixture_sha256` khớp blob: Lần 5 (đo và tấn công) 5/5 và 28/28, Lần 6 (container và pod) 7/7 và 8/8. Sáu PDF và tám file `.bbl`/`.blg` trong `evidence/qc5/` (so blob, không so bản CRLF trong checkout Windows) khớp `artifact_sha256` của hàng runsc. `/opt/spk-06/worker.py` trong image `sha256:d5af9bea…` khớp blob; `packages.tsv` trong image trùng `evidence/qc5/packages.tsv` và `evidence/cold-start/packages.tsv`.
+- Số đo Lần 5: QC tính lại từ `evidence/qc5/measurements.json` và khớp 12/12 dòng bảng `report.md:331-342`: trung vị, min–max, `latexmk` trung vị, RSS max, cgroup max. Runsc lớn nhất: wall 7,9614 s, cgroup 223,3 MiB, RSS 260,9 MiB. Tỉ lệ runsc/runc 1,27–2,05; wall − worker 0,4669/0,5017/0,691 s. `container_config` giống nhau giữa runc và runsc, chỉ khác Runtime.
+- Số đo Lần 6: QC tính lại từ `cold-start/{container,pod}/results.json`, khớp `summary.json` và các bảng `report.md:518-547` sau làm tròn. Container: 8 chỉ số × 3 runtime, mỗi runtime 20 lượt đủ vòng 1–20, 5 lượt bỏ (đều runc). Pod: 10 chỉ số × 2 runtime, 11 lượt bỏ. Không lượt nào được giữ lại mà có `clock_step` (độ lệch lớn nhất 0,34 ms). p95 là nearest-rank, giá trị thứ 19. Phân bậc Ready (`report.md:558-561`), các tỉ lệ ×1,75, ×2,26, ×2,07 và mức 22% ngân sách 10 s đều đúng. `load.txt` của hai lượt dùng chỉ có `nutrimeal_services_db`, load1 tối đa 1,63 và 2,06.
+- Cold start không thay nghiệm thu N3 (Queued → Running, PID-00080): `report.md:578-580` ghi rõ.
+- Bảo mật harness cold start: chứng chỉ client của kind ghi ra thư mục tạm quyền 0600 rồi xóa (`cold_start.py:334-341`, `546-550`); pod non-root, drop ALL, không token service account; init container chỉ có `CAP_CHOWN` (`cold_start.py:384-399`). Khác biệt của pod so với container (có mạng CNI, không ulimit) đã ghi ở `report.md:506-511`.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00031-AC01 | đạt | thao tác tay của QC, runsc KVM trên WSL2 (máy PO) | `attack.sh › shell, passwd` × pdfLaTeX, XeLaTeX | QC chạy `attack.sh` exit 0. shell ×2: `success`, không có marker, log ghi `runsystem(touch /work/SHELL_EXECUTED)...disabled.`. passwd ×2: `compile_error` exit 12, log `Not reading from /etc/passwd (openin_any = p).`. `isolation_verified=true` (UID 65532, rootfs và `/tmp` chỉ đọc) |
+| PID-00031-AC02 | đạt (theo quyết định PO G3) | như trên | `attack.sh › loop, memory, memory-probe` | loop: `timeout` ở 120,018 s và 120,012 s, `limit_reason=deadline`. memory: `memory_limit`, `tex_capacity` (`main memory size=5000000`), cgroup 88,9 và 234,0 MiB. memory-probe: `memory_limit`, `cgroup_oom`, `OOMKilled=true`, exit 137, cgroup peak 2.147.483.648 B |
+| PID-00031-AC03 | đạt | evidence Lần 5 cộng một lượt chạy chức năng của QC | `measure.sh` | Lần 5: 36/36, bảng khớp dữ liệu thô. QC chạy `measure.sh --repetitions 1`: 12/12 `success` (Default, bài báo, luận văn × 2 engine × runc/runsc). Cả 8 build Default/luận văn có BibTeX, `main.bbl` và natbib; PDF 2/4/19 trang. Thời gian của QC chỉ dùng để kiểm chức năng, không dùng làm số hiệu năng |
+| PID-00031-AC04 | một phần (G10) | đọc báo cáo | `report.md` Lần 5–6 | Có kết luận ASM-07 (`report.md:359-364`) và danh sách package đã dùng thật (`report.md:366-371`), nhưng danh sách thiếu font nghiêng cho XeLaTeX |
+| NFR-SANDBOX-001-AC01 | đạt ở mức spike | như AC01 | `attack.sh › passwd, network, network-probe` | Như AC01. network ×2: `write18` bị chặn. network-probe: `[Errno 101] Network is unreachable`. Kiểm chính thức ở PID-00128 |
+
+Edge case:
+
+- EC01: runsc KVM chạy được trên WSL2 ở cả máy Dev (kernel 6.6) và máy PO (kernel 6.18). systrap chạy được trên 6.18 (Lần 6, mức container). Hợp spec 2.5.
+- EC02: 36 build Lần 5 và 12 build của QC không thiếu package; image không tải gì khi chạy (`MKTEX*=0`, `--network=none`).
+- EC03: một phần (G10). Tiếng Việt hiển thị được, nhưng XeLaTeX với DejaVu Serif không có kiểu nghiêng.
+
+### Lệnh đã chạy
+
+Chạy trong worktree tách riêng ở `36c53b3` (Windows 11; Python bằng interpreter gốc của uv). Suite gVisor chạy trong WSL `Ubuntu-24.04` (kernel `6.18.58.1-microsoft-standard-WSL2`, Docker 29.8.2, runsc `release-20261116.0` với `--platform=kvm`, image có sẵn `sires/spk-06:texlive-2022` = `sha256:d5af9bea…`), trên bản LF của thư mục spike xuất từ git, output trong scratchpad của QC. Không cài gì, không sửa `daemon.json`, không pull image, không khởi động cụm kind.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `node scripts/docs/add-license.mjs --check` (trước khi cài phụ thuộc) | exit 0, “0 file chưa có thông báo giấy phép”. QC tự kiểm khối ba dòng: 17 file mới thiếu (G12) |
+| `node scripts/docs/update-index.mjs --check` | exit 0: khớp 159 PID, 159 task |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00031 --result` | exit 0: “KẾT QUẢ ĐỦ (0 cảnh báo)”, trạng thái Xong — chờ QC |
+| `node scripts/development/check-tracks.mjs --base origin/main` | exit 0: `tracks touched: repo, sandbox-runner` |
+| `ruff check --no-cache apps/sandbox-runner/spikes/spk-06` (ruff 0.17.4, cấu hình gốc) | “All checks passed!” |
+| `python -B -m unittest -v test_spike test_cold_start` (Windows 3.12.16; WSL 3.12.3 trên bản LF) | 16/16 OK ở cả hai |
+| `bash -n measure.sh attack.sh setup-runsc.sh cold-start.sh` (WSL) | exit 0 |
+| `pnpm install --frozen-lockfile` | exit 0 |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/sandbox-runner --skip-nx-cache` | exit 0; 4 task phụ thuộc đạt. Nx báo `@sires/contracts:generate-ts` flaky (luồng khác, chỉ là cảnh báo) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --head=HEAD --skip-nx-cache` | exit 0; chỉ `@sires/sandbox-runner` và 4 task phụ thuộc |
+| `pnpm --filter @sires/sandbox-runner deploy --legacy --prod <thư mục tạm>` | exit 0; không có `spikes/` (G4 đóng) |
+| `git diff origin/main...HEAD --check` | exit 2: 532 dòng có khoảng trắng cuối trong 4 file evidence Lần 6 (G13) |
+| `git -c core.autocrlf=false archive HEAD apps/sandbox-runner/spikes/spk-06`, so sha256 với `git cat-file blob` | 42/42 khớp |
+| `docker run` (runc, `--network=none --read-only`) kiểm image: sha256 `worker.py`, `packages.tsv`, biến môi trường, `fc-list` | Khớp blob; `openin_any=p`, `openout_any=p`, `shell_escape=f`, `MKTEX*=0`; latexmk 4.79; UID 65532; DejaVu Serif chỉ có Regular và Bold (G10) |
+| `bash attack.sh --image sires/spk-06:texlive-2022 --output <tạm>` | exit 0, 12/12 đạt (bảng AC). Hash nguồn 5/5, fixture 28/28 khớp blob. Sau suite không còn container `sires-spk06-<12 hex>` |
+| `bash measure.sh --image sires/spk-06:texlive-2022 --output <tạm> --repetitions 1` | exit 0, 12/12 đạt; `container_config` giống nhau giữa runc và runsc, chỉ khác Runtime. 2/12 lượt có `latexmk_seconds` lệch vì đồng hồ thực nhảy (G11). Hai build luận văn XeLaTeX có cảnh báo thay font (G10) |
+| Script tính lại số đo Lần 5 (`evidence/qc5/*.json`) và Lần 6 (`evidence/cold-start/*/results.json`), đọc từ blob git | Khớp bảng trong report và `summary.json` (mục “Đã kiểm”) |
+| `gh api repos/kks32/phd-thesis-template/...` tại `8d6c2d5` (chỉ đọc, không lưu file) | Commit tồn tại, license MIT; sha256 5 file khớp `vendor/upstream.json`; LICENSE trùng |
+| Quét evidence tìm tên người dùng, đường dẫn, IP, cổng, khóa, chứng chỉ | Chỉ có `C:\Users\Admin\…` trong log của Dev (tên chung) và `127.0.0.1:2375` loopback đã có từ Lần 2 của Dev. Không có khóa hay chứng chỉ. `commands.txt:7` còn đường dẫn checkout của PO (G14). `machineID`/`systemUUID` trong `pod/environment.json` là của node kind |
+| `gh pr view 39`, `gh pr checks 39`, `gh api repos/toilatrung/sires/commits/<sha>` | PR OPEN, head `36c53b3`, `mergeStateStatus=BEHIND` (`main` đi trước 11 commit, gồm PR #51); `build`, `tracks` đạt. 3 commit chưa ký cũ (G5), không có commit chưa ký mới; thông điệp commit không có dòng ghi công AI. Mô tả PR vẫn ghi trạng thái “Đang làm — … chờ G3/cold start” |
+| `cold-start.sh container`, `cold-start.sh pod` | không chạy: đây là phép đo hiệu năng, máy đang dùng chung nên số đo lại không đáng tin; cụm kind đang dừng và theo chỉ dẫn không khởi động lại. QC kiểm phần này bằng cách tính lại từ dữ liệu thô và chạy unit test |
+| Suite trên runsc systrap, GitHub Actions | không chạy: ngoài phạm vi kiểm AC01–AC03, ticket không yêu cầu |
+
+### Lệch với Self-QC
+
+- `report.md:309-310` và `self-qc.md:219-220` ghi không thiếu glyph, package hay font, coi EC03 là đạt. QC thấy cả 6 build luận văn XeLaTeX của Lần 5 (và 2 build QC chạy lại) đều có cảnh báo thiếu kiểu nghiêng DejaVu Serif; danh sách package vẫn chỉ có `fonts-dejavu-core` (G10).
+- `self-qc.md` Lần 6 không chạy `git diff --check`; QC chạy và nhận exit 2 do evidence Lần 6 (G13).
+- `self-qc.md:245` ghi `add-license --check` 0 file thiếu. Đúng như vậy, nhưng lệnh chỉ tìm chuỗi định danh, và 17 file mới thiếu khối ba dòng (G12).
+- `report.md:633` ghi đã thay tên máy và thư mục home, nhưng `evidence/cold-start/commands.txt:7` còn đường dẫn checkout cục bộ (G14).
+- Lần 5 của Dev chạy `attack.sh` bị gián đoạn và phải chạy tiếp 4 ca (`evidence/qc5/attack-resume.json`). QC chạy lại một lượt liền, exit 0, 12/12, nên kết luận AC01, AC02 không còn dựa vào lượt chạy tiếp đó.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. PO quyết Đề xuất 1 (G10: sửa trước khi merge hay chuyển cho PID-00054) và G14.
+2. Ghi cảnh báo font vào EC03, sửa danh sách package (ví dụ thêm `fonts-dejavu-extra`); nếu đổi `Dockerfile` thì chạy một lượt luận văn XeLaTeX để xác nhận (G10, PID-00031-AC04, EC03).
+3. Thêm cách phát hiện đồng hồ nhảy cho `latexmk_seconds` trong `spike.py`, hoặc ghi giới hạn trong README (G11, O1).
+4. Thay dòng một-SPDX bằng khối ba dòng ở 17 file; file thích nghi từ MIT ghi theo Đề xuất 2 (G12).
+5. Bỏ khoảng trắng cuối dòng ở 4 file evidence Lần 6 rồi chạy `git diff origin/main...HEAD --check` (G13).
+6. Sửa “phiên Claude Code” và đường dẫn trong `commands.txt` theo quyết định ở bước 1 (G14).
+7. Người làm bước 2–6 (Dev theo `spec-execution-skill`, hoặc phiên PO giao vì G14 thuộc nội dung Lần 6) ghi “Lần 7” trong `report.md`, `self-qc.md`. Nếu chỉ sửa tài liệu và script mà không đổi `Dockerfile`, `worker.py` hay fixture thì không cần đo lại.
+8. Khi merge: cập nhật nhánh theo `main` (PR đang BEHIND 11 commit) để CI `tracks`, `build` chạy lại; sửa mô tả PR #39 cho đúng trạng thái sau Lần 6; squash với thông điệp tiếng Việt đúng dấu (G5, G9).
+
+### Đề xuất cho PO
+
+1. **G10 trước hay sau merge.** Đây là MEDIUM, không chặn cổng QC. Nhưng S03 ghi “Xong khi PID-00054 dùng được đề xuất”, mà PID-00054 sẽ lấy danh sách package này, nên QC đề xuất sửa report trước khi merge. Việc chỉ là sửa tài liệu; nếu thêm gói font thì chỉ cần một lượt build kiểm.
+2. **Giấy phép của nội dung bên thứ ba.** `LICENSES.md` mục 1–2 ghi toàn bộ repo thuộc sở hữu độc quyền của eTroy, trong khi repo đã chứa nội dung MIT (template CUED trong fixture này, Spec Kit ở `agent/skills/THIRD_PARTY_NOTICES.md`). PO cân nhắc: thêm ngoại lệ “nội dung bên thứ ba giữ giấy phép gốc” vào `LICENSES.md`, và chốt cách ghi SPDX cho file thích nghi (G12).
+3. **CRLF trên Windows.** Checkout với `core.autocrlf=true` làm `source_sha256`/`fixture_sha256` lệch blob và image dựng từ bản CRLF khác image dựng từ bản LF (phiên Lần 6 phải tự đổi về LF). Luồng sandbox-runner có thể thêm `.gitattributes` riêng trong `apps/sandbox-runner/spikes/spk-06/` (ví dụ `* text eol=lf`, ảnh PNG giữ binary) để ai chạy lại cũng có cùng hash.
+4. **Dọn máy PO** khi không cần nữa, theo bảng `report.md:599-608`: cụm kind `sires-spk06` (đang dừng), image khoảng 2,6 GB, runtime `runsc` và `runsc-systrap` trong `daemon.json`, `~/sires-coldstart/`.
+5. Đề xuất 3–7 của Lần 1 vẫn còn hiệu lực cho PID-00054, PID-00112, PID-00128 và mẫu spec spike. Riêng Đề xuất 3 có thêm dữ kiện: systrap chạy được trên kernel WSL2 6.18 (Lần 6, mức container).
 
 ---
 
