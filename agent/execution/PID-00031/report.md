@@ -136,7 +136,7 @@ ticket đều có giấy phép. Các kiểm riêng sandbox-runner đã đạt.
 
 | # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
 | --- | --- | --- | --- | --- | --- |
-| YC1 | PO Trịnh Quang Trung, 21/11/2026, trả lời Đề xuất 1 và 2 của `qc-report.md` Lần 1 | “39 - 1. memory_limit và 2. Đo luôn nhưng bạn hãy gọi 1 phiên đo luôn chứ không để dev đo” | (1) Trong phạm vi: chốt mã cho G3 (AC02), không đổi hành vi harness. (2) Đổi phạm vi: thêm phép đo cold start mà kiến trúc 9.5 giao cho SPK-06 nhưng ticket không nêu | (1) “TeX capacity exceeded” giữ mã `memory_limit`, kèm `limit_reason=tex_capacity`; không sửa `classify`. (2) Làm, PO đồng ý bằng nguyên văn trên. Phép đo do phiên Claude Code mà PO giao thực hiện trên máy của PO, **không phải Dev**; Dev được báo tạm không push trên PR #39 | Lần 6: `cold_start.py`, `cold-start.sh`, `cold-start-kind.yaml`, `cold-start-k8s.yaml`, `test_cold_start.py`; `evidence/cold-start/` |
+| YC1 | PO Trịnh Quang Trung, 21/11/2026, trả lời Đề xuất 1 và 2 của `qc-report.md` Lần 1 | “39 - 1. memory_limit và 2. Đo luôn nhưng bạn hãy gọi 1 phiên đo luôn chứ không để dev đo” | (1) Trong phạm vi: chốt mã cho G3 (AC02), không đổi hành vi harness. (2) Đổi phạm vi: thêm phép đo cold start mà kiến trúc 9.5 giao cho SPK-06 nhưng ticket không nêu | (1) “TeX capacity exceeded” giữ mã `memory_limit`, kèm `limit_reason=tex_capacity`; không sửa `classify`. (2) Làm, PO đồng ý bằng nguyên văn trên. Phép đo là của phiên đo do PO giao, chạy trên máy của PO, **không phải Dev**; Dev được báo tạm không push trên PR #39 | Lần 6: `cold_start.py`, `cold-start.sh`, `cold-start-kind.yaml`, `cold-start-k8s.yaml`, `test_cold_start.py`; `evidence/cold-start/` |
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -417,8 +417,8 @@ Các bằng chứng mới sau đây thuộc Lần 5; dữ liệu cũ không bị
 ## Lần 6 — 21/11/2026
 
 Đo cold start gVisor theo kiến trúc 9.5 (“Cold start của pod gVisor phải đo ở
-SPK-06”) và Đề xuất 2 của `qc-report.md` Lần 1. **Phép đo do phiên Claude Code
-mà PO giao thực hiện trên máy của PO, không phải Dev**; Dev được báo tạm không
+SPK-06”) và Đề xuất 2 của `qc-report.md` Lần 1. **Phép đo là của phiên đo do PO
+giao, chạy trên máy của PO, không phải Dev**; Dev được báo tạm không
 push trên PR #39. Quyết định của PO ghi nguyên văn ở mục 5 (YC1). Nhánh làm
 việc tạo từ `origin/sandbox-runner/pid-00031-gvisor` tại `ff16f5e`, không có
 commit mới của Dev sau đó.
@@ -630,7 +630,7 @@ chưa ký, thông điệp lỗi dấu) vẫn để PO xử lý khi squash.
 - `evidence/cold-start/container/load.txt`, `evidence/cold-start/pod/load.txt`: load và container khác, 2 s một mẫu.
 - `evidence/cold-start/pod/manifest-runc.json`, `evidence/cold-start/pod/manifest-gvisor.json`: manifest pod đã dùng.
 - `evidence/cold-start/container-discarded/summary.json`, `evidence/cold-start/container-discarded/load.txt`: lượt container 12:55–13:02 UTC bị bỏ vì trùng test của phiên khác.
-- `evidence/cold-start/host-environment.json`: host, Docker, `daemon.json`, gVisor (SHA-512, SHA-256 binary), kind, node, image, đối chiếu package. Tên máy và thư mục home trong evidence đã thay bằng `<host>` và `~` (repo public).
+- `evidence/cold-start/host-environment.json`: host, Docker, `daemon.json`, gVisor (SHA-512, SHA-256 binary), kind, node, image, đối chiếu package. Tên máy, thư mục home và đường dẫn checkout trong evidence đã thay bằng `<host>`, `~` và `<repo>` (repo public).
 - `evidence/cold-start/packages.tsv`: manifest package của image đo (trùng Lần 5).
 - `evidence/cold-start/image-build.txt`, `evidence/cold-start/kind-up.txt`, `evidence/cold-start/kind-load.txt`: dựng image, tạo cụm (lần nạp image đầu là bản CRLF, được thay bằng `kind-load.txt`), nạp image vào node.
 - `evidence/cold-start/commands.txt`: script điều phối lượt đo cuối và log của nó.

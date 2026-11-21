@@ -223,7 +223,7 @@ Không còn HIGH về fixture/đo mẫu theo tự đối chiếu của Dev; G3 M
 
 ## Lần 6 — 21/11/2026
 
-Người chạy là phiên Claude Code mà PO giao đo cold start (YC1 ở `report.md` mục 5),
+Người chạy là phiên đo do PO giao để đo cold start (YC1 ở `report.md` mục 5),
 không phải Dev. Phiên này làm trên máy của PO, trong worktree riêng, từ nhánh PR
 tại `ff16f5e`. Chỉ thêm mã đo trong `apps/sandbox-runner/spikes/spk-06/` và
 evidence trong `evidence/cold-start/`. Không sửa `spike.py`, `worker.py`,
