@@ -38,6 +38,7 @@
 <li>Agent chuyển mỗi câu trả lời thành <code>H&lt;n&gt;</code> ở mục 5 của trang ticket, cập nhật hồ sơ, đổi trạng thái phiếu thành “Đã chuyển vào hồ sơ (H<i>n</i>)”.</li></ol>
 <p>Câu hỏi nghiệp vụ chỉ PO trả lời; phiếu chưa phải câu trả lời khi “Câu trả lời đã ghi” còn trống.</p>
 <p><strong>18/11/2026:</strong> PO chấp nhận phương án đề xuất của cả chín phiếu I1–I9 (“Chấp nhận tất cả”, lô PH-01). Câu trả lời đã chuyển vào <a href="../index.html#phien-2">mục 5 của trang ticket</a> thành H1–H9; các phiếu này giữ làm biên bản. Câu trả lời của I6 mâu thuẫn với đề xuất B của PID-00014 I1, PO cũng chấp nhận cùng ngày, nên mở phiếu mới <a href="#i10">I10</a>.</p>
+<p><strong>21/11/2026:</strong> PO nhận đề xuất của I10 (phương án B) trong phiên. Câu trả lời đã chuyển vào <a href="../index.html#phien-3">mục 5 của trang ticket</a> thành H11, thay cơ chế của H6; mọi phiếu của PID này đã chuyển vào hồ sơ.</p>
 
 <div class="table-wrap"><table><thead><tr><th scope="col">Phiếu</th><th scope="col">Vấn đề</th><th scope="col">Chặn</th><th scope="col">Trạng thái</th></tr></thead><tbody>
 <tr><td><a href="#i1">I1</a></td><td>Shell có tự nối dữ liệu điều hướng (số Pending Actions, chưa đọc, project, ProjectRail, Active task) trong PID-00012 không?</td><td>có — S07</td><td>Đã chuyển vào hồ sơ (H1)</td></tr>
@@ -49,7 +50,7 @@
 <tr><td><a href="#i7">I7</a></td><td>Ai giữ nội dung đang nhập khi phiên hết hạn và đăng nhập lại?</td><td>không (N6)</td><td>Đã chuyển vào hồ sơ (H7)</td></tr>
 <tr><td><a href="#i8">I8</a></td><td>Thẻ Interactive Agent Prompt là component của shell hay của khu vực?</td><td>không (N8)</td><td>Đã chuyển vào hồ sơ (H8)</td></tr>
 <tr><td><a href="#i9">I9</a></td><td>Nút Đăng xuất đặt ở đâu, và đăng xuất RP-initiated đi qua hợp đồng thế nào?</td><td>không (N11)</td><td>Đã chuyển vào hồ sơ (H9)</td></tr>
-<tr><td><a href="#i10">I10</a></td><td>Đánh dấu hoạt động của người dùng: header (H6) hay <code>GET /auth/session</code> (PID-00014 I1)?</td><td>có — S13</td><td>Mở (18/11/2026)</td></tr>
+<tr><td><a href="#i10">I10</a></td><td>Đánh dấu hoạt động của người dùng: header (H6) hay <code>GET /auth/session</code> (PID-00014 I1)?</td><td>có — S13</td><td>Đã chuyển vào hồ sơ (H11)</td></tr>
 </tbody></table></div>
 
 <article class="issue" id="i1" data-issue="I1">
@@ -321,7 +322,7 @@
 <tr><th scope="row">Nguồn</th><td>Trang ticket mục 5, H6; <a href="../../PID-00014/others/issues.html#i1">PID-00014 others/issues.html#i1</a> (đề xuất B); ADR-27; kiến trúc 10.2: “Chỉ thao tác do người dùng thực hiện (lệnh ghi, điều hướng, mở màn hình) cập nhật <code>last_activity</code> của phiên; kết nối SSE, polling trạng thái và refresh token chạy nền không tính”; INT-OIDC-003-AC02.</td></tr>
 <tr><th scope="row">Ảnh hưởng</th><td>P14, EC32, S13; INT-OIDC-003-AC02 (phần shell); PID-00014 S04; hợp đồng (<code>parameters.yaml</code>, Quy ước chung của <code>openapi.yaml</code>, hoặc mô tả <code>getSession</code>)</td></tr>
 <tr><th scope="row">Chặn</th><td>có — S13</td></tr>
-<tr><th scope="row">Trạng thái</th><td>Mở (18/11/2026)</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Đã chuyển vào hồ sơ (H11)</td></tr>
 </tbody></table></div>
 <div class="table-wrap"><table><thead><tr><th scope="col">Phương án</th><th scope="col">Nội dung</th><th scope="col">Hệ quả cho mã / dữ liệu / test</th></tr></thead><tbody>
 <tr><td>A</td><td>Giữ H6: hợp đồng thêm header cho request do người dùng thao tác; shell gắn header khi request xuất phát từ điều hướng hay thao tác; gateway gia hạn khi có header hoặc khi lệnh ghi được chấp nhận. PID-00014 đổi theo (bỏ đề xuất B của I1).</td><td>PO sửa <code>parameters.yaml</code>, Quy ước chung, kiến trúc 10.2 trước S13 (thêm chờ nguồn). Client phân loại từng lời gọi; quên gắn thì phiên hết sớm hơn, không bao giờ quá hạn. Phân biệt được cả thao tác không đổi route (mở panel, bấm tải lại).</td></tr>
@@ -339,7 +340,7 @@
 <label>Điều kiện, số liệu, ghi chú<textarea name="note" rows="2"></textarea></label>
 <div class="row"><label>Người trả lời<input type="text" name="who" placeholder="PO"></label><label>Ngày<input type="text" name="date" placeholder="dd/mm/yyyy"></label></div>
 </form>
-<p><strong>Câu trả lời đã ghi:</strong> —</p>
+<p><strong>Câu trả lời đã ghi:</strong> B — <code>GET /auth/session</code> khi điều hướng (theo PID-00014 I1) — PO nhận đề xuất — Trịnh Quang Trung, 21/11/2026 → <a href="../index.html#phien-3">H11</a></p>
 </article>
 
 <section class="no-print">

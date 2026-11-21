@@ -29,10 +29,10 @@
 <tr><th scope="row">Output spec</th><td>O6</td></tr>
 <tr><th scope="row">Bước spec</th><td>B5</td></tr>
 <tr><th scope="row">Edge case</th><td>EC14 (từ <code>specs/scope.html</code>)</td></tr>
-<tr><th scope="row">Phụ thuộc</th><td>S01, S02; phần vai trò chạy migration viết sau S03 (I1)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02; phần vai trò chạy migration viết sau S03 (H3)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li><code>infra/README.md</code> (có sẵn): thêm mục PostgreSQL cục bộ — bảng vai trò mỗi service (owner, <code>_app</code>, <code>_system</code>, <code>_purge</code>, vai trò chạy migration theo I1; thuộc tính, dùng cho gì, dẫn database 3.2); mật khẩu <code>sires-local</code> chỉ cho máy phát triển, không dùng ở staging (EC14); DSN mẫu, ví dụ <code>postgres://sires_planning_app:sires-local@localhost:5432/sires_planning</code> cho <code>_app</code>, tương tự cho <code>_system</code> và vai trò chạy migration; <code>vector</code> có sẵn trong <code>sires_knowledge</code>; lệnh <code>pnpm local:check-db</code>.</li>
+<ol><li><code>infra/README.md</code> (có sẵn): thêm mục PostgreSQL cục bộ — bảng vai trò mỗi service (owner, <code>_app</code>, <code>_system</code>, <code>_purge</code>, <code>sires_&lt;svc&gt;_migrator</code> (H3); thuộc tính, dùng cho gì, dẫn database 3.2); mật khẩu <code>sires-local</code> chỉ cho máy phát triển, không dùng ở staging (EC14); DSN mẫu, ví dụ <code>postgres://sires_planning_app:sires-local@localhost:5432/sires_planning</code> cho <code>_app</code>, tương tự cho <code>_system</code>; DSN migrator <code>postgres://sires_planning_migrator:sires-local@localhost:5432/sires_planning</code> cho biến DSN migrator của service (ví dụ <code>DATABASE_MIGRATOR_URL</code> của agent-core); <code>vector</code> có sẵn trong <code>sires_knowledge</code>; lệnh <code>pnpm local:check-db</code>.</li>
 <li><code>scripts/development/README.md</code> (có sẵn): mục môi trường cục bộ ghi <code>pnpm local:up</code> áp vai trò cho cả volume đã có; thêm <code>pnpm local:check-db</code>; bảng “Script khác” ghi hành động <code>check-db</code> của <code>local-env.mjs</code>.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li>Đọc lại: làm theo README trên một máy có volume cũ thì <code>pnpm local:check-db</code> đạt; DSN mẫu đăng nhập được bằng <code>psql</code> trong container</li>

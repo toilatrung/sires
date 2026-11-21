@@ -4,7 +4,16 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — mã lỗi 415, 429, PO chốt 18/11/2026
+### Thay đổi gần nhất — mô tả `getSession`, PO chốt 21/11/2026
+
+PID-00012 H6 (header cho request do người dùng) và PID-00014 H1 (không header, gia hạn bằng `GET /auth/session`) mâu thuẫn; PO trả lời phiếu PID-00012 I10 theo phương án B (PID-00012 H11), cùng cách với PID-00014 H1.
+
+- `paths/15-settings-and-sign-in.yaml#/auth/session` (`getSession`): mô tả thêm — web gọi mỗi lần điều hướng hoặc mở màn hình, không gọi theo chu kỳ; lời gọi được tính là thao tác của người dùng, gateway cập nhật `last_activity` và tính lại hạn không hoạt động 12 giờ (ADR-27, INT-OIDC-003-AC02); ngoài operation này chỉ lệnh ghi được chấp nhận gia hạn phiên; GET khác và lệnh ghi bị từ chối không gia hạn; không có header đánh dấu.
+- Chỉ đổi mô tả: không đổi schema, tham số hay response; tương thích ngược. `parameters.yaml`, Quy ước chung và kiến trúc 10.2 giữ nguyên.
+- Ticket cập nhật: PID-00012 (S13, P14, EC32, INT-OIDC-003-AC02), PID-00014 (mục “Phải sửa ở nguồn” ghi đã sửa).
+- `dist/openapi.bundled.yaml` đã dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint sạch).
+
+### Mã lỗi 415, 429, PO chốt 18/11/2026
 
 QC độc lập PID-00001 (G4, `agent/execution/PID-00001/qc-report.md`): bộ lọc problem+json của `libs/ts/platform` phải trả `500 internal_error` cho lỗi 415 của Fastify (`Content-Type` không nhận) vì danh mục `ErrorCode` không có mã cho status này; gateway có rate limit (kiến trúc 3, 4) nhưng hợp đồng không có mã 429. PO chốt tên mã trong phiên.
 
