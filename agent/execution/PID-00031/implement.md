@@ -1,7 +1,7 @@
 # PID-00031 — Triển khai
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026
 
 ## 1. Luồng đã triển khai
 
@@ -28,7 +28,15 @@ không thay NestJS service, hợp đồng, database hoặc image sản phẩm.
    runtime không khởi động được là tấn công đã bị chặn.
    Fixture Default và luận văn còn cần có main.bbl/main.blg và bằng chứng
    BibTeX/natbib thực chạy. Ma trận 36 build đã được chạy ở Lần 5, cùng 12
-   probe; dữ liệu/metadata ở evidence/qc5. Classify vẫn giữ nguyên khi chờ PO chốt G3.
+   probe; dữ liệu/metadata ở evidence/qc5. PO chốt G3 ngày 21/11/2026: TeX
+   capacity giữ `memory_limit` (có `limit_reason=tex_capacity`), classify không đổi.
+8. Cold start (report Lần 6, phiên PO giao): `cold-start.sh` gọi `cold_start.py`.
+   Chế độ `container` tạo container qua Docker Engine API (unix socket), cùng
+   cấu hình cô lập như `run_case`. Chế độ `pod` tạo pod qua API server của cụm
+   kind (`kind-up`: `cold-start-kind.yaml`, shim runsc, RuntimeClass `gvisor` ở
+   `cold-start-k8s.yaml`). Lệnh trong sandbox in `__SPK06_READY__` rồi chạy
+   `worker.py` không đổi, nên tách được khởi động sandbox với TeX. Mỗi lượt là
+   một container/pod mới; lượt bị đồng hồ thực nhảy thì bỏ và đo lại.
 
 ## 2. Hàm, thuật toán, class ảnh hưởng cao
 
@@ -39,6 +47,10 @@ không thay NestJS service, hợp đồng, database hoặc image sản phẩm.
 | `verdict` | Hàm | `spike.py` | Kiểm bằng chứng theo scenario | Compile lỗi tùy ý hoặc runtime lỗi không được tính đạt | test_spike.py, attack.sh |
 | `main` | Hàm | `worker.py` | Biên dịch/probe trong sandbox | Không đọc latexmkrc; không bật shell escape; không truyền command từ fixture vào shell host | Fixture hai engine, isolation_verified |
 | Cặp memory probe | Thuật toán kiểm | fixtures/memory, worker | Phân biệt capacity TeX với cgroup hard limit | Không gọi capacity 90 MiB là đã chạm 2 GiB | memory hai engine + memory-probe |
+| `container_case`, `Engine` | Hàm, class | `cold_start.py` | create → attach → start → ready → kết quả qua Engine API | Không có CLI trong đường đo; cùng hạn mức và cô lập với `run_case` | test_cold_start.py, evidence/cold-start/container |
+| `pod_case`, `Kube`, `pod_manifest` | Hàm, class | `cold_start.py` | Tạo pod, watch điều kiện, đọc mốc worker từ timestamp log CRI, xóa pod | Mốc client là monotonic; worker non-root, drop ALL; init container chỉ `CAP_CHOWN`; đóng watch không chặn | test_cold_start.py, evidence/cold-start/pod |
+| `ClockWatch` | Class | `cold_start.py` | Lấy mẫu `realtime − monotonic` 5 ms một lần trong lượt | Lệch > 20 ms → `discarded=clock_step`, đo lại, không vào thống kê | test_cold_start.py |
+| `summarize` | Hàm | `cold_start.py` | n, min, trung vị, p95 nearest-rank, max | Bỏ warm-up và lượt bị loại; giá trị thiếu không thay bằng 0 | test_cold_start.py |
 
 ### Thuật toán deadline và bằng chứng bộ nhớ
 

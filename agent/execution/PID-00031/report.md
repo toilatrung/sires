@@ -1,8 +1,8 @@
 # PID-00031 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — đo lại hoàn tất; chờ PO chốt G3 và phạm vi cold start
+**Trạng thái:** Xong — chờ QC
 
-**Kết quả mới nhất:** xem Lần 5 ở cuối file; 36 build và 12 probe đã hoàn tất. G3 chưa được PO chốt. Các lần trước được giữ để truy vết.
+**Kết quả mới nhất:** xem Lần 6 ở cuối file: đo cold start container và pod gVisor/runc (phiên PO giao, không phải Dev); PO chốt G3 = `memory_limit`. Các lần trước được giữ để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Luồng:** `sandbox-runner` · **Giai đoạn:** PH-01
 - **Nhánh:** `sandbox-runner/pid-00031-gvisor` · **PR:** [#39](https://github.com/toilatrung/sires/pull/39) → `main`; mã, bằng chứng và hồ sơ triển khai đã được commit/push.
@@ -134,7 +134,9 @@ ticket đều có giấy phép. Các kiểm riêng sandbox-runner đã đạt.
 
 ## 5. Yêu cầu thêm
 
-Không có.
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC1 | PO Trịnh Quang Trung, 21/11/2026, trả lời Đề xuất 1 và 2 của `qc-report.md` Lần 1 | “39 - 1. memory_limit và 2. Đo luôn nhưng bạn hãy gọi 1 phiên đo luôn chứ không để dev đo” | (1) Trong phạm vi: chốt mã cho G3 (AC02), không đổi hành vi harness. (2) Đổi phạm vi: thêm phép đo cold start mà kiến trúc 9.5 giao cho SPK-06 nhưng ticket không nêu | (1) “TeX capacity exceeded” giữ mã `memory_limit`, kèm `limit_reason=tex_capacity`; không sửa `classify`. (2) Làm, PO đồng ý bằng nguyên văn trên. Phép đo do phiên Claude Code mà PO giao thực hiện trên máy của PO, **không phải Dev**; Dev được báo tạm không push trên PR #39 | Lần 6: `cold_start.py`, `cold-start.sh`, `cold-start-kind.yaml`, `cold-start-k8s.yaml`, `test_cold_start.py`; `evidence/cold-start/` |
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -411,3 +413,224 @@ Các bằng chứng mới sau đây thuộc Lần 5; dữ liệu cũ không bị
 - `evidence/qc5/thesis-xelatex.bbl`
 - `evidence/qc5/thesis-xelatex.blg`
 - `evidence/qc5/thesis-xelatex.pdf`
+
+## Lần 6 — 21/11/2026
+
+Đo cold start gVisor theo kiến trúc 9.5 (“Cold start của pod gVisor phải đo ở
+SPK-06”) và Đề xuất 2 của `qc-report.md` Lần 1. **Phép đo do phiên Claude Code
+mà PO giao thực hiện trên máy của PO, không phải Dev**; Dev được báo tạm không
+push trên PR #39. Quyết định của PO ghi nguyên văn ở mục 5 (YC1). Nhánh làm
+việc tạo từ `origin/sandbox-runner/pid-00031-gvisor` tại `ff16f5e`, không có
+commit mới của Dev sau đó.
+
+### Quyết định G3
+
+PO chốt ngày 21/11/2026: lỗi “TeX capacity exceeded” giữ mã `memory_limit`.
+`spike.py` (`classify`) đã trả `memory_limit` và ghi `limit_reason=tex_capacity`
+để phân biệt với cgroup OOM (`limit_reason=cgroup_oom`), nên **không sửa
+`classify`** và không chạy lại `attack.sh`. Kết quả 12/12 probe của Lần 5
+(`evidence/qc5/attacks.json`) là kết quả theo đúng quyết định này. G3 đóng.
+
+### Môi trường và khác biệt so với máy Dev
+
+PO đồng ý trong phiên trước mỗi lần tải hoặc cài (nguồn ở mục “Đã cài”).
+
+| Mục | Máy đo Lần 6 | Máy Dev (Lần 5) |
+| --- | --- | --- |
+| Host | Windows 11, WSL2 Ubuntu 24.04, AMD Ryzen 7 4800H, 16 vCPU, RAM 9,5 GiB | WSL2 Ubuntu 24.04, 8 CPU, RAM 7,6 GiB |
+| Kernel | `6.18.58.1-microsoft-standard-WSL2` | `6.6.87.2-microsoft-standard-WSL2` |
+| Docker | 29.8.2, containerd v2.3.6, cgroup v2, driver systemd | 29.8.2, cgroup v2 |
+| gVisor | `release-20261116.0`, SHA-512 tarball khớp; platform `kvm` (có `/dev/kvm`) và thêm `systrap` | cùng release, `kvm`; systrap lỗi seccomp notify |
+| Image | `sha256:d5af9bea…` (config `409971f6…`), 1.298.749.346 byte, dựng lại từ Dockerfile; 202/202 package trùng `evidence/qc5/packages.tsv` | `sha256:f535ce7c…` |
+| Kubernetes | kind v0.33.0, node `kindest/node:v1.37.0@sha256:a1ed56…`, kubelet v1.37.0, containerd 2.3.4, shim `containerd-shim-runsc-v1` cùng release, RuntimeClass `gvisor` → handler `runsc`, `runsc.toml`: `platform="kvm"`, `systemd-cgroup="true"` | không có |
+
+systrap chạy được trên kernel 6.18 của máy này, khác lỗi EC01 trên kernel 6.6
+của Dev, nên phần (a) đo thêm `runsc-systrap`. Đây vẫn là WSL2, không phải
+platform production.
+
+Hai đặc điểm của máy làm phải sửa cách đo; cả hai đã xử lý trong harness hoặc khi chuẩn bị:
+
+- Đồng hồ thực của WSL2 nhảy lùi khoảng 2–3 s, trung bình khoảng 1 phút một lần
+  (`journalctl -k` có 183 dòng “Time jumped backwards” từ lúc khởi động). Harness
+  đo mọi mốc bằng monotonic. Mỗi lượt lấy mẫu `realtime − monotonic` 5 ms một
+  lần; lệch quá 20 ms thì lượt bị đánh dấu `discarded=clock_step`, giữ trong
+  `results.json`, không vào thống kê, và được đo lại ngay (tối đa 3 lần).
+  Số lượt bị bỏ: container 5 (đều runc), pod 11.
+- Checkout trên Windows (`core.autocrlf=true`) có CRLF ở `spike.py`, `worker.py`,
+  `Dockerfile` và fixture. Trước lượt đo cuối đã đổi working tree về LF; nội
+  dung git không đổi. Nhờ vậy image và `source_sha256`/`fixture_sha256` trong
+  evidence khớp blob của commit; đã kiểm 7/7 file nguồn và 8/8 fixture.
+
+Máy dùng chung với các phiên khác. Các lượt đo trùng thời gian chạy test
+Testcontainers, test nutrimeal hay phép đo SPK-08 đều bị bỏ, không có trong kết
+quả: lượt 10:46–11:28 UTC (harness trước khi xử lý đồng hồ; bản CRLF; pod bị
+nhiễu từ 11:21:50), lượt 11:39–11:50 UTC (nhiễu, dừng giữa chừng), và lượt
+container 12:55:30–13:02:36 UTC (trùng test Testcontainers của QC PID-00022 lúc
+12:58–13:00, 98 mẫu có container lạ; lưu ở `evidence/cold-start/container-discarded/`).
+Lượt dùng trong báo cáo: container 13:19:09–13:24:23 UTC, pod 13:27:58–13:34:23 UTC,
+máy chờ rảnh 120 s trước mỗi phần, không có container nào khác ngoài
+`nutrimeal_services_db` đang nhàn rỗi, load1 tối đa 1,63 (container) và 2,06 (pod).
+Mẫu tải mỗi 2 s ở `load.txt`. Trong phần container, node kind được `docker pause`.
+
+### Định nghĩa phép đo
+
+Chung: mỗi lượt là **một container hoặc một pod mới** từ image đã có sẵn trên
+host/node (không tính thời gian pull; pod dùng `imagePullPolicy: Never`), build
+template Default (`fixtures/default`, pdfLaTeX, BibTeX + natbib) một lần. Lệnh
+trong sandbox là `python3 -c BOOT pdflatex default`: câu lệnh đầu tiên in
+`__SPK06_READY__`, sau đó chạy `/opt/spk-06/worker.py` của image, không sửa.
+“Worker ready” là lúc tiến trình trong sandbox đã chạy và sẵn sàng nhận job.
+Phần TeX là `latexmk_seconds` (GNU time trong sandbox); “ngoài TeX” bằng tạo →
+build xong trừ `latexmk_seconds`. Mỗi runtime có 1 lượt warm-up không tính,
+sau đó 20 lượt; thứ tự runtime đảo mỗi vòng; nghỉ 2 s giữa hai lượt; chạy tuần
+tự từng lượt. Thống kê gồm trung vị, min, max, p95 nearest-rank (n = 20, p95
+là giá trị thứ 19).
+
+- **(a) Container**: harness gọi Docker Engine API qua unix socket, không qua
+  CLI. Cấu hình cô lập và hạn mức giống `spike.py`: network none, rootfs chỉ
+  đọc, UID 65532, drop ALL, no-new-privileges, 2 GiB, 2 CPU, 256 PID, tmpfs
+  `/work` 500 MB `uid=65532`. Mốc: `POST /containers/create` → attach →
+  `POST /start` → nhận dòng ready → nhận dòng kết quả. Chỉ để tham khảo: một lệnh
+  `docker inspect` qua CLI mất trung vị 0,17–0,18 s, nên harness dùng CLI sẽ
+  cộng thêm chừng ấy cho mỗi lệnh.
+- **(b) Pod**: harness tạo pod bằng API server của kind (client certificate),
+  theo dõi bằng watch. Mốc điều kiện (`PodScheduled`, `PodReadyToStartContainers`
+  = sandbox và mạng xong, `Initialized`, `Ready`) lấy theo thời điểm watch nhận
+  sự kiện. Mốc ready và kết quả của worker lấy theo timestamp log CRI của
+  containerd, quy về monotonic. Pod gVisor có `runtimeClassName: gvisor`, pod
+  runc dùng handler mặc định; cả hai cùng spec (`evidence/cold-start/pod/manifest-*.json`):
+  `runAsUser 65532`, `runAsNonRoot`, `readOnlyRootFilesystem`, drop ALL,
+  seccomp RuntimeDefault, không token service account, requests = limits =
+  2 CPU / 2 GiB, `/work` là emptyDir Memory 500 MB, fixture qua ConfigMap
+  mount chỉ đọc ở `/input` và `/tmp`.
+  Khác container ở ba điểm. (1) emptyDir do kubelet tạo thuộc root, trong khi
+  `copytree` của worker cần làm chủ `/work`, nên có init container chạy root
+  chỉ với `CAP_CHOWN` để đổi chủ `/work`; thời gian của bước này nằm trong
+  khoảng PodReadyToStartContainers → Initialized. (2) Pod có mạng CNI của kind,
+  không có NetworkPolicy. (3) Không đặt ulimit nofile/fsize và `/dev/shm`.
+  Xóa pod dùng `gracePeriodSeconds=1`, chờ sự kiện DELETED rồi mới sang lượt sau.
+
+### Kết quả (a) — container
+
+Đơn vị giây: trung vị (min–max) · p95, 20 lượt mỗi runtime, đều đạt (PDF, BibTeX,
+natbib, UID 65532, rootfs và `/tmp` chỉ đọc).
+
+| Chỉ số | runc | runsc KVM | runsc systrap |
+| --- | --- | --- | --- |
+| Tạo container (API create) | 0,10 (0,08–0,21) · p95 0,13 | 0,09 (0,08–0,11) · p95 0,11 | 0,09 (0,09–0,15) · p95 0,11 |
+| start → worker ready | 0,16 (0,15–0,25) · p95 0,19 | 0,20 (0,17–0,26) · p95 0,24 | 0,19 (0,16–0,43) · p95 0,21 |
+| **Tạo → worker ready** | 0,25 (0,24–0,46) · p95 0,31 | 0,31 (0,27–0,35) · p95 0,34 | 0,28 (0,25–0,58) · p95 0,30 |
+| worker ready → kết quả | 1,34 (1,28–1,60) · p95 1,43 | 2,38 (2,29–4,03) · p95 3,61 | 3,05 (2,90–3,32) · p95 3,31 |
+| trong đó latexmk | 1,30 (1,24–1,56) · p95 1,39 | 2,28 (2,20–3,83) · p95 3,50 | 2,94 (2,78–3,21) · p95 3,10 |
+| **Tạo → build Default xong** | 1,59 (1,52–1,90) · p95 1,85 | 2,70 (2,58–4,34) · p95 3,95 | 3,33 (3,17–3,89) · p95 3,59 |
+| Ngoài TeX | 0,29 (0,27–0,49) · p95 0,34 | 0,40 (0,36–0,51) · p95 0,45 | 0,40 (0,35–0,92) · p95 0,49 |
+| Xóa container | 0,12 (0,10–0,16) · p95 0,14 | 0,14 (0,13–0,18) · p95 0,15 | 0,13 (0,11–0,18) · p95 0,14 |
+| Warm-up, tạo → worker ready | 0,29 | 0,30 | 0,29 |
+
+### Kết quả (b) — pod
+
+Đơn vị giây, tính từ lúc gửi `POST` tạo pod: trung vị (min–max) · p95, 20 lượt
+mỗi runtime, đều đạt.
+
+| Chỉ số | runc | gVisor (runsc KVM) |
+| --- | --- | --- |
+| API tạo pod trả về | 0,02 (0,01–0,02) · p95 0,02 | 0,02 (0,01–0,03) · p95 0,02 |
+| PodReadyToStartContainers (sandbox + mạng) | 0,56 (0,51–0,61) · p95 0,60 | 0,60 (0,56–0,73) · p95 0,71 |
+| Initialized (init container xong) | 0,92 (0,86–1,63) · p95 1,62 | 0,93 (0,91–1,93) · p95 1,93 |
+| **Tạo → Ready** | 1,08 (1,05–1,79) · p95 1,77 | 1,14 (1,10–2,17) · p95 2,17 |
+| **Tạo → worker ready** (log CRI) | 1,08 (1,04–1,78) · p95 1,76 | 1,13 (1,10–2,16) · p95 2,15 |
+| worker ready → kết quả | 1,51 (1,36–1,70) · p95 1,62 | 3,16 (2,79–3,77) · p95 3,60 |
+| trong đó latexmk | 1,46 (1,32–1,64) · p95 1,57 | 3,02 (2,67–3,63) · p95 3,45 |
+| **Tạo → build Default xong** | 2,62 (2,44–3,25) · p95 3,14 | 4,37 (3,92–5,76) · p95 5,59 |
+| Ngoài TeX | 1,12 (1,08–1,82) · p95 1,82 | 1,27 (1,24–2,31) · p95 2,30 |
+| Xóa pod → DELETED | 2,62 (2,34–3,51) · p95 3,38 | 0,84 (0,51–1,63) · p95 1,17 |
+| Warm-up, tạo → worker ready | 2,48 (bỏ do đồng hồ), 1,10 | 2,19 |
+
+Pull image không được đo: image được nạp sẵn bằng `kind load` (`kind-load.txt`).
+
+### So sánh runsc và runc
+
+- **Khởi động sandbox**: gVisor chỉ thêm khoảng 0,06 s ở mức container (trung
+  vị tạo → worker ready 0,31 so với 0,25 s; p95 0,34 so với 0,31 s) và khoảng
+  0,05 s ở mức pod (Ready 1,14 so với 1,08 s). Bước sandbox + mạng của pod chậm
+  hơn 0,04 s (0,60 so với 0,56 s). systrap khởi động ngang KVM (0,28 s).
+- **Thời gian còn lại của pod chủ yếu do kubelet**: từ sandbox xong đến Ready
+  mất khoảng 0,5 s ở cả hai runtime. Ready phân thành bậc: runc có 18/20 lượt
+  trong khoảng 1,05–1,13 s và 2 lượt ở 1,77–1,79 s; gVisor có 12/20 lượt trong
+  khoảng 1,10–1,14 s, 3 lượt ở 1,82–1,83 s và 5 lượt ở 2,10–2,17 s. Bước nhảy
+  0,7–1 s phù hợp với chu kỳ relist 1 s của PLEG trong kubelet. gVisor khởi
+  động chậm hơn vài chục ms nên trượt sang bậc sau thường hơn; vì vậy chênh p95
+  là 0,4 s, còn chênh trung vị chỉ 0,06 s. Init container đổi chủ `/work`
+  chiếm khoảng 0,35 s (PodReadyToStartContainers → Initialized); thiết kế không
+  cần bước này thì pod sẵn sàng sớm hơn chừng đó và có thể bớt một bước PLEG.
+- **TeX chậm hơn rõ dưới gVisor**: latexmk ×1,75 ở container KVM, ×2,26 ở
+  systrap, ×2,07 ở pod. Build Default xong trong 2,70 s (container) và 4,37 s
+  (pod), p95 3,95 và 5,59 s. latexmk trong pod gVisor chậm hơn container gVisor
+  (3,02 so với 2,28 s). Phép đo này không tách được nguyên nhân: emptyDir và
+  ConfigMap qua gofer, cgroup systemd trong node kind, hay node chạy lồng
+  trong container.
+- Khớp với ước lượng của Dev ở Lần 5: phần ngoài worker của runsc là 0,47–0,69 s,
+  đo qua CLI và không gồm create. Số mới ngoài TeX của container runsc là
+  0,36–0,51 s qua API, có gồm create.
+
+### Kết luận cho NFR-PERF-007 và pool ấm (kiến trúc 9.5)
+
+- NFR-PERF-007 đo Build Queued → Running (≤ 10 s, p95). Phép đo này **không thay**
+  nghiệm thu Queued → Running (N3, PID-00080); nó chỉ cho biết phần cold start
+  của pod gVisor trong ngân sách đó.
+- Trên node có sẵn image và còn tài nguyên, một pod gVisor mới **Ready trong
+  2,17 s ở p95** (worker ready 2,15 s, n = 20). Như vậy cold start dùng khoảng
+  22% ngân sách 10 s, và gVisor chỉ góp khoảng 0,05–0,4 s so với runc.
+  Cold start gVisor không phải điểm nghẽn của NFR-PERF-007 trong điều kiện đã đo.
+- Chưa đo, và là phần có thể vượt 10 s: pull image 1,3 GB trên node mới; thêm
+  node vào pool (PID-00112); độ trễ để KEDA phát hiện hàng đợi (kiến trúc 9.5:
+  “thêm pod khi hàng đợi > 0 quá 5 giây”, cộng chu kỳ polling của KEDA); lập
+  lịch khi node đầy; nhiều pod khởi động cùng lúc; phần cứng và platform
+  production (KVM trên WSL2 ở đây; systrap mới chỉ đo ở mức container).
+- **Pool ấm**: số đo không cho lý do để đổi mức tối thiểu 2 sandbox LaTeX của
+  kiến trúc 9.5. Nếu chỉ dựa vào autoscale thì build đầu tiên phải chờ ngưỡng
+  5 s, cộng polling, cộng khoảng 2,2 s cold start; tổng này chỉ dưới 10 s khi
+  polling vài giây, node còn chỗ và có sẵn image. Pool ấm vẫn cần để build bắt
+  đầu ngay. Ngược lại, thay container sau N job (9.1) chỉ tốn khoảng 1–2 s và
+  làm nền được. Đề xuất cho PO, chưa chốt: giữ pool tối thiểu 2; PID-00080 đo
+  Queued → Running với cấu hình KEDA thật (ngưỡng, polling); PID-00112 bảo đảm
+  image có sẵn trên node (pre-pull) và chốt platform.
+
+### Đã cài trên máy PO (WSL Ubuntu-24.04) — để PO dọn khi không cần
+
+| Thứ đã cài | Nguồn | Gỡ |
+| --- | --- | --- |
+| `/usr/local/bin/runsc`, `/usr/local/bin/containerd-shim-runsc-v1`, `/usr/local/bin/gvisor-bin/` | `storage.googleapis.com/gvisor/releases/release/20261116.0/x86_64/gvisor.tar.bz2` (84,7 MB, SHA-512 khớp) | `sudo rm -rf` ba đường dẫn này |
+| `/etc/docker/daemon.json` (file mới): runtime `runsc` (`--platform=kvm`), `runsc-systrap` (`--platform=systrap`); đã `systemctl reload docker` | `runsc install` | xóa file rồi `sudo systemctl reload docker` |
+| `~/.local/bin/kind` v0.33.0 | GitHub release `kubernetes-sigs/kind` (10,5 MB, SHA-256 khớp) | `rm ~/.local/bin/kind` |
+| Cụm kind `sires-spk06` (container `sires-spk06-control-plane`, network `kind`, context `kind-sires-spk06` trong `~/.kube/config`) | `cold-start.sh kind-up` | `bash cold-start.sh kind-down` |
+| Image `kindest/node:v1.37.0@sha256:a1ed56…`, `debian:bookworm-slim@sha256:734a72…`, `sires/spk-06:texlive-2022` và image cũ không tag của bản CRLF | Docker Hub; Dockerfile + snapshot.debian.org | `docker image rm …`, `docker image prune` |
+| `~/sires-coldstart/` (dữ liệu làm việc, gồm các lượt đã bỏ) | phiên này | `rm -rf ~/sires-coldstart` |
+
+### Mã và kiểm tra
+
+Mã mới nằm trong `apps/sandbox-runner/spikes/spk-06/`: `cold_start.py` (harness),
+`cold-start.sh` (lệnh `container`, `pod`, `kind-up`, `kind-down`),
+`cold-start-kind.yaml`, `cold-start-k8s.yaml` (RuntimeClass `gvisor`),
+`test_cold_start.py`; README có thêm mục “Cold start”. Không sửa `spike.py`,
+`worker.py`, `Dockerfile`, fixture, `docs/` hay `qc-report.md`. Lệnh kiểm và
+kết quả ở `self-qc.md` Lần 6.
+
+### Còn lại
+
+Không còn việc trong phạm vi PID-00031. Chờ QC độc lập Lần 2. G5/G9 (commit cũ
+chưa ký, thông điệp lỗi dấu) vẫn để PO xử lý khi squash.
+
+### Tài liệu Lần 6
+
+- `evidence/cold-start/container/results.json`, `evidence/cold-start/pod/results.json`: số đo thô từng lượt, gồm lượt warm-up và lượt bỏ do đồng hồ.
+- `evidence/cold-start/container/summary.json`, `evidence/cold-start/pod/summary.json`: trung vị, min, max, p95 tính từ số đo thô.
+- `evidence/cold-start/container/environment.json`, `evidence/cold-start/pod/environment.json`: kernel, Docker, runtime, image, node, RuntimeClass, hash mã và fixture.
+- `evidence/cold-start/container/console.txt`, `evidence/cold-start/pod/console.txt`: log từng lượt.
+- `evidence/cold-start/container/load.txt`, `evidence/cold-start/pod/load.txt`: load và container khác, 2 s một mẫu.
+- `evidence/cold-start/pod/manifest-runc.json`, `evidence/cold-start/pod/manifest-gvisor.json`: manifest pod đã dùng.
+- `evidence/cold-start/container-discarded/summary.json`, `evidence/cold-start/container-discarded/load.txt`: lượt container 12:55–13:02 UTC bị bỏ vì trùng test của phiên khác.
+- `evidence/cold-start/host-environment.json`: host, Docker, `daemon.json`, gVisor (SHA-512, SHA-256 binary), kind, node, image, đối chiếu package. Tên máy và thư mục home trong evidence đã thay bằng `<host>` và `~` (repo public).
+- `evidence/cold-start/packages.tsv`: manifest package của image đo (trùng Lần 5).
+- `evidence/cold-start/image-build.txt`, `evidence/cold-start/kind-up.txt`, `evidence/cold-start/kind-load.txt`: dựng image, tạo cụm (lần nạp image đầu là bản CRLF, được thay bằng `kind-load.txt`), nạp image vào node.
+- `evidence/cold-start/commands.txt`: script điều phối lượt đo cuối và log của nó.

@@ -1,8 +1,8 @@
 # PID-00031 — Self-QC của Dev
 
-**Kết luận:** Đã chạy lại đầy đủ — AC03 có bằng chứng mới; G3 và phạm vi cold start còn chờ PO
+**Kết luận:** Đạt — PO chốt G3 = `memory_limit`; cold start container và pod đã đo (Lần 6, phiên PO giao)
 
-**Kết quả mới nhất:** Lần 5 ở cuối file. Giữ các lần trước để truy vết.
+**Kết quả mới nhất:** Lần 6 ở cuối file. Giữ các lần trước để truy vết.
 
 - **Ticket:** [PID-00031](../../../docs/tickets/issues/PID-00031/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 21/11/2026
@@ -220,3 +220,40 @@ EC02/EC03: 36 build không thiếu package/font, 24 build Default/luận văn x�
 BibTeX/natbib. Raw metrics và sáu PDF được lưu riêng với hash khớp.
 Không còn HIGH về fixture/đo mẫu theo tự đối chiếu của Dev; G3 MEDIUM và quyết
 định cold start vẫn chưa chốt. Chưa chuyển Xong — chờ QC và không sửa báo cáo QC độc lập.
+
+## Lần 6 — 21/11/2026
+
+Người chạy là phiên Claude Code mà PO giao đo cold start (YC1 ở `report.md` mục 5),
+không phải Dev. Phiên này làm trên máy của PO, trong worktree riêng, từ nhánh PR
+tại `ff16f5e`. Chỉ thêm mã đo trong `apps/sandbox-runner/spikes/spk-06/` và
+evidence trong `evidence/cold-start/`. Không sửa `spike.py`, `worker.py`,
+`Dockerfile`, fixture, `docs/` hay `qc-report.md`.
+
+### Lệnh và kết quả thật
+
+| Kiểm | Kết quả |
+| --- | --- |
+| `python -m unittest test_cold_start test_spike` (Windows 3.12.16; WSL 3.12.3) | 16/16 đạt ở cả hai (7 test mới cho harness cold start, gồm test phát hiện đồng hồ nhảy; 9 test cũ) |
+| `ruff check apps/sandbox-runner/spikes/spk-06` (ruff 0.17.4, không cache) | Exit 0 |
+| `bash -n cold-start.sh measure.sh attack.sh setup-runsc.sh` | Exit 0 |
+| `cold-start.sh container --repetitions 20 --warmup 1 --runtimes runc,runsc,runsc-systrap` | Exit 0; 60/60 lượt đạt; 5 lượt runc bỏ do đồng hồ, đã đo lại |
+| `cold-start.sh kind-up`, `cold-start.sh pod --repetitions 20 --warmup 1` | Exit 0; 40/40 lượt đạt; 11 lượt bỏ do đồng hồ, đã đo lại |
+| Đối chiếu `source_sha256`, `fixture_sha256` trong evidence với `git show HEAD:<file>` | 7/7 file nguồn và 8/8 fixture Default khớp, ở cả container và pod |
+| `packages.tsv` của image đo so với `evidence/qc5/packages.tsv` | 202/202 dòng trùng |
+| Mẫu tải trong lượt dùng (`load.txt`) | Không có container lạ; load1 tối đa 1,63 (container), 2,06 (pod) |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/sandbox-runner --skip-nx-cache` | Exit 0; sandbox-runner và 4 task phụ thuộc đạt. Nx cảnh báo `@sires/contracts:generate-ts` flaky; đây là cảnh báo, không phải lỗi, và thuộc luồng khác |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu thông báo |
+| `node scripts/docs/update-index.mjs --check` | Khớp 159 PID, 159 task |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `repo, sandbox-runner` |
+
+### AC và việc còn chờ
+
+| AC / G | Kết quả Lần 6 |
+| --- | --- |
+| PID-00031-AC02 / G3 | Đạt: PO chốt TeX capacity giữ `memory_limit` (có `limit_reason=tex_capacity`); harness đã đúng nên không sửa `classify`; 12/12 probe Lần 5 giữ nguyên |
+| PID-00031-AC01, PID-00031-AC03, PID-00031-AC04, NFR-SANDBOX-001-AC01 | Giữ kết quả Lần 5; Lần 6 không đổi mã đo hay fixture của các AC này |
+| Đề xuất 2 (cold start, kiến trúc 9.5) | Đã đo: container runsc tạo → worker ready p95 0,34 s; pod gVisor tạo → Ready p95 2,17 s; chênh với runc nhỏ. Không thay nghiệm thu Queued → Running (PID-00080) |
+| EC01 | systrap chạy được trên kernel WSL2 6.18 (khác 6.6 của Dev); đã đo ở mức container. Chưa phải platform production |
+
+Không còn khoảng trống trong phạm vi ticket. G5/G9 để PO xử lý khi squash.
+Đặt `Xong — chờ QC` cho QC độc lập Lần 2.

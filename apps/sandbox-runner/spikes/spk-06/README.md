@@ -110,8 +110,8 @@ BibTeX chạy và natbib được nạp. Số đo thật chỉ nằm trong JSON 
 Sau khi thay fixture theo QC, cần đo lại toàn bộ suite; số đo cũ ở hồ sơ
 Lần 1–3 không được dùng để kết luận cho các fixture mới.
 Đợt đo 36 build cho fixture mới đã hoàn tất ngày 21/11/2026, xem report Lần 5
-và evidence/qc5. Mã lỗi cho TeX capacity vẫn chờ PO chốt G3; kết quả assertion
-memory của harness hiện tại không đồng nghĩa đã nghiệm thu cách ánh xạ đó.
+và evidence/qc5. PO chốt G3 ngày 21/11/2026: TeX capacity giữ mã `memory_limit`
+(kèm `limit_reason=tex_capacity`), `classify` không đổi.
 
 pdfLaTeX dùng T5/UTF-8; XeLaTeX dùng DejaVu Serif, không phụ thuộc font host.
 Riêng Default tiếng Anh dùng T1/Latin Modern; luận văn dùng class CUED với
@@ -123,6 +123,34 @@ không tải động trong sandbox.
 spike không được đưa vào gói `pnpm deploy --legacy --prod` cho image sản phẩm.
 Giới hạn file 16 MiB của spike không được sao chép nguyên sang PID-00054;
 PDF luận văn nhiều ảnh có thể cần lớn hơn giới hạn đó.
+
+## Cold start (kiến trúc 9.5, report Lần 6)
+
+```bash
+# runsc đã cài như trên; muốn so platform thì đăng ký thêm runtime systrap:
+#   sudo /usr/local/bin/runsc install --runtime=runsc-systrap -- --platform=systrap
+#   sudo systemctl reload docker
+bash cold-start.sh container --output /tmp/spk06-cs-container --runtimes runc,runsc,runsc-systrap
+bash cold-start.sh kind-up sires/spk-06:texlive-2022   # cần kind; node image cố định ở cold-start-kind.yaml
+bash cold-start.sh pod --output /tmp/spk06-cs-pod      # runc và RuntimeClass gvisor
+bash cold-start.sh kind-down
+```
+
+- Mỗi lượt là một container hoặc pod mới từ image đã có trên host/node (không tính pull),
+  build Default bằng pdfLaTeX một lần. Tiến trình trong sandbox in `__SPK06_READY__` ở câu
+  lệnh đầu tiên rồi chạy `worker.py` không đổi (`BOOT` trong `cold_start.py`), nên tách được
+  thời gian khởi động sandbox với thời gian TeX (`latexmk_seconds` do GNU time đo).
+- Container: harness gọi Docker Engine API qua unix socket, không qua CLI, cùng cấu hình
+  cô lập và hạn mức như `spike.py`. Mốc: create → attach → start → nhận dòng ready → nhận
+  kết quả; `docker_cli_inspect_seconds` chỉ để biết một lệnh CLI tốn bao lâu.
+- Pod: tạo pod bằng API server (client certificate của kind), mốc điều kiện lấy lúc watch
+  nhận sự kiện; mốc ready/kết quả của worker lấy theo timestamp log CRI của containerd.
+  Pod có init container chỉ có `CAP_CHOWN` để đổi chủ `/work` (emptyDir do kubelet tạo là
+  root), thay cho `uid=65532` của tmpfs Docker; pod có mạng CNI của kind, không có
+  NetworkPolicy, không đặt ulimit nofile/fsize và `/dev/shm` như container.
+- Mặc định một lượt khởi động mỗi runtime (ghi `warmup`, không vào thống kê) rồi 20 lượt,
+  đảo thứ tự runtime mỗi vòng, nghỉ 2 giây giữa hai lượt. `summary.json` ghi số lượt,
+  min, trung vị, p95 (nearest-rank) và max; `results.json` và từng file lượt là dữ liệu thô.
 
 Tài liệu runtime: [cài gVisor](https://gvisor.dev/docs/user_guide/install/),
 [chọn platform](https://gvisor.dev/docs/user_guide/platforms/),
