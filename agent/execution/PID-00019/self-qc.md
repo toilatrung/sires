@@ -1,9 +1,9 @@
 # PID-00019 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — S02 và ca 1 của PID-00019-AC03 bị chặn bởi PID-00158 (helper sinh app.state_transition chưa có trên main); phần làm được đạt
+**Kết luận:** Chưa đạt — S02 và ca 1 của PID-00019-AC03 bị chặn bởi PID-00158 (helper sinh app.state_transition chưa có trên main); phần làm được đạt, kiểm lại sau merge `main` đạt (Lần 2, 21/11/2026)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -88,6 +88,24 @@ Chạy theo `agent/skills/qc/spec-converge-skill` ở chế độ Dev tự QC ng
 | G5 | partial | LOW | EC08 (DBQ-01) không kiểm được trên Testcontainers | — | Cần lưu ý; thao tác tay trên managed (Tech lead) |
 | G6 | unrequested | LOW | Phần thêm kỹ thuật: `src/db/schema.ts` rỗng (drizzle-kit bắt buộc `schema`); `WorkflowEngineService` rỗng làm provider cho token; devDependencies `@types/pg`, `eslint` (test luật dùng ESLint API); assertion thêm ở ca 8 (ghi chéo, không đặt `app.account_id`) theo chú thích DDL | `src/db/schema.ts`, `src/engine/workflow-engine.service.ts`, `apps/orchestration/package.json` | Giữ — lý do ở implement.md mục 3; PO bỏ được nếu không muốn |
 | G7 | partial | LOW | README mục “State machine” mô tả tình trạng chặn; phải sửa khi S02 xong | `apps/orchestration/README.md` (mục State machine) | Lần 2 |
+
+## Lần 2 — 21/11/2026
+
+Kiểm lại phần đã làm sau khi merge `origin/main` (11 commit) vào nhánh, trước khi mở PR (PO cho merge trước, report.md Lần 2). Không đổi mã so với Lần 1 và so với bản QC độc lập Lần 1 đã kiểm.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git merge origin/main` | không xung đột; `pnpm-lock.yaml` git tự gộp |
+| `pnpm install --frozen-lockfile` | đạt — lockfile sau merge nhất quán, không sinh lại |
+| `NX_DAEMON=false pnpm nx run-many -t lint typecheck test build -p @sires/orchestration --skip-nx-cache` | đạt; test 5 file, **21 passed, 4 todo** (chờ PID-00158), 0 lỗi; PostgreSQL 16 + pgvector qua Testcontainers, Docker 29.8.2 trong WSL |
+| `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main` | chạy hết 19 project (lockfile đổi nên mọi project bị ảnh hưởng), kể cả các project Python (`uv run` chạy được trên máy ở lần này). Mọi target đạt trừ 3 task test lỗi `read ECONNRESET` / `WinError 10054` khi gọi Docker ở `localhost:2375` trong lúc Nx chạy song song nhiều bộ Testcontainers: `@sires/testing:test`, `sires-common:test`, `@sires/orchestration:test` (riêng `src/db/migrate.spec.ts`, lỗi ở `beforeAll` khởi động container). Chạy lại tuần tự ba task đó (`NX_DAEMON=false pnpm nx run-many -t test -p @sires/testing sires-common @sires/orchestration --parallel=1 --skip-nx-cache`): đạt — 13/13, 79 passed, 21 passed + 4 todo; lỗi là của môi trường Docker dùng chung, không phải mã |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: infra, orchestration, repo` — `infra` chỉ do `pnpm-lock.yaml` |
+| `node scripts/docs/add-license.mjs --check` | 0 file chưa có thông báo giấy phép (sau khi xóa `.pytest_cache`, `.ruff_cache`, `.mypy_cache` do task Python của `nx affected` sinh; đều bị gitignore, không thuộc PR) |
+| `node scripts/docs/update-index.mjs --check` | khớp (159 PID, taskboard 159 task) |
+| `node scripts/development/check-charts.mjs` | không chạy — không có `helm` trên máy (“Không tìm thấy helm trong PATH”); CI chạy (helm v3.19.0) vì PR đổi `apps/orchestration/deploy/`. Thao tác tay thay: `helm template` bằng image `alpine/helm:3.19.0` với values của orchestration render Job `orchestration-migration` (`pre-install,pre-upgrade`), `command: [node, dist/migrate.js]` |
+| `git log --format=%G?` | `5f816fa`, `8b6379b`: `G`; `960270b`, `134f276` (report.md, đã push): `N`, để nguyên |
+
+Khoảng trống của Lần 1 (mục 5) và của QC độc lập Lần 1 không đổi; G1, G2, G3, G8 của `qc-report.md` làm ở Lần 3 khi PID-00158 lên `main`. G4 của QC: chart PID-00010 nhận `migration.command` dạng mảng, đã render đúng (trên).
 
 ---
 

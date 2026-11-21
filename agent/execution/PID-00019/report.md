@@ -1,10 +1,10 @@
 # PID-00019 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — PID-00158 (S02 và phần S05 cần dòng app.state_transition sinh bằng helper chưa có trên main)
+**Trạng thái:** Bị chặn — PID-00158 (S02 và phần S05 cần dòng app.state_transition sinh bằng helper chưa có trên main); phần làm được đã QC độc lập, PO cho merge trước (21/11/2026)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
-- **Nhánh:** `orchestration/migration-skeleton` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026
+- **Nhánh:** `orchestration/migration-skeleton` (đã commit mã phần làm được, đã push) · **PR:** đang mở
+- **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -57,6 +57,51 @@ Không có. (Chỉ dẫn của phiên điều phối về nhánh, phụ thuộc 
 - **Còn mở:** S02 và ca 1, đối chứng ca 6 của S05 — chờ PID-00158 (D6, không dựng bản thay thế). EC08 — DBQ-01 (extension, BYPASSRLS trên PostgreSQL managed) chưa kiểm được trên managed, thao tác tay khi có môi trường (Tech lead, trước PH-07).
 - **Bước tiếp theo:** khi PID-00158 có trên main, Dev làm “Lần 2” (mục 4). Phiên điều phối quyết commit mã, PR (mã đang để chưa commit trong worktree). Sau khi đặt `Xong — chờ QC`: QC chạy `spec-converge-skill PID-00019`.
 - **Tài liệu đi kèm:** không có (log lệnh tóm tắt ở self-qc.md).
+
+## Lần 2 — 21/11/2026
+
+Người làm: agent Claude trong phiên Dev dev-pid-00019 (worktree `.claude/worktrees/pid-00019-e754b0`), theo yêu cầu của phiên “Kiểm tra và merge PR” chuyển quyết định của PO. Việc của lần này: commit và mở PR cho phần đã làm, không làm thêm slice. QC độc lập Lần 1 ([qc-report.md](qc-report.md), 19/11/2026) đã chạy trên mã này; commit nguyên trạng.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC1 | PO, chuyển qua phiên điều phối “Kiểm tra và merge PR” (21/11/2026) | “cho merge trước phần đã làm của PID-00019.” | Trong phạm vi: chỉ đổi thời điểm merge, không đổi phạm vi, AC hay hành vi. Trả lời mục “Đề xuất cho PO” của `qc-report.md` Lần 1 | Làm | commit `5f816fa`, merge `origin/main` `8b6379b`, PR (đầu file); kiểm ở mục “Kết quả” dưới |
+
+### Trạng thái công việc
+
+| Slice | Trạng thái Lần 2 | Trong PR này |
+| --- | --- | --- |
+| S01 | Xong | `migrations/0000_init.sql`, journal, `src/db/migrate.ts`, `database.testkit.ts`, `migration.spec.ts` |
+| S02 | Chặn — chờ PID-00158 | Có khai báo bảy machine (`src/domain/state-machines.ts`) và test khai báo khớp 43 dòng của DDL; chưa có migration nạp dòng `app.state_transition` |
+| S03 | Xong | năm module, `engine/index.ts`, `eslint.config.mjs`, test ranh giới |
+| S04 | Xong | `src/migrate.ts`, script `migrate`, `deploy/values.yaml`. PID-00010 đã lên `main`: chart render Job migration với đúng `migration.command` (mục “Kết quả”) |
+| S05 | Chặn một phần — chờ PID-00158 | ca 2–9 của PID-00019-AC03 đạt; ca 1 và đối chứng đổi `status` của ca 6 là `it.todo` |
+| S06 | Xong | README; mục “State machine” sửa lại khi S02 xong |
+
+### Kết quả
+
+- **Phần merge trước:** S01, S03, S04, S05 (ca 2–9), S06, cùng phần S02 không cần helper. PID-00019-AC02 đạt; PID-00019-AC01 đạt phần cấu trúc; PID-00019-AC03 đạt 8/9 ca. Theo QC Lần 1, phần này không có lỗi phải sửa.
+- **Phần còn chờ PID-00158 (Lần 3, PR sau):** G1, G2, G3, G8 của `qc-report.md` — bọc khai báo bằng `defineStateMachine`; custom migration mới `0001_*` nạp dòng bằng `sires-state-transition-sql` (không sửa `0000_init.sql`); test so dòng và EC07; ca 1 cho mỗi machine và đối chứng ca 6; sửa mục “State machine” của README.
+- **Hệ quả khi merge (QC Lần 1 đã nêu):** tới Lần 3, database dựng từ `main` từ chối mọi lần đổi `status` (bảng chuyển trạng thái rỗng) và mọi lệnh ghi Workflow bằng `_app` (bản sao `replica.project_state` rỗng, N7). PID-00046 chưa chạy được logic trạng thái trước khi Lần 3 merge.
+- **Git:** `git merge origin/main` (11 commit, gồm PID-00010, PID-00020, PID-00027, DEC-59) không xung đột; `pnpm-lock.yaml` git tự gộp, `pnpm install --frozen-lockfile` đạt nên lockfile nhất quán, không sinh lại. Commit `5f816fa` (mã) và `8b6379b` (merge) có chữ ký (`%G? = G`). Hai commit `report.md` đã push trước đó (`960270b`, `134f276`) chưa ký, để nguyên theo yêu cầu (không viết lại lịch sử; PO merge bằng squash).
+- **Quy tắc 1.4.13 (đầu ra đúng spec, mới trên `main`):** đối chiếu lại, không lệch. `0000_init.sql` thay cho `NNN_init.sql` theo cách đặt tên của drizzle-kit, S01 cho phép và đã ghi ở `implement.md`; tên file test trùng tên đề xuất ở `acceptance.html`; mọi file ở trong `apps/orchestration/`.
+- **Kiểm lại sau merge (21/11/2026):**
+  - `NX_DAEMON=false pnpm nx run-many -t lint typecheck test build -p @sires/orchestration --skip-nx-cache`: đạt; test 5 file, 21 đạt, 4 todo (chờ PID-00158).
+  - `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main`: chạy hết 19 project (lockfile đổi nên mọi project bị ảnh hưởng), kể cả các project Python (`uv run` chạy được trên máy ở lần này). Mọi target đạt trừ 3 task test lỗi `read ECONNRESET` / `WinError 10054` khi gọi Docker ở `localhost:2375` trong lúc Nx chạy song song nhiều bộ Testcontainers: `@sires/testing:test`, `sires-common:test`, `@sires/orchestration:test` (riêng `src/db/migrate.spec.ts`, lỗi ở `beforeAll` khởi động container). Chạy lại tuần tự ba task đó (`NX_DAEMON=false pnpm nx run-many -t test -p @sires/testing sires-common @sires/orchestration --parallel=1 --skip-nx-cache`): đạt — 13/13, 79 passed, 21 passed + 4 todo; lỗi là của môi trường Docker dùng chung, không phải mã.
+  - `node scripts/development/check-tracks.mjs --base origin/main`: `tracks touched: infra, orchestration, repo` — `infra` chỉ do `pnpm-lock.yaml` (S01 bước 4 đã dự kiến), `repo` là `agent/execution/PID-00019/`.
+  - `node scripts/docs/add-license.mjs --check`: 0 file thiếu. `node scripts/docs/update-index.mjs --check`: khớp (159 PID).
+  - `node scripts/development/check-charts.mjs`: không chạy cục bộ — máy không có `helm` (“Không tìm thấy helm trong PATH”); CI chạy với helm v3.19.0 vì PR đổi `apps/orchestration/deploy/`. Thay bằng thao tác tay: `helm template` (image `alpine/helm:3.19.0`) với `apps/orchestration/deploy/values.yaml` render Job `orchestration-migration`, hook `pre-install,pre-upgrade`, `command: [node, dist/migrate.js]` (G4 của QC).
+
+### Việc còn lại
+
+1. PO review PR và merge (squash).
+2. Khi PID-00158 lên `main`: Dev làm Lần 3 (G1, G2, G3, G8 của `qc-report.md`), PR riêng.
+3. Trước PID-00035: dựng image và chạy `migration.command` trong image (G5; Dev đã làm tay 19/11/2026 trước khi PID-00010 đổi Dockerfile). Trước PH-07: DBQ-01 trên PostgreSQL managed (G6).
+
+### Cần PO
+
+- Đề xuất ở mục 6 Lần 1 và đề xuất OQ “chủ sở hữu đối tượng do migration tạo” của `qc-report.md` vẫn mở.
 
 ---
 
