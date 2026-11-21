@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Luồng:** `eval` · **Giai đoạn:** PH-01
-- **Nhánh:** `eval/dataset-csv-format` (chưa commit mã; chỉ `report.md` đã commit) · **PR:** chưa mở
-- **Cập nhật:** 19/11/2026 (Lần 3)
+- **Nhánh:** `eval/dataset-csv-format` (đã commit) · **PR:** [#47](https://github.com/toilatrung/sires/pull/47)
+- **Cập nhật:** 21/11/2026 (Lần 4)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -111,6 +111,33 @@ Kiểm (chi tiết ở `self-qc.md` Lần 3):
 - Không chạy được: `pnpm nx`, vì Nx không dựng được graph khi có worktree. CI chạy.
 
 **Cần PO:** như Lần 2. Hồ sơ H3 (nhánh `docs/pid-00033-ec01-semicolon`) phải lên main trước hoặc cùng PR mã; xác nhận nghĩa của “ra đúng tên cột” ở H3; G6 PO thử bằng Excel khi nghiệm thu. Không còn mở.
+
+## Lần 4 — 21/11/2026
+
+Đầu việc: PO yêu cầu, qua phiên “Kiểm tra và merge PR”, hoàn tất ticket trong worktree này:
+- sửa G7, G8;
+- merge `main`, commit mã, ký lại commit cũ, mở PR vào `main`.
+
+G7, G8 đã sửa ở Lần 3, nên Lần 4 không đổi mã.
+
+| Việc | Kết quả |
+| --- | --- |
+| Commit mã và kết quả | `fa89d07`: toàn bộ `eval/…` và `agent/execution/PID-00033/` (gồm `qc-report.md` nguyên trạng), stage theo từng đường dẫn |
+| Ký lại commit | `git rebase --force-rebase --gpg-sign --committer-date-is-author-date f88adb4`; cây trước và sau như nhau (`git diff` rỗng, `range-diff` toàn `=`). SHA cũ → mới: `f149c40` → `a3c6767`, `154696f` → `996d50f`, `fa4fcb9` → `72bf144`, `2194490` → `4a27583`, `3caba0b` → `204e336`, `ac81900` → `c86c4ee`, `3e04991` → `fa89d07`. Mọi commit `%G? = G` |
+| Merge `main` | `26545fb` (có chữ ký) merge `origin/main` `8c95931`, không xung đột; `main` không đổi gì ở `eval/` |
+| Push | `--force-with-lease=refs/heads/eval/dataset-csv-format:ac81900` → `26545fb` |
+| PR | [#47](https://github.com/toilatrung/sires/pull/47) vào `main`; phụ thuộc #46 (hồ sơ H3), merge #46 trước |
+| Đầu ra đúng spec (quy tắc 1.4.13, có trên `main` từ #44) | O1–O7 đúng đường dẫn, tên; file thêm (`eval/tests/eval_support.py`, `eval/tests/fixtures/`, `eval/.gitignore`, `eval/datasets/.gitattributes`, `.editorconfig`) không đổi tên, gộp hay tách đầu ra nào |
+
+Kiểm sau merge (chi tiết ở `self-qc.md` Lần 4):
+- 20 test đạt trên Windows (workaround) và trên Linux (container).
+- ruff, mypy strict sạch; `check-tracks --base origin/main` → `eval, repo`; add-license, update-index, `check-pid --result` sạch.
+- Không chạy được: `pnpm nx`, vì Nx không dựng được graph khi có worktree. CI chạy.
+
+**Cần PO:**
+- Merge #46 rồi review, merge #47 (cần quyền bypass của PO).
+- Xác nhận nghĩa của “ra đúng tên cột” ở H3.
+- Thử một file bằng Excel khi nghiệm thu (G6).
 
 ---
 

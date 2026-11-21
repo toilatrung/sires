@@ -1,9 +1,9 @@
 # PID-00033 — Self-QC của Dev
 
-**Kết luận:** Đạt (Lần 3, 19/11/2026)
+**Kết luận:** Đạt (Lần 4, 21/11/2026)
 
 - **Ticket:** [PID-00033](../../../docs/tickets/issues/PID-00033/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 19/11/2026 (Lần 3)
+- **Cập nhật:** 21/11/2026 (Lần 4)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -209,6 +209,28 @@ Không có CRITICAL, HIGH.
 | G8 LOW (chú thích `LIST_SEPARATOR`) | Đã sửa: `schema.py:37`–`38` ghi file tách bằng `,` hoặc `;` (H3), ô tác giả trong file `;` phải có nháy kép, Excel tự thêm |
 
 Khoảng trống còn lại: các mục LOW của Lần 2 không đổi (G7–G10 trong bảng của `self-qc.md` Lần 2: nghĩa của “ra đúng tên cột” cần PO xác nhận, hướng dẫn Text to Columns, fixture Excel, Nx chưa chạy cục bộ). Không có CRITICAL, HIGH.
+
+## Lần 4 — 21/11/2026
+
+**Kết luận Lần 4:** Đạt. Không đổi mã (G7, G8 đã sửa ở Lần 3). Lần này commit, ký lại toàn bộ commit, merge `origin/main` `8c95931`, mở PR #47. Kiểm chạy trên nhánh sau khi merge.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pytest` ở `eval/` (Windows, workaround interpreter gốc) | 20 passed |
+| `pytest` ở `eval/` (Linux, container `uv:python3.12-bookworm-slim`, Docker WSL) | 20 passed |
+| `ruff check --no-cache .` | All checks passed |
+| `mypy src` (strict) | no issues in 8 source files |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: eval, repo` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `node scripts/docs/update-index.mjs --check` | khớp (159 PID, taskboard 159 task) |
+| `check-pid.mjs PID-00033 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `git log --format=%G? f88adb4..HEAD` | mọi commit `G` |
+| `git diff <tip cũ> <tip mới>` sau khi rebase ký lại; `git range-diff` | rỗng; 7/7 `=` |
+| `pnpm nx run eval:test`, `pnpm nx affected …` | không chạy — Nx không dựng được project graph khi có `.claude/worktrees/*`; CI chạy trên PR #47 |
+
+Tự đối chiếu (spec-converge-skill) Lần 4:
+- Mã không đổi so với Lần 3, nên kết quả Lần 3 giữ nguyên: 0 CRITICAL, 0 HIGH.
+- Kiểm thêm quy tắc 1.4.13 (đã lên `main` ở #44): O1–O7 đúng đường dẫn, tên; không có lệch.
 
 ---
 
