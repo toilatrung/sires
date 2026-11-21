@@ -29,10 +29,10 @@
 <tr><th scope="row">Output spec</th><td>O1 (vai trò chạy migration), O3 (<code>check-db</code> mục 7), O5</td></tr>
 <tr><th scope="row">Bước spec</th><td>B4</td></tr>
 <tr><th scope="row">Edge case</th><td>EC06, EC10–EC12 (từ <code>specs/scope.html</code>)</td></tr>
-<tr><th scope="row">Phụ thuộc</th><td>S01; chặn bởi <a href="../../others/issues.html#i1">I1</a> (vai trò nào đăng nhập để chạy migration)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01 (vai trò chạy migration theo H3, PO trả lời <a href="../../others/issues.html#i1">I1</a> ngày 21/11/2026)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Theo câu trả lời I1, bổ sung <code>02-roles.sql</code>. Nếu A (đề xuất): mỗi service thêm <code>sires_&lt;svc&gt;_migrator</code> — LOGIN, mật khẩu <code>sires-local</code>, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOBYPASSRLS, <code>GRANT sires_&lt;svc&gt;_owner TO sires_&lt;svc&gt;_migrator</code>, <code>ALTER ROLE sires_&lt;svc&gt;_migrator SET role = 'sires_&lt;svc&gt;_owner'</code>, CONNECT chỉ database của service; chạy lại không đổi. Nếu B hay C: làm đúng phương án được chọn, ghi <code>implement.md</code>; mục 1–6 của <code>check-db</code> cập nhật theo.</li>
+<ol><li>Theo H3, bổ sung <code>02-roles.sql</code>: mỗi service thêm <code>sires_&lt;svc&gt;_migrator</code> — LOGIN, mật khẩu <code>sires-local</code>, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOBYPASSRLS, <code>GRANT sires_&lt;svc&gt;_owner TO sires_&lt;svc&gt;_migrator</code>, <code>ALTER ROLE sires_&lt;svc&gt;_migrator SET role = 'sires_&lt;svc&gt;_owner'</code>, CONNECT chỉ database của service; chạy lại không đổi. Owner giữ NOLOGIN. Mục 1–6 của <code>check-db</code> kiểm thêm thuộc tính của migrator (AC01, AC02 áp cho cả vai trò này).</li>
 <li>Thêm mục 7 “áp DDL tham chiếu” vào <code>check-db</code> (<a href="../index.html#s-4-4">spec 4.4</a>): với mỗi service trong 11, bằng superuser: <code>DROP DATABASE IF EXISTS sires_check_&lt;svc&gt;</code> (EC12), <code>CREATE DATABASE sires_check_&lt;svc&gt; OWNER sires_&lt;svc&gt;_owner</code>, thu CONNECT của PUBLIC, cấp CONNECT cho vai trò chạy migration; với knowledge, <code>CREATE EXTENSION vector</code> trong bản tạm (EC06). Đọc <code>docs/database/ddl/00-common.sql</code> và file DDL của service ở máy, đưa qua stdin vào <code>psql -v ON_ERROR_STOP=1</code> đăng nhập bằng vai trò chạy migration qua TCP với mật khẩu (EC10). Truy vấn <code>pg_class</code>, <code>pg_proc</code> trong <code>app</code>, <code>replica</code>, <code>vec</code>: mọi đối tượng thuộc <code>sires_&lt;svc&gt;_owner</code>. Xóa database tạm, kể cả khi lỗi.</li>
 <li>Lỗi khi áp DDL mà không do vai trò hay quyền (ví dụ cú pháp, hàm không có trên PostgreSQL 16) → dừng slice, ghi DBQ đề xuất kèm file, dòng, thông báo lỗi trong <code>report.md</code>; không sửa DDL (EC11).</li></ol>
 <h2 id="kiem">Kiểm</h2>
@@ -41,7 +41,7 @@
 <li>Sau lệnh: không còn database tên <code>sires_check_*</code> (<code>\l</code> trong container)</li>
 <li>Trên Windows (EC10): chạy từ PowerShell, nội dung DDL đi qua stdin của <code>wsl.exe</code></li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Vai trò chạy migration theo I1 có trong init; DDL tham chiếu của 11 service áp được bằng vai trò đó, đối tượng thuộc owner; Dev service có DSN migrator cục bộ chạy được.</li></ul>
+<ul><li><code>sires_&lt;svc&gt;_migrator</code> (H3) có trong init; DDL tham chiếu của 11 service áp được bằng vai trò đó, đối tượng thuộc owner; Dev service có DSN migrator cục bộ chạy được.</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00159</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Ticket PID-00159 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
