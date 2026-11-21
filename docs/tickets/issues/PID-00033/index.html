@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00033</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00033</p><h1>PID-00033 — Eval: mẫu CSV bộ dữ liệu nghiệm thu, trình kiểm và khung báo cáo</h1>
-<p class="meta">Xác nhận: PO duyệt 08/11/2026 · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: PO duyệt 08/11/2026 · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill; bổ sung 19/11/2026 theo đề xuất của Dev Lần 1 (H3, EC01) · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -38,7 +38,7 @@
 <tr><th scope="row">Đợt song song</th><td>Đ1</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td>Không</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-45">DEC-45</a>, <a href="../../../overview/sections/19-acceptance-criteria-and-test-scenarios.html#rel-03">REL-03</a></td></tr>
-<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill</td></tr>
+<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill; 19/11/2026 · PO chốt EC01 theo đề xuất của Dev (H3)</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
 </tbody></table></div>
 
@@ -83,13 +83,16 @@
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Đạt: PO xác nhận 08/11/2026</td><td>Có</td><td>Đạt</td><td>Không có</td><td>Theo H1; Dev kiểm bằng spec mục 2.5</td></tr>
+<tr><td>Đạt: PO xác nhận 08/11/2026</td><td>Có</td><td>Đạt</td><td>Không có; EC01 chốt lại 19/11/2026 (H3)</td><td>Theo H1; Dev kiểm bằng spec mục 2.5</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
 <h3 id="phien-1">Phiên 06/11/2026</h3>
 <ul><li>H1: Dev chạy các PID đợt Đ1 ở đâu? → Đ: Linux hoặc WSL2 có Docker của từng Dev; SPK-06, SPK-07 chạy trên máy Linux thật hoặc GitHub Actions ubuntu cài runsc. · Ảnh hưởng: cổng Môi trường; spec mục 2.5</li>
 <li>H2: PO gán nhãn bộ dữ liệu nghiệm thu bằng định dạng nào? → Đ: CSV mở bằng Excel: mỗi đề tài một thư mục CSV; trình kiểm báo lỗi theo dòng rồi chuyển sang dạng máy đọc cho harness. · Ảnh hưởng: cột dữ liệu, trình kiểm, bộ chuyển đổi, hướng dẫn cho PO</li></ul>
+<h3 id="phien-2">Phiên 19/11/2026 (sau Dev Lần 1, PO chọn phương án đề xuất của Dev)</h3>
+<p>Căn cứ: <code>agent/execution/PID-00033/report.md</code> Lần 1, mục 6 “Đề xuất cho PO” (Excel và dấu <code>;</code>, phương án a, b, c); PO trả lời trong phiên “Chọn (b) nhận file ;”.</p>
+<ul><li>H3 (EC01): Trên Windows vi-VN (dấu thập phân <code>,</code>), Excel 16 dùng <code>;</code> làm dấu ngăn cột, nên file “CSV UTF-8” Excel lưu ra luôn tách bằng <code>;</code> và EC01 cũ (báo lỗi, hướng dẫn lưu lại) không dùng được trên máy này. Xử lý thế nào? → Đ: Phương án (b) — trình kiểm và bộ chuyển đổi nhận file tách bằng <code>;</code> khi dòng tiêu đề tách bằng <code>;</code> ra đúng tên cột của file đó theo định dạng; tên cột cố định nên đây không phải đoán. Nhận dạng theo từng file. Dòng tiêu đề tách bằng <code>,</code> đọc như cũ; tiêu đề không ra đúng tên cột theo cả hai dấu thì báo lỗi như hiện hành. Mã hóa không phải UTF-8 vẫn báo lỗi và hướng dẫn lưu lại thành “CSV UTF-8”. Mẫu <code>eval/datasets/template/</code> và đề tài mẫu giữ dấu <code>,</code>. Không chọn (a) đổi Decimal symbol của Windows, (c) LibreOffice Calc. · Ảnh hưởng: EC01 (scope), spec mục 4.7, ghi chú thiết kế, brief, S02 (Làm, Kiểm, Xong khi), S03 (hướng dẫn); Dev làm thành Lần 2 của ticket này.</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
 <ul><li>Không có.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
@@ -98,7 +101,7 @@
 <h2 id="s-6">6. Slice</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
 <tr><td><a href="specs/slices/S01-csv-template.html">S01</a></td><td>Mẫu CSV và đề tài mẫu</td><td>—</td><td>—</td></tr>
-<tr><td><a href="specs/slices/S02-validator.html">S02</a></td><td>Trình kiểm và bộ chuyển đổi</td><td>PID-00033-AC01, PID-00033-AC02, PID-00033-AC03</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S02-validator.html">S02</a></td><td>Trình kiểm và bộ chuyển đổi; nhận file tách bằng <code>;</code> theo H3</td><td>PID-00033-AC01, PID-00033-AC02, PID-00033-AC03</td><td>S01</td></tr>
 <tr><td><a href="specs/slices/S03-report-guide.html">S03</a></td><td>Khung báo cáo và hướng dẫn</td><td>PID-00033-AC04</td><td>S02</td></tr>
 </tbody></table></div>
 

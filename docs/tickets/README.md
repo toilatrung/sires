@@ -9,7 +9,7 @@ Trạng thái: **Đề xuất — chờ PO duyệt** (phiên bản 0.1, 03/11/20
 | Đường dẫn | Nội dung |
 | --- | --- |
 | [index.html](index.html) | Trang vào: tóm tắt, bảng giai đoạn, sơ đồ làn luồng × giai đoạn (FIG-301), mục lục |
-| `sections/01-tracks-and-boundaries.html` | Điểm bắt đầu, danh sách luồng, khu vực dùng chung, quy tắc ranh giới mã nguồn 1.4.1–1.4.12 |
+| `sections/01-tracks-and-boundaries.html` | Điểm bắt đầu, danh sách luồng, khu vực dùng chung, quy tắc ranh giới mã nguồn 1.4.1–1.4.13 |
 | `sections/02-phases-and-gates.html` | Giai đoạn PH-01–PH-08, lát hội tụ, spike, cổng ra |
 | `sections/03-track-plans.html` | Kế hoạch chung từng luồng |
 | `sections/04-dependencies-risks-and-questions.html` | Phụ thuộc ngoài luồng code, rủi ro DLR-NN, câu hỏi OQ |
