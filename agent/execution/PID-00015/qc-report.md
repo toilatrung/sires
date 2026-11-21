@@ -9,7 +9,7 @@ QC chạy độc lập với Dev, không sửa mã, không sửa `docs/`. Mỗi 
 
 ## Lần 1 — 18/11/2026 · spec-converge-skill
 
-Người chạy: agent QC do PO giao (Claude), không mang kết luận của Dev. Mã nguồn: PR #29, nhánh `gateway/spk-02-oidc-stub`, commit `775ddbe` (đã merge `main` `1f6235d`).
+Người chạy: agent QC do PO giao, không mang kết luận của Dev. Mã nguồn: PR #29, nhánh `gateway/spk-02-oidc-stub`, commit `775ddbe` (đã merge `main` `1f6235d`).
 
 Phạm vi đã đọc: `apps/gateway/spikes/spk-02/rp.ts`, `flow.spec.ts`, `apps/gateway/package.json`, phần `pnpm-lock.yaml` đổi; đối chiếu `acceptance.html`, `scope.html` (P1–P3, N1–N3, EC01–EC03), ticket mục 1, 5, 7, 8. Đối chiếu thêm mã nguồn `toilatrung/eTroy_OIDC` (`main`, `e5fa331`, chỉ đọc) để kiểm các điểm K của báo cáo Dev.
 

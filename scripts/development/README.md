@@ -9,6 +9,13 @@ Cách chia của SIRes trên máy Windows:
 
 Test trên Windows gọi Docker trong WSL qua `DOCKER_HOST=tcp://localhost:2375`; dockerd chỉ nghe `127.0.0.1:2375` trong WSL, WSL2 chuyển cổng localhost sang Windows. Cổng không có xác thực: mọi tiến trình trên máy điều khiển được Docker, nên chỉ dùng trên máy phát triển. Máy Linux hoặc macOS: chạy `setup-wsl.sh --no-tcp` (Linux) hoặc tự cài Docker, rồi cài Node, pnpm, uv như bảng trên.
 
+## Quy tắc cài môi trường
+
+PO chốt 21/11/2026:
+
+- Gói, công cụ cài được trực tiếp trên Windows (PowerShell) thì cài trên Windows. Chỉ cài trong WSL khi bắt buộc cần Linux: Docker Engine, hoặc thứ không chạy được trên Windows (ví dụ phần mở rộng native bị Smart App Control chặn).
+- Thêm gói hay công cụ môi trường mới, kể cả gói của spike, thì cập nhật script cài tự động trong cùng PR: phần Windows ở `setup-windows.ps1`, phần WSL ở `setup-wsl.sh`. Máy khác phải dựng lại được bằng script, không cài tay.
+
 ## Cài đặt
 
 Từ gốc repo, PowerShell thường (không cần mở bằng quyền admin):
@@ -25,6 +32,8 @@ Script kiểm từng bước, hỏi trước khi cài, rồi gọi `setup-wsl.sh
 4. Đặt biến môi trường user `DOCKER_HOST`, chạy `pnpm install`, `uv sync --all-packages`.
 
 `-Check` chỉ kiểm và báo; `-Yes` không hỏi lại. Mở terminal mới sau khi chạy để nhận PATH và `DOCKER_HOST`.
+
+`-Spikes` cài thêm gói của spike, chỉ khi làm spike đó: mỗi `apps/*/spikes/*/requirements.txt` (ghim kèm hash) cài bằng Python của uv vào `%LOCALAPPDATA%\sires\spikes\<spike>`, ngoài repo và ngoài venv của workspace; script của spike chạy bằng Python đó với `PYTHONPATH` trỏ thư mục này. Cài lại khi `requirements.txt` đổi.
 
 Môi trường cục bộ (PostgreSQL 16 + pgvector, RabbitMQ, MinIO), chạy compose trong WSL khi ở Windows:
 

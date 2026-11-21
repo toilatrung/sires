@@ -9,7 +9,7 @@ QC chạy độc lập với Dev, không sửa mã, không sửa `docs/`. Mỗi 
 
 ## Lần 1 — 19/11/2026 · spec-converge-skill
 
-Người chạy: agent Claude ở chế độ QC độc lập do phiên điều phối của PO `toilatrung` giao. Phiên này là Dev của PID-00020; không mang theo kết luận của Dev PID-00033. Mã nguồn: worktree `H:\Troy University\sires\.claude\worktrees\pid-00033-571df3`, nhánh `eval/dataset-csv-format`, commit `154696f` cộng các thay đổi **chưa commit** trong worktree (trạng thái file ngày 19/11/2026). QC đánh giá file hiện có, không so nhánh.
+Người chạy: phiên QC độc lập do phiên điều phối của PO `toilatrung` giao. Phiên này là Dev của PID-00020; không mang theo kết luận của Dev PID-00033. Mã nguồn: worktree `H:\Troy University\sires\.claude\worktrees\pid-00033-571df3`, nhánh `eval/dataset-csv-format`, commit `154696f` cộng các thay đổi **chưa commit** trong worktree (trạng thái file ngày 19/11/2026). QC đánh giá file hiện có, không so nhánh.
 
 Đã đối chiếu: `index.html` (AC01–AC04, Gồm, Không gồm, mục 7, 8), `specs/acceptance.html`, `specs/scope.html` (P1–P5, N1–N3, EC01–EC04), `specs/index.html` (O1–O7, mục 4.4, 4.7, B1–B5, mục 7), slice S01–S03, `designs/notes.html`; hợp đồng `docs/api-design/components/schemas/evidence.yaml`, `library.yaml`; PRD NFR-EVAL-001, NFR-EVAL-003, REL-03, REL-10, TS-13-09; mã ở `eval/src/sires_eval/datasets/`, `eval/src/sires_eval/report.py`, `eval/tests/`, `eval/datasets/`, `eval/project.json`, `eval/.gitignore`.
 
@@ -83,7 +83,7 @@ Máy PO, Windows 11. Smart App Control chặn `.venv\Scripts\python.exe`, nên l
 
 ## Lần 2 — 19/11/2026 · spec-converge-skill
 
-Người chạy: agent Claude ở chế độ QC độc lập, do phiên điều phối của PO `toilatrung` giao. Phiên này là Dev của PID-00027 và chưa đọc mã PID-00033 trước đó; không mang theo kết luận của Dev hay của QC Lần 1.
+Người chạy: phiên QC độc lập, do phiên điều phối của PO `toilatrung` giao. Phiên này là Dev của PID-00027 và chưa đọc mã PID-00033 trước đó; không mang theo kết luận của Dev hay của QC Lần 1.
 
 - **Mã nguồn:** worktree `H:\Troy University\sires\.claude\worktrees\pid-00033-571df3`, nhánh `eval/dataset-csv-format`, commit `2194490` (commit này chỉ có `report.md`) cộng các thay đổi **chưa commit** trong worktree (trạng thái file ngày 19/11/2026).
 - **Hồ sơ:** bản đã sửa theo H3, đọc ở worktree `docs-pid-00033-ec01` (nhánh `docs/pid-00033-ec01-semicolon`). Lúc QC chạy, các file hồ sơ này **chưa commit** và chưa có trên `origin/main` (`989d65f`).
