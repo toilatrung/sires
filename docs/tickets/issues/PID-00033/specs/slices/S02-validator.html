@@ -34,18 +34,21 @@
 <h2 id="lam">Làm</h2>
 <ol><li>Viết <code>eval/src/sires_eval/datasets/</code> và lệnh chạy cho PO</li>
 <li>Thêm target test vào <code>eval/project.json</code> nếu chưa có</li>
-<li>Bỏ qua thư mục kết quả trong <code>.gitignore</code></li></ol>
+<li>Bỏ qua thư mục kết quả trong <code>.gitignore</code></li>
+<li>Trình kiểm và bộ chuyển đổi nhận file tách bằng <code>;</code> khi dòng tiêu đề tách bằng <code>;</code> ra đúng tên cột của file, nhận dạng theo từng file; mã hóa không phải UTF-8 vẫn báo lỗi (EC01, H3)</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run eval:test</code> → đạt</li>
 <li><code>eval/tests/test_format.py › test_sample_ok</code> (PID-00033-AC01)</li>
 <li><code>eval/tests/test_format.py › test_errors_by_row</code> (PID-00033-AC02)</li>
 <li><code>eval/tests/test_format.py › test_excel_bom</code> (PID-00033-AC03)</li>
 <li><code>eval/tests/test_format.py › test_wrong_encoding</code> (EC01)</li>
+<li><code>eval/tests/test_format.py › test_semicolon_header</code> (EC01, H3): bộ tách bằng <code>;</code> có tiêu đề đúng cho cùng kết quả kiểm và JSONL như bộ tách bằng <code>,</code>; tiêu đề <code>;</code> sai tên cột vẫn báo lỗi</li>
 <li><code>eval/tests/test_format.py › test_incomplete_set</code> (EC02)</li>
 <li><code>eval/tests/test_format.py › test_evidence_optional</code> (EC03)</li>
 <li><code>eval/tests/test_format.py › test_quoted_cells</code> (EC04)</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
-<ul><li>Mọi loại lỗi báo đúng dòng, cột</li></ul>
+<ul><li>Mọi loại lỗi báo đúng dòng, cột</li>
+<li>File Excel “CSV UTF-8” lưu trên Windows vi-VN (dấu <code>;</code>) kiểm và chuyển được, không phải lưu lại (H3)</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00033</a><a href="../../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Slice PID-00033 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
