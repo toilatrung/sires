@@ -1,11 +1,12 @@
 # PID-00025 — Self-QC
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 21/11/2026
 - **Môi trường:** Ubuntu 24.04 trong WSL2, Node 22.23.3, pnpm 10.34.9;
   Docker Engine 29.8.2 có sẵn, spike HTTP/parser không cần compose.
-- **Kết luận:** Chưa hoàn tất yêu cầu Lần 2 — thiếu API key. Mã Lần 1 đã đạt;
-  kết quả bổ sung và đầu vào cần thiết được ghi ở cuối file, không chốt ASM.
+- **Kết luận:** Chưa hoàn tất yêu cầu bổ sung: đã có hai key API dự phòng;
+  OpenAlex đủ 9/9 query, Semantic Scholar 3/9 query và vẫn 429. Còn đo phần
+  bị giới hạn và kiểm chứng ASM-01/ASM-14 qua vendor; mã bổ sung đã đạt kiểm tra.
 
 ## 1. Lệnh đã chạy
 
@@ -118,6 +119,34 @@ sẵn; Nx cuối chạy đạt cả bốn target, không còn việc sửa mã t
   có 9 file cache ngoài ticket, không phải file được đưa vào PR.
 - Yêu cầu Lần 2 vẫn thiếu credential và số đo thật; mở PR nháp để review,
   không đổi kết luận ASM-01/ASM-14, không đánh dấu toàn bộ yêu cầu đã xong.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 4 — 21/11/2026 · Đo có xác thực
+
+| Kiểm | Kết quả |
+| --- | --- |
+| Cài workspace riêng `pnpm install --frozen-lockfile --ignore-scripts` | Đạt; không đổi lockfile hoặc node_modules ở nhánh đang mở của người dùng |
+| Live hai API có key và các lượt S2 riêng sau khi dừng | OA 9/9 query, 45 paper, 34 đủ trường; S2 3/9 query tích lũy, 15 paper/15 đủ trường. Key có sẵn, nhưng S2 vẫn 429 kể cả khoảng cách 60032 ms giữa request |
+| `nx affected -t lint typecheck test build --files=…` | Đạt cả bốn target của library và 4 dependency task; 10/10 test trên 3 file. Test mới kiểm mẫu số của tập query còn thiếu và không tự điền abstract |
+| `node scripts/docs/add-license.mjs --check` | Đạt toàn worktree: 0 file thiếu notice (worktree riêng không có cache Python cũ của Lần 1) |
+| `node scripts/docs/update-index.mjs --check` | Đạt; không ghi docs/taskboard |
+| `git diff --check` | Đạt cho thay đổi Lần 4; hai khoảng trắng RIS nguồn đã ghi ở Lần 3 không bị sửa |
+| Kiểm hồ sơ / secret / cấu hình CLI | `check-pid.mjs --result` đạt, 0 cảnh báo; quét 21 file đổi không chứa giá trị hai key; `.env.spk03` được Git bỏ qua. Bốn cấu hình CLI sai (source, query trùng, query lạ, interval quá thấp) bị từ chối trước phép đo |
+
+**Tự đối chiếu Lần 4:**
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G3 (cập nhật) | partial | HIGH | Không còn thiếu key OA/S2; còn 6 query S2 chưa có mẫu và phần kiểm chứng vendor | `coverage-2026-11-21.json`: OA 9/9, S2 3/9; S2 429 × 6 trên 6 lượt | Dừng có giới hạn, giữ bằng chứng, không đoán key không hợp lệ hoặc corpus rỗng; PR tiếp tục nháp |
+| G4 | missing | HIGH | ASM-01/ASM-14 chưa có response/hồ sơ Scholar qua vendor và xác nhận điều khoản áp dụng | Key mới chỉ cấp cho OpenAlex/Semantic Scholar; không có key/quota SerpApi/SearchApi, không gọi vendor | Ghi rõ trong report/PR; không mua gói hoặc tự kết luận hai giả định |
+
+- Tính coverage dùng lần thành công đầu tiên theo query ID, không cộng trùng
+  query giữa các lượt; denominator completeness chỉ gồm paper đã nhận. Với S2,
+  hai HTTP 200 tìm author không bị đếm thành publication. Query bị dừng và query
+  chưa gọi không được coi là rỗng; kết quả không phải recall hay ngưỡng rate thật.
+- Giữ nguyên lịch sử evidence ngày 19/11; không gắn số liệu ngày 21 vào lượt cũ.
+  Không yêu cầu lại hai key đã được cung cấp. Không suy ra quyền dùng Scholar từ
+  key API dự phòng, không chuyển PR sang Ready khi yêu cầu bổ sung chưa hoàn tất.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

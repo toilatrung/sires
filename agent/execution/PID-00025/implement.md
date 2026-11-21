@@ -58,4 +58,22 @@ API, database, sự kiện, migration hay thay đổi service sản phẩm.
   key và quota thật, không tạo kết luận ASM bằng response trong docs.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## 5. Bổ sung Lần 4 — 21/11/2026
+
+- `runSource(source, client, querySet = queries)` nhận tập query chọn từ corpus
+  gốc để đo phần còn thiếu. `summarize()` dùng số result được lên lịch làm mẫu
+  số; truy vấn dừng/chưa chạy vẫn giữ outcome và query ID, không coi là rỗng.
+- `remeasure.mjs` đọc `SPK03_SOURCES`, `SPK03_QUERY_IDS`, `SPK03_INTERVAL_MS`.
+  Kiểm source/ID tồn tại, không trùng và interval nguyên >=1500 trước khi gọi
+  mạng; mặc định vẫn hai nguồn, 9 query, interval 20000 ms. Không thêm retry
+  tự động; mỗi lượt vẫn dừng nguồn ngay 429/401/403.
+- Mẫu nhiều lượt được tổng hợp trong `coverage-2026-11-21.json`: chỉ lấy
+  top-5 thành công đầu tiên của từng query ID, có filename provenance. Báo
+  cáo phân biệt một lượt OpenAlex đủ corpus với độ phủ S2 tích lũy qua lượt
+  riêng; không suy ra giới hạn server hoặc recall từ số đo này.
+- Test mới kiểm tập query sinh học/kinh tế có mẫu số 2, metadata thiếu abstract
+  không được tính đủ, và query ID giữ nguyên. Header xác thực và redaction
+  tiếp tục dùng cơ chế đã kiểm ở Lần 2, không đưa secret vào tracked files.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

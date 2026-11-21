@@ -2,6 +2,24 @@
 
 Đo tiếp sau HTTP 429 (yêu cầu bổ sung của PO ngày 19/11/2026):
 
+Từ 21/11, có thể chọn nguồn/query còn thiếu để không gọi lại phần đã đo được:
+
+```bash
+SPK03_SOURCES=semantic-scholar SPK03_QUERY_IDS=bio-keyword,bio-title node --env-file=.env.spk03 apps/library/spikes/spk-03/remeasure.mjs
+```
+
+Hai biến này tùy chọn; bỏ qua thì chạy đủ hai nguồn và 9 query như cũ. ID phải
+thuộc corpus cố định, không được lặp; cấu hình sai dừng trước khi gọi mạng.
+Summary ghi mẫu số đúng tập query thực sự lên lịch. Lượt nào gặp 429 vẫn dừng
+toàn nguồn; chỉ mở lượt riêng sau thời gian chờ, giữ nguyên lỗi và provenance.
+Nếu gom kết quả nhiều lượt, chỉ tính một mẫu top-5 cho mỗi query ID thành công,
+ghi rõ đó là độ phủ tích lũy, không phải một lượt liên tục không bị giới hạn.
+
+`SPK03_INTERVAL_MS` cho phép tăng khoảng cách request (mặc định 20000 ms,
+không được thấp hơn 1500 ms). Lượt kiểm ngày 21/11 dùng thêm 60000 ms khi
+Semantic Scholar vẫn trả 429 dù đã có key; không suy ra hạn mức server từ
+khoảng cách client. Không tự đăng ký hay đổi key để vượt hạn mức.
+
 1. Đặt key sẵn có trong `.env.spk03` ở root repo (được `.gitignore` bỏ qua):
 
    ```dotenv

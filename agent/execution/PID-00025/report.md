@@ -1,17 +1,19 @@
 # PID-00025 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — dừng ở Lần 2: thiếu API key cho phép đo bổ sung
+**Trạng thái:** Đang làm — còn thiếu mẫu Semantic Scholar sau 429 và kiểm chứng ASM-01/ASM-14
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
-- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, chờ key và số đo bổ sung
-- **Cập nhật:** 19/11/2026
+- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, đã có key nguồn dự phòng; còn mẫu bị giới hạn và kiểm chứng vendor
+- **Cập nhật:** 21/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
-- Slice: 3/3 xong ở mức spike Lần 1. Yêu cầu bổ sung Lần 2 chưa xong do thiếu key.
-- AC: đủ bằng chứng khảo sát cho 4/4 AC; AC01 ghi rõ mẫu thiếu do 429,
-  completeness Semantic Scholar chưa đo được. Không gọi dịch vụ trung gian.
+- Slice: 3/3 xong ở mức spike Lần 1. Lần 4 đã đo có key: OpenAlex đủ 9/9 query;
+  Semantic Scholar có mẫu thành công cho 3/9 query, còn 6 query chưa đủ mẫu do 429.
+- AC: bằng chứng khảo sát cho 4/4 AC; completeness hiện đo được ở cả hai nguồn
+  (OpenAlex 34/45, Semantic Scholar 15/15 trên mẫu lấy được), chưa chốt chất lượng
+  toàn corpus hoặc ASM-01/ASM-14. Chưa gọi dịch vụ trung gian.
 - Yêu cầu thêm: 1, xem Lần 2 bên dưới. Chưa kết luận ASM-01/ASM-14.
 
 ## 2. Trạng thái công việc
@@ -255,6 +257,86 @@ yêu cầu bổ sung hoàn thành, không sửa kết quả lịch sử của L�
   thay thế credential hoặc dữ liệu thật; yêu cầu bổ sung Lần 2 vẫn chưa xong.
 - Bước tiếp theo hiện tại: review mã trong PR nháp; cung cấp key/quota hợp lệ
   để đo đủ, cập nhật bằng chứng và tự QC rồi mới chuyển Ready cho QC độc lập.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+## Lần 4 — 21/11/2026 · Đo bằng key OpenAlex/Semantic Scholar
+
+### Đầu vào đã có và cách đo
+
+- Người dùng đã cung cấp key OpenAlex và key Semantic Scholar được phê duyệt
+  hạn mức 1 request/giây cộng dồn. Đã lưu trong `.env.spk03` được Git bỏ qua;
+  không ghi giá trị key vào report/evidence/commit. Không còn thiếu hai key này.
+- Chạy trên WSL2, gửi OpenAlex bằng bearer header, Semantic Scholar bằng
+  `x-api-key`; evidence chỉ ghi `authentication: environment-key-header`, che
+  key nếu phản chiếu trong body/lỗi. Không ghi request header xác thực.
+- Lượt đầy đủ dùng khoảng cách 20000 ms mỗi nguồn. Semantic Scholar gặp 429
+  thì dừng toàn nguồn, đợi trước lượt riêng chọn query còn thiếu; kiểm thêm
+  khoảng cách 60000 ms. Không đổi key/IP/endpoint để vượt hạn mức, không burst
+  hoặc lặp vô hạn. Tổng ngày đo: OpenAlex 12 request, Semantic Scholar 11 request.
+- `SPK03_SOURCES`, `SPK03_QUERY_IDS` cho phép đo lại tập còn thiếu, không gọi
+  lại phần OpenAlex đã đủ. ID phải thuộc corpus cố định, không trùng; mẫu số
+  summary là tập được lên lịch, không luôn bằng 9. `SPK03_INTERVAL_MS` chỉ nhận
+  số nguyên >=1500 ms, mặc định 20000 ms. Các lượt trước giữ nguyên mặc định.
+
+### Số đo đã có
+
+Tổng hợp ở [coverage-2026-11-21.json](evidence/coverage-2026-11-21.json), ghi
+filename nguồn cho từng query. Chỉ tính **top-5 thành công đầu tiên của mỗi
+query ID** trong ngày, không cộng trùng query giữa các lượt. Paper là số lần
+xuất hiện theo query, chưa deduplicate giữa query. Tỷ lệ không phải recall.
+
+| Chỉ số | OpenAlex | Semantic Scholar |
+| --- | --- | --- |
+| Query có mẫu / corpus dự kiến | 9/9 (100%), trong một lượt | 3/9 (33,33%), tích lũy nhiều lượt |
+| Paper top-5 đã đo | 45 | 15 |
+| Đủ trường bắt buộc INT-SCHOLAR-003 | 34/45 (75,56%) | 15/15 (100% của mẫu hiện có) |
+| Title, author, year, source URL | Mỗi trường 45/45 | Mỗi trường 15/15 |
+| Description/abstract | 34/45 | 15/15 |
+| Venue / citation count có sẵn | 43/45 / 45/45 | 15/15 / 15/15 |
+| HTTP quan sát trong ngày | 200 × 12, không 429 | 200 × 5, 429 × 6 |
+| Khoảng cách nhỏ nhất trong lượt 20 giây | 20012 ms | 20010 ms trong lượt có >=2 request |
+| Kiểm thêm ở khoảng cách 60 giây | Không cần, đã đủ corpus | Tìm author 200 rồi lấy papers 429, cách 60032 ms |
+
+Semantic Scholar lấy được `cs-keyword`, `cs-title`, `bio-keyword`. Sáu query
+chưa có mẫu thành công: `cs-author`, `bio-title`, `bio-author`, `econ-keyword`,
+`econ-title`, `econ-author`. Có request tìm tác giả trả 200 nhưng request lấy
+công bố trả 429, nên không tính author record là paper. Một số query chưa được
+gọi do nguồn đã dừng; không coi chúng là kết quả rỗng.
+
+**Không còn kết luận “thiếu key” cho hai API dự phòng.** Hiện chưa đủ dữ liệu để
+giải thích nguyên nhân 429 hoặc suy ra ngưỡng thật của Semantic Scholar. Không
+khẳng định key không hợp lệ từ lỗi 429. Giữ lại cả thành công và lỗi để đo tiếp
+khi nguồn khả dụng hoặc cung cấp timestamp/endpoint cho bộ phận hỗ trợ nếu PO
+muốn liên hệ. Không tự gửi email.
+
+### Bằng chứng từng lượt
+
+| Lượt bắt đầu UTC | Tập được đo | Thành công paper query | Request HTTP |
+| --- | --- | --- | --- |
+| 12:43:28 | OpenAlex đủ 9; Semantic Scholar đủ 9 | OA 9/9, S2 0/9 | OA 200 × 12; S2 429 × 1 |
+| 12:45:28 | S2 đủ 9 | 2/9 | 200 × 2, 429 × 1 |
+| 12:47:51 | S2 phần còn thiếu 7, tác giả trước | 0/7 | 200 × 1 (author), 429 × 1 (papers) |
+| 12:49:36 | S2 7 query thiếu, sinh học trước | 1/7 | 200 × 1, 429 × 1 |
+| 12:50:54 | S2 `cs-author`, cách request 60 giây | 0/1 | 200 × 1 (author), 429 × 1 (papers) |
+| 12:53:39 | S2 5 query thiếu, kinh tế trước | 0/5 | 429 × 1, dừng |
+
+- Lượt 12:43:28: [OpenAlex](evidence/free-sources-followup-2026-11-21T12-43-28-866Z-8f7c6ebb-openalex.json), [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-43-28-866Z-8f7c6ebb-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-43-28-866Z-8f7c6ebb-summary.json).
+- Lượt 12:45:28: [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-45-28-852Z-425ed13b-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-45-28-852Z-425ed13b-summary.json).
+- Lượt 12:47:51: [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-47-51-909Z-cb603bdc-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-47-51-909Z-cb603bdc-summary.json).
+- Lượt 12:49:36: [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-49-36-008Z-49edd585-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-49-36-008Z-49edd585-summary.json).
+- Lượt 12:50:54: [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-50-54-182Z-07666026-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-50-54-182Z-07666026-summary.json).
+- Lượt 12:53:39: [Semantic Scholar](evidence/free-sources-followup-2026-11-21T12-53-39-549Z-f71bcb2a-semantic-scholar.json), [summary](evidence/free-sources-followup-2026-11-21T12-53-39-549Z-f71bcb2a-summary.json).
+
+### Phần còn thiếu hiện tại
+
+1. Sáu query Semantic Scholar chưa có mẫu paper thành công do giới hạn nguồn,
+   dù đã gửi key và giãn request 20/60 giây; không yêu cầu lại key đã có.
+2. **ASM-01/ASM-14 vẫn chưa kết luận:** hai key mới chỉ thuộc OpenAlex/Semantic
+   Scholar, không cấp quyền truy cập Google Scholar qua SerpApi/SearchApi.
+   Chưa có key/quota vendor, chưa thử query/title/author và URL hồ sơ qua vendor
+   thật; chưa có xác nhận PO về điều khoản/hợp đồng áp dụng. Không tự mua gói.
+3. PR tiếp tục là nháp. Cập nhật số đo và phần còn thiếu, không gắn nhãn hoàn
+   tất yêu cầu bổ sung chỉ vì key đã được cấp hoặc test offline chạy đạt.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

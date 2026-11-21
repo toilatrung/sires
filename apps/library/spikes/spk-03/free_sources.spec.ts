@@ -2,9 +2,25 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 import { describe, expect, it } from 'vitest';
-import { abstractFromIndex, completeness, normalize, PacedClient, runSource, summarize } from './free-sources.mjs';
+import { abstractFromIndex, completeness, normalize, PacedClient, queries, runSource, summarize } from './free-sources.mjs';
 
 describe('PID-00025-AC01 — phép đo và INT-SCHOLAR-003', () => {
+  it('đo tiếp tập query còn thiếu vẫn giữ đúng mẫu số, provenance và abstract thực', async () => {
+    let calls = 0;
+    const client = new PacedClient('semantic-scholar', {
+      wait: async () => {},
+      fetcher: async () => {
+        calls++;
+        return new Response(JSON.stringify({ data: [{ paperId: 'p1', title: 'Paper', authors: [{ name: 'Author' }], year: 2026, url: 'https://example.org/p1', abstract: null, citationCount: 0 }] }));
+      },
+    });
+    const subset = queries.filter(query => query.kind === 'keyword').slice(1);
+    const run = await runSource('semantic-scholar', client, subset);
+    expect(calls).toBe(2);
+    expect(run.results.map(row => row.query.id)).toEqual(['bio-keyword', 'econ-keyword']);
+    expect(summarize(run)).toMatchObject({ planned: 2, successful: 2, nonempty: 2, completeness: { total: 2, complete: 0 } });
+  });
+
   it('key chỉ ở header; bằng chứng và lỗi che key nếu server phản chiếu', async () => {
     const key = 'fake-test-key-123';
     let sentHeaders: object | undefined;

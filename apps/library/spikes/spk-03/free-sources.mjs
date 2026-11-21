@@ -124,9 +124,9 @@ function endpoint(base, params) {
 }
 const fields = 'title,authors,year,venue,url,abstract,citationCount,externalIds';
 
-export async function runSource(source, client) {
+export async function runSource(source, client, querySet = queries) {
   const results = [];
-  for (const query of queries) {
+  for (const query of querySet) {
     if (client.stopped) {
       results.push({ query, outcome: 'not-attempted-after-stop', papers: [] });
       continue;
@@ -167,7 +167,7 @@ export function summarize(run) {
   const starts = run.requests.map(r => Date.parse(r.startedAt));
   return {
     source: run.source,
-    planned: queries.length,
+    planned: run.results.length,
     successful: run.results.filter(r => r.outcome === 'ok').length,
     nonempty: run.results.filter(r => r.papers.length > 0).length,
     notAttempted: run.results.filter(r => r.outcome === 'not-attempted-after-stop').length,
