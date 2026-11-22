@@ -3,10 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "description": "SIRes workspace service (NestJS)",
+  "files": [
+    "dist",
+    "migrations"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
+    "migrate": "node dist/migrate.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
@@ -17,6 +22,8 @@
     "@nestjs/platform-express": "catalog:",
     "@sires/contracts": "workspace:*",
     "@sires/platform": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:"
   },
@@ -25,6 +32,8 @@
     "@nestjs/testing": "catalog:",
     "@sires/testing": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -33,6 +42,16 @@
       "type:app",
       "lang:ts",
       "scope:workspace"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/docs/database/ddl/00-common.sql",
+          "{workspaceRoot}/docs/database/ddl/workspace.sql"
+        ]
+      }
+    }
   }
 }
