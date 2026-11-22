@@ -1,0 +1,52 @@
+-P OUTPUT DROP
+-A OUTPUT -o lo -j ACCEPT
+-A OUTPUT -d 172.17.0.1/32 -j ACCEPT
+External network blocked; runner namespace allows loopback and Docker gateway only
+
+ NX   Running target test for project @sires/sample-service and 4 tasks it depends on:
+
+
+
+> nx run @sires/contracts:generate-ts  [local cache]
+
+
+> nx run @sires/contracts:build  [local cache]
+
+
+> nx run @sires/testing:build  [local cache]
+
+
+> nx run @sires/platform:build  [local cache]
+
+
+> nx run @sires/sample-service:test
+
+> @sires/sample-service@0.0.0 test /workspace/libs/ts/sample-service
+> vitest run
+ RUN  v3.2.7 /workspace/libs/ts/sample-service
+sample-service migrate: hoàn tất
+{"level":40,"time":"2026-11-21T16:58:00.890Z","service":"sample-service","pid":186,"hostname":"db783a292817","msg":"LOG_ACCOUNT_HASH_KEY chưa đặt: account_hash dùng khóa ngẫu nhiên, chỉ so được trong tiến trình này"}
+{"level":40,"time":"2026-11-21T16:58:01.240Z","service":"sample-service","pid":186,"hostname":"db783a292817","msg":"LOG_ACCOUNT_HASH_KEY chưa đặt: account_hash dùng khóa ngẫu nhiên, chỉ so được trong tiến trình này"}
+{"level":40,"time":"2026-11-21T16:58:01.467Z","service":"sample-service","pid":186,"hostname":"db783a292817","msg":"LOG_ACCOUNT_HASH_KEY chưa đặt: account_hash dùng khóa ngẫu nhiên, chỉ so được trong tiến trình này"}
+ ✓ src/sample.spec.ts (9 tests) 16453ms
+   ✓ inbox > sự kiện trùng đến sau (EC02)  335ms
+   ✓ thiếu ngữ cảnh tenant thấy 0 dòng (EC04)  1276ms
+   ✓ endpoint nội bộ kiểm token nội bộ (PID-00006-AC05)  313ms
+sample-service migrate: hoàn tất
+ ✓ src/migration.spec.ts (3 tests) 23228ms
+   ✓ áp lên database rỗng  365ms
+   ✓ thiếu vai trò thì migration lỗi (EC08)  11344ms
+   ✓ chạy lại migrate không áp lại (EC09)  330ms
+DDL PostgreSQL 16: [{"service":"agent-core","database":"ddl_agent_core","postgres":"160016","result":"đạt"},{"service":"audit","database":"ddl_audit","postgres":"160016","result":"đạt"},{"service":"gateway","database":"ddl_gateway","postgres":"160016","result":"đạt"},{"service":"identity","database":"ddl_identity","postgres":"160016","result":"đạt"},{"service":"knowledge","database":"ddl_knowledge","postgres":"160016","result":"đạt","pgvector":"0.8.7","embedding":"vector(1536), HNSW"},{"service":"library","database":"ddl_library","postgres":"160016","result":"đạt"},{"service":"manuscript","database":"ddl_manuscript","postgres":"160016","result":"đạt"},{"service":"orchestration","database":"ddl_orchestration","postgres":"160016","result":"đạt"},{"service":"planning","database":"ddl_planning","postgres":"160016","result":"đạt"},{"service":"research","database":"ddl_research","postgres":"160016","result":"đạt"},{"service":"workspace","database":"ddl_workspace","postgres":"160016","result":"đạt"}]
+ ✓ src/ddl-pg16.spec.ts (1 test) 26636ms
+   ✓ dựng 11 database từ DDL tham chiếu (PID-00006-AC04)  26635ms
+ Test Files  3 passed (3)
+      Tests  13 passed (13)
+   Start at  16:57:46
+   Duration  28.14s (transform 224ms, setup 0ms, collect 3.90s, tests 66.32s, environment 1ms, prepare 343ms)
+
+
+
+ NX   Successfully ran target test for project @sires/sample-service and 4 tasks it depends on
+
+Nx read the output from the cache instead of running the command for 4 out of 5 tasks.
