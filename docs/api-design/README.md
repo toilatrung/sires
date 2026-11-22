@@ -4,7 +4,20 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — mô tả `getSession`, PO chốt 21/11/2026
+### Thay đổi gần nhất — nguồn discovery theo DEC-60, PO chốt 22/11/2026
+
+DEC-60 (sửa DEC-19) sau đánh giá thực tế 19–21/11/2026 (SPK-03, PID-00025): OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng), phía trước là module connector Google Scholar của SIRes; Semantic Scholar bỏ khỏi phạm vi.
+
+- `paths/10-academic-discovery-and-trusted-library.yaml#/discovery/sources` (`listDiscoverySources`) và tag `Discovery` ở `openapi.yaml`: mô tả theo DEC-60.
+- `components/schemas/library.yaml`: `examples` của `ReferenceMetadata.source` và `DiscoverySource.source` bỏ `semantic_scholar`, `openalex` đứng đầu.
+- `internal/library.yaml`: mô tả `info` liệt kê lại source adapter.
+- Ngoài `default` của `DiscoverySearchRequest.source`, chỉ đổi mô tả và `examples`: không đổi schema, enum hay operation; `source` vẫn là chuỗi.
+- `DiscoverySearchRequest.source`: `default` đổi từ `google_scholar` sang `openalex` theo DEC-60 (1), thêm mô tả; chưa có bên gọi hay hiện thực nên không ảnh hưởng ai.
+- Chưa đổi, chờ PO chốt OQ-114 (Google Scholar dùng thế nào khi OpenAlex mặc định): `default: google_scholar` của `AuthorSearchRequest.source` (trường `author` nhận cả URL hồ sơ Google Scholar) và enum `DiscoverySource.role` (`primary`, `fallback`). Tính năng liên kết hồ sơ Google Scholar, tổng hợp công bố, đăng báo cáo qua connector chưa có hợp đồng, chờ OQ-115.
+- Ticket cập nhật: PID-00025 (H3), PID-00050 (tên, phạm vi, mục “Còn mở”).
+- `dist/openapi.bundled.yaml` đã dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, `internal/library.yaml` sạch).
+
+### Mô tả `getSession`, PO chốt 21/11/2026
 
 PID-00012 H6 (header cho request do người dùng) và PID-00014 H1 (không header, gia hạn bằng `GET /auth/session`) mâu thuẫn; PO trả lời phiếu PID-00012 I10 theo phương án B (PID-00012 H11), cùng cách với PID-00014 H1.
 
