@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00017](../../../docs/tickets/issues/PID-00017/index.html) · **Luồng:** `workspace` · **Giai đoạn:** PH-01
-- **Nhánh:** `workspace/pid-00017-migration-skeleton` (đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `workspace/pid-00017-migration-skeleton` (đã commit, đã push) · **PR:** [#72](https://github.com/toilatrung/sires/pull/72)
 - **Cập nhật:** 22/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
