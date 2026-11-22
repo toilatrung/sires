@@ -1,6 +1,6 @@
 # PID-00009 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Lần 4, 22/11/2026, QC độc lập đầu tiên (Lần 1–3 do Dev ghi) trên đầu nhánh `3fd73e7`: không còn CRITICAL; còn 2 HIGH (G5 AC01 với cache của `main`, G6 T5: AC06 phần cache, AC07 phần push `main`), cả hai thuộc phần spec đặt sau merge nên không chặn merge nhưng chặn nghiệm thu; 8 MEDIUM, 7 LOW (gồm 4 mục quy trình GP1–GP4). PO có thể merge (squash) với điều kiện chạy T5 ngay sau merge, đồng bộ `develop` rồi chạy lại T1–T3 trên mã CI của đầu nhánh. PID chưa Xong.
+**Kết luận mới nhất:** Merge được theo quyết định PO 22/11/2026 (“Merge ngay, chạy T5”) — 0 CRITICAL; G5, G6 (HIGH) là phần spec đặt sau merge: T5 trên `main`, đo lại T3 với cache của `main` sau khi đồng bộ `develop`. PO nhận nâng vitest 4 và bản vá (G11 đóng), xác nhận hai câu trích là lời PO (GP2 đóng). Còn G7–G10, G12 (MEDIUM), GP1 (qc-report Lần 1–3 do Dev ghi) và LOW (Lần 5, 22/11/2026)
 
 - **Ticket:** [PID-00009](../../../docs/tickets/issues/PID-00009/index.html)
 - **PR:** https://github.com/toilatrung/sires/pull/57
@@ -215,6 +215,20 @@ G2: `measure.mjs` chạy thoát 0 trên dữ liệu thật — đã xử lý. G3
 4. G5, G7, G8 (PO đồng bộ `develop`; Dev chạy lại T1–T3): sau T5.
 5. G9 (Dev): phép thử thao tác tay trên nhánh thử, theo quyết định PO.
 6. G11, G14, G16 (PO quyết); G13, G15, G17 (Dev, luồng infra, khi tiện hoặc tại mốc DEC-59); test outbox (luồng platform, G12).
+
+## Lần 5 — 22/11/2026 · ghi quyết định PO trước khi merge
+
+Người chạy: phiên do PO giao; lần này chỉ ghi quyết định PO và kiểm lockfile sau khi gộp `main`, không chạy lại các phép kiểm của Lần 4. Mã nguồn: đầu nhánh `31a1916` cộng commit gộp `main` `79075b4` (PID-00023 #71, PID-00017 #72, PID-00002 #70): git tự gộp `pnpm-lock.yaml` không xung đột; importer `apps/planning`, `apps/workspace`, `libs/ts/sample-service` đều trỏ vitest 4.1.12; `pnpm install --frozen-lockfile` đạt.
+
+Quyết định PO (trả lời ba câu hỏi của phiên PO, 22/11/2026):
+
+| G | Quyết định PO | Trạng thái |
+| --- | --- | --- |
+| G5, G6 | “Merge ngay, chạy T5”: merge squash; ngay sau merge theo dõi T5 trên `main`, đồng bộ `develop`, Dev chạy lại T3 từ `develop` mới để kết luận AC01 với cache của `main`; workflow lỗi nặng thì revert commit squash | Còn mở (sau merge) |
+| G11 | “Nhận vitest 4 và bản vá”: giữ catalog vitest 4.1.12, 7 `overrides` và `patches/query-string@7.1.3.patch`; báo các luồng TS | Đóng |
+| GP2 | “Có, tôi đã nói”: hai câu trích ở `report.md` Lần 6 là lời PO; Dev ghi nguồn (phiên, comment) khi cập nhật | Đóng |
+| GP1 | DEC-58: `qc-report.md` chỉ do QC độc lập ghi; Dev ghi kết quả tự kiểm ở `self-qc.md` | Nhắc Dev |
+| G7–G10, G12 | Như Lần 4 | Còn mở |
 
 ---
 
