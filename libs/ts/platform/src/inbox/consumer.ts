@@ -260,7 +260,12 @@ export class EventConsumer {
       // Channel closed meanwhile: the broker gives the message again and the inbox drops it if it was applied.
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: không ack được message');
     }
-    this.options.onOutcome?.(outcome, messageId(message));
+    try {
+      this.options.onOutcome?.(outcome, messageId(message));
+    } catch (error) {
+      // A failing callback (metrics) must not become an unhandled rejection that stops the process (QC Lần 2 G4).
+      this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: onOutcome lỗi');
+    }
     return outcome;
   }
 
