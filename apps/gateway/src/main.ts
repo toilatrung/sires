@@ -7,3 +7,4 @@ import { AppModule } from './app.module';
 import { manifest } from './manifest';
 
 void bootstrapService(AppModule, manifest);
+// PID-00009 acceptance T3: gateway workflow timing.
