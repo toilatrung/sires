@@ -326,3 +326,4 @@ def install_problem_handlers(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, _validation_handler)
     app.add_exception_handler(StarletteHTTPException, _http_handler)
     app.add_middleware(ProblemMiddleware)
+# PID-00009 acceptance T2: Python shared dependency graph.
