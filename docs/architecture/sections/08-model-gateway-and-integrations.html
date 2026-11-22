@@ -108,7 +108,7 @@ Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, re
 
 <h2 id="s-8-7">8.7. Source adapter học thuật</h2>
 <pre><code>interface SourceAdapter {                         // service library (NestJS) — hợp đồng PRD 17.6
-  key: "scholar_intermediary" | "openalex" | "semantic_scholar";
+  key: "openalex" | "scholar_intermediary";        // DEC-60: openalex là nguồn mặc định
   capabilities(): SourceCapabilities;              // trường, bộ lọc, full text?, rate limit, điều khoản
   search(query, filters, page): Promise&lt;Page&lt;NormalizedRecord&gt;&gt;;
   getRecord(identifier): Promise&lt;NormalizedRecord&gt;;
@@ -117,8 +117,8 @@ Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, re
 <div class="table-wrap"><table>
 <thead><tr><th>Adapter</th><th>Vai trò</th><th>Ghi chú</th></tr></thead>
 <tbody>
-<tr><td><code>scholar_intermediary</code></td><td>Google Scholar qua dịch vụ trung gian theo hợp đồng (DEC-19)</td><td>Nhà cung cấp chọn sau SPK-03 (ASM-01); key hợp đồng của đội phát triển trong secret manager; giữ <code>raw</code> để đối chiếu.</td></tr>
-<tr><td><code>openalex</code> / <code>semantic_scholar</code></td><td>Dự phòng khi Scholar không khả thi (INT-SCHOLAR-007)</td><td>Bật bằng cấu hình triển khai; Discovery Agent và WF-04 không đổi; trường <code>source</code> ghi nguồn thực tế.</td></tr>
+<tr><td><code>openalex</code></td><td>Nguồn discovery mặc định (<a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a>)</td><td>Bật mặc định; vẫn chạy khi Google Scholar không khả dụng hoặc chưa có hợp đồng SerpApi (INT-SCHOLAR-007); Discovery Agent và WF-04 không đổi; trường <code>source</code> ghi nguồn thực tế.</td></tr>
+<tr><td><code>scholar_intermediary</code></td><td>Google Scholar qua SerpApi, dịch vụ trung gian theo hợp đồng (DEC-19, DEC-60)</td><td>Module connector Google Scholar của SIRes đứng trước SerpApi: gọi SerpApi, chuẩn hóa theo 17.6, giữ <code>raw</code> để đối chiếu; key hợp đồng của đội phát triển trong secret manager. Cách dùng cùng OpenAlex (chọn nguồn, gộp, hay chỉ khi cần) chờ <a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-114">OQ-114</a>; phạm vi connector (liên kết hồ sơ Google Scholar với tài khoản SIRes, tổng hợp hồ sơ và công bố, đăng báo cáo) chờ <a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-115">OQ-115</a>.</td></tr>
 <tr><td><code>doi_resolver</code></td><td>Phân giải DOI khi nhập thủ công</td><td>Crossref trước, DataCite nếu Crossref không có; header User-Agent có email liên hệ.</td></tr>
 <tr><td><code>bibtex_import</code>, <code>ris_import</code></td><td>Nhập BibTeX/RIS</td><td>Parser BibTeX/RIS phía TypeScript (2.3); chuẩn hóa theo schema 17.6; lỗi từng entry báo riêng.</td></tr>
 </tbody></table></div>
@@ -126,6 +126,7 @@ Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, re
 <li><strong>Rate limit theo adapter</strong> (INT-SCHOLAR-005): token bucket lưu trong database library theo <code>adapter_key</code> (toàn hệ thống) và theo tài khoản; vượt thì truy vấn chờ trong hàng đợi, tôn trọng thời gian chờ adapter khai báo (INT-SCHOLAR-002).</li>
 <li>Kết quả tìm kiếm lưu cache 24 giờ theo (adapter, query chuẩn hóa, trang) để giảm truy vấn lặp và chi phí hợp đồng.</li>
 <li>Không có lời gọi trực tiếp từ agent: Discovery Agent chỉ có tool <code>search_sources</code> = API nội bộ của library (INT-SCHOLAR-001).</li>
+<li>Semantic Scholar đã bỏ khỏi phạm vi theo DEC-60 (sửa DEC-19): API thử ở SPK-03 không ổn định; không có adapter cho nguồn này.</li>
 </ul>
 
 <h2 id="s-8-8">8.8. eTroy OIDC</h2>

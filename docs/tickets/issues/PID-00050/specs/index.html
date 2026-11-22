@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Spec kỹ thuật PID-00050: Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite.">
+<meta name="description" content="Spec kỹ thuật PID-00050: Source adapter và DOI: OpenAlex (mặc định), Google Scholar qua SerpApi, Crossref, DataCite.">
 <title>PID-00050 — Spec kỹ thuật | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00050</span></header>
 <main id="main-content">
-<p class="eyebrow">Spec kỹ thuật · PID-00050</p><h1>PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite</h1>
+<p class="eyebrow">Spec kỹ thuật · PID-00050</p><h1>PID-00050 — Source adapter và DOI: OpenAlex (mặc định), Google Scholar qua SerpApi, Crossref, DataCite</h1>
 <p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00050</a> · Luồng: <code>library</code> · Giai đoạn: PH-02 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
@@ -30,12 +30,12 @@
 
 <h2 id="s-1">1. Phạm vi và căn cứ</h2>
 <div class="table-wrap"><table><tbody>
-<tr><th scope="row">Mục đích</th><td>Adapter tách riêng để đổi nhà cung cấp không chạm phần duyệt reference (DEC-19). Xây với stub nguồn, hội tụ ở PH-05.</td></tr>
+<tr><th scope="row">Mục đích</th><td>Adapter tách riêng để đổi nhà cung cấp không chạm phần duyệt reference (DEC-19, DEC-60). Xây với stub nguồn, hội tụ ở PH-05.</td></tr>
 <tr><th scope="row">Luồng, giai đoạn</th><td><code>library</code> · PH-02</td></tr>
 <tr><th scope="row">Ô trên FIG-301</th><td>Xây với stub · Xây</td></tr>
 <tr><th scope="row">AC phủ trong spec</th><td>PID-00050-AC01, PID-00050-AC02</td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a></td></tr>
-<tr><th scope="row">Không làm ở spec này</th><td>Reference và duyệt (<a href="../../PID-00076/index.html">PID-00076</a>)</td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a>, <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a></td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Reference và duyệt (<a href="../../PID-00076/index.html">PID-00076</a>); liên kết hồ sơ Google Scholar, tổng hợp công bố, báo cáo qua connector (chờ <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-115">OQ-115</a>)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-2">2. Input</h2>
@@ -88,7 +88,7 @@ pnpm --filter @sires/library dev</pre>
 <p>Không có sự kiện.</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
 <ul><li>Interface source adapter, rate limiter</li>
-<li>Adapter Scholar trung gian, OpenAlex, Semantic Scholar</li>
+<li>Adapter OpenAlex (nguồn discovery mặc định) và adapter Google Scholar: module connector Google Scholar của SIRes gọi SerpApi (DEC-60); cách dùng Google Scholar cùng OpenAlex chờ <a href="../../../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-114">OQ-114</a></li>
 <li>DOI qua Crossref, DataCite</li>
 <li>Tìm theo từ khóa và theo tác giả; DiscoveredResult</li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
@@ -98,13 +98,13 @@ pnpm --filter @sires/library dev</pre>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
 <tr><td>Nguồn trả dữ liệu thiếu tiêu đề</td><td>Bỏ kết quả và đếm, không lưu rác</td></tr>
-<tr><td>Chưa có hợp đồng Scholar</td><td>Tắt adapter đó theo cấu hình, chạy nguồn dự phòng</td></tr>
+<tr><td>Chưa có hợp đồng SerpApi</td><td>Tắt adapter Google Scholar theo cấu hình, chạy OpenAlex (nguồn mặc định, DEC-60)</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
 <li id="b1"><strong>B1</strong> Interface source adapter, rate limiter — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/library:test</li>
-<li id="b2"><strong>B2</strong> Adapter Scholar trung gian, OpenAlex, Semantic Scholar — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/library:test</li>
+<li id="b2"><strong>B2</strong> Adapter OpenAlex (mặc định) và adapter Google Scholar qua connector Google Scholar của SIRes, SerpApi — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/library:test</li>
 <li id="b3"><strong>B3</strong> DOI qua Crossref, DataCite — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/library:test</li>
 <li id="b4"><strong>B4</strong> Tìm theo từ khóa và theo tác giả; DiscoveredResult — Kết quả: Quy tắc miền có test đơn vị — Kiểm tra: pnpm nx run @sires/library:test</li>
 <li id="b5"><strong>B5</strong> Controller và service theo hợp đồng cho 6 operation ở mục 4.2 — Kết quả: Khớp OpenAPI — Kiểm tra: Contract test</li>

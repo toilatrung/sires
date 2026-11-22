@@ -8,8 +8,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Ticket PID-00050: Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite.">
-<title>PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite | SIRes Delivery Plan</title>
+<meta name="description" content="Ticket PID-00050: Source adapter và DOI: OpenAlex (mặc định), Google Scholar qua SerpApi, Crossref, DataCite.">
+<title>PID-00050 — Source adapter và DOI: OpenAlex (mặc định), Google Scholar qua SerpApi, Crossref, DataCite | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
 </head>
@@ -18,7 +18,7 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00050</span></header>
 <main id="main-content">
-<p class="eyebrow">Ticket · PID-00050</p><h1>PID-00050 — Source adapter và DOI: Scholar trung gian, OpenAlex, Semantic Scholar, Crossref, DataCite</h1>
+<p class="eyebrow">Ticket · PID-00050</p><h1>PID-00050 — Source adapter và DOI: OpenAlex (mặc định), Google Scholar qua SerpApi, Crossref, DataCite</h1>
 <p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
@@ -37,7 +37,7 @@
 <tr><th scope="row">Ô trên FIG-301</th><td>Xây với stub: Xây</td></tr>
 <tr><th scope="row">Đợt song song</th><td>Đ3</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00002/index.html">PID-00002</a>, <a href="../PID-00003/index.html">PID-00003</a>, <a href="../PID-00004/index.html">PID-00004</a>, <a href="../PID-00007/index.html">PID-00007</a>, <a href="../PID-00024/index.html">PID-00024</a>, <a href="../PID-00025/index.html">PID-00025</a></td></tr>
-<tr><th scope="row">Căn cứ</th><td><a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td><a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a></td></tr>
 <tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
 </tbody></table></div>
@@ -49,9 +49,9 @@
 <p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
 
 <h2 id="s-1">1. Ticket</h2>
-<ul><li><strong>Mục đích:</strong> Adapter tách riêng để đổi nhà cung cấp không chạm phần duyệt reference (DEC-19). Xây với stub nguồn, hội tụ ở PH-05.</li>
-<li><strong>Gồm:</strong> Interface source adapter, rate limiter; Adapter Scholar trung gian, OpenAlex, Semantic Scholar; DOI qua Crossref, DataCite; Tìm theo từ khóa và theo tác giả; DiscoveredResult.</li>
-<li><strong>Không gồm:</strong> Reference và duyệt (<a href="../PID-00076/index.html">PID-00076</a>).</li></ul>
+<ul><li><strong>Mục đích:</strong> Adapter tách riêng để đổi nhà cung cấp không chạm phần duyệt reference (DEC-19, DEC-60). Xây với stub nguồn, hội tụ ở PH-05.</li>
+<li><strong>Gồm:</strong> Interface source adapter, rate limiter; Adapter OpenAlex (nguồn discovery mặc định) và adapter Google Scholar: module connector Google Scholar của SIRes gọi SerpApi (DEC-60); DOI qua Crossref, DataCite; Tìm theo từ khóa và theo tác giả; DiscoveredResult.</li>
+<li><strong>Không gồm:</strong> Reference và duyệt (<a href="../PID-00076/index.html">PID-00076</a>); liên kết hồ sơ Google Scholar với tài khoản SIRes, tổng hợp hồ sơ và danh sách công bố, quản lý và đăng báo cáo qua connector (chờ OQ-115, xem <a href="#sua-o-nguon">Phải sửa ở nguồn</a>).</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
 <ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00002/index.html">PID-00002</a>, <a href="../PID-00003/index.html">PID-00003</a>, <a href="../PID-00004/index.html">PID-00004</a>, <a href="../PID-00007/index.html">PID-00007</a>, <a href="../PID-00024/index.html">PID-00024</a>, <a href="../PID-00025/index.html">PID-00025</a></li>
 <li><strong>Hợp đồng:</strong> 6 operation hiện thực, 0 operation gọi (<a href="specs/index.html#s-2-3">spec mục 2.3</a>)</li></ul>
@@ -71,15 +71,16 @@
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 6 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 6 PID</td><td>OQ-114, OQ-115 còn mở (<a href="#con-mo">Còn mở</a>)</td><td>Chưa kiểm</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
 <p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00050</code> khi chuẩn bị giao Dev.</p>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Không có.</li></ul>
+<ul><li>Tính năng mới của DEC-60 (PO 22/11/2026): Researcher liên kết hồ sơ Google Scholar với tài khoản SIRes; SIRes tổng hợp hồ sơ và danh sách công bố từ Google Scholar; Researcher quản lý và đăng báo cáo qua connector. Chưa có PID, hợp đồng hay AC: PO cấp PID sau khi chốt OQ-115. PID-00050 chỉ làm phần tìm kiếm và đọc của adapter Google Scholar.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có.</li></ul>
+<ul><li><a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-114">OQ-114</a>: Google Scholar dùng thế nào khi OpenAlex là nguồn mặc định (chọn nguồn, gộp kết quả, hay chỉ gọi khi cần). Ảnh hưởng: PID-00050-AC02 đang viết theo “nguồn dự phòng”, “nguồn chính” của DEC-19; spec mục 4.7; ở hợp đồng, <code>default: google_scholar</code> của <code>source</code> trong <code>DiscoverySearchRequest</code>, <code>AuthorSearchRequest</code> và enum <code>DiscoverySource.role</code> (<code>primary</code>, <code>fallback</code>) chưa đổi. spec-clarify-skill PID-00050 cần câu trả lời này để viết lại AC02.</li>
+<li><a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#oq-115">OQ-115</a>: phạm vi, ưu tiên MVP của connector Google Scholar và nghĩa của “đăng báo cáo” (Google Scholar không có API ghi, SerpApi chỉ đọc). Ảnh hưởng: mục “Không gồm”, “Phải sửa ở nguồn”.</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
 <p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>
