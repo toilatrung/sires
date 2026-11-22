@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00023](../../../docs/tickets/issues/PID-00023/index.html) · **Luồng:** `planning` · **Giai đoạn:** PH-01
-- **Nhánh:** `planning/pid-00023-migration-state-machine` (đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `planning/pid-00023-migration-state-machine` (đã commit, đã push) · **PR:** [#71](https://github.com/toilatrung/sires/pull/71)
 - **Cập nhật:** 22/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
