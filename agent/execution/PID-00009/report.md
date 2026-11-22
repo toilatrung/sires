@@ -104,5 +104,9 @@ Sửa bổ sung khi nghiệm thu: giữ được số liệu PR đã đóng/xóa
 
 Chạy lại `measure.mjs` sau khi đóng/xóa nhánh: 2/20 run PR không chạm code (T1 và T7), 0/20 push main. Công cụ giữ chính sách đếm run đã hoàn tất trừ cancelled, nên T7 thất bại có chủ đích vẫn được tính vào nhóm không chạm code; đây không phải hai mẫu T1 thành công. Chưa đủ 20 mẫu nên không in p95/ngưỡng. Frozen install, ESLint hai script, cú pháp Node, giấy phép, chỉ mục, kiểm hồ sơ kết quả và diff whitespace đều đạt.
 
+## Lần 7 — 22/11/2026 · Kiểm báo cáo bằng Gitleaks
+
+CI `add5003` (run 45025760053) phát hiện false positive `generic-api-key` tại `qc-report.md:18`: cụm nhãn trạng thái `skipped/concurrency` đứng sau từ “secret”. Thêm allowlist regex neo hai đầu cho đúng giá trị này trong `infra/ci/gitleaks.toml`, không bỏ quét file/commit hay tắt rule. Gitleaks 8.24.3 chạy cục bộ trên toàn bộ `origin/main..HEAD` đạt, 8 commit không có leak; quét fixture token giả với cùng config vẫn thoát 1 và báo một leak. Không đưa fixture vào Git. Đây là lần kiểm bổ sung, không thay đổi kết quả T7 đã có.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).

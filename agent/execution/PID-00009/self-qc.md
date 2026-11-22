@@ -94,5 +94,9 @@ Các file nghiệp vụ của service và hợp đồng ở docs giữ theo upst
 - Chi tiết từng job và thời gian: [acceptance-20261122.json](acceptance-20261122.json).
 - Bổ sung sửa measure để tìm được PR đã đóng/xóa nhánh; summary ghi cả log và GITHUB_STEP_SUMMARY. Kiểm lần cuối và CI trên commit báo cáo được xác nhận trong phiên sau push.
 
+## Lần 7 — 22/11/2026 · Gitleaks trên báo cáo
+
+CI của commit báo cáo `add5003` nhận nhầm nhãn trạng thái trong `qc-report.md:18`. Allowlist chỉ khớp chính xác giá trị `skipped/concurrency`; Gitleaks 8.24.3 quét lịch sử PR đạt và fixture token giả vẫn bị chặn với mã thoát 1. Không có ngoại lệ theo toàn bộ file/commit và không tắt quét lịch sử. Chi tiết ở report Lần 7.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).
