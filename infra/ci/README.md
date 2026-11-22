@@ -13,7 +13,8 @@
 | Project TS hoặc Python bị ảnh hưởng | `typescript` hoặc `python` |
 | Hợp đồng API | `contracts` và các project TS phụ thuộc contracts |
 | Lock file hoặc manifest | `dependencies` |
-| Service có deploy values hoặc Dockerfile tương ứng | `images` |
+| Code service bị ảnh hưởng hoặc Dockerfile/Dockerfile.dockerignore tương ứng | `images` |
+| Chỉ sửa deploy/values.yaml hoặc chart chung | `helm`; bỏ qua các job code và image |
 | Project bị ảnh hưởng | `contract-test` và `asyncapi-payload` |
 
 Gitleaks dùng bộ luật mặc định và chế độ che giá trị. Nếu fixture cần ngoại lệ, thêm phạm vi đường dẫn cụ thể và lý do vào `gitleaks.toml`. Đối với Trivy, `dependency-exceptions.json` nhận mục có `id` của cảnh báo, `package` và `reason` để PO duyệt.

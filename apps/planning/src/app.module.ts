@@ -4,9 +4,10 @@
 
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
+import { DatabaseModule } from './db/database.module';
 import { manifest } from './manifest';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  imports: [HealthModule.forService(manifest), DatabaseModule],
 })
 export class AppModule {}

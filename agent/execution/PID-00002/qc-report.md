@@ -1,6 +1,6 @@
 # PID-00002 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 2 LOW (Lần 2, 21/11/2026). G1, G2, G3 của Lần 1 đã xử lý, QC kiểm bằng test và probe trên PostgreSQL, RabbitMQ thật; 15/15 AC và 18/18 EC đạt; G4, G5 (LOW) không chặn merge theo DEC-58
+**Kết luận mới nhất:** Merge được PR #70 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 3, 22/11/2026). G4 đã sửa cho `onOutcome` ném lỗi đồng bộ (có test, QC kiểm thêm bằng probe trên mã cũ và mã mới); còn mở G5 (chờ PO), G6 (`onOutcome` async bị từ chối vẫn sinh unhandled rejection), G7 (đầu `report.md`, `self-qc.md` chưa cập nhật cho Lần 3), đều LOW, không chặn merge theo DEC-58. Test outbox TS không chập chờn qua 9 lượt; lỗi thứ tự PID-00009 gặp là test Python của PID-00005
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -186,6 +186,96 @@ Không còn việc chặn merge. Hai việc LOW, làm ở PR này hoặc lượt
 - **Span cho mỗi lượt relay và job dọn** (kiến trúc 11.4; đề xuất 4 ở `report.md` Lần 2): không chặn; nếu làm thì cùng luồng platform.
 - **PID-00005 (bản Python):** bên sửa nêu consumer Python chỉ phục hồi khi service dùng kết nối robust, `emit_event`, `emit_audit` chưa kiểm `accountId` như G3. QC Lần 2 không đọc mã Python — ghi lại như lời khai để PO đưa vào hồ sơ PID-00005.
 - Các đề xuất của Lần 1 vẫn chờ PO: sửa slice S03 — `request_hash` (mã vẫn chưa đổi, đúng dặn); publish `mandatory`; tên lease `outbox-relay` (TS) và `outbox_relay` (Python); `writeCommand` chưa đặt được `replyTo`, `correlation_id` cho RPC Mermaid; gộp ActorRef, ServiceName sau PR #34.
+
+## Lần 3 — 22/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do phiên PO giao (không mang kết luận của Dev). Mã nguồn: PR #70 (tác giả `T1xNTH`), nhánh `platform/pid-00002-g4-onoutcome`, commit `94c8f8f4f4e2c42cfbe07b947e790ab70e3a3057`; cha là `3dd4c15`, đúng `origin/main` lúc QC (PR #36 đã merge vào `main`, PR #70 là lượt sửa tiếp). PR có 1 commit, đổi 4 file: `libs/ts/platform/src/inbox/consumer.ts` (+6/−1), `inbox.spec.ts` (+31), `agent/execution/PID-00002/report.md`, `self-qc.md`.
+
+Phạm vi đã đọc: `inbox/consumer.ts` (toàn bộ, nhất là `process` `:253–270`, chỗ gọi `:197–203`, kiểu `onOutcome` `:70–71`), `inbox.spec.ts` (helper `:36–176`, test G4 `:267–296`), `logging/logger.ts`, `logging/redact.ts` (che theo dạng `sk-…`, JWT, entropy), `tenancy/uuid.ts`, `outbox/outbox.spec.ts`, `audit/audit.spec.ts` (truy vấn `app.outbox` và giả định thứ tự), `eslint.config.mjs`; `scope.html` (P3, EC07, EC08, NFR-OBS-002); lời khai Lần 3 trong `report.md`, `self-qc.md`, mô tả PR #70; mục Lần 2 của file này. Cho phần test chập chờn: `report.md` PID-00009 Lần 6 (nhánh `infra/pid-00009-ci`), `libs/py/sires_common/tests/test_messaging.py`, `libs/py/sires_common/src/sires_common/tenancy.py`, `messaging.py` trên `origin/main`.
+
+### Kiểm các G của Lần 2
+
+| G Lần 2 | Mức | Kết luận Lần 3 | Bằng chứng |
+| --- | --- | --- | --- |
+| G4 | LOW | Đã xử lý với lỗi đồng bộ; phần lỗi bất đồng bộ tách thành G6 | `inbox/consumer.ts:263–268`: gọi `onOutcome` trong `try/catch`, lỗi ghi `warn` `consumer: onOutcome lỗi` với `message_id`, `err`; ack, nack vẫn chạy trước ở `:255–262` nên thứ tự không đổi; `process` không còn ném nên `void work.finally(…)` (`:202`) không còn promise bị từ chối. Test `inbox.spec.ts:267 › onOutcome ném lỗi không làm dừng consumer (QC Lần 2 G4)` đạt ở mọi lượt QC chạy (toàn bộ, 4 lượt lặp đầy đủ, `nx affected`): 2 `applied`, 2 dòng `warn`, không unhandled rejection, `isConsuming` đúng. Probe QC (mục Lệnh): **C** — cùng kịch bản trên `consumer.ts` của `origin/main` sinh 3 unhandled rejection cho 3 message, nên test phân biệt được mã cũ và mã mới; **A** — mã mới với logger mặc định của thư viện: 3 message `applied`, queue `0 ready / 0 unacked / 1 consumer` (đã ack), 3 dòng `warn` chỉ có `message_id` và `err`; khóa dạng `sk-ant-…` trong thông báo lỗi thành `[REDACTED]`, payload không xuất hiện trong log (NFR-OBS-002) |
+| G5 | LOW | Còn mở, chờ PO | `inbox/consumer.ts:134–147` không đổi: `start()` lần đầu vẫn ném khi broker không tới được. PR #70 và `report.md` Lần 3 ghi rõ chờ PO chọn (a) hoặc (b) như Lần 2 |
+
+Ngoài `try/catch` mới, mã của `outbox/`, `inbox/` (trừ 6 dòng trên), `idempotency/`, `audit/`, `jobs/` không đổi so với `main`; 37 test của PID-00002 (36 của Lần 2 và test G4) đạt ở mọi lượt chạy đủ (mục Lệnh). PR không chạm `docs/`; Output O1–O11 giữ nguyên đường dẫn, tên file.
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G5 | Như Lần 2 (kiến trúc 11.6) | partial | LOW | Như Lần 2, `inbox/consumer.ts:134–147` | Chờ PO chọn (a) hoặc (b) của Lần 2 |
+| G6 | P3 · O2 · S02 · ý của G4 Lần 2 (“callback lỗi không làm dừng tiến trình”) | partial | LOW | `inbox/consumer.ts:71` khai `onOutcome` trả `void`, TypeScript vẫn nhận hàm `async` hay hàm trả `Promise`; `:263–268` chỉ bắt lỗi ném đồng bộ, promise trả về bị bỏ qua. Probe **B** (`onOutcome: async () => { throw … }`) và **D** (`() => Promise.reject(…)`) trên mã mới: mỗi message một unhandled rejection (3/3), dù message vẫn ack và consumer vẫn chạy. Với Node mặc định (`--unhandled-rejections=throw`) tiến trình service dừng, đúng hệ quả G4 muốn chặn. `eslint.config.mjs` không bật luật có kiểu như `no-misused-promises`, nên service truyền callback `async` (ví dụ đẩy metric qua mạng) không bị cảnh báo | Bắt cả lỗi bất đồng bộ: gọi qua `Promise.resolve().then(() => onOutcome(…)).catch(…)` (hoặc kiểm giá trị trả về có `then` rồi gắn `.catch`), log như lỗi đồng bộ; hoặc khai kiểu trả `void \| Promise<void>` và xử lý cả hai. Thêm test `onOutcome` async bị từ chối → không unhandled rejection |
+| G7 | `report.md` dòng 10 (“Lần chạy sau cập nhật trạng thái ở trên”) · khung `self-qc.md` · DEC-58 (Dev tự chạy `spec-converge-skill` trước khi mở PR) | partial | LOW | `report.md:6` vẫn ghi nhánh `platform/ts-outbox-inbox`, PR #36 (lượt này là PR #70, nhánh `platform/pid-00002-g4-onoutcome`); `report.md` Lần 3 không có bước tiếp theo. `self-qc.md:3` “Kết luận: Đạt (Lần 2, 21/11/2026)”, `:6` “Cập nhật: 21/11/2026”; mục Lần 3 chỉ có bảng lệnh, không có phần tự đối chiếu. `check-pid --result` vẫn đạt vì chỉ kiểm có đủ mục | Cập nhật đầu `report.md` (nhánh, PR #70), thêm bước tiếp theo; cập nhật kết luận, ngày ở đầu `self-qc.md` và thêm tự đối chiếu cho Lần 3 |
+
+### AC
+
+Mức kiểm: ô Xây, test tích hợp thật trên PostgreSQL 16 + pgvector và RabbitMQ 4 qua Testcontainers (Docker Engine trong WSL), QC tự chạy. Lần này chỉ đổi đường gọi `onOutcome` sau ack/nack, nên QC chạy lại toàn bộ test của PID-00002 để xác nhận không hỏng gì, không đọc lại từng AC.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00002-AC01 · DATA-PERSIST-001-AC01 · NFR-DUR-001-AC01 (phần thư viện) | đạt | Xây · thật | `libs/ts/platform/src/audit/audit.spec.ts › rollback không để lại outbox và Audit Event (…)`; `inbox.spec.ts › chờ broker khởi động lại rồi consume tiếp (G1, kiến trúc 11.6)` | Đạt ở toàn bộ, lượt lặp 2–5 và `nx affected` (lượt lặp 1 không chạy được — môi trường, mục Lệnh) |
+| PID-00002-AC02 · DATA-IDEMP-005-AC01 (phần thư viện) | đạt | Xây · thật | `libs/ts/platform/src/inbox/inbox.spec.ts › sự kiện trùng chỉ áp một lần (…)`, `› kết nối lại sau khi broker đóng kết nối (G1, P3)` | Như trên |
+| PID-00002-AC03 | đạt | Xây · thật | `inbox.spec.ts › bản cũ đến sau bị bỏ (PID-00002-AC03)` | Như trên |
+| PID-00002-AC04 | đạt | Xây · thật (Nest + Fastify) | `libs/ts/platform/src/idempotency/idempotency.spec.ts › gửi lại trả kết quả lần đầu (PID-00002-AC04)` | Đạt ở toàn bộ, lượt lặp 1–5, `nx affected` |
+| PID-00002-AC05 | đạt | Xây · thật | `idempotency.spec.ts › cùng khóa khác nội dung (PID-00002-AC05)` | Như AC04 |
+| PID-00002-AC06 | đạt | Xây · thật | `libs/ts/platform/src/outbox/outbox.spec.ts › relay publish có confirm (PID-00002-AC06)`; `› phát lại sau khi relay dừng (EC01)` | Đạt cả 9 lượt `outbox.spec.ts` chạy (mục Lệnh) |
+| CTX-AUDIT-001-AC01…AC05 (phần thư viện) | đạt | Xây · thật | Các test `audit.spec.ts`, `jobs.spec.ts`, `inbox.spec.ts › handler giữ trace của message (G2, …)` như Lần 2 | Đạt ở toàn bộ, lượt lặp 2–5, `nx affected` |
+| NFR-RET-008-AC01 (phần thư viện) | đạt | Xây · thật | `jobs.spec.ts › không xóa dòng chưa publish`, `› dọn đúng hạn từng bảng (P7)` | Đạt ở toàn bộ, lượt lặp 1–5, `nx affected` |
+
+Edge case: EC01–EC18 vẫn có test đúng tên ở `scope.html`, đạt ở mọi lượt chạy đủ. EC07 (nack giao lại), EC08 (dead-letter, không log payload) không đổi: `onOutcome` chỉ chạy sau ack/nack. P1–P8 có trong mã; N1–N9 không bị làm lấn. Không có giao diện nên không chạy `sires-ui-review`.
+
+### Test outbox có chập chờn không (theo ghi chú của PID-00009)
+
+- **TS — không thấy chập chờn.** `outbox.spec.ts` (9 test) chạy 9 lượt, cả 9 đạt 9/9: toàn `@sires/platform:test`; lượt lặp 2, 3, 4, 5 của bộ test PID-00002; 3 lượt riêng `src/outbox` (75 s, 97 s, 262 s); lượt trong `nx affected`. Lượt lặp 1 không chạy được: ba file dùng Testcontainers dừng ở `beforeAll` vì PostgreSQL không báo “database system is ready to accept connections” sau 60 s (Docker trong WSL đang có tải trung bình 42 do các phiên QC khác chạy song song) — lỗi môi trường, không phải lỗi thứ tự. Test TS không so thứ tự giữa các dòng outbox (truy vấn theo `id`), và `uuidv7()` của TS tăng chặt trong một tiến trình (`tenancy/uuid.ts:18–43`, bộ đếm trong cùng mili giây), nên relay `ORDER BY created_at, id` (`outbox/relay.ts:90`) giữ đúng thứ tự gọi trong một giao dịch.
+- **Lỗi PID-00009 gặp là test Python của PID-00005, không phải test TS.** `report.md` PID-00009 Lần 6 ghi `sires-common:test › test_envelope_and_rollback` trả `['audit', 'event']` thay vì `['event', 'audit']`. QC đọc mã trên `origin/main`: test đọc `app.outbox ORDER BY created_at, id` (`libs/py/sires_common/tests/test_messaging.py:113`) rồi so thứ tự (`:215`); `uuid7()` của Python (`libs/py/sires_common/src/sires_common/tenancy.py:35–45`) lấy 12 bit `rand_a` ngẫu nhiên, không có bộ đếm, nên hai id trong cùng mili giây và cùng `created_at` (cùng giao dịch) xếp ngẫu nhiên — khoảng một nửa số lần khi hai lệnh rơi vào cùng mili giây. Không do PR #70 (PR không đổi Python), không phải khoảng trống của PID-00002 nên không ghi G ở đây; chuyển thành đề xuất cho PID-00005 (mục Đề xuất). QC không chạy test Python tại chỗ (máy chặn `python.exe` của `.venv`, như Lần 2).
+
+### Lệnh đã chạy
+
+Chạy trong worktree riêng (detached ở `94c8f8f`) ở scratchpad của phiên QC, Windows 11, Node 24.21.0, pnpm 10.34.9, `DOCKER_HOST=tcp://localhost:2375` (Docker Engine 29.8.2 trong WSL `Ubuntu-24.04`, giữ sống bằng `wsl.exe -d Ubuntu-24.04 -e sleep`). Chỉ dùng image có sẵn (`pgvector/pgvector:pg16`, `rabbitmq:4-management`, `testcontainers/ryuk`). Ba phiên QC khác chạy song song trên cùng Docker.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt, 1 phút 22 giây; cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | 167/168 (21 file), 2 phút 17 giây. Lỗi duy nhất: `telemetry/telemetry.spec.ts › OpenTelemetry cho HTTP > span và log cùng mã yêu cầu` quá 5 s — test của PID-00001, PR không sửa `telemetry/`. Chạy lại riêng file: 6/6. Cả 37 test PID-00002 đạt (outbox 9, inbox 9, idempotency 8, audit 7, jobs 4) |
+| `npx vitest run src/outbox src/inbox src/idempotency src/audit src/jobs --reporter=verbose` (trong `libs/ts/platform`), 5 lượt | Lượt 1: 12/37 rồi dừng — `audit.spec.ts`, `inbox.spec.ts`, `outbox.spec.ts` lỗi ở `beforeAll`: “Log message /database system is ready to accept connections/ not received after 60000ms” (môi trường, như trên). Lượt 2–5: 37/37 (165 s, 98 s, 103 s, 184 s) |
+| `npx vitest run src/outbox --reporter=verbose`, 3 lượt | 9/9 cả 3 lượt (75 s, 97 s, 262 s) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba (kèm 3 tác vụ phụ thuộc) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --skip-nx-cache` | 12 project (đều TS: `platform`, `sample-service` và 10 service), 9 phút 55 giây. Mọi tác vụ đạt trừ `@sires/platform:test` 156 đạt, 1 lỗi, 11 bỏ qua: `errors/errors.spec.ts`, `errors/validation.spec.ts`, `service-auth/client.spec.ts` hết hạn 10 s ở `beforeAll` (khởi động app Nest khi máy tải cao), `telemetry.spec.ts › span và log cùng mã yêu cầu` quá 5 s — đều là test HTTP của PID-00001 và service-auth, PR không sửa. Chạy lại riêng 4 file: 17/17. Trong lượt này 37 test PID-00002 đạt (outbox 101 s, inbox 137 s) |
+| Probe G4 của QC: `vitest run --config qc-probe/vitest.probe.config.mjs` (thư mục `qc-probe/` tạm trong `libs/ts/platform` của worktree, không thuộc repo, đã xóa sau khi chạy; `consumer.old.ts` là `consumer.ts` của `origin/main` đổi đường import; PostgreSQL, RabbitMQ thật). Mỗi ca 3 sự kiện tới queue riêng | **A** mã mới, `onOutcome` ném đồng bộ, logger `createLogger` của thư viện: 3 `applied`, 0 unhandled rejection, `isConsuming` đúng, queue `0/0/1` (ready/unacked/consumer), 3 dòng `warn` chỉ có `message_id`, `err`; khóa `sk-ant-…` trong lỗi bị che, payload không có trong log. **B** mã mới, `onOutcome` `async` ném: 3 `applied`, ack đủ (`0/0/1`), **3 unhandled rejection** (G6). **C** mã `origin/main`, `onOutcome` ném đồng bộ: 3 unhandled rejection (G4 cũ còn trên `main`, test mới phân biệt được). **D** mã mới, `onOutcome` trả `Promise.reject`: 3 unhandled rejection (G6) |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: platform, repo` — một luồng mã (`platform`), `repo` do `agent/execution/PID-00002/`; không có file ngoài luồng cần lời PO |
+| `node scripts/docs/add-license.mjs --check` | Trước khi ghi file này: `0 file chưa có thông báo giấy phép.` Sau khi ghi: xem dòng cuối bảng |
+| `node scripts/docs/update-index.mjs --check` | Khớp: 159 PID, 15 đợt; taskboard khớp 159 task; `docs/index.html` khớp |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)`, trạng thái `Xong — chờ QC`, có `qc-report.md` |
+| `gh api repos/toilatrung/sires/pulls/70/commits --paginate` | 1 commit `94c8f8f`, tác giả và committer `T1xNTH`, `verified: true` (`valid`); thông điệp “PID-00002: sửa G4 của QC độc lập Lần 2 — onOutcome lỗi không làm dừng consumer” đủ dấu tiếng Việt, không có trailer ghi công AI. `gh pr view 70`: `OPEN`, base `main`, `MERGEABLE`, `mergeStateStatus: BLOCKED`, chưa có review |
+| `gh pr checks 70`, `gh run view 45004112605 --log --job 137151780930` (bằng chứng phụ, runner Linux) | `build` pass (1m52s), `tracks` pass (6s), `headSha` = `94c8f8f`. Log `build`: “Successfully ran targets lint, typecheck, test, build for 12 projects and 3 tasks they depend on”; `@sires/platform:test` 21 file, 168/168, `inbox.spec.ts` 9 test |
+| `node scripts/docs/add-license.mjs --check` (sau khi ghi file này) | `0 file chưa có thông báo giấy phép.` File này giữ khối giấy phép ba dòng ở cuối |
+
+### Lệch với Self-QC
+
+- Self-QC Lần 3 ghi “105/105 test” cho `@sires/platform`: trên base hiện tại (`3dd4c15`) bộ test có 168 test; QC chạy được 167/168 (1 lỗi môi trường ở `telemetry.spec.ts`, chạy lại đạt), CI 168/168. Số 105 có lẽ đo trên base cũ trước khi nhánh đặt lại lên `main` mới.
+- Self-QC Lần 3 ghi test G4 lỗi trên mã cũ: QC không sửa mã trong worktree nên không chạy test của Dev trên mã cũ, nhưng probe C (cùng kịch bản, `consumer.ts` của `origin/main`) cho 3 unhandled rejection — khớp lời khai.
+- Self-QC và mô tả PR nói bản sửa làm “onOutcome lỗi không làm dừng consumer”: đúng với lỗi đồng bộ; với callback `async` hoặc trả promise bị từ chối thì chưa (G6). Self-QC Lần 3 không có phần tự đối chiếu nên không nêu.
+- Đầu `report.md` và `self-qc.md` chưa cập nhật cho Lần 3 (G7).
+- `check-tracks`: Lần 1, Lần 2 có `infra` do `pnpm-lock.yaml`; PR #70 không đổi lockfile nên chỉ còn `platform, repo` — khớp, không phải lệch.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không còn việc chặn merge PR #70. Ba việc LOW, làm ở PR này hoặc lượt sau của luồng platform tùy PO:
+
+1. G6: bắt cả lỗi bất đồng bộ của `onOutcome` (`inbox/consumer.ts:263–268`, kiểu ở `:71`), thêm test `onOutcome` async bị từ chối.
+2. G5: theo lựa chọn (a) hoặc (b) của PO (Lần 2).
+3. G7: cập nhật đầu `report.md` (nhánh, PR #70, bước tiếp theo) và `self-qc.md` (kết luận, ngày, tự đối chiếu Lần 3).
+
+### Đề xuất cho PO
+
+- **Merge được PR #70 theo DEC-58:** 0 CRITICAL, 0 HIGH; G5, G6, G7 LOW. GitHub đang `BLOCKED` vì chưa có review; commit đã ký, CI đạt.
+- **Cần PO quyết G5** (như Lần 2): `start()` lần đầu ném lỗi hay tự thử lại khi broker chưa tới được.
+- **G6 trước khi service đầu tiên gắn metric vào `onOutcome`** (PID-00057 và các service dùng `EventConsumer`): nếu PO muốn merge ngay, nên ghi vào README của `@sires/platform` rằng `onOutcome` phải đồng bộ, không trả promise, cho tới khi G6 xong.
+- **PID-00005 (Python, luồng platform) — test chập chờn PID-00009 gặp:** `test_envelope_and_rollback` (`libs/py/sires_common/tests/test_messaging.py:113`, `:215`) so thứ tự dòng outbox theo `created_at, id` trong khi `uuid7()` (`tenancy.py:35–45`) không tăng chặt trong cùng mili giây. Hai cách: test so theo tập (hoặc theo `kind`) thay vì thứ tự; hoặc `uuid7()` Python dùng bộ đếm trong cùng mili giây như bản TS (RFC 9562 §6.2, method 1) — cách này còn làm relay Python (`messaging.py:293`, `ORDER BY created_at, id`) publish đúng thứ tự gọi trong một giao dịch như bản TS. Cần chủ luồng platform chọn và sửa ở PID-00005 trước khi CI của PID-00009 bắt buộc; không chặn PR #70.
+- Các đề xuất của Lần 1, Lần 2 còn chờ PO: `request_hash` (slice S03), publish `mandatory`, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`, `correlation_id`, gộp ActorRef, ServiceName, heartbeat AMQP cho PID-00057, span cho relay và job dọn, khôi phục quyền cho EC01 (nay `outbox.spec.ts:90–95` đã khôi phục trong `finally`; kết nối của `recordQueue` (`outbox/messaging.testkit.ts:61`) và `admin` (`outbox.spec.ts:125`) vẫn chưa gắn `on('error')`).
 
 ---
 

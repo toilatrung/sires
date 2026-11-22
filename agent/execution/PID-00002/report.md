@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
 - **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36)
-- **Cập nhật:** 21/11/2026 (Lần 2: sửa G1–G3 của QC độc lập Lần 1, phiên do PO giao)
+- **Cập nhật:** 22/11/2026 (Lần 3: sửa G4 của QC độc lập Lần 2)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -107,6 +107,10 @@ Không có trong phạm vi. Span cho mỗi lượt relay và job dọn (QC Lần
 - **Còn mở:** không có.
 - **Bước tiếp theo:** PO cho chạy QC độc lập Lần 2 (`spec-converge-skill PID-00002`); không còn CRITICAL, HIGH thì PO merge PR #36. Dev `T1xNTH` đồng bộ lại nhánh cục bộ (`git fetch origin`, `git merge --ff-only origin/platform/ts-outbox-inbox`; có commit cục bộ chưa push thì merge rồi đối chiếu với bản sửa này) trước khi làm tiếp.
 - **Tài liệu đi kèm:** không có.
+
+## Lần 3 — 22/11/2026
+
+Sửa G4 (LOW) của `qc-report.md` Lần 2: `EventConsumer.process` bắt lỗi của `onOutcome` và ghi log `warn` (`consumer: onOutcome lỗi`), không còn unhandled rejection làm dừng tiến trình; message vẫn được ack bình thường, consumer consume tiếp. File: `libs/ts/platform/src/inbox/consumer.ts`, `inbox.spec.ts` (test `› onOutcome ném lỗi không làm dừng consumer (QC Lần 2 G4)`). G5 chưa đổi: chờ PO chốt giữ hành vi (ghi README) hay để thư viện tự thử lại lần `start()` đầu. Bản sửa G1–G3 cục bộ của Dev ngày 19/11 chưa push, bỏ vì trùng với Lần 2.
 
 ---
 
