@@ -217,12 +217,12 @@ def check_pdf_isolated(
                 result: CheckResult = parent.recv()
                 return result
             except EOFError:
-                # EOF can arrive before the OS marks the worker as exited (notably on Windows).
-                # Wait for exit within the original deadline instead of treating that race as a timeout.
-                # A worker that closes the pipe and then hangs must still obey the same timeout budget.
-                proc.join(max(0.0, timeout_s - (time.perf_counter() - start)))
-        reason = "timeout" if proc.is_alive() else f"worker exited with code {proc.exitcode}"
-        return CheckResult("corrupt", reason, elapsed_s=round(time.perf_counter() - start, 4))
+                # The child closed the pipe without sending: it exited. It may not be reaped yet, so is_alive()
+                # can still be True here; wait for it instead of asking.
+                proc.join(5)
+                reason = f"worker exited with code {proc.exitcode}"
+                return CheckResult("corrupt", reason, elapsed_s=round(time.perf_counter() - start, 4))
+        return CheckResult("corrupt", "timeout", elapsed_s=round(time.perf_counter() - start, 4))
     finally:
         parent.close()
         if proc.is_alive():

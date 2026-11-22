@@ -1,9 +1,9 @@
 # PID-00014 — Self-QC của Dev
 
-**Kết luận:** Đạt — Lần 2 ngày 22/11/2026 đã sửa lỗi knowledge/agent-core theo YC1; affected 19 project, 72 task đạt.
+**Kết luận:** Chưa đạt — G2 HIGH / DBQ-10 (H7) chặn merge; G4 chờ PO. Xem Lần 4. Phần trước là lịch sử, kết luận cũ đã bị QC độc lập thay thế.
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 22/11/2026
 
 ## 1. Lệnh
 
@@ -79,10 +79,10 @@ NFR-AUTH-001-AC02 thuộc N7 (PID-00038/web), không tính vào nghiệm thu tic
 - [x] Không có sự kiện mới; outbox không áp dụng.
 - [x] Migration mới, không sửa migration đã có; so schema với DDL tham chiếu đạt.
 - [x] Không có UI; kiểm giao diện không áp dụng.
-- [x] Không sửa docs, file sinh tự động hoặc nguồn luồng khác; lockfile chỉ sinh từ gói gateway theo 1.4.7.
-- [x] Không có yêu cầu ngoài phạm vi; report mục 5 ghi Không có.
+- [x] Đã sửa nhận định Lần 1 về ranh giới: sau YC1 có sửa ngoài luồng; Lần 4 khôi phục spike về main theo H9.
+- [x] Đã ghi YC1 ngoài phạm vi bị QC bác và bỏ thay đổi ngoài gateway theo H9.
 - [x] Mã runtime không có console.log hoặc TODO không chủ; test đặt theo AC/EC.
-- [x] Đã áp dụng spec-converge-skill ở chế độ Dev tự QC; không có qc-report.md của QC độc lập.
+- [x] Đã tự QC; sau đó có qc-report.md độc lập Lần 1, giữ nguyên ở lượt sửa này.
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
@@ -98,9 +98,6 @@ README và migration.* có đúng đường dẫn. DDL và hợp đồng không 
 Hai nguy cơ trên được xử lý ngay trong thiết kế/triển khai và kiểm lại bằng lượt cuối 29/29 test.
 Không còn khoảng trống CRITICAL hoặc HIGH của PID-00014. Lỗi knowledge và cảnh báo cache giấy phép
 ở mục 1 là giới hạn kiểm toàn repo, không phải kết luận đã xanh toàn repo. PO cần QC độc lập trước merge.
-
-<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
 
 ## Lần 2 — 22/11/2026 · Kiểm nốt và sửa lỗi theo YC1
 
@@ -128,5 +125,57 @@ Tự đối chiếu thêm:
 | G4 | partial | MEDIUM | `agent-core/.../spk08_contract.py`: relpath khác ổ Windows ném ValueError; đã fallback URL giấy phép, có test cùng/khác ổ và end-to-end |
 
 Không còn G3/G4 mở; không còn CRITICAL/HIGH. Sửa nguồn ngoài gateway được người dùng yêu cầu trực tiếp
-qua YC1 trong report mục 5; không ghi docs hoặc đổi hợp đồng/DDL. Các thay đổi vẫn chưa commit.
-Log cuối: [pid00014-final-check.log](../../../.nx/pid00014-final-check.log).
+qua YC1 trong report mục 5; QC độc lập đã bác căn cứ này và Lần 4 khôi phục spike theo H9.
+Tại thời điểm Lần 2 chưa commit; Lần 3 đã đẩy PR. Log cục bộ không được dùng làm bằng chứng hiện tại.
+
+## Lần 4 — 22/11/2026 · Tự đối chiếu sau QC độc lập
+
+Đối chiếu lại AC01, AC02, NFR-AUTH-001-AC01, P1–P9, EC01–EC17, O1–O5,
+QC độc lập G1–G7 và H7–H9 ở hồ sơ mới nhất từ main. G trong bảng này dùng mã của QC độc lập.
+
+| G | Kết quả | Bằng chứng / việc còn lại |
+| --- | --- | --- |
+| G1 HIGH | Đã sửa theo H9 | Diff với main ở knowledge/agent-core trống; giữ bản race #61 |
+| G2 HIGH | Còn mở — chặn merge | `migration.spec.ts`: migration chạy bằng migrator/owner thật; owner của hàm không SUPERUSER/BYPASSRLS; `_app` không context nhận 0 dòng thay vì một phiên hợp lệ. Chưa có quyết định mới về DBQ-10; giữ DDL theo yêu cầu trong phiên |
+| G3 HIGH | Đã sửa theo H8 | `session.guard.ts` dùng `routeOptions.url`; HTTP `/api/v1/auth/*`, `/api/v1/events`; ba test unit ngăn URL thô ảnh hưởng công khai/gia hạn. `/health` là probe chart chung |
+| G4 MEDIUM | Chờ PO | Không tự đổi người làm trong sổ, không sửa hồ sơ hoặc qc-report độc lập |
+| G5 MEDIUM | Đã sửa | Trạng thái chặn, ghi rõ số liệu cũ và giới hạn fixture superuser; bỏ đường dẫn máy và log hỏng; chân giấy phép ở cuối |
+| G6 LOW | Đã sửa | Hai test HTTP: thu hồi trong handler và database lỗi khi renew đều giữ 201 và body; kiểm không hồi sinh phiên, không log bí mật |
+| G7 LOW | Đã sửa | README cảnh báo chỉ `drizzle-kit generate --custom` |
+
+| Lệnh / kiểm | Kết quả thực tế |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/gateway --parallel=2 --output-style=static` | Lint/typecheck/build đạt; lượt test đầu lộ lỗi fixture journal sau rollback và kiểm logger; đã sửa ở lượt sau |
+| `pnpm --filter @sires/gateway test` sau sửa fixture/test | **34 đạt, 1 lỗi / 35**, 5 file, 17.69 giây; duy nhất DBQ-10/G2. Không skip/expected failure |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=2 --output-style=static` | Không đạt: chọn 20 project; chỉ `@sires/gateway:test` (DBQ-10) và `agent-core:test` lỗi. Gateway vẫn 34 đạt/1 lỗi; agent-core 20 đạt/1 lỗi, `test_ac02_ec03_read_latency_runs_end_to_end` ném ValueError do relpath giữa D: và C:. Giữ spike như main theo H9, báo PO; knowledge 22 đạt/2 skip theo điều kiện dữ liệu. Các target còn lại đạt hoặc dùng cache |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00014 --result` | Kết quả đủ, 0 cảnh báo |
+| AC01, AC02, NFR-AUTH-001-AC01 và EC01–EC17 | Test guard/CSRF đạt trong fixture HTTP; không nghiệm thu production do G2. EC13/EC16 và schema/migration chạy lại đạt với migrator thật |
+| `node scripts/docs/update-index.mjs --check` | Đạt; không ghi docs/taskboard |
+| `node scripts/docs/add-license.mjs --check` | 14 cảnh báo trên cache/report tự sinh không được Git theo dõi; nguồn sửa và test mới có SPDX |
+| `check-tracks.mjs --stdin` trên diff main | Gateway + infra do 12 dòng lockfile importer gateway; không có knowledge/agent-core |
+| `git diff --check` | Đạt |
+
+Lần thử đầu thiếu liên kết dependency gateway trong node_modules. `pnpm install --frozen-lockfile`
+bị EACCES ở dependency library có sẵn; cài có filter `@sires/gateway...` với frozen lockfile và
+ignore-scripts thành công, không đổi lockfile. Không tính lượt thiếu dependency là kết quả đạt.
+Không chạy lại production package hoặc staging ở lượt này. G2 HIGH vẫn chặn merge; cần PO/Tech lead
+chốt DDL rồi sửa migration, chuyển fixture HTTP sang vai trò thật và QC độc lập lại.
+
+## Lần 5 — 22/11/2026 · Sửa riêng lỗi SPK-08 Windows
+
+- Đã kiểm lại PR #63, #67, tìm DBQ-10 và fetch origin: chưa có quyết định mới. Người dùng
+  chọn “Giữ blocker, chưa thay đổi DDL”; G2/H7 tiếp tục chặn merge, G4 chờ PO.
+- Nhánh riêng `agent-core/fix-spk08-license-cross-drive` chỉ sửa hai file spike SPK-08,
+  không gộp vào PR #63 theo H9. Dùng cùng môi trường Python đã cài để chạy kiểm.
+- `python -m pytest apps/agent-core/spikes/spk-08/test_spk08.py -q`: 8 test đạt, gồm
+  test end-to-end xuất vào TEMP ở ổ khác và hai test hồi quy footer cùng/khác ổ.
+- `python -m ruff check` trên hai file sửa và `git diff --check` ở nhánh riêng: đạt.
+- Toàn bộ `python -m pytest -o 'addopts=' -q` ở agent-core nhánh riêng: **23 đạt, không skip**,
+  36.58 giây, 2 cảnh báo deprecation có sẵn. Dùng Docker endpoint và `UV_PROJECT_ENVIRONMENT`
+  trỏ về môi trường đã cài để subprocess `uv run --no-sync alembic` chạy đúng. Lượt đầu thiếu
+  Alembic trong venv mới của worktree đã lỗi; sau cấu hình môi trường, kiểm lại toàn bộ đạt.
+- `git diff origin/main --exit-code -- apps/agent-core apps/knowledge` ở nhánh gateway:
+  đạt, không đưa sửa ngoài luồng trở lại PR. DDL/migration vẫn nguyên trạng.
+
+<!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).

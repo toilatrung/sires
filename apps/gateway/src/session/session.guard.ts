@@ -7,12 +7,12 @@ import { ProblemException } from '@sires/platform';
 import { sessionIdFromCookie } from './session.crypto';
 import { type CurrentSession, SessionService } from './session.service';
 
-const PUBLIC_PATHS = new Set(['/health', '/auth/login', '/auth/callback']);
+const PUBLIC_PATHS = new Set(['/health', '/api/v1/auth/login', '/api/v1/auth/callback']);
 export const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export interface SessionRequest {
   method: string;
-  url: string;
+  routeOptions: { url?: string };
   headers: Record<string, string | string[] | undefined>;
   accountId?: string;
   session?: CurrentSession;
@@ -24,15 +24,15 @@ export class SessionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<SessionRequest>();
-    const path = request.url.split('?')[0];
-    if (PUBLIC_PATHS.has(path)) return true;
+    const path = request.routeOptions.url;
+    if ((request.method === 'GET' || request.method === 'HEAD') && path && PUBLIC_PATHS.has(path)) return true;
     const id = sessionIdFromCookie(request.headers.cookie);
     if (!id) throw new ProblemException('unauthenticated');
     const current = await this.sessions.find(id);
     request.accountId = current.accountId;
     request.session = current;
     if (WRITE_METHODS.has(request.method)) this.sessions.requireCsrf(current, id, request.headers['x-csrf-token']);
-    if (request.method === 'GET' && path === '/auth/session') await this.sessions.renew(current);
+    if (request.method === 'GET' && path === '/api/v1/auth/session') await this.sessions.renew(current);
     return true;
   }
 }

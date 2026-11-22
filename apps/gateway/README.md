@@ -35,15 +35,21 @@ Thiếu DSN hoặc khóa CSRF hợp lệ thì service dừng lúc khởi động
 Các endpoint OIDC và `/auth/session` chưa được triển khai ở PH-01 (PID-00038);
 định tuyến nghiệp vụ và SSE thuộc PID-00039, PID-00040.
 
-Module `src/session/` đăng ký guard toàn cục: `/health`, `/auth/login`, `/auth/callback`
+Các controller API phải đăng ký dưới `/api/v1` (H8); những đường dẫn `/auth/*`, `/events`
+trong hợp đồng là tương đối với gốc này. `/health` là probe hạ tầng của chart chung.
+Module `src/session/` đăng ký guard toàn cục: `/health`, `/api/v1/auth/login`, `/api/v1/auth/callback`
 được công khai; route còn lại cần cookie `sires_session`. `SessionRequest.accountId` và
 `SessionRequest.session` chứa danh tính đã tra bằng `app.find_session(sha256(session id))`.
 Không có, bị thu hồi hoặc hết hạn → `401 unauthenticated`. POST/PUT/PATCH/DELETE
 cần `X-CSRF-Token` đúng → nếu không, `403 forbidden` trước khi handler chạy.
 
-Chỉ lệnh ghi thành công và GET `/auth/session` gia hạn `last_seen_at`,
+Guard dùng `FastifyRequest.routeOptions.url` của route đã khớp, không dùng URL thô hoặc query.
+Chỉ lệnh ghi thành công và GET `/api/v1/auth/session` gia hạn `last_seen_at`,
 `idle_expires_at` thêm 12 giờ; SSE, polling, các GET khác không gia hạn.
 Lệnh ghi bị handler từ chối cũng không gia hạn. Hạn tuyệt đối luôn được kiểm độc lập.
+Nếu gia hạn sau lệnh ghi thành công thất bại (thu hồi/hết hạn hoặc lỗi database), giữ nguyên
+kết quả của handler và log cảnh báo cố định, không kèm exception hoặc thông tin phiên.
+Request tiếp theo vẫn phải xác thực lại; phiên bị thu hồi không được hồi sinh.
 
 PID-00038 dùng `SessionService.create({ accountId, absoluteExpiresAt, oidcSid?,
 refreshTokenEnc?, userAgentHash? })` để nhận `sessionId`, `csrfToken`, `cookie` và dòng
@@ -67,6 +73,13 @@ Vai trò `sires_gateway_owner`, `_app`, `_system`, `_purge` phải được cấ
 Terraform ở staging/production; PID-00159 cho compose; test tự cấp vai trò trong Testcontainers.
 Migration không tự tạo vai trò hoặc cấp BYPASSRLS.
 
+**Chặn merge — DBQ-10 (H7):** DDL hiện tại khiến `app.find_session` trả 0 dòng khi
+migration chạy bằng migrator/owner không BYPASSRLS và bảng bật FORCE RLS. Chờ PO/Tech lead
+chốt và cập nhật DDL; chưa dùng mã này để nghiệm thu xác thực trên staging/production.
+`migration.spec.ts` chạy bằng vai trò thật và có test hồi quy đang lỗi vì blocker này.
+Fixture HTTP còn dùng migration bằng superuser để kiểm riêng guard/CSRF; kết quả HTTP
+không chứng minh DDL chạy được với quyền production.
+
 ```bash
 # Đặt DATABASE_MIGRATOR_URL riêng trong môi trường trước khi chạy.
 pnpm nx run @sires/gateway:migrate
@@ -75,6 +88,9 @@ node dist/migrate.js
 # Tạo custom migration mới lúc phát triển:
 pnpm --filter @sires/gateway exec drizzle-kit generate --custom --name <ten>
 ```
+
+Chỉ dùng `generate --custom`. Snapshot của migration custom ban đầu trống;
+`generate` không có `--custom` sẽ sinh lại `CREATE TABLE app.session` và gây trùng bảng.
 
 Target Nx build service trước khi chạy. Image mang `dist/`, `migrations/` qua trường
 `files` của package; lệnh runtime dùng `migrate()` của drizzle-orm, không cần drizzle-kit.

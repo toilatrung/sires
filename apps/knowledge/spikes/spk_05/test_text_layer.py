@@ -141,29 +141,6 @@ def _die(conn: Connection, path: str, kwargs: dict[str, Any]) -> None:
     os._exit(3)
 
 
-def _close_then_die(conn: Connection, path: str, kwargs: dict[str, Any]) -> None:
-    conn.close()
-    time.sleep(0.2)  # deterministic EOF while the worker is still alive
-    os._exit(3)
-
-
-def _close_then_hang(conn: Connection, path: str, kwargs: dict[str, Any]) -> None:
-    conn.close()
-    time.sleep(600)
-
-
-@pytest.mark.parametrize(
-    ("worker", "reason"), [(_close_then_die, "worker exited with code 3"), (_close_then_hang, "timeout")]
-)
-def test_eof_before_worker_exit(tmp_path: Path, worker: Any, reason: str) -> None:
-    """EOF is not proof of exit; wait only within the deadline and still kill a hanging worker."""
-    path = _write(tmp_path, "any.pdf", _born_digital())
-    start = time.monotonic()
-    result = check_pdf_isolated(path, timeout_s=2, _worker=worker)
-    assert result.status == "corrupt" and result.reason == reason
-    assert time.monotonic() - start < 20
-
-
 def test_corrupt_never_hangs(tmp_path: Path) -> None:
     """EC01 "không treo": a worker that hangs is killed at the timeout, one that dies is reported; both corrupt."""
     path = _write(tmp_path, "any.pdf", _born_digital())

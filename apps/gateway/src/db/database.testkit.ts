@@ -8,7 +8,10 @@ import { runMigrations } from './migrate';
 
 export async function createRoles(admin: Pool): Promise<void> {
   await admin.query(`
-    CREATE ROLE sires_gateway_owner NOLOGIN;
+    CREATE ROLE sires_gateway_owner NOLOGIN NOSUPERUSER NOBYPASSRLS;
+    CREATE ROLE sires_gateway_migrator LOGIN PASSWORD 'gateway-test' NOSUPERUSER NOBYPASSRLS IN ROLE sires_gateway_owner;
+    ALTER ROLE sires_gateway_migrator SET role = 'sires_gateway_owner';
+    ALTER DATABASE sires_gateway OWNER TO sires_gateway_owner;
     CREATE ROLE sires_gateway_app LOGIN PASSWORD 'gateway-test' NOSUPERUSER NOBYPASSRLS;
     CREATE ROLE sires_gateway_system NOLOGIN BYPASSRLS;
     CREATE ROLE sires_gateway_purge NOLOGIN BYPASSRLS;
@@ -16,8 +19,16 @@ export async function createRoles(admin: Pool): Promise<void> {
 }
 
 export function appRoleUrl(connectionUri: string): string {
+  return roleUrl(connectionUri, 'sires_gateway_app');
+}
+
+export function migratorRoleUrl(connectionUri: string): string {
+  return roleUrl(connectionUri, 'sires_gateway_migrator');
+}
+
+function roleUrl(connectionUri: string, role: string): string {
   const url = new URL(connectionUri);
-  url.username = 'sires_gateway_app';
+  url.username = role;
   url.password = 'gateway-test';
   return url.toString();
 }
@@ -34,6 +45,8 @@ export async function startGatewayDatabase(): Promise<GatewayDatabase> {
   const admin = new Pool({ connectionString: postgres.connectionUri });
   try {
     await createRoles(admin);
+    // HTTP tests isolate the session code until DBQ-10 is resolved. This superuser fixture is NOT
+    // production validation; migration.spec.ts migrates as the real owner and must expose G2.
     await runMigrations(postgres.connectionUri);
     return {
       postgres,

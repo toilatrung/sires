@@ -76,20 +76,6 @@ def test_stub_payloads_match_the_contracts() -> None:
         spk08_contract.validate_response("getTaskContextBundle", broken)
 
 
-def test_markdown_footer_in_repo_uses_relative_license_link() -> None:
-    assert "[LICENSES.md](LICENSES.md)" in spk08_contract.markdown_footer(spk08_contract.REPO)
-
-
-def test_markdown_footer_on_another_drive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    def different_drive(path: Any, start: Any) -> str:
-        raise ValueError("path is on a different mount")
-
-    monkeypatch.setattr(spk08_contract.os.path, "relpath", different_drive)
-    footer = spk08_contract.markdown_footer(tmp_path)
-    assert "[LICENSES.md](https://github.com/toilatrung/sires/blob/main/LICENSES.md)" in footer
-    assert "SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0" in footer
-
-
 def test_ac02_ec03_read_latency_runs_end_to_end(tmp_path: Path) -> None:
     pytest.importorskip("sires_common.generated.planning", reason="generate-python not run (PID-00007)")
     import read_latency

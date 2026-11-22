@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import 'reflect-metadata';
-import { Controller, Delete, Get, Module, Patch, Post, Put, Req } from '@nestjs/common';
+import { Controller, Delete, Get, Logger, Module, Patch, Post, Put, Req } from '@nestjs/common';
 import { createServiceApp, ProblemException, uuidv7 } from '@sires/platform';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../app.module';
@@ -16,8 +16,13 @@ import { SessionService } from './session.service';
 let handlerCalls = 0;
 
 /** These routes exist only inside the test. No business/auth endpoint is implemented in PH-01. */
-@Controller()
+@Controller('api/v1')
 class TestController {
+  @Post('revoke-during-write') async revokeDuringWrite(@Req() req: SessionRequest) {
+    await revokeDuringWrite(req);
+    handlerCalls++;
+    return { ok: true };
+  }
   @Get('read') read(@Req() req: SessionRequest) {
     return { accountId: req.accountId };
   }
@@ -53,6 +58,8 @@ class TestController {
     throw new ProblemException('forbidden');
   }
 }
+
+let revokeDuringWrite: (req: SessionRequest) => Promise<void>;
 
 @Module({ imports: [AppModule], controllers: [TestController] })
 class TestAppModule {}
@@ -96,6 +103,11 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     sessions = app.get(SessionService);
+    revokeDuringWrite = async (req) => {
+      await database.admin.query("update app.session set revoked_at=now(),revoke_reason='admin' where id=$1", [
+        req.session!.id,
+      ]);
+    };
   }, 300_000);
 
   afterAll(async () => {
@@ -105,7 +117,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
   }, 60_000);
 
   it('không có phiên (NFR-AUTH-001-AC01, EC02)', async () => {
-    const response = await app.inject({ method: 'GET', url: '/read' });
+    const response = await app.inject({ method: 'GET', url: '/api/v1/read' });
     expect(response.statusCode).toBe(401);
     expect(response.headers['content-type']).toContain('application/problem+json');
     expect(response.json()).toMatchObject({ status: 401, code: 'unauthenticated' });
@@ -114,7 +126,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
 
   it('cookie lạ (EC03): id không tồn tại, sai định dạng và cookie trùng', async () => {
     for (const header of ['sires_session=???', cookie(newSessionId()), 'sires_session=a; sires_session=b']) {
-      const response = await app.inject({ method: 'GET', url: '/read', headers: { cookie: header } });
+      const response = await app.inject({ method: 'GET', url: '/api/v1/read', headers: { cookie: header } });
       expect(response.statusCode).toBe(401);
       expect(response.json().code).toBe('unauthenticated');
     }
@@ -126,7 +138,8 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       issued.session.id,
     ]);
     expect(
-      (await app.inject({ method: 'GET', url: '/read', headers: { cookie: cookie(issued.sessionId) } })).statusCode,
+      (await app.inject({ method: 'GET', url: '/api/v1/read', headers: { cookie: cookie(issued.sessionId) } }))
+        .statusCode,
     ).toBe(401);
   });
 
@@ -140,7 +153,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
         })
       ).statusCode,
@@ -154,7 +167,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const before = await activity(issued);
     const response = await app.inject({
       method: 'POST',
-      url: '/write',
+      url: '/api/v1/write',
       headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
     });
     expect(response.statusCode).toBe(401);
@@ -165,7 +178,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
         })
       ).statusCode,
@@ -179,7 +192,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const issued = await issue();
     await database.admin.query('update app.session set idle_expires_at=now() where id=$1', [issued.session.id]);
     const before = await activity(issued);
-    for (const url of ['/read', '/auth/session']) {
+    for (const url of ['/api/v1/read', '/api/v1/auth/session']) {
       expect((await app.inject({ method: 'GET', url, headers: { cookie: cookie(issued.sessionId) } })).statusCode).toBe(
         401,
       );
@@ -194,7 +207,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       [1, 2].map(() =>
         app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
         }),
       ),
@@ -216,13 +229,14 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     await age(issued);
     const before = await activity(issued);
     expect(
-      (await app.inject({ method: 'GET', url: '/events', headers: { cookie: cookie(issued.sessionId) } })).statusCode,
+      (await app.inject({ method: 'GET', url: '/api/v1/events', headers: { cookie: cookie(issued.sessionId) } }))
+        .statusCode,
     ).toBe(200);
     expect(await activity(issued)).toEqual(before);
   });
 
   it('route công khai (EC08)', async () => {
-    for (const url of ['/health', '/auth/login', '/auth/callback']) {
+    for (const url of ['/health', '/api/v1/auth/login', '/api/v1/auth/callback']) {
       expect((await app.inject({ method: 'GET', url })).statusCode).toBe(200);
     }
   });
@@ -233,7 +247,11 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const before = await activity(issued);
     for (const method of ['POST', 'PUT', 'PATCH', 'DELETE'] as const) {
       const calls = handlerCalls;
-      const rejected = await app.inject({ method, url: '/write', headers: { cookie: cookie(issued.sessionId) } });
+      const rejected = await app.inject({
+        method,
+        url: '/api/v1/write',
+        headers: { cookie: cookie(issued.sessionId) },
+      });
       expect(rejected.statusCode).toBe(403);
       expect(rejected.headers['content-type']).toContain('application/problem+json');
       expect(rejected.json().code).toBe('forbidden');
@@ -245,7 +263,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
         (
           await app.inject({
             method,
-            url: '/write',
+            url: '/api/v1/write',
             headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
           })
         ).statusCode,
@@ -262,7 +280,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': 'wrong-csrf' },
         })
       ).statusCode,
@@ -272,7 +290,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/denied',
+          url: '/api/v1/denied',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
         })
       ).statusCode,
@@ -283,7 +301,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
   it('GET không cần CSRF (EC10), HEAD không cần CSRF', async () => {
     const issued = await issue();
     for (const method of ['GET', 'HEAD'] as const) {
-      const response = await app.inject({ method, url: '/read', headers: { cookie: cookie(issued.sessionId) } });
+      const response = await app.inject({ method, url: '/api/v1/read', headers: { cookie: cookie(issued.sessionId) } });
       expect(response.statusCode).toBe(200);
       if (method === 'GET') expect(response.json().accountId).toBe(accountId);
     }
@@ -291,7 +309,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
 
   it('lệnh ghi không có phiên (EC11)', async () => {
     for (const header of [{}, { 'x-csrf-token': 'present-but-no-session' }]) {
-      const response = await app.inject({ method: 'POST', url: '/write', headers: header });
+      const response = await app.inject({ method: 'POST', url: '/api/v1/write', headers: header });
       expect(response.statusCode).toBe(401);
       expect(response.json().code).toBe('unauthenticated');
     }
@@ -303,7 +321,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const before = await activity(issued);
     for (let i = 0; i < 3; i++) {
       expect(
-        (await app.inject({ method: 'GET', url: '/read?poll=1', headers: { cookie: cookie(issued.sessionId) } }))
+        (await app.inject({ method: 'GET', url: '/api/v1/read?poll=1', headers: { cookie: cookie(issued.sessionId) } }))
           .statusCode,
       ).toBe(200);
     }
@@ -312,7 +330,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'GET',
-          url: '/auth/session?navigation=1',
+          url: '/api/v1/auth/session?navigation=1',
           headers: { cookie: cookie(issued.sessionId) },
         })
       ).statusCode,
@@ -339,7 +357,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       (
         await app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
         })
       ).statusCode,
@@ -354,7 +372,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       tokens.map((token) =>
         app.inject({
           method: 'POST',
-          url: '/write',
+          url: '/api/v1/write',
           headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': token },
         }),
       ),
@@ -383,7 +401,7 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
       const calls = handlerCalls;
       const response = await rotatedApp.inject({
         method: 'POST',
-        url: '/write',
+        url: '/api/v1/write',
         headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
       });
       expect(response.statusCode).toBe(403);
@@ -417,15 +435,15 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const issued = await issue();
     await app.inject({
       method: 'POST',
-      url: '/write',
+      url: '/api/v1/write',
       headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
     });
     await app.inject({
       method: 'POST',
-      url: '/write',
+      url: '/api/v1/write',
       headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': 'wrong-visible-token' },
     });
-    await app.inject({ method: 'POST', url: '/write', headers: { 'x-csrf-token': issued.csrfToken } });
+    await app.inject({ method: 'POST', url: '/api/v1/write', headers: { 'x-csrf-token': issued.csrfToken } });
     await new Promise<void>((resolve) => setImmediate(resolve));
     const logs = logLines.join('');
     expect(logs).toContain('request completed');
@@ -445,5 +463,51 @@ describe('gateway session — HTTP Fastify và PostgreSQL 16 thật', () => {
     const before = await activity(issued);
     await expect(sessions.renew(current)).rejects.toThrowError(ProblemException);
     expect(await activity(issued)).toEqual(before);
+  });
+
+  it('thu hồi trong handler: giữ kết quả ghi thành công, không hồi sinh phiên (G6)', async () => {
+    const warning = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const issued = await issue();
+      await age(issued);
+      const before = await activity(issued);
+      const calls = handlerCalls;
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/revoke-during-write',
+        headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
+      });
+      expect(response.statusCode).toBe(201);
+      expect(response.json()).toEqual({ ok: true });
+      expect(handlerCalls).toBe(calls + 1);
+      expect(await activity(issued)).toEqual(before);
+      await expect(sessions.find(issued.sessionId)).rejects.toThrowError(ProblemException);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      const logs = logLines.join('');
+      expect(warning).toHaveBeenCalledWith('Session renewal failed after a successful write');
+      expect(logs).not.toContain(issued.sessionId);
+      expect(logs).not.toContain(issued.csrfToken);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it('lỗi database khi gia hạn sau lệnh ghi không thay kết quả hoặc lộ lỗi (G6)', async () => {
+    const issued = await issue();
+    const renew = vi.spyOn(sessions, 'renew').mockRejectedValueOnce(new Error(`secret-${issued.sessionId}`));
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/write',
+        headers: { cookie: cookie(issued.sessionId), 'x-csrf-token': issued.csrfToken },
+      });
+      expect(response.statusCode).toBe(201);
+      expect(response.json()).toEqual({ ok: true });
+      expect(renew).toHaveBeenCalledOnce();
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      expect(logLines.join('')).not.toContain(`secret-${issued.sessionId}`);
+    } finally {
+      renew.mockRestore();
+    }
   });
 });

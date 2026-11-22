@@ -1,22 +1,25 @@
 # PID-00014 — Triển khai
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 22/11/2026
 
 ## 1. Luồng đã triển khai
 
 `AppModule` nạp `SessionModule`, đăng ký `SessionGuard` và `SessionActivityInterceptor` toàn cục.
 Service cần `DATABASE_URL` của vai trò `_app` và `GATEWAY_CSRF_KEY` hợp lệ ngay lúc khởi động.
 
-1. Guard bỏ qua đúng `/health`, `/auth/login`, `/auth/callback`; route khác đọc đúng một cookie
+1. Guard đọc `routeOptions.url` đã khớp của Fastify, không so URL thô. GET/HEAD `/health`,
+   `/api/v1/auth/login`, `/api/v1/auth/callback` công khai; route khác đọc đúng một cookie
    `sires_session`, kiểm định dạng và tra `app.find_session(sha256(id))`. Hàm SQL chỉ trả phiên
    chưa thu hồi, còn hạn idle và tuyệt đối. Không có phiên trả `401 unauthenticated` qua bộ lọc platform.
 2. Guard gắn `accountId`, `session` lên request. POST/PUT/PATCH/DELETE cần CSRF token:
    kiểm hash với cột đã lưu và HMAC bằng khóa hiện tại, so sánh thời gian hằng. Lỗi trả `403 forbidden`.
-3. GET `/auth/session` gia hạn trong guard theo S04. Với lệnh ghi, interceptor chỉ gia hạn sau khi
-   handler thành công, response dưới 400. Handler ném lỗi không gia hạn. GET khác và SSE không gia hạn.
+3. GET `/api/v1/auth/session` gia hạn trong guard theo S04. Với lệnh ghi, interceptor chỉ gia hạn sau khi
+   handler thành công, response dưới 400. Nếu gia hạn lỗi, giữ kết quả handler và log cảnh báo cố định,
+   không kèm exception hay thông tin phiên. Handler ném lỗi không gia hạn. GET khác và SSE không gia hạn.
 4. `renew()` dùng `withAccountTransaction`, đặt `app.account_id` theo phiên, kiểm lại thu hồi/hết hạn
-   trong UPDATE. `greatest` bảo đảm request đồng thời không làm thời gian lùi; UPDATE 0 dòng trả 401.
+   trong UPDATE. `greatest` bảo đảm request đồng thời không làm thời gian lùi; UPDATE 0 dòng ném 401.
+   Guard GET chuyển lỗi này tới client; interceptor sau lệnh ghi bắt lỗi để giữ kết quả đã thực hiện.
 5. `create()` cho PID-00038 sinh session id ngẫu nhiên, tính CSRF HMAC, ghi hai giá trị băm trong
    giao dịch tenant và trả id, token, Set-Cookie cho mã server gọi nó. Cookie có Expires bằng hạn tuyệt đối.
    Ticket này không triển khai endpoint OIDC, định tuyến nghiệp vụ hay SSE.
@@ -53,7 +56,9 @@ Target Nx `migrate` build trước khi chạy. Helm bật Job bằng cùng lện
   Journal và snapshot trống do `drizzle-kit generate --custom --name init` sinh, không sửa tay metadata.
 - So schema bằng `pg_dump --schema-only --no-owner --schema=app --schema=replica` trên hai database cùng
   PostgreSQL 16; chỉ bỏ bình luận, dòng rỗng và token restrict ngẫu nhiên. Quyền, policy, hàm và index vẫn được so.
-- Các vai trò test do testkit tạo; kết nối `_app` thật không SUPERUSER/BYPASSRLS. Test admin chỉ seed và kiểm DB.
+- Các vai trò test do testkit tạo; kết nối `_app` thật không SUPERUSER/BYPASSRLS. Test migration đăng nhập
+  bằng migrator, tự SET role owner không SUPERUSER/BYPASSRLS. Fixture HTTP còn migrate bằng superuser
+  để cô lập guard/CSRF trong khi chờ DBQ-10; kết quả này không chứng minh quyền production đạt.
 - Dùng parser cookie nhỏ cho một id opaque thay vì thêm plugin và catalog; tên cấu hình, helper và cách chia file
   là lựa chọn kỹ thuật. Test HTTP đi qua module thật, các handler thử chỉ tồn tại trong test.
 - `pnpm install` sinh 12 dòng lockfile cho importer gateway (drizzle-orm, pg, @types/pg, drizzle-kit); không đổi catalog
@@ -61,21 +66,17 @@ Target Nx `migrate` build trước khi chạy. Helm bật Job bằng cùng lện
 - Đã kiểm gói `pnpm deploy --legacy --prod`: journal/SQL có trong gói, không có drizzle-kit/@sires/testing;
   CLI migration chạy database rỗng và app production trả `/health` 200. Chưa build/publish image hoặc deploy staging.
 
+## 4. Giới hạn đã biết
+
+DBQ-10/H7 chặn merge: hàm SECURITY DEFINER thuộc owner không BYPASSRLS không đọc được
+phiên trước tenant context do FORCE RLS. `migration.spec.ts` chạy bằng migrator thật và gọi
+`app.find_session` bằng `_app`; assertion yêu cầu trả phiên hợp lệ được giữ nguyên, không skip.
+Chưa sửa DDL hoặc migration khi chưa có quyết định PO/Tech lead.
+
+Các thay đổi spike knowledge/agent-core ở Lần 2 đã đưa về `origin/main` theo H9;
+không còn thuộc triển khai hiện tại. `/health` giữ làm probe chart chung; controller API đăng ký
+dưới `/api/v1`, endpoint thật thuộc PID-00038/00039/00040. README cảnh báo chỉ dùng
+`drizzle-kit generate --custom` vì snapshot custom ban đầu trống.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
-
-## Lần 2 — 22/11/2026 · YC1: sửa lỗi phát hiện khi kiểm nốt
-
-Người dùng yêu cầu “test nốt đi”, sau đó “tìm lỗi và sửa luôn”, cho phép sửa các lỗi
-ngoài gateway phát hiện trong lượt affected đầy đủ.
-
-- `apps/knowledge/spikes/spk_05/text_layer.py:check_pdf_isolated`: trên Windows, EOF của pipe có thể
-  đến khi `proc.is_alive()` vẫn đúng, dù worker đang thoát. Sau EOF, chờ `proc.join()` trong phần
-  ngân sách timeout còn lại; worker đã thoát được báo đúng exit code, worker đóng pipe rồi treo vẫn
-  bị timeout/kill. Không tăng timeout, không bỏ qua test hoặc đổi phân loại `corrupt`.
-  Test mới `test_eof_before_worker_exit` dùng worker đóng pipe trước rồi thoát/treo để tái hiện
-  chắc chắn khoảng giao thời; test `test_corrupt_never_hangs` gốc cũng đạt sau sửa.
-- `apps/agent-core/spikes/spk-08/spk08_contract.py:markdown_footer`: `os.path.relpath` không áp dụng
-  giữa ổ D: (repo) và C: (TEMP). Giữ link tương đối khi có thể, fallback sang LICENSES.md trên
-  GitHub khi gặp ValueError. Có test cùng ổ, mô phỏng khác ổ chạy trên mọi nền tảng và bài
-  end-to-end SPK-08 thực tế xuất báo cáo vào TEMP.
