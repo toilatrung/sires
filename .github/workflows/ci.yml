@@ -399,5 +399,5 @@ jobs:
             while IFS=$'\t' read -r name result duration; do
               printf '| %s | %s | %s |\n' "$name" "$result" "$duration"
             done < "$RUNNER_TEMP/jobs.tsv"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"

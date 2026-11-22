@@ -1,6 +1,6 @@
 ﻿# PID-00009 — Self-QC
 
-**Kết luận:** Chưa đạt nghiệm thu hoàn toàn. CI toàn bộ tại HEAD, S11 và S12 đã đạt; còn các PR thử T1–T3, T5, T7.
+**Kết luận:** T1/T2/T3/T4/T6/T7 đã có bằng chứng Actions; còn T5 và T3 dùng cache main sau merge. Không merge theo yêu cầu PO. Có test outbox không ổn định cần platform theo dõi.
 
 ## 1. Lệnh và kết quả
 
@@ -81,6 +81,18 @@ Các file nghiệp vụ của service và hợp đồng ở docs giữ theo upst
 
 - Rerun [44931193323](https://github.com/toilatrung/sires/actions/runs/44931193323), attempt 2, đã đạt trên commit HEAD `51befc7`.
 - G01 thu hẹp: T4 đã có bằng chứng; còn T1–T3, T5, T7 và điều kiện EC11 (`develop` phải được đồng bộ từ `main`).
+
+## Lần 6 — 22/11/2026 · Nghiệm thu và sửa theo review #57
+
+- G2–G4 của QC đã sửa: công cụ đo lọc phản hồi API, Dockerfile.dockerignore chọn đúng image, values-only không chạy code/image. Workflow lọc dùng cùng danh sách affected với classifier. Frozen install sau sửa importer sample-service đạt.
+- T1 #73 đạt với các job không liên quan skipped; run đầu 45024755723 bị hủy bởi push thứ hai, run 45024781831 đạt sau 43s.
+- T2 #74, run 45024785948 đạt sau 99s: đúng 4 project Python và 2 image; TS skipped.
+- T3 #75, run 45024813714: cold 141s, warm cache PR attempt 2 là 60s. Log Nx xác nhận cache 8/8 task trên runner mới. Đây chưa phải cache main theo AC01.
+- T7 #76, run 45024821794: đúng kỳ vọng secrets/build fail, fixture dòng 3, Secret REDACTED; assert trên log xác nhận không có nguyên token giả.
+- T4 `d8c7076`, run 45024841054 attempt 2 đạt sau rerun phần lỗi. Attempt đầu gặp test outbox sai thứ tự; ghi đầy đủ ở report và artifact, không coi lần đầu là đạt.
+- Cả bốn PR thử đã đóng và xóa nhánh. Không sửa `docs/`, không merge #57, không đổi develop. Phần hậu merge T5/cache main giữ mở theo lựa chọn PO.
+- Chi tiết từng job và thời gian: [acceptance-20261122.json](acceptance-20261122.json).
+- Bổ sung sửa measure để tìm được PR đã đóng/xóa nhánh; summary ghi cả log và GITHUB_STEP_SUMMARY. Kiểm lần cuối và CI trên commit báo cáo được xác nhận trong phiên sau push.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).

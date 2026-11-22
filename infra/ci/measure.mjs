@@ -7,17 +7,35 @@ const api = (path, query) => JSON.parse(execFileSync('gh', ['api', path, '--jq',
   encoding: 'utf8',
   maxBuffer: 16 * 1024 * 1024,
 }));
+let developPulls;
+const developPullRequests = () => {
+  if (developPulls) return developPulls;
+  developPulls = [];
+  for (let page = 1; page <= 10; page++) {
+    const batch = api(`repos/${repository}/pulls?state=all&base=develop&per_page=100&page=${page}`,
+      '[.[] | {base: {ref: .base.ref, sha: .base.sha}, headRef: .head.ref, headRepoId: .head.repo.id, created_at, closed_at}]');
+    developPulls.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return developPulls;
+};
 const runs = (event, branch = '') => {
   const found = [];
   for (let page = 1; page <= 10; page++) {
     const query = new URLSearchParams({ event, status: 'completed', per_page: '100', page: String(page) });
     if (branch) query.set('branch', branch);
     const batch = api(`repos/${repository}/actions/workflows/ci.yml/runs?${query}`,
-      '[.workflow_runs[] | {id, conclusion, pull_requests: [.pull_requests[] | {base: {ref: .base.ref, sha: .base.sha}}], head_sha, run_attempt, created_at, updated_at}]');
+      '[.workflow_runs[] | {id, conclusion, pull_requests: [.pull_requests[] | {base: {ref: .base.ref, sha: .base.sha}}], head_sha, head_branch, headRepoId: .head_repository.id, run_attempt, created_at, updated_at}]');
     for (const run of batch) {
       if (run.conclusion === 'cancelled') continue;
       if (event === 'pull_request') {
-        const pr = run.pull_requests.find(({ base }) => base.ref === 'develop');
+        // GitHub empties workflow_runs.pull_requests after the trial branch is deleted.
+        // Resolve closed PRs by branch, repository and lifetime, including earlier pushes.
+        const pr = run.pull_requests.find(({ base }) => base.ref === 'develop')
+          ?? developPullRequests().find((pull) => pull.headRef === run.head_branch
+            && pull.headRepoId === run.headRepoId
+            && pull.created_at <= run.created_at
+            && (!pull.closed_at || run.created_at <= pull.closed_at));
         if (!pr) continue;
         const comparison = api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`,
           '{files: [.files[] | {filename, previous_filename}]}');
