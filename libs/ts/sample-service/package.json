@@ -1,0 +1,39 @@
+{
+  "name": "@sires/sample-service",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mẫu NestJS của cổng PH-01 và SPK-10",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "migrations"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "migrate": "node dist/migrate.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "catalog:",
+    "@nestjs/core": "catalog:",
+    "@nestjs/platform-fastify": "catalog:",
+    "@sires/platform": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
+    "reflect-metadata": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "devDependencies": {
+    "@sires/testing": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "amqplib": "catalog:",
+    "drizzle-kit": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "nx": {
+    "tags": ["type:lib", "lang:ts", "scope:platform"],
+    "targets": { "migrate": { "dependsOn": ["build"], "cache": false } }
+  }
+}
