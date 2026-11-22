@@ -1,0 +1,84 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Báo cáo khảo sát nguồn học thuật cho discovery của SIRes (OpenAlex, Semantic Scholar, Google Scholar qua SerpApi), căn cứ của DEC-60.">
+<title>Khảo sát nguồn học thuật | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a> · Báo cáo khảo sát</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Báo cáo khảo sát</p>
+<h1>Khảo sát nguồn học thuật cho discovery</h1>
+<p class="meta">Khảo sát 19–21/11/2026 · Người đánh giá và quyết định: PO Trịnh Quang Trung · Lập báo cáo 22/11/2026 theo yêu cầu PO · Quyết định: <a href="sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a> (sửa đổi <a href="sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>)</p>
+
+<div class="note"><p><strong>Kết luận.</strong> OpenAlex ổn định nhất nên là nguồn discovery mặc định. Google Scholar kết nối qua SerpApi, phía sau một module connector Google Scholar của SIRes. Semantic Scholar bị bỏ hẳn vì API không ổn định khi thử. PO đánh giá và quyết định ngày 22/11/2026; số đo bên dưới lấy từ spike SPK-03.</p></div>
+
+<h2 id="s-1">1. Mục đích và phạm vi</h2>
+<p>Chọn nguồn tìm kiếm tài liệu học thuật cho discovery (WF-04, <a href="sections/10-academic-discovery-and-trusted-library.html">mục 10</a>) và cách kết nối Google Scholar (<a href="sections/17-integrations-and-external-dependencies.html#s-17-2">17.2</a>), đồng thời kiểm chứng <a href="sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a> (có cách truy cập Google Scholar hợp lệ, ổn định) và <a href="sections/20-assumptions-constraints-and-open-questions.html#asm-14">ASM-14</a> (đọc được hồ sơ Google Scholar qua URL).</p>
+<ul>
+<li>Nguồn miễn phí gọi thật: OpenAlex, Semantic Scholar (có key của cả hai từ Lần 4).</li>
+<li>Google Scholar: gọi thật qua SerpApi, gói miễn phí; so sánh thêm SearchApi qua tài liệu công khai, không gọi API.</li>
+<li>Không thuộc phạm vi: đo độ ổn định dài hạn, rà hợp đồng và điều khoản lưu, phân phối dữ liệu, chi phí theo khối lượng thật.</li>
+</ul>
+
+<h2 id="s-2">2. Nguồn số liệu</h2>
+<p>Số liệu lấy từ spike SPK-03 (<a href="../tickets/issues/PID-00025/index.html">PID-00025</a>), báo cáo của Dev <code>agent/execution/PID-00025/report.md</code> và thư mục <code>evidence/</code> trên nhánh <code>library/pid-00025-sources-parsers</code> (PR #38, bản nháp, đầu nhánh <code>bb5414c</code>, 21/11/2026). Các lượt đo: Lần 1 (19/11/2026, không key), Lần 4–5 (21/11/2026, có key OpenAlex và Semantic Scholar), Lần 6 (21/11/2026, SerpApi). Bộ truy vấn mẫu gồm 9 truy vấn theo từ khóa, tiêu đề, tác giả, trải ba lĩnh vực (khoa học máy tính, sinh học, kinh tế). Client dừng nguồn khi gặp 429, 401, 403 và không thử lại trong lượt.</p>
+
+<h2 id="s-3">3. Kết quả</h2>
+<div class="table-wrap"><table><thead><tr>
+<th scope="col">Tiêu chí</th>
+<th scope="col">OpenAlex</th>
+<th scope="col">Semantic Scholar</th>
+<th scope="col">Google Scholar qua SerpApi</th>
+</tr></thead><tbody>
+<tr><td>Truy vấn thành công</td><td>Lần 5 (21/11/2026, có key): 9/9 truy vấn, 12/12 request HTTP 200, 45 paper</td><td>Lần 5: 429 ngay request đầu ở cả hai lượt (13:22:41 và 13:24:24 UTC), đã gửi <code>x-api-key</code>; Lần 1 (không key): 429 ngay request đầu. Chỉ có mẫu 3/9 truy vấn từ Lần 4</td><td>Lần 6: 7/7 lần tìm HTTP 200, <code>search_metadata.status=Success</code> (từ khóa, tiêu đề, tác giả, hai trang hồ sơ, hai lần lặp không dùng cache)</td></tr>
+<tr><td>Dữ liệu tối thiểu (INT-SCHOLAR-003)</td><td>34/45 paper đủ trường bắt buộc; 11 paper thiếu mô tả vì nguồn trả <code>abstract_inverted_index: null</code></td><td>Không đánh giá được ở Lần 5 (mẫu số 0)</td><td>25/25 kết quả có tiêu đề, liên kết, snippet, tóm tắt công bố, tác giả có liên kết, số trích dẫn; năm nằm trong tóm tắt, không phải trường cấu trúc riêng</td></tr>
+<tr><td>Hồ sơ tác giả qua URL (ASM-14)</td><td>Không áp dụng</td><td>Không áp dụng</td><td>Đọc được: URL <code>scholar.google.com/citations?user=…</code> → <code>author_id</code> → engine <code>google_scholar_author</code>; mẫu công khai trả 40 công bố trong 2 trang, cùng một tác giả</td></tr>
+<tr><td>Độ trễ quan sát</td><td>Không ghi riêng; khoảng cách giữa hai request ≥ 20 s do client</td><td>Không có</td><td>722–7 275 ms mỗi lần tìm, khoảng cách bắt đầu ≥ 15 s</td></tr>
+<tr><td>Giới hạn công bố (tài liệu, đọc 19/11/2026)</td><td>Ẩn danh 10 req/s; key miễn phí 30 req/s</td><td>Pool ẩn danh dùng chung; key ban đầu 1 req/s, có thể bị giới hạn khi tải cao</td><td>Gói Free 250 lần tìm/tháng, 50/giờ; Starter 25 USD/1 000 lần tìm, 200/giờ; mỗi trang kết quả tính một lần tìm</td></tr>
+<tr><td>Chi phí đã dùng</td><td>0</td><td>0</td><td>7/250 lần tìm của gói miễn phí (0 USD)</td></tr>
+</tbody></table></div>
+<p class="status">Số liệu là mẫu nhỏ trong khoảng hai ngày (9 truy vấn mỗi nguồn miễn phí, 7 lần tìm SerpApi trong khoảng 2 phút), không phải đo độ ổn định dài hạn, recall hay ngưỡng giới hạn tốc độ. Thông số giới hạn là số tài liệu công bố, không phải số đo được.</p>
+
+<h2 id="s-4">4. Đánh giá của PO</h2>
+<ul>
+<li><strong>OpenAlex</strong> ổn định nhất trong các lượt thử: mọi truy vấn thành công khi có key, metadata đủ cho phần lớn kết quả, chi phí bằng 0. Chọn làm nguồn mặc định.</li>
+<li><strong>Google Scholar qua SerpApi</strong> chạy được thật cho tìm kiếm và đọc hồ sơ qua URL. Giữ SerpApi làm dịch vụ trung gian theo hợp đồng (DEC-19), đặt phía sau một module connector Google Scholar của SIRes để quản lý cho Researcher.</li>
+<li><strong>Semantic Scholar</strong> không ổn định: bị giới hạn ngay request đầu ở mọi lượt, kể cả khi có key, nên không lấy đủ mẫu. Bỏ hẳn khỏi phạm vi.</li>
+</ul>
+
+<h2 id="s-5">5. Quyết định (DEC-60)</h2>
+<ol>
+<li>OpenAlex là nguồn discovery mặc định.</li>
+<li>Google Scholar kết nối qua SerpApi, phía sau module connector Google Scholar của SIRes.</li>
+<li>Bỏ Semantic Scholar khỏi phạm vi.</li>
+<li>Tính năng mới: Researcher liên kết hồ sơ Google Scholar với tài khoản SIRes; SIRes tổng hợp hồ sơ và danh sách công bố từ Google Scholar vào SIRes; Researcher quản lý và đăng báo cáo qua connector.</li>
+</ol>
+<p>Luồng nhập do người dùng hỗ trợ (INT-SCHOLAR-006) và nhập DOI, BibTeX, RIS, PDF (LIB-IMPORT-002) giữ nguyên.</p>
+
+<h2 id="s-6">6. Giới hạn và việc còn mở</h2>
+<ul>
+<li><a href="sections/20-assumptions-constraints-and-open-questions.html#oq-114">OQ-114</a>: khi OpenAlex là mặc định, Google Scholar được dùng thế nào trong một lần tìm (Researcher chọn nguồn, gộp kết quả, hay chỉ dùng khi cần).</li>
+<li><a href="sections/20-assumptions-constraints-and-open-questions.html#oq-115">OQ-115</a>: phạm vi và mức ưu tiên của connector Google Scholar, và “đăng báo cáo” cụ thể là gì. Google Scholar không có API ghi và SerpApi chỉ đọc, nên không thể tự động đưa bài lên hồ sơ Google Scholar.</li>
+<li><a href="sections/20-assumptions-constraints-and-open-questions.html#risk-12">RISK-12</a>: phụ thuộc SerpApi (gói, hạn mức, giá, điều khoản) và việc Google Scholar có thể chặn.</li>
+<li>Chưa rà hợp đồng SerpApi về quyền lưu, phân phối metadata và attribution; chưa chọn gói trả phí. Cần làm trước khi dùng cho người dùng thật (ASM-01).</li>
+<li>Chưa đo OpenAlex trên đủ ba lĩnh vực ở quy mô lớn hơn; nên đo lại khi làm adapter (PID-00050).</li>
+</ul>
+
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="sections/20-assumptions-constraints-and-open-questions.html#dec-60">← DEC-60</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Báo cáo khảo sát nguồn học thuật. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
