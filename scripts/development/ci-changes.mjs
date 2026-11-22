@@ -14,7 +14,7 @@ const head = option('--head', 'HEAD');
 const shared = /^(?:[^/]+\.(?:json|ya?ml|toml|lock|mjs)|\.nvmrc|\.python-version|\.github\/workflows\/|scripts\/development\/|infra\/ci\/)/;
 const contract = /^docs\/api-design\//;
 const chart = /^(?:infra\/helm\/sires-service\/|apps\/[^/]+\/deploy\/values\.yaml$)/;
-const docker = /^infra\/docker\/(node|python)\/Dockerfile$/;
+const docker = /^infra\/docker\/(node|python)\/Dockerfile(?:\.dockerignore)?$/;
 const terraform = /^infra\/terraform\//;
 const dependency = /(?:^|\/)(?:pnpm-lock\.yaml|uv\.lock|package\.json|pyproject\.toml|pnpm-workspace\.yaml)$/;
 
@@ -40,7 +40,9 @@ const pythonProjects = show('--projects=tag:lang:python');
 let affected;
 if (!full) {
   try {
-    affected = files.length ? show('--affected', '--files', ...files) : [];
+    // Deploy values belong to the chart job, not to the service's code targets (EC15).
+    const codeFiles = files.filter((file) => !/^apps\/[^/]+\/deploy\/values\.yaml$/.test(file));
+    affected = codeFiles.length ? show('--affected', '--files', ...codeFiles) : [];
     if (files.some((file) => contract.test(file)) && !affected.includes('@sires/contracts')) {
       affected = [...new Set([...affected, ...show('--affected', '--files=libs/ts/contracts/package.json')])];
     }
@@ -62,9 +64,9 @@ const images = readdirSync('apps')
       args: isPython ? `PACKAGE=sires-${service}\nMODULE=${service.replaceAll('-', '_')}.main` : `SERVICE=${service}`,
     };
   })
-  .filter(({ service, language, project }) => full || affected.includes(project)
+  .filter(({ language, project }) => full || affected.includes(project)
     || files.includes(`infra/docker/${language}/Dockerfile`)
-    || files.includes(`apps/${service}/deploy/values.yaml`));
+    || files.includes(`infra/docker/${language}/Dockerfile.dockerignore`));
 
 const result = {
   mode: full ? 'full' : 'filtered',
@@ -81,8 +83,8 @@ const result = {
   chart: full || files.some((file) => chart.test(file)),
   terraform: full || files.some((file) => terraform.test(file)),
   docker: full || files.some((file) => docker.test(file)),
-  node_docker: full || files.includes('infra/docker/node/Dockerfile'),
-  python_docker: full || files.includes('infra/docker/python/Dockerfile'),
+  node_docker: full || files.some((file) => docker.test(file) && file.startsWith('infra/docker/node/')),
+  python_docker: full || files.some((file) => docker.test(file) && file.startsWith('infra/docker/python/')),
   images: JSON.stringify({ include: images }),
   has_images: images.length > 0,
 };
