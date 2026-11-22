@@ -1,6 +1,6 @@
 # PID-00006 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu về mã — 0 CRITICAL, 0 HIGH, 4 MEDIUM, 3 LOW (Lần 1, 22/11/2026). Năm AC đạt, Output O1–O4 đúng đường dẫn, số đo SPK-10 khớp GitHub Actions. Trước khi merge PR #62, PO cần quyết G1 (EC11: PR đo chọn cả 20 project), G4 (người làm khác người được giao), cách xử lý G2 (sự kiện mẫu dùng hợp đồng `task.activated` thật) và cập nhật nhánh theo `main`.
+**Kết luận mới nhất:** Merge được theo quyết định PO — 0 CRITICAL, 0 HIGH. PO 22/11/2026 (“Merge, ghi việc sau”): G1 nhận số đo 20 project làm cận trên; G4 xác nhận Vietanhhhhhh2003 làm thay T1xNTH; G2 thành việc sau (Dev đổi sang `type` riêng của mẫu ở PR tiếp theo). Còn G3 (MEDIUM, Nx `inputs` cho DDL) và G5–G7 (LOW) (Lần 2, 22/11/2026)
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -86,6 +86,20 @@ Môi trường QC: worktree tách riêng tại đầu nhánh `a619e51`, Windows,
 - Database 12.4: 12 file DDL dựng xong 11 database trên PostgreSQL 16 (Dev 16.16, QC 16.15) + pgvector 0.8.7; knowledge có `vector(1536)`, HNSW. Không có DBQ.
 - N13: gắn `libs/ts/sample-service` vào luồng `platform` ở bảng 1.4 và `scripts/development/check-tracks.mjs` (vẫn còn mở).
 - PID-00001 H7 (“test trên bản build chuyển PID-00006”, `docs/docs_context.md` còn mở “ghi H7 vào hồ sơ PID-00006”) chưa có trong hồ sơ PID-00006, nên QC không đối chiếu. Trên thực tế test của mẫu dùng `@sires/platform` qua `dist` (package `exports` trỏ `dist/index.js`), tức đã chạy trên bản build cho các API mẫu dùng; PO quyết có cần ghi H7 vào hồ sơ không.
+
+## Lần 2 — 22/11/2026 · ghi quyết định PO
+
+Người chạy: phiên do PO giao; lần này chỉ ghi quyết định PO, không chạy lại các phép kiểm của Lần 1. Mã nguồn: nhánh `platform/pid-00006-sample-service` sau khi cập nhật theo `main` (`ab32bfb`, merge `main` `8275263`; không đổi mã của PR).
+
+Quyết định PO: trả lời câu hỏi về G1, G2, G4 của Lần 1 bằng “Merge, ghi việc sau” (22/11/2026).
+
+| G Lần 1 | Trạng thái | Quyết định PO |
+| --- | --- | --- |
+| G1 | Đóng | Nhận số đo SPK-10 khi PR chọn cả 20 project (do `pnpm-lock.yaml`) làm cận trên của EC11 |
+| G2 | Chuyển việc sau | Dev đổi sự kiện mẫu sang `type` riêng của mẫu (không dùng `task.activated` của planning) ở PR tiếp theo |
+| G3 | Còn mở (MEDIUM) | Nên sửa Nx `inputs` trước khi chép kết quả DDL vào database 12.4 |
+| G4 | Đóng | Xác nhận `Vietanhhhhhh2003` làm thay `T1xNTH` cho PID-00006 |
+| G5–G7 | Còn mở (LOW) | Không xử lý ở lần này |
 
 ---
 
