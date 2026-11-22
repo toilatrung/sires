@@ -84,3 +84,4 @@ Rerun CI trên commit HEAD `51befc7` đạt ở attempt 2 (run 44931193323). Xá
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
 `n<!-- PID-00009 acceptance T1: docs-only first push. -->
+<!-- PID-00009 acceptance T1: second push cancels previous run. -->
