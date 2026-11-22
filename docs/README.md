@@ -47,6 +47,7 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | `phieu-chot-backlog.html` | Phiếu chốt để PO trả lời OQ và duyệt hàng loạt |
 | `phieu-chot-spk-01.html` | Phiếu chốt sau SPK-01 (PID-00021): key proxy, OQ-113, G5–G10, PID-00070; lập 21/11/2026, chờ PO chốt (đề nghị PC-02) |
 | `bao-cao-khao-sat-nguon-hoc-thuat.html` | Báo cáo khảo sát nguồn học thuật cho discovery (OpenAlex, Semantic Scholar, Google Scholar qua SerpApi), căn cứ DEC-60 (22/11/2026) |
+| `phieu-chot-google-scholar.html` | Phiếu chốt chi tiết Google Scholar trong discovery và connector kế hoạch công bố (DEC-60, DEC-61); lập 22/11/2026, chờ PO chốt (đề nghị PC-03) |
 | `figures/` | Nguồn sơ đồ Mermaid `FIG-0NN-*.mmd`; [hướng dẫn](overview/figures/README.md) |
 | `assets/` | `styles.css` dùng chung cho mọi bộ tài liệu HTML; logo ở `assets/brand/` |
 
