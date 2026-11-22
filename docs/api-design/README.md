@@ -4,7 +4,13 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — nguồn discovery theo DEC-60, PO chốt 22/11/2026
+### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+
+- Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
+- Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).
+- `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml`.
+
+### Thay đổi trước — nguồn discovery theo DEC-60, PO chốt 22/11/2026
 
 DEC-60 (sửa DEC-19) sau đánh giá thực tế 19–21/11/2026 (SPK-03, PID-00025): OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng), phía trước là module connector Google Scholar của SIRes; Semantic Scholar bỏ khỏi phạm vi.
 
