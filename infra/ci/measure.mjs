@@ -2,24 +2,31 @@
 import { execFileSync } from 'node:child_process';
 
 const repository = process.argv[2] ?? 'toilatrung/sires';
-const api = (path) => JSON.parse(execFileSync('gh', ['api', path], { encoding: 'utf8' }));
+// Keep repository/actor metadata out of the buffered response (100 runs exceed 1 MiB).
+const api = (path, query) => JSON.parse(execFileSync('gh', ['api', path, '--jq', query], {
+  encoding: 'utf8',
+  maxBuffer: 16 * 1024 * 1024,
+}));
 const runs = (event, branch = '') => {
   const found = [];
   for (let page = 1; page <= 10; page++) {
     const query = new URLSearchParams({ event, status: 'completed', per_page: '100', page: String(page) });
     if (branch) query.set('branch', branch);
-    const batch = api(`repos/${repository}/actions/workflows/ci.yml/runs?${query}`).workflow_runs;
+    const batch = api(`repos/${repository}/actions/workflows/ci.yml/runs?${query}`,
+      '[.workflow_runs[] | {id, conclusion, pull_requests: [.pull_requests[] | {base: {ref: .base.ref, sha: .base.sha}}], head_sha, run_attempt, created_at, updated_at}]');
     for (const run of batch) {
       if (run.conclusion === 'cancelled') continue;
       if (event === 'pull_request') {
         const pr = run.pull_requests.find(({ base }) => base.ref === 'develop');
         if (!pr) continue;
-        const comparison = api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`);
+        const comparison = api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`,
+          '{files: [.files[] | {filename, previous_filename}]}');
         if (!comparison.files?.length || comparison.files.length >= 300 ||
             comparison.files.some(({ filename, previous_filename }) => [filename, previous_filename]
               .filter(Boolean).some((file) => !/^(agent\/|docs\/(?!api-design\/))/.test(file)))) continue;
       }
-      const jobs = api(`repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`).jobs;
+      const jobs = api(`repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`,
+        '[.jobs[] | {name, conclusion}]');
       if (!jobs.some((job) => job.name === 'changes' && job.conclusion === 'success')) continue;
       found.push(run);
       if (found.length === 20) return found;

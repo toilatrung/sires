@@ -113,12 +113,11 @@ jobs:
           if [[ "$MODE" == full ]]; then
             pnpm nx run-many -t lint typecheck test build --projects=tag:lang:ts
           else
-            pnpm nx affected -t lint typecheck test build --base="$BASE" --head="$HEAD_SHA" --exclude=tag:lang:python
+            pnpm nx run-many -t lint typecheck test build --projects="$AFFECTED" --exclude=tag:lang:python
           fi
         env:
           MODE: ${{ needs.changes.outputs.mode }}
-          BASE: ${{ needs.changes.outputs.base }}
-          HEAD_SHA: ${{ needs.changes.outputs.head }}
+          AFFECTED: ${{ needs.changes.outputs.affected }}
       - run: bash infra/ci/nx-cache-db.sh save
         continue-on-error: true
 
@@ -158,12 +157,11 @@ jobs:
           if [[ "$MODE" == full ]]; then
             pnpm nx run-many -t lint typecheck test --projects=tag:lang:python
           else
-            pnpm nx affected -t lint typecheck test --base="$BASE" --head="$HEAD_SHA" --exclude=tag:lang:ts
+            pnpm nx run-many -t lint typecheck test --projects="$AFFECTED" --exclude=tag:lang:ts
           fi
         env:
           MODE: ${{ needs.changes.outputs.mode }}
-          BASE: ${{ needs.changes.outputs.base }}
-          HEAD_SHA: ${{ needs.changes.outputs.head }}
+          AFFECTED: ${{ needs.changes.outputs.affected }}
       - run: bash infra/ci/nx-cache-db.sh save
         continue-on-error: true
 
