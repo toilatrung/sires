@@ -1,47 +1,64 @@
-# PID-00029 ? B?o c?o th?c thi
+# PID-00029 — Báo cáo thực thi
 
-**Tr?ng th?i:** ?ang l?m
+**Trạng thái:** Bị chặn — EC09: DDL chung chấp nhận provenance thiếu inputs; chờ PO sửa nguồn
 
-- **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) ? **Lu?ng:** `research` ? **Giai ?o?n:** PH-01
-- **Nh?nh:** `research/pid-00029-migration` ? **PR:** ch?a m?
-- **C?p nh?t:** 23/11/2026
-- **Tri?n khai:** [implement.md](implement.md) ? **Self-QC:** [self-qc.md](self-qc.md)
+- **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Luồng:** `research` · **Giai đoạn:** PH-01
+- **Nhánh:** `research/pid-00029-migration` · **PR:** chưa mở
+- **Cập nhật:** 23/11/2026
+- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
-## 1. T?m t?t
+## 1. Tóm tắt
 
-- Slice: 0/3 xong. ?ang tri?n khai S01; PID-00001, PID-00004, PID-00158 ?? c? tr?n origin/main f9da4af.
-- AC: 0/1 ??t; ch?a ch?y test. Edge case: 0/13 ?? ki?m.
-- Y?u c?u th?m: 0.
+- Slice: 2/3 xong. S01 đã triển khai, chặn nghiệm thu EC09 do DDL nguồn; S02, S03 đạt.
+- AC: 1/1 đạt ở mức kiểm tích hợp Testcontainers PostgreSQL 16 + pgvector; chưa nghiệm thu toàn ticket vì EC09 lỗi.
+- Edge case: 12/13 đạt; EC09 chỉ đạt một phần, ca provenance thiếu inputs thất bại.
+- Test cuối: 20 đạt, 1 lỗi / 21; lint, typecheck, build đạt.
+- Yêu cầu thêm: 0.
 
-## 2. Tr?ng th?i c?ng vi?c
+## 2. Trạng thái công việc
 
-| Slice | M?c ti?u | Tr?ng th?i | File t?o / s?a |
-| --- | --- | --- | --- |
-| S01 | Migration, l?nh migrate, Helm, EC01?EC12 | ?ang l?m | `apps/research/migrations/`, `src/db/`, `package.json`, `deploy/values.yaml` |
-| S02 | Ba state machine, SQL sinh v? EC13 | Ch?a l?m | `src/domain/`, `src/db/state-transition.spec.ts` |
-| S03 | Khung module v? README | Ch?a l?m | `src/app.module.ts`, `src/app.module.spec.ts`, `README.md` |
+| Slice | Mục tiêu                                 | Trạng thái                                    | File tạo / sửa                                                                                                                                                                                                       |
+| ----- | ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S01   | Migration, lệnh migrate, Helm, EC01–EC12 | Chặn — EC09 trong DDL chung; mã đã triển khai | `apps/research/migrations/0000_init.sql`, `migrations/meta/`, `drizzle.config.ts`, `src/db/`, `src/migrate.ts`, `src/migrate.spec.ts`, `package.json`, `tsconfig.build.json`, `deploy/values.yaml`, `pnpm-lock.yaml` |
+| S02   | Ba state machine, SQL sinh và EC13       | Xong — 9 chuyển hợp lệ, đủ 34 cặp đã kiểm     | `src/domain/state-machines.ts`, `src/db/state-transition.spec.ts`, SQL sinh trong `0000_init.sql`                                                                                                                    |
+| S03   | Khung module, health và README           | Xong                                          | `src/{evidence,claims,verification,artifacts,diagrams,kpi}/`, `src/app.module.ts`, `src/app.module.spec.ts`, `README.md`                                                                                             |
 
-## 3. K?t qu?
+## 3. Kết quả
 
-H? s? ?? ?? th?c thi: check-pid 0 c?nh b?o. Worktree ri?ng t? origin/main, gi? nguy?n thay ??i d? PID-00014.
+Worktree `D:/sires/.nx/pid00029` từ `origin/main` f9da4af, giữ nguyên công việc PID-00014.
+Hồ sơ check-pid đủ, 0 cảnh báo. PID-00001, PID-00004 và PID-00158 đã có trên main.
 
-## 4. Vi?c c?n l?i
+Custom migration tạo 16 bảng app/replica và các đối tượng chung, chạy bằng drizzle-orm;
+không tạo vai trò. Schema khớp DDL qua pg_dump với cùng owner thật, không SUPERUSER/BYPASSRLS.
+Chạy lại không đổi. Ba state machine và SQL dùng helper PID-00158. NestJS nạp sáu module,
+HTTP `/health` trả service research/status ok. README ghi ba bản sao và sự kiện nguồn.
 
-Tri?n khai v? ki?m ?? ba slice, t? ??i chi?u b?ng spec-converge-skill.
+Kiểm cuối `pnpm --filter @sires/research test`: 20 đạt, 1 lỗi, không skip. Ca lỗi giữ
+assertion phải từ chối, không đổi thành expected failure hoặc bỏ qua. Chi tiết ở Self-QC.
 
-## 5. Y?u c?u th?m
+## 4. Việc còn lại
 
-Kh?ng c?.
+PO duyệt và sửa DDL chung cho provenance thiếu inputs. Sau khi nguồn được merge,
+Dev đồng bộ nguồn vào migration chưa merge (hoặc migration mới nếu đã merge), chạy
+lại EC09, toàn bộ research và các kiểm tra liên quan, thêm Lần 2 vào báo cáo.
+Chưa chạy helm template do máy không có Helm; cần kiểm trước nghiệm thu phần Job.
+Mã triển khai và Self-QC chưa commit; chỉ báo cáo được commit/push theo ngoại lệ của skill.
 
-## 6. C?n PO v? t?i li?u ?i k?m
+## 5. Yêu cầu thêm
 
-- **?? xu?t cho PO:** kh?ng c?.
-- **Y?u c?u h?p ??ng:** kh?ng c?.
-- **C?n m?:** ch?a ph?t hi?n.
-- **B??c ti?p theo:** tri?n khai, Self-QC; commit m? v? m? PR khi ng??i d?ng y?u c?u theo AGENT.md.
-- **T?i li?u ?i k?m:** kh?ng c?.
+Không có. Hai câu hỏi trong phiên về EC09 và quyền sửa DDL là yêu cầu giải thích,
+không phải PO duyệt sửa nguồn hoặc đổi phạm vi.
+
+## 6. Cần PO và tài liệu đi kèm
+
+- **Đề xuất cho PO:** đề xuất DBQ (chưa tự cấp mã). Nguồn: `docs/database/ddl/00-common.sql:85–91`, hàm `app.is_provenance`; `research.sql` dùng hàm trong CHECK cột provenance. Hồ sơ EC09 yêu cầu ArtifactVersion không có provenance hợp lệ phải bị từ chối. Đầu vào `{ "createdBy": { "type": "system", "component": "research-test" } }` thiếu trường `inputs` vẫn được lưu. `jsonb_typeof(p->'inputs') = 'array'` trả SQL NULL khi thiếu trường; cả hàm có thể trả NULL; PostgreSQL CHECK chấp nhận NULL. Đề nghị PO duyệt làm hàm trả boolean chặt chẽ (ví dụ bọc biểu thức xác thực bằng `COALESCE(..., false)`), bảo đảm thiếu inputs → false, inputs=[] vẫn hợp lệ, rà ảnh hưởng các service dùng chung và giao migration cập nhật cho chúng. Không sửa docs hay chỉ vá migration research, vì như vậy lệch AC01/schema tham chiếu.
+- **Yêu cầu hợp đồng:** không có.
+- **Còn mở:** G1 HIGH (EC09/DDL); G2 MEDIUM (Helm chưa chạy). `nx affected` toàn repo đã phát hiện timeout trong `@sires/platform:test` (telemetry, 167 đạt/1 lỗi); dừng lượt rộng sau lỗi, không khẳng định 20 project đều đạt.
+- **Bước tiếp theo:** PO xử lý DDL; Dev sửa theo nguồn đã duyệt và chạy lại; commit mã/mở PR khi được yêu cầu. Không đặt Xong — chờ QC khi G1 còn mở.
+- **Tài liệu đi kèm:** không có; test tái hiện nằm trong `apps/research/src/db/behaviour.testkit.ts`, được đăng ký bởi `migration.spec.ts`.
 
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
-SIRes ? Copyright ? 2026 The eTroy development team ? eTroy One platform. Sole decision-maker: PO Tr?nh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+
+SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
