@@ -71,7 +71,7 @@ tags:
   - name: Tasks
     description: Task, readiness, kích hoạt, nghiệm thu — PRD 9.4–9.10.
   - name: Discovery
-    description: Google Scholar qua dịch vụ trung gian, nguồn dự phòng — PRD 10.1–10.3, 17.2.
+    description: OpenAlex (nguồn mặc định), Google Scholar qua SerpApi — PRD 10.1–10.3, 17.2; DEC-60.
   - name: Trusted Library
     description: Reference, duyệt, thu hồi, nội dung để index — PRD 10.4–10.9.
   - name: Evidence & Claims
@@ -181,7 +181,14 @@ paths:
         - Auth
       operationId: getSession
       summary: Trạng thái phiên hiện tại
-      description: Trả thông tin phiên và CSRF token. Không bao giờ trả access/ID token.
+      description: |
+        Trả thông tin phiên và CSRF token. Không bao giờ trả access/ID token.
+
+        Web gọi operation này mỗi lần điều hướng hoặc mở màn hình, không gọi theo chu kỳ hay hẹn giờ.
+        Lời gọi được tính là thao tác của người dùng: gateway cập nhật `last_activity` và tính lại hạn
+        không hoạt động 12 giờ (ADR-27, INT-OIDC-003-AC02). Ngoài operation này chỉ lệnh ghi được chấp
+        nhận mới gia hạn phiên; GET khác (polling, `/events`) và lệnh ghi bị từ chối (`401`, `403`) không
+        gia hạn. Không có header riêng để đánh dấu thao tác của người dùng.
       x-requirements:
         - INT-OIDC-003
       x-priority: P0
@@ -2405,7 +2412,11 @@ paths:
         - Discovery
       operationId: listDiscoverySources
       summary: Nguồn discovery khả dụng và năng lực
-      description: Google Scholar qua dịch vụ trung gian theo hợp đồng là nguồn chính; OpenAlex/Semantic Scholar dự phòng (DEC-19).
+      description: |
+        OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng của DEC-19),
+        phía trước là module connector Google Scholar của SIRes (DEC-60, sửa DEC-19). Google Scholar chỉ dùng khi Researcher
+        chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức
+        thêm sau phiếu chốt PC-03.
       x-requirements:
         - DISC-SCHOLAR-002
         - DISC-ADAPTER-001
@@ -8129,9 +8140,8 @@ components:
         source:
           type: string
           examples:
-            - google_scholar
             - openalex
-            - semantic_scholar
+            - google_scholar
         role:
           type: string
           enum:
@@ -8168,7 +8178,8 @@ components:
           minLength: 1
         source:
           type: string
-          default: google_scholar
+          default: openalex
+          description: Nguồn tìm kiếm; mặc định OpenAlex (DEC-60). Google Scholar qua SerpApi dùng giá trị `google_scholar`, chỉ khi Researcher chọn và cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức thêm sau phiếu chốt PC-03.
         filters:
           type: object
           properties:
@@ -8302,9 +8313,8 @@ components:
         source:
           type: string
           examples:
-            - google_scholar
             - openalex
-            - semantic_scholar
+            - google_scholar
             - doi
             - bibtex
             - ris

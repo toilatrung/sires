@@ -9,7 +9,7 @@
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè. Mục 1–6 dưới là kết quả **Lần 1** (18/11/2026), giữ nguyên; trạng thái slice, kết quả và việc còn lại hiện tại ở các mục [Lần 2](#lần-2--19112026) và [Lần 3](#lần-3--19112026) cuối file.
 
-Người làm Lần 1: agent Claude trong phiên của PO `toilatrung` (PID giao cho `toilatrung`). PO chọn trong phiên: “Viết PID-00020, chưa chạy test” — môi trường phiên không có mạng tới PyPI, npm và không có Docker.
+Người làm Lần 1: phiên của PO `toilatrung` (PID giao cho `toilatrung`). PO chọn trong phiên: “Viết PID-00020, chưa chạy test” — môi trường phiên không có mạng tới PyPI, npm và không có Docker.
 
 ## 1. Tóm tắt
 
@@ -61,7 +61,7 @@ Không có.
 
 ## Lần 2 — 19/11/2026
 
-Người làm: agent Claude trong phiên Dev do phiên điều phối của PO `toilatrung` khởi động (lô 4 PID PH-01 của `toilatrung`, mỗi PID một worktree). Việc của lần này là mục 4 của Lần 1: sinh lại `uv.lock`, chạy thật mọi test, ruff, mypy, thao tác tay EC07, sửa test lỗi trong phạm vi, tự QC. Máy PO (Windows 11, có mạng); test chạy hai nơi: Windows qua runner (Smart App Control chặn `.venv\Scripts\python.exe` và `.pyd` Cython của SQLAlchemy) và Linux (container `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` trên Docker Engine của WSL, giống CI). Chi tiết lệnh, môi trường: [self-qc.md Lần 2](self-qc.md).
+Người làm: phiên Dev do phiên điều phối của PO `toilatrung` khởi động (lô 4 PID PH-01 của `toilatrung`, mỗi PID một worktree). Việc của lần này là mục 4 của Lần 1: sinh lại `uv.lock`, chạy thật mọi test, ruff, mypy, thao tác tay EC07, sửa test lỗi trong phạm vi, tự QC. Máy PO (Windows 11, có mạng); test chạy hai nơi: Windows qua runner (Smart App Control chặn `.venv\Scripts\python.exe` và `.pyd` Cython của SQLAlchemy) và Linux (container `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` trên Docker Engine của WSL, giống CI). Chi tiết lệnh, môi trường: [self-qc.md Lần 2](self-qc.md).
 
 ### Yêu cầu thêm
 

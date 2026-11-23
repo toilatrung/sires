@@ -8,3 +8,10 @@ image:
   tag: latest
 port: 3102
 replicas: 2
+# Job migration của chart chung (PID-00010 S02) chạy lệnh này trong image của service trước Deployment
+# (PID-00017 S04; kiến trúc 6.10, H1, H5). Lệnh chạy từ WORKDIR /app của infra/docker/node/Dockerfile, chỉ dùng
+# migrate() của drizzle-orm có trong image (không cần drizzle-kit, EC15); DSN của vai trò migrator lấy từ biến
+# DATABASE_MIGRATOR_URL. Chạy lại khi đã ở bản mới nhất không làm gì (EC01).
+migration:
+  enabled: true
+  command: ["node", "dist/migrate.js"]

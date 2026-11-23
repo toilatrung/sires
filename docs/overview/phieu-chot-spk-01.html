@@ -1,0 +1,308 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu để Product Owner chốt các câu còn mở sau SPK-01 (PID-00021): key proxy và EC01, ánh xạ lỗi HTTP 400 (OQ-113), các mục G5–G10 của QC, PID-00070 và điều kiện hoàn tất.">
+<title>Phiếu chốt SPK-01 | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .ctx{font-size:.88rem;margin:.3rem 0 .5rem}
+.item .ctx ol{margin:.3rem 0;padding-left:1.4rem}
+.item .q{margin:.3rem 0 .6rem;font-weight:600}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="back-log.html">Backlog</a> · Phiếu chốt SPK-01</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
+<h1>Phiếu chốt SPK-01 (PID-00021)</h1>
+<p class="meta">Số phiếu đề nghị: PC-02 · Lập 21/11/2026 theo yêu cầu PO · Nguồn: <a href="../../agent/execution/PID-00021/report.md">report.md</a> Lần 1–2 và <a href="../../agent/execution/PID-00021/qc-report.md">qc-report.md</a> Lần 1–2 của <a href="../tickets/issues/PID-00021/index.html">PID-00021</a> (PR #55, đã merge 21/11/2026) · 12 mục: 1 Open Question, 9 quyết định, 2 việc duyệt</p>
+<div class="note"><p><strong>Bối cảnh.</strong> PID-00021 (SPK-01) đã merge với kết luận một phần theo quyết định của PO (“Sửa G3 rồi merge”, 21/11/2026). Ticket vẫn “Bị chặn — EC01”: QC Lần 1 còn G1, G2 (HIGH, chưa đo được Claude, Gemini và endpoint chính thức), G4 (MEDIUM, ánh xạ lỗi) và G5–G10 (LOW). Phiếu này gom các câu cần PO chốt để đóng ticket và để PID-00070 bắt đầu được. Câu trả lời của PO ở phiếu này là căn cứ (R-02) để áp dụng vào PRD, kiến trúc, hồ sơ ticket và mã spike.</p></div>
+<div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của người lập phiếu, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="PC-02"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Điền đề xuất cho mục còn trống</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<button type="button" id="b-reset">Xóa phiếu</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="back-log.html">← Backlog</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt SPK-01. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+const R = {
+  ticket: ['PID-00021', '../tickets/issues/PID-00021/index.html'],
+  scope: ['scope EC01–EC04', '../tickets/issues/PID-00021/specs/scope.html'],
+  report: ['report.md', '../../agent/execution/PID-00021/report.md'],
+  qc: ['qc-report.md', '../../agent/execution/PID-00021/qc-report.md'],
+  p70: ['PID-00070', '../tickets/issues/PID-00070/index.html'],
+  prd86: ['PRD 8.6', 'sections/08-ai-assistant-and-multi-agent-orchestration.html#s-8-6'],
+  arch84: ['Kiến trúc 8.4', '../architecture/sections/08-model-gateway-and-integrations.html#s-8-4'],
+  arch122: ['Kiến trúc 12.2', '../architecture/sections/12-decisions-risks-and-open-issues.html#s-12-2'],
+  asm: ['ASM-02, ASM-03, ASM-10', 'sections/20-assumptions-constraints-and-open-questions.html#asm-02'],
+  oq113: ['PRD 20.3', 'sections/20-assumptions-constraints-and-open-questions.html#oq-113'],
+};
+const APPROVE_OPTS = ['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'];
+// rec: index của phương án đề xuất
+const GROUPS = [
+ {title:'A. Key proxy và EC01 (G1, G2)', items:[
+  {id:'K1', kind:'Quyết định', refs:['ticket','scope','qc'], impact:'PID-00021-AC01–AC03, ASM-02, ASM-03, ASM-10',
+   ctx:'PO đã cấp một key của proxy tổng hợp, đặt cho cả ba biến ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY; mọi phép đo của Lần 1 dùng key này. Kết quả: OpenAI đạt mọi phép thử qua proxy. Claude không đo được vì nhóm key không có kênh Claude (HTTP 503 “No available channel”). Với API dạng Anthropic và Gemini, proxy không giữ cấu hình structured output. Endpoint chính thức của cả ba hãng từ chối key này (401, 400), nên AC03 không so được proxy với endpoint chính thức. EC01 chỉ viết cho trường hợp “chưa có key của một provider”, chưa nói key proxy có được tính hay không.',
+   q:'Key proxy tổng hợp có được tính là key của provider khi xét EC01 không?',
+   opts:['Tính cho OpenAI, không tính cho Claude và Gemini. Kết luận ASM-02, ASM-10 cho OpenAI được nhận, ghi “đo qua proxy”. Claude và Gemini cần key theo mục K2 để chạy Lần 3; AC03 cần ít nhất một key chính thức để so với proxy.',
+     'Tính cho cả ba. Đóng PID-00021 với kết luận hiện có: Claude ghi “không đo được qua proxy”, Gemini ghi kết quả qua proxy, AC03 bỏ phần so với endpoint chính thức. Rủi ro: ASM-02 cho Claude chưa có bằng chứng nào; thiếu năng lực chỉ lộ ra ở ô Hội tụ của PID-00070.',
+     'Không tính. Cần key chính thức của cả ba hãng, kể cả OpenAI; kết luận OpenAI hiện có chỉ để tham khảo tới Lần 3.'], rec:0},
+  {id:'K2', kind:'Quyết định', refs:['report','qc'], impact:'PID-00021 Lần 3, chi phí',
+   ctx:'Lần 3 không cần sửa mã: chạy lại capabilities.py và base_url.py compare trên endpoint chính thức. Lần 1 tốn dưới 0,01 USD trên model giá thấp (gpt-4.1-nano, gemini-2.5-flash-lite; claude-haiku-4-5 bị chặn).',
+   q:'Lần 3 dùng key nào và trần chi phí bao nhiêu?',
+   opts:['PO cấp key chính thức Anthropic (dạng sk-ant-…) và Google AI Studio (dạng AIza…), thêm OpenAI nếu K1 chọn “Không tính”; đặt ở biến môi trường cấp User như hiện tại; trần chi phí 1 USD cho Lần 3.',
+     'PO đổi sang nhóm key của proxy có kênh Claude và giữ nguyên structured output. Vẫn là phép đo qua proxy; AC03 vẫn không so được với endpoint chính thức.',
+     'Không cấp key cho SPK-01. Năng lực Claude, Gemini thật được đo ở test provider thật của PID-00070 (ô Hội tụ).'], rec:0},
+ ]},
+ {title:'B. Ánh xạ lỗi provider (G4)', items:[
+  {id:'OQ-113', kind:'Open Question', refs:['oq113','prd86','arch84','qc'], impact:'PRD 8.6 (AGENT-PROVIDER-001), ProviderErrorCode ở docs/api-design, kiến trúc 8.4, PID-00070',
+   ctx:'Bộ mã chuẩn 8.6 có 11 mã lỗi provider. HTTP 400 hiện chỉ có hai dòng ánh xạ: vượt context → context_too_long, và (Gemini) key sai → auth_failed. Các HTTP 400 khác (tham số không hợp lệ; schema hay khai báo tool bị từ chối, ví dụ proxy từ chối strict của OpenAI) spike đang ghi unmapped. Đây là lỗi của yêu cầu: thử lại không giúp, Researcher thường phải đổi model hoặc base URL.',
+   q:'HTTP 400 không thuộc 11 mã chuẩn ánh xạ về mã nào?',
+   opts:['Thêm mã mới invalid_request (cố định, không thử lại) vào 8.6, ProviderErrorCode và kiến trúc 8.4. Agent Run báo yêu cầu bị provider từ chối, gợi ý kiểm model và base URL.',
+     'Gộp vào invalid_response (cố định), không thêm mã. Nhược điểm: invalid_response nói về phản hồi không qua schema, không phải yêu cầu bị từ chối, nên khó chẩn đoán.',
+     'Gộp vào provider_unavailable (tạm thời, tự thử lại). Không đề xuất: thử lại cùng yêu cầu vẫn bị từ chối, tốn lượt gọi.'], rec:0},
+  {id:'M1', kind:'Duyệt', refs:['arch84','report','qc'], impact:'Kiến trúc 8.4, 8.2; PID-00070',
+   ctxList:['Proxy trả 503 kèm thân code: model_not_found; mapper xét HTTP status trước nên ra provider_unavailable và thử lại sai → quy tắc: mã lỗi trong thân phản hồi ưu tiên hơn HTTP status.',
+     'Gemini key sai là HTTP 400 INVALID_ARGUMENT, reason API_KEY_INVALID → auth_failed.',
+     'google-genai ném thẳng exception của httpx (ConnectTimeout, ConnectError, ReadTimeout) và JSONDecodeError → gateway tự ánh xạ thành timeout, network_error, invalid_response.',
+     '429 của Gemini phân biệt giới hạn tốc độ với hạn mức ngày bằng QuotaFailure.quotaId.',
+     'Anthropic hết tiền là 402 billing_error → quota_exceeded (theo SDK 2.12, chưa kiểm thật).',
+     'SDK Anthropic, OpenAI tự thử lại 2 lần → gateway đặt max_retries=0 để tự thử lại và đếm attempts.',
+     'Stream OpenAI phải luôn đặt stream_options.include_usage.'],
+   q:'Duyệt bảy bổ sung trên (đề xuất 4 ở report.md mục 6) cho kiến trúc 8.4, để PID-00070 làm theo?',
+   opts:['Duyệt cả bảy; ghi vào kiến trúc 8.4 khi áp dụng phiếu.',
+     'Duyệt quy tắc ưu tiên mã trong thân (ý 1) và max_retries=0 (ý 6); các ý còn lại để PID-00070 tự kiểm lại.',
+     'Chưa duyệt; giữ kiến trúc 8.4 như hiện tại.'], rec:0},
+ ]},
+ {title:'C. Các mục LOW của QC (G5–G10)', note:'Các mục này không chặn merge (PR #55 đã merge). “Trước Lần 3” nghĩa là làm trên nhánh mới của PID-00021 trước khi chạy lại với key.', items:[
+  {id:'G5', kind:'Quyết định', refs:['report','qc'], impact:'report.md (O2)',
+   ctx:'Báo cáo có ba câu lệch dữ liệu thô: Pydantic AI và LangGraph ghi “cùng số lời gọi và token” nhưng token khác (1 296–1 506 vào, 174–193 ra); Gemini ghi 72 lời gọi có usage, dữ liệu thô có 69; lượt d, e ghi usage không stream “có” trong khi summary ghi “không đủ”.',
+   q:'Xử lý G5 thế nào?',
+   opts:['Sửa ba câu trong report.md cho khớp dữ liệu, cùng nhánh với Lần 3.', 'Sửa ngay trong một PR nhỏ của luồng agent-core.', 'Giữ nguyên; chỗ lệch đã ghi ở qc-report.'], rec:0},
+  {id:'G6', kind:'Quyết định', refs:['report','qc'], impact:'frameworks.py, README spike (O1)',
+   ctx:'frameworks.py mặc định ghi evidence vào evidence/frameworks-<platform>/, còn lệnh chạy lại trong report và README không có --out; evidence đã nộp nằm ở evidence/frameworks/.',
+   q:'Xử lý G6 thế nào?',
+   opts:['Đổi mặc định thành evidence/frameworks, trước Lần 3.', 'Giữ mặc định, ghi --out vào lệnh chạy lại.', 'Không sửa.'], rec:0},
+  {id:'G7', kind:'Quyết định', refs:['qc'], impact:'scripts/development/setup-windows.ps1 (luồng infra)',
+   ctx:'setup-windows.ps1 -Spikes băm nguyên byte của requirements.txt. Trên checkout có core.autocrlf=true (mặc định của Git for Windows) file thành CRLF nên mã băm lệch: -Check báo “[cần]” dù gói đã cài, lần chạy thường xóa rồi tải lại khoảng 80 MB.',
+   q:'Xử lý G7 thế nào?',
+   opts:['Chuẩn hóa xuống dòng (CRLF → LF) trong setup-windows.ps1 trước khi băm; luồng infra làm, không phụ thuộc cấu hình checkout.', 'Ghim eol=lf cho apps/*/spikes/*/requirements.txt trong .gitattributes.', 'Không sửa.'], rec:0},
+  {id:'G8', kind:'Quyết định', refs:['qc'], impact:'common.py › redact(), evidence/ (repo public)',
+   ctx:'Evidence còn 9 request id do proxy sinh và tên nhóm tài khoản trên proxy, nằm trong thông báo lỗi. Đây không phải host hay key, nhưng nhà vận hành proxy dùng được để đối chiếu tài khoản. Các dòng này đã nằm trong lịch sử git của main: che bây giờ chỉ ngăn lan tiếp, không xóa khỏi lịch sử.',
+   q:'Xử lý G8 thế nào?',
+   opts:['Thêm quy tắc che request id và tên nhóm vào redact(), che luôn các dòng trong evidence hiện có, bằng một PR nhỏ của luồng agent-core ngay (không chờ Lần 3).', 'Chỉ thêm quy tắc vào redact(); evidence sinh lại ở Lần 3 sẽ sạch, evidence cũ giữ nguyên.', 'Chấp nhận, không che.'], rec:0},
+  {id:'G9', kind:'Quyết định', refs:['qc','p70'], impact:'base_url.py; quy tắc key của Model Gateway (SCOPE-13, kiến trúc 8.2)',
+   ctx:'base_url.py compare luôn gửi key trong biến môi trường tới endpoint chính thức, kể cả khi biến base URL trỏ proxy; key proxy vì vậy đã được gửi tới ba endpoint chính thức (đều bị từ chối). Sản phẩm phải chỉ gửi key của một Provider Connection tới base URL của chính kết nối đó.',
+   q:'Xử lý G9 thế nào?',
+   opts:['Sửa spike trước Lần 3: đường chính thức chỉ dùng key chính thức (biến riêng), không gửi key proxy; ghi quy tắc này vào hồ sơ PID-00070 khi làm rõ.', 'Không sửa spike; chỉ ghi quy tắc cho PID-00070.', 'Như phương án đề xuất, và PO đổi key proxy vì key đã được gửi tới bên thứ ba.'], rec:0},
+  {id:'G10', kind:'Quyết định', refs:['scope','qc'], impact:'PID-00021-AC04, EC03',
+   ctx:'Burst 50 lời gọi đồng thời không gây được 429 trên proxy; 429, 402 billing_error, 529 chỉ kiểm bằng thân lỗi giả theo tài liệu của provider. EC03 cho phép cách này.',
+   q:'Xử lý G10 thế nào?',
+   opts:['Chấp nhận theo EC03; kiểm 429 thật khi có key bậc thấp riêng (không dùng key dùng chung), ở Lần 3 nếu có, hoặc ở ô Hội tụ của PID-00070.', 'Bắt buộc kiểm 429 thật trước khi đóng PID-00021.'], rec:0},
+ ]},
+ {title:'D. PID-00070 và điều kiện hoàn tất PID-00021', items:[
+  {id:'P70', kind:'Quyết định', refs:['p70','ticket'], impact:'PID-00070 (luồng agent-core, PH-03), PID-00073',
+   ctx:'PID-00070 (Model Gateway ba provider) phụ thuộc PID-00005, PID-00007, PID-00020, PID-00021; hồ sơ “Chưa sẵn sàng — chờ PO làm rõ”. Mục 4.1 của ticket ghi key không chặn trước, test dùng Model Gateway giả lập. PID-00070-AC03 (cùng schema, ba provider đều qua kiểm schema) cần provider thật ở ô Hội tụ. Từ SPK-01 đã dùng được: API chốt cho từng adapter, output tool làm đường dự phòng cho mọi adapter, bảng ánh xạ lỗi, đề xuất framework Pydantic AI. Chưa có: năng lực Claude, Gemini trên API chính thức. PR của PH-02 trở đi vào develop từ mốc DEC-59.',
+   q:'PID-00070 có được bắt đầu trên kết luận một phần của SPK-01 không?',
+   opts:['Có, kèm điều kiện. PID-00021 được coi là đủ cho phụ thuộc của PID-00070 ở mức Xây (gateway giả lập). Khi chạy spec-clarify cho PID-00070, ghi vào hồ sơ: API và đường dự phòng theo SPK-01, ánh xạ lỗi theo OQ-113 và M1, quy tắc key của G9. PID-00070-AC03 chỉ nghiệm thu ở ô Hội tụ sau khi SPK-01 Lần 3 kết luận Claude, Gemini (hoặc PID-00070 tự đo nếu K2 chọn phương án 3).',
+     'Có, không điều kiện: làm rõ và giao PID-00070 theo ticket hiện tại.',
+     'Không: chờ PID-00021 Lần 3 xong mới làm rõ PID-00070.'], rec:0},
+  {id:'DK', kind:'Duyệt', refs:['ticket','qc','arch122','asm'], impact:'Trạng thái PID-00021 → Xong',
+   ctx:'PID-00021 được coi là đủ khi đạt cả bảy điều kiện:',
+   ctxList:['Key theo K1, K2 có trên máy chạy; Dev kiểm dạng key mà không in giá trị.',
+     'Lần 3: capabilities.py cho anthropic và google (thêm openai nếu K1 chọn “Không tính”) trên endpoint chính thức; mỗi năng lực đạt, hoặc ghi rõ năng lực thiếu và cách xử lý theo EC02 (AC01, AC02).',
+     'base_url.py compare có đường endpoint chính thức, kết luận tương đương hay lệch giữa proxy và endpoint chính thức (AC03).',
+     'Các mục G5–G10 mà PO chọn “trước Lần 3” đã xong.',
+     'ASM-02, ASM-03, ASM-10 có kết luận cho đủ ba provider; G1, G2 đóng.',
+     'QC độc lập Lần 3 không còn CRITICAL, HIGH; PO nghiệm thu.',
+     'PO ghi kiến trúc 12.2 (SPK-01 “Đã chạy”), kiến trúc 8.2–8.4 theo M1, PRD 20.2 (ASM-02, ASM-03, ASM-10) và PRD 8.6 theo OQ-113.'],
+   q:'Duyệt danh sách điều kiện hoàn tất PID-00021?', opts:APPROVE_OPTS, rec:0},
+ ]},
+];
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-spk-01-v1';
+let state = {head:{}, items:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const refLinks = it => it.refs.map(k => `<a href="${R[k][1]}">${esc(R[k][0])}</a>`).join(' · ');
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ctx = (it.ctx ? `<p>${esc(it.ctx)}</p>` : '') + (it.ctxList ? `<ol>${it.ctxList.map(c => `<li>${esc(c)}</li>`).join('')}</ol>` : '');
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${esc(it.id)}</h3><p class="ref">${esc(it.kind)} · ${refLinks(it)} · Ảnh hưởng: ${esc(it.impact)}</p>
+<div class="ctx">${ctx}</div><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${esc(it.id)}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${esc(it.id)}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  const n = ALL.filter(it => isDone(it.id)).length;
+  document.getElementById('progress').textContent = `Đã chốt ${n}/${ALL.length}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status:'Đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = new Date().toISOString().slice(0, 10);
+  if (!state.head.no) state.head.no = 'PC-02';
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-spk-01-${state.head.date || new Date().toISOString().slice(0, 10)}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, done = ALL.filter(it => isDone(it.id)).length;
+  const L = ['# Phiếu chốt SPK-01 (PID-00021) — SIRes', '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    '- Nguồn: report.md, qc-report.md của PID-00021 (21/11/2026)', `- Đã chốt: ${done}/${ALL.length}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id} — ${a.status}`, '', `- Loại: ${it.kind}`, `- Ảnh hưởng: ${it.impact}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-spk-01', source:'agent/execution/PID-00021@2026-11-21', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, type:it.kind, impact:it.impact, question:it.q,
+        status:a.status, decision:a.text || null, followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+function confirmGaps() {
+  const left = ALL.length - ALL.filter(it => isDone(it.id)).length;
+  return left === 0 || confirm(`Còn ${left} mục chưa chốt. Các mục này sẽ được xuất với trạng thái “Chưa chốt”. Tiếp tục?`);
+}
+
+document.getElementById('b-md').onclick = () => { if (confirmGaps()) download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8'); };
+document.getElementById('b-json').onclick = () => { if (confirmGaps()) download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8'); };
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  for (const it of ALL) if (!isDone(it.id)) state.items[it.id] = {...(state.items[it.id] || {other:'', note:''}), choice: String(it.rec)};
+  save(); render();
+};
+document.getElementById('b-reset').onclick = () => {
+  if (!confirm('Xóa toàn bộ lựa chọn và ghi chú trên phiếu này?')) return;
+  state = {head:{}, items:{}}; save(); bindHead(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>

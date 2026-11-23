@@ -1,0 +1,166 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "spec": {
+    "restartPolicy": "Never",
+    "automountServiceAccountToken": false,
+    "enableServiceLinks": false,
+    "terminationGracePeriodSeconds": 1,
+    "securityContext": {
+      "runAsUser": 65532,
+      "runAsGroup": 65532,
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "initContainers": [
+      {
+        "name": "workspace",
+        "image": "sires/spk-06:texlive-2022",
+        "imagePullPolicy": "Never",
+        "resources": {
+          "limits": {
+            "cpu": "2",
+            "memory": "2147483648"
+          },
+          "requests": {
+            "cpu": "2",
+            "memory": "2147483648"
+          }
+        },
+        "command": [
+          "python3",
+          "-c",
+          "import os; os.chmod('/work', 0o700); os.chown('/work', 65532, 65532)"
+        ],
+        "securityContext": {
+          "runAsUser": 0,
+          "runAsGroup": 0,
+          "readOnlyRootFilesystem": true,
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ],
+            "add": [
+              "CHOWN"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "work",
+            "mountPath": "/work"
+          }
+        ]
+      }
+    ],
+    "containers": [
+      {
+        "name": "worker",
+        "image": "sires/spk-06:texlive-2022",
+        "imagePullPolicy": "Never",
+        "resources": {
+          "limits": {
+            "cpu": "2",
+            "memory": "2147483648"
+          },
+          "requests": {
+            "cpu": "2",
+            "memory": "2147483648"
+          }
+        },
+        "command": [
+          "python3",
+          "-c",
+          "import runpy; print('__SPK06_READY__', flush=True); runpy.run_path('/opt/spk-06/worker.py', run_name='__main__')"
+        ],
+        "args": [
+          "pdflatex",
+          "default"
+        ],
+        "securityContext": {
+          "runAsNonRoot": true,
+          "readOnlyRootFilesystem": true,
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "work",
+            "mountPath": "/work"
+          },
+          {
+            "name": "input",
+            "mountPath": "/input",
+            "readOnly": true
+          },
+          {
+            "name": "input",
+            "mountPath": "/tmp",
+            "readOnly": true
+          }
+        ]
+      }
+    ],
+    "volumes": [
+      {
+        "name": "work",
+        "emptyDir": {
+          "medium": "Memory",
+          "sizeLimit": "500000000"
+        }
+      },
+      {
+        "name": "input",
+        "configMap": {
+          "name": "spk06-default-fixture",
+          "items": [
+            {
+              "key": "f0",
+              "path": "bibliography/references.bib"
+            },
+            {
+              "key": "f1",
+              "path": "figures/.gitkeep"
+            },
+            {
+              "key": "f2",
+              "path": "main.tex"
+            },
+            {
+              "key": "f3",
+              "path": "sections/conclusion.tex"
+            },
+            {
+              "key": "f4",
+              "path": "sections/introduction.tex"
+            },
+            {
+              "key": "f5",
+              "path": "sections/method.tex"
+            },
+            {
+              "key": "f6",
+              "path": "sections/related-work.tex"
+            },
+            {
+              "key": "f7",
+              "path": "sections/results.tex"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "name": "spk06-cs-runc-da75e2c8",
+    "labels": {
+      "app.kubernetes.io/name": "sires-spk06-cold-start"
+    }
+  }
+}

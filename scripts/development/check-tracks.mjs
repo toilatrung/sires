@@ -21,7 +21,7 @@ const SHARED = [
   [/^libs\/(ts\/(platform|testing)|py\/sires_common)\//, 'platform'],
   [/^libs\/ts\/contracts\//, 'contracts'],
   [/^(infra\/|\.github\/workflows\/|scripts\/development\/)/, 'infra'],
-  [/^(package\.json|pnpm-workspace\.yaml|pnpm-lock\.yaml|nx\.json|tsconfig\.base\.json|eslint\.config\.mjs|pyproject\.toml|uv\.lock|\.nvmrc|\.python-version)$/, 'infra'],
+  [/^(package\.json|pnpm-workspace\.yaml|nx\.json|tsconfig\.base\.json|eslint\.config\.mjs|pyproject\.toml|\.nvmrc|\.python-version)$/, 'infra'],
   [/^eval\//, 'eval'],
   [/^e2e\//, 'e2e'],
   [/^docs\/api-design\//, 'contracts-spec'],

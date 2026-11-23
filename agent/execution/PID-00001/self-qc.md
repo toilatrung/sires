@@ -74,7 +74,7 @@ Môi trường: Windows 11, Node 24.21.0, pnpm 10.34.9, Docker Engine 29.8.2 tro
 
 ## Lần 2 — 18/11/2026
 
-Người chạy: Dev T1xNTH (agent Claude Code). Môi trường: Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker Engine trên máy (Testcontainers chạy thật). Worktree của nhánh `platform/ts-core-tenancy-logging` sau khi merge `origin/main` (`de98a18`, merge đã stage, chưa commit).
+Người chạy: Dev T1xNTH. Môi trường: Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker Engine trên máy (Testcontainers chạy thật). Worktree của nhánh `platform/ts-core-tenancy-logging` sau khi merge `origin/main` (`de98a18`, merge đã stage, chưa commit).
 
 ### 1. Lệnh
 
@@ -133,7 +133,7 @@ Không có CRITICAL, HIGH.
 
 ## Lần 3 — 18/11/2026
 
-Người chạy: Dev T1xNTH (agent Claude Code), sau `qc-report.md` Lần 1. Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker thật cho Testcontainers. Nhánh tại `f713467` cộng thay đổi Lần 3.
+Người chạy: Dev T1xNTH, sau `qc-report.md` Lần 1. Linux, Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Docker thật cho Testcontainers. Nhánh tại `f713467` cộng thay đổi Lần 3.
 
 ### 1. Lệnh (spec mục 6 và việc 5 của QC)
 
