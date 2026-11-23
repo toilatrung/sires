@@ -13,7 +13,7 @@ CREATE TABLE app.discovered_result (
   id                       uuid PRIMARY KEY DEFAULT app.uuid_v7(),
   account_id               uuid NOT NULL,
   project_id               uuid,                       -- project nơi chạy discovery (ngữ cảnh, không phải chủ sở hữu)
-  source                   text NOT NULL,              -- google_scholar | openalex | semantic_scholar | ...
+  source                   text NOT NULL,              -- openalex | google_scholar | ... (DEC-60)
   query                    text NOT NULL,
   metadata                 jsonb NOT NULL,             -- schema chuẩn hóa 17.6
   source_url               text NOT NULL,
