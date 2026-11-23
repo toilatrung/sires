@@ -4,9 +4,12 @@
 
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
+import { WorkspaceAuthModule } from './auth/service-auth';
+import { DatabaseModule } from './db/database.module';
 import { manifest } from './manifest';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  // Cấu hình database và khóa công khai service-auth đọc từ biến môi trường khi khởi động; thiếu thì không lên.
+  imports: [HealthModule.forService(manifest), DatabaseModule, WorkspaceAuthModule.forRoot()],
 })
 export class AppModule {}

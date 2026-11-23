@@ -264,6 +264,37 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     await dead.close();
   });
 
+  it('onOutcome ném lỗi không làm dừng consumer (QC Lần 2 G4)', async () => {
+    reset();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    const warnings: string[] = [];
+    const seen: ConsumeOutcome[] = [];
+    try {
+      const consumer = await startConsumer('outcome-throws', {
+        onOutcome: (outcome: ConsumeOutcome) => {
+          seen.push(outcome);
+          throw new Error('metric lỗi');
+        },
+        logger: { info: () => undefined, warn: (_fields: unknown, msg?: string) => warnings.push(String(msg)), error: () => undefined },
+      } as unknown as Partial<ConstructorParameters<typeof EventConsumer>[0]>);
+      const first = taskEvent(uuidv7(), 1, 'Ready');
+      const second = taskEvent(uuidv7(), 1, 'Ready');
+      publishEvent(first);
+      publishEvent(second);
+      const deadline = Date.now() + 10_000;
+      while (seen.length < 2 && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(seen).toEqual(['applied', 'applied']);
+      expect(warnings.filter((msg) => msg === 'consumer: onOutcome lỗi')).toHaveLength(2);
+      expect(unhandled).toEqual([]);
+      expect(consumer.isConsuming).toBe(true);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
   it('handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)', async () => {
     const exporter = new InMemorySpanExporter();
     const telemetry = startTelemetry({ serviceName: 'orchestration', spanProcessor: new SimpleSpanProcessor({ exporter }) });
