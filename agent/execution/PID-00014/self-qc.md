@@ -203,6 +203,20 @@ chốt DDL rồi sửa migration, chuyển fixture HTTP sang vai trò thật và
   `bash -n infra/ci/check-helm-images.sh` đạt. Lần thử PowerShell đầu sinh khóa lỗi quoting,
   đã sửa lệnh kiểm và chạy lại đạt, dọn container; không coi lượt đầu là đạt.
 
+## Lần 7 — 23/11/2026 · Báo lỗi và kiểm phạm vi bàn giao SIRes
+
+- Gateway kiểm lại: **34 đạt, 1 lỗi / 35**, 5 file, 20.91 giây; chỉ DBQ-10.
+  Không skip hoặc đánh dấu expected failure.
+- [CI 45111435549](https://github.com/toilatrung/sires/actions/runs/45111435549) xác nhận bản sửa Helm:
+  gateway và agent-core `/health` 200, PID 1 non-root; chỉ job TypeScript lỗi DBQ-10 và
+  `build` tổng hợp báo lỗi theo. Không tuyên bố CI xanh.
+- [Issue #83](https://github.com/toilatrung/sires/issues/83) ghi bước tái hiện, expected/actual,
+  vai trò database thật và quyết định cần PO/Tech lead chốt; liên kết PR #63.
+- Spike SIRes với provider eTroy One chỉnh local: 14/14 kiểm tra đạt; provider chưa commit/push.
+  Không dùng kết quả đó để đóng DBQ-10 hoặc kết luận tương thích provider trên remote.
+- Theo yêu cầu mới nhất, chỉ bàn giao hồ sơ và issue của SIRes. Không đưa bản sửa eTroy One
+  vào commit hoặc push. DDL/migration giữ nguyên; G4 và yêu cầu QC độc lập vẫn còn.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).

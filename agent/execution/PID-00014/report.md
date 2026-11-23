@@ -180,6 +180,23 @@ mã phiên để tương thích Vitest 4.1.12; DDL, migration và assertion DBQ-
 G2/DBQ-10 và G4 vẫn mở; PR chưa đủ điều kiện merge. Các sửa G1, G3, G5–G7 ở Lần 4
 tiếp tục vượt qua test trên Vitest mới. Không sửa task-registry hoặc báo cáo QC độc lập.
 
+## Lần 8 — 23/11/2026 · Báo lỗi DBQ-10 và bàn giao riêng SIRes
+
+Người dùng yêu cầu đẩy commit và lỗi, sau đó xác nhận chỉ đẩy phần liên quan SIRes,
+không đẩy bản sửa eTroy One. Mở [issue #83 — DBQ-10](https://github.com/toilatrung/sires/issues/83)
+để theo dõi G2/H7: có bước tái hiện, nguyên nhân, ảnh hưởng và việc cần PO/Tech lead chốt.
+
+- Kiểm lại gateway bằng `pnpm --filter @sires/gateway test`: **34 đạt, 1 lỗi / 35**,
+  5 file, 20.91 giây trên Windows; lỗi duy nhất DBQ-10 tại `migration.spec.ts:139`.
+- [CI 45111435549](https://github.com/toilatrung/sires/actions/runs/45111435549), mã `2355737`:
+  Helm smoke gateway và agent-core đạt `/health` 200, PID 1 non-root. Image, contracts,
+  Python và các job còn lại đạt; TypeScript chỉ lỗi DBQ-10, `build` tổng hợp báo lỗi theo.
+- Kiểm nối spike SIRes với eTroy One đã chỉnh cục bộ: 14/14 kiểm tra đạt, gồm Basic exchange,
+  PKCE/nonce, UserInfo, refresh và logout. Đây là bản provider local chưa commit/push,
+  không chứng minh bản provider trên remote tương thích và không đóng ASM-13 hay DBQ-10.
+- Không thay mã SIRes, DDL, migration, task-registry hoặc báo cáo QC độc lập trong lượt bàn giao này.
+  G2/DBQ-10 và G4 vẫn mở; PR #63 chưa được merge.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
