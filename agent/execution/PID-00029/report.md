@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — EC09: DDL chung chấp nhận provenance thiếu inputs; chờ PO sửa nguồn
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Luồng:** `research` · **Giai đoạn:** PH-01
-- **Nhánh:** `research/pid-00029-migration` · **PR:** chưa mở
+- **Nhánh:** `research/pid-00029-migration` · **PR:** [#82](https://github.com/toilatrung/sires/pull/82) — Draft, chờ PO sửa DDL EC09
 - **Cập nhật:** 23/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -64,6 +64,10 @@ push và tạo draft PR cho phần triển khai hiện có; không phải duyệ
 Giữ trạng thái Bị chặn EC09. PR nêu rõ G1 HIGH, ví dụ provenance thiếu inputs,
 nguyên nhân SQL NULL trong CHECK và đề xuất PO sửa hàm chung; G2/G3 vẫn được ghi rõ.
 Không thay mã nghiệp vụ hoặc kết quả test trong lần đẩy PR này.
+
+Đã push toàn bộ phần triển khai trong commit `111cf2d`; GitHub xác nhận chữ ký Verified
+(`reason: valid`). Draft PR [#82](https://github.com/toilatrung/sires/pull/82) vào main,
+mô tả có nhắc PO và đề xuất sửa nguồn. Không merge; chờ xử lý G1 và QC lại.
 
 ---
 
