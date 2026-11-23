@@ -42,7 +42,7 @@ PO duyệt và sửa DDL chung cho provenance thiếu inputs. Sau khi nguồn đ
 Dev đồng bộ nguồn vào migration chưa merge (hoặc migration mới nếu đã merge), chạy
 lại EC09, toàn bộ research và các kiểm tra liên quan, thêm Lần 2 vào báo cáo.
 Chưa chạy helm template do máy không có Helm; cần kiểm trước nghiệm thu phần Job.
-Mã triển khai và Self-QC chưa commit; chỉ báo cáo được commit/push theo ngoại lệ của skill.
+Người dùng đã yêu cầu commit/push toàn bộ phần triển khai và mở draft PR; ticket vẫn Bị chặn EC09.
 
 ## 5. Yêu cầu thêm
 
@@ -54,8 +54,16 @@ không phải PO duyệt sửa nguồn hoặc đổi phạm vi.
 - **Đề xuất cho PO:** đề xuất DBQ (chưa tự cấp mã). Nguồn: `docs/database/ddl/00-common.sql:85–91`, hàm `app.is_provenance`; `research.sql` dùng hàm trong CHECK cột provenance. Hồ sơ EC09 yêu cầu ArtifactVersion không có provenance hợp lệ phải bị từ chối. Đầu vào `{ "createdBy": { "type": "system", "component": "research-test" } }` thiếu trường `inputs` vẫn được lưu. `jsonb_typeof(p->'inputs') = 'array'` trả SQL NULL khi thiếu trường; cả hàm có thể trả NULL; PostgreSQL CHECK chấp nhận NULL. Đề nghị PO duyệt làm hàm trả boolean chặt chẽ (ví dụ bọc biểu thức xác thực bằng `COALESCE(..., false)`), bảo đảm thiếu inputs → false, inputs=[] vẫn hợp lệ, rà ảnh hưởng các service dùng chung và giao migration cập nhật cho chúng. Không sửa docs hay chỉ vá migration research, vì như vậy lệch AC01/schema tham chiếu.
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** G1 HIGH (EC09/DDL); G2 MEDIUM (Helm chưa chạy). `nx affected` toàn repo đã phát hiện timeout trong `@sires/platform:test` (telemetry, 167 đạt/1 lỗi); dừng lượt rộng sau lỗi, không khẳng định 20 project đều đạt.
-- **Bước tiếp theo:** PO xử lý DDL; Dev sửa theo nguồn đã duyệt và chạy lại; commit mã/mở PR khi được yêu cầu. Không đặt Xong — chờ QC khi G1 còn mở.
+- **Bước tiếp theo:** PO xử lý DDL; Dev sửa theo nguồn đã duyệt và chạy lại; đã được người dùng yêu cầu đẩy draft PR để PO xem vấn đề DDL. Không đặt Xong — chờ QC khi G1 còn mở.
 - **Tài liệu đi kèm:** không có; test tái hiện nằm trong `apps/research/src/db/behaviour.testkit.ts`, được đăng ký bởi `migration.spec.ts`.
+
+## Lần 2 — 23/11/2026 · Đẩy draft PR theo yêu cầu
+
+Người dùng yêu cầu: “ok đẩy PR lên, ghi rõ để báo PO sửa”. Đây là yêu cầu commit,
+push và tạo draft PR cho phần triển khai hiện có; không phải duyệt sửa DDL.
+Giữ trạng thái Bị chặn EC09. PR nêu rõ G1 HIGH, ví dụ provenance thiếu inputs,
+nguyên nhân SQL NULL trong CHECK và đề xuất PO sửa hàm chung; G2/G3 vẫn được ghi rõ.
+Không thay mã nghiệp vụ hoặc kết quả test trong lần đẩy PR này.
 
 ---
 
