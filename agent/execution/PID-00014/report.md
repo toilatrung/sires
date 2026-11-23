@@ -16,13 +16,13 @@ Các số liệu ở Lần 2–3 là lịch sử, không chứng minh bản hi�
 
 ## 2. Trạng thái công việc
 
-| Slice | Mục tiêu | Trạng thái | File tạo / sửa |
-| --- | --- | --- | --- |
-| S01 | Migration, lệnh migrate, Helm và test DDL | Chặn — DBQ-10 | `apps/gateway/migrations/`, `src/db/`, `src/migrate.ts`, `src/migration.spec.ts`, `drizzle.config.ts`, `package.json`, `deploy/values.yaml`, `README.md`; `pnpm-lock.yaml` tự sinh |
-| S02 | Tra phiên, hết hạn và gia hạn | Chặn — DBQ-10 | `apps/gateway/src/session/`, `src/app.module.ts`, `src/app.module.spec.ts` |
-| S03 | Kiểm CSRF | Xong | `apps/gateway/src/session/session.service.ts`, `session.guard.ts`, `session.interceptor.ts`, `session.spec.ts` |
-| S04 | Gia hạn GET /auth/session | Xong | `apps/gateway/src/session/session.guard.ts`, `session.spec.ts` |
-| S05 | Tạo phiên, CSRF token và cookie | Xong | `apps/gateway/src/session/session.crypto.ts`, `session.schema.ts`, `session.service.ts`, `session.spec.ts`, `README.md` |
+| Slice | Mục tiêu                                  | Trạng thái    | File tạo / sửa                                                                                                                                                                     |
+| ----- | ----------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S01   | Migration, lệnh migrate, Helm và test DDL | Chặn — DBQ-10 | `apps/gateway/migrations/`, `src/db/`, `src/migrate.ts`, `src/migration.spec.ts`, `drizzle.config.ts`, `package.json`, `deploy/values.yaml`, `README.md`; `pnpm-lock.yaml` tự sinh |
+| S02   | Tra phiên, hết hạn và gia hạn             | Chặn — DBQ-10 | `apps/gateway/src/session/`, `src/app.module.ts`, `src/app.module.spec.ts`                                                                                                         |
+| S03   | Kiểm CSRF                                 | Xong          | `apps/gateway/src/session/session.service.ts`, `session.guard.ts`, `session.interceptor.ts`, `session.spec.ts`                                                                     |
+| S04   | Gia hạn GET /auth/session                 | Xong          | `apps/gateway/src/session/session.guard.ts`, `session.spec.ts`                                                                                                                     |
+| S05   | Tạo phiên, CSRF token và cookie           | Xong          | `apps/gateway/src/session/session.crypto.ts`, `session.schema.ts`, `session.service.ts`, `session.spec.ts`, `README.md`                                                            |
 
 ## 3. Kết quả
 
@@ -53,8 +53,8 @@ Nhận định ban đầu về diff knowledge đã sai sau YC1; Lần 4 khôi ph
 
 ## 5. Yêu cầu thêm
 
-| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
-| --- | --- | --- | --- | --- | --- |
+| #   | Người yêu cầu          | Nguyên văn                           | Phân loại                     | Quyết định                                   | Đã làm, kiểm bằng                                                  |
+| --- | ---------------------- | ------------------------------------ | ----------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
 | YC1 | Người dùng trong phiên | “test nốt đi”, “tìm lỗi và sửa luôn” | Mở rộng ngoài gateway ở Lần 2 | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử |
 
 ## Lần 2 — 22/11/2026
@@ -152,5 +152,34 @@ Người dùng yêu cầu “đẩy lên đi”: commit có chữ ký và đẩy
 Mô tả PR cập nhật phạm vi và kết quả kiểm ở Lần 4–5, bỏ lời khai spike Windows thuộc PR gateway.
 Không merge PR; DBQ-10/H7 và G4 vẫn giữ nguyên. Test G2 tiếp tục báo lỗi, không skip.
 
+## Lần 7 — 23/11/2026 · Đồng bộ main và kiểm CI mới
+
+Người dùng yêu cầu kéo code mới và sửa PR #63, sau đó chọn “Giữ blocker, sửa phần còn lại”.
+Đã đồng bộ `origin/main` tại `f9da4af` và commit gộp main trên remote `c3b6983`;
+lockfile gộp sạch, cài dependency gateway bằng frozen lockfile thành công. Không cần đổi
+mã phiên để tương thích Vitest 4.1.12; DDL, migration và assertion DBQ-10 giữ nguyên.
+
+- Windows: gateway **34 đạt, 1 lỗi / 35 test**, 5 file, 48.47 giây; lỗi duy nhất DBQ-10/G2.
+  Lint, typecheck và build trực tiếp của gateway đạt. Nx build tại workspace này bị EPERM
+  khi đổi tên thư mục mã hợp đồng sinh sẵn; không tính lượt đó là đạt.
+- [CI mới, run 45110694858](https://github.com/toilatrung/sires/actions/runs/45110694858):
+  TypeScript chỉ lỗi `@sires/gateway:test`, đúng DBQ-10 (34 đạt, 1 lỗi, 18.21 giây).
+  Image gateway và 11 image còn lại, Python, contracts, contract-test, asyncapi-payload,
+  dependencies, secrets, docs, tracks và Terraform đã đạt. Không tuyên bố toàn bộ CI đạt.
+- Helm smoke của run đó lỗi thêm vì khởi động gateway thiếu `DATABASE_URL` và
+  `GATEWAY_CSRF_KEY`. Trong phạm vi yêu cầu sửa phần còn lại, cập nhật duy nhất
+  `infra/ci/check-helm-images.sh`: cấp DSN thử không kết nối database và khóa CSRF ngẫu nhiên
+  cho container gateway. Không dùng secret triển khai hoặc nới cấu hình bắt buộc của app.
+- Build Docker Linux từ bản nguồn Git sạch đạt, gồm Nx build đầy đủ và deploy production.
+  Chạy image với cấu hình smoke trả `/health` 200, PID 1 có UID 1000; `bash -n` đạt.
+  Lần thử PowerShell đầu sinh khóa sai do quoting nên container dừng; đã sửa lệnh kiểm,
+  chạy lại đạt và dọn container. Kiểm này chỉ xác nhận khởi động/probe, không nghiệm thu DBQ-10.
+- Diff với main ở knowledge/agent-core trống theo H9. `check-pid --result` 0 cảnh báo,
+  `update-index --check`, Prettier nguồn TS gateway và `git diff --check` đạt.
+
+G2/DBQ-10 và G4 vẫn mở; PR chưa đủ điều kiện merge. Các sửa G1, G3, G5–G7 ở Lần 4
+tiếp tục vượt qua test trên Vitest mới. Không sửa task-registry hoặc báo cáo QC độc lập.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
