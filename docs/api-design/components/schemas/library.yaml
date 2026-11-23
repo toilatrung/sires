@@ -53,7 +53,7 @@ ReferenceMetadata:
     citationCountAt: { $ref: common.yaml#/Timestamp }
     source:
       type: string
-      examples: [google_scholar, openalex, semantic_scholar, doi, bibtex, ris, pdf]
+      examples: [openalex, google_scholar, doi, bibtex, ris, pdf]
     retrievedAt: { $ref: common.yaml#/Timestamp }
     raw:
       type: object
@@ -65,7 +65,7 @@ DiscoverySource:
   description: capabilities() của source adapter (17.6) và cổng kiểm chứng phương thức truy cập (DISC-SCHOLAR-002).
   required: [source, available]
   properties:
-    source: { type: string, examples: [google_scholar, openalex, semantic_scholar] }
+    source: { type: string, examples: [openalex, google_scholar] }
     role:
       type: string
       enum: [primary, fallback]
@@ -89,7 +89,8 @@ DiscoverySearchRequest:
     query: { type: string, minLength: 1 }
     source:
       type: string
-      default: google_scholar
+      default: openalex
+      description: Nguồn tìm kiếm; mặc định OpenAlex (DEC-60). Google Scholar qua SerpApi dùng giá trị `google_scholar`, chỉ khi Researcher chọn và cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức thêm sau phiếu chốt PC-03.
     filters:
       type: object
       properties:

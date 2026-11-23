@@ -39,15 +39,15 @@
        (đăng nhập, DEC-26)     │   │   │
    Claude / OpenAI / Gemini ◄──┘   │   └────────► Crossref / DataCite (phân giải DOI)
    (key của người dùng, DEC-23)    │
-                                   └────────────► Dịch vụ trung gian Google Scholar
-                                                  hoặc OpenAlex / Semantic Scholar (DEC-19)</code></pre>
+                                   └────────────► OpenAlex (nguồn mặc định);
+                                                  Google Scholar qua SerpApi (DEC-60)</code></pre>
 <p class="status">FIG-101 — Ngữ cảnh hệ thống. Nguồn: <a href="../figures/FIG-101-system-context.mmd">figures/FIG-101-system-context.mmd</a>.</p>
 <div class="table-wrap"><table>
 <thead><tr><th>Hệ thống ngoài</th><th>Service gọi</th><th>Giao thức</th><th>Thông tin xác thực</th><th>Khi không khả dụng</th></tr></thead>
 <tbody>
 <tr><td>eTroy OIDC</td><td>gateway</td><td>OIDC authorization code + PKCE</td><td>Client secret trong secret manager</td><td>Không đăng nhập mới; phiên còn hạn vẫn chạy (INT-OIDC-004)</td></tr>
 <tr><td>Anthropic, OpenAI, Google</td><td>agent-core, knowledge (embedding)</td><td>HTTPS, SDK chính thức, base URL tùy chỉnh</td><td>API key của người dùng, mã hóa ở identity</td><td>Thử lại theo 8.5/17.1, sau đó dừng và báo Provider issue</td></tr>
-<tr><td>Dịch vụ trung gian Scholar / nguồn API dự phòng</td><td>library</td><td>HTTPS REST qua source adapter</td><td>Key hợp đồng của đội phát triển</td><td>Hiển thị lý do, đề nghị nhập thủ công (INT-SCHOLAR-006)</td></tr>
+<tr><td>OpenAlex (nguồn mặc định); Google Scholar qua SerpApi, dịch vụ trung gian theo hợp đồng (<a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a>)</td><td>library</td><td>HTTPS REST qua source adapter; Google Scholar qua connector Google Scholar của SIRes</td><td>Key của đội phát triển trong secret manager (OpenAlex; SerpApi theo hợp đồng)</td><td>Hiển thị lý do, đề nghị nhập thủ công (INT-SCHOLAR-006)</td></tr>
 <tr><td>Crossref, DataCite</td><td>library</td><td>HTTPS REST</td><td>Không cần key</td><td>Người dùng nhập metadata thủ công</td></tr>
 <tr><td>Object storage, KMS, secret manager</td><td>Theo quyền từng service (10.3)</td><td>SDK nhà cloud, workload identity</td><td>Không key tĩnh</td><td>Sự cố hạ tầng, theo RTO 8 giờ</td></tr>
 </tbody></table></div>
@@ -62,7 +62,7 @@
 <tr><td><strong>workspace</strong></td><td>TypeScript, NestJS</td><td>ResearchProject, ResearchContextVersion, Conversation, Message, PendingAction, Notification; vòng đời project (lưu trữ, xóa mềm).</td><td>HTTP + consumer</td></tr>
 <tr><td><strong>planning</strong></td><td>TypeScript, NestJS</td><td>ResearchPlan, PlanVersion, Phase, Task, TaskDefinition, TaskDependency, readiness check, TaskReview, phân tích ảnh hưởng.</td><td>HTTP + consumer</td></tr>
 <tr><td><strong>orchestration</strong></td><td>TypeScript, NestJS</td><td>Workflow engine: Workflow, WorkflowStep, AgentRun (bản ghi), Checkpoint, InteractiveAgentPrompt, ContextItem (Shared Context Store), Deliberation, DeliberationEntry (Deliberation Board), ContextSnapshot (PRD 8.7, 14.9; ADR-24); điều phối bước, heartbeat, sweeper, Recovery decision, usage.</td><td>HTTP + consumer + scheduler</td></tr>
-<tr><td><strong>library</strong></td><td>TypeScript, NestJS</td><td>DiscoveredResult, Reference, phê duyệt reference, ProjectReferenceSelection, source adapter (Scholar trung gian, OpenAlex/Semantic Scholar), DOI, BibTeX/RIS, tải lên PDF.</td><td>HTTP + consumer</td></tr>
+<tr><td><strong>library</strong></td><td>TypeScript, NestJS</td><td>DiscoveredResult, Reference, phê duyệt reference, ProjectReferenceSelection, source adapter (OpenAlex mặc định; Google Scholar qua connector Google Scholar của SIRes và SerpApi; DEC-60), DOI, BibTeX/RIS, tải lên PDF.</td><td>HTTP + consumer</td></tr>
 <tr><td><strong>research</strong></td><td>TypeScript, NestJS</td><td>Evidence, Claim, ClaimEvidenceLink, VerificationResult, Artifact, ArtifactVersion (gồm sơ đồ); registry đầu ra.</td><td>HTTP + consumer</td></tr>
 <tr><td><strong>manuscript</strong></td><td>TypeScript, NestJS</td><td>Manuscript, ManuscriptFile, ManuscriptRevision, ChangeProposal, BibliographyEntry, Build; cổng citation; điều phối build và render qua sandbox.</td><td>HTTP + consumer</td></tr>
 <tr><td><strong>audit</strong></td><td>TypeScript, NestJS</td><td>Kho Audit Event chỉ ghi thêm, truy vấn, export JSON/CSV; tính KPI định kỳ.</td><td>HTTP + consumer</td></tr>
