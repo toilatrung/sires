@@ -11,17 +11,24 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
   "sires-common",
+  # Migration runs in the production image (uv sync --no-dev): Alembic on SQLAlchemy async + asyncpg (PID-00026 H3, H4).
+  "alembic>=1.13",
+  "sqlalchemy[asyncio]>=2.0",
 ]
 
 [dependency-groups]
 # Spike SPK-04 (spikes/spk_04, PID-00027): numpy for synthetic vectors; its tests run PostgreSQL in Testcontainers.
 # Spike SPK-05 (spikes/spk_05, PID-00028): PDF extraction measured with the ADR-15 libraries, pinned to the measured versions.
+# Tests of the service (PID-00026): fixtures of sires_common.testing (PostgreSQL 16 + pgvector in Testcontainers);
+# pyyaml reads deploy/values.yaml, types-pyyaml types it for mypy strict.
 # Development only: the service wheel packages src/knowledge alone (see tool.hatch below); uv sync --no-dev skips this group.
 dev = [
   "numpy>=2.1",
   "pdfplumber==0.11.10",
   "pypdfium2==5.15.0",
+  "pyyaml>=6",
   "sires-common[testing]",
+  "types-pyyaml>=6",
 ]
 
 [tool.uv.sources]

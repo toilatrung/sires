@@ -8,3 +8,10 @@ image:
   tag: latest
 port: 8102
 replicas: 2
+# Job migration của chart chung (PID-00010 S02) chạy lệnh này trong image của service trước Deployment (PID-00026
+# S03; H3, D1). Lệnh chạy từ WORKDIR /repo của infra/docker/python/Dockerfile, chỉ dùng phụ thuộc chạy (EC09); DSN của
+# migrator lấy từ biến DATABASE_MIGRATOR_URL (secret migration.secretName). Chạy lại khi đã ở head không làm gì
+# (EC03). Kiểu giá trị là danh sách argv, đúng khóa chart nhận (migration-job.yaml).
+migration:
+  enabled: true
+  command: ["uv", "run", "--no-sync", "alembic", "-c", "apps/knowledge/alembic.ini", "upgrade", "head"]
