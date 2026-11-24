@@ -4,9 +4,13 @@
 
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
+import { DoiModule } from './doi/doi.module';
+import { ImportersModule } from './importers/importers.module';
 import { manifest } from './manifest';
+import { ReferencesModule } from './references/references.module';
+import { SourcesModule } from './sources/sources.module';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  imports: [HealthModule.forService(manifest), SourcesModule, DoiModule, ImportersModule, ReferencesModule],
 })
 export class AppModule {}

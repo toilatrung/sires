@@ -4,7 +4,7 @@
   "neverConnectToCloud": true,
   "plugins": ["./scripts/development/nx-uv-workspace.cjs"],
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": ["{projectRoot}/**/*", "sharedGlobals", { "dependentTasksOutputFiles": "**/*", "transitive": true }],
     "production": [
       "default",
       "!{projectRoot}/**/*.spec.ts",
@@ -29,14 +29,17 @@
     },
     "typecheck": {
       "dependsOn": ["^build"],
+      "inputs": ["default", "^default"],
       "cache": true
     },
     "lint": {
       "dependsOn": ["^build"],
+      "inputs": ["default", "^default"],
       "cache": true
     },
     "test": {
       "dependsOn": ["^build"],
+      "inputs": ["default", "^default"],
       "cache": true
     }
   },

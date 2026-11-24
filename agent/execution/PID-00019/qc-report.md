@@ -1,11 +1,10 @@
 # PID-00019 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 2 HIGH, 1 MEDIUM, 3 LOW (Lần 2, 21/11/2026).
-- G1, G2 (HIGH) và G3 (MEDIUM) vẫn chỉ do PID-00158 chưa có trên main. Theo quyết định của PO (`report.md` Lần 2, YC1), ba mục này hoãn sang Lần 3, không phải lỗi mới.
-- Mã đã commit đúng là bản Lần 1 đã kiểm và vẫn đạt sau khi gộp main. Không có lỗi mới. G4, G5 đã đóng.
-- Có thể merge phần đã làm theo quyết định của PO. Trước khi merge phải cập nhật nhánh với main: PR đang chậm 3 commit, không xung đột.
-- Hệ quả đã kiểm: database dựng từ main từ chối mọi lần đổi `status` của bảy machine cho tới khi Lần 3 merge.
-- Ticket vẫn “Bị chặn”, chưa nghiệm thu PID-00019-AC01 và PID-00019-AC03.
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 3, 24/11/2026).
+- G1, G2, G3 (hoãn từ Lần 2 vì PID-00158) và G8 đã đóng. PID-00019-AC01, AC02, AC03 đạt trên PostgreSQL 16 thật; QC chạy lại test, tự sinh lại SQL bằng helper và thử đột biến.
+- Ca 1 của PID-00019-AC03 với machine `prompt` ra `23000` thay vì `23514`: đã quyết (H10, PO 24/11/2026), không tính là khoảng trống. `acceptance.html` sửa ở PR docs #95.
+- Còn LOW không chặn: G6 (EC08, DBQ-01, trước PH-07), G7 (unrequested, giữ), G9 (quy ước timeout Testcontainers, mới).
+- Trước khi merge: cập nhật nhánh với main (PR `BEHIND` một commit docs, không xung đột). PR #94 cũng thêm migration `0001` ở orchestration: PR nào merge sau phải đánh số lại `0002` (journal, snapshot, `when`), xem mục “Trùng số migration” của Lần 3.
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -303,6 +302,138 @@ Chạy trong worktree QC ngày 21/11/2026. Docker trong WSL `Ubuntu-24.04` đư�
 **Vẫn mở từ Lần 1:**
 - Đề xuất OQ “chủ sở hữu đối tượng do migration tạo” (`runMigrations` không `SET ROLE`). Lần chạy trong image của QC cũng dùng superuser, nên chưa kiểm được điểm này.
 - Các đề xuất ở `report.md` mục 6.
+
+## Lần 3 — 24/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao (DEC-58), không mang kết luận của Dev.
+
+**Mã nguồn:**
+- Worktree tách riêng ở HEAD `31cdc3b` của nhánh `orchestration/state-transition-rows` (PR [#90](https://github.com/toilatrung/sires/pull/90)), không dùng worktree của Dev.
+- So với `origin/main` `343c7b9`. Nhánh đã gộp main `0153261`; main đi thêm một commit `343c7b9` (#93, chỉ `docs/` và taskboard).
+
+**Phạm vi PR** (`git diff --name-only origin/main...HEAD`): 12 file, gồm 9 file trong `apps/orchestration/` và 3 file trong `agent/execution/PID-00019/`. Không chạm `pnpm-lock.yaml`.
+
+**Việc của lần này:** kiểm G1, G2, G3, G8 (hoãn từ Lần 2) đã xử lý chưa; đối chiếu S02, S05, S06 với mã; chạy lại test trên PostgreSQL thật; tìm lỗi mới.
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Trạng thái Lần 3 | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- | --- |
+| G1 | PID-00019-AC01 (dữ liệu chuyển trạng thái) · O1, O3 · B1–B2 · S02 · EC06, EC07 | missing | HIGH | **Đóng** | `apps/orchestration/migrations/0001_state_transition.sql` (custom migration thứ hai, `0000_init.sql` không đổi); `src/db/migration.spec.ts:129` (`› state_transition sinh từ khai báo`), `:174` (`› chuyển ngoài bảng bị từ chối`) | Không còn việc |
+| G2 | PID-00019-AC03 ca 1, đối chứng ca 6 · S05 | partial | HIGH | **Đóng** (xem điểm chờ PO C1) | `src/db/ddl-behaviour.spec.ts:292`–`347` (ca 1, 142 cặp), `:455`–`469` (đối chứng ca 6) | Không còn việc |
+| G3 | S02 bước 1 | partial | MEDIUM | **Đóng** | `src/domain/state-machines.ts:14` (import `defineStateMachine`), `:17`–`124` (bảy machine và `stateMachines`), không còn interface cục bộ | Không còn việc |
+| G4 | S04 “Kiểm” · O5 | partial | LOW | Đóng từ Lần 2. Chú thích cũ ở `deploy/values.yaml:14`–`15` đã sửa | `apps/orchestration/deploy/values.yaml:14`–`15`; CI job `helm` đạt | Không còn việc |
+| G5 | EC09 (thao tác tay trong image) | partial | LOW | Đóng từ Lần 2; **QC kiểm lại ở Lần 3** vì PR thêm migration (mục “Lệnh đã chạy”) | Image dựng từ cây gộp có `migrations/0001_state_transition.sql`; chạy lệnh trong image nạp 43 dòng | Không còn việc |
+| G6 | EC08 (DBQ-01) | partial | LOW | Còn mở, không đổi | — | Tech lead làm thao tác tay trên PostgreSQL managed, trước PH-07 |
+| G7 | Ticket “Gồm”, spec mục 3 | unrequested | LOW | Giữ. Lần 3 chỉ thêm trong test: hàm `attempt` có câu chuẩn bị, trần 60 s cho ca 1, ca thêm ở ca 6 (đổi `status` kèm `content` → `23000`). Đều có lý do ở `implement.md` mục 3 | `src/db/ddl-behaviour.spec.ts:250`, `:347`, `:470`–`476` | Không cần làm |
+| G8 | S06 (README, mục “State machine”) | partial | LOW | **Đóng** | `apps/orchestration/README.md:51` (migration `0001`), mục “State machine” (lệnh sinh SQL, test đối chiếu, cách đổi state machine) | Không còn việc |
+| G9 | Quy ước timeout Testcontainers (PO 24/11/2026, `docs/docs_context.md` nhật ký 24/11, ghi ở #93 sau lần gộp main cuối của nhánh) | partial | LOW | Mới | `src/db/ddl-behaviour.spec.ts:347` (trần riêng `60_000` cho một test), `:239` (`180_000` cho `beforeAll`); `apps/orchestration/` chưa có `vitest.config.ts`, trong khi planning, workspace đã khai `testTimeout: 60_000`, `hookTimeout: 180_000` | Không chặn merge: thời hạn hiệu lực bằng nhau. Quy ước muốn khai một lần ở `@sires/testing` (chưa có trên main) rồi mỗi project dùng trong `vitest.config.ts` của mình, “luồng khác áp khi chạm tới”. Làm khi luồng platform xuất hằng số, hoặc ở PID orchestration kế tiếp |
+
+Không có CRITICAL, HIGH, MEDIUM; không có `contradicts`. Đầu ra đúng quy tắc 1.4.13: mọi file mã ở `apps/orchestration/`, tên test trùng `acceptance.html`, migration mới không sửa migration đã merge.
+
+### Điểm đã quyết (không tính là khoảng trống)
+
+**C1 — ca 1 của PID-00019-AC03 với machine `prompt` ra `23000`, không ra `check_violation`: đã quyết (H10, PO 24/11/2026).**
+
+Quyết định của PO, do phiên điều phối chuyển tới trong lúc QC chạy: chọn “Sửa câu chữ acceptance”, chấp nhận hành vi DDL hiện tại.
+- Chuyển trạng thái ngoài bảng bị từ chối với `check_violation` (`23514`).
+- Riêng khi trigger bất biến (`prompt_answer_once`, `agent_run_final`) chạy trước thì lỗi là `23000`.
+- Hồ sơ PID-00019 ghi H10 và sửa `acceptance.html` ở PR docs riêng (#95), không sửa trên nhánh #90. Mã và test của #90 không phải đổi: test đã ghim đúng hành vi này.
+
+Hiện trạng, QC đã kiểm:
+- `acceptance.html` ghi ca (1) “chuyển trạng thái không có trong app.state_transition của mỗi machine — check_violation”.
+- Với `prompt`, ba cặp `Open → Answered/Expired/Cancelled` đều có trong bảng. Chín cặp ngoài bảng đều xuất phát từ trạng thái đã rời Open.
+- PostgreSQL chạy trigger `BEFORE` cùng sự kiện theo thứ tự tên. `prompt_answer_once` (`docs/database/ddl/orchestration.sql:242`–`243`, `WHEN (OLD.status <> 'Open')`, `tg_immutable()`) đứng trước `prompt_state` (`:430`), nên từ chối trước với `23000` `integrity_constraint_violation`.
+- Test ghim đúng hành vi đó: `ddl-behaviour.spec.ts:306`–`312` (mong đợi), `:341` (`prompt: 3 / 0 / 9`). `agent_run` cũng có 12 cặp bị `agent_run_final` chặn trước với `23000`, nhưng vẫn có 3 cặp ra `23514`, nên vẫn đạt câu chữ “mỗi machine”.
+
+Nhận xét của QC về rủi ro (QC soạn trước khi nhận quyết định; giữ lại làm căn cứ cho H10):
+- **Toàn vẹn dữ liệu: không có rủi ro.** Database vẫn từ chối cả 9 cặp ngoài bảng của `prompt`. Chỉ khác SQLSTATE và trigger nào chặn. Đột biến của QC (bỏ `Open → Expired` khỏi khai báo) làm ca 1 đỏ đúng ở `prompt: Open → Expired`, nên phép kiểm có tác dụng.
+- **`prompt_state` hiện không bao giờ là lớp từ chối** với tập trạng thái hiện tại. Nó chỉ có tác dụng khi sau này thêm trạng thái hoặc nới `prompt_answer_once`. Khi đó bảng đếm ở `ddl-behaviour.spec.ts:337`–`345` sẽ đỏ, nên thay đổi không lọt im lặng.
+- **Ảnh hưởng tới PID sau:** PID-00065 (prompts) phải kiểm chuyển trạng thái ở lớp domain (`assertTransition` với `promptStateMachine`) trước khi ghi; database là lớp thứ hai (DATA-STATE-001). Nếu PID-00065 ánh xạ lỗi database sang lỗi API theo SQLSTATE, thì `23000` của `prompt_answer_once` và `23514` phải cùng ra một lỗi. Nên ghi điểm này vào hồ sơ PID-00065 khi làm rõ.
+- **Chi phí hai phương án Dev đề xuất** (`report.md` Lần 3, “Cần PO”):
+  - Sửa câu chữ `acceptance.html` (PO đã chọn): không đổi mã hay test.
+  - Mở DBQ đổi DDL để `prompt_state` chạy trước: đổi tên trigger trong `orchestration.sql`, cần migration mới ở orchestration và sửa test ca 1, ca 4. Lợi ích chỉ là thống nhất SQLSTATE.
+- Giữ nguyên hành vi có rủi ro thấp và không chặn merge PR #90.
+
+### Trùng số migration với PR #94 (không phải lỗi của #90)
+
+PR #94 (EC09, nhánh `database/ec09-jsonb-helpers`, đầu `8839cde`) cũng thêm `apps/orchestration/migrations/0001_ec09_jsonb_helpers.sql`, `meta/0001_snapshot.json` và mục journal idx 1. #90 thêm `0001_state_transition.sql`, `meta/0001_snapshot.json`, idx 1. Hai PR sẽ xung đột ở `meta/_journal.json`, `meta/0001_snapshot.json`, `src/db/migrate.spec.ts`, `src/db/migration.spec.ts`, README.
+
+PR nào merge sau phải đánh số lại migration orchestration của mình thành `0002_*`:
+- Đổi tên file SQL thành `0002_*.sql` và snapshot thành `meta/0002_snapshot.json`, với `prevId` bằng `id` của `0001_snapshot.json` đã merge.
+- Journal: idx 2, tag mới, và **`when` lớn hơn `when` của mục 0001 đã merge.**
+  - drizzle-orm 0.45.4 (`pg-core/dialect.js`, hàm `migrate`) chỉ áp migration có `when` lớn hơn `created_at` của dòng cuối trong `drizzle.__drizzle_migrations`.
+  - `when` của #90 là `1795531337355`, nhỏ hơn của #94 (`1795533919180`).
+  - Nếu #94 merge trước và #90 chỉ đổi tên mà giữ `when`, database đã áp `0001_ec09_jsonb_helpers` sẽ **bỏ qua `0002_state_transition` mà không báo lỗi**. Test trên database rỗng không bắt được.
+  - Cách an toàn: chạy lại `pnpm exec drizzle-kit generate --custom --name state_transition` để có `when` mới, rồi chép lại nội dung.
+- Sửa test theo số mới:
+  - Nếu #90 đổi số: `migration.spec.ts:34`–`35` (`MIGRATION_COUNT` thành 3), `:145`, `:155` (tên file); `migrate.spec.ts:39`, `:48` (“áp 3 …, đã ghi sổ 3”), `:81` (danh sách tag); README `:51`; `implement.md`.
+  - Nếu #94 đổi số: các dòng tương ứng của #94 trong `migrate.spec.ts`, `migration.spec.ts` và README của orchestration.
+- Sau khi đánh số lại: chạy lại `@sires/orchestration:test`. Phép so schema của `migration.spec.ts › schema khớp DDL` phải vẫn đạt với cả hai migration.
+
+### AC
+
+**Mức kiểm:** ô Xây, trên PostgreSQL 16 + pgvector thật (`pgvector/pgvector:pg16`) qua Testcontainers, Docker 29.8.2 trong WSL. Không dùng stub. Ticket PH-01 không có ô Hội tụ, cũng không có ô staging.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00019-AC01 (cấu trúc) | đạt | Xây, Testcontainers; thêm thao tác tay trong image | `src/db/migration.spec.ts › schema khớp DDL`; `› schema khớp DDL — extension và bảng sổ phiên bản (EC04, EC05)`; `› chạy lại không đổi schema (EC02)`; `› thiếu vai trò thì rollback` | Đạt (QC chạy lại). Dump schema vẫn bằng DDL khi có `0001` |
+| PID-00019-AC01 (dữ liệu chuyển trạng thái) | đạt | Xây, Testcontainers | `› state_transition sinh từ khai báo`; `› chuyển ngoài bảng bị từ chối` | Đạt. Ba nguồn bằng nhau: `compareStateTransitionRows` rỗng cho database migration và database DDL, hai tập 43 dòng bằng nhau. QC tự chạy `sires-state-transition-sql` trên bản build: đầu ra bằng từng byte thân file `0001`. EC06 có ca lệch cố ý; EC07 `Running → Created` → `23514`, đối chứng `Running → Paused` đi qua |
+| PID-00019-AC02 | đạt | Xây: lint, build, test | `src/engine/engine-boundary.spec.ts › luật chặn import nội bộ engine`; `src/app.module.spec.ts › nạp đủ module con` | Đạt, không đổi so với Lần 2 |
+| PID-00019-AC03 | đạt 9/9 ca, theo DDL và theo quyết định H10 cho ca 1 (C1) | Xây, Testcontainers, vai trò `_app` qua `withAccountTransaction` | `src/db/ddl-behaviour.spec.ts › chuyển ngoài bảng bị từ chối (ca 1)` và các test ca 2–9 | Đạt. Ca 1: 142 cặp, 43 cặp trong bảng đi qua, mọi cặp ngoài bảng bị từ chối; bảng đếm `workflow 16/40/0`, `workflow_step 11/19/0`, `agent_run 5/3/12`, `prompt 3/0/9`, `context_item 2/4/0`, `deliberation 3/9/0`, `deliberation_entry 3/3/0`. Đối chứng ca 6 `Active → Superseded` kèm `superseded_by_id` đi qua |
+
+### Lệnh đã chạy
+
+Chạy trong worktree QC ngày 24/11/2026. Docker trong WSL `Ubuntu-24.04` được giữ sống trong lúc chạy. Cùng lúc có các phiên khác chạy Testcontainers.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt (“Done”), lockfile không đổi |
+| `NX_DAEMON=false pnpm nx run-many -t lint typecheck test build -p @sires/orchestration --skip-nx-cache --parallel=1` | Đạt, kèm 4 task phụ thuộc. Test: 5 file, **23 passed, 0 todo**, 0 lỗi. Build: 19 file `.js`, 0 file spec/testkit |
+| `NX_DAEMON=false pnpm nx show projects --affected --base=origin/main` | Chỉ `@sires/orchestration`, nên `run-many` ở trên phủ đúng `nx affected -t lint typecheck test build` |
+| `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` (trong `apps/orchestration`), so với `0001_state_transition.sql` bỏ 4 dòng đầu | Mã 0; giống từng byte; 43 dòng INSERT |
+| `git grep "INSERT INTO app.state_transition" -- apps/orchestration ':!*.spec.ts'` | Câu lệnh thật chỉ ở `0001_state_transition.sql:54`; còn lại là chú thích (`0000_init.sql:8`, `:727`) và README. Không có bộ sinh SQL trong `apps/orchestration` |
+| Đột biến của QC: bỏ `{ from: 'Open', to: 'Expired' }` khỏi `promptStateMachine`, không sinh lại `0001`; chạy `vitest run src/db/migration.spec.ts src/db/ddl-behaviour.spec.ts` | 2 test đỏ đúng chỗ: ca 1 (`prompt: Open → Expired` mong `23514`, nhận đi qua) và `› state_transition sinh từ khai báo` (cặp `prompt` lệch). 14 test còn lại đạt. Đã chép lại file gốc, `git status` sạch. Khác đột biến của Dev (bỏ một dòng trong `0001`), nên phủ thêm nhánh “khai báo đổi mà quên sinh lại SQL” |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: orchestration, repo`, mã 0 |
+| `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép.” |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard 159 task) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00019 --result` | “PID-00019: KẾT QUẢ ĐỦ (0 cảnh báo).” |
+| `git diff --check origin/main...HEAD` | Sạch |
+| `git merge-tree --write-tree HEAD origin/main` | Không xung đột (tree `8f52bb6`) |
+| `git log --format='%h %G?' origin/main..HEAD` | Cả 5 commit `G` (có chữ ký) |
+| CI PR #90 (`gh pr view 90`) | 25 check `SUCCESS`, gồm `typescript`, `build`, `helm`, `images (orchestration …)`. `mergeStateStatus: BEHIND` vì main có thêm `343c7b9` |
+| EC09: dựng image `docker build -f infra/docker/node/Dockerfile --build-arg SERVICE=orchestration`, ngữ cảnh là `git archive` của tree gộp `8f52bb6`; chạy `node dist/migrate.js` trong image với `pgvector/pgvector:pg16` đã có ba vai trò | Đạt. Image: uid 1000, WORKDIR `/app`; có `migrations/0000_init.sql`, `0001_state_transition.sql`, `meta/_journal.json`, hai snapshot, `dist/migrate.js`; `node_modules` có `drizzle-orm`, không có `drizzle-kit`, `tsx`, `vitest`; không có file spec/testkit. Thiếu DSN: mã 1, báo thiếu `DATABASE_MIGRATOR_URL`. Lần 1: “áp 2 migration mới, đã ghi sổ 2”, mã 0. Lần 2: “áp 0 migration mới, đã ghi sổ 2”, mã 0. Kết quả: 18 bảng, `app.state_transition` 43 dòng, sổ drizzle 2 dòng. Image, container, network đã xoá |
+| `node scripts/development/check-charts.mjs` | Không chạy cục bộ: máy không có `helm` trong PATH. Dùng CI job `helm` (đạt) |
+
+### Lệch với Self-QC
+
+- **Kết quả lệnh khớp `self-qc.md` Lần 3.** QC xác nhận: 23 passed, 0 todo; bảng đếm ca 1; `0001` bằng đầu ra helper; `check-tracks` chỉ `orchestration, repo`; chữ ký commit.
+- **EC09.** Dev ghi không dựng lại image (G9 của `self-qc.md`). QC đã dựng lại và chạy lệnh trong image (mục trên).
+- **Đột biến.** Dev thử bỏ một dòng của `0001`; QC thử nhánh khác (đổi khai báo, không sinh lại SQL). Cả hai đều làm test đỏ đúng chỗ.
+- **Mới sau báo cáo của Dev, không phải Dev ghi sai:**
+  - Main có thêm `343c7b9` (#93), nên PR `BEHIND`.
+  - PR #94 dùng trùng số `0001` ở orchestration.
+  - Quy ước timeout của PO (G9) ghi ở #93, sau lần gộp main cuối của nhánh.
+- **G8 của `self-qc.md`** (câu chữ ca 1 với `prompt`): QC đồng ý với phân tích của Dev, ghi ở C1. Dev xếp MEDIUM. QC không tính là khoảng trống vì PO đã quyết (H10, 24/11/2026).
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. **Trước khi merge PR #90 — việc của PO:**
+   1. Cập nhật nhánh với `main` (`343c7b9`, chỉ docs, `merge-tree` không xung đột). Ruleset đòi check đạt trên nhánh đã cập nhật.
+   2. Nếu PR #94 merge trước: Dev đánh số lại migration thành `0002_state_transition` theo mục “Trùng số migration”, nhất là `when`. Nếu #90 merge trước: #94 làm việc đó.
+2. **C1 đã quyết (H10):** PR docs #95 sửa câu chữ `acceptance.html` ca 1. Không phụ thuộc #90, không đổi mã.
+3. **PO merge PR #90**, nghiệm thu PID-00019 (không còn CRITICAL, HIGH).
+4. **G9 (LOW):** khi `@sires/testing` xuất hằng số timeout, thêm `apps/orchestration/vitest.config.ts` theo quy ước. Không chặn.
+5. **G6:** DBQ-01 trên PostgreSQL managed, Tech lead, trước PH-07.
+
+### Đề xuất cho PO
+
+- **Có thể merge và nghiệm thu PID-00019** sau khi cập nhật nhánh: AC01, AC02, AC03 đạt trên PostgreSQL 16 thật. G1, G2, G3, G8 đã đóng. Còn lại G6, G7, G9 đều LOW.
+- **Hệ quả của Lần 2 đã hết:** database dựng từ migration nay có 43 dòng `app.state_transition`, nên các lần đổi `status` hợp lệ đi qua bằng `_app`. Ghi Workflow bằng `_app` vẫn cần dòng `replica.project_state` (consumer N7, PID sau).
+- **C1 đã quyết (H10).** Nên ghi kèm vào hồ sơ PID-00065 (prompts) ghi chú về ánh xạ lỗi: `23000` của `prompt_answer_once` và `23514` cùng ra một lỗi API; lớp domain kiểm chuyển trạng thái trước.
+- **Vẫn mở từ Lần 1–2:**
+  - Đề xuất OQ “chủ sở hữu đối tượng do migration tạo”: `runMigrations` không `SET ROLE` (`src/db/migrate.ts:38`).
+  - Các đề xuất ở `report.md` mục 6: snapshot drizzle-kit, `.dockerignore`, ghi vào database 12.4 rằng DDL orchestration đã chạy trên PostgreSQL 16.
 
 ---
 
