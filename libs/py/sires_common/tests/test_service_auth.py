@@ -338,3 +338,33 @@ async def test_kms_signer_and_key_set_formats() -> None:
     assert TokenVerifier("knowledge", round_trip).verify(token).service == "agent-core"
     with pytest.raises(ValueError):
         PublicKeySet.from_jwks({"keys": [{"kty": "RSA", "kid": "x"}]})
+
+
+def test_public_key_set_refuses_private_jwk() -> None:
+    """A JWKS holding a private part ("d") is refused: the error names the kid, never the key value (parity with TS)."""
+    import base64
+
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    def b64(value: int) -> str:
+        return base64.urlsafe_b64encode(value.to_bytes(32, "big")).rstrip(b"=").decode()
+
+    numbers = LocalKeySigner.generate("gateway").public_key().public_numbers()
+    private_numbers = ec.generate_private_key(ec.SECP256R1()).private_numbers()
+    public_jwk = {"kty": "EC", "crv": "P-256", "kid": "gateway", "x": b64(numbers.x), "y": b64(numbers.y)}
+    secret = b64(private_numbers.private_value)
+    private_jwk = {
+        "kty": "EC",
+        "crv": "P-256",
+        "kid": "planning",
+        "x": b64(private_numbers.public_numbers.x),
+        "y": b64(private_numbers.public_numbers.y),
+        "d": secret,
+    }
+    with pytest.raises(ValueError) as refused:
+        PublicKeySet.from_jwks({"keys": [public_jwk, private_jwk]})
+    assert str(refused.value) == (
+        "JWK của 'planning' là khóa riêng (có \"d\"); bộ khóa công khai chỉ nhận khóa công khai"
+    )
+    assert secret not in str(refused.value)
+    assert PublicKeySet.from_jwks({"keys": [public_jwk]}).kids() == ["gateway"]

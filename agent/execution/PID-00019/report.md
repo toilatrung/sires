@@ -1,10 +1,10 @@
 # PID-00019 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — PID-00158 (S02 và phần S05 cần dòng app.state_transition sinh bằng helper chưa có trên main); phần làm được đã QC độc lập, PO cho merge trước (21/11/2026)
+**Trạng thái:** Xong — chờ QC (Lần 4, 25/11/2026: gộp main tới #100, migration dòng chuyển trạng thái sinh lại thành 0002; 25 test đạt, 0 todo; QC độc lập Lần 3 đạt, H10 đã chốt)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
-- **Nhánh:** `orchestration/migration-skeleton` (đã commit mã phần làm được, đã push) · **PR:** [#50](https://github.com/toilatrung/sires/pull/50) (vào `main`, chưa merge)
-- **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
+- **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`) · **PR:** [#90](https://github.com/toilatrung/sires/pull/90) (vào `main`, chưa merge); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
+- **Cập nhật:** 25/11/2026 (Lần 4); Lần 3 24/11/2026; Lần 2 21/11/2026; Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -102,6 +102,117 @@ Người làm: phiên Dev dev-pid-00019 (worktree `.claude/worktrees/pid-00019-e
 ### Cần PO
 
 - Đề xuất ở mục 6 Lần 1 và đề xuất OQ “chủ sở hữu đối tượng do migration tạo” của `qc-report.md` vẫn mở.
+
+## Lần 3 — 24/11/2026
+
+Người làm: phiên do PO `toilatrung` giao. Nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`, PR [#90](https://github.com/toilatrung/sires/pull/90). Việc của lần này: S02 và phần còn lại của S05 — G1, G2, G3, G8 của `qc-report.md` Lần 2 — vì chỗ chặn PID-00158 đã gỡ: helper có trên `main` từ PR #52 (21/11/2026), `apps/planning`, `apps/workspace` đã dùng.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC2 | PO `toilatrung`, qua phiên điều phối (24/11/2026) | “Chuyển hết toàn bộ công việc còn lại sang PO toilatrung để hoàn thiện PH-01 trong hôm nay”, rồi “Chạy ngay” | Trong phạm vi: làm nốt slice còn chặn của hồ sơ, không đổi phạm vi, AC hay hành vi; là căn cứ commit, push, mở PR vào `main` (DEC-58; merge do PO) | Làm | Mục “Kết quả” dưới; self-qc.md Lần 3 |
+
+### Trạng thái công việc
+
+| Slice | Trạng thái Lần 3 | File tạo / sửa ở Lần 3 |
+| --- | --- | --- |
+| S01 | Xong (không đổi) | — |
+| S02 | Xong | sửa: `apps/orchestration/src/domain/state-machines.ts` (bọc bằng `defineStateMachine`); tạo: `migrations/0001_state_transition.sql` (đầu ra của `sires-state-transition-sql`), `migrations/meta/0001_snapshot.json`; sửa: `migrations/meta/_journal.json`; test: `src/db/migration.spec.ts › state_transition sinh từ khai báo`, `› chuyển ngoài bảng bị từ chối`; `src/db/migrate.spec.ts` (hai migration, 43 dòng) |
+| S03 | Xong (không đổi) | — |
+| S04 | Xong | sửa chú thích `apps/orchestration/deploy/values.yaml` (G4 QC: chart chung đã nhận mảng argv) |
+| S05 | Xong | sửa: `src/db/ddl-behaviour.spec.ts` (ca 1 cho mọi cặp của bảy machine; đối chứng ca 6) |
+| S06 | Xong | sửa: `apps/orchestration/README.md` (mục Migration, State machine, bảng test) |
+
+### Kết quả
+
+- **S02.** Bảy machine bọc bằng `defineStateMachine` của `@sires/platform`, bỏ interface cục bộ (G3). `0001_state_transition.sql` là custom migration thứ hai của drizzle-kit, nội dung đúng từng byte đầu ra của `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` sau ba dòng giấy phép: `DELETE` cặp không khai báo, `INSERT … ON CONFLICT DO UPDATE` 43 dòng. `0000_init.sql` không sửa. Không có khối INSERT viết tay, không có bộ sinh SQL trong `apps/orchestration` (G1).
+- **Ba nguồn bằng nhau** (`migration.spec.ts › state_transition sinh từ khai báo`): `compareStateTransitionRows` rỗng cho database dựng từ migration và database dựng từ DDL; hai tập dòng bằng nhau, 43 dòng; file `0001` bằng `renderStateTransitionSql(stateMachines)`. Khai báo lệch cố ý thì phép so chỉ ra đúng cặp (EC06). `Running → Created` → `23514`, đối chứng `Running → Paused` đi qua (EC07).
+- **S05, ca 1** (`ddl-behaviour.spec.ts › chuyển ngoài bảng bị từ chối (ca 1)`), bằng `_app` trong giao dịch đặt `app.account_id`: mọi cặp trạng thái khác nhau của bảy machine (142 cặp). 43 cặp trong bảng đi qua. Cặp ngoài bảng:
+
+  | Machine | Bị trigger `*_state` từ chối (`23514`) | Bị trigger khác chặn trước (`23000`) |
+  | --- | --- | --- |
+  | workflow | 40 | 0 |
+  | workflow_step | 19 | 0 |
+  | agent_run | 3 | 12 — từ trạng thái kết thúc, `agent_run_final` (ca 5) |
+  | prompt | 0 | 9 — từ trạng thái đã rời Open, `prompt_answer_once` (ca 4) |
+  | context_item | 4 | 0 |
+  | deliberation | 9 | 0 |
+  | deliberation_entry | 3 | 0 |
+
+  Database từ chối mọi cặp ngoài bảng. Riêng `prompt`, không cặp nào ra `check_violation` như câu chữ của `acceptance.html` (xem “Cần PO”).
+- **S05, đối chứng ca 6:** `Active → Superseded` cùng `superseded_by_id` (ContextItem mới) đi qua; đổi `status` kèm `content` vẫn `23000` (G2).
+- **S06:** README mục State machine nêu migration `0001` và lệnh sinh SQL (G8).
+- **AC:** PID-00019-AC01 đạt đủ (cấu trúc và dữ liệu chuyển trạng thái, EC06, EC07). PID-00019-AC02 đạt (không đổi). PID-00019-AC03 đạt 9/9 ca theo DDL; ca 1 với machine `prompt` lệch câu chữ AC về SQLSTATE (G8 của self-qc.md, Cần PO). Không còn `it.todo`.
+- **Lệnh** (chi tiết, kết quả thật ở self-qc.md Lần 3): `pnpm --filter @sires/orchestration test` 5 file, **23 passed, 0 todo**; `nx affected -t lint typecheck test build --base=origin/main` đạt, chỉ `@sires/orchestration` bị ảnh hưởng; `check-tracks` `orchestration, repo`; `add-license --check` 0 file thiếu; `update-index --check` khớp; helm lint/template (image `alpine/helm:3.19.0`) đạt; thử đột biến bỏ một dòng của `0001` thì 5 test lỗi; `check-pid.mjs PID-00019 --result` “KẾT QUẢ ĐỦ (0 cảnh báo)”.
+- **Git:** `1ea27e7` (report.md, Đang làm), `eea178f` (mã), `000eac4` (gộp `origin/main` `0153261`, PR #88, #89, không xung đột), cùng commit kết quả này; mọi commit có chữ ký (`%G? = G`). Nhánh không chạm `pnpm-lock.yaml`.
+- **Lỗi đã biết, PO chưa chốt — `app.is_actor_ref` (agent `analysis` thiếu `instance`):** test của PID này không tạo `agent_run` với agent `analysis`, không chạm lỗi; không sửa DDL nguồn.
+
+### Cần PO
+
+- **Câu chữ ca 1 của PID-00019-AC03 với machine `prompt` (G8 của self-qc.md, MEDIUM).** `acceptance.html` ghi “(1) chuyển trạng thái không có trong app.state_transition của mỗi machine — check_violation”. Với `prompt`, mọi cặp ngoài bảng xuất phát từ trạng thái đã rời Open (Open → Answered, Expired, Cancelled đều có trong bảng). PostgreSQL chạy trigger `BEFORE` theo thứ tự tên, nên `prompt_answer_once` (`orchestration.sql:242`–`243`, `tg_immutable()`, `integrity_constraint_violation`) chạy trước `prompt_state` (`orchestration.sql:430`) và từ chối bằng `23000`. Database vẫn từ chối, nhưng không bằng `check_violation`. Tương tự với 12 cặp của agent_run từ trạng thái kết thúc (`agent_run_final`); agent_run vẫn có 3 cặp ra `check_violation`. Database xếp trên ticket, spec trong thứ tự nguồn, nên test ghim hành vi thật của DDL; DDL không sửa. Đề xuất PO chọn một:
+  1. Sửa `acceptance.html` ca 1: “check_violation; riêng prompt đã rời Open và agent_run đã kết thúc thì trigger bất biến (ca 4, ca 5) chặn trước với integrity_constraint_violation”. Mã không phải đổi.
+  2. Muốn `prompt_state` là lớp chặn thật cho `prompt` thì mở DBQ đổi DDL (ví dụ tên trigger để `*_state` chạy trước); khi đó test đổi theo DDL mới.
+- **Vẫn mở từ Lần 1–2:** đề xuất ở mục 6 Lần 1 (snapshot drizzle-kit, `.dockerignore`, ghi DDL đã chạy trên PostgreSQL 16 vào database 12.4); đề xuất OQ “chủ sở hữu đối tượng do migration tạo” của `qc-report.md`; EC08 (DBQ-01, Tech lead, trước PH-07).
+- **EC09 trong image:** Lần 3 không dựng lại image (Docker dùng chung với các phiên chạy song song hôm nay). Phụ thuộc, `files`, Dockerfile không đổi; image chép cả `migrations/` nên có `0001`. QC độc lập dựng lại nếu cần.
+
+### Việc còn lại
+
+1. PO review PR #90, QC độc lập Lần 3 (`spec-converge-skill PID-00019`, ghi `qc-report.md`), merge.
+2. PO quyết G8 (sửa `acceptance.html` hoặc mở DBQ).
+3. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
+
+## Lần 4 — 25/11/2026
+
+Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Việc của lần này: gộp `main` sau khi PR #94 (EC09) merge và đánh số lại migration dòng chuyển trạng thái, theo thứ tự merge PO chốt (#94 trước #90, PC-04 A8). QC độc lập Lần 3 ([qc-report.md](qc-report.md), commit `2876023`) kết luận “Có thể nghiệm thu”, đã lấy về nhánh trước khi gộp.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC3 | PO `toilatrung`, qua phiên điều phối (24/11/2026) | “Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01” và “Hãy thực hiện đi nhé!”; thứ tự merge #94 → #90 (PC-04 A8) | Trong phạm vi: giữ đúng Đầu ra của S02 (migration mới trong `apps/orchestration/migrations/`, không sửa migration đã có) khi `main` đã có migration `0001` khác | Làm | Mục “Kết quả” dưới; self-qc.md Lần 4 |
+
+### Trạng thái công việc
+
+Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
+
+| Slice | File tạo / sửa / xóa ở Lần 4 |
+| --- | --- |
+| S02 | xóa: `migrations/0001_state_transition.sql`; tạo: `migrations/0002_state_transition.sql` (thân giống từng byte bản cũ), `migrations/meta/0002_snapshot.json`; sửa: `migrations/meta/_journal.json` (giữ mục `0001_ec09_jsonb_helpers` của #94, thêm `0002_state_transition`); test: `src/db/migration.spec.ts` (ba migration, đọc `0002`, ca mới áp lần lượt), `src/db/migrate.spec.ts` (ba migration); chú thích `src/domain/state-machines.ts` |
+| S05 | sửa chú thích ca 1 `src/db/ddl-behaviour.spec.ts` theo H10; bỏ trần riêng 60 s của ca 1; tạo: `apps/orchestration/vitest.config.ts` (timeout chung) |
+| S06 | sửa: `apps/orchestration/README.md` (mục Migration có cả `0001_ec09` và `0002`; bảng test) |
+
+### Kết quả
+
+- **Gộp `main`:** `5c43b37` gộp `80a6626` (#94), xung đột ở journal, snapshot `0001`, README, hai file test: journal và snapshot `0001` lấy bản của `main`, `0001_state_transition.sql` gỡ. `09f3b38` gộp `f28424c` (#95: H10, sửa `acceptance.html`), không xung đột.
+- **Migration `0002`:** sinh lại bằng `drizzle-kit generate --custom --name state_transition`, không chỉ đổi tên file. Lý do: migrator của drizzle-orm chỉ áp migration có `when` lớn hơn `created_at` của dòng cuối trong sổ. `when` của `0001_state_transition` cũ (1795531337355) nhỏ hơn của `0001_ec09` (1795533919180), nên database đã áp `0001_ec09` sẽ bỏ qua mà không báo lỗi. `0002` có `when` 1795539120471; snapshot `0002` có `prevId` = id snapshot `0001`. Thân SQL là đầu ra của `sires-state-transition-sql` chạy lại sau khi gộp (giống từng byte đầu ra Lần 3).
+- **Test mới** `migration.spec.ts › áp lần lượt 0000 → 0001_ec09 → 0002 trên cùng database`: journal tăng dần theo `idx`. Database mới áp hai migration đầu (thư mục tạm, journal cắt còn hai mục) thì có 0 dòng chuyển trạng thái. Chạy lệnh với đủ migration thì áp đúng 1 migration, tổng 3, 43 dòng khớp khai báo, dump schema bằng database áp một lần, sổ ghi `created_at` bằng `when` từng mục. Đột biến hạ `when` của `0002` về giá trị cũ thì test lỗi.
+- **Timeout:** lần chạy đầu sau khi gộp, 2 test vượt trần mặc định 5 s của vitest trên máy có tải: ca S04 có sẵn `› lệnh migrate trên database rỗng` và ca áp lần lượt mới. Thêm `apps/orchestration/vitest.config.ts` (`testTimeout` 60 s, `hookTimeout` 180 s) như planning, workspace (#88, #89) và quy ước PO 24/11/2026 (G9 của QC Lần 3). Hằng số chung ở `@sires/testing` chưa có trên `main`, nên khai giá trị trực tiếp; đổi sang hằng số khi luồng platform xuất.
+- **AC:** PID-00019-AC01, AC02, AC03 đạt. Ca 1 AC03 khớp câu chữ `acceptance.html` sau H10 (`23514` cho cặp ngoài bảng; `23000` cho cặp xuất phát từ trạng thái mà trigger bất biến đã khóa). Lỗi EC09 của `app.is_actor_ref` đã sửa ở #94; schema dựng từ ba migration vẫn bằng DDL tham chiếu.
+- **Lệnh** (chi tiết ở self-qc.md Lần 4):
+  - `pnpm --filter @sires/orchestration test`: 5 file, **24 passed, 0 todo**, PostgreSQL 16 + pgvector qua Testcontainers (sau khi gộp #100: 25 passed, xem “Sửa sau CI”).
+  - `nx affected -t lint typecheck test build --base=origin/main`: đạt, chỉ `@sires/orchestration` bị ảnh hưởng.
+  - `check-tracks`: `orchestration, repo`.
+  - `add-license --check`: 0 file thiếu. `update-index --check`: khớp. `git diff --check`: sạch.
+- **Không chạy lại:** dựng image và chạy lệnh migrate trong image (Docker dùng chung với các phiên song song; phụ thuộc, `files`, Dockerfile không đổi; QC Lần 3 đã dựng với cùng thân migration).
+
+### Sửa sau CI
+
+- **Lỗi:** CI run `45445082745` trên đầu nhánh `7a23a4d`: job `typescript` lỗi 2 test so dump schema (`› chạy lại không đổi schema (EC02)`, `› lệnh migrate trên database rỗng`). Diff cho thấy một bản dump có “b��t biến” thay vì “bất biến” trong thân `app.tg_agent_run_final`; schema không khác.
+- **Nguyên nhân:** `exec` của Testcontainers 12.2.1 gom stdout bằng `chunk.toString()` cho từng frame Docker. Ký tự UTF-8 vắt qua ranh giới frame thành U+FFFD. Lỗi có từ Lần 1 trong `dumpSchema` của `src/db/database.testkit.ts` (S01); lộ ra khi EC09 đổi độ dài thân hàm.
+- **Sửa:** `dumpSchema` cho `pg_dump` ghi file trong container rồi đọc qua `base64`, giải mã UTF-8 một lần ở Node. Bản dump còn U+FFFD hoặc thiếu dòng kết thúc thì báo lỗi rõ. Test schema kiểm thêm chữ tiếng Việt trong thân hàm. Cục bộ không tái hiện được lỗi cũ; chi tiết các lượt chạy ở self-qc.md Lần 4.
+- **Gộp `main` lần ba:** `c5eaf3a` gộp `5e66d14` (#82, PID-00029 research), không xung đột. `nx affected --base=origin/main` đạt, 24 passed; `check-tracks` `orchestration, repo`.
+- **Gộp `main` lần bốn:** PR #100 của PO (“pg_dump qua base64”) đã sửa cùng lỗi cho orchestration, planning, workspace, research, sample-service. `797a60c` gộp `a3482a1` (#66, #100): `dumpSchema` lấy bản của #100 để các app thống nhất; `migration.spec.ts` giữ test S02 của nhánh và thêm test probe UTF-8 của #100. `nx affected --base=origin/main` đạt, **25 passed**; `check-tracks` `orchestration, repo`. Không còn việc ở luồng khác.
+
+### Cần PO
+
+- Không có điểm mới. G8 Lần 3 đã chốt (H10, #95).
+- Vẫn mở từ trước: đề xuất ở mục 6 Lần 1; đề xuất OQ “chủ sở hữu đối tượng do migration tạo” của `qc-report.md`; EC08 (DBQ-01, trước PH-07).
+
+### Việc còn lại
+
+1. PO review PR #90 (đã cập nhật với `main` `a3482a1`), QC độc lập xác nhận phần đánh số lại nếu cần, merge.
+2. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
 
 ---
 

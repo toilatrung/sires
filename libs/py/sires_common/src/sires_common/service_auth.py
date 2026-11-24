@@ -177,6 +177,11 @@ class PublicKeySet:
         for jwk in jwks.get("keys", []):
             if jwk.get("kty") != "EC" or jwk.get("crv") != "P-256" or not jwk.get("kid"):
                 raise ValueError("JWK phải là EC P-256 có kid")
+            if "d" in jwk:
+                # A private key in the shared key set would be handed to every service: refuse it, never quote it.
+                raise ValueError(
+                    f'JWK của {jwk["kid"]!r} là khóa riêng (có "d"); bộ khóa công khai chỉ nhận khóa công khai'
+                )
             x = int.from_bytes(_b64url_decode(jwk["x"]), "big")
             y = int.from_bytes(_b64url_decode(jwk["y"]), "big")
             loaded[jwk["kid"]] = ec.EllipticCurvePublicNumbers(x, y, ec.SECP256R1()).public_key()

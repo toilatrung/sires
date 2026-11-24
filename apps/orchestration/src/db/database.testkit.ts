@@ -96,12 +96,14 @@ export async function startOrchestrationPostgres(options: { withRoles?: boolean 
       await admin(database, sql);
     },
     async dumpSchema(database) {
+      // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD.
       const result = await server.container.exec([
-        'pg_dump', '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
+        'bash', '-o', 'pipefail', '-c', 'pg_dump "$@" | base64 -w 0', 'pg_dump',
+        '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
         '-U', server.username, '-d', database,
       ]);
       if (result.exitCode !== 0) throw new Error(`pg_dump ${database} lỗi: ${result.stderr || result.output}`);
-      return normalizeDump(result.stdout);
+      return normalizeDump(Buffer.from(result.stdout.trim(), 'base64').toString('utf8'));
     },
     stop: () => server.stop(),
   };
