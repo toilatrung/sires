@@ -5,14 +5,15 @@
 // PID-00019-AC03 (S05): hành vi đã ghi trong chú thích của docs/database/ddl/orchestration.sql, 00-common.sql, chạy
 // bằng vai trò sires_orchestration_app trên database dựng từ migration. Mỗi thao tác chạy trong giao dịch đặt
 // app.account_id (withAccountTransaction của @sires/platform) rồi rollback, nên các ca không ảnh hưởng nhau.
-// Ca cần dòng app.state_transition (S02, chờ helper PID-00158) để todo. Cần Docker (Testcontainers).
+// Dòng app.state_transition do migration 0001 nạp từ khai báo (S02). Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
-import { withAccountTransaction, type TenantDatabase } from '@sires/platform';
+import { findTransition, type StateMachine, withAccountTransaction, type TenantDatabase } from '@sires/platform';
 import { type SQL, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client, Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { stateMachines } from '../domain/state-machines';
 import { type OrchestrationPostgres, ROLES, sqlState, startOrchestrationPostgres } from './database.testkit';
 import { runMigrations } from './migrate';
 
@@ -114,8 +115,108 @@ const SEED_SQL = `
 `;
 
 type Outcome = { ok: true; rowCount: number; rows: Record<string, unknown>[] } | { ok: false; code?: string; constraint?: string };
+type Attempt = { result: { rowCount: number; rows: Record<string, unknown>[] } } | { error: unknown };
 
 class Rollback extends Error {}
+
+/** Trạng thái kết thúc: workflow_ended_ck buộc ended_at; agent_run_final khóa dòng agent_run (DDL). */
+const ENDED = ['Succeeded', 'Failed', 'Cancelled'];
+
+/**
+ * Ca 1: câu tạo một dòng của bảng ứng với `machine` ở trạng thái `from` (id `rowId`), đủ cột mà CHECK của trạng thái
+ * đó cần, và câu đổi dòng sang `to` (kèm cột mà CHECK của `to` cần). Trigger *_state chỉ xét cột status.
+ */
+function transitionCase(machine: string, rowId: string, from: string, to: string): { prepare: SQL[]; move: SQL } {
+  switch (machine) {
+    case 'workflow':
+      return {
+        prepare: [sql`
+          INSERT INTO app.workflow (id, account_id, project_id, type, triggered_by, status, ended_at, idempotency_key,
+            created_by)
+          VALUES (${rowId}, ${A}, ${project.a}, 'discovery', ${researcherA}::jsonb, ${from},
+            CASE WHEN ${from} IN ('Succeeded', 'Failed', 'Cancelled') THEN now() END, ${`c1-${rowId}`},
+            ${researcherA}::jsonb)`],
+        move: sql`
+          UPDATE app.workflow SET status = ${to},
+            ended_at = CASE WHEN ${to} IN ('Succeeded', 'Failed', 'Cancelled') THEN now() END
+          WHERE id = ${rowId} RETURNING status`,
+      };
+    case 'workflow_step':
+      return {
+        prepare: [workflowStepRow(rowId, 'agent_run', from)],
+        move: sql`UPDATE app.workflow_step SET status = ${to} WHERE id = ${rowId} RETURNING status`,
+      };
+    case 'agent_run':
+      // structured_output, usage, error có sẵn để agent_run_output_ck, _usage_ck, _error_ck qua ở mọi trạng thái.
+      return {
+        prepare: [sql`
+          INSERT INTO app.agent_run (id, account_id, project_id, workflow_id, step_id, agent, provider_connection_id,
+            provider, model, adapter_version, agent_definition_version, prompt_template_version, input_summary,
+            context_manifest, status, structured_output, usage, error, created_by)
+          VALUES (${rowId}, ${A}, ${project.a}, ${id.workflow}, ${id.step}, 'discovery', ${connection}, 'anthropic',
+            'model-x', 'a1', 'd1', 'p1', 'ca 1', '{}', ${from}, '{}', '{"inputTokens": 1, "outputTokens": 1}',
+            '{"code": "provider_error"}', ${seeder}::jsonb)`],
+        move: sql`UPDATE app.agent_run SET status = ${to} WHERE id = ${rowId} RETURNING status`,
+      };
+    case 'prompt':
+      return {
+        prepare: [sql`
+          INSERT INTO app.interactive_agent_prompt (id, account_id, project_id, workflow_id, step_id,
+            created_by_agent_run_id, type, question, pending_action, status, response, created_by)
+          VALUES (${rowId}, ${A}, ${project.a}, ${id.workflow}, ${id.step}, ${id.runActive}, 'approval', 'Duyệt?', '{}',
+            ${from}, CASE WHEN ${from} = 'Answered' THEN '{"text": "ok"}'::jsonb END, ${seeder}::jsonb)`],
+        move: sql`
+          UPDATE app.interactive_agent_prompt SET status = ${to},
+            response = CASE WHEN ${to} = 'Answered' THEN '{"text": "ok"}'::jsonb END
+          WHERE id = ${rowId} RETURNING status`,
+      };
+    case 'context_item':
+      return {
+        prepare: [sql`
+          INSERT INTO app.context_item (id, account_id, project_id, scope, kind, content, source_type, source_id,
+            status, superseded_by_id, created_by)
+          VALUES (${rowId}, ${A}, ${project.a}, 'project', 'fact', '{"text": "ca 1"}', 'researcher', ${randomUUID()},
+            ${from}, CASE WHEN ${from} = 'Superseded' THEN ${id.contextItem}::uuid END, ${researcherA}::jsonb)`],
+        move: sql`
+          UPDATE app.context_item SET status = ${to},
+            superseded_by_id = CASE WHEN ${to} = 'Superseded' THEN ${id.contextItem}::uuid END
+          WHERE id = ${rowId} RETURNING status`,
+      };
+    case 'deliberation': {
+      // deliberation_step_uq: mỗi Deliberation một bước riêng.
+      const stepId = randomUUID();
+      return {
+        prepare: [
+          workflowStepRow(stepId, 'deliberation', 'Running'),
+          sql`
+            INSERT INTO app.deliberation (id, account_id, project_id, workflow_id, step_id, problem_type, brief,
+              context_snapshot_id, status, created_by)
+            VALUES (${rowId}, ${A}, ${project.a}, ${id.workflow}, ${stepId}, 'methodology', '{}', ${id.snapshotFresh},
+              ${from}, ${seeder}::jsonb)`,
+        ],
+        move: sql`UPDATE app.deliberation SET status = ${to} WHERE id = ${rowId} RETURNING status`,
+      };
+    }
+    case 'deliberation_entry':
+      return {
+        prepare: [sql`
+          INSERT INTO app.deliberation_entry (id, account_id, project_id, workflow_id, deliberation_id, round, author,
+            author_agent_run_id, type, content, status, created_by)
+          VALUES (${rowId}, ${A}, ${project.a}, ${id.workflow}, ${id.deliberation}, 1, '{}', ${id.runActive}, 'position',
+            '{}', ${from}, ${seeder}::jsonb)`],
+        move: sql`UPDATE app.deliberation_entry SET status = ${to} WHERE id = ${rowId} RETURNING status`,
+      };
+    default:
+      throw new Error(`ca 1: chưa có bảng cho machine ${machine}`);
+  }
+}
+
+function workflowStepRow(stepId: string, kind: string, status: string): SQL {
+  return sql`
+    INSERT INTO app.workflow_step (id, account_id, project_id, workflow_id, "order", kind, description, status,
+      created_by)
+    VALUES (${stepId}, ${A}, ${project.a}, ${id.workflow}, 100, ${kind}, 'ca 1', ${status}, ${seeder}::jsonb)`;
+}
 
 describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
   let pg: OrchestrationPostgres;
@@ -142,20 +243,34 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
     await pg?.stop();
   });
 
-  /** Chạy một câu bằng _app trong giao dịch của tài khoản `account`, luôn rollback; trả kết quả hoặc SQLSTATE. */
-  async function asApp(account: string, query: SQL): Promise<Outcome> {
-    let outcome: Outcome | undefined;
+  /**
+   * Chạy các câu `prepare` (dữ liệu riêng của ca; lỗi ở đây là lỗi của test, ném ra) rồi câu `query` bằng _app trong
+   * giao dịch của tài khoản `account`, luôn rollback; trả kết quả hoặc lỗi của câu `query`.
+   */
+  async function attempt(account: string, query: SQL, prepare: readonly SQL[] = []): Promise<Attempt> {
+    let settled: Attempt | undefined;
+    let prepared = false;
     try {
       await withAccountTransaction(appDb, account, async (tx) => {
+        for (const statement of prepare) await tx.execute(statement);
+        prepared = true;
         const result = await tx.execute(query);
-        outcome = { ok: true, rowCount: result.rowCount ?? 0, rows: result.rows };
+        settled = { result: { rowCount: result.rowCount ?? 0, rows: result.rows } };
         throw new Rollback();
       });
     } catch (error) {
-      if (error instanceof Rollback && outcome) return outcome;
-      return { ok: false, code: sqlState(error), constraint: constraintOf(error) };
+      if (error instanceof Rollback && settled) return settled;
+      if (!prepared) throw error;
+      return { error };
     }
-    throw new Error('asApp: giao dịch không rollback');
+    throw new Error('attempt: giao dịch không rollback');
+  }
+
+  /** Như `attempt`; trả số dòng và dòng, hoặc SQLSTATE và tên ràng buộc. */
+  async function asApp(account: string, query: SQL, prepare: readonly SQL[] = []): Promise<Outcome> {
+    const run = await attempt(account, query, prepare);
+    if ('result' in run) return { ok: true, ...run.result };
+    return { ok: false, code: sqlState(run.error), constraint: constraintOf(run.error) };
   }
 
   const passes = (rowCount = 1) => ({ ok: true, rowCount });
@@ -174,10 +289,62 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
     expect(n).toBe(2);
   });
 
-  it.todo(
-    'chuyển ngoài bảng bị từ chối (ca 1: mỗi machine, check_violation; đối chứng: cặp có trong bảng đi qua); ' +
-      'chặn: dòng app.state_transition chờ helper PID-00158 (S02)',
-  );
+  it('chuyển ngoài bảng bị từ chối (ca 1)', async () => {
+    // Mọi cặp (từ, đến) khác nhau của bảy machine: dòng tạo ở `từ` trong chính giao dịch của _app, rồi đổi sang `đến`.
+    // Cặp có trong khai báo (= dòng app.state_transition, S02) đi qua — đối chứng; cặp ngoài bảng bị trigger *_state
+    // (tg_state_transition) từ chối với check_violation. Hai chỗ DDL chặn trước trigger *_state, vì PostgreSQL chạy
+    // trigger BEFORE cùng sự kiện theo thứ tự tên: agent_run đã kết thúc (agent_run_final, ca 5) và prompt đã rời Open
+    // (prompt_answer_once = tg_immutable(), ca 4), cả hai integrity_constraint_violation. Với prompt, mọi cặp ngoài bảng
+    // đều xuất phát từ trạng thái đã rời Open (Open → mọi trạng thái khác đều có trong bảng), nên không cặp nào tới được
+    // prompt_state (report.md Lần 3, đề xuất cho PO).
+    type Move = { ok: true; rows: Record<string, unknown>[] } | { ok: false; code?: string; message?: string };
+    const expected = (m: StateMachine, rowId: string, from: string, to: string): Move => {
+      if (findTransition(m, from, to)) return { ok: true, rows: [{ status: to }] };
+      if (m.machine === 'agent_run' && ENDED.includes(from)) {
+        return { ok: false, code: INTEGRITY_VIOLATION, message: `Agent Run ${rowId} đã kết thúc, bất biến` };
+      }
+      if (m.machine === 'prompt' && from !== 'Open') {
+        return {
+          ok: false,
+          code: INTEGRITY_VIOLATION,
+          message: 'app.interactive_agent_prompt bất biến; chỉ được đổi: không cột nào',
+        };
+      }
+      return { ok: false, code: CHECK_VIOLATION, message: `Chuyển trạng thái không hợp lệ cho ${m.machine}: ${from} → ${to}` };
+    };
+
+    const tally: Record<string, { accepted: number; stateTrigger: number; earlierTrigger: number }> = {};
+    for (const m of stateMachines) {
+      const counts = (tally[m.machine] = { accepted: 0, stateTrigger: 0, earlierTrigger: 0 });
+      for (const from of m.states) {
+        for (const to of m.states) {
+          if (from === to) continue;
+          const rowId = randomUUID();
+          const { prepare, move } = transitionCase(m.machine, rowId, from, to);
+          const run = await attempt(A, move, prepare);
+          const outcome: Move =
+            'result' in run
+              ? { ok: true, rows: run.result.rows }
+              : { ok: false, code: sqlState(run.error), message: pgMessage(run.error) };
+          expect(outcome, `${m.machine}: ${from} → ${to}`).toEqual(expected(m, rowId, from, to));
+          if (outcome.ok) counts.accepted += 1;
+          else if (outcome.code === CHECK_VIOLATION) counts.stateTrigger += 1;
+          else counts.earlierTrigger += 1;
+        }
+      }
+    }
+    // 43 cặp trong bảng đi qua; mỗi machine trừ prompt có cặp ngoài bảng bị trigger *_state từ chối.
+    expect(tally).toEqual({
+      workflow: { accepted: 16, stateTrigger: 40, earlierTrigger: 0 },
+      workflow_step: { accepted: 11, stateTrigger: 19, earlierTrigger: 0 },
+      agent_run: { accepted: 5, stateTrigger: 3, earlierTrigger: 12 },
+      prompt: { accepted: 3, stateTrigger: 0, earlierTrigger: 9 },
+      context_item: { accepted: 2, stateTrigger: 4, earlierTrigger: 0 },
+      deliberation: { accepted: 3, stateTrigger: 9, earlierTrigger: 0 },
+      deliberation_entry: { accepted: 3, stateTrigger: 3, earlierTrigger: 0 },
+    });
+    // 142 giao dịch: cục bộ khoảng 1,3 s; trần riêng thay cho mặc định 5 s của vitest để runner CI có tải không báo sai.
+  }, 60_000);
 
   it('một Workflow chưa kết thúc cho mỗi Task (ca 2, DATA-IDEMP-002)', async () => {
     const task = randomUUID();
@@ -280,17 +447,34 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
       expect(await asApp(A, sql`UPDATE app.context_item SET kind = 'decision' WHERE id = ${id.contextItem}`)).toEqual(
         rejected(INTEGRITY_VIOLATION),
       );
-      // Đối chứng không cần bảng chuyển trạng thái: cột mà tg_immutable luôn cho đổi (updated_by) đi qua.
+      // Đối chứng: cột mà tg_immutable luôn cho đổi (updated_by) đi qua.
       expect(
         strip(await asApp(A, sql`UPDATE app.context_item SET updated_by = ${researcherA}::jsonb
                                  WHERE id = ${id.contextItem}`)),
       ).toEqual(passes());
+      // Đối chứng: đổi status Active → Superseded cùng superseded_by_id (ContextItem mới thay thế) đi qua — cần dòng
+      // app.state_transition của S02; context_item_superseded_ck buộc hai cột đổi cùng nhau.
+      const newer = randomUUID();
+      expect(
+        await asApp(
+          A,
+          sql`UPDATE app.context_item SET status = 'Superseded', superseded_by_id = ${newer}
+              WHERE id = ${id.contextItem} RETURNING status, superseded_by_id`,
+          [sql`
+            INSERT INTO app.context_item (id, account_id, project_id, scope, kind, content, source_type, source_id,
+              created_by)
+            VALUES (${newer}, ${A}, ${project.a}, 'project', 'fact', '{"text": "thay thế"}', 'researcher',
+              ${randomUUID()}, ${researcherA}::jsonb)`],
+        ),
+      ).toEqual({ ok: true, rowCount: 1, rows: [{ status: 'Superseded', superseded_by_id: newer }] });
+      // Cùng lần đổi đó mà kèm cột khác (content) vẫn bị từ chối.
+      expect(
+        await asApp(
+          A,
+          sql`UPDATE app.context_item SET status = 'Retracted', content = '{"text": "sửa"}' WHERE id = ${id.contextItem}`,
+        ),
+      ).toEqual(rejected(INTEGRITY_VIOLATION));
     });
-
-    it.todo(
-      'đổi cột của context_item ngoài status, superseded_by_id bị từ chối (ca 6) — đối chứng đổi status Active → ' +
-        'Superseded cùng superseded_by_id đi qua; chặn: dòng app.state_transition chờ helper PID-00158 (S02)',
-    );
 
     it('context_snapshot.outdated true → false bị từ chối (ca 7)', async () => {
       expect(
@@ -361,6 +545,17 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
     expect(strip(await asApp(A, insert(project.a)))).toEqual(passes());
   });
 });
+
+/** Thông báo của lỗi PostgreSQL (lỗi mang SQLSTATE trong chuỗi `cause` mà drizzle bọc). */
+function pgMessage(error: unknown): string | undefined {
+  let current: unknown = error;
+  for (let depth = 0; current instanceof Error && depth < 5; depth += 1) {
+    const code = (current as Error & { code?: unknown }).code;
+    if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return current.message;
+    current = current.cause;
+  }
+  return undefined;
+}
 
 function constraintOf(error: unknown): string | undefined {
   let current: unknown = error;

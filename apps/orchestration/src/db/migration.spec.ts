@@ -2,23 +2,40 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
-// PID-00019-AC01: database dựng từ migration khớp database dựng từ DDL tham chiếu (S01), khai báo state machine
-// khớp dòng app.state_transition của DDL (S02, phần không cần helper PID-00158). Cần Docker (Testcontainers).
+// PID-00019-AC01: database dựng từ migration khớp database dựng từ DDL tham chiếu (S01); dòng app.state_transition
+// của database dựng từ migration bằng tập do helper PID-00158 sinh từ khai báo và bằng dòng của DDL (S02).
+// Cần Docker (Testcontainers).
 
+import { randomUUID } from 'node:crypto';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  compareStateTransitionRows,
+  defineStateMachine,
+  renderStateTransitionSql,
+  stateTransitionRows,
+} from '@sires/platform';
+import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { stateMachines } from '../domain/state-machines';
+import { stateMachines, workflowStateMachine } from '../domain/state-machines';
 import {
   EXPECTED_TABLES,
   listTables,
   type OrchestrationPostgres,
   ROLES,
+  sqlState,
   startOrchestrationPostgres,
 } from './database.testkit';
-import { MIGRATIONS_SCHEMA, MIGRATIONS_TABLE, runMigrationCommand, runMigrations } from './migrate';
+import { MIGRATIONS_FOLDER, MIGRATIONS_SCHEMA, MIGRATIONS_TABLE, runMigrationCommand, runMigrations } from './migrate';
 
 const CONTAINER_TIMEOUT = 180_000;
 const MIGRATED = 'orch_migrated';
 const REFERENCE = 'orch_reference';
+/** Số migration trong migrations/ (0000_init, 0001_state_transition). */
+const MIGRATION_COUNT = 2;
+const ROWS_SQL = 'SELECT machine, from_state, to_state, code FROM app.state_transition ORDER BY 1, 2, 3';
+
+type StateTransitionDbRow = { machine: string; from_state: string; to_state: string; code: string | null };
 
 describe('migration orchestration — PID-00019-AC01', () => {
   let pg: OrchestrationPostgres;
@@ -96,47 +113,104 @@ describe('migration orchestration — PID-00019-AC01', () => {
 
   it('chạy lại không đổi schema (EC02)', async () => {
     const second = await runMigrations(pg.url(MIGRATED));
-    expect(second).toEqual({ applied: 0, total: 1 });
+    expect(second).toEqual({ applied: 0, total: MIGRATION_COUNT });
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const recorded = await pg.admin<{ n: string }>(
       MIGRATED,
       `SELECT count(*) AS n FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`,
     );
-    expect(recorded).toEqual([{ n: '1' }]);
+    expect(recorded).toEqual([{ n: String(MIGRATION_COUNT) }]);
+    // SQL đồng bộ của helper chạy lại không đổi dòng nào (sổ phiên bản đã chặn chạy lại; đây là lớp thứ hai).
+    expect(await pg.admin<StateTransitionDbRow>(MIGRATED, ROWS_SQL)).toHaveLength(43);
   });
 
-  // S02, phần không cần helper: khai báo khớp đúng 43 dòng mà khối INSERT của DDL tạo ra (EC06).
-  it('state_transition sinh từ khai báo — khai báo khớp dòng của DDL (43 cặp)', async () => {
-    const rows = await pg.admin<{ machine: string; from_state: string; to_state: string; code: string | null }>(
-      REFERENCE,
-      'SELECT machine, from_state, to_state, code FROM app.state_transition',
-    );
-    const key = (machine: string, from: string, to: string) => `${machine}: ${from} → ${to}`;
-    const reference = new Set(rows.map((row) => key(row.machine, row.from_state, row.to_state)));
-    const declared = new Set(
-      stateMachines.flatMap((m) => m.transitions.map((t) => key(m.machine, t.from, t.to))),
-    );
-    // Báo đúng cặp lệch khi khai báo thiếu hoặc thừa (EC06).
-    expect({
-      missing: [...reference].filter((pair) => !declared.has(pair)),
-      unexpected: [...declared].filter((pair) => !reference.has(pair)),
-    }).toEqual({ missing: [], unexpected: [] });
-    expect(reference.size).toBe(43);
-    expect(rows.every((row) => row.code === null)).toBe(true);
-    // Mỗi trạng thái của cặp nằm trong danh sách trạng thái của machine.
-    for (const m of stateMachines) {
-      const states: readonly string[] = m.states;
-      for (const t of m.transitions) {
-        expect(states, key(m.machine, t.from, t.to)).toEqual(expect.arrayContaining([t.from, t.to]));
+  // S02 (PID-00019-AC01 phần dữ liệu, EC06): ba nguồn bằng nhau — tập helper sinh từ khai báo, dòng của database
+  // dựng từ migration, dòng của database dựng từ DDL (43 dòng của bảy machine).
+  it('state_transition sinh từ khai báo', async () => {
+    const migrated = await pg.admin<StateTransitionDbRow>(MIGRATED, ROWS_SQL);
+    const reference = await pg.admin<StateTransitionDbRow>(REFERENCE, ROWS_SQL);
+    const noDiff = { missing: [], unexpected: [], codeMismatch: [] };
+    expect(compareStateTransitionRows(migrated, stateMachines)).toEqual(noDiff);
+    expect(compareStateTransitionRows(reference, stateMachines)).toEqual(noDiff);
+    expect(migrated).toEqual(reference);
+    expect(migrated).toHaveLength(43);
+    expect(stateTransitionRows(stateMachines)).toHaveLength(43);
+    const perMachine = Object.fromEntries(stateMachines.map((m) => [m.machine, m.transitions.length]));
+    expect(perMachine).toEqual({
+      workflow: 16, workflow_step: 11, agent_run: 5, prompt: 3, context_item: 2, deliberation: 3, deliberation_entry: 3,
+    });
+
+    // Dòng vào database chỉ qua migration 0001, là đúng SQL helper sinh (bỏ ba dòng giấy phép và dòng trống); không
+    // migration nào khác có khối INSERT viết tay (D2, DEC-57).
+    const file = readFileSync(join(MIGRATIONS_FOLDER, '0001_state_transition.sql'), 'utf8').replace(/\r\n/g, '\n');
+    expect(file.split('\n').slice(4).join('\n')).toBe(renderStateTransitionSql(stateMachines));
+    const sqlWithoutComments = (name: string) =>
+      readFileSync(join(MIGRATIONS_FOLDER, name), 'utf8')
+        .split(/\r?\n/)
+        .filter((line) => !line.trimStart().startsWith('--'))
+        .join('\n');
+    const inserting = readdirSync(MIGRATIONS_FOLDER)
+      .filter((name) => name.endsWith('.sql'))
+      .filter((name) => /INSERT\s+INTO\s+app\.state_transition\b/i.test(sqlWithoutComments(name)));
+    expect(inserting).toEqual(['0001_state_transition.sql']);
+
+    // Khai báo lệch DDL (thiếu một cặp, thừa một cặp): phép so chỉ ra đúng cặp lệch (EC06).
+    const drifted = defineStateMachine({
+      machine: 'workflow',
+      states: workflowStateMachine.states,
+      transitions: [
+        ...workflowStateMachine.transitions.filter((t) => !(t.from === 'Running' && t.to === 'Paused')),
+        { from: 'Succeeded', to: 'Running' },
+      ],
+    });
+    const otherMachines = stateMachines.filter((m) => m.machine !== 'workflow');
+    expect(compareStateTransitionRows(migrated, [drifted, ...otherMachines])).toEqual({
+      missing: [{ machine: 'workflow', fromState: 'Succeeded', toState: 'Running', code: null }],
+      unexpected: [{ machine: 'workflow', fromState: 'Running', toState: 'Paused', code: null }],
+      codeMismatch: [],
+    });
+  });
+
+  it('chuyển ngoài bảng bị từ chối', async () => {
+    // EC07: sau khi migration nạp dòng, trigger workflow_state (tg_state_transition) từ chối Running → Created với
+    // check_violation, kể cả với superuser; đối chứng Running → Paused (có trong bảng) đi qua. Mỗi lần thử chạy trong
+    // giao dịch riêng rồi rollback.
+    const attempt = async (to: string) => {
+      const client = new Client({ connectionString: pg.url(MIGRATED) });
+      await client.connect();
+      const account = randomUUID();
+      const project = randomUUID();
+      const actor = JSON.stringify({ type: 'researcher', accountId: account });
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          `INSERT INTO replica.project_state (project_id, account_id, status, deleted_at, source_version)
+           VALUES ($1, $2, 'Active', NULL, 1)`,
+          [project, account],
+        );
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO app.workflow (account_id, project_id, type, triggered_by, status, idempotency_key, created_by)
+           VALUES ($1, $2, 'discovery', $3, 'Running', 'ec07', $3) RETURNING id`,
+          [account, project, actor],
+        );
+        const updated = await client.query<{ status: string }>(
+          'UPDATE app.workflow SET status = $1 WHERE id = $2 RETURNING status',
+          [to, rows[0]?.id],
+        );
+        return { accepted: updated.rows };
+      } catch (error) {
+        return { code: sqlState(error), message: error instanceof Error ? error.message : String(error) };
+      } finally {
+        await client.query('ROLLBACK');
+        await client.end();
       }
-    }
+    };
+    expect(await attempt('Created')).toEqual({
+      code: '23514',
+      message: 'Chuyển trạng thái không hợp lệ cho workflow: Running → Created',
+    });
+    expect(await attempt('Paused')).toEqual({ accepted: [{ status: 'Paused' }] });
   });
-
-  it.todo(
-    'state_transition sinh từ khai báo — dòng của database dựng từ migration bằng tập helper PID-00158 sinh ' +
-      '(compareStateTransitionRows rỗng); chặn: chờ PID-00158',
-  );
-  it.todo('chuyển ngoài bảng bị từ chối (EC07: workflow Running → Created, check_violation); chặn: chờ PID-00158');
 });
 
 describe('migration orchestration — thiếu vai trò thì rollback (EC03)', () => {

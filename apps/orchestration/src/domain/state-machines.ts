@@ -6,20 +6,15 @@
 // PID-00046 và các PID module (prompts, context-store, deliberation) dùng lại, không khai báo lại (PID-00019 H1, D2).
 // Chỉ có các cặp từ → đến của docs/database/ddl/orchestration.sql, không có điều kiện chuyển, mã hay actor.
 //
-// Dạng dữ liệu theo khai báo mà helper của PID-00158 nhận ({ machine, states, transitions: [{ from, to }] }, spec
-// 4.2 của PID-00158). Dòng app.state_transition của migration sinh từ `stateMachines` bằng lệnh
-// sires-state-transition-sql của helper, không viết tay. Khi helper có trên main: bọc từng machine bằng
-// defineStateMachine của @sires/platform và sinh migration dòng chuyển trạng thái (PID-00019 S02, đang chặn).
+// Khai báo bằng defineStateMachine của @sires/platform (helper PID-00158): helper kiểm khai báo khi nạp module (tên,
+// trạng thái, cặp trùng, cặp X → X) và trả đối tượng đóng băng. `stateMachines` là export mà lệnh
+// sires-state-transition-sql đọc từ bản build (dist/domain/state-machines.js) để sinh SQL của migration
+// 0001_state_transition.sql; dòng app.state_transition không viết tay (DEC-57, database 10.2; PID-00019 S02).
 
-/** Hình dạng khai báo dạng dữ liệu của PID-00158 (chỉ để kiểm kiểu; helper kiểm nội dung khi định nghĩa). */
-interface StateMachineDeclaration {
-  readonly machine: string;
-  readonly states: readonly string[];
-  readonly transitions: readonly { readonly from: string; readonly to: string }[];
-}
+import { defineStateMachine } from '@sires/platform';
 
 /** Workflow (16 cặp; gồm Waiting for User → Paused, DEC-53). */
-export const workflowStateMachine = {
+export const workflowStateMachine = defineStateMachine({
   machine: 'workflow',
   states: ['Created', 'Running', 'Waiting for User', 'Paused', 'Interrupted', 'Succeeded', 'Failed', 'Cancelled'],
   transitions: [
@@ -40,10 +35,10 @@ export const workflowStateMachine = {
     { from: 'Paused', to: 'Cancelled' },
     { from: 'Interrupted', to: 'Cancelled' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
 /** WorkflowStep (11 cặp). */
-export const workflowStepStateMachine = {
+export const workflowStepStateMachine = defineStateMachine({
   machine: 'workflow_step',
   states: ['Pending', 'Running', 'Waiting for User', 'Succeeded', 'Failed', 'Cancelled'],
   transitions: [
@@ -59,10 +54,10 @@ export const workflowStepStateMachine = {
     { from: 'Waiting for User', to: 'Cancelled' },
     { from: 'Failed', to: 'Running' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
 /** AgentRun (5 cặp); bất biến sau trạng thái cuối, trừ cờ discarded (trigger agent_run_final). */
-export const agentRunStateMachine = {
+export const agentRunStateMachine = defineStateMachine({
   machine: 'agent_run',
   states: ['Pending', 'Running', 'Succeeded', 'Failed', 'Cancelled'],
   transitions: [
@@ -72,10 +67,10 @@ export const agentRunStateMachine = {
     { from: 'Pending', to: 'Cancelled' },
     { from: 'Running', to: 'Cancelled' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
-/** InteractiveAgentPrompt (3 cặp); tên machine `prompt` như DDL. */
-export const promptStateMachine = {
+/** InteractiveAgentPrompt (3 cặp); tên machine `prompt` như DDL; bất biến khi rời Open (trigger prompt_answer_once). */
+export const promptStateMachine = defineStateMachine({
   machine: 'prompt',
   states: ['Open', 'Answered', 'Expired', 'Cancelled'],
   transitions: [
@@ -83,20 +78,20 @@ export const promptStateMachine = {
     { from: 'Open', to: 'Expired' },
     { from: 'Open', to: 'Cancelled' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
 /** ContextItem (2 cặp). */
-export const contextItemStateMachine = {
+export const contextItemStateMachine = defineStateMachine({
   machine: 'context_item',
   states: ['Active', 'Superseded', 'Retracted'],
   transitions: [
     { from: 'Active', to: 'Superseded' },
     { from: 'Active', to: 'Retracted' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
 /** Deliberation (3 cặp). */
-export const deliberationStateMachine = {
+export const deliberationStateMachine = defineStateMachine({
   machine: 'deliberation',
   states: ['Running', 'Completed', 'Failed', 'Cancelled'],
   transitions: [
@@ -104,10 +99,10 @@ export const deliberationStateMachine = {
     { from: 'Running', to: 'Failed' },
     { from: 'Running', to: 'Cancelled' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
 /** DeliberationEntry (3 cặp). */
-export const deliberationEntryStateMachine = {
+export const deliberationEntryStateMachine = defineStateMachine({
   machine: 'deliberation_entry',
   states: ['draft', 'final', 'retracted'],
   transitions: [
@@ -115,9 +110,9 @@ export const deliberationEntryStateMachine = {
     { from: 'draft', to: 'retracted' },
     { from: 'final', to: 'retracted' },
   ],
-} as const satisfies StateMachineDeclaration;
+});
 
-/** Danh sách mà lệnh sires-state-transition-sql của PID-00158 đọc (tên export mặc định `stateMachines`). */
+/** Danh sách mà lệnh sires-state-transition-sql đọc (export mặc định `stateMachines`), theo thứ tự khối INSERT của DDL. */
 export const stateMachines = [
   workflowStateMachine,
   workflowStepStateMachine,

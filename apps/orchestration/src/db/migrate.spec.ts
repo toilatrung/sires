@@ -36,14 +36,16 @@ describe('lệnh migrate', () => {
     const first = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...first.io })).toBe(0);
     expect(first.stderr).toEqual([]);
-    expect(first.stdout).toEqual(['orchestration migrate: áp 1 migration mới, đã ghi sổ 1']);
+    expect(first.stdout).toEqual(['orchestration migrate: áp 2 migration mới, đã ghi sổ 2']);
     expect(await listTables(pg, database)).toEqual([...EXPECTED_TABLES]);
+    // Migration 0001 nạp dòng app.state_transition sinh từ khai báo (S02): 43 cặp của bảy machine.
+    expect(await pg.admin(database, 'SELECT machine FROM app.state_transition')).toHaveLength(43);
     const schema = await pg.dumpSchema(database);
 
     // Job migration chạy trước mỗi lần deploy: lần hai không áp gì, không lỗi, schema giữ nguyên (EC02).
     const second = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...second.io })).toBe(0);
-    expect(second.stdout).toEqual(['orchestration migrate: áp 0 migration mới, đã ghi sổ 1']);
+    expect(second.stdout).toEqual(['orchestration migrate: áp 0 migration mới, đã ghi sổ 2']);
     expect(await pg.dumpSchema(database)).toBe(schema);
   });
 
@@ -76,7 +78,7 @@ describe('lệnh migrate', () => {
     const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as {
       entries: { tag: string }[];
     };
-    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init']);
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition']);
 
     // migration.command của deploy/values.yaml trùng script migrate (cùng điểm vào dist/migrate.js).
     const values = readFileSync(join(APP_ROOT, 'deploy', 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
