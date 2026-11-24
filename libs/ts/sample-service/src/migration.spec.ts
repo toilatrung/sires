@@ -54,5 +54,5 @@ it('chạy lại migrate không áp lại (EC09)', async () => {
   const before = await snapshot();
   expect(await runMigrationCommand({ DATABASE_MIGRATOR_URL: postgres.connectionUri })).toBe(0);
   expect(await snapshot()).toEqual(before);
-  expect(before.journal).toHaveLength(1);
+  expect(before.journal).toHaveLength(2);
 });

@@ -5,7 +5,7 @@
 // PID-00019-AC03 (S05): hành vi đã ghi trong chú thích của docs/database/ddl/orchestration.sql, 00-common.sql, chạy
 // bằng vai trò sires_orchestration_app trên database dựng từ migration. Mỗi thao tác chạy trong giao dịch đặt
 // app.account_id (withAccountTransaction của @sires/platform) rồi rollback, nên các ca không ảnh hưởng nhau.
-// Dòng app.state_transition do migration 0001 nạp từ khai báo (S02). Cần Docker (Testcontainers).
+// Dòng app.state_transition do migration 0002 nạp từ khai báo (S02). Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
 import { findTransition, type StateMachine, withAccountTransaction, type TenantDatabase } from '@sires/platform';
@@ -296,7 +296,8 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
     // trigger BEFORE cùng sự kiện theo thứ tự tên: agent_run đã kết thúc (agent_run_final, ca 5) và prompt đã rời Open
     // (prompt_answer_once = tg_immutable(), ca 4), cả hai integrity_constraint_violation. Với prompt, mọi cặp ngoài bảng
     // đều xuất phát từ trạng thái đã rời Open (Open → mọi trạng thái khác đều có trong bảng), nên không cặp nào tới được
-    // prompt_state (report.md Lần 3, đề xuất cho PO).
+    // prompt_state. Đúng câu chữ ca 1 của acceptance sau H10 (PO 24/11/2026): cặp xuất phát từ trạng thái mà trigger bất
+    // biến đã khóa bị từ chối bằng 23000.
     type Move = { ok: true; rows: Record<string, unknown>[] } | { ok: false; code?: string; message?: string };
     const expected = (m: StateMachine, rowId: string, from: string, to: string): Move => {
       if (findTransition(m, from, to)) return { ok: true, rows: [{ status: to }] };

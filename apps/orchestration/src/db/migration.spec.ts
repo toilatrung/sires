@@ -7,7 +7,8 @@
 // Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   compareStateTransitionRows,
@@ -31,11 +32,19 @@ import { MIGRATIONS_FOLDER, MIGRATIONS_SCHEMA, MIGRATIONS_TABLE, runMigrationCom
 const CONTAINER_TIMEOUT = 180_000;
 const MIGRATED = 'orch_migrated';
 const REFERENCE = 'orch_reference';
-/** Số migration trong migrations/ (0000_init, 0001_state_transition). */
-const MIGRATION_COUNT = 2;
+/** Migration trong migrations/, theo thứ tự journal. */
+const MIGRATION_TAGS = ['0000_init', '0001_ec09_jsonb_helpers', '0002_state_transition'] as const;
+const MIGRATION_COUNT = MIGRATION_TAGS.length;
+/** Migration nạp dòng app.state_transition (S02). */
+const STATE_TRANSITION_FILE = '0002_state_transition.sql';
 const ROWS_SQL = 'SELECT machine, from_state, to_state, code FROM app.state_transition ORDER BY 1, 2, 3';
 
 type StateTransitionDbRow = { machine: string; from_state: string; to_state: string; code: string | null };
+type JournalEntry = { idx: number; when: number; tag: string };
+
+function readJournal(folder: string = MIGRATIONS_FOLDER): { entries: JournalEntry[] } & Record<string, unknown> {
+  return JSON.parse(readFileSync(join(folder, 'meta', '_journal.json'), 'utf8')) as { entries: JournalEntry[] };
+}
 
 describe('migration orchestration — PID-00019-AC01', () => {
   let pg: OrchestrationPostgres;
@@ -140,9 +149,9 @@ describe('migration orchestration — PID-00019-AC01', () => {
       workflow: 16, workflow_step: 11, agent_run: 5, prompt: 3, context_item: 2, deliberation: 3, deliberation_entry: 3,
     });
 
-    // Dòng vào database chỉ qua migration 0001, là đúng SQL helper sinh (bỏ ba dòng giấy phép và dòng trống); không
+    // Dòng vào database chỉ qua migration 0002, là đúng SQL helper sinh (bỏ ba dòng giấy phép và dòng trống); không
     // migration nào khác có khối INSERT viết tay (D2, DEC-57).
-    const file = readFileSync(join(MIGRATIONS_FOLDER, '0001_state_transition.sql'), 'utf8').replace(/\r\n/g, '\n');
+    const file = readFileSync(join(MIGRATIONS_FOLDER, STATE_TRANSITION_FILE), 'utf8').replace(/\r\n/g, '\n');
     expect(file.split('\n').slice(4).join('\n')).toBe(renderStateTransitionSql(stateMachines));
     const sqlWithoutComments = (name: string) =>
       readFileSync(join(MIGRATIONS_FOLDER, name), 'utf8')
@@ -152,7 +161,7 @@ describe('migration orchestration — PID-00019-AC01', () => {
     const inserting = readdirSync(MIGRATIONS_FOLDER)
       .filter((name) => name.endsWith('.sql'))
       .filter((name) => /INSERT\s+INTO\s+app\.state_transition\b/i.test(sqlWithoutComments(name)));
-    expect(inserting).toEqual(['0001_state_transition.sql']);
+    expect(inserting).toEqual([STATE_TRANSITION_FILE]);
 
     // Khai báo lệch DDL (thiếu một cặp, thừa một cặp): phép so chỉ ra đúng cặp lệch (EC06).
     const drifted = defineStateMachine({
@@ -210,6 +219,48 @@ describe('migration orchestration — PID-00019-AC01', () => {
       message: 'Chuyển trạng thái không hợp lệ cho workflow: Running → Created',
     });
     expect(await attempt('Paused')).toEqual({ accepted: [{ status: 'Paused' }] });
+  });
+
+  it('áp lần lượt 0000 → 0001_ec09 → 0002 trên cùng database', async () => {
+    // Migrator của drizzle-orm chỉ áp migration có `when` (journal) lớn hơn `created_at` của dòng cuối trong sổ: một
+    // migration có `when` nhỏ hơn migration đã áp bị bỏ qua mà không báo lỗi. Journal phải tăng dần theo idx.
+    const journal = readJournal();
+    expect(journal.entries.map((entry) => entry.tag)).toEqual([...MIGRATION_TAGS]);
+    expect(journal.entries.map((entry) => entry.idx)).toEqual([0, 1, 2]);
+    for (let i = 1; i < journal.entries.length; i += 1) {
+      expect(journal.entries[i]!.when, journal.entries[i]!.tag).toBeGreaterThan(journal.entries[i - 1]!.when);
+    }
+
+    // Database đã ở 0001_ec09 (như database dựng từ main trước PR này), rồi chạy lệnh với đủ migration.
+    const database = 'orch_stepwise';
+    await pg.createDatabase(database);
+    const partial = mkdtempSync(join(tmpdir(), 'orch-migrations-'));
+    try {
+      mkdirSync(join(partial, 'meta'));
+      for (const entry of journal.entries.slice(0, 2)) {
+        copyFileSync(join(MIGRATIONS_FOLDER, `${entry.tag}.sql`), join(partial, `${entry.tag}.sql`));
+      }
+      writeFileSync(
+        join(partial, 'meta', '_journal.json'),
+        JSON.stringify({ ...journal, entries: journal.entries.slice(0, 2) }),
+      );
+      expect(await runMigrations(pg.url(database), partial)).toEqual({ applied: 2, total: 2 });
+    } finally {
+      rmSync(partial, { recursive: true, force: true });
+    }
+    expect(await pg.admin(database, ROWS_SQL)).toEqual([]);
+
+    expect(await runMigrations(pg.url(database))).toEqual({ applied: 1, total: MIGRATION_COUNT });
+    const rows = await pg.admin<StateTransitionDbRow>(database, ROWS_SQL);
+    expect(compareStateTransitionRows(rows, stateMachines)).toEqual({ missing: [], unexpected: [], codeMismatch: [] });
+    expect(rows).toHaveLength(43);
+    // Cùng schema với database áp một lần, và sổ ghi đúng `when` của từng migration theo thứ tự.
+    expect(await pg.dumpSchema(database)).toBe(migratedDump);
+    const ledger = await pg.admin<{ created_at: string }>(
+      database,
+      `SELECT created_at FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}" ORDER BY id`,
+    );
+    expect(ledger.map((row) => Number(row.created_at))).toEqual(journal.entries.map((entry) => entry.when));
   });
 });
 

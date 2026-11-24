@@ -9,7 +9,7 @@
 // Khai báo bằng defineStateMachine của @sires/platform (helper PID-00158): helper kiểm khai báo khi nạp module (tên,
 // trạng thái, cặp trùng, cặp X → X) và trả đối tượng đóng băng. `stateMachines` là export mà lệnh
 // sires-state-transition-sql đọc từ bản build (dist/domain/state-machines.js) để sinh SQL của migration
-// 0001_state_transition.sql; dòng app.state_transition không viết tay (DEC-57, database 10.2; PID-00019 S02).
+// 0002_state_transition.sql; dòng app.state_transition không viết tay (DEC-57, database 10.2; PID-00019 S02).
 
 import { defineStateMachine } from '@sires/platform';
 
