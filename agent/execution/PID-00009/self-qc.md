@@ -1,6 +1,6 @@
 ﻿# PID-00009 — Self-QC
 
-**Kết luận:** Lần 8 (24/11/2026): T5 đạt trên `main` (6 lần push, cache Nx nối tiếp, hai push gần nhau cùng chạy hết); sửa G18 (EC06 cho project không phụ thuộc project nào) và số giây job skipped. Còn hai HIGH: G5 (T3 với cache `main`, chờ PO đồng bộ `develop` theo EC11) và G19 (mã hợp đồng sinh ra không nằm trong hash Nx, cần PO chọn cách sửa). Chưa đặt `Xong — chờ QC`.
+**Kết luận:** Lần 9 (24/11/2026): AC01 đạt. T3 với cache `main` xong trong 182 giây trên PR thử #96, đóng G5. Lần 8 (24/11/2026): T5 đạt trên `main`; sửa G18 (EC06 cho project không phụ thuộc project nào) và số giây job skipped. Còn một HIGH: G19 (mã hợp đồng sinh ra không nằm trong hash Nx, cần PO chọn cách sửa), nên chưa đặt `Xong — chờ QC`.
 
 ## 1. Lệnh và kết quả
 
@@ -163,6 +163,47 @@ File đổi: `.github/workflows/ci.yml`, `nx.json` (luồng infra) và `agent/ex
 | G10, G12 (QC) | MEDIUM | Checkout đầu nhánh PR; lần chạy toàn bộ đỏ ngẫu nhiên | Còn mở; 6/6 lần push `main` đạt ngay lần đầu |
 | G18 | HIGH | `sires-common:lint`, `typecheck` và `@sires/contracts:*` không nhận `pyproject.toml`, `uv.lock`, `.python-version`, `eslint.config.mjs` gốc (trái EC06) | Đã sửa trong `nx.json`, đã kiểm |
 | G19 | HIGH | `docs/api-design/**/*.yaml` và mã sinh ra không nằm trong hash của `@sires/contracts:typecheck`, `build`, `test`, các service TS và `sires-common:test`; PR làm hỏng consumer qua hợp đồng có thể xanh nhờ cache | Còn mở — cần PO chọn phương án (a) luồng contracts, platform hoặc (b) luồng infra (`report.md` Lần 8) |
+
+## Lần 9 — 24/11/2026 · T3 với cache `main`, tự đối chiếu
+
+Người chạy: phiên do PO `toilatrung` giao. Số đo chi tiết ở `report.md` Lần 9.
+
+### Lệnh và kết quả
+
+| Lệnh | Kết quả thật |
+| --- | --- |
+| `git rev-list --count origin/develop..origin/main` sau khi PO merge #92 | 0 (`develop` `c11bba3`, `main` `80a6626`) |
+| Tạo worktree tạm ngoài repo từ `origin/develop`, thêm một dòng chú thích vào `apps/gateway/src/main.ts`, `git commit -S`, push, `gh pr create --base develop` | PR thử #96, commit `5237827` (`G`, chữ ký hợp lệ). Blob giữ LF |
+| `gh api repos/…/actions/runs/45442437182` và `/jobs` | `success`, attempt 1, 16:53:57Z → 16:56:59Z = 182 giây; 9 job đạt, 5 job skipped |
+| `gh run view 45442437182 --job <typescript> --log` | `Cache hit for restore-key: nx-ts-Linux-main-4578236…`; `… for 4 out of 8 tasks.` |
+| `gh run view … --job <build> --log` | Bảng 14 job; số giây của job skipped là −1 và −16 (mã `develop`) |
+| `git fetch` sau khi đo | `main` `f28424c` (#95, chỉ đổi `docs/`, merge 16:53:35Z); `develop..main` = 1 |
+| `gh pr close 96 --delete-branch`, `git push origin --delete`, `git worktree remove` | Đóng PR, không merge; nhánh đã xóa trên `origin` và ở máy |
+| Job `typescript` của run 45420184190 (CI của #91) | 63/63 task TS, 13/13 task Python chạy mới, 0 đọc từ cache (hash mới vì `nx.json` đổi); 25 job đạt |
+| Log job `typescript` của run 45441635225 (push `main` của #94) | `@sires/orchestration:test` đỏ: dump tham chiếu hỏng ký tự UTF-8; không có `Cache saved` (`save-always: false`) |
+| `node infra/ci/measure.mjs toilatrung/sires` | Thoát 0: “PR vào develop chỉ đổi tài liệu: 2/20 lần”, “Push toàn bộ vào main: 10/20 lần”; không in p95 |
+| `git merge -S origin/main` vào nhánh #91 | Không xung đột; `nx.json`, `ci.yml` không bị `main` đổi |
+| Không chạy | T1, T2 trên mã CI mới của `develop`: sau khi đo, `develop` lại thiếu #95 (EC11). Lần không cache của T3: dùng số tham khảo 141 giây (Lần 6) |
+
+### AC thay đổi trong Lần 9
+
+| AC | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| PID-00009-AC01 | Đạt | Run 45442437182 của #96: 182 giây, dưới 10 phút, cache Nx lấy từ `main` (4/8 task). Lúc chạy `main` có thêm #95, chỉ đổi `docs/` (`report.md` Lần 9) |
+| PID-00009-AC07 | Đạt (thêm bằng chứng) | 3 lần push `main` (#86, #94, #95) chồng nhau, cả ba chạy hết, không lần nào `cancelled` |
+| PID-00009-AC08 | Đạt; phần sửa chưa chạy trên Actions | Log `build` của T3 có bảng đủ 14 job gồm 5 job skipped; số giây âm sửa trong #91, chưa merge |
+| AC02–AC06 | Như Lần 8 | AC06 còn G19 |
+
+### Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| Mã | Mức | Phát hiện | Trạng thái |
+| --- | --- | --- | --- |
+| G5 (QC) | HIGH | AC01 chưa có T3 với cache `main` | Đóng — #96, 182 giây |
+| G7 (QC) | MEDIUM | T1–T3 chạy trên mã CI `develop` cũ | Một phần — T3 đã chạy mã mới (lệnh lọc `run-many --projects`); T1, T2 chờ PO đồng bộ `develop` (thiếu #95) |
+| G8 (QC) | MEDIUM | Bảng job có job skipped; số giây âm | Một phần — bảng log `build` của T3 có 5 job skipped; số âm (−1, −16) sửa ở #91, chưa merge |
+| G12 (QC) | MEDIUM | Lần chạy toàn bộ đỏ ngẫu nhiên | Còn mở — thêm lần push `main` của #94 đỏ vì `@sires/orchestration:test` (UTF-8 trong dump); lần sau đạt với cùng mã. Ngoài mã PID này |
+| G19 | HIGH | Như Lần 8 | Còn mở — cần PO |
+| G16 (QC) | LOW | EC15/S11 | Cần PO, chưa có trả lời |
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).
