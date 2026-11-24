@@ -82,6 +82,8 @@ describe('migration orchestration — PID-00019-AC01', () => {
       'CREATE TEXT SEARCH CONFIGURATION app.sires_simple',
       'CREATE TRIGGER workflow_state BEFORE UPDATE OF status ON app.workflow',
       `GRANT SELECT ON TABLE replica.project_state TO ${ROLES.app}`,
+      // Chữ tiếng Việt trong thân hàm đọc đúng (bản dump không có U+FFFD do giải mã theo chunk).
+      'Agent Run % đã kết thúc, bất biến',
     ]) {
       expect(migratedDump).toContain(fragment);
     }
