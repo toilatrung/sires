@@ -75,7 +75,7 @@ Tạo migration mới: `pnpm --filter @sires/identity exec drizzle-kit generate 
 
 Test (`pnpm nx run @sires/identity:test`) cần Docker: PostgreSQL 16 qua Testcontainers, test tự tạo bốn vai trò. Hai file DDL là input của target test.
 
-**Còn mở — DBQ-10:** khi migration chạy bằng vai trò owner thật (không BYPASSRLS), `app.find_account_by_identity` trả 0 dòng vì bảng `app.account` bị FORCE RLS. Test `src/migration.spec.ts › find_account_by_identity bằng vai trò thật (DBQ-10)` đánh dấu `it.fails` tới khi PO chốt DBQ-10 và DDL sửa theo.
+**Còn mở — DBQ-10 (đề xuất, chờ PO chốt):** khi migration chạy bằng vai trò migrator thật (owner, không BYPASSRLS), `app.find_account_by_identity` trả 0 dòng vì bảng `app.account` bị FORCE RLS. Đề xuất phương án (a): migration `0002_dbq10_definer_lookup.sql` thêm policy `definer_lookup` (`FOR SELECT TO sires_identity_owner USING (true)`). Test `src/migration.spec.ts › tra cứu trước tenant context bằng vai trò thật (DBQ-10)` chạy migration bằng migrator và gọi hàm bằng `_app` không có tenant context. Trong lúc `docs/database/ddl/identity.sql` chưa sửa, phép so dump chạy thêm bản vá ở `PENDING_REFERENCE_PATCHES` (`src/db/database.testkit.ts`); PO sửa DDL thì bỏ phần tử đó.
 
 ## Ranh giới
 

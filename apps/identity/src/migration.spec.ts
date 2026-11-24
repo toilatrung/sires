@@ -4,7 +4,7 @@
 
 // Migration sires_identity (PID-00016 S01, S02): schema khớp DDL tham chiếu (PID-00016-AC02), quyền provider_secret
 // (EC05), RLS (EC06), thiếu vai trò (EC07), state machine (EC08); lệnh migrate và values cho Job migration; hàm
-// app.find_account_by_identity chạy bằng vai trò thật (DBQ-10). Cần Docker (Testcontainers).
+// app.find_account_by_identity khi migration chạy bằng vai trò migrator thật (DBQ-10). Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { compareStateTransitionRows, findTransition, renderStateTransitionSql } from '@sires/platform';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  enableOwnerLogin,
+  enableMigratorLogin,
   EXPECTED_TABLES,
   type IdentityPostgres,
   listTables,
@@ -58,7 +58,7 @@ describe('migration identity — PID-00016-AC02', () => {
     // Lệnh migrate của service (cùng hàm mà node dist/migrate.js gọi), DSN ở DATABASE_MIGRATOR_URL.
     const run = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(MIGRATED) }, ...run.io })).toBe(0);
-    expect(run.stdout).toEqual(['identity migrate: áp 2 migration mới, đã ghi sổ 2']);
+    expect(run.stdout).toEqual(['identity migrate: áp 3 migration mới, đã ghi sổ 3']);
     await pg.applyReferenceDdl(REFERENCE);
     migratedDump = await pg.dumpSchema(MIGRATED);
   }, CONTAINER_TIMEOUT);
@@ -81,14 +81,15 @@ describe('migration identity — PID-00016-AC02', () => {
       'CREATE TRIGGER provider_connection_state BEFORE UPDATE OF test_status ON app.provider_connection',
       `GRANT SELECT,INSERT,UPDATE ON TABLE app.account TO ${ROLES.app}`,
       `GRANT INSERT,DELETE ON TABLE app.provider_secret TO ${ROLES.app}`,
+      `CREATE POLICY definer_lookup ON app.account FOR SELECT TO ${ROLES.owner} USING (true)`,
     ]) {
       expect(migratedDump).toContain(fragment);
     }
     // Chạy lại không đổi.
-    expect(await runMigrations(pg.url(MIGRATED))).toEqual({ applied: 0, total: 2 });
+    expect(await runMigrations(pg.url(MIGRATED))).toEqual({ applied: 0, total: 3 });
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const ledger = await pg.admin(MIGRATED, `SELECT count(*)::int AS n FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`);
-    expect(ledger).toEqual([{ n: 2 }]);
+    expect(ledger).toEqual([{ n: 3 }]);
   });
 
   it('áp lên database rỗng — lệnh migrate và giá trị Helm (S01)', () => {
@@ -102,7 +103,7 @@ describe('migration identity — PID-00016-AC02', () => {
     expect(Object.keys(pkg.dependencies)).not.toContain('drizzle-kit');
     expect(pkg.scripts.migrate).toBe('node dist/migrate.js');
     const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] };
-    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition']);
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition', '0002_dbq10_definer_lookup']);
     const values = readFileSync(join(APP_ROOT, 'deploy', 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
     expect(values).toMatch(/^migration:\n {2}enabled: true\n {2}command: \["node", "dist\/migrate\.js"\]$/m);
   });
@@ -180,19 +181,62 @@ describe('migration identity — PID-00016-AC02', () => {
     }
   });
 
-  // DBQ-10 (mở 22/11/2026): hàm SECURITY DEFINER chạy bằng owner, owner không BYPASSRLS và bảng FORCE RLS, nên khi
-  // migration chạy bằng vai trò owner thật (không phải superuser như các test khác) hàm trả 0 dòng. Test kỳ vọng
-  // hành vi đúng (tìm thấy tài khoản) và được đánh dấu `fails` tới khi PO chốt DBQ-10 và DDL sửa theo: lúc đó test
-  // này đạt, vitest báo `fails` sai và phải bỏ đánh dấu.
-  it.fails('find_account_by_identity bằng vai trò thật (DBQ-10)', async () => {
-    const database = 'identity_owner';
+});
+
+// DBQ-10 (mở 22/11/2026, chờ PO chốt): app.find_account_by_identity là SECURITY DEFINER nên chạy bằng owner; owner
+// không BYPASSRLS (database 3.2) và app.account bị FORCE RLS, nên trước khi có tenant context hàm trả 0 dòng. Các test
+// khác chạy migration bằng superuser nên không thấy. Ở đây migration chạy bằng vai trò migrator thật (thành viên owner,
+// SET role owner) và request gọi hàm bằng _app không có app.account_id, như lúc đăng nhập.
+describe('migration identity — tra cứu trước tenant context bằng vai trò thật (DBQ-10)', () => {
+  let pg: IdentityPostgres;
+  const database = 'identity_migrator';
+  const ISSUER = 'https://id.etroy.test';
+
+  beforeAll(async () => {
+    pg = await startIdentityPostgres();
     await pg.createDatabase(database);
-    const ownerUrl = await enableOwnerLogin(pg, database);
-    await runMigrations(ownerUrl);
-    const { accountId, subject } = await seedAccount(pg, database);
+    const run = capture();
+    const migratorUrl = await enableMigratorLogin(pg, database);
+    expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: migratorUrl }, ...run.io })).toBe(0);
+  }, CONTAINER_TIMEOUT);
+
+  afterAll(async () => {
+    await pg?.stop();
+  });
+
+  it('migration chạy bằng quyền owner, không phải superuser', async () => {
+    const rows = await pg.admin<{ owner: string; force: boolean }>(database,
+      `SELECT pg_get_userbyid(c.relowner) AS owner, c.relforcerowsecurity AS force
+       FROM pg_class c WHERE c.oid = 'app.account'::regclass`);
+    expect(rows).toEqual([{ owner: ROLES.owner, force: true }]);
+    const fn = await pg.admin<{ owner: string; definer: boolean }>(database,
+      `SELECT pg_get_userbyid(p.proowner) AS owner, p.prosecdef AS definer
+       FROM pg_proc p WHERE p.oid = 'app.find_account_by_identity(text, text)'::regprocedure`);
+    expect(fn).toEqual([{ owner: ROLES.owner, definer: true }]);
+  });
+
+  it('find_account_by_identity tìm thấy tài khoản khi chưa có tenant context', async () => {
+    const { accountId, subject } = await seedAccount(pg, database, ISSUER);
+    await seedAccount(pg, database, ISSUER);
     const found = await pg.asRole(database, 'app', undefined, async (client) =>
-      (await client.query('SELECT id, status FROM app.find_account_by_identity($1, $2)', ['https://id.etroy.test', subject])).rows);
+      (await client.query('SELECT id, status FROM app.find_account_by_identity($1, $2)', [ISSUER, subject])).rows);
     expect(found).toEqual([{ id: accountId, status: 'Active' }]);
+    const missing = await pg.asRole(database, 'app', undefined, async (client) =>
+      (await client.query('SELECT id FROM app.find_account_by_identity($1, $2)', [ISSUER, 'sub-khong-co'])).rows);
+    expect(missing).toEqual([]);
+  });
+
+  it('_app vẫn bị RLS chặn khi đọc thẳng app.account (bản sửa không nới RLS cho request)', async () => {
+    const a = await seedAccount(pg, database, ISSUER);
+    const b = await seedAccount(pg, database, ISSUER);
+    const read = (accountId: string | undefined) => pg.asRole(database, 'app', accountId, async (client) =>
+      (await client.query<{ id: string }>('SELECT id FROM app.account WHERE id = ANY($1)', [[a.accountId, b.accountId]])).rows);
+    expect(await read(undefined)).toEqual([]);
+    expect(await read(a.accountId)).toEqual([{ id: a.accountId }]);
+    // Cập nhật chéo tài khoản vẫn không chạm dòng nào.
+    const updated = await pg.asRole(database, 'app', a.accountId, (client) =>
+      client.query(`UPDATE app.account SET display_name = 'x' WHERE id = $1`, [b.accountId]));
+    expect(updated.rowCount).toBe(0);
   });
 });
 
