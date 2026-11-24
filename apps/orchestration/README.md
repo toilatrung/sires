@@ -122,7 +122,7 @@ Test database cần Docker (Linux, hoặc Docker trong WSL2 với `DOCKER_HOST=t
 
 | File | Kiểm |
 | --- | --- |
-| `src/db/migration.spec.ts` | Schema dựng từ migration khớp schema dựng từ DDL (so `pg_dump --schema-only`); chạy lại không đổi; thiếu vai trò thì rollback; dòng `app.state_transition` bằng nhau ở khai báo (helper), database dựng từ migration và DDL; `Running → Created` bị từ chối |
+| `src/db/migration.spec.ts` | Schema dựng từ migration khớp schema dựng từ DDL (so `pg_dump --schema-only`); chạy lại không đổi; thiếu vai trò thì rollback; dòng `app.state_transition` bằng nhau ở khai báo (helper), database dựng từ migration và DDL; `Running → Created` bị từ chối; journal tăng dần, database đã ở `0001_ec09` nhận `0002` |
 | `src/db/migrate.spec.ts` | Lệnh migrate trên database rỗng, chạy hai lần; thiếu DSN; image có `dist/`, `migrations/`, không cần drizzle-kit |
 | `src/db/ddl-behaviour.spec.ts` | Hành vi DDL bằng vai trò `_app`: chuyển trạng thái ngoài bảng bị từ chối (mọi cặp của bảy machine), một Workflow chưa kết thúc cho mỗi Task, bản ghi bất biến, RLS chặn đọc chéo tài khoản, project không `Active` chặn ghi Workflow |
 | `src/engine/engine-boundary.spec.ts` | Luật lint chặn import nội bộ engine |

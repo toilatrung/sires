@@ -344,8 +344,7 @@ describe('hành vi DDL bằng vai trò _app — PID-00019-AC03', () => {
       deliberation: { accepted: 3, stateTrigger: 9, earlierTrigger: 0 },
       deliberation_entry: { accepted: 3, stateTrigger: 3, earlierTrigger: 0 },
     });
-    // 142 giao dịch: cục bộ khoảng 1,3 s; trần riêng thay cho mặc định 5 s của vitest để runner CI có tải không báo sai.
-  }, 60_000);
+  });
 
   it('một Workflow chưa kết thúc cho mỗi Task (ca 2, DATA-IDEMP-002)', async () => {
     const task = randomUUID();
