@@ -161,7 +161,8 @@ vì Smart App Control chặn `.venv` trên Windows. Một phiên khác chạy Te
 | `node scripts/development/check-tracks.mjs --base origin/main` | Trước khi #94 vào `main`: 5 luồng (commit của #94 trong nhánh). Sau khi gộp `origin/main` `80a6626`: `audit, repo`, exit 0; diff so với `main` chỉ `apps/audit/`, `agent/execution/PID-00018/`, `pnpm-lock.yaml` |
 | `git merge origin/main` (lần 2, `80a6626`) | Không xung đột; `git diff origin/main -- docs/` rỗng; `0000_init.sql` trùng byte với `00-common.sql` + dòng trống + `audit.sql` của `main` (`cmp`) |
 | Ranh giới thay đổi của lượt này (`git diff --name-only` + file chưa theo dõi) | Chỉ `audit` (cộng `agent/execution/PID-00018/`). Không sửa `docs/`, `apps/research`, nhánh khác |
-| `check-pid.mjs PID-00018 --result` | Xem cuối mục này |
+| `check-pid.mjs PID-00018 --result` | KẾT QUẢ ĐỦ, 0 cảnh báo; trạng thái `Xong — chờ QC` |
+| CI PR #66, run `45448586810` trên `f2cb0c8` (sau khi gộp `origin/main` `f28424c`, chỉ thêm docs của #95) | **success** mọi job (`typescript`, `python`, `contracts`, `helm`, `images (audit)`, `tracks`, `build`…). Trong `typescript`, bốn target của `@sires/audit` chạy thật trên Linux và đạt; test platform, workspace, orchestration, contracts lấy kết quả cache Nx (cùng input đã đạt trên CI) |
 
 Không chạy lại trong lượt này: `validate-production.cjs`, `validate-cache.cjs`, Helm, Docker
 image (đổi của lượt chỉ là thân ba hàm SQL và cấu hình test). EC13 vẫn có test

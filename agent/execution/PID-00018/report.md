@@ -109,8 +109,8 @@ Người làm: phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhh
   `main`: `@sires/contracts:test` (Smart App Control chặn `openapi-python-client`); platform,
   workspace, orchestration lỗi `ECONNRESET`/hết giờ khi WSL tải cao (load average 41, nhiều
   container của phiên khác); chạy riêng spec telemetry của platform 6/6. 4 project Python trong
-  container uv: ruff, mypy, pytest đạt. Kết quả quyết định cho các project này là CI Linux.
-  Chi tiết ở Self-QC Lần 3.
+  container uv: ruff, mypy, pytest đạt. CI Linux run `45448586810` trên `f2cb0c8`: success mọi
+  job; `@sires/audit` lint, typecheck, test, build chạy thật và đạt. Chi tiết ở Self-QC Lần 3.
 - **Phụ thuộc PR #94 đã thỏa:** #94 vào `main` ở `80a6626`. Sau lần gộp `origin/main` cuối, diff
   của PR #66 so với `main` chỉ còn `apps/audit/`, `agent/execution/PID-00018/`, `pnpm-lock.yaml`;
   `check-tracks` báo `audit, repo`.
