@@ -1,10 +1,10 @@
 # PID-00009 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — đã chạy T1–T4, T6, T7; còn T5 và phép đo cache main sau merge theo yêu cầu PO
+**Trạng thái:** Đang làm — Lần 8: thu số đo T5 trên `main`, T3 với cache `main`
 
 - **Ticket:** [PID-00009](../../../docs/tickets/issues/PID-00009/index.html) · **Luồng:** infra · **Giai đoạn:** PH-01
-- **Người thực hiện:** congminh1705 · **Nhánh:** `infra/pid-00009-ci` · **PR:** [#57](https://github.com/toilatrung/sires/pull/57)
-- **Cập nhật:** 22/11/2026
+- **Người thực hiện:** congminh1705 (Lần 1–7); từ Lần 8 (24/11/2026) phiên do PO `toilatrung` giao · **Nhánh:** `infra/pid-00009-ci` (Lần 1–7), `infra/pid-00009-t5-cache-main` (Lần 8) · **PR:** [#57](https://github.com/toilatrung/sires/pull/57)
+- **Cập nhật:** 24/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
