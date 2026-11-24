@@ -4,16 +4,16 @@
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Luồng:** `research` · **Giai đoạn:** PH-01
 - **Nhánh:** `research/pid-00029-migration` · **PR:** [#82](https://github.com/toilatrung/sires/pull/82) — Draft, chờ PO sửa DDL EC09
-- **Cập nhật:** 23/11/2026
+- **Cập nhật:** 24/11/2026 (Lần 3; kết quả mới nhất ở cuối file)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
 - Slice: 2/3 xong. S01 đã triển khai, chặn nghiệm thu EC09 do DDL nguồn; S02, S03 đạt.
 - AC: 1/1 đạt ở mức kiểm tích hợp Testcontainers PostgreSQL 16 + pgvector; chưa nghiệm thu toàn ticket vì EC09 lỗi.
-- Edge case: 12/13 đạt; EC09 chỉ đạt một phần, ca provenance thiếu inputs thất bại.
-- Test cuối: 20 đạt, 1 lỗi / 21; lint, typecheck, build đạt.
-- Yêu cầu thêm: 0.
+- Edge case: EC07–EC09 còn lỗi kiểm approval/actor/provenance theo QC G1–G3; EC04 đã mở rộng đủ 12 bảng.
+- Test cuối Lần 3: 22 đạt, 22 lỗi / 44; toàn bộ lỗi tái hiện DDL G1–G3. Lint, typecheck, build đạt.
+- Yêu cầu thêm: YC01 kiểm PO và sửa phần test theo QC.
 
 ## 2. Trạng thái công việc
 
@@ -46,8 +46,10 @@ Người dùng đã yêu cầu commit/push toàn bộ phần triển khai và m�
 
 ## 5. Yêu cầu thêm
 
-Không có. Hai câu hỏi trong phiên về EC09 và quyền sửa DDL là yêu cầu giải thích,
-không phải PO duyệt sửa nguồn hoặc đổi phạm vi.
+YC01 — 24/11/2026: người dùng yêu cầu “https://github.com/toilatrung/sires/pull/82 check xem PO chốt chưa rồi fix nhé”.
+Kiểm quyết định trên PR và main; xử lý G4–G6 của QC trong phạm vi test P2, EC04, EC07–EC09.
+Chưa có quyết định sửa DDL nguồn nên G1–G3 giữ chờ PO; không suy yêu cầu này thành duyệt sửa docs.
+Hai câu hỏi trước về EC09 và quyền sửa DDL là yêu cầu giải thích, không phải PO duyệt sửa nguồn hoặc đổi phạm vi.
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -68,6 +70,31 @@ Không thay mã nghiệp vụ hoặc kết quả test trong lần đẩy PR này
 Đã push toàn bộ phần triển khai trong commit `111cf2d`; GitHub xác nhận chữ ký Verified
 (`reason: valid`). Draft PR [#82](https://github.com/toilatrung/sires/pull/82) vào main,
 mô tả có nhắc PO và đề xuất sửa nguồn. Không merge; chờ xử lý G1 và QC lại.
+
+## Lần 3 — 24/11/2026 · Sửa phần test theo QC Lần 1
+
+Đã fetch remote và fast-forward worktree `D:/sires/.nx/pid00029` tới `6781f37`.
+PR #82 vẫn draft; comment mới nhất của PO ngày 23/11/2026 (`issuecomment-7104372198`)
+ghi “Còn chờ PO, em chưa sửa migration”. Không có review duyệt; main `1947571`
+chưa sửa ba hàm chung (lần sửa gần nhất của file DDL là `7895741`). Chưa đủ căn cứ
+đồng bộ migration hay chuyển PR sang ready. Trạng thái ticket vẫn Bị chặn.
+
+- G4: thêm test INSERT/UPDATE bằng `_app` cho I02–I17; I01 giữ ca “provenance thiếu inputs”.
+  Bao gồm thiếu `approvedBy`, `decision`, `apr`, `approvedBy.type` và chỉ còn bốn trường
+  ở cả Claim/ArtifactVersion Accepted; đối chứng I04 và V1/V2 (agent writing, inputs=[]).
+  Giữ assertion SQLSTATE 23514; không skip hoặc expected failure.
+- G5: EC04 mồi dữ liệu đủ 12 bảng tenant, kiểm A thấy dữ liệu từng bảng trước khi
+  kiểm B/thiếu context thấy 0 dòng. Đối chiếu danh sách với catalog để tránh bỏ sót bảng.
+- G6: sửa nhãn EC03/EC04 sai và mô tả trigger bất biến chạy bằng superuser.
+- Helper insert Artifact/ArtifactVersion nhận actor tùy chọn để thử dữ liệu thiếu trường.
+  Testkit bị loại khỏi bản build; không thêm phụ thuộc hay đổi mã runtime.
+
+G1–G3 của QC vẫn mở: PO cần chốt cả ba hàm, đặc biệt biểu thức instance của agent
+không phải analysis. Đề xuất COALESCE riêng is_provenance ở Lần 1 không đủ và có thể
+từ chối agent writing hợp lệ; đối chứng mới bảo vệ trường hợp này.
+Không sửa `docs/`, migration hoặc `qc-report.md`. Kết quả lệnh Lần 3 ghi trong Self-QC.
+Người dùng yêu cầu “đẩy lên đi”: commit và push phần G4–G6 trên nhánh PR #82;
+giữ draft và trạng thái Bị chặn chờ PO chốt DDL G1–G3.
 
 ---
 

@@ -1,7 +1,7 @@
 # PID-00029 — Triển khai
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 23/11/2026
+- **Cập nhật:** 24/11/2026
 
 ## 1. Luồng đã triển khai
 
@@ -36,6 +36,8 @@ consumer, truy vấn database của service khác hoặc phát sự kiện.
 - Schema comparison dùng `pg_dump --schema-only` trong cùng container: chỉ bỏ schema journal `drizzle`, khóa ngẫu nhiên `restrict/unrestrict` và chú thích phiên bản; giữ cột, mặc định, index, ràng buộc, trigger, hàm, policy RLS, GRANT/REVOKE, extension, owner.
 - Database dựng từ migration và database tham chiếu đều chạy qua login migrator thành viên owner; đối tượng thuộc `sires_research_owner`. Superuser chỉ cấp hạ tầng test, dump và kiểm trực tiếp trigger bất biến sau khi đã kiểm quyền `_app`/`_system`.
 - Test hành vi được chia vào `behaviour.testkit.ts` và đăng ký từ `migration.spec.ts` để giữ đường dẫn test theo hồ sơ; file testkit không vào bản build production.
+- Test hồi quy QC Lần 1 phủ I01–I17, kiểm SQLSTATE 23514 bằng `_app`; approval thiếu trường được thử trên cả Claim và ArtifactVersion Accepted. Đối chứng agent `writing` không có instance với `inputs: []` vẫn phải ghi được (V1/V2). Helper insert Artifact/ArtifactVersion cho phép truyền actor để thử lỗi thiếu trường.
+- EC04 mồi đủ 12 bảng tenant và xác nhận tài khoản A thấy dữ liệu trước khi kiểm B/thiếu context thấy 0 dòng. Danh sách bảng được so với catalog (bỏ outbox/inbox theo quy ước DDL) để bắt việc bỏ sót bảng mới.
 - Domain đặt ở `src/domain/state-machines.ts`; sáu module khung theo đường dẫn của các PID tiếp theo: evidence, claims, verification, artifacts, diagrams, kpi.
 - Nx test inputs gồm hai DDL tham chiếu để thay DDL vô hiệu hóa cache test.
 - `pnpm-lock.yaml` sinh bằng pnpm; thay đổi chỉ importer `apps/research`, các phiên bản đều đã có trong catalog. Không thêm công cụ môi trường mới.

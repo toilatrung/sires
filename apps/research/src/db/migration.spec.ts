@@ -35,7 +35,7 @@ describe('migration research — PID-00029-AC01', () => {
   it('schema khớp DDL (PID-00029-AC01)', async () => {
     // So bằng pg_dump --schema-only của hai database cùng container, cùng vai trò: mọi bảng, cột, mặc định, ràng
     // buộc (kể cả DEFERRABLE, partial unique), index (GIN), trigger, hàm, RLS, policy, GRANT, REVOKE, extension và
-    // cấu hình tìm kiếm. Schema drizzle (sổ phiên bản) bị loại khỏi dump (EC04).
+    // cấu hình tìm kiếm. Schema drizzle (sổ phiên bản) bị loại khỏi dump (AC01).
     expect(migratedDump).toBe(await pg.dumpSchema(REFERENCE));
 
     // Chặn trường hợp hai dump giống nhau vì cùng rỗng: đủ 16 bảng và đối tượng tiêu biểu.

@@ -68,14 +68,63 @@ export function migrationBehaviourTests() {
     it('RLS (EC04): tài khoản khác, thiếu context và ghi sai tenant', async () => {
       const evidence = await asApp((c) => insertEvidence(c, accountId, projectId, referenceId));
       const tables = [
+        'app.artifact',
+        'app.artifact_version',
+        'app.claim',
+        'app.claim_evidence_link',
+        'app.claim_revision',
         'app.evidence',
-        'replica.reference_state',
+        'app.idempotency_key',
+        'app.provenance_input',
+        'app.verification_result',
         'replica.project_reference_scope',
         'replica.project_state',
+        'replica.reference_state',
       ];
+      await asApp(async (c) => {
+        const artifactId = await insertArtifact(c, accountId, projectId);
+        const versionId = await insertVersion(c, accountId, projectId, artifactId);
+        const claimId = await insertClaim(c, accountId, projectId);
+        await c.query(
+          `INSERT INTO app.claim_revision (claim_id,account_id,revision,statement,approval_status,support_status,created_by)
+           VALUES ($1,$2,1,'Bản gốc','Draft','Supported',$3)`,
+          [claimId, accountId, SYSTEM_ACTOR],
+        );
+        await c.query(
+          `INSERT INTO app.claim_evidence_link (account_id,project_id,claim_id,evidence_id,relation,created_by)
+           VALUES ($1,$2,$3,$4,'supports',$5)`,
+          [accountId, projectId, claimId, evidence, SYSTEM_ACTOR],
+        );
+        await c.query(
+          `INSERT INTO app.verification_result
+           (account_id,project_id,target_type,target_id,agent_run_id,outcome,thresholds_used,created_by)
+           VALUES ($1,$2,'claim',$3,$4,'Supported','{}',$5)`,
+          [accountId, projectId, claimId, randomUUID(), SYSTEM_ACTOR],
+        );
+        await c.query(
+          `INSERT INTO app.provenance_input (account_id,dependent_type,dependent_id,input_type,input_id,input_version)
+           VALUES ($1,'artifact_version',$2,'claim',$3,1)`,
+          [accountId, versionId, claimId],
+        );
+        await c.query(
+          `INSERT INTO app.idempotency_key (account_id,key,operation,request_hash)
+           VALUES ($1,$2,'research-test',$3)`,
+          [accountId, randomUUID(), Buffer.alloc(32)],
+        );
+        // Đối chứng: tenant A phải thấy dữ liệu mồi ở từng bảng, tránh test xanh vì bảng rỗng.
+        for (const table of tables)
+          expect((await c.query(`SELECT 1 FROM ${table}`)).rowCount, table).toBeGreaterThan(0);
+      });
+      const tenantTables = await pg.admin<{ name: string }>(
+        db,
+        `SELECT table_schema || '.' || table_name AS name FROM information_schema.columns
+         WHERE table_schema IN ('app','replica') AND column_name='account_id'
+         AND table_name NOT IN ('outbox','inbox') ORDER BY 1`,
+      );
+      expect(tenantTables.map((row) => row.name)).toEqual(tables);
       for (const tenant of [randomUUID(), undefined]) {
         await pg.asRole(db, 'app', tenant, async (client) => {
-          for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual([]);
+          for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows, table).toEqual([]);
         });
       }
       expect((await asApp((c) => c.query('SELECT id FROM app.evidence WHERE id=$1', [evidence]))).rowCount).toBe(1);
@@ -181,6 +230,141 @@ export function migrationBehaviourTests() {
       ).rejects.toMatchObject({ code: '23514' });
     });
 
+    // G4: giữ assertion từ chối (không skip/expected failure) trong lúc chờ PO sửa DDL G1–G3.
+    const missingAgent = { type: 'agent', agentRunId: randomUUID() };
+    const missingInstance = { ...missingAgent, agent: 'analysis' };
+    const writingActor = { ...missingAgent, agent: 'writing' };
+    const evidenceActor = { ...missingAgent, agent: 'evidence_retrieval' };
+    const synthesisActor = { ...missingAgent, agent: 'synthesis' };
+
+    it.each([
+      ['I02', { createdBy: missingAgent, inputs: [] }],
+      ['I03', { createdBy: missingInstance, inputs: [] }],
+      ['I04', { createdBy: SYSTEM_ACTOR, inputs: {} }],
+    ])('%s: ArtifactVersion từ chối provenance không hợp lệ (EC09)', async (_id, provenance) => {
+      const artifactId = await asApp((c) => insertArtifact(c, accountId, projectId));
+      await expect(
+        asApp((c) => insertVersion(c, accountId, projectId, artifactId, { provenance })),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it('I05: ArtifactVersion từ chối created_by thiếu agent', async () => {
+      const artifactId = await asApp((c) => insertArtifact(c, accountId, projectId));
+      await expect(
+        asApp((c) => insertVersion(c, accountId, projectId, artifactId, { actor: missingAgent })),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it.each([
+      ['I06', SYSTEM_ACTOR, { createdBy: SYSTEM_ACTOR }],
+      ['I07', evidenceActor, { createdBy: evidenceActor }],
+      ['I08', missingAgent, { createdBy: missingAgent, inputs: [] }],
+    ])('%s: Evidence từ chối actor/provenance không hợp lệ (EC09)', async (_id, actor, provenance) => {
+      await expect(
+        asApp((c) => insertEvidence(c, accountId, projectId, referenceId, { actor, provenance })),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it('I09: Claim từ chối provenance thiếu inputs (EC09)', async () => {
+      await expect(
+        asApp((c) =>
+          insertClaim(c, accountId, projectId, {
+            actor: synthesisActor,
+            provenance: { createdBy: synthesisActor },
+          }),
+        ),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    const approvalCases = [
+      ['thiếu approvedBy (I10, I12)', 'approvedBy'],
+      ['thiếu decision', 'decision'],
+      ['thiếu apr', 'apr'],
+      ['approvedBy thiếu type (I13)', 'type'],
+      ['chỉ còn bốn trường (I11)', 'all'],
+    ] as const;
+    for (const entity of ['Claim', 'ArtifactVersion'] as const) {
+      it.each(approvalCases)(`${entity} Accepted từ chối approval %s (EC07, EC08)`, async (_label, field) => {
+        const record: Record<string, unknown> = approval(randomUUID());
+        if (field === 'type') record.approvedBy = { accountId };
+        else if (field === 'all') {
+          delete record.approvedBy;
+          delete record.decision;
+          delete record.apr;
+        } else delete record[field];
+        await expect(
+          asApp(async (c) => {
+            if (entity === 'Claim')
+              return insertClaim(c, accountId, projectId, { status: 'Accepted', approval: record });
+            const artifactId = await insertArtifact(c, accountId, projectId);
+            return insertVersion(c, accountId, projectId, artifactId, { status: 'Accepted', approval: record });
+          }),
+        ).rejects.toMatchObject({ code: '23514' });
+      });
+    }
+
+    it('I14: Artifact từ chối analysis thiếu instance', async () => {
+      await expect(asApp((c) => insertArtifact(c, accountId, projectId, missingInstance))).rejects.toMatchObject({
+        code: '23514',
+      });
+    });
+
+    it('I15: ClaimEvidenceLink từ chối created_by thiếu agent', async () => {
+      await expect(
+        asApp(async (c) => {
+          const evidenceId = await insertEvidence(c, accountId, projectId, referenceId);
+          const claimId = await insertClaim(c, accountId, projectId);
+          return c.query(
+            `INSERT INTO app.claim_evidence_link (account_id,project_id,claim_id,evidence_id,relation,created_by)
+           VALUES ($1,$2,$3,$4,'supports',$5)`,
+            [accountId, projectId, claimId, evidenceId, missingAgent],
+          );
+        }),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it('I16: VerificationResult từ chối created_by thiếu agent', async () => {
+      await expect(
+        asApp((c) =>
+          c.query(
+            `INSERT INTO app.verification_result
+         (account_id,project_id,target_type,target_id,agent_run_id,outcome,thresholds_used,created_by)
+         VALUES ($1,$2,'claim',$3,$4,'Supported','{}',$5)`,
+            [accountId, projectId, randomUUID(), randomUUID(), missingAgent],
+          ),
+        ),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it('I17: Artifact từ chối updated_by thiếu agent', async () => {
+      const artifactId = await asApp((c) => insertArtifact(c, accountId, projectId));
+      await expect(
+        asApp((c) => c.query('UPDATE app.artifact SET updated_by=$1 WHERE id=$2', [missingAgent, artifactId])),
+      ).rejects.toMatchObject({ code: '23514' });
+    });
+
+    it('V1/V2: agent writing và inputs rỗng hợp lệ vẫn ghi được (EC09)', async () => {
+      await asApp(async (c) => {
+        const provenance = { createdBy: writingActor, inputs: [] };
+        const artifactId = await insertArtifact(c, accountId, projectId, writingActor);
+        const versionId = await insertVersion(c, accountId, projectId, artifactId, { actor: writingActor, provenance });
+        const evidenceId = await insertEvidence(c, accountId, projectId, referenceId, {
+          actor: evidenceActor,
+          provenance: { createdBy: evidenceActor, inputs: [] },
+        });
+        const claimId = await insertClaim(c, accountId, projectId, {
+          actor: synthesisActor,
+          provenance: { createdBy: synthesisActor, inputs: [] },
+          status: 'Accepted',
+          approval: approval(randomUUID()),
+        });
+        const rows = await c.query('SELECT created_by, provenance FROM app.artifact_version WHERE id=$1', [versionId]);
+        expect(rows.rows).toEqual([{ created_by: writingActor, provenance }]);
+        expect(evidenceId).toBeTypeOf('string');
+        expect(claimId).toBeTypeOf('string');
+      });
+    });
+
     it('bản ghi bất biến (EC10)', async () => {
       const evidenceId = await asApp((c) => insertEvidence(c, accountId, projectId, referenceId));
       await expect(
@@ -215,7 +399,7 @@ export function migrationBehaviourTests() {
           ).rejects.toMatchObject({ code: '42501' });
         }
       }
-      // Trigger bất biến vẫn bảo vệ chủ sở hữu khi vượt qua quyền UPDATE (owner chịu FORCE RLS).
+      // Superuser vượt quyền UPDATE và RLS; trigger bất biến vẫn phải chặn sửa nội dung.
       await expect(
         pg.admin(db, "UPDATE app.claim_revision SET statement='Đổi' WHERE claim_id=$1", [claimId]),
       ).rejects.toMatchObject({ code: '23000' });

@@ -1,9 +1,9 @@
 # PID-00029 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — EC09: provenance thiếu inputs được DDL nguồn chấp nhận (G1 HIGH)
+**Kết luận:** Chưa đạt — ba hàm DDL nguồn còn lỗi SQL NULL (QC G1–G3 HIGH); Lần 2 bổ sung hồi quy, RLS đủ 12 bảng và sửa chú thích
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 23/11/2026
+- **Cập nhật:** 24/11/2026 (kết quả mới nhất ở Lần 2 cuối file)
 
 ## 1. Lệnh
 
@@ -83,6 +83,43 @@ không có timeout hoặc unhandled error; chỉ còn lỗi DDL EC09.
 S02/S03 hội tụ theo phạm vi. Không sửa nguồn trong lúc tự QC, không tạo hoặc sửa
 `qc-report.md`. Quyết định sửa DDL thuộc PO; toàn PID chưa đạt và chưa đủ mở PR nghiệm thu.
 Ngày 23/11/2026 người dùng yêu cầu mở draft PR để PO xem và sửa DDL; giữ nguyên kết luận Chưa đạt và G1 HIGH.
+
+## Lần 2 — 24/11/2026 · Dev tự QC sau sửa G4–G6
+
+Đối chiếu lại AC01, P2, EC04, EC07–EC09, slice S01 và QC Lần 1 trên mã hiện tại.
+Không tạo/sửa báo cáo QC độc lập. PO chưa chốt ba hàm; giữ trạng thái Bị chặn và draft PR.
+
+| Lệnh                                                       | Kết quả                                                                                                                                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-pid.mjs PID-00029`                                  | Đủ, 1 cảnh báo do đã có qc-report cần đọc                                                                                                                           |
+| `pnpm --filter @sires/research test`                       | **22 đạt, 22 lỗi / 44**, 4 file, 180.17s; không skip. Toàn bộ 22 lỗi là INSERT/UPDATE không bị từ chối do DDL G1–G3; không có lỗi timeout/quyền/FK hoặc lỗi fixture |
+| `pnpm --filter @sires/research typecheck`, `lint`, `build` | Cả ba đạt                                                                                                                                                           |
+| Prettier check ba file test thay đổi                       | Đạt                                                                                                                                                                 |
+| `node scripts/docs/add-license.mjs --check`                | Hai file cache có sẵn `libs/py/sires_common/.mypy_cache/.gitignore`, `.ruff_cache/.gitignore` thiếu header; không thuộc PID, không có file mới trong lần sửa        |
+| `node scripts/docs/update-index.mjs --check`               | Khớp 159 PID; không ghi docs/taskboard                                                                                                                              |
+| `git diff --name-only` qua `check-tracks.mjs --stdin`      | Lượt cuối: repo, research; mã service chỉ research                                                                                                                  |
+| `git diff --check`                                         | Sạch                                                                                                                                                                |
+
+`pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=2`:
+chọn 20 project; platform test đạt 168/168 trong lượt này. Phiên công cụ khởi động
+lại giữa lượt, tiến trình đã kết thúc và mất session; chưa có kết quả tổng hợp.
+Không khẳng định toàn repo đạt; bộ research chạy riêng đã xác nhận 22 lỗi DDL.
+
+AC01 (schema khớp DDL), EC04 mở rộng, đối chứng I04 và V1/V2 đạt trong lượt test này.
+EC07/EC08 theo ca cũ vẫn đạt nhưng approval thiếu trường chưa bị từ chối; EC09 chưa đạt.
+Các test còn lại (EC01–EC06, EC10–EC13, health, CLI) đạt. S02 vẫn kiểm đủ 34 cặp.
+
+| QC G      | Kết quả đối chiếu                                                                                                 | Việc còn lại                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| G1 HIGH   | I01, I06, I07, I09 đều lỗi đúng dạng promise resolved thay vì SQLSTATE 23514                                      | PO sửa is_provenance ở DDL nguồn, Dev đồng bộ theo nguồn đã duyệt                                    |
+| G2 HIGH   | I02, I03, I05, I08, I14–I17 lỗi; V1/V2 agent writing và inputs=[] vẫn ghi được                                    | PO sửa is_actor_ref cả nhánh agent và biểu thức instance; không chỉ bọc COALESCE ngoài is_provenance |
+| G3 HIGH   | 10 ca approval thiếu approvedBy/decision/apr/type hoặc chỉ bốn trường đều lọt trên Claim/ArtifactVersion Accepted | PO sửa is_approval_record và chốt phạm vi EC07/EC08                                                  |
+| G4 MEDIUM | Đã chuẩn bị hồi quy đủ I01–I17 (I04 là đối chứng từ chối), thêm thiếu decision/apr trên hai entity và V1/V2       | Test sẽ chỉ xanh sau khi G1–G3 được sửa; không chuyển thành skip/expected failure                    |
+| G5 LOW    | EC04 xác nhận A thấy dữ liệu cả 12 bảng, B/thiếu context thấy 0; so danh sách với catalog                         | Đã xử lý                                                                                             |
+| G6 LOW    | Nhãn extension dùng EC01, dump dùng AC01; mô tả đúng superuser vượt RLS nhưng trigger vẫn chạy                    | Đã xử lý                                                                                             |
+
+Giữ nguyên lịch sử kết quả trước đây. G2/G3 MEDIUM của Self-QC Lần 1 là mã riêng,
+không phải G2/G3 HIGH trong QC độc lập; QC đã ghi bằng chứng Helm CI và timeout platform.
 
 ---
 
