@@ -48,8 +48,10 @@ liveness, không kiểm kết nối DB; service không tự chạy migration lú
 ## Migration và kiểm thử
 
 Migration đầu `migrations/0000_init.sql` là nguyên DDL `00-common.sql` rồi
-`audit.sql`, có journal của drizzle-kit. Không có schema bảng bằng TypeScript
-trong PID này. Tạo migration tiếp bằng `pnpm --filter @sires/audit exec drizzle-kit
+`audit.sql`, có journal của drizzle-kit. Bản `00-common.sql` chép vào đã gồm sửa EC09
+(PO 24/11/2026): `is_actor_ref`, `is_approval_record`, `is_provenance` trả false thay vì
+NULL, nên audit không cần migration EC09 riêng như các service đã có migration trước đó.
+Không có schema bảng bằng TypeScript trong PID này. Tạo migration tiếp bằng `pnpm --filter @sires/audit exec drizzle-kit
 generate --custom --name ten_migration`; không sửa migration đã áp dụng.
 
 `migrate()` của drizzle-orm chạy mọi migration mới trong giao dịch; lỗi thì rollback,
@@ -67,7 +69,8 @@ Target test build trước khi kiểm CLI. Fixture dùng PostgreSQL thật, `ext
 tạo role riêng và hai database độc lập để so `pg_dump --schema-only`: chỉ loại schema
 sổ migration `drizzle` và các dòng metadata ngẫu nhiên của pg_dump. Các DDL nguồn
 là input của target test để Nx không dùng cache cũ khi chúng đổi. Test chạy một worker
-để hạn chế số container đồng thời trên máy Dev.
+để hạn chế số container đồng thời trên máy Dev. `vitest.config.ts` đặt trần 60 s mỗi
+test, 180 s mỗi hook (quy ước PO 24/11/2026).
 
 Audit Event: `_app`, `_system`, `_purge` không UPDATE; owner bị trigger chặn UPDATE.
 `_app`, `_system` không DELETE; `_purge` được DELETE để xóa cùng project/tài khoản.

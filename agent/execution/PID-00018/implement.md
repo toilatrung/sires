@@ -1,13 +1,16 @@
 # PID-00018 — Triển khai
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 24/11/2026
+- **Cập nhật:** 24/11/2026 (Lần 3)
 
 ## 1. Luồng đã triển khai
 
 1. `apps/audit/drizzle.config.ts` cấu hình PostgreSQL, output `migrations/`.
    Đã tạo `0000_init.sql`, journal và snapshot bằng `drizzle-kit generate --custom --name init`.
-   SQL là nguyên `00-common.sql` rồi `audit.sql`; không thêm/sửa schema, role hoặc hàm.
+   SQL là nguyên `00-common.sql` rồi `audit.sql` (cách nhau một dòng trống); không thêm/sửa
+   schema, role hoặc hàm. Bản `00-common.sql` đã gồm sửa EC09 của PR #94 (ba hàm kiểm JSON
+   bọc `COALESCE(…, false)`), chép lại ngày 24/11/2026; journal, snapshot không đổi vì
+   migration custom không lưu hash trong journal và snapshot rỗng.
    Không có schema TypeScript cho bảng trong ticket này.
 2. `src/db/migrate.ts:23` mở node-postgres Client bằng DSN migrator và gọi migrator
    của drizzle-orm. Drizzle ghi sổ ở schema `drizzle` và áp migration mới trong giao dịch;
@@ -51,9 +54,19 @@ Hai DDL nguồn là input Nx của target test. `validate-cache.cjs` dựng work
 riêng trong `.nx`, xác nhận test schema đạt, lượt lặp dùng cache, rồi chỉ sửa giới hạn
 summary trong bản sao DDL thành 1999: target phải chạy lại và đỏ. DDL repo gốc không đổi.
 
+### CHECK ActorRef (EC09)
+
+`audit_event.actor` và `audit_export.created_by` dùng `CHECK (app.is_actor_ref(…))`.
+PostgreSQL chỉ từ chối khi CHECK là FALSE; hàm hiện bọc `COALESCE((…), false)` nên JSON
+thiếu `agent`, `agent: null`, analysis thiếu hoặc `null` `instance` cho FALSE (23514).
+Vế `(agent = 'analysis') = COALESCE(instance IN ('A','B'), false)` giữ agent thường không
+`instance` là TRUE. `ddl-behaviour.spec.ts` kiểm N1–N5 và đối chứng synthesis ở cả hai cột.
+
 ## 3. Quyết định kỹ thuật trong phạm vi
 
 - Test chạy một worker để giảm số container đồng thời trên Windows/Docker WSL.
+  `apps/audit/vitest.config.ts` đặt `testTimeout: 60_000`, `hookTimeout: 180_000` (quy ước
+  PO 24/11/2026, như workspace, planning); chuyển sang hằng chung khi `@sires/testing` có.
 - Drizzle CLI vẫn bắt buộc `schema` khi generate custom: trỏ module runner (không export
   bảng), không tạo schema TypeScript nghiệp vụ. Chỉ dùng `generate --custom` ở PID này.
 - Chỉ thêm dependency đã có trong catalog vào package audit; lockfile tự đồng bộ importer audit.
@@ -61,8 +74,10 @@ summary trong bản sao DDL thành 1999: target phải chạy lại và đỏ. D
   Dockerfile chung: đã kiểm không có drizzle-kit, SQL/journal có mặt, CLI áp thật hai lần
   và service production trả `/health` 200 trên cổng ngẫu nhiên.
 - Không chạy migration trên Compose do PID-00159 chưa xong; không tự tạo role ở Compose.
-- Theo quyết định người dùng, giữ nguyên DDL nguồn khi EC09 thất bại. Chi tiết lỗi,
-  tái hiện và việc PO cần làm ở [blocker-ec09.md](blocker-ec09.md).
+- EC09: Dev không sửa DDL nguồn. PO chốt cách sửa ở PR #94; nhánh này gộp PR #94 rồi chép
+  lại `00-common.sql` vào `0000_init.sql` (audit chưa merge nên sửa migration đầu, không thêm
+  migration tiến). PR #66 phụ thuộc PR #94; #94 đã vào `main` (`80a6626`). Lịch sử blocker ở
+  [blocker-ec09.md](blocker-ec09.md).
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).

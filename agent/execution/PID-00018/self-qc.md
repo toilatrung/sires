@@ -1,9 +1,9 @@
 # PID-00018 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — EC09 sai lệch DDL chung; người dùng yêu cầu giữ phạm vi audit và ghi blocker cho PO
+**Kết luận:** Đạt (Lần 3, 24/11/2026) — mọi AC, EC01–EC13 đạt; EC09 gỡ nhờ PR #94 (đã vào `main`, `80a6626`). Lần 1–2: Chưa đạt — EC09 sai lệch DDL chung
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 22/11/2026 · **Nhánh:** `audit/pid-00018-migration`
+- **Cập nhật:** 24/11/2026 (Lần 3; mục 1–5 là Lần 1, 22/11/2026) · **Nhánh:** `audit/pid-00018-migration`
 - **Môi trường:** Node 24.22.3 trên Windows; PostgreSQL 16 thật qua Docker trong WSL2.
   Lệnh kiểm đặt `DOCKER_HOST=tcp://127.0.0.1:2375`, `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`
   và `NX_DAEMON=false` trong tiến trình; không đổi cấu hình user.
@@ -125,6 +125,99 @@ trong lượt sửa này; các hạn chế của Lần 1 giữ nguyên.
 
 Cần PO xử lý G1, sau đó đồng bộ migration theo quyết định và chạy lại test/QC.
 Giữ nguyên kết luận chưa đạt, chưa chuyển PR khỏi draft.
+
+## Lần 3 — 24/11/2026 · Gỡ EC09 theo PR #94
+
+Người chạy: phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhhhhh2003`.
+Mã: nhánh `audit/pid-00018-migration` sau khi gộp `origin/main` (`343c7b9`) và nhánh PR #94
+(`8839cde`), rồi gộp thêm `origin/main` (`80a6626`: #94 squash, #86) khi #94 đã merge.
+Môi trường: Windows 11, Node 24, PostgreSQL 16 qua Testcontainers trên Docker
+Engine trong WSL `Ubuntu-24.04` (`DOCKER_HOST=tcp://127.0.0.1:2375`,
+`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`, `NX_DAEMON=false` trong tiến
+trình). Python chạy trong container `ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim`
+vì Smart App Control chặn `.venv` trên Windows. Một phiên khác chạy Testcontainers song song.
+
+### Lệnh
+
+| Lệnh/kiểm | Kết quả thật |
+| --- | --- |
+| `check-pid.mjs PID-00018` | ĐỦ để thực thi; 1 cảnh báo đọc `qc-report.md` |
+| `git merge origin/main`, `git merge origin/database/ec09-jsonb-helpers` | Không xung đột; hai commit gộp có chữ ký SSH |
+| So `0000_init.sql` với `00-common.sql` + dòng trống + `audit.sql` (blob Git) | Trước khi sửa: khớp bản cũ. Sau khi dựng lại: `git diff` chỉ ba hàm và hai dòng chú thích, trùng diff `00-common.sql` của PR #94 |
+| `pnpm install --frozen-lockfile` | Đạt (882 gói, lockfile không đổi) |
+| `pnpm nx run @sires/audit:test --skip-nx-cache` | Đạt, kèm build phụ thuộc: **4 file, 35/35**, 108 giây |
+| `vitest run --reporter=verbose` trong `apps/audit` | **35/35**; liệt kê từng ca ở bảng EC09 dưới |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main` (project TS, `--parallel=2`) lượt 1 | Không đạt vì tải: `read ECONNRESET` tới Docker ở audit (1 ca), planning (1 suite), platform; một ca platform hết 5 s. Lệnh bị dừng ở trần 10 phút của công cụ (exit 130). PowerShell tách `--exclude` có dấu phẩy nên Nx còn chạy target Python trên Windows (lỗi spawn `ruff`/`mypy` do SAC). Không tính lượt này |
+| Như trên, `--parallel=1`, `--exclude` đặt trong nháy | 16 project, 63 task: **61 đạt**. Audit 35/35, planning 40/40, workspace 26/26, orchestration 21 đạt + 4 todo, sample-service 13/13, web 10/10; gateway, identity, library, manuscript, research, sandbox-runner, testing đạt; lint, typecheck, build mọi project đạt. Không đạt: `@sires/contracts:test` (SAC chặn `openapi-python-client`, os error 4551) và `@sires/platform:test` (2 ca hết 5 s, 2 suite `ECONNRESET`) |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` riêng | 168/169; ca còn lại `telemetry.spec.ts › span và log cùng mã yêu cầu` hết 5 s. Chạy riêng `vitest run src/telemetry/telemetry.spec.ts`: 6/6. `libs/ts/platform` không đổi so với `origin/main` |
+| `@sires/contracts:test` | Không chạy được trên máy — SAC; `libs/ts/contracts` không đổi so với `origin/main`; để CI Linux kiểm |
+| `nx affected` TS lần 3, sau khi gộp `origin/main` `80a6626` (#86 đổi `libs/ts/platform`, nên test phụ thuộc chạy lại), `--parallel=1` | **Audit 35/35**, planning 40/40, sample-service 13/13, testing 13/13, web 10/10; gateway, identity, library, manuscript, research, sandbox-runner đạt; lint, typecheck, build mọi project đạt. Không đạt: contracts:test (SAC); platform:test 170/171 (ca telemetry hết 5 s như trên); orchestration:test (hook EC03 hết 10 s); workspace:test (`migrate.spec.ts`: lệnh migrate lần hai trả 1) |
+| Chạy riêng `test` của workspace, orchestration | Vẫn lỗi nhưng ở chỗ khác: `read ECONNRESET`, `Connection terminated unexpectedly`, ca hết 5 s (workspace 24 đạt + 2 bỏ qua do suite lỗi kết nối; ca migrate trước đó lỗi nay đạt). Lúc đó WSL có load average 41 và 8 container `pgvector` của phiên khác (gồm `qc82-pg`). `apps/workspace`, `apps/orchestration`, `libs/ts/platform` không đổi so với `origin/main`; kết luận các lỗi này do tải máy, không thuộc PR. Kết quả quyết định là CI Linux |
+| Python trong container uv (`uv sync --frozen --all-packages`, rồi `ruff check .`, `mypy src`, `pytest` cho từng project) | agent-core, knowledge, eval: cả ba bước exit 0 (agent-core gồm migration `0002_ec09_jsonb_helpers` của PR #94). sires_common: ruff, mypy đạt; pytest lượt đầu lỗi thu thập vì chưa sinh contracts Python (target phụ thuộc `generate-python` bị SAC chặn) |
+| `node libs/ts/contracts/scripts/generate.mjs --python-only` trong container `node:22` có `uv` | Đạt: 9 API nội bộ, 42 message (thư mục sinh bị ignore) |
+| `pytest` sires_common sau khi sinh contracts | **132 passed** |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu thông báo giấy phép |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard khớp) |
+| `node scripts/development/check-tracks.mjs --base origin/main` | Trước khi #94 vào `main`: 5 luồng (commit của #94 trong nhánh). Sau khi gộp `origin/main` `80a6626`: `audit, repo`, exit 0; diff so với `main` chỉ `apps/audit/`, `agent/execution/PID-00018/`, `pnpm-lock.yaml` |
+| `git merge origin/main` (lần 2, `80a6626`) | Không xung đột; `git diff origin/main -- docs/` rỗng; `0000_init.sql` trùng byte với `00-common.sql` + dòng trống + `audit.sql` của `main` (`cmp`) |
+| Ranh giới thay đổi của lượt này (`git diff --name-only` + file chưa theo dõi) | Chỉ `audit` (cộng `agent/execution/PID-00018/`). Không sửa `docs/`, `apps/research`, nhánh khác |
+| `check-pid.mjs PID-00018 --result` | Xem cuối mục này |
+
+Không chạy lại trong lượt này: `validate-production.cjs`, `validate-cache.cjs`, Helm, Docker
+image (đổi của lượt chỉ là thân ba hàm SQL và cấu hình test). EC13 vẫn có test
+`migrate.spec.ts` đạt trên SQL mới.
+
+### AC → test
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00018-AC01 | `migration.spec.ts › schema khớp DDL tham chiếu`; `ddl-behaviour.spec.ts › không sửa được — app/system/purge/owner (EC06)`, `› không xóa được trừ purge (EC07)` | Đạt trên PostgreSQL thật; schema dựng từ migration khớp `00-common.sql` mới + `audit.sql` |
+| CTX-AUDIT-001-AC04 (phần database) | `ddl-behaviour.spec.ts › không sửa được`, `› không xóa được trừ purge` | Đạt |
+
+### Edge case
+
+| Mã | Trạng thái | Test/bằng chứng (Lần 3) |
+| --- | --- | --- |
+| EC01 | Đạt | `chạy lần hai không đổi` |
+| EC02 | Đạt | `thiếu vai trò thì dừng — false`, `— migrator-only` |
+| EC03 | Đạt | `schema khớp DDL tham chiếu` (`extensions: []`) |
+| EC04 | Đạt | `schema khớp DDL tham chiếu` (loại sổ `drizzle`) |
+| EC05 | Đạt (Lần 1) | `cache-validation.json`; hai DDL vẫn là input của target test. Không chạy lại |
+| EC06 | Đạt | `không sửa được — app/system/purge/owner` |
+| EC07 | Đạt | `không xóa được trừ purge` |
+| EC08 | Đạt | `chỉ system ghi — trùng id bị từ chối` |
+| EC09 | **Đạt** | `check — 'agent thiếu agentRunId'`, `'APR-11'`, `'summary 2001 ký tự'`; `check — actor`, `check — created_by`: N1 analysis thiếu instance, N2 instance null, N3 thiếu agent, N4 agent null, N5 thiếu agent có instance đều 23514 (10 ca); đối chứng synthesis không instance ghi được ở cả hai cột; ActorRef hợp lệ sinh `actor_type`, summary 2000 ký tự |
+| EC10 | Đạt | `rls — tài khoản B và thiếu context…`; `module database — helper tenancy…` |
+| EC11 | Đạt | `kpi snapshot — kỳ, mã và UNIQUE NULLS NOT DISTINCT` |
+| EC12 | Đạt | `audit export — row_version, format, status` |
+| EC13 | Đạt | `lệnh migrate áp lên database rỗng`, `thiếu cấu hình hoặc kết nối lỗi trả exit 1`; gói production Lần 1 |
+
+Edge case mới: không. Ghi chú vận hành: test dùng Testcontainers trên máy này nhạy với tải
+Docker (`ECONNRESET`); trần timeout mới của audit không che lỗi này — chạy lại riêng thì đạt.
+
+### Tự kiểm
+
+- [x] Không sửa `docs/`; `docs/database/ddl/00-common.sql` mới đến từ PR #94 PO đã duyệt, nay đã ở `main`.
+- [x] `0000_init.sql` là migration của chính ticket, chưa merge; sửa theo yêu cầu, không đụng migration đã merge của service khác.
+- [x] Không nới test hay giá trị mong đợi; N1–N5 và đối chứng giữ nguyên từ Lần 2.
+- [x] Không log DSN; không thêm consumer, endpoint, sự kiện, schema TypeScript.
+- [x] File mới có SPDX; không ghi công cụ hay AI là người làm.
+
+### Tự đối chiếu — spec-converge-skill (Dev), Lần 3
+
+Đối chiếu lại AC01, CTX-AUDIT-001-AC04, P1–P4, N1–N7, EC01–EC13, S01–S03, O1–O3, B1–B4 và
+việc còn lại của QC độc lập Lần 1 trên mã hiện tại.
+
+| G | Loại | Mức | Bằng chứng | Xử lý |
+| --- | --- | --- | --- | --- |
+| G1 (QC L1) | partial | HIGH → đóng | `0000_init.sql` mang ba hàm đã bọc `COALESCE`; 10 ca N1–N5 đỏ ở Lần 2 nay xanh | Đóng; phụ thuộc PR #94 đã thỏa (`80a6626`) |
+| G2 (QC L1) | partial | MEDIUM → đóng | `ddl-behaviour.spec.ts` có N1–N5 và đối chứng synthesis ở hai cột; bắt được bẫy `coalesce` (đối chứng đạt) | Đóng |
+| G3 (QC L1) | contradicts | HIGH → đóng | `src/config/database.ts` chỉ đọc DSN app/system; `app.module.spec.ts` đạt | Đóng (Lần 2) |
+| G4, G5 (QC L1) | partial | LOW → đóng | `migration.spec.ts › — migrator-only`; Self-QC không còn đường dẫn máy | Đóng (Lần 2) |
+| G6 | partial | LOW → đóng | Nhánh từng chứa commit của PR #94 (nguy cơ đưa `docs/` vào `main` qua PR audit) | Đóng: #94 đã vào `main`, gộp lại `origin/main`, diff `docs/` rỗng |
+| G7 | partial | LOW | `@sires/contracts:test` không chạy được trên máy (SAC); platform, workspace, orchestration lỗi kết nối/hết giờ khi máy tải cao | Các project này không đổi so với `main`; chờ CI Linux trên PR |
+
+Còn 0 CRITICAL, 0 HIGH. Kết luận Lần 3: Đạt; đặt `Xong — chờ QC`.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).

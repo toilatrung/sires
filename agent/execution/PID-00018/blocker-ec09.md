@@ -52,5 +52,20 @@ migration cũ để đưa bản sửa vào bằng migration tiến, không sửa
 Sau khi nguồn được cập nhật, đồng bộ migration audit mới và chạy lại test schema,
 ActorRef và kiểm tổng thể. Chưa cấp mã DBQ/OQ mới trong tài liệu nguồn ở lượt này.
 
+## Cập nhật 24/11/2026 — đã gỡ, phụ thuộc PR #94
+
+PO đã chốt cách sửa và duyệt PR #94 (nhánh `database/ec09-jsonb-helpers`, đầu nhánh
+`8839cde`): trong `docs/database/ddl/00-common.sql`, `app.is_actor_ref`,
+`app.is_approval_record`, `app.is_provenance` bọc `COALESCE((…), false)`; vế instance của
+`is_actor_ref` thành `COALESCE(a->>'instance' IN ('A','B'), false)`, nên agent khác analysis
+không có `instance` vẫn hợp lệ. PR #94 cũng thêm migration tiến cho các service đã có migration.
+
+Nhánh `audit/pid-00018-migration` đã gộp (merge) `origin/main` và PR #94. Audit chưa merge
+nên `0000_init.sql` được chép lại từ nguồn mới (nguyên văn `00-common.sql` rồi `audit.sql`),
+không thêm migration riêng. Trên PostgreSQL thật: N1–N5 ở `actor` và `created_by` bị
+CHECK từ chối (23514), đối chứng synthesis không `instance` vẫn ghi được; so schema với DDL
+đạt. PR #66 phụ thuộc PR #94; phụ thuộc này đã thỏa: #94 vào `main` (squash `80a6626`) và
+nhánh đã gộp lại `origin/main`.
+
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
