@@ -36,14 +36,14 @@ describe('lệnh migrate', () => {
     const first = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...first.io })).toBe(0);
     expect(first.stderr).toEqual([]);
-    expect(first.stdout).toEqual(['workspace migrate: áp 2 migration mới, đã ghi sổ 2']);
+    expect(first.stdout).toEqual(['workspace migrate: áp 3 migration mới, đã ghi sổ 3']);
     expect(await listTables(pg, database)).toEqual([...EXPECTED_TABLES]);
     const schema = await pg.dumpSchema(database);
 
     // Job migration chạy trước mỗi lần deploy: lần hai không áp gì, không lỗi, schema giữ nguyên (EC01).
     const second = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...second.io })).toBe(0);
-    expect(second.stdout).toEqual(['workspace migrate: áp 0 migration mới, đã ghi sổ 2']);
+    expect(second.stdout).toEqual(['workspace migrate: áp 0 migration mới, đã ghi sổ 3']);
     expect(await pg.dumpSchema(database)).toBe(schema);
   });
 
