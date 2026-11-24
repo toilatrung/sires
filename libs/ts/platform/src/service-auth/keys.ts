@@ -65,7 +65,11 @@ export function servicePublicKeysFromJwks(jwks: ServiceJwks | string): ServicePu
   const document = (typeof jwks === 'string' ? JSON.parse(jwks) : jwks) as ServiceJwks;
   if (!document || !Array.isArray(document.keys)) throw new TypeError('servicePublicKeysFromJwks: expected {"keys": [...]}');
   const keys: Partial<Record<ServiceName, JsonWebKey>> = {};
-  for (const jwk of document.keys) {
+  for (const item of document.keys as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      throw new TypeError('servicePublicKeysFromJwks: each key must be a JWK object');
+    }
+    const jwk = item as ServiceJwks['keys'][number];
     if (!isServiceName(jwk.kid)) throw new TypeError(`servicePublicKeysFromJwks: kid “${String(jwk.kid)}” is not a service name`);
     if (keys[jwk.kid]) throw new TypeError(`servicePublicKeysFromJwks: kid “${jwk.kid}” appears twice`);
     keys[jwk.kid] = jwk;
@@ -180,7 +184,17 @@ function publicKeysFromEnv(value: string): ServicePublicKeys {
   } catch {
     throw new Error(`${SERVICE_AUTH_ENV.publicKeys} is not valid JSON (expected a JWKS)`);
   }
-  return servicePublicKeysFromJwks(document as ServiceJwks);
+  try {
+    return servicePublicKeysFromJwks(document as ServiceJwks);
+  } catch (error) {
+    // Name the variable (QC PID-00003 Lần 2 G9). Only our own structural messages are kept; anything else (a key that
+    // does not parse) gets a generic reason so no value is quoted.
+    const reason =
+      error instanceof TypeError && error.message.startsWith('servicePublicKeysFromJwks: ')
+        ? error.message.slice('servicePublicKeysFromJwks: '.length)
+        : 'a key is not a valid EC P-256 public JWK';
+    throw new Error(`${SERVICE_AUTH_ENV.publicKeys} is not a valid JWKS: ${reason}`);
+  }
 }
 
 function keySet(privateKeys: Map<ServiceName, KeyObject>) {

@@ -295,6 +295,37 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
+  it('onOutcome async bị từ chối không gây unhandled rejection (QC PID-00002 Lần 3 G6)', async () => {
+    reset();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    const warnings: string[] = [];
+    const seen: ConsumeOutcome[] = [];
+    try {
+      const consumer = await startConsumer('outcome-rejects', {
+        // One callback is an async function that throws, the other returns a rejected promise.
+        onOutcome: (outcome: ConsumeOutcome) => {
+          seen.push(outcome);
+          if (seen.length === 1) return (async () => Promise.reject(new Error('metric async lỗi')))();
+          return Promise.reject(new Error('metric bị từ chối'));
+        },
+        logger: { info: () => undefined, warn: (_fields: unknown, msg?: string) => warnings.push(String(msg)), error: () => undefined },
+      } as unknown as Partial<ConstructorParameters<typeof EventConsumer>[0]>);
+      publishEvent(taskEvent(uuidv7(), 1, 'Ready'));
+      publishEvent(taskEvent(uuidv7(), 1, 'Ready'));
+      const deadline = Date.now() + 10_000;
+      while (seen.length < 2 && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(seen).toEqual(['applied', 'applied']);
+      expect(warnings.filter((msg) => msg === 'consumer: onOutcome lỗi')).toHaveLength(2);
+      expect(unhandled).toEqual([]);
+      expect(consumer.isConsuming).toBe(true);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
   it('handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)', async () => {
     const exporter = new InMemorySpanExporter();
     const telemetry = startTelemetry({ serviceName: 'orchestration', spanProcessor: new SimpleSpanProcessor({ exporter }) });
