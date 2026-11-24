@@ -1,6 +1,6 @@
 # PID-00019 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC (Lần 4, 25/11/2026: gộp main có #94 EC09, migration dòng chuyển trạng thái sinh lại thành 0002; 24 test đạt, 0 todo; QC độc lập Lần 3 đạt, H10 đã chốt)
+**Trạng thái:** Xong — chờ QC (Lần 4, 25/11/2026: gộp main tới #100, migration dòng chuyển trạng thái sinh lại thành 0002; 25 test đạt, 0 todo; QC độc lập Lần 3 đạt, H10 đã chốt)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
 - **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`) · **PR:** [#90](https://github.com/toilatrung/sires/pull/90) (vào `main`, chưa merge); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
@@ -190,7 +190,7 @@ Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
 - **Timeout:** lần chạy đầu sau khi gộp, 2 test vượt trần mặc định 5 s của vitest trên máy có tải: ca S04 có sẵn `› lệnh migrate trên database rỗng` và ca áp lần lượt mới. Thêm `apps/orchestration/vitest.config.ts` (`testTimeout` 60 s, `hookTimeout` 180 s) như planning, workspace (#88, #89) và quy ước PO 24/11/2026 (G9 của QC Lần 3). Hằng số chung ở `@sires/testing` chưa có trên `main`, nên khai giá trị trực tiếp; đổi sang hằng số khi luồng platform xuất.
 - **AC:** PID-00019-AC01, AC02, AC03 đạt. Ca 1 AC03 khớp câu chữ `acceptance.html` sau H10 (`23514` cho cặp ngoài bảng; `23000` cho cặp xuất phát từ trạng thái mà trigger bất biến đã khóa). Lỗi EC09 của `app.is_actor_ref` đã sửa ở #94; schema dựng từ ba migration vẫn bằng DDL tham chiếu.
 - **Lệnh** (chi tiết ở self-qc.md Lần 4):
-  - `pnpm --filter @sires/orchestration test`: 5 file, **24 passed, 0 todo**, PostgreSQL 16 + pgvector qua Testcontainers.
+  - `pnpm --filter @sires/orchestration test`: 5 file, **24 passed, 0 todo**, PostgreSQL 16 + pgvector qua Testcontainers (sau khi gộp #100: 25 passed, xem “Sửa sau CI”).
   - `nx affected -t lint typecheck test build --base=origin/main`: đạt, chỉ `@sires/orchestration` bị ảnh hưởng.
   - `check-tracks`: `orchestration, repo`.
   - `add-license --check`: 0 file thiếu. `update-index --check`: khớp. `git diff --check`: sạch.
@@ -202,7 +202,7 @@ Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
 - **Nguyên nhân:** `exec` của Testcontainers 12.2.1 gom stdout bằng `chunk.toString()` cho từng frame Docker. Ký tự UTF-8 vắt qua ranh giới frame thành U+FFFD. Lỗi có từ Lần 1 trong `dumpSchema` của `src/db/database.testkit.ts` (S01); lộ ra khi EC09 đổi độ dài thân hàm.
 - **Sửa:** `dumpSchema` cho `pg_dump` ghi file trong container rồi đọc qua `base64`, giải mã UTF-8 một lần ở Node. Bản dump còn U+FFFD hoặc thiếu dòng kết thúc thì báo lỗi rõ. Test schema kiểm thêm chữ tiếng Việt trong thân hàm. Cục bộ không tái hiện được lỗi cũ; chi tiết các lượt chạy ở self-qc.md Lần 4.
 - **Gộp `main` lần ba:** `c5eaf3a` gộp `5e66d14` (#82, PID-00029 research), không xung đột. `nx affected --base=origin/main` đạt, 24 passed; `check-tracks` `orchestration, repo`.
-- **Cùng lỗi ở luồng khác (không sửa, đề xuất):** `apps/planning`, `apps/workspace`, `apps/research` có `dumpSchema` đọc `pg_dump` qua stdout của `exec` như bản cũ, nên CI của các luồng đó có thể lỗi ngẫu nhiên khi thân hàm có chữ tiếng Việt. Nên đưa cách đọc qua `base64` thành hàm dùng chung ở `@sires/testing` (luồng platform), rồi từng luồng áp khi chạm tới.
+- **Gộp `main` lần bốn:** PR #100 của PO (“pg_dump qua base64”) đã sửa cùng lỗi cho orchestration, planning, workspace, research, sample-service. `797a60c` gộp `a3482a1` (#66, #100): `dumpSchema` lấy bản của #100 để các app thống nhất; `migration.spec.ts` giữ test S02 của nhánh và thêm test probe UTF-8 của #100. `nx affected --base=origin/main` đạt, **25 passed**; `check-tracks` `orchestration, repo`. Không còn việc ở luồng khác.
 
 ### Cần PO
 
@@ -211,7 +211,7 @@ Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
 
 ### Việc còn lại
 
-1. PO review PR #90 (đã cập nhật với `main` `f28424c`), QC độc lập xác nhận phần đánh số lại nếu cần, merge.
+1. PO review PR #90 (đã cập nhật với `main` `a3482a1`), QC độc lập xác nhận phần đánh số lại nếu cần, merge.
 2. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
 
 ---

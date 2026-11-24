@@ -222,6 +222,10 @@ Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Căn c
 | `git merge origin/main` (`5e66d14`, #82 PID-00029 research, đổi `pnpm-lock.yaml`), `pnpm install --frozen-lockfile` | Không xung đột; commit `c5eaf3a`; lockfile nhất quán |
 | `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` | Đạt: chỉ `@sires/orchestration`; 24 passed |
 | `check-tracks` (`origin/main...HEAD`), `add-license --check`, `update-index --check` | `orchestration, repo`; 0 file thiếu; khớp |
+| CI PR #90 trên `808f501` | 25/25 check đạt; PR `BEHIND` vì `main` có thêm #66 (PID-00018) và #100 |
+| `git merge origin/main` (`a3482a1`: #66, #100 “pg_dump qua base64” cho orchestration, planning, workspace, research, sample-service) | Xung đột ở `database.testkit.ts`, `migration.spec.ts`: `dumpSchema` lấy bản của #100 (cùng cách base64, thống nhất các app; bỏ hai dòng kiểm thêm của `d7ca3ae`); `migration.spec.ts` giữ test S02 của nhánh, thêm hằng số và test probe UTF-8 của #100, bỏ test cũ “khai báo khớp dòng của DDL (43 cặp)” mà Lần 3 đã thay. Commit `797a60c` |
+| `pnpm install --frozen-lockfile`; `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` | Đạt: chỉ `@sires/orchestration`; **25 passed** (thêm `› dumpSchema giữ nguyên ký tự UTF-8 nhiều byte` của #100) |
+| `check-tracks`, `add-license --check`, `update-index --check`, `git diff --check origin/main...HEAD` | `orchestration, repo`; 0 file thiếu; khớp; sạch |
 
 ### AC → test (Lần 4)
 
@@ -245,7 +249,7 @@ Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Căn c
 | G8 (ca 1 AC03 với `prompt`) | **Đóng**: PO chốt H10, `acceptance.html` sửa ở #95 | `ddl-behaviour.spec.ts:292`–`:347` |
 | G9 (EC09 trong image) | LOW, như Lần 3 | — |
 | G10 (mới, = cảnh báo “Trùng số migration” của QC Lần 3) | **Đã sửa**: `0002` sinh bằng drizzle-kit, `when` lớn hơn `0001_ec09`, snapshot nối `prevId`; test áp lần lượt và kiểm `when` tăng dần | `migrations/meta/_journal.json`; `migration.spec.ts:224` |
-| G11 (mới) — `dumpSchema` đọc stdout của `exec` hỏng ký tự UTF-8 (CI run `45445082745`) | **Đã sửa** (mục “Sửa sau CI”); planning, workspace, research có cùng cách đọc (luồng khác, report.md Lần 4) | `database.testkit.ts:98` |
+| G11 (mới) — `dumpSchema` đọc stdout của `exec` hỏng ký tự UTF-8 (CI run `45445082745`) | **Đã sửa**: nhánh sửa ở `d7ca3ae`, rồi lấy bản của #100 (đã sửa cùng lỗi cho mọi app) khi gộp `main` | `database.testkit.ts:98` |
 | G9 của QC (quy ước timeout) | Một phần: `vitest.config.ts` khai 60 s/180 s như planning, workspace. Hằng số chung ở `@sires/testing` chưa có trên `main` (luồng platform); khi có thì đổi sang dùng hằng số | `apps/orchestration/vitest.config.ts` |
 
 Không còn CRITICAL, HIGH.
