@@ -363,7 +363,8 @@ def test_public_key_set_refuses_private_jwk() -> None:
     }
     with pytest.raises(ValueError) as refused:
         PublicKeySet.from_jwks({"keys": [public_jwk, private_jwk]})
-    assert "'planning'" in str(refused.value)
-    assert "d" in str(refused.value)
+    assert str(refused.value) == (
+        "JWK của 'planning' là khóa riêng (có \"d\"); bộ khóa công khai chỉ nhận khóa công khai"
+    )
     assert secret not in str(refused.value)
     assert PublicKeySet.from_jwks({"keys": [public_jwk]}).kids() == ["gateway"]
