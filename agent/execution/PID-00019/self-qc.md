@@ -210,6 +210,19 @@ Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Căn c
 | Dựng lại image, chạy `node dist/migrate.js` trong image | Không chạy lại — Docker dùng chung với các phiên song song; phụ thuộc, `files`, Dockerfile không đổi; QC Lần 3 đã dựng image với cùng thân migration; `migrate.spec.ts` kiểm journal ba mục và lệnh migrate nạp 43 dòng |
 | `check-pid.mjs PID-00019 --result` (sau khi ghi xong ba file) | “PID-00019: KẾT QUẢ ĐỦ (0 cảnh báo).”, mã 0 |
 
+**Sửa sau CI** (cùng Lần 4):
+
+| Lệnh | Kết quả |
+| --- | --- |
+| CI PR #90, run `45445082745` (đầu nhánh `7a23a4d`) | Job `typescript` lỗi 2 test: `migration.spec.ts › chạy lại không đổi schema (EC02)`, `migrate.spec.ts › lệnh migrate trên database rỗng`. Diff của assertion: một trong hai bản dump có “b��t biến” thay vì “bất biến” trong thân `app.tg_agent_run_final`; schema không khác. Job `build` lỗi theo vì tổng hợp kết quả |
+| Đọc `testcontainers@12.2.1` `build/container-runtime/clients/container/docker-container-client.js` (`exec`) | stdout gom bằng `chunk.toString()` cho từng frame của `demuxStream`: ký tự UTF-8 vắt qua ranh giới frame thành U+FFFD. Lỗi có từ Lần 1 trong `dumpSchema` (S01); lộ ra khi EC09 đổi độ dài thân hàm |
+| Sửa `dumpSchema` (`database.testkit.ts:98`): `pg_dump -f` trong container rồi `base64 -w 0`, giải mã ở Node; báo lỗi nếu còn U+FFFD hoặc thiếu dòng kết thúc; `migration.spec.ts › schema khớp DDL` kiểm thêm “Agent Run % đã kết thúc, bất biến” | — |
+| Spec tạm (không commit) so cách cũ và cách mới trên cùng database | Cục bộ cách cũ không tái hiện (0/40 bản có U+FFFD; frame của Docker trong WSL lớn hơn). Cách mới: lượt đầu ghi 2 bản khác nhau trong 40 nhưng spec không in chỗ khác; ba lượt sau (30, 100, 40 lần) đều một bản. Không tái hiện được bản khác đó; dòng kiểm “dump complete” thêm vào để bản dump đọc thiếu báo lỗi rõ thay vì so lệch âm thầm |
+| `pnpm exec vitest run` hai lượt | Mỗi lượt 5 file, 24 passed |
+| `git merge origin/main` (`5e66d14`, #82 PID-00029 research, đổi `pnpm-lock.yaml`), `pnpm install --frozen-lockfile` | Không xung đột; commit `c5eaf3a`; lockfile nhất quán |
+| `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` | Đạt: chỉ `@sires/orchestration`; 24 passed |
+| `check-tracks` (`origin/main...HEAD`), `add-license --check`, `update-index --check` | `orchestration, repo`; 0 file thiếu; khớp |
+
 ### AC → test (Lần 4)
 
 | AC | Test | Kết quả |
@@ -232,6 +245,7 @@ Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Căn c
 | G8 (ca 1 AC03 với `prompt`) | **Đóng**: PO chốt H10, `acceptance.html` sửa ở #95 | `ddl-behaviour.spec.ts:292`–`:347` |
 | G9 (EC09 trong image) | LOW, như Lần 3 | — |
 | G10 (mới, = cảnh báo “Trùng số migration” của QC Lần 3) | **Đã sửa**: `0002` sinh bằng drizzle-kit, `when` lớn hơn `0001_ec09`, snapshot nối `prevId`; test áp lần lượt và kiểm `when` tăng dần | `migrations/meta/_journal.json`; `migration.spec.ts:224` |
+| G11 (mới) — `dumpSchema` đọc stdout của `exec` hỏng ký tự UTF-8 (CI run `45445082745`) | **Đã sửa** (mục “Sửa sau CI”); planning, workspace, research có cùng cách đọc (luồng khác, report.md Lần 4) | `database.testkit.ts:98` |
 | G9 của QC (quy ước timeout) | Một phần: `vitest.config.ts` khai 60 s/180 s như planning, workspace. Hằng số chung ở `@sires/testing` chưa có trên `main` (luồng platform); khi có thì đổi sang dùng hằng số | `apps/orchestration/vitest.config.ts` |
 
 Không còn CRITICAL, HIGH.

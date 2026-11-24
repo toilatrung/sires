@@ -196,6 +196,14 @@ Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
   - `add-license --check`: 0 file thiếu. `update-index --check`: khớp. `git diff --check`: sạch.
 - **Không chạy lại:** dựng image và chạy lệnh migrate trong image (Docker dùng chung với các phiên song song; phụ thuộc, `files`, Dockerfile không đổi; QC Lần 3 đã dựng với cùng thân migration).
 
+### Sửa sau CI
+
+- **Lỗi:** CI run `45445082745` trên đầu nhánh `7a23a4d`: job `typescript` lỗi 2 test so dump schema (`› chạy lại không đổi schema (EC02)`, `› lệnh migrate trên database rỗng`). Diff cho thấy một bản dump có “b��t biến” thay vì “bất biến” trong thân `app.tg_agent_run_final`; schema không khác.
+- **Nguyên nhân:** `exec` của Testcontainers 12.2.1 gom stdout bằng `chunk.toString()` cho từng frame Docker. Ký tự UTF-8 vắt qua ranh giới frame thành U+FFFD. Lỗi có từ Lần 1 trong `dumpSchema` của `src/db/database.testkit.ts` (S01); lộ ra khi EC09 đổi độ dài thân hàm.
+- **Sửa:** `dumpSchema` cho `pg_dump` ghi file trong container rồi đọc qua `base64`, giải mã UTF-8 một lần ở Node. Bản dump còn U+FFFD hoặc thiếu dòng kết thúc thì báo lỗi rõ. Test schema kiểm thêm chữ tiếng Việt trong thân hàm. Cục bộ không tái hiện được lỗi cũ; chi tiết các lượt chạy ở self-qc.md Lần 4.
+- **Gộp `main` lần ba:** `c5eaf3a` gộp `5e66d14` (#82, PID-00029 research), không xung đột. `nx affected --base=origin/main` đạt, 24 passed; `check-tracks` `orchestration, repo`.
+- **Cùng lỗi ở luồng khác (không sửa, đề xuất):** `apps/planning`, `apps/workspace`, `apps/research` có `dumpSchema` đọc `pg_dump` qua stdout của `exec` như bản cũ, nên CI của các luồng đó có thể lỗi ngẫu nhiên khi thân hàm có chữ tiếng Việt. Nên đưa cách đọc qua `base64` thành hàm dùng chung ở `@sires/testing` (luồng platform), rồi từng luồng áp khi chạm tới.
+
 ### Cần PO
 
 - Không có điểm mới. G8 Lần 3 đã chốt (H10, #95).
