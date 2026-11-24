@@ -1,10 +1,10 @@
 # PID-00019 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC (Lần 3, 24/11/2026: S02, S05 xong; 23 test đạt, 0 todo; một đề xuất cho PO về câu chữ ca 1 của PID-00019-AC03 với machine prompt)
+**Trạng thái:** Xong — chờ QC (Lần 4, 25/11/2026: gộp main có #94 EC09, migration dòng chuyển trạng thái sinh lại thành 0002; 24 test đạt, 0 todo; QC độc lập Lần 3 đạt, H10 đã chốt)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
 - **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`) · **PR:** [#90](https://github.com/toilatrung/sires/pull/90) (vào `main`, chưa merge); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
-- **Cập nhật:** 24/11/2026 (Lần 3); Lần 2 21/11/2026; Lần 1 19/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 4); Lần 3 24/11/2026; Lần 2 21/11/2026; Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -161,6 +161,50 @@ Người làm: phiên do PO `toilatrung` giao. Nhánh `orchestration/state-trans
 1. PO review PR #90, QC độc lập Lần 3 (`spec-converge-skill PID-00019`, ghi `qc-report.md`), merge.
 2. PO quyết G8 (sửa `acceptance.html` hoặc mở DBQ).
 3. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
+
+## Lần 4 — 25/11/2026
+
+Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Việc của lần này: gộp `main` sau khi PR #94 (EC09) merge và đánh số lại migration dòng chuyển trạng thái, theo thứ tự merge PO chốt (#94 trước #90, PC-04 A8). QC độc lập Lần 3 ([qc-report.md](qc-report.md), commit `2876023`) kết luận “Có thể nghiệm thu”, đã lấy về nhánh trước khi gộp.
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC3 | PO `toilatrung`, qua phiên điều phối (24/11/2026) | “Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01” và “Hãy thực hiện đi nhé!”; thứ tự merge #94 → #90 (PC-04 A8) | Trong phạm vi: giữ đúng Đầu ra của S02 (migration mới trong `apps/orchestration/migrations/`, không sửa migration đã có) khi `main` đã có migration `0001` khác | Làm | Mục “Kết quả” dưới; self-qc.md Lần 4 |
+
+### Trạng thái công việc
+
+Mọi slice Xong, như Lần 3. Đổi ở Lần 4:
+
+| Slice | File tạo / sửa / xóa ở Lần 4 |
+| --- | --- |
+| S02 | xóa: `migrations/0001_state_transition.sql`; tạo: `migrations/0002_state_transition.sql` (thân giống từng byte bản cũ), `migrations/meta/0002_snapshot.json`; sửa: `migrations/meta/_journal.json` (giữ mục `0001_ec09_jsonb_helpers` của #94, thêm `0002_state_transition`); test: `src/db/migration.spec.ts` (ba migration, đọc `0002`, ca mới áp lần lượt), `src/db/migrate.spec.ts` (ba migration); chú thích `src/domain/state-machines.ts` |
+| S05 | sửa chú thích ca 1 `src/db/ddl-behaviour.spec.ts` theo H10; bỏ trần riêng 60 s của ca 1; tạo: `apps/orchestration/vitest.config.ts` (timeout chung) |
+| S06 | sửa: `apps/orchestration/README.md` (mục Migration có cả `0001_ec09` và `0002`; bảng test) |
+
+### Kết quả
+
+- **Gộp `main`:** `5c43b37` gộp `80a6626` (#94), xung đột ở journal, snapshot `0001`, README, hai file test: journal và snapshot `0001` lấy bản của `main`, `0001_state_transition.sql` gỡ. `09f3b38` gộp `f28424c` (#95: H10, sửa `acceptance.html`), không xung đột.
+- **Migration `0002`:** sinh lại bằng `drizzle-kit generate --custom --name state_transition`, không chỉ đổi tên file. Lý do: migrator của drizzle-orm chỉ áp migration có `when` lớn hơn `created_at` của dòng cuối trong sổ. `when` của `0001_state_transition` cũ (1795531337355) nhỏ hơn của `0001_ec09` (1795533919180), nên database đã áp `0001_ec09` sẽ bỏ qua mà không báo lỗi. `0002` có `when` 1795539120471; snapshot `0002` có `prevId` = id snapshot `0001`. Thân SQL là đầu ra của `sires-state-transition-sql` chạy lại sau khi gộp (giống từng byte đầu ra Lần 3).
+- **Test mới** `migration.spec.ts › áp lần lượt 0000 → 0001_ec09 → 0002 trên cùng database`: journal tăng dần theo `idx`. Database mới áp hai migration đầu (thư mục tạm, journal cắt còn hai mục) thì có 0 dòng chuyển trạng thái. Chạy lệnh với đủ migration thì áp đúng 1 migration, tổng 3, 43 dòng khớp khai báo, dump schema bằng database áp một lần, sổ ghi `created_at` bằng `when` từng mục. Đột biến hạ `when` của `0002` về giá trị cũ thì test lỗi.
+- **Timeout:** lần chạy đầu sau khi gộp, 2 test vượt trần mặc định 5 s của vitest trên máy có tải: ca S04 có sẵn `› lệnh migrate trên database rỗng` và ca áp lần lượt mới. Thêm `apps/orchestration/vitest.config.ts` (`testTimeout` 60 s, `hookTimeout` 180 s) như planning, workspace (#88, #89) và quy ước PO 24/11/2026 (G9 của QC Lần 3). Hằng số chung ở `@sires/testing` chưa có trên `main`, nên khai giá trị trực tiếp; đổi sang hằng số khi luồng platform xuất.
+- **AC:** PID-00019-AC01, AC02, AC03 đạt. Ca 1 AC03 khớp câu chữ `acceptance.html` sau H10 (`23514` cho cặp ngoài bảng; `23000` cho cặp xuất phát từ trạng thái mà trigger bất biến đã khóa). Lỗi EC09 của `app.is_actor_ref` đã sửa ở #94; schema dựng từ ba migration vẫn bằng DDL tham chiếu.
+- **Lệnh** (chi tiết ở self-qc.md Lần 4):
+  - `pnpm --filter @sires/orchestration test`: 5 file, **24 passed, 0 todo**, PostgreSQL 16 + pgvector qua Testcontainers.
+  - `nx affected -t lint typecheck test build --base=origin/main`: đạt, chỉ `@sires/orchestration` bị ảnh hưởng.
+  - `check-tracks`: `orchestration, repo`.
+  - `add-license --check`: 0 file thiếu. `update-index --check`: khớp. `git diff --check`: sạch.
+- **Không chạy lại:** dựng image và chạy lệnh migrate trong image (Docker dùng chung với các phiên song song; phụ thuộc, `files`, Dockerfile không đổi; QC Lần 3 đã dựng với cùng thân migration).
+
+### Cần PO
+
+- Không có điểm mới. G8 Lần 3 đã chốt (H10, #95).
+- Vẫn mở từ trước: đề xuất ở mục 6 Lần 1; đề xuất OQ “chủ sở hữu đối tượng do migration tạo” của `qc-report.md`; EC08 (DBQ-01, trước PH-07).
+
+### Việc còn lại
+
+1. PO review PR #90 (đã cập nhật với `main` `f28424c`), QC độc lập xác nhận phần đánh số lại nếu cần, merge.
+2. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
 
 ---
 

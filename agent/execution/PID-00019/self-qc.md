@@ -1,9 +1,9 @@
 # PID-00019 — Self-QC của Dev
 
-**Kết luận:** Đạt — S02, S05 xong (Lần 3, 24/11/2026): 23 test đạt, 0 todo; tự đối chiếu không còn CRITICAL, HIGH; một đề xuất cho PO về câu chữ ca 1 của PID-00019-AC03 với machine `prompt` (G8, MEDIUM)
+**Kết luận:** Đạt — Lần 4 (25/11/2026): gộp `main` có #94 (EC09), migration dòng chuyển trạng thái sinh lại thành `0002`; 24 test đạt, 0 todo; tự đối chiếu không còn CRITICAL, HIGH; G8 (câu chữ ca 1 AC03 với `prompt`) PO đã chốt H10
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 24/11/2026 (Lần 3); Lần 2 21/11/2026; Lần 1 19/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 4); Lần 3 24/11/2026; Lần 2 21/11/2026; Lần 1 19/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -180,6 +180,59 @@ Chạy lại theo `agent/skills/qc/spec-converge-skill` ở chế độ Dev tự
 | G7 (= G8 QC) | S06 | partial | LOW | **Đã sửa**: README mục Migration, State machine, bảng test | `apps/orchestration/README.md` |
 | G8 (mới) | AC03 ca 1 (câu chữ `acceptance.html`: “mỗi machine — check_violation”) | partial | MEDIUM | **Để PO.** Với machine `prompt`, không cặp ngoài bảng nào tới được `prompt_state`: mọi cặp ngoài bảng xuất phát từ trạng thái đã rời Open, và `prompt_answer_once` (`tg_immutable()`, `orchestration.sql:242`–`243`) chạy trước `prompt_state` (`orchestration.sql:430`) theo thứ tự tên trigger, nên database từ chối bằng `23000`. Database xếp trên ticket, spec trong thứ tự nguồn (`docs/tickets/README.md`), nên test ghim hành vi thật của DDL, không đổi DDL. Không có trong `docs/` nào câu cho thấy PO muốn khác | `ddl-behaviour.spec.ts:292`–`:347` (bảng đếm `prompt: 3/0/9`) |
 | G9 (mới) | EC09 (thao tác tay trong image) | partial | LOW | Không dựng lại image ở Lần 3 (lý do ở bảng lệnh). Phụ thuộc, `files`, Dockerfile không đổi; QC độc lập có thể dựng lại nếu muốn | `migrate.spec.ts` |
+
+Không còn CRITICAL, HIGH.
+
+## Lần 4 — 25/11/2026
+
+Người làm: phiên do PO `toilatrung` giao, qua phiên điều phối. Căn cứ: PO chốt thứ tự merge #94 trước #90 (PC-04 A8); nguyên văn PO: “Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01” và “Hãy thực hiện đi nhé!”. Việc: #94 (EC09) thêm `apps/orchestration/migrations/0001_ec09_jsonb_helpers.sql`, trùng số với `0001_state_transition.sql` của PR #90; gộp `main` và sinh lại migration dòng chuyển trạng thái thành `0002`. QC độc lập Lần 3 (`qc-report.md`, commit `2876023`) đã lấy về nhánh trước khi gộp.
+
+### Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git merge --ff-only origin/orchestration/state-transition-rows` | Lấy commit QC `2876023` |
+| `git merge origin/main` (`80a6626`, #94) | Xung đột ở `README.md`, `migrations/meta/_journal.json`, `migrations/meta/0001_snapshot.json` (add/add), `src/db/migrate.spec.ts`, `src/db/migration.spec.ts`. Journal, snapshot `0001` lấy bản của `main`; `0001_state_transition.sql` gỡ; README giữ cả hai dòng migration; test sửa theo ba migration. Commit merge `5c43b37` |
+| `pnpm exec drizzle-kit generate --custom --name state_transition` (trong `apps/orchestration`) | Tạo `0002_state_transition.sql`, `meta/0002_snapshot.json` (`prevId` = id của `0001_snapshot.json`), mục journal `idx` 2, `when` 1795539120471 > 1795533919180 của `0001_ec09`. Kiểm bằng script: chuỗi `prevId` 0000 → 0001 → 0002 đúng, `when` tăng dần |
+| `pnpm install --frozen-lockfile`, `nx run @sires/orchestration:build`, `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` | Đầu ra helper giống từng byte đầu ra Lần 3 (`cmp`); chép vào `0002`, `add-license.mjs` thêm giấy phép; thân file bằng đầu ra helper; cả file `0002` giống từng byte `0001_state_transition.sql` cũ |
+| `git merge origin/main` (`f28424c`, #95: H10, sửa `acceptance.html`) | Không xung đột; commit `09f3b38` |
+| `pnpm --filter @sires/orchestration typecheck`, `lint` | Đạt, 0 lỗi |
+| `pnpm exec vitest run` (lần đầu, chưa có `vitest.config.ts`) | **2 lỗi “Test timed out in 5000ms”**: `migrate.spec.ts › lệnh migrate trên database rỗng` (5 037 ms; Lần 3 là 1,4 s) và ca mới `› áp lần lượt…` (5 070 ms), kèm “Connection terminated unexpectedly” do test bị cắt. Máy có tải lúc chạy (ca 1 mất 4,3 s, Lần 3 1,3 s). Không phải lỗi mã: cùng nguyên nhân #88, #89 |
+| Thêm `apps/orchestration/vitest.config.ts` (`testTimeout` 60 s, `hookTimeout` 180 s, như planning, workspace và quy ước PO 24/11/2026); bỏ trần riêng 60 s của ca 1 | — |
+| `pnpm exec vitest run --reporter=verbose` | **5 file, 24 passed, 0 todo**. Ca `› áp lần lượt 0000 → 0001_ec09 → 0002 trên cùng database` đạt (6,8 s): áp hai migration đầu → 0 dòng chuyển trạng thái; áp đủ thư mục → áp 1, tổng 3, 43 dòng khớp khai báo, dump schema bằng database áp một lần, sổ ghi `created_at` bằng `when` của journal |
+| Thử đột biến: đặt `when` của `0002` về 1795531337355 (giá trị của `0001_state_transition` cũ), chạy `migration.spec.ts`, `migrate.spec.ts`, `git checkout` journal | Ca áp lần lượt lỗi: “0002_state_transition: expected 1795531337355 to be greater than 1795533919180”. Journal đã khôi phục (`when` 1795539120471) |
+| `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` | Đạt: chỉ `@sires/orchestration` (+ 4 task phụ thuộc); test 5 file, 24 passed |
+| `check-tracks.mjs --stdin` (diff với `origin/main` `f28424c` cộng file chưa theo dõi) | `tracks touched: orchestration, repo` |
+| `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép.” |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard 159 task) |
+| `git diff --check origin/main` | Sạch |
+| `git grep "INSERT INTO app.state_transition"` (mã, bỏ chú thích) | Chỉ `migrations/0002_state_transition.sql:54` |
+| Dựng lại image, chạy `node dist/migrate.js` trong image | Không chạy lại — Docker dùng chung với các phiên song song; phụ thuộc, `files`, Dockerfile không đổi; QC Lần 3 đã dựng image với cùng thân migration; `migrate.spec.ts` kiểm journal ba mục và lệnh migrate nạp 43 dòng |
+| `check-pid.mjs PID-00019 --result` (sau khi ghi xong ba file) | “PID-00019: KẾT QUẢ ĐỦ (0 cảnh báo).”, mã 0 |
+
+### AC → test (Lần 4)
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00019-AC01 (cấu trúc) | như Lần 3; `› chạy lại không đổi schema (EC02)` nay đếm 3 migration | Đạt. Dump schema của database dựng từ ba migration bằng DDL tham chiếu (DDL đã có EC09 từ #94) |
+| PID-00019-AC01 (dữ liệu chuyển trạng thái) | `migration.spec.ts › state_transition sinh từ khai báo` (đọc `0002`); `› chuyển ngoài bảng bị từ chối`; mới: `› áp lần lượt 0000 → 0001_ec09 → 0002 trên cùng database` | Đạt |
+| PID-00019-AC02 | như Lần 3 | Đạt |
+| PID-00019-AC03 | `ddl-behaviour.spec.ts` ca 1–9 | Đạt. Ca 1 khớp câu chữ sau H10: ngoài bảng → `23514`; cặp xuất phát từ trạng thái mà trigger bất biến đã khóa → `23000` |
+
+### Tự đối chiếu (spec-converge-skill, Lần 4)
+
+Đối chiếu lại AC (sau H10), S02 (Đầu ra: migration trong `apps/orchestration/migrations/`, không sửa migration đã có), `qc-report.md` Lần 3. Không có `contradicts`: `0001_ec09_jsonb_helpers.sql` của #94 giữ nguyên; migration của PID này là file mới `0002`.
+
+| G | Lần 4 | Bằng chứng |
+| --- | --- | --- |
+| G1, G2, G3, G7 | Đóng (Lần 3; QC Lần 3 xác nhận) | — |
+| G4 | Đóng | — |
+| G5 (EC08) | Còn mở, LOW | — |
+| G6 (unrequested) | Giữ, LOW. Lần 4 thêm `vitest.config.ts` (quy ước timeout PO 24/11/2026, G9 của QC) | `apps/orchestration/vitest.config.ts` |
+| G8 (ca 1 AC03 với `prompt`) | **Đóng**: PO chốt H10, `acceptance.html` sửa ở #95 | `ddl-behaviour.spec.ts:292`–`:347` |
+| G9 (EC09 trong image) | LOW, như Lần 3 | — |
+| G10 (mới, = cảnh báo “Trùng số migration” của QC Lần 3) | **Đã sửa**: `0002` sinh bằng drizzle-kit, `when` lớn hơn `0001_ec09`, snapshot nối `prevId`; test áp lần lượt và kiểm `when` tăng dần | `migrations/meta/_journal.json`; `migration.spec.ts:224` |
+| G9 của QC (quy ước timeout) | Một phần: `vitest.config.ts` khai 60 s/180 s như planning, workspace. Hằng số chung ở `@sires/testing` chưa có trên `main` (luồng platform); khi có thì đổi sang dùng hằng số | `apps/orchestration/vitest.config.ts` |
 
 Không còn CRITICAL, HIGH.
 
