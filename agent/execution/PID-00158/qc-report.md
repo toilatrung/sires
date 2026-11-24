@@ -1,6 +1,6 @@
 # PID-00158 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 2 LOW (G1, G2: chờ PO quyết, không chặn merge) (Lần 1, 21/11/2026)
+**Kết luận mới nhất:** Đã merge (PR #52, `c640182`), kết luận nghiệm thu giữ nguyên — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW: G1, G2 chờ PO ghi vào hồ sơ; G3 mới, file bin thiếu bit thực thi trong git nên cây làm việc trên Linux bẩn sau `pnpm install` (Lần 2, 24/11/2026)
 
 - **Ticket:** [PID-00158](../../../docs/tickets/issues/PID-00158/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -98,6 +98,79 @@ Không còn CRITICAL, HIGH: PO có thể merge PR #52 và nghiệm thu khi đã 
 - **Mục “Phải sửa ở nguồn” của trang ticket** (DR-01 database 13.2, PH-01 dòng platform, kế hoạch luồng 3.1, phụ thuộc PID-00158 ở 8 hồ sơ PID migration) vẫn chờ PO.
 - **CI không kéo service Python khi `sires-common` đổi:** đồ thị Nx ở `b5d859c` không có cạnh `agent-core` → `sires-common`, `knowledge` → `sires-common` (`pnpm nx graph`), nên `nx affected` của PR này (cục bộ và CI) không chạy test của hai service Python. Không chặn PID này (chưa service nào dùng `state_machine`), nhưng PID-00026 sẽ dùng helper từ `knowledge`: đề xuất luồng infra thêm `implicitDependencies` hay plugin Python cho Nx trước PID-00026.
 - **Test ổn định của `@sires/platform`:** `telemetry.spec.ts › span và log cùng mã yêu cầu` dùng thời gian chờ mặc định 5000 ms, lỗi quá thời gian 2/3 lần chạy đầy đủ cục bộ khi nhiều Testcontainers chạy song song (CI đạt; PR này thêm một file Testcontainers vào cùng target). Đề xuất luồng platform tăng `testTimeout` cho file đó ở PID khác.
+
+## Lần 2 — 24/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do phiên điều phối giao (lô QC-B), không mang kết luận của bên làm. Mục đích: kiểm mã đã merge, xem G1, G2 của Lần 1 và các đề xuất đã được xử lý chưa, và chạy lại trên Linux các lệnh mà Lần 1 bị lỗi môi trường Windows.
+
+Mã nguồn:
+- `origin/develop` `083795b`. PR #52 đã vào `main` bằng squash `c640182`, rồi được đồng bộ sang `develop`. QC chạy trên worktree riêng (nhánh `qc/t1xnth-batch-b`).
+- Phần mã của PID này đã đối chiếu: `libs/ts/platform/src/state-machine/`, `libs/ts/platform/bin/`, `libs/py/sires_common/src/sires_common/state_machine.py`, `tests/test_state_machine*.py`, hai README. `git diff b5d859c c640182` và `git diff c640182 083795b` trên các đường dẫn đó đều rỗng: mã trên `develop` trùng commit QC Lần 1 kiểm. Hai commit platform sau đó (#70, #64) không chạm vào các file này.
+- Hồ sơ `docs/tickets/issues/PID-00158/` không có commit nào sau `c640182`.
+
+Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Python 3.12 (`.venv` sau `uv sync --all-packages --frozen`); Docker Engine 29.9.2 cục bộ, image có sẵn `pgvector/pgvector:pg16`. Load average khoảng 2–4.
+
+Kiểm độc lập:
+- **CLI TS:** `node libs/ts/platform/dist/state-machine/cli.js libs/ts/platform/src/state-machine/testdata/state-machines.mjs` cho kết quả trùng `golden.txt` (`cmp`). Hai service đang dùng helper là workspace, planning. Đầu ra của helper trùng file `0001_state_transition.sql` của cả hai (PID-00017, PID-00023 Lần 2).
+- **Đồ thị Nx (đề xuất 3 của Lần 1):** trên `083795b`, `nx graph` đã có cạnh `agent-core → sires-common`, `knowledge → sires-common` và `eval → agent-core, knowledge`. Vì vậy `nx affected` đã kéo service Python khi `sires-common` đổi. Đề xuất này coi như đã xử lý ở nguồn (ngoài PID này).
+- **Chế độ file của bin (mới, G3):** `libs/ts/platform/bin/sires-state-transition-sql.mjs` có shebang `#!/usr/bin/env node`, được khai ở `package.json` `bin`, nhưng git ghi mode `100644`. Khi link bin cho importer (`apps/workspace`, `apps/planning`), pnpm chmod file đích thành 755. Trên Linux, ngay sau `pnpm install` thì cây làm việc đã bẩn. Tái hiện: `git checkout -- libs/ts/platform/bin/sires-state-transition-sql.mjs` (mode 664, `git status` sạch), rồi `pnpm install --frozen-lockfile --offline` (mode 755, `git status` báo ` M libs/ts/platform/bin/sires-state-transition-sql.mjs`, `git diff` chỉ có `old mode 100644 / new mode 100755`). Lần 1 chạy trên Windows, nơi git không theo dõi bit thực thi, nên không thấy.
+
+### Trạng thái khoảng trống của Lần 1
+
+| Mã | Mức | Trạng thái | Bằng chứng | Ghi chú |
+| --- | --- | --- | --- | --- |
+| G1 | LOW | chưa có quyết định ghi vào hồ sơ | `libs/ts/platform/src/state-machine/index.ts:8`–`31`; spec 4.2 chưa có các tên `STATE_MACHINE_ACTORS`, `MACHINE_NAME_PATTERN`, `STATEMENT_BREAKPOINT`, `STATE_MACHINES_EXPORT` (`grep` trên `specs/index.html`: không có) | PR đã merge với các export này. Theo quy tắc 1.4.5, chúng giờ là API phải giữ tương thích: helper đã được workspace và planning dùng. Còn lại: PO bổ sung bảng 4.2 |
+| G2 | LOW | chưa có quyết định ghi vào hồ sơ | `define.ts:53`, `:89`–`91`; `state_machine.py:97`, `:116`–`117`; spec 4.7 và AC02 chưa có ca surrogate lẻ (`grep -i surrogate`: không có) | Mã giữ nguyên; còn lại là việc hồ sơ |
+
+### Khoảng trống mới
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G3 | PID-00158-AC06 · O3 (bin chạy được qua `pnpm exec`) · S04 | partial | LOW | `libs/ts/platform/bin/sires-state-transition-sql.mjs:1` (shebang) và `git ls-files -s` → `100644`; `libs/ts/platform/package.json:8`–`10` (`bin`) | Lệnh vẫn chạy đúng, vì pnpm tự chmod, nên AC06 vẫn đạt. Hệ quả: mọi máy Linux, WSL và CI Linux có cây làm việc bẩn sau `pnpm install`. Một lần `git add -A` vô ý là đưa đổi mode của luồng platform vào PR của luồng khác (`check-tracks` sẽ báo chạm `platform`). Sửa: `git update-index --chmod=+x libs/ts/platform/bin/sires-state-transition-sql.mjs`, một PR nhỏ của luồng platform |
+
+Không có CRITICAL, HIGH, không có `contradicts`.
+
+### AC
+
+Sáu AC giữ kết luận đạt của Lần 1. QC chạy lại trên Linux:
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00158-AC01–AC03, AC05 (phần đơn vị) | đạt | test đơn vị TS, Python | `check.spec.ts`, `define.spec.ts`, `sql.spec.ts`; `test_state_machine.py` | Đạt: TS 63/63 (5 file state-machine); Python 53/53 (3 file) |
+| PID-00158-AC04, AC05 (database) | đạt | PostgreSQL 16 thật (Testcontainers) | `ddl.pg.spec.ts`; `test_state_machine_pg.py` | Đạt, nằm trong hai con số trên; pytest `-rs` không có skip |
+| PID-00158-AC06 | đạt (G3 LOW) | test đơn vị + thao tác tay | `cli.spec.ts`; `test_state_machine_cli.py` | Đạt; CLI TS in đúng `golden.txt`. Bin cần pnpm chmod mới có quyền thực thi (G3) |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt; sau lệnh, `libs/ts/platform/bin/sires-state-transition-sql.mjs` đổi mode (G3) |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63 |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169. Lần 1 có `telemetry.spec.ts` quá hạn trên Windows; lần này không tái hiện (máy ít tải) |
+| `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip |
+| `pnpm nx run sires-common:test --skip-nx-cache` | Đạt: 132 passed, 2 warnings. Lần 1 có 3 lỗi MAX_PATH trên Windows; trên Linux không còn lỗi này, trùng con số CI |
+| `pnpm nx run-many -t lint typecheck -p sires-common @sires/platform --skip-nx-cache` | Đạt |
+| `node libs/ts/platform/dist/state-machine/cli.js …/testdata/state-machines.mjs \| cmp - …/testdata/golden.txt` | Trùng |
+| `pnpm nx graph --file=…` | Có cạnh `agent-core`, `knowledge` → `sires-common` |
+| `git checkout` file bin, rồi `pnpm install --frozen-lockfile --offline`, rồi `git status` | Tái hiện G3 (chi tiết ở mục Kiểm độc lập). QC đã khôi phục mode trước khi commit báo cáo; không commit đổi mode |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | Sạch (chạy chung lô với PID-00017) |
+| `check-tracks.mjs`, fuzz TS/Python của Lần 1 | Không chạy: mã đã merge và không đổi. Lần 1 đã chạy fuzz trên đúng mã này |
+
+### Lệch với Self-QC
+
+Không có điểm mới. Các điểm lệch về `pnpm-lock.yaml` và số project của Lần 1 vẫn đúng; `report.md`, `self-qc.md` chưa được cập nhật.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. Đặt mode `100755` cho `libs/ts/platform/bin/sires-state-transition-sql.mjs` (G3). PR nhỏ của luồng platform vào `develop`.
+2. PO ghi quyết định G1 (bổ sung bảng 4.2) và G2 (ca surrogate lẻ ở spec 4.7, AC02) vào hồ sơ bằng spec-docs-skill. Không cần sửa mã.
+3. Không bắt buộc: Dev cập nhật `report.md` dòng S03 và `self-qc.md` mục 1, G3 cho đúng diff (Lệch với Self-QC của Lần 1).
+
+### Đề xuất cho PO
+
+1. Đề xuất “CI không kéo service Python khi `sires-common` đổi” của Lần 1 đã được xử lý ở nguồn: đồ thị Nx trên `develop` đã có cạnh. PO có thể bỏ khỏi danh sách theo dõi.
+2. Các đề xuất về hồ sơ của Lần 1 (spec 4.2, 4.7, AC02, đường dẫn bin ở O3, spec 2.2 và O6 đã cũ) và mục “Phải sửa ở nguồn” (DR-01, PH-01, kế hoạch luồng 3.1) chưa có thay đổi ở `docs/`, giữ nguyên.
+3. Đề xuất cuối của Lần 1 về timeout của `telemetry.spec.ts` nằm cùng nhóm với G1 của PID-00017 và PID-00023 (test dùng container không đặt timeout). Nên chốt chung một quy ước.
 
 ---
 
