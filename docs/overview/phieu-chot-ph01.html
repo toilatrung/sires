@@ -59,7 +59,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <main id="main-content">
 <p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
 <h1>Phiếu chốt hoàn tất PH-01 (24/11/2026)</h1>
-<p class="meta">Số phiếu: PC-04 · Lập 24/11/2026 theo yêu cầu PO · Trạng thái: đã chốt, chờ PO xem lại · Nguồn: <a href="../docs_context.md">docs_context.md</a> (nhật ký 24/11/2026), <a href="../database/sections/13-decisions-risks-and-open-issues.html">database 13</a>, <a href="../tickets/issues/PID-00019/index.html">PID-00019</a> mục 5 · 14 mục: 9 chốt theo đề xuất, 5 PO chọn trực tiếp</p>
+<p class="meta">Số phiếu: PC-04 · Lập 24/11/2026 theo yêu cầu PO · Trạng thái: đã chốt, chờ PO xem lại · Nguồn: <a href="../docs_context.md">docs_context.md</a> (nhật ký 24/11/2026), <a href="../database/sections/13-decisions-risks-and-open-issues.html">database 13</a>, <a href="../tickets/issues/PID-00019/index.html">PID-00019</a> mục 5 · 17 mục: 12 chốt theo đề xuất (A10–A12 thêm 25/11/2026), 5 PO chọn trực tiếp</p>
 <div class="note"><p><strong>Bối cảnh.</strong> Ngày 24/11/2026 PO chuyển các PID PH-01 chưa xong sang <code>toilatrung</code> và giao hoàn tất các PR còn dở để xong PH-01. Trong phiên, PO chọn trực tiếp một số điểm (nhóm B). Với các điểm còn lại, PO ủy quyền: “Hãy cứ chốt theo đề xuất của bạn, rồi xuất ra phiếu chốt (PC) để tôi theo dõi sau khi còn việc hoàn tất” (nhóm A). Mọi mục đã được áp dụng hoặc đang được áp dụng theo phương án đang chọn trên phiếu. PO xem lại; muốn đổi mục nào thì chọn phương án khác hoặc ghi ở ghi chú rồi xuất phiếu gửi lại, và việc đã làm theo mục đó sẽ được sửa theo.</p></div>
 <div class="note no-print"><p>Mỗi mục đã được chọn sẵn phương án đã áp dụng (nhãn <strong>Đã chốt</strong>). Nhãn <strong>Đề xuất</strong> đánh dấu đề xuất của người lập phiếu; ở nhóm B có mục PO chọn khác đề xuất. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
 
@@ -91,6 +91,13 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <li>Cổng ra PH-01: PO duyệt baseline hợp đồng; máy Home Lab sẵn sàng cho staging (OQ-108).</li>
 <li>Ghi các quyết định A2–A5 vào mục 5 hồ sơ PID-00002, PID-00003, PID-00006 (chưa làm).</li>
 <li>Phát hiện của QC #94, có từ trước: <code>is_actor_ref</code> vẫn nhận agent khác <code>analysis</code> có <code>instance</code> khác A/B (ví dụ <code>C</code>), trong khi bản TS (<code>envelope.ts</code>) và Python (<code>schemas.py</code>) từ chối. Chưa chốt.</li>
+<li>PID-00004 (QC Lần 1, PR #101): sửa lệnh kiểm <code>@sires/platform:test</code> thành <code>@sires/testing:test</code> ở 11 dòng hồ sơ; có đặt <code>EventEnvelope</code> sinh làm kiểu mặc định của <code>FakeBroker</code> không (G4 MEDIUM); làm rõ quy tắc 1.4.7 về thêm mục pnpm catalog trong PR của ticket (PR #20, #30, #34 đã làm); có ghim digest image test cùng compose trong PH-01 không.</li>
+<li>PID-00029 (QC Lần 1–2): <code>inputs: []</code> có hợp lệ theo PRD 18.3 không; có siết các kiểm lỏng (<code>location ? 'page'</code>, phần tử mảng của <code>is_versioned_refs</code>, researcher có <code>accountId: null</code>) không; FORCE RLS áp cả owner với migration dữ liệu sau này.</li>
+<li>PID-00030 (QC Lần 1): <code>manuscript.sql:144</code> không chặn INSERT thẳng Accepted khi base lỗi thời; <code>:180</code> không chặn UPDATE <code>reference_id</code> sang Reference không Trusted — cho PID-00079, PID-00095.</li>
+<li>PID-00026 (QC Lần 1): xác nhận extension <code>vector</code> do hạ tầng tạo sẵn (PID-00159-AC04, PID-00011-AC02) là điều kiện trước Job migration knowledge ở PID-00035.</li>
+<li>PID-00009: G16 (EC15/S11, image smoke khi chỉ đổi chart) chờ PO; G20, G21 của luồng contracts.</li>
+<li>Repo: thêm <code>*.sql text eol=lf</code> vào <code>.gitattributes</code> để migrate từ checkout Windows không sinh thân hàm có CR (QC PR #82).</li>
+<li>PR #85: T1xNTH chuyển kết quả tự rà sang <code>self-qc.md</code> theo A7; PR #63 (PID-00014) chờ PR DDL của T1xNTH (B3); PID-00016 do T1xNTH làm nốt.</li>
 <li>PID-00065: ghi vào hồ sơ là <code>23000</code> và <code>23514</code> từ DDL phải ra cùng một lỗi API (nhận xét của QC #90 về H10).</li>
 </ul>
 <h2 class="print-only">Xác nhận</h2>
@@ -121,6 +128,9 @@ const R = {
   pr38: ['PR #38', GH + '38'], pr63: ['PR #63', GH + '63'], pr66: ['PR #66', GH + '66'], pr82: ['PR #82', GH + '82'],
   pr85: ['PR #85', GH + '85'], pr86: ['PR #86', GH + '86'], pr87: ['PR #87', GH + '87'], pr90: ['PR #90', GH + '90'],
   pr92: ['PR #92', GH + '92'], pr94: ['PR #94', GH + '94'],
+  pr91: ['PR #91', GH + '91'], pr97: ['PR #97', GH + '97'], pr98: ['PR #98', GH + '98'],
+  p09: ['PID-00009', '../tickets/issues/PID-00009/index.html'],
+  dbq11: ['DBQ-11', '../database/sections/13-decisions-risks-and-open-issues.html#dbq-11'],
 };
 const BASIS_A = 'Chốt theo đề xuất (PO ủy quyền 24/11/2026)';
 const BASIS_B = 'PO chọn trong phiên 24/11/2026';
@@ -174,6 +184,22 @@ const GROUPS = [
    ctx:'Ba PID migration này chép 00-common.sql vào migration đầu. Nếu làm trước khi #94 vào main, chúng chép bản còn lỗi EC09 và phải sửa lại.',
    q:'Khi nào bắt đầu PID-00024, PID-00026, PID-00030?',
    opts:['Ngay sau khi #94 vào main, chép bản 00-common.sql đã sửa.', 'Bắt đầu ngay, gộp nhánh của #94.', 'Để sau, không tính vào lô hoàn tất PH-01 hôm nay.'], rec:0, chosen:0},
+ {id:'A10', kind:'Quyết định', basis:BASIS_A, refs:['p24','p25','pr98','pr38'], impact:'apps/library (parser BibTeX, RIS); kiến trúc 2.3',
+   ctx:'PID-00024 S04–S07 cần thư viện parser. Báo cáo nháp SPK-03 (PID-00025, PR #38) đề xuất Citation.js 0.9.0 (@citation-js/core, plugin-bibtex, plugin-ris, MIT) cho cả hai định dạng. Kiến trúc 2.3 nêu @retorquere/bibtex-parser nhưng SPK-03 chưa thử thư viện này; PC-03 chưa chốt.',
+   q:'PID-00024 dùng parser nào?',
+   opts:['Citation.js 0.9.0, tạm thời: đặt sau adapter trong apps/library (mã nghiệp vụ không import thẳng thư viện), chỉ nạp hai plugin định dạng, validation riêng; đổi được khi SPK-03 chính thức kết luận khác.',
+     '@retorquere/bibtex-parser cho BibTeX, tự viết parser RIS.',
+     'Chặn S04–S07 tới khi PR #38 merge.'], rec:0, chosen:0},
+  {id:'A11', kind:'Quyết định', basis:BASIS_A, refs:['dbq11','p30','pr97'], impact:'manuscript.sql và migration đầu của manuscript (PR #97); DBQ-11',
+   ctx:'change_proposal_accept_ck ra NULL khi citation_check_passed là NULL, CHECK coi là đạt nên Change Proposal lên Accepted khi chưa chạy citation check (EC10 của PID-00030 đỏ); cùng loại EC09.',
+   q:'Sửa CHECK thế nào?',
+   opts:['citation_check_passed IS TRUE AND approval IS NOT NULL; sửa ngay trong PR #97 vì manuscript.sql chưa có bản sao ở migration đã merge; ghi DBQ-11 mở và đóng 25/11/2026.',
+     'Giữ test đỏ, PID-00030 Bị chặn tới khi PO sửa DDL ở PR riêng.'], rec:0, chosen:0},
+  {id:'A12', kind:'Quyết định', basis:BASIS_A, refs:['p09','pr91'], impact:'nx.json (luồng infra); cache CI',
+   ctx:'G19 (HIGH) của PID-00009: mã hợp đồng sinh từ docs/api-design không nằm trong hash Nx của các task dùng nó, nên PR làm hỏng consumer qua hợp đồng có thể xanh nhờ cache.',
+   q:'Đưa mã sinh ra vào hash Nx bằng cách nào?',
+   opts:['(b) Luồng infra: namedInputs.default của nx.json gồm đầu ra của mọi task phụ thuộc (kể cả gián tiếp), làm trong PR #91; kiểm hash đổi khi đổi schema và cache vẫn trúng khi không đổi.',
+     '(a) Luồng contracts khai docs/api-design/**/*.yaml vào namedInputs.default của libs/ts/contracts; luồng platform thêm vào inputs của sires-common:test.'], rec:0, chosen:0},
  ]},
  {title:'B. PO chọn trực tiếp trong phiên', note:'Ghi lại để theo dõi cùng phiếu. Phương án đã chốt là lựa chọn của PO; nhãn Đề xuất là đề xuất lúc hỏi.', items:[
   {id:'B1', kind:'Phân công', basis:BASIS_B, refs:['tb','ph01'], impact:'Sổ task-registry; DEC-58 cho PH-02 trở đi giữ nguyên',
