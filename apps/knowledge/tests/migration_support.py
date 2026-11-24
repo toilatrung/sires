@@ -45,6 +45,8 @@ def revision_module(stem: str) -> ModuleType:
 def alembic_config(dsn: str) -> Config:
     config = Config(str(ALEMBIC_INI))
     config.attributes["dsn"] = dsn
+    # In-process run: keep pytest's logging, do not load the [loggers] of alembic.ini (migrations/env.py).
+    config.attributes["configure_logger"] = False
     return config
 
 

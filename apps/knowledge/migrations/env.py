@@ -8,12 +8,17 @@ The DSN is the migrator role's, from `DATABASE_MIGRATOR_URL` (`postgresql://…`
 tests may pass it as `Config.attributes["dsn"]`. `alembic_version` stays in the default schema (`public`), outside
 `app`, `replica` and `vec`, so neither `app.grant_standard` nor the GRANTs on schema `vec` reach it and the schema
 comparison leaves it out (EC05).
+
+Run as a command (Job migration, Dev), the logging of `alembic.ini` is loaded, so each revision applied is printed on
+stderr (`Running upgrade …`); a run at head prints none. Callers that drive Alembic in-process (tests) set
+`Config.attributes["configure_logger"] = False` to keep their own logging setup (Alembic cookbook).
 """
 
 from __future__ import annotations
 
 import asyncio
 import os
+from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.engine import Connection
@@ -51,6 +56,8 @@ async def _run_online() -> None:
         await engine.dispose()
 
 
+if context.config.config_file_name is not None and context.config.attributes.get("configure_logger", True):
+    fileConfig(context.config.config_file_name, disable_existing_loggers=False)
 if context.is_offline_mode():
     raise SystemExit("knowledge không hỗ trợ alembic --sql: revision chạy SQL của DDL trực tiếp trên database")
 asyncio.run(_run_online())

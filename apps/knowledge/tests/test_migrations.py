@@ -23,9 +23,11 @@ from migration_support import (
     SERVICE_DB,
     VALUES_YAML,
     VERSIONS_DIR,
+    Snapshot,
     catalog_rows,
     ddl,
     downgrade,
+    fetch,
     fetchval,
     revision_module,
     schema_diff,
@@ -171,6 +173,89 @@ async def test_missing_roles_rolls_back(sires_postgres: PostgresServer, empty_db
     assert await version(dsn) is None
 
 
+# Database 3.2: the owner owns the schema and runs the DDL without logging in; the migrator logs in, is a member of the
+# owner with `SET role` owner at login, and has no privilege of its own. Roles are cluster-wide: create them once.
+OWNER = "sires_knowledge_owner"
+MIGRATOR = "sires_knowledge_migrator"
+_MIGRATOR_ROLES_SQL = f"""
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{OWNER}') THEN
+    CREATE ROLE "{OWNER}" NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '{MIGRATOR}') THEN
+    CREATE ROLE "{MIGRATOR}" LOGIN PASSWORD 'migrator' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS
+      IN ROLE "{OWNER}";
+  END IF;
+END $$;
+ALTER ROLE "{MIGRATOR}" SET role = '{OWNER}';
+"""
+
+
+def _without_owner(snapshot: Snapshot) -> Snapshot:
+    """The owner holds every privilege on its own objects; the DDL database is owned by the superuser instead."""
+    return {aspect: {row for row in rows if OWNER not in row} for aspect, rows in snapshot.items()}
+
+
+async def test_migrator_role_needs_vector_preinstalled(sires_postgres: PostgresServer, ddl_db: ServiceDatabase) -> None:
+    """QC Lần 1 G1, EC01, EC09: the revisions run as sires_knowledge_migrator of database 3.2 on a database owned by
+    sires_knowledge_owner. pgvector is not a trusted extension: without `vector` created beforehand by a superuser,
+    CREATE EXTENSION is refused and nothing remains; with it, the revisions run to head (twice), the schema matches the
+    DDL and every object belongs to the owner. `ddl_db` also makes sure the roles _app, _system, _purge exist."""
+    bare, ready = (f"sires_knowledge_migrator_{kind}_{secrets.token_hex(4)}" for kind in ("bare", "ready"))
+    admin = await asyncpg.connect(sires_postgres.dsn())
+    try:
+        await admin.execute(_MIGRATOR_ROLES_SQL)
+        for name in (bare, ready):
+            await admin.execute(f'CREATE DATABASE "{name}" OWNER "{OWNER}"')
+    finally:
+        await admin.close()
+    # What the infrastructure does before the Job migration (PID-00159-AC04 locally, PID-00011-AC02 on staging).
+    superuser = await asyncpg.connect(sires_postgres.dsn(database=ready))
+    try:
+        await superuser.execute("CREATE EXTENSION vector")
+    finally:
+        await superuser.close()
+
+    def migrator(name: str) -> str:
+        return sires_postgres.dsn(user=MIGRATOR, password="migrator", database=name)
+
+    # The session of the migrator runs as the owner (ALTER ROLE … SET role), without superuser rights.
+    assert await fetchval(migrator(bare), "SELECT current_user") == OWNER
+    assert await fetchval(migrator(bare), "SELECT rolsuper FROM pg_roles WHERE rolname = current_user") is False
+
+    # Without `vector`: refused by PostgreSQL, the whole transaction rolls back.
+    with pytest.raises((asyncpg.PostgresError, sqlalchemy.exc.DBAPIError)) as refused:
+        await upgrade(migrator(bare))
+    assert 'permission denied to create extension "vector"' in str(refused.value)
+    dsn = migrator(bare)
+    assert await fetchval(dsn, "SELECT count(*) FROM pg_namespace WHERE nspname IN ('app', 'replica', 'vec')") == 0
+    assert await fetchval(
+        dsn, "SELECT count(*) FROM pg_extension WHERE extname IN ('pgcrypto', 'unaccent', 'pg_trgm', 'vector')"
+    ) == 0
+    assert await version(dsn) is None
+
+    # With `vector` created by a superuser: CREATE EXTENSION IF NOT EXISTS skips it and the revisions run to head.
+    dsn = migrator(ready)
+    for _ in range(2):
+        await upgrade(dsn)
+    assert await version(dsn) == HEAD
+    assert schema_diff(_without_owner(await schema_snapshot(dsn)), await schema_snapshot(ddl_db.owner_dsn)) == {}
+    assert await catalog_rows(dsn) == await catalog_rows(ddl_db.owner_dsn)
+    assert len(await state_transition_rows(dsn)) == 7
+    owners = await fetch(
+        dsn,
+        """SELECT 'schema' AS kind, pg_get_userbyid(nspowner) AS owner FROM pg_namespace
+             WHERE nspname IN ('app', 'replica', 'vec')
+           UNION SELECT 'relation', pg_get_userbyid(c.relowner) FROM pg_class c
+             JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname IN ('app', 'replica', 'vec', 'public')
+           UNION SELECT 'function', pg_get_userbyid(p.proowner) FROM pg_proc p
+             JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'app'""",
+    )
+    assert {(row["kind"], row["owner"]) for row in owners} == {
+        ("schema", OWNER), ("relation", OWNER), ("function", OWNER)
+    }
+
+
 async def test_downgrade_refused(sires_postgres: PostgresServer, revision_db: ServiceDatabase) -> None:
     """EC02: downgrade below the first revision fails clearly and drops nothing (forward only)."""
     # From head: the first step down (0002) already refuses, whatever the target.
@@ -256,16 +341,22 @@ def _migration_command() -> list[str]:
 
 async def test_migrate_command(empty_db: ServiceDatabase) -> None:
     """S03, EC03, EC09: the exact `migration.command` of deploy/values.yaml, from the repository root (the image's
-    /repo), with the migrator DSN in DATABASE_MIGRATOR_URL; run twice."""
+    /repo), with the migrator DSN in DATABASE_MIGRATOR_URL; run twice. QC Lần 1 G2: the Job's log shows each revision
+    applied on the first run and none on the second."""
     command = _migration_command()
     assert shutil.which(command[0]), f"{command[0]} không có trên PATH: chạy test qua uv như knowledge:test"
     env = {**os.environ, "DATABASE_MIGRATOR_URL": empty_db.owner_dsn}
     dsn = empty_db.owner_dsn
     snapshots = []
+    logs = []
     for _ in range(2):
         result = subprocess.run(command, cwd=REPO_ROOT, env=env, capture_output=True, text=True, timeout=300)
         assert result.returncode == 0, result.stderr
+        logs.append(result.stderr)
         snapshots.append((await schema_snapshot(dsn), await catalog_rows(dsn), await state_transition_rows(dsn)))
+    assert "Running upgrade  -> 0001" in logs[0] and "Running upgrade 0001 -> 0002" in logs[0], logs[0]
+    assert "Running upgrade" not in logs[1], logs[1]
+    assert empty_db.owner_dsn not in logs[0] + logs[1]
     assert OWN_TABLES | {REPLICA_PROJECT_STATE} | PLATFORM_TABLES <= tables(snapshots[0][0])
     assert schema_diff(snapshots[1][0], snapshots[0][0]) == {}
     assert snapshots[1][1:] == snapshots[0][1:]

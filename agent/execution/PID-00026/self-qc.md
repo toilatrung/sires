@@ -1,9 +1,9 @@
 # PID-00026 — Self-QC của Dev
 
-**Kết luận:** Đạt — 16/16 test của `apps/knowledge/tests/` đạt trên Linux (container uv, PostgreSQL 16.15 + pgvector 0.8.7 qua Testcontainers); `knowledge:test` qua Nx trên Windows 37 đạt, 2 bỏ qua (gồm test spike); ruff, `mypy src`, `mypy src migrations tests` sạch; `check-charts.mjs` đạt; EC09 đạt trong image production; tự đối chiếu không còn CRITICAL, HIGH
+**Kết luận:** Đạt (Lần 2, 25/11/2026, sửa theo QC độc lập Lần 1) — 17/17 test của `apps/knowledge/tests/` đạt trên Linux (container uv, PostgreSQL 16.15 + pgvector 0.8.7 qua Testcontainers), gồm test mới chạy revision bằng vai trò migrator của database 3.2; ruff, `mypy src`, `mypy src migrations tests` sạch; không còn CRITICAL, HIGH. Lần 1: 16/16, `knowledge:test` qua Nx trên Windows 37 đạt, 2 bỏ qua, `check-charts.mjs` đạt, EC09 đạt trong image production
 
-- **Ticket:** [PID-00026](../../../docs/tickets/issues/PID-00026/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 25/11/2026
+- **Ticket:** [PID-00026](../../../docs/tickets/issues/PID-00026/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md) · **QC độc lập:** [qc-report.md](qc-report.md)
+- **Cập nhật:** 25/11/2026 (Lần 2); Lần 1 25/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -89,6 +89,58 @@ Chế độ Dev tự QC, 25/11/2026: một agent đọc độc lập (không nh�
 | G4 | unrequested | LOW | `alembic.ini` có mục logging nhưng `env.py` không gọi `fileConfig`; Job thành công không in gì | `apps/knowledge/alembic.ini`, `migrations/env.py` | Giữ như agent-core; lý do ghi `implement.md` mục 3. PO quyết nếu muốn log ở Job (sửa cả hai service) |
 | G5 | unrequested | LOW | File ngoài danh sách Đầu ra: `tests/conftest.py`, `tests/migration_support.py`, `tests/test_skeleton.py`, `alembic.ini`, gói `domain/`; `types-pyyaml` chỉ dùng khi chạy `mypy src migrations tests` | `apps/knowledge/` | Để PO biết; đều phục vụ slice (S02 cho phép gói mới; `alembic.ini` là cấu hình Alembic của O1) |
 | G6 | partial | MEDIUM | Chưa có kết quả `check-charts.mjs`, thao tác tay EC09, phiên bản pgvector (EC01), cờ luồng của `uv.lock` | S03 mục Kiểm; ticket mục 8 | Sửa: đã chạy và ghi ở mục 1, mục 3 và `report.md` |
+
+## Lần 2 — 25/11/2026
+
+Sửa theo QC độc lập Lần 1 ([qc-report.md](qc-report.md): 0 CRITICAL, 0 HIGH; G1 MEDIUM, G2, G3 LOW). Môi trường như Lần 1 (container `ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim`, worktree mount ở `/repo`, Testcontainers `pgvector/pgvector:pg16` = PostgreSQL 16.15, pgvector 0.8.7). Nhánh đã gộp nhanh tới `cf70e03` (qc-report); `origin/main` không có commit mới sau `eafd885`.
+
+### Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `uv sync --all-packages --locked` (container) | đạt — `uv.lock` không đổi |
+| `ruff check --no-cache .` (`apps/knowledge`, lệnh của `knowledge:lint`) | `All checks passed!` |
+| `mypy src` (lệnh của `knowledge:typecheck`); `mypy src migrations tests` | `Success: no issues found in 8 source files`; `… in 17 source files` |
+| `pytest tests -rA -p no:cacheprovider` (`apps/knowledge`) | **17 passed** (111 s), gồm `test_migrator_role_needs_vector_preinstalled` mới và `test_migrate_command` có kiểm log |
+| `pytest` toàn `knowledge:test` (gồm `spikes/`) | không chạy lại — Lần 2 chỉ đổi `migrations/env.py`, `tests/`, README; spike không dùng chúng; Lần 1 37 đạt, 2 bỏ qua; CI job `python` chạy lại trên PR |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `git diff --check` | sạch |
+| `check-tracks.mjs --stdin` (thay đổi của nhánh và của Lần 2) | `tracks touched: knowledge, repo` |
+| `node scripts/docs/update-index.mjs --check` | khớp (159 PID, taskboard 159 task) |
+| `check-pid.mjs PID-00026 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)`, có `qc-report.md` |
+
+### AC → test (Lần 2)
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00026-AC01 (cấu trúc, dòng danh mục) | `test_schema_matches_ddl`, `test_upgrade_twice`, `test_missing_roles_rolls_back`, `test_downgrade_refused`; thêm `test_migrator_role_needs_vector_preinstalled` (revision chạy bằng migrator, schema khớp DDL) | đạt |
+| PID-00026-AC01 (dữ liệu chuyển trạng thái) | `test_state_transitions_from_declaration`, `test_transition_outside_table_rejected` | đạt |
+| PID-00026-AC02 | `apps/knowledge/tests/test_ddl_behaviour.py` (6 test) | đạt |
+
+### Edge case thay đổi
+
+| # | Trạng thái | Cách giải quyết (test) hoặc lưu ý |
+| --- | --- | --- |
+| EC01 | Cần lưu ý (ghi rõ điều kiện) | Chạy bằng migrator của database 3.2 thì extension `vector` phải do superuser tạo sẵn: `test_migrator_role_needs_vector_preinstalled` kiểm cả ca thiếu (`permission denied to create extension "vector"`, rollback hết) và ca có sẵn (chạy tới `0002` hai lần, schema khớp DDL, mọi đối tượng thuộc `sires_knowledge_owner`). README mục Migration ghi điều kiện tiên quyết; hạ tầng: PID-00159-AC04, PID-00011-AC02, trước PID-00035. DBQ-01 (managed) vẫn mở |
+| EC09 | Đã giải quyết | Thêm: `test_migrate_command` kiểm lần chạy đầu in `Running upgrade  -> 0001` và `Running upgrade 0001 -> 0002`, lần hai không in, log không chứa DSN |
+| Mới — fixture chỉ trả DSN superuser | Cần lưu ý | `create_service_database` không tạo owner, migrator; test migrator của knowledge tự tạo. Đề xuất PID luồng platform (QC đề xuất 2) |
+
+### Tự kiểm
+
+- [x] Mọi việc QC giao đã làm và chạy lệnh ở trên: G1 (README, `report.md` EC01, test migrator), G2 (log), gộp `main` (không có gì mới).
+- [x] Không sửa DDL, `docs/`, `libs/py/sires_common`, Dockerfile, migration đã có (`0001`, `0002` không đổi).
+- [x] Không còn mã gỡ lỗi; test mới có tên theo việc kiểm.
+
+### Tự đối chiếu (Lần 2)
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| QC G1 | partial | MEDIUM | Migration bằng migrator cần `vector` tạo sẵn; README, `report.md` chưa ghi | `apps/knowledge/README.md` mục Migration; `report.md` Lần 2 | Sửa, có test |
+| QC G2 | partial | LOW | Job migration không in log | `migrations/env.py`; `test_migrate_command` | Sửa (riêng knowledge; agent-core là luồng khác) |
+| QC G3 | partial | LOW | EC04 đổi tên vai trò trên container chung | `implement.md` mục 3 | Giữ, đã ghi điều kiện chạy tuần tự |
+| G7 | partial | LOW | Test migrator tạo vai trò `sires_knowledge_owner`, `sires_knowledge_migrator` cấp cụm trong container của phiên pytest và để lại sau test (không ảnh hưởng test khác: chúng dùng DSN superuser) | `test_migrations.py` | Ghi nhận; container chỉ sống trong phiên pytest |
+
+Không còn CRITICAL, HIGH.
 
 ---
 
