@@ -53,7 +53,7 @@ export function servicePublicKeys(keys: Partial<Record<ServiceName, KeyObject | 
   for (const [kid, key] of Object.entries(keys) as Array<[ServiceName, KeyObject | JsonWebKey | undefined]>) {
     if (!isServiceName(kid)) throw new TypeError(`servicePublicKeys: kid “${kid}” is not a service name`);
     if (!key) continue;
-    const publicKey = isKeyObject(key) ? (key.type === 'private' ? createPublicKey(key) : key) : publicFromJwk(key);
+    const publicKey = isKeyObject(key) ? (key.type === 'private' ? createPublicKey(key) : key) : publicFromJwk(key, kid);
     assertP256(publicKey, 'public', kid);
     map.set(kid, publicKey);
   }
@@ -72,6 +72,10 @@ export function servicePublicKeysFromJwks(jwks: ServiceJwks | string): ServicePu
     const jwk = item as ServiceJwks['keys'][number];
     if (!isServiceName(jwk.kid)) throw new TypeError(`servicePublicKeysFromJwks: kid “${String(jwk.kid)}” is not a service name`);
     if (keys[jwk.kid]) throw new TypeError(`servicePublicKeysFromJwks: kid “${jwk.kid}” appears twice`);
+    if ('d' in jwk) {
+      // A private key in the shared key set would be handed to every service: refuse it, never quote it.
+      throw new TypeError(`servicePublicKeysFromJwks: kid “${jwk.kid}” is a private JWK (has "d"); a JWKS holds public keys only`);
+    }
     keys[jwk.kid] = jwk;
   }
   return servicePublicKeys(keys);
@@ -210,8 +214,9 @@ function keySet(privateKeys: Map<ServiceName, KeyObject>) {
   };
 }
 
-function publicFromJwk(jwk: JsonWebKey): KeyObject {
-  // Never keep a private part handed in by mistake.
+function publicFromJwk(jwk: JsonWebKey, kid: string): KeyObject {
+  // A private JWK where a public key is expected is a configuration mistake that leaks the key: refuse it.
+  if ('d' in jwk) throw new TypeError(`servicePublicKeys: key of “${kid}” is a private JWK (has "d"); public keys only`);
   const { kty, crv, x, y } = jwk;
   return createPublicKey({ key: { kty, crv, x, y }, format: 'jwk' });
 }
