@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Luồng:** `research` · **Giai đoạn:** PH-01
 - **Người làm:** `toilatrung` (PO giao lại 24/11/2026); Lần 4 do phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhhhhh2003` (Lần 1–3)
-- **Nhánh:** `research/pid-00029-migration` · **PR:** [#82](https://github.com/toilatrung/sires/pull/82) — Draft, chờ QC độc lập; **phụ thuộc PR [#94](https://github.com/toilatrung/sires/pull/94)** (phải merge #94 trước)
+- **Nhánh:** `research/pid-00029-migration` · **PR:** [#82](https://github.com/toilatrung/sires/pull/82) — Draft, chờ QC độc lập; phụ thuộc PR [#94](https://github.com/toilatrung/sires/pull/94) **đã thỏa** (#94 vào `main` `80a6626`)
 - **Cập nhật:** 24/11/2026 (Lần 4; kết quả mới nhất ở cuối file)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -39,7 +39,7 @@ assertion phải từ chối, không đổi thành expected failure hoặc bỏ 
 
 ## 4. Việc còn lại
 
-Hiện tại (Lần 4): PO merge PR #94 vào `main` trước, rồi QC độc lập Lần 2 trên PR #82
+Hiện tại (Lần 4): PR #94 đã vào `main` (`80a6626`); còn QC độc lập Lần 2 trên PR #82
 (`spec-converge-skill PID-00029`), chuyển PR sang sẵn sàng và merge. Đoạn dưới là việc còn lại
 của Lần 1, giữ làm lịch sử.
 
@@ -133,9 +133,11 @@ PID-00029 cho `toilatrung`, chốt cách sửa EC09 và duyệt PR #94 (`databas
 - **Kiểm toàn repo cục bộ:** `nx affected` (TS) chỉ lỗi `@sires/contracts:test` (Smart App Control chặn
   `openapi-python-client`) và `@sires/platform:test` (timeout khi máy tải; chạy riêng 168/169, telemetry
   riêng 6/6) — PR không đổi `libs/`. Python `agent-core` chạy trong container uv: ruff, mypy, pytest (20 đạt, 1 skip) đạt.
-- **Phụ thuộc:** PR #82 phụ thuộc PR #94 — phải merge #94 trước. Tới lúc đó diff của #82 so với `main` gồm
-  cả file của #94 (5 luồng); sau khi #94 vào `main`, diff còn `repo` (`pnpm-lock.yaml`), `research` và
-  `agent/execution/PID-00029/`.
+- **Phụ thuộc:** PR #82 phụ thuộc PR #94 — **đã thỏa**: #94 vào `main` (squash `80a6626`), cùng #86
+  (`4578236`) và #95 (`f28424c`). Nhánh gộp thêm `origin/main` `f28424c` (merge, không xung đột); diff của #82
+  so với `main` chỉ còn `repo` (`pnpm-lock.yaml`), `research` và `agent/execution/PID-00029/` (31 file,
+  `check-tracks`: `repo, research`). 312 dòng đầu `0000_init.sql` trùng `00-common.sql` trên `main`. Sau lần
+  gộp này chạy lại `pnpm nx run-many -t lint typecheck test build -p @sires/research`; kết quả ở Self-QC Lần 3.
 
 Slice S01, S02, S03 Xong; AC01 đạt; Self-QC đạt, không còn CRITICAL/HIGH. Trạng thái **Xong — chờ QC**.
 PR #82 giữ bản nháp; phiên điều phối của PO chuyển sang sẵn sàng sau QC độc lập Lần 2.
