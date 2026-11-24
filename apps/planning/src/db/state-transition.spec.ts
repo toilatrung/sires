@@ -9,12 +9,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { compareStateTransitionRows, findTransition, renderStateTransitionSql } from '@sires/platform';
+import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PLAN_VERSION_STATUSES, planVersionMachine, stateMachines, TASK_STATUSES, taskMachine } from '../task-state';
 import {
   insertTask,
   type PlanningPostgres,
   seedPlan,
+  seedPlanWith,
   type SeededPlan,
   sqlState,
   startPlanningPostgres,
@@ -120,57 +122,72 @@ describe('dòng chuyển trạng thái và trigger (PID-00023 S03, S05)', () => 
         decidedAt: new Date().toISOString(), objectType: 'plan_version', objectId, objectVersion: 1,
       });
     // Một plan cho mỗi cặp: bản Draft mặc định bị hủy (deleted_at) để bản ở trạng thái nguồn không vướng partial unique.
-    const versionIn = async (status: string): Promise<{ plan: SeededPlan; id: string }> => {
-      const plan = await seedPlan(pg, MIGRATED);
+    // Dựng cả 20 plan trong một phiên _system, rồi thử 20 cặp trong một phiên _app (savepoint mỗi cặp, đặt lại
+    // app.account_id theo plan), như ca task mọi cặp; mở mỗi cặp ba kết nối mới làm test chạy sát 5 s trên CI.
+    const versionIn = async (client: Client, status: string): Promise<{ plan: SeededPlan; id: string }> => {
+      const plan = await seedPlanWith(client);
       const id = randomUUID();
-      await pg.asRole(MIGRATED, 'system', undefined, async (client) => {
-        await client.query('UPDATE app.plan_version SET deleted_at = now() WHERE id = $1', [plan.planVersionId]);
-        await client.query(
-          `INSERT INTO app.plan_version (id, account_id, project_id, plan_id, version_number, status, context_version_id,
-             approval, rejection_reason, created_by)
-           VALUES ($1, $2, $3, $4, 2, $5, $6, $7, $8, $9)`,
-          [id, plan.accountId, plan.projectId, plan.planId, status, randomUUID(),
-            ['Approved', 'Superseded'].includes(status) ? approval(id) : null,
-            status === 'Rejected' ? 'Không đạt' : null, SYSTEM_ACTOR],
-        );
-      });
+      await client.query('UPDATE app.plan_version SET deleted_at = now() WHERE id = $1', [plan.planVersionId]);
+      await client.query(
+        `INSERT INTO app.plan_version (id, account_id, project_id, plan_id, version_number, status, context_version_id,
+           approval, rejection_reason, created_by)
+         VALUES ($1, $2, $3, $4, 2, $5, $6, $7, $8, $9)`,
+        [id, plan.accountId, plan.projectId, plan.planId, status, randomUUID(),
+          ['Approved', 'Superseded'].includes(status) ? approval(id) : null,
+          status === 'Rejected' ? 'Không đạt' : null, SYSTEM_ACTOR],
+      );
       return { plan, id };
     };
-    let accepted = 0;
-    for (const from of PLAN_VERSION_STATUSES) {
-      for (const to of PLAN_VERSION_STATUSES) {
-        if (from === to) continue;
-        const { plan, id } = await versionIn(from);
-        const outcome = await pg
-          .asRole(MIGRATED, 'app', plan.accountId, (client) =>
-            client.query(
-              `UPDATE app.plan_version SET status = $1,
-                 approval = CASE WHEN $1 = 'Approved' THEN $2::jsonb ELSE approval END,
-                 rejection_reason = CASE WHEN $1 = 'Rejected' THEN 'Không đạt' ELSE rejection_reason END
-               WHERE id = $3`,
-              [to, approval(id), id],
-            ),
-          )
-          .then(() => 'accepted', (error: unknown) => sqlState(error));
-        const expected = findTransition(planVersionMachine, from, to) !== undefined;
-        expect(outcome, `${from} → ${to}`).toBe(expected ? 'accepted' : '23514');
-        if (expected) accepted += 1;
+    const pairs = PLAN_VERSION_STATUSES.flatMap((from) => PLAN_VERSION_STATUSES.filter((to) => to !== from).map((to) => ({ from, to })));
+    const sources = await pg.asRole(MIGRATED, 'system', undefined, async (client) => {
+      const result: { plan: SeededPlan; id: string }[] = [];
+      for (const { from } of pairs) result.push(await versionIn(client, from));
+      return result;
+    });
+    const outcomes = await pg.asRole(MIGRATED, 'app', undefined, async (client) => {
+      const result: string[] = [];
+      for (const [index, { to }] of pairs.entries()) {
+        const { plan, id } = sources[index];
+        await client.query(`SELECT set_config('app.account_id', $1, true)`, [plan.accountId]);
+        await client.query('SAVEPOINT pair');
+        try {
+          await client.query(
+            `UPDATE app.plan_version SET status = $1,
+               approval = CASE WHEN $1 = 'Approved' THEN $2::jsonb ELSE approval END,
+               rejection_reason = CASE WHEN $1 = 'Rejected' THEN 'Không đạt' ELSE rejection_reason END
+             WHERE id = $3`,
+            [to, approval(id), id],
+          );
+          await client.query('RELEASE SAVEPOINT pair');
+          result.push('accepted');
+        } catch (error) {
+          await client.query('ROLLBACK TO SAVEPOINT pair');
+          result.push(sqlState(error) ?? String(error));
+        }
       }
+      return result;
+    });
+    let accepted = 0;
+    for (const [index, { from, to }] of pairs.entries()) {
+      const expected = findTransition(planVersionMachine, from, to) !== undefined;
+      expect(outcomes[index], `${from} → ${to}`).toBe(expected ? 'accepted' : '23514');
+      if (expected) accepted += 1;
     }
     expect(accepted).toBe(4);
 
     // EC15: duyệt bản mới khi đã có Approved, trong một giao dịch.
     const approvedTwo = async () => {
-      const plan = await seedPlan(pg, MIGRATED);
       const oldId = randomUUID();
       const newId = randomUUID();
-      await pg.asRole(MIGRATED, 'system', undefined, async (client) => {
-        await client.query('UPDATE app.plan_version SET deleted_at = now() WHERE id = $1', [plan.planVersionId]);
+      const plan = await pg.asRole(MIGRATED, 'system', undefined, async (client) => {
+        const seeded = await seedPlanWith(client);
+        await client.query('UPDATE app.plan_version SET deleted_at = now() WHERE id = $1', [seeded.planVersionId]);
         await client.query(
           `INSERT INTO app.plan_version (id, account_id, project_id, plan_id, version_number, status, context_version_id, approval, created_by)
            VALUES ($1, $2, $3, $4, 2, 'Approved', $5, $6, $7), ($8, $2, $3, $4, 3, 'Proposed', $5, NULL, $7)`,
-          [oldId, plan.accountId, plan.projectId, plan.planId, randomUUID(), approval(oldId), SYSTEM_ACTOR, newId],
+          [oldId, seeded.accountId, seeded.projectId, seeded.planId, randomUUID(), approval(oldId), SYSTEM_ACTOR, newId],
         );
+        return seeded;
       });
       return { plan, oldId, newId };
     };
