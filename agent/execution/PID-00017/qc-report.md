@@ -1,7 +1,8 @@
 # PID-00017 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 2 MEDIUM, 5 LOW; không mục nào chặn merge (Lần 1, 22/11/2026)
+**Kết luận mới nhất:** Đã merge (PR #72, `0ceccff` trên `develop`), kết luận nghiệm thu giữ nguyên — 0 CRITICAL, 0 HIGH; G1–G6 của Lần 1 (2 MEDIUM, 4 LOW) chưa xử lý, G7 không cần làm (Lần 2, 24/11/2026)
 
+- Lần 2: mã workspace trên `develop` trùng commit Lần 1; QC chạy lại, 26/26 test đạt trên Linux, lint, typecheck, build đạt. Chưa có khoảng trống nào được xử lý; DBQ-10 vẫn mở, workspace không có hàm `SECURITY DEFINER`.
 - Hai AC đạt trên PostgreSQL 16 + pgvector thật (Testcontainers), không phải stub.
 - `migrate.spec.ts › lệnh migrate trên database rỗng` dùng timeout mặc định 5 s (G3, MEDIUM). Trên máy QC có tải, cả bộ test đỏ 3/4 lần vì ca này; chạy riêng file thì đạt; CI đạt. Nên sửa trước merge, việc nhỏ.
 - QC chạy thêm migration bằng vai trò migrator thật (database 3.2) từ bản `pnpm deploy --prod` như image. Lần chạy này đạt: mọi đối tượng thuộc `sires_workspace_owner`, schema khớp DDL tham chiếu.
@@ -145,6 +146,74 @@ Không có việc chặn merge. Việc nên làm, Dev làm trong PR này hoặc 
 2. **Hồ sơ PID-00017 chưa cập nhật theo PID-00159 H3.** Trang ticket mục 3 và S01 vẫn ghi “test tự tạo bốn vai trò”. Mục “Phải sửa ở nguồn” của PID-00159 nói các hồ sơ PID migration được cập nhật trong cùng lô theo D4. Không chặn PID này. Khi PO chốt đề xuất 1 thì sửa hồ sơ theo.
 3. Đồng ý đề xuất 1 của Dev (`report.md` mục 6): `ServiceAuthModule` của platform có cách dựng chỉ có khóa công khai cho service không gọi đi. Việc này của luồng platform, PR riêng, không chặn.
 4. Nhắc lại mục “Phải sửa ở nguồn” của ticket: PO chốt cách workspace biết project còn Workflow hoạt động trước PID-00044.
+
+## Lần 2 — 24/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do phiên điều phối giao (lô QC-B), không mang kết luận của Dev. Mục đích: kiểm mã đã merge và xem các khoảng trống G1–G7 của Lần 1 đã xử lý chưa.
+
+Mã nguồn:
+- `origin/develop` `083795b`. PR #72 đã vào `develop` bằng squash `0ceccff`. QC chạy trên worktree riêng (nhánh `qc/t1xnth-batch-b`).
+- `git diff c830985 083795b -- apps/workspace` rỗng: mã workspace trên `develop` trùng từng byte với commit QC Lần 1 kiểm. Sau Lần 1 chỉ có thêm `qc-report.md` này. Từ `3dd4c15` tới `083795b`, `docs/tickets/issues/PID-00017/`, `00-common.sql` và `workspace.sql` không đổi.
+
+Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Python 3.12; Docker Engine 29.9.2 cục bộ, image có sẵn `pgvector/pgvector:pg16`, `testcontainers/ryuk:0.14.0`. Load average lúc chạy khoảng 2–4.
+
+Kiểm độc lập:
+- **Sinh migration từ khai báo:** `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` trong `apps/workspace`, so với `0001_state_transition.sql` bỏ bốn dòng đầu (giấy phép và dòng trống): trùng.
+- **DBQ-10:** `grep "SECURITY DEFINER"` trên `apps/workspace/migrations/*.sql`, `docs/database/ddl/00-common.sql`, `workspace.sql`: không có kết quả. Kết luận Lần 1 giữ nguyên: workspace không có lỗi cùng dạng DBQ-10. Tuy vậy, DBQ-10 vẫn mở ở database 13.3 (`docs/docs_context.md` dòng 141, 149), và phần “test chạy bằng superuser nên không lộ lỗi” của DBQ-10 vẫn đúng với workspace (G1). Lần này QC không chạy lại phép thử bằng migrator thật: mã không đổi, và Lần 1 đã chạy phép thử đó.
+
+### Trạng thái khoảng trống của Lần 1
+
+| Mã | Mức | Trạng thái | Bằng chứng (file:dòng) | Ghi chú |
+| --- | --- | --- | --- | --- |
+| G1 | MEDIUM | chưa xử lý (partial) | `apps/workspace/src/db/database.testkit.ts:35`–`40` (vẫn chỉ tạo bốn vai trò, không có `sires_workspace_migrator`) | Test vẫn dựng schema bằng superuser. Đây là chỗ DBQ-10 cảnh báo: lỗi FORCE RLS với owner thật không lộ ra ở test. Chưa có quyết định PO cho đề xuất 1 của Lần 1 (`docs/docs_context.md` không có mục nào sau 22/11/2026 về testkit migrator) |
+| G2 | LOW | chưa xử lý | `apps/workspace/src/db/ddl-behaviour.spec.ts:80`–`81` | Phụ thuộc G1 |
+| G3 | MEDIUM | chưa xử lý; lần này không tái hiện | `apps/workspace/src/migrate.spec.ts:31`, `:35`; `state-transition.spec.ts:32`, `:46` (vẫn không có timeout riêng); `apps/workspace` không có `vitest.config.*` | Máy QC lần này ít tải: 26/26 đạt. Rủi ro đỏ ngẫu nhiên trên máy có tải vẫn còn, như Lần 1 đã tái hiện 3/4 lần |
+| G4 | LOW | chưa xử lý | `apps/workspace/src/migrate.spec.ts:59` | Chưa dựng image Linux thật. PID-00009 (#57) thêm bước build image vào CI; QC không kiểm CI của `develop` trong lần này |
+| G5 | LOW | chưa xử lý, còn bị chặn | `agent/execution/PID-00017/report.md` mục 4 | PID-00159 chưa có mã trên `develop` (chỉ có commit hồ sơ `4c81f36`) |
+| G6 | LOW | chưa xử lý, còn bị chặn | `apps/workspace/README.md:45`, `:63` | Như G5 |
+| G7 | LOW | không cần làm | — | Giữ kết luận Lần 1 |
+
+Không có khoảng trống mới. Không có CRITICAL, HIGH, không có `contradicts`.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00017-AC01 | đạt | database thật (Testcontainers), dựng bằng superuser (G1) | `apps/workspace/src/db/migration.spec.ts`, `src/db/ddl-behaviour.spec.ts` | Đạt trong 26/26 test của `@sires/workspace:test` |
+| NFR-MAINT-003-AC01 (phần workspace) | đạt | đơn vị + database thật | `src/domain/state-machines.spec.ts`, `src/db/state-transition.spec.ts` | Đạt; file migration trùng đầu ra helper (QC chạy lại) |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt, 3,6 s. Có cảnh báo “Ignored build scripts: cpu-features, protobufjs, ssh2” (cấu hình pnpm, không liên quan PID) |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/workspace --skip-nx-cache --parallel=1` | Đạt cả bốn target. Test: 7 file, 26/26 đạt, 16,7 s |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/planning --skip-nx-cache --parallel=1` | Đạt cả bốn target; 6 file, 39/39 test (chạy cùng lô, để có số liệu cho PID-00023) |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63 test, gồm `ddl.pg.spec.ts` trên PostgreSQL thật |
+| `uv sync --all-packages --frozen` rồi `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip, 1 cảnh báo DeprecationWarning của testcontainers rabbitmq |
+| `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` (trong `apps/workspace`) | Trùng `0001_state_transition.sql` (bỏ phần giấy phép) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00017 --result` | “KẾT QUẢ ĐỦ (0 cảnh báo)” |
+| `node scripts/docs/add-license.mjs --check` | Lần đầu báo 2 file thiếu giấy phép: `libs/py/sires_common/.pytest_cache/.gitignore`, `README.md`. Đây là thư mục cache pytest do chính QC vừa tạo, không được git theo dõi; QC xóa rồi thì sạch. Không phải G |
+| `node scripts/docs/update-index.mjs --check` | Sạch: 159 PID, 15 đợt; `issues`, taskboard, `docs/index.html` khớp |
+| `node scripts/development/check-tracks.mjs` | Không chạy: mã đã merge, không còn nhánh PR để so. Lần 1 đã chạy |
+
+### Lệch với Self-QC
+
+Không có điểm mới. Các điểm lệch của Lần 1 vẫn đúng, vì mã không đổi.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Giữ thứ tự của Lần 1. Không có việc nào chặn, vì PR đã merge:
+
+1. Đặt timeout riêng cho các `it`, `afterAll` dùng container (G3). PR nhỏ của luồng workspace vào `develop`.
+2. Chờ PO quyết đề xuất 1 của Lần 1 (testkit chạy migration bằng migrator), rồi làm G1, G2.
+3. Khi PID-00159 có mã trên `develop`: làm G5, G6.
+4. Kiểm bước build image của CI (PID-00009) có chạy `migration.command` của workspace không; nếu không, dựng image một lần trước PID-00035 (G4).
+
+### Đề xuất cho PO
+
+1. Nhắc lại đề xuất 1 của Lần 1 (testkit chạy migration bằng vai trò nào). Đề xuất này vẫn chưa có mã OQ, chưa được chốt. DBQ-10 còn mở là thêm một lý do nên chốt sớm: mọi PID migration đang test bằng superuser.
+2. Đề xuất 2–4 của Lần 1 giữ nguyên, chưa có thay đổi.
 
 ---
 
