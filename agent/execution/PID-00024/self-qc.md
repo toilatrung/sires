@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00024](../../../docs/tickets/issues/PID-00024/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 25/11/2026 (Lần 2)
+- **Cập nhật:** 25/11/2026 (Lần 3 — sửa theo QC độc lập Lần 1, mục cuối file)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -15,7 +15,7 @@ Máy chạy: Windows 11, Node 24.21.0, pnpm 10.34.9, Docker Engine 29.8.2 trong 
 | --- | --- |
 | `pnpm install --frozen-lockfile` | đạt (sau khi gộp `origin/main` #82 và sau khi thêm Citation.js) |
 | `pnpm nx affected -t lint typecheck test build --base=origin/main` | 20 project vì `pnpm-lock.yaml` đổi. Phần TypeScript (`--exclude=sires-common,agent-core,knowledge,eval,@sires/contracts --parallel=1`): “Successfully ran targets lint, typecheck, test, build for 15 projects and 2 tasks they depend on” (52/60 tác vụ chạy mới). `@sires/contracts`: lint, typecheck, build đạt; `@sires/contracts:test` không chạy trên Windows (cần `uv tool run`, bị Smart App Control chặn) — CI chạy. Bốn project Python: không chạy lại ở Lần 2 vì PR không đổi mã Python (chỉ lockfile pnpm); Lần 1 đã chạy trong container uv (mục Lần 1) |
-| `pnpm nx run-many -t lint typecheck build test -p @sires/library` | đạt; test 45/45 (7 file): `app.module.spec.ts` 2, `domain/state-machines.spec.ts` 2, `migrate.spec.ts` 3, `db/migration.spec.ts` 11, `db/state-transition.spec.ts` 2, `importers/importers.spec.ts` 20, `importers/citation-js/citation-js.parsers.spec.ts` 5. Chạy sau khi gộp `origin/main` (#66, #87, #100) và áp bản sửa `pg_dump` qua base64 của #100 vào testkit (`› dumpSchema giữ nguyên ký tự UTF-8 nhiều byte`). Lượt `nx affected` ở dòng trên chạy trước khi gộp ba PR đó; CI chạy lại trên nhánh đã gộp |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/library` | (Lần 2) đạt; test 45/45 (7 file) — Lần 3: 46/46, xem mục Lần 3: `app.module.spec.ts` 2, `domain/state-machines.spec.ts` 2, `migrate.spec.ts` 3, `db/migration.spec.ts` 11, `db/state-transition.spec.ts` 2, `importers/importers.spec.ts` 20, `importers/citation-js/citation-js.parsers.spec.ts` 5. Chạy sau khi gộp `origin/main` (#66, #87, #100) và áp bản sửa `pg_dump` qua base64 của #100 vào testkit (`› dumpSchema giữ nguyên ký tự UTF-8 nhiều byte`). Lượt `nx affected` ở dòng trên chạy trước khi gộp ba PR đó; CI chạy lại trên nhánh đã gộp |
 | `pnpm nx run @sires/contracts:generate` (dependency của library) | đạt trên hợp đồng đã nới `ReferenceMetadata.identifiers` (S07) |
 | `node scripts/development/check-charts.mjs` (helm 3.19.0 chép từ image `alpine/helm:3.19.0`, chạy trong `node:22`) | “OK Helm library” cùng 11 service khác và “OK Helm từ chối migration thiếu command”: lint, template, Job migration có `command` trùng `deploy/values.yaml` |
 | `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép” |
@@ -100,6 +100,26 @@ Chạy `spec-converge-skill PID-00024` ở chế độ Dev tự QC, Lần 2 (25/
 | G8 | partial | LOW | Lựa chọn thư viện là tạm thời (PC-04 A10), khác kiến trúc 2.3 (`@retorquere/bibtex-parser`) | `report.md` mục 1; PR #98 | Ghi rõ theo YC1 điều kiện 3; không sửa `docs/`; đổi thư viện = bản hiện thực `ReferenceParser` khác |
 
 Không có CRITICAL, HIGH. Trạng thái `Xong — chờ QC`.
+
+## Lần 3 — 25/11/2026 (sửa theo QC độc lập Lần 1)
+
+Kết luận Lần 3: Đạt. Việc lấy từ `qc-report.md` Lần 1 (commit `58f1d35`): G1 MEDIUM, G2 LOW (tùy chọn), G4 LOW (gộp `main`). G3 LOW (chạy migration bằng vai trò migrator trong testkit) để PO quyết, không làm: AC02 nêu bốn vai trò, QC đã probe đạt.
+
+| Việc | Đã làm | Kiểm bằng |
+| --- | --- | --- |
+| G4 — gộp `main` | `git merge origin/main` (#90, #101), merge thường, có chữ ký; `pnpm install --frozen-lockfile` đạt | `git log` |
+| G1 — RIS CRLF mất văn bản gốc | `splitRis` cắt `text` theo vị trí trong chuỗi vào như `splitBibtex` (không `join('\n')`), nhận CRLF, LF, CR; chuỗi đưa cho Citation.js đổi xuống dòng sang LF (`forLibrary`, thư viện không nhận CR đơn), `text`/`raw.text` vẫn là bản gốc; `splitBibtex` nhận CR là xuống dòng khi tìm khối kế tiếp | Tái hiện trước khi sửa: fixture checkout CRLF (`core.autocrlf=true`) → `importers.spec.ts` 24/25, đỏ `› RIS mẫu đa ngành` tại dòng 200, đúng QC báo. Sau khi sửa: test mới `importers.spec.ts › xuống dòng CRLF giữ văn bản gốc` (BibTeX và RIS ở LF, CRLF, CR: cùng kết quả, mọi `text`/`raw.text` là đoạn của chuỗi vào, bỏ mục hỏng theo `text` vẫn được) |
+| G2 — test “không tải URL” chỉ spy `fetch` | Spy `child_process.execFileSync` (đường tải đồng bộ của `sync-fetch-undici`) đặt bằng `vi.hoisted` trước khi Citation.js nạp, chặn mọi lần gọi; ca đối chứng `util.fetchFile` bị spy bắt (1 lần); parser BibTeX, RIS với URL, DOI trơn và mục có `url`/`doi`: 0 lần `execFileSync`, 0 lần `fetch` | `citation-js.parsers.spec.ts › không tải URL hay DOI đưa vào` |
+
+| Lệnh (Lần 3) | Kết quả |
+| --- | --- |
+| `NX_DAEMON=false pnpm nx run-many -t lint typecheck build test -p @sires/library --skip-nx-cache` trên checkout Windows (fixture `.bib`, `.ris` và `0000_init.sql` CRLF) | lint, typecheck, build đạt; test **46/46** (7 file): `importers.spec.ts` 21, `citation-js.parsers.spec.ts` 5, `db/migration.spec.ts` 11, còn lại như Lần 2 |
+| `pnpm exec vitest run src/importers` với fixture đổi tạm sang LF (như CI Linux; đã khôi phục bằng `git checkout`) | 26/26 |
+| `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép” |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00024 --result` | “KẾT QUẢ ĐỦ (0 cảnh báo)” |
+| `check-tracks.mjs` trên file đã đổi | `tracks touched: library, repo` |
+
+Tự đối chiếu Lần 3: G1, G2, G4 của QC đã xử lý; không phát sinh khoảng trống mới; không có CRITICAL, HIGH.
 
 ## Lần 1 — 24–25/11/2026
 

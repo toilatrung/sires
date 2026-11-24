@@ -81,6 +81,15 @@ Phiên được PO giao (“Pr nào còn dang dở thì hoàn thiện luôn đi,
 - Phiên điều phối của PO chốt phương án (a) — Citation.js 0.9.0, ghi vào PC-04 mục A10 kèm bốn điều kiện (YC1, mục 5). Làm S04–S07 theo điều kiện đó; trạng thái `Xong — chờ QC`.
 - Sửa thêm trong Lần 2: chạy được `check-charts.mjs` bằng helm 3.19.0 trong container (đóng G3 của Lần 1); gộp `origin/main` (#66, #87, #100) và áp bản sửa của #100 cho `library` (`pg_dump` trong test qua base64 để ký tự UTF-8 không vỡ giữa hai khúc stdout, kèm test kiểm).
 
+## Lần 3 — 25/11/2026
+
+- Sửa theo QC độc lập Lần 1 (`qc-report.md`, kết luận “Có thể nghiệm thu”, 0 CRITICAL, 0 HIGH):
+  - **G1 (MEDIUM):** `splitRis` cắt văn bản bản ghi theo vị trí trong chuỗi vào, nên file RIS dùng CRLF (hoặc CR) giữ `text`, `raw.text` đúng bản gốc; chuỗi đưa cho Citation.js đổi sang LF; `splitBibtex` nhận CR. Test mới `importers.spec.ts › xuống dòng CRLF giữ văn bản gốc` (BibTeX, RIS ở LF, CRLF, CR). `› RIS mẫu đa ngành` đạt trên checkout Windows (CRLF).
+  - **G2 (LOW):** test “không tải URL” chặn thêm `child_process.execFileSync` (đường tải đồng bộ của Citation.js), có ca đối chứng.
+  - **G4 (LOW):** gộp `origin/main` (#90, #101).
+  - **G3 (LOW, tùy chọn):** chưa làm — chạy migration bằng vai trò migrator trong testkit; AC02 nêu bốn vai trò và QC đã probe đạt. PO quyết nếu cần.
+- `@sires/library` 46/46 trên checkout Windows; chi tiết ở `self-qc.md` Lần 3. Trạng thái giữ `Xong — chờ QC`.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
