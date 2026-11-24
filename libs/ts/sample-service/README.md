@@ -37,7 +37,8 @@ Token thiếu, hết hạn hoặc sai chữ ký trả `401 application/problem+j
 Migration đầu là custom SQL của drizzle-kit, gồm bản chép `00-common.sql` và bảng mẫu, rồi
 `enable_tenant_rls` và `grant_standard('sample')`. Bốn vai trò `sires_sample_owner`, `_app`, `_system`,
 `_purge` do hạ tầng tạo trước; `_app` NOBYPASSRLS, `_system` và `_purge` BYPASSRLS.
-Test tự tạo vai trò; migration không tạo vai trò. Thêm migration mới từ thư mục project:
+Test tự tạo vai trò; migration không tạo vai trò. Migration `0001_ec09_jsonb_helpers.sql` sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
+Thêm migration mới từ thư mục project:
 
 ```sh
 pnpm exec drizzle-kit generate --custom --name=ten_thay_doi

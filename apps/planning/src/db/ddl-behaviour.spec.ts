@@ -246,4 +246,50 @@ describe('hành vi DDL planning (PID-00023 S06)', () => {
       .then(() => undefined, (e: unknown) => sqlState(e));
     expect(missing).toBe('23503');
   });
+
+  // Lỗi EC09 (PID-00029; PO 24/11/2026): CHECK coi NULL là đạt, nên ba hàm kiểm JSON của 00-common.sql phải trả false
+  // khi JSON thiếu trường. plan_version có cả ba hàm trong CHECK (updated_by, provenance, approval).
+  it('hàm kiểm JSON trả false thay vì NULL (EC09 của PID-00029)', async () => {
+    const plan = await seedPlan(pg, DB);
+    const runId = randomUUID();
+    const system = JSON.parse(SYSTEM_ACTOR) as Record<string, unknown>;
+    const agent = (fields: Record<string, unknown>) => ({ type: 'agent', agentRunId: runId, ...fields });
+    const provenance = (fields: Record<string, unknown>) => JSON.stringify({ createdBy: system, inputs: [], ...fields });
+    const approvalWithout = (field: string) => {
+      const record = JSON.parse(approval('plan_version', plan.planVersionId)) as Record<string, unknown>;
+      delete record[field];
+      return JSON.stringify(record);
+    };
+    const cases: ReadonlyArray<readonly [string, 'is_actor_ref' | 'is_provenance' | 'is_approval_record', string | null, boolean]> = [
+      ['actor: analysis thiếu instance', 'is_actor_ref', JSON.stringify(agent({ agent: 'analysis' })), false],
+      ['actor: thiếu agent', 'is_actor_ref', JSON.stringify(agent({})), false],
+      ['actor: agent null', 'is_actor_ref', JSON.stringify(agent({ agent: null })), false],
+      ['actor: analysis có instance (đối chứng)', 'is_actor_ref', JSON.stringify(agent({ agent: 'analysis', instance: 'A' })), true],
+      ['actor: agent khác analysis, không instance (đối chứng)', 'is_actor_ref', JSON.stringify(agent({ agent: 'discovery' })), true],
+      ['provenance: thiếu inputs', 'is_provenance', JSON.stringify({ createdBy: system }), false],
+      ['provenance: createdBy thiếu agent', 'is_provenance', provenance({ createdBy: agent({}) }), false],
+      ['provenance: đủ (đối chứng)', 'is_provenance', provenance({ createdBy: agent({ agent: 'synthesis' }) }), true],
+      ['approval: thiếu approvedBy', 'is_approval_record', approvalWithout('approvedBy'), false],
+      ['approval: thiếu decision', 'is_approval_record', approvalWithout('decision'), false],
+      ['approval: thiếu apr', 'is_approval_record', approvalWithout('apr'), false],
+      ['approval: đủ (đối chứng)', 'is_approval_record', approval('plan_version', plan.planVersionId), true],
+      ['approval: NULL (đối chứng)', 'is_approval_record', null, true],
+    ];
+
+    // Gọi thẳng hàm: kết quả phải là false hoặc true, không bao giờ NULL.
+    const returned: Record<string, unknown> = {};
+    for (const [name, fn, value] of cases) {
+      returned[name] = (await pg.admin<{ result: boolean | null }>(DB, `SELECT app.${fn}($1::jsonb) AS result`, [value]))[0]?.result;
+    }
+    expect(returned).toEqual(Object.fromEntries(cases.map(([name, , , expected]) => [name, expected])));
+
+    // CHECK của plan_version, ghi bằng _app như service thật: ca false bị từ chối (23514), ca đối chứng qua.
+    const column = { is_actor_ref: 'updated_by', is_provenance: 'provenance', is_approval_record: 'approval' } as const;
+    const written: Record<string, unknown> = {};
+    for (const [name, fn, value] of cases) {
+      written[name] = await asApp(plan.accountId, (q) =>
+        q(`UPDATE app.plan_version SET ${column[fn]} = $1 WHERE id = $2`, [value, plan.planVersionId]));
+    }
+    expect(written).toEqual(Object.fromEntries(cases.map(([name, , , expected]) => [name, expected ? undefined : '23514'])));
+  });
 });

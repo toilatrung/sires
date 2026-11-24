@@ -49,28 +49,30 @@ LANGUAGE sql STABLE AS $$
   SELECT nullif(current_setting('app.account_id', true), '')::uuid
 $$;
 
+-- EC09 (PO 24/11/2026): CHECK coi NULL là đạt, nên is_actor_ref, is_approval_record, is_provenance bọc COALESCE(…, false).
 -- ActorRef (PRD 18.1): {type: researcher|agent|system, accountId?, agent?, instance?, agentRunId?, component?}
+-- Thiếu instance coi như không phải A/B, để agent khác analysis (không có instance) vẫn hợp lệ khi đã bọc COALESCE.
 CREATE OR REPLACE FUNCTION app.is_actor_ref(a jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE AS $$
-  SELECT a IS NOT NULL AND jsonb_typeof(a) = 'object' AND CASE a->>'type'
+  SELECT COALESCE((a IS NOT NULL AND jsonb_typeof(a) = 'object' AND CASE a->>'type'
     WHEN 'researcher' THEN a ? 'accountId'
     WHEN 'agent' THEN a->>'agent' IN ('orchestrator','discovery','reference_processing','evidence_retrieval',
                                        'synthesis','writing','verification','diagram','analysis')
                       AND a ? 'agentRunId'
-                      AND ((a->>'agent' = 'analysis') = (a->>'instance' IN ('A','B')))
+                      AND ((a->>'agent' = 'analysis') = COALESCE(a->>'instance' IN ('A','B'), false))
     WHEN 'system' THEN a ? 'component'
-    ELSE false END
+    ELSE false END), false)
 $$;
 
 -- ApprovalRecord (PRD 18.1): approvedBy luôn là researcher; gắn objectVersion và APR-01–APR-10.
 CREATE OR REPLACE FUNCTION app.is_approval_record(r jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE AS $$
-  SELECT r IS NULL OR (
+  SELECT COALESCE((r IS NULL OR (
     jsonb_typeof(r) = 'object'
     AND r->'approvedBy'->>'type' = 'researcher'
     AND r->>'decision' IN ('approved','rejected','edited_and_approved')
     AND r->>'apr' ~ '^APR-(0[1-9]|10)$'
-    AND r ? 'decidedAt' AND r ? 'objectType' AND r ? 'objectId' AND r ? 'objectVersion')
+    AND r ? 'decidedAt' AND r ? 'objectType' AND r ? 'objectId' AND r ? 'objectVersion')), false)
 $$;
 
 -- Tham chiếu có phiên bản {type, id, version} (inputRefs, outputRefs, provenance.inputs).
@@ -84,10 +86,10 @@ $$;
 -- Provenance (PRD 18.3): createdBy, inputs[] bắt buộc; thiếu → từ chối ghi (DATA-PROV-001).
 CREATE OR REPLACE FUNCTION app.is_provenance(p jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE AS $$
-  SELECT p IS NOT NULL AND jsonb_typeof(p) = 'object'
+  SELECT COALESCE((p IS NOT NULL AND jsonb_typeof(p) = 'object'
     AND app.is_actor_ref(p->'createdBy')
     AND jsonb_typeof(p->'inputs') = 'array'
-    AND app.is_versioned_refs(p->'inputs')
+    AND app.is_versioned_refs(p->'inputs')), false)
 $$;
 
 -- ---------------------------------------------------------------------------
