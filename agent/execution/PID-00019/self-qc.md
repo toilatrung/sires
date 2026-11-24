@@ -109,7 +109,7 @@ Khoảng trống của Lần 1 (mục 5) và của QC độc lập Lần 1 khôn
 
 ## Lần 3 — 24/11/2026
 
-Người làm: phiên do PO `toilatrung` giao (24/11/2026, chuyển việc còn lại của PH-01 về PO). Worktree `.claude/worktrees/pid-00033-571df3`, nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`, đã gộp `main` `0153261` (PR #88, #89). Việc: S02 và phần còn lại của S05 (G1, G2, G3, G8 của `qc-report.md`), sau khi helper PID-00158 lên `main` (PR #52, 21/11/2026).
+Người làm: phiên do PO `toilatrung` giao (24/11/2026, chuyển việc còn lại của PH-01 về PO). Nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`, đã gộp `main` `0153261` (PR #88, #89). Việc: S02 và phần còn lại của S05 (G1, G2, G3, G8 của `qc-report.md`), sau khi helper PID-00158 lên `main` (PR #52, 21/11/2026).
 
 Môi trường như Lần 1; `pnpm install --frozen-lockfile` trong worktree; Docker Engine 29.8.2 trong WSL `Ubuntu-24.04` được giữ sống trong lúc chạy test.
 

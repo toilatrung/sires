@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC (Lần 3, 24/11/2026: S02, S05 xong; 23 test đạt, 0 todo; một đề xuất cho PO về câu chữ ca 1 của PID-00019-AC03 với machine prompt)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
-- **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
+- **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`) · **PR:** [#90](https://github.com/toilatrung/sires/pull/90) (vào `main`, chưa merge); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
 - **Cập nhật:** 24/11/2026 (Lần 3); Lần 2 21/11/2026; Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -105,7 +105,7 @@ Người làm: phiên Dev dev-pid-00019 (worktree `.claude/worktrees/pid-00019-e
 
 ## Lần 3 — 24/11/2026
 
-Người làm: phiên do PO `toilatrung` giao. Worktree `.claude/worktrees/pid-00033-571df3`, nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`. Việc của lần này: S02 và phần còn lại của S05 — G1, G2, G3, G8 của `qc-report.md` Lần 2 — vì chỗ chặn PID-00158 đã gỡ: helper có trên `main` từ PR #52 (21/11/2026), `apps/planning`, `apps/workspace` đã dùng.
+Người làm: phiên do PO `toilatrung` giao. Nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`, PR [#90](https://github.com/toilatrung/sires/pull/90). Việc của lần này: S02 và phần còn lại của S05 — G1, G2, G3, G8 của `qc-report.md` Lần 2 — vì chỗ chặn PID-00158 đã gỡ: helper có trên `main` từ PR #52 (21/11/2026), `apps/planning`, `apps/workspace` đã dùng.
 
 ### Yêu cầu thêm
 
@@ -158,7 +158,7 @@ Người làm: phiên do PO `toilatrung` giao. Worktree `.claude/worktrees/pid-0
 
 ### Việc còn lại
 
-1. PO review PR, QC độc lập Lần 3 (`spec-converge-skill PID-00019`, ghi `qc-report.md`), merge.
+1. PO review PR #90, QC độc lập Lần 3 (`spec-converge-skill PID-00019`, ghi `qc-report.md`), merge.
 2. PO quyết G8 (sửa `acceptance.html` hoặc mở DBQ).
 3. Trước PH-07: DBQ-01 trên PostgreSQL managed (EC08).
 
