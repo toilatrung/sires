@@ -6,14 +6,14 @@ Luồng `gateway` (TypeScript, NestJS). Kế hoạch: [docs/tickets mục 3](../
 
 BFF duy nhất ra Internet: OIDC RP của eTroy OIDC (PKCE), phiên server-side, CSRF, rate limit, định tuyến `/api/v1/*` tới service sở hữu, SSE `/events`, tìm kiếm toàn cục. Không có logic nghiệp vụ.
 
-| Mục | Giá trị |
-| --- | --- |
-| Database | `sires_gateway` (DDL tham chiếu: `docs/database/ddl/gateway.sql`) |
-| Cổng cục bộ | 3000 (ghi đè bằng biến `PORT`) |
-| Hợp đồng | `docs/api-design/openapi.yaml` (định tuyến), `paths/15-settings-and-sign-in.yaml` (`/auth/*`) |
-| Bảng sở hữu | `app.session` (phiên server-side), `app.sse_event_log` (phát lại SSE 24 giờ) |
-| Entity nghiệp vụ | Không có |
-| Bản sao chỉ đọc | Không có |
+| Mục              | Giá trị                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| Database         | `sires_gateway` (DDL tham chiếu: `docs/database/ddl/gateway.sql`)                             |
+| Cổng cục bộ      | 3000 (ghi đè bằng biến `PORT`)                                                                |
+| Hợp đồng         | `docs/api-design/openapi.yaml` (định tuyến), `paths/15-settings-and-sign-in.yaml` (`/auth/*`) |
+| Bảng sở hữu      | `app.session` (phiên server-side), `app.sse_event_log` (phát lại SSE 24 giờ)                  |
+| Entity nghiệp vụ | Không có                                                                                      |
+| Bản sao chỉ đọc  | Không có                                                                                      |
 
 ## Chạy
 
@@ -69,9 +69,18 @@ Không log cookie, session id, CSRF token hoặc khóa.
 
 Custom SQL và journal của drizzle-kit nằm trong `migrations/`; migration đầu chép
 nguyên văn `00-common.sql` rồi `gateway.sql`. Chỉ tiến; không sửa migration đã áp.
-Vai trò `sires_gateway_owner`, `_app`, `_system`, `_purge` phải được cấp trước:
+Vai trò `sires_gateway_owner`, `sires_gateway_migrator`, `sires_gateway_app`,
+`sires_gateway_system`, `sires_gateway_purge` phải được cấp trước:
 Terraform ở staging/production; PID-00159 cho compose; test tự cấp vai trò trong Testcontainers.
 Migration không tự tạo vai trò hoặc cấp BYPASSRLS.
+
+`DATABASE_MIGRATOR_URL` đăng nhập bằng `sires_gateway_migrator` (LOGIN), thành viên của
+`sires_gateway_owner`, và được cấu hình tự SET role sang owner theo database 3.2.
+Owner là NOLOGIN, không SUPERUSER/BYPASSRLS; owner phải sở hữu database `sires_gateway`
+hoặc được cấp `CREATE` trên database đó để tạo schema và các extension trusted.
+Terraform/PID-00159 cấp quyền này trước khi chạy Job; nếu database thuộc vai trò khác,
+quản trị viên cấp `GRANT CREATE ON DATABASE sires_gateway TO sires_gateway_owner`.
+Thiếu quyền này khiến migration thất bại với SQLSTATE `42501` (permission denied for database).
 
 **Chặn merge — DBQ-10 (H7):** DDL hiện tại khiến `app.find_session` trả 0 dòng khi
 migration chạy bằng migrator/owner không BYPASSRLS và bảng bật FORCE RLS. Chờ PO/Tech lead
@@ -108,4 +117,5 @@ Chỉ luồng `gateway` sửa thư mục này. Không import mã hay đọc data
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
+
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../LICENSES.md).

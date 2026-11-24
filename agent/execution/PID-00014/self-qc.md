@@ -1,9 +1,9 @@
 # PID-00014 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — G2 HIGH / DBQ-10 (H7) chặn merge; G4 chờ PO. Xem Lần 4. Phần trước là lịch sử, kết luận cũ đã bị QC độc lập thay thế.
+**Kết luận:** Chưa đạt — G2 HIGH / DBQ-10 (H7), G8 HIGH và G4 MEDIUM chờ PO. G9, G10 đã sửa; xem Lần 8. Phần trước là lịch sử, kết luận cũ đã bị QC độc lập thay thế.
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 24/11/2026
 
 ## 1. Lệnh
 
@@ -216,6 +216,28 @@ chốt DDL rồi sửa migration, chuyển fixture HTTP sang vai trò thật và
   Không dùng kết quả đó để đóng DBQ-10 hoặc kết luận tương thích provider trên remote.
 - Theo yêu cầu mới nhất, chỉ bàn giao hồ sơ và issue của SIRes. Không đưa bản sửa eTroy One
   vào commit hoặc push. DDL/migration giữ nguyên; G4 và yêu cầu QC độc lập vẫn còn.
+
+## Lần 8 — 24/11/2026 · Tự đối chiếu sửa QC Lần 2
+
+| Mã        | Kết quả tự kiểm          | Bằng chứng / việc còn lại                                                                                                                                                    |
+| --------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G2 HIGH   | Còn mở                   | Issue #83 chưa có phản hồi; H7 và DDL trên origin/main chưa đổi. Test migrator/owner thật vẫn lỗi tại `migration.spec.ts:139`; không sửa assertion                           |
+| G4 MEDIUM | Còn mở                   | Chờ PO xác nhận người làm và cập nhật sổ; không sửa taskboard                                                                                                                |
+| G8 HIGH   | Còn mở; đã sửa hồ sơ Dev | `report.md` mục 5 ghi YC2 và phần chờ PO; ngày cập nhật, nguồn cảnh báo tracks trong `implement.md` đã đúng. Giữ hay tách infra vẫn cần PO quyết và code owner duyệt         |
+| G9 LOW    | Đã sửa                   | `tsconfig.build.json` loại `src/**/*.testkit.ts`; tsc listFilesOnly không có testkit/spec; build mới có 36 file, quét không có spec/testkit hoặc tham chiếu `@sires/testing` |
+| G10 LOW   | Đã sửa                   | README nêu năm vai trò, migrator tự SET role owner, quyền sở hữu hoặc CREATE trên database, SQLSTATE 42501 khi thiếu quyền                                                   |
+
+- `pnpm --filter @sires/gateway... install --frozen-lockfile`: đạt, lockfile không đổi.
+- `NX_DAEMON=false pnpm nx run-many -t build lint typecheck test -p @sires/gateway
+--output-style=static --skip-nx-cache`: build/lint/typecheck đạt;
+  test **34 đạt, 1 lỗi / 35**, 5 file, 44.43 giây, Vitest 4.1.12.
+  Chỉ lỗi DBQ-10; lệnh tổng thoát lỗi. Không coi toàn bộ CI là xanh.
+- AC01, AC02, NFR-AUTH-001-AC01 (gateway): test HTTP hiện có đạt ở mức Xây;
+  fixture HTTP vẫn migrate bằng superuser, chưa chứng minh quyền production hoặc staging.
+  Lượt này không đổi logic phiên/CSRF hay xử lý EC01–EC17.
+- `add-license --check`, `update-index --check`, `git diff --check`: đạt.
+  Diff lượt này: gateway + repo (hồ sơ Dev); toàn PR: gateway + infra + repo,
+  cảnh báo hai luồng do G8. Không ghi `docs/` hoặc `qc-report.md`.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 

@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
 - **Nhánh:** `gateway/pid-00014-session` · **PR:** [#63](https://github.com/toilatrung/sires/pull/63) vào `main`
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 24/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
@@ -12,6 +12,7 @@
 Đang sửa theo QC độc lập Lần 1 và H7–H9 (PR #67 đã merge). G1 đã bỏ sửa spike ngoài luồng;
 G3 dùng route đã khớp dưới `/api/v1`; G6 giữ kết quả handler khi gia hạn lỗi; G7 cảnh báo custom migration.
 G2 HIGH vẫn chờ PO/Tech lead chốt DBQ-10; G4 chờ PO xác nhận người làm.
+Lần 9 xử lý G9, G10 của QC độc lập Lần 2; G8 HIGH chờ PO quyết phạm vi sửa infra.
 Các số liệu ở Lần 2–3 là lịch sử, không chứng minh bản hiện tại đủ điều kiện merge. Xem Lần 4.
 
 ## 2. Trạng thái công việc
@@ -44,6 +45,8 @@ Kết quả mới nhất được ghi riêng ở Lần 4.
 
 G2/DBQ-10 chặn S01/S02 và merge: chờ PO/Tech lead chốt, sửa DDL rồi migration và chạy lại test vai trò thật.
 G4: PO xác nhận assignee; code owner gateway duyệt theo quy trình. Đoạn sau chỉ là lịch sử lượt trước.
+G8: PO quyết giữ sửa Helm smoke trong PR này kèm code owner `/infra/` duyệt,
+hoặc tách PR infra merge trước #63. Chưa có quyết định PO khi kiểm ngày 24/11/2026.
 
 Kết quả lượt đầu (đã được giải quyết ở Lần 2): `nx affected` chọn 19 project do lockfile, dừng ở
 `apps/knowledge/spikes/spk_05/test_text_layer.py:152` (`test_corrupt_never_hangs`: expected `exited`, actual `timeout`).
@@ -53,9 +56,10 @@ Nhận định ban đầu về diff knowledge đã sai sau YC1; Lần 4 khôi ph
 
 ## 5. Yêu cầu thêm
 
-| #   | Người yêu cầu          | Nguyên văn                           | Phân loại                     | Quyết định                                   | Đã làm, kiểm bằng                                                  |
-| --- | ---------------------- | ------------------------------------ | ----------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
-| YC1 | Người dùng trong phiên | “test nốt đi”, “tìm lỗi và sửa luôn” | Mở rộng ngoài gateway ở Lần 2 | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử |
+| #   | Người yêu cầu                | Nguyên văn                           | Phân loại                     | Quyết định                                        | Đã làm, kiểm bằng                                                                                                                                                                                                                 |
+| --- | ---------------------------- | ------------------------------------ | ----------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YC1 | Người dùng trong phiên       | “test nốt đi”, “tìm lỗi và sửa luôn” | Mở rộng ngoài gateway ở Lần 2 | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR      | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử                                                                                                                                                                |
+| YC2 | Người dùng trong phiên trước | “Giữ blocker, sửa phần còn lại”      | Sửa ngoài gateway ở Lần 7     | Chờ PO quyết theo G8; chưa phải lời đồng ý của PO | Commit `2355737` sửa `infra/ci/check-helm-images.sh`: cấp DSN thử và khóa CSRF ngẫu nhiên để gateway khởi động trong Helm smoke; CI Helm đạt. Cần PO quyết giữ kèm code owner `/infra/` duyệt, hoặc tách PR infra merge trước #63 |
 
 ## Lần 2 — 22/11/2026
 
@@ -124,7 +128,7 @@ chỉ `@sires/gateway:test` và `agent-core:test` lỗi. Gateway lỗi DBQ-10; a
 spike theo H9, báo PO xử lý trong luồng của mình. Knowledge 22 đạt, 2 skip theo điều kiện dữ liệu.
 `check-pid --result`: 0 cảnh báo; `update-index --check`, `git diff --check` đạt.
 Giấy phép có 14 cảnh báo cache/report tự sinh ngoài nguồn Git; file nguồn sửa có SPDX.
-Chưa commit/push bản sửa hoặc merge PR.
+Bàn giao bản sửa lên nhánh PR #63 theo yêu cầu “đẩy lên đi”; không merge PR.
 
 ## Lần 5 — 22/11/2026 · Xử lý lỗi còn lại trên nhánh riêng
 
@@ -196,6 +200,30 @@ không đẩy bản sửa eTroy One. Mở [issue #83 — DBQ-10](https://github.
   không chứng minh bản provider trên remote tương thích và không đóng ASM-13 hay DBQ-10.
 - Không thay mã SIRes, DDL, migration, task-registry hoặc báo cáo QC độc lập trong lượt bàn giao này.
   G2/DBQ-10 và G4 vẫn mở; PR #63 chưa được merge.
+
+## Lần 9 — 24/11/2026 · Sửa QC độc lập Lần 2
+
+Yêu cầu trong phiên: “check xem PO chốt chưa rồi fix”. Đã fetch và kiểm thảo luận
+PR #63, issue #83 cùng `origin/main`: DBQ-10 vẫn mở, issue chưa có phản hồi;
+H7 và DDL chưa đổi. Chưa có quyết định PO cho G4, G8. Không sửa DDL/migration,
+test DBQ-10 hoặc hồ sơ QC độc lập.
+
+- G9: `tsconfig.build.json` loại `src/**/*.testkit.ts` khỏi build production.
+- G10: README nêu đủ năm vai trò, migrator đăng nhập và tự SET role owner;
+  owner cần sở hữu database hoặc có CREATE. Nêu SQLSTATE 42501 khi thiếu quyền.
+- G8: mục 5 ghi lại sửa Helm smoke ở commit `2355737` và phần chờ PO;
+  cập nhật ngày, nguồn cảnh báo tracks và hiện trạng build image trong `implement.md`.
+- Workspace chính bị tiến trình khác chuyển nhánh khi đang làm, trước khi sửa thành công;
+  bản sửa nằm trong worktree riêng, nhánh `fix/pr63-qc2-20261124`, từ đầu PR `1a6940f`.
+- Frozen install đạt; Nx chạy không cache: build, lint, typecheck đạt;
+  test **34 đạt, 1 lỗi / 35**, 5 file, 44.43 giây trên Windows với PostgreSQL 16 thật.
+  Lỗi duy nhất là DBQ-10 tại `migration.spec.ts:139`, không skip/expected failure.
+- Build sạch: 36 file trong `dist`, không có spec/testkit hoặc tham chiếu `@sires/testing`.
+  Kiểm giấy phép, chỉ mục tài liệu và `git diff --check` đạt. Diff lượt này chỉ thuộc gateway
+  và hồ sơ Dev; toàn PR vẫn cảnh báo gateway + infra theo G8.
+
+PR tiếp tục bị chặn: G2 HIGH, G8 HIGH, G4 MEDIUM; G9, G10 đã sửa để QC kiểm lại.
+Chưa commit/push bản sửa hoặc merge PR.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 
