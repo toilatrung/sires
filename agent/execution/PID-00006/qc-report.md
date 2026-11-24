@@ -1,6 +1,6 @@
 # PID-00006 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được theo quyết định PO — 0 CRITICAL, 0 HIGH. PO 22/11/2026 (“Merge, ghi việc sau”): G1 nhận số đo 20 project làm cận trên; G4 xác nhận Vietanhhhhhh2003 làm thay T1xNTH; G2 thành việc sau (Dev đổi sang `type` riêng của mẫu ở PR tiếp theo). Còn G3 (MEDIUM, Nx `inputs` cho DDL) và G5–G7 (LOW) (Lần 2, 22/11/2026)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH; còn G2 (MEDIUM, việc sau theo PO, chưa làm), G3 (MEDIUM, nay chỉ còn phần cache Nx), G5–G8 (LOW) (Lần 3, 24/11/2026). Đã merge vào `develop` (#62); mã mẫu trên `develop` `083795b` không đổi so với Lần 1, `@sires/sample-service:test` 13/13
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -100,6 +100,72 @@ Quyết định PO: trả lời câu hỏi về G1, G2, G4 của Lần 1 bằng 
 | G3 | Còn mở (MEDIUM) | Nên sửa Nx `inputs` trước khi chép kết quả DDL vào database 12.4 |
 | G4 | Đóng | Xác nhận `Vietanhhhhhh2003` làm thay `T1xNTH` cho PID-00006 |
 | G5–G7 | Còn mở (LOW) | Không xử lý ở lần này |
+
+## Lần 3 — 24/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC độc lập `sires-13` do điều phối `sires-c2` giao (task QC-A), không mang kết luận của Dev. Mã nguồn: `origin/develop` commit `083795b` (đã chứa #62 `e199a67`), worktree riêng, nhánh `qc/t1xnth-batch-a`. Lần 1 đã kết luận, Lần 2 ghi quyết định PO (“Merge, ghi việc sau”) và PR đã merge, nên lần này chỉ kiểm phần còn mở (G2, G3, G5, G6, G7) và chạy lại test của project.
+
+Phạm vi đã đọc: `libs/ts/sample-service/src/sample.service.ts`, `package.json`, `README.md`, `drizzle.config.ts`; `nx.json`; `libs/ts/platform/package.json` (`nx.targets.test.inputs`); `.github/workflows/ci.yml` (cache Nx); đầu `report.md`, `self-qc.md`. `git log` của `libs/ts/sample-service` và `agent/execution/PID-00006` trên `develop`: chỉ có `e199a67` (#62), không có commit nào sau Lần 2.
+
+### Kiểm các G còn mở
+
+| G | Mức | Kết luận Lần 3 | Bằng chứng |
+| --- | --- | --- | --- |
+| G2 | MEDIUM | Còn mở — việc sau theo PO, chưa có PR | `sample.service.ts:13`, `:29`, `:34`, `:47` vẫn dùng `type`, `action`, routing key `task.activated` |
+| G3 | MEDIUM | Một phần: phần “affected” đã có, phần cache còn | **Affected — nay đúng, gián tiếp:** PID-00158 (#52, `c640182`) thêm `{workspaceRoot}/docs/database/ddl/*.sql` vào `nx.targets.test.inputs` của `@sires/platform` (`libs/ts/platform/package.json:70–76`). QC chạy `pnpm nx show projects --affected --files=docs/database/ddl/planning.sql` → 16 project, có `@sires/platform` và `@sires/sample-service` (đối chứng: `--files=docs/README.md` → `[]`). **Cache — còn:** `libs/ts/sample-service/package.json` vẫn không khai `inputs` cho `test`; `nx show project @sires/sample-service --json` cho `targets.test` không có `inputs` nên dùng mặc định (`default` của chính project và `^default` của phụ thuộc). Đường DDL của platform nằm ở input của target `test`, không thuộc named input `default` (`nx.json:7`), nên không vào hash của `@sires/sample-service:test`. CI giữ cache Nx giữa các lượt (`ci.yml:101–110`, `.nx/cache`, `infra/ci/nx-cache-db.sh restore`), nên khi chỉ DDL đổi, `sample-service:test` được chọn nhưng có thể trả kết quả cache cũ, không chạy lại AC04 (`ddl-pg16.spec.ts`). Suy từ cấu hình; QC không sửa DDL để thử |
+| G5 | LOW | Còn mở (không chặn) | Bằng chứng offline không đổi (`validation-offline.txt`, `linux-qc.sh:36–48`); QC không tái lập, như Lần 1 |
+| G6 | LOW | Còn mở | `drizzle.config.ts:7` vẫn `schema: './src/schema.ts'`; README (`:37–43`) chỉ dạy `generate --custom`, không cảnh báo `generate` không `--custom` sẽ sinh lại `CREATE TABLE` |
+| G7 | LOW | Còn mở | `self-qc.md:25` vẫn dẫn `.nx/pid00006-affected.log`; `:55` EC07 vẫn “Chưa xử lý — S07”; `report.md:19` vẫn câu “Worktree `.nx/pid00006` giữ nguyên workspace PID-00034” |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G2 | Như Lần 1; quyết định PO Lần 2 | contradicts | MEDIUM | `libs/ts/sample-service/src/sample.service.ts:13`, `:29`, `:34`, `:47` | Như quyết định PO: đổi sang `type` riêng của mẫu ở PR tiếp theo |
+| G3 | Như Lần 1 (PID-00006-AC04, EC10, O4) | partial | MEDIUM | `libs/ts/sample-service/package.json:35–38` (không có `inputs`); `nx.json:7`, `:38–41`; `.github/workflows/ci.yml:101–110` | Như Lần 1: thêm `nx.targets.test.inputs` = `default`, `^default` (hoặc `^production`), `{workspaceRoot}/docs/database/ddl/**/*` — theo cách `@sires/platform` đã làm |
+| G5 | Như Lần 1 | partial | LOW | `agent/execution/PID-00006/linux-qc.sh:36–48` | Như Lần 1 |
+| G6 | Như Lần 1 | partial | LOW | `libs/ts/sample-service/drizzle.config.ts:7`, `README.md:37–43` | Như Lần 1 |
+| G7 | Như Lần 1 | partial | LOW | `agent/execution/PID-00006/self-qc.md:25`, `:55`; `report.md:19` | Như Lần 1 |
+| G8 | `report.md` (“Lần chạy sau cập nhật trạng thái ở trên”) · `spec-execution-skill` | partial | LOW | `agent/execution/PID-00006/report.md:3` vẫn `Xong — chờ QC` dù PR #62 đã merge theo quyết định PO; `check-pid --result` không phát hiện | Dev (hoặc PO khi nghiệm thu) đặt trạng thái sau merge; QC không sửa `report.md` |
+
+### AC
+
+Mã không đổi từ Lần 1, nên QC không đọc lại từng AC; kết luận AC của Lần 1 giữ nguyên, xác nhận lại bằng test của project trên `develop`.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00006-AC01…AC03, AC05 | đạt | stub (PostgreSQL thật qua Testcontainers, như Lần 1) | Như Lần 1 (`sample.spec.ts`) | Đạt: `@sires/sample-service:test` 3 file, 13/13 |
+| PID-00006-AC04 | đạt (lần chạy này, `--skip-nx-cache`); xem G3 | stub (Testcontainers) | `ddl-pg16.spec.ts › dựng 11 database từ DDL tham chiếu (PID-00006-AC04)` | Đạt: 11 database “đạt” trên PostgreSQL 160016, knowledge có pgvector 0.8.7, `vector(1536)`, HNSW |
+| NFR-MAINT-004-AC01 (phần ticket) | như Lần 1 | thao tác tay | — | Không chạy lại — như Lần 1 (G5) |
+
+### Lệnh đã chạy
+
+Worktree `/home/trong-hung/sires-wt/qc-a` (Ubuntu, Linux 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run @sires/sample-service:test --skip-nx-cache` | Đạt: 3 file, 13/13, 9,3 s; log có `sample-service migrate: hoàn tất` và bảng DDL 11 database “đạt” (dòng `sample-service migrate: migration lỗi; …` là ca lỗi có chủ đích của test) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/sample-service --skip-nx-cache` | Đạt cả ba |
+| `pnpm nx show projects --affected --files=docs/database/ddl/planning.sql` | 16 project, gồm `@sires/platform`, `@sires/sample-service` |
+| `pnpm nx show projects --affected --files=docs/README.md` (đối chứng) | `[]` |
+| `pnpm nx show project @sires/sample-service --json` (`targets.test`) | Không có `inputs`; `dependsOn: ["^build"]`, `cache: true` |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00006 --result` | `PID-00006: KẾT QUẢ ĐỦ (0 cảnh báo).`, trạng thái `Xong — chờ QC` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` (trước và sau khi ghi file này) |
+
+### Lệch với Self-QC
+
+Không có lệch mới.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. G3: khai `inputs` cho `test` của `@sires/sample-service` (nên làm trước khi chép kết quả DDL vào database 12.4, như PO ghi ở Lần 2).
+2. G2: đổi sự kiện mẫu sang `type` riêng (việc sau theo PO).
+3. G6, G7, G8: README, `self-qc.md`, trạng thái `report.md`.
+
+### Đề xuất cho PO
+
+- G3 nay chỉ còn phần cache: một dòng `inputs` trong `libs/ts/sample-service/package.json` là đủ; nên gộp vào PR sửa G2.
+- Có thể cân nhắc đưa `{workspaceRoot}/docs/database/ddl/*.sql` vào một named input chung (ví dụ `ddl`) trong `nx.json` để mọi project chạy DDL (platform, sample-service, planning, workspace, sires-common) dùng chung, tránh sót như G3 — việc của luồng infra, cần PO giao.
 
 ---
 
