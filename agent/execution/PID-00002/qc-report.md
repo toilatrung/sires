@@ -1,6 +1,6 @@
 # PID-00002 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được PR #70 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 3, 22/11/2026). G4 đã sửa cho `onOutcome` ném lỗi đồng bộ (có test, QC kiểm thêm bằng probe trên mã cũ và mã mới); còn mở G5 (chờ PO), G6 (`onOutcome` async bị từ chối vẫn sinh unhandled rejection), G7 (đầu `report.md`, `self-qc.md` chưa cập nhật cho Lần 3), đều LOW, không chặn merge theo DEC-58. Test outbox TS không chập chờn qua 9 lượt; lỗi thứ tự PID-00009 gặp là test Python của PID-00005
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW còn mở (G5 chờ PO, G6, G7) (Lần 4, 24/11/2026). Đã merge vào `develop` (#36, #70); mã của PID-00002 trên `develop` `083795b` không đổi so với Lần 3, `@sires/platform:test` 169/169
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -276,6 +276,66 @@ Không còn việc chặn merge PR #70. Ba việc LOW, làm ở PR này hoặc l
 - **G6 trước khi service đầu tiên gắn metric vào `onOutcome`** (PID-00057 và các service dùng `EventConsumer`): nếu PO muốn merge ngay, nên ghi vào README của `@sires/platform` rằng `onOutcome` phải đồng bộ, không trả promise, cho tới khi G6 xong.
 - **PID-00005 (Python, luồng platform) — test chập chờn PID-00009 gặp:** `test_envelope_and_rollback` (`libs/py/sires_common/tests/test_messaging.py:113`, `:215`) so thứ tự dòng outbox theo `created_at, id` trong khi `uuid7()` (`tenancy.py:35–45`) không tăng chặt trong cùng mili giây. Hai cách: test so theo tập (hoặc theo `kind`) thay vì thứ tự; hoặc `uuid7()` Python dùng bộ đếm trong cùng mili giây như bản TS (RFC 9562 §6.2, method 1) — cách này còn làm relay Python (`messaging.py:293`, `ORDER BY created_at, id`) publish đúng thứ tự gọi trong một giao dịch như bản TS. Cần chủ luồng platform chọn và sửa ở PID-00005 trước khi CI của PID-00009 bắt buộc; không chặn PR #70.
 - Các đề xuất của Lần 1, Lần 2 còn chờ PO: `request_hash` (slice S03), publish `mandatory`, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`, `correlation_id`, gộp ActorRef, ServiceName, heartbeat AMQP cho PID-00057, span cho relay và job dọn, khôi phục quyền cho EC01 (nay `outbox.spec.ts:90–95` đã khôi phục trong `finally`; kết nối của `recordQueue` (`outbox/messaging.testkit.ts:61`) và `admin` (`outbox.spec.ts:125`) vẫn chưa gắn `on('error')`).
+
+## Lần 4 — 24/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC độc lập `sires-13` do điều phối `sires-c2` giao (task QC-A), không mang kết luận của Dev. Mã nguồn: `origin/develop` commit `083795b` (đã chứa #36 `1da4b16` và #70 `79075b4`), worktree riêng, nhánh `qc/t1xnth-batch-a`. Lần 3 đã kết luận merge được và PR đã merge, nên lần này chỉ kiểm phần còn mở (G5, G6, G7) và chạy lại test của project.
+
+Phạm vi đã đọc: `libs/ts/platform/src/inbox/consumer.ts` (`start()` `:134–147`, `stop()` `:150–160`, `process` `:253–270`, kiểu `onOutcome` `:71`), `libs/ts/platform/README.md:46`, đầu `report.md`, `self-qc.md`; `git log` của `libs/ts/platform/src/{outbox,inbox,idempotency,audit,jobs}` và `agent/execution/PID-00002` trên `develop`: chỉ có `1da4b16` (#36) và `79075b4` (#70), không có commit nào sau Lần 3.
+
+### Kiểm các G còn mở
+
+| G | Mức | Kết luận Lần 4 | Bằng chứng |
+| --- | --- | --- | --- |
+| G5 | LOW | Còn mở, chờ PO | `inbox/consumer.ts:134–147` không đổi: `start()` lần đầu lỗi thì đặt `running = false` rồi ném lại, không vào vòng kết nối lại. README `libs/ts/platform/README.md:46` đã ghi hành vi này (“`start()` lần đầu lỗi thì ném lỗi; `isConsuming` cho health”) nhưng chưa ghi hướng dẫn service không chặn khởi động HTTP vào `start()` như lựa chọn (a); chưa thấy quyết định PO trong `report.md` |
+| G6 | LOW | Còn mở | `inbox/consumer.ts:71` vẫn khai `onOutcome?: (…) => void`; `:263–268` chỉ `try/catch` lời gọi đồng bộ, promise trả về bị bỏ qua — callback `async` ném lỗi vẫn thành unhandled rejection (như probe B, D của Lần 3; mã không đổi nên QC không chạy lại probe). README chưa ghi “`onOutcome` phải đồng bộ” |
+| G7 | LOW | Còn mở | `report.md:3` vẫn `Xong — chờ QC` dù đã merge; `:6` vẫn nhánh `platform/ts-outbox-inbox`, PR #36 (không nhắc #70). `self-qc.md:3` vẫn “Kết luận: Đạt (Lần 2, 21/11/2026)”, `:6` “Cập nhật: 21/11/2026”; mục `## Lần 3` (`self-qc.md:153`) không có tự đối chiếu |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G5 | Như Lần 2 (kiến trúc 11.6) | partial | LOW | `libs/ts/platform/src/inbox/consumer.ts:134–147` | Chờ PO chọn (a) hoặc (b) của Lần 2 |
+| G6 | Như Lần 3 (P3 · O2 · S02) | partial | LOW | `libs/ts/platform/src/inbox/consumer.ts:71`, `:263–268` | Như Lần 3: bắt cả lỗi bất đồng bộ của `onOutcome`, thêm test |
+| G7 | Như Lần 3 | partial | LOW | `agent/execution/PID-00002/report.md:3`, `:6`; `self-qc.md:3`, `:6`, `:153` | Như Lần 3; thêm đặt trạng thái sau khi merge theo `spec-execution-skill` |
+
+Không có G mới.
+
+### AC
+
+Mã của PID-00002 không đổi từ Lần 3, nên QC không đọc lại từng AC; kết luận AC của Lần 3 giữ nguyên, xác nhận lại bằng toàn bộ test của `@sires/platform` trên `develop`.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00002-AC01…AC06 và các AC requirement phần thư viện (như Lần 3) | đạt | Xây · thật (PostgreSQL 16 + pgvector, RabbitMQ 4 qua Testcontainers) | Như Lần 3 (`outbox.spec.ts`, `inbox.spec.ts`, `idempotency.spec.ts`, `audit.spec.ts`, `jobs.spec.ts`) | Đạt: `@sires/platform:test` 21 file, 169/169 |
+
+### Lệnh đã chạy
+
+Worktree `/home/trong-hung/sires-wt/qc-a` (Ubuntu, Linux 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt; cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169, 33,6 s (kèm `contracts:generate-ts`, `contracts:build`, `testing:build`) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)`, trạng thái `Xong — chờ QC`, có `qc-report.md` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` (trước và sau khi ghi file này) |
+
+### Lệch với Self-QC
+
+Không có lệch mới. `self-qc.md` chưa có lần chạy sau Lần 3 (G7).
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. G6: bắt lỗi bất đồng bộ của `onOutcome`, thêm test (luồng platform).
+2. G5: theo quyết định của PO.
+3. G7: cập nhật đầu `report.md` (trạng thái sau merge, PR #70) và `self-qc.md`.
+
+### Đề xuất cho PO
+
+- **Cần PO quyết G5** (từ Lần 2, vẫn mở): (a) giữ hành vi, ghi vào README; hoặc (b) thư viện thử lại lần đầu.
+- G6 nên xong trước khi service đầu tiên gắn metric `async` vào `onOutcome`; tạm thời ghi vào README `@sires/platform` rằng `onOutcome` phải đồng bộ.
+- Các đề xuất của Lần 1–3 còn chờ PO giữ nguyên (`request_hash` slice S03, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`/`correlation_id`, `uuid7()` Python của PID-00005).
 
 ---
 
