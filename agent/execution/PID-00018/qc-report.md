@@ -1,6 +1,6 @@
 # PID-00018 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 2 HIGH (Lần 1, 23/11/2026). Chưa merge được.
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 1 LOW (Lần 2, 25/11/2026). Trước khi merge cần cập nhật nhánh theo `main` (ruleset), xem Lần 2.
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md`, `blocker-ec09.md` trong thư mục này
@@ -140,6 +140,107 @@ Ranh giới luồng: chấp nhận. Thay đổi `pnpm-lock.yaml` là phần sinh
 - **S03 cấu hình:** câu “chuỗi kết nối cho _app, _system, người chạy migration; … kiểm khi khởi động” đọc được theo hai cách. Nếu PO chủ ý muốn service giữ DSN migrator thì G3 hạ xuống MEDIUM; QC đề nghị ghi rõ trong spec là chỉ Job migration nhận DSN migrator.
 - **Ghi chú cho PID-00045:** `drizzle.config.ts` trỏ `schema` vào module runner và snapshot `0000_snapshot.json` rỗng; nếu sau này chạy `drizzle-kit generate` không có `--custom` với schema TypeScript thật, drizzle-kit sẽ sinh lại CREATE TABLE cho bảng đã có. README đã dặn dùng `--custom`; PID-00045 cần giữ quy ước này.
 - **Chi phí CI:** mọi PR đổi `pnpm-lock.yaml` làm cả 20 project thành affected; chỉ để PO biết, không phải lỗi của PR.
+
+## Lần 2 — 25/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao. Mã nguồn: nhánh `audit/pid-00018-migration` (PR #66, draft), commit `28a4f7b`, kiểm trong worktree riêng (không dùng checkout chính). Nguồn so sánh: `main` `f28424c` (lúc Dev gộp) và `5e66d14` (lúc QC). Môi trường: Windows 11, Node 24.21.0, PostgreSQL 16 (`pgvector/pgvector:pg16`) qua Testcontainers trên Docker Engine 29.8.2 trong WSL `Ubuntu-24.04`; máy tải cao (load average 17–28, container của phiên khác chạy song song). Đối chiếu thêm CI run `45450603901` trên cùng commit `28a4f7b`.
+
+Tóm tắt: hai HIGH của Lần 1 đã đóng. `0000_init.sql` trùng từng byte với `00-common.sql` + một dòng trống + `audit.sql` của `main` (đã gồm sửa EC09 của PR #94); N1–N5 bị CHECK từ chối ở cả `actor` và `created_by`; service không còn đọc DSN migrator. G2, G4, G5 cũng đóng. Test audit 35/35 trên PostgreSQL thật, ở máy QC và trên CI. Ba đột biến đều bị test bắt: trả hàm EC09 về bản cũ (đỏ đúng 10 ca N1–N5), bẫy `COALESCE` thiếu vế `instance` (đỏ đúng 2 đối chứng synthesis), migration cũ với DDL mới (so schema đỏ). Còn một LOW về hồ sơ `report.md`.
+
+### Việc còn lại của Lần 1
+
+| G (Lần 1) | Mức | Kết quả Lần 2 | Bằng chứng |
+| --- | --- | --- | --- |
+| G1 | HIGH | Đóng | Blob `apps/audit/migrations/0000_init.sql` của `28a4f7b` = `00-common.sql` + `\n` + `audit.sql` dựng từ blob `origin/main` (`cmp` trùng, 21.394 byte, SHA-256 `0c0914bb…f429`); `main` mới `5e66d14` không đổi hai file DDL. `ddl-behaviour.spec.ts:67-84` N1–N5 × hai cột đạt (23514) |
+| G2 | MEDIUM | Đóng | `ddl-behaviour.spec.ts:67-73` (N1–N5), `:86-95` (đối chứng synthesis không `instance` ở `actor` và `created_by`); đột biến M2 chứng minh đối chứng bắt được bẫy `COALESCE` |
+| G3 | HIGH | Đóng | `src/config/database.ts:26` chỉ đọc `DATABASE_APP_URL`, `DATABASE_SYSTEM_URL`; `DATABASE_MIGRATOR_URL` chỉ còn ở lệnh migrate (`src/db/migrate.ts:51`) và README `:27`, `:41`. `app.module.spec.ts:17` đạt. QC chạy `node dist/main.js` chỉ với hai DSN: `/health` 200, log không chứa mật khẩu |
+| G4 | LOW | Đóng | `migration.spec.ts:43-55` biến thể `migrator-only` đăng nhập bằng migrator: 42704, không còn schema `app`/`replica`, không extension, sổ rỗng, không tạo vai trò ứng dụng |
+| G5 | LOW | Đóng | Không còn đường dẫn ổ đĩa máy trong `agent/execution/PID-00018/` (`git grep` rỗng) |
+
+### Khoảng trống
+
+Mã tiếp nối G1–G5 (Lần 1) và G6, G7 (Self-QC Lần 3 của Dev).
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G8 | Quy ước file kết quả (`report.md` phản ánh trạng thái hiện tại) | partial | LOW | `agent/execution/PID-00018/report.md:36` “Test audit: 22 passed, 1 failed”, `:41` “PO cần xử lý nguồn is_actor_ref…”, `:60` “Còn mở: G1 HIGH ở EC09…”, `:62` “Bước tiếp theo: PO xử lý nguồn; Dev làm tiếp test đỏ…”: mục 3, 4, 6 vẫn là nội dung Lần 1 nhưng không ghi là lịch sử (chỉ mục 1 có ghi), trái với trạng thái `Xong — chờ QC` ở đầu file | Ghi rõ mục 3, 4, 6 là kết quả Lần 1, hoặc viết lại theo Lần 3. Không chặn merge |
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00018-AC01 | Đạt | PostgreSQL 16 thật qua Testcontainers (ô Khung) | `migration.spec.ts › schema khớp DDL tham chiếu`; `ddl-behaviour.spec.ts › không sửa được — app/system/purge/owner (EC06)`, `› không xóa được trừ purge — hành vi theo DDL (EC07)` | Đạt trên máy QC (35/35) và CI (35/35). `_app`, `_system`, `_purge` UPDATE → 42501; owner UPDATE → 23000 (trigger); `_app`, `_system` DELETE → 42501; `_purge` DELETE 1 dòng theo DDL |
+| CTX-AUDIT-001-AC04 (phần database) | Đạt | Như trên | `ddl-behaviour.spec.ts › không sửa được`, `› không xóa được trừ purge` | Đạt |
+
+Edge case:
+
+| EC | Kết quả QC | Bằng chứng |
+| --- | --- | --- |
+| EC01 | Đạt | `chạy lần hai không đổi`: `{applied: 0, total: 1}`, dump không đổi |
+| EC02 | Đạt | `thiếu vai trò thì dừng — false`, `— migrator-only` |
+| EC03, EC04 | Đạt | `schema khớp DDL tham chiếu` (`extensions: []`, loại schema `drizzle`); lượt này phép so qua `container.exec` không chập chờn |
+| EC05 | Đạt mức cấu hình | `nx show project @sires/audit`: input của `test` gồm `00-common.sql`, `audit.sql`, `dependsOn: build`; `apps/audit/package.json` không đổi từ Lần 1 (lúc QC làm lệch tay ba kiểu và test đỏ). Đột biến M3 lần này là thêm một ca: DDL đổi mà migration không đổi → so schema đỏ. Hành vi cache Nx không chạy lại |
+| EC06–EC08 | Đạt | Test đạt |
+| EC09 | Đạt | `check — 'agent thiếu agentRunId'`, `'APR-11'`, `'summary 2001 ký tự'` → 23514; N1–N5 × `actor`/`created_by` → 23514; đối chứng synthesis không `instance` ghi được ở cả hai bảng; ActorRef hợp lệ sinh `actor_type`, summary 2000 ký tự được. Đột biến M1, M2 |
+| EC10 | Đạt | SET ROLE và test module dùng pool đăng nhập thật `sires_audit_app` |
+| EC11, EC12 | Đạt | Test đạt |
+| EC13 | Đạt | `migrate.spec.ts › lệnh migrate áp lên database rỗng` chạy `dist/migrate.js` từ `tmpdir()`; CI `images (audit)`, `helm` đạt trên `28a4f7b`. Gói `pnpm deploy --prod` không chạy lại: đã kiểm ở Lần 1, `package.json`, `deploy/values.yaml`, `src/db/migrate.ts`, `src/migrate.ts` không đổi từ đó |
+
+### Đối chiếu quy ước migration và Đầu ra
+
+- **D1/H1 (kiến trúc 6.10):** `0000_init.sql` là custom migration của drizzle-kit (journal `0000_init`, snapshot rỗng), nội dung là nguyên văn `00-common.sql` rồi `audit.sql` (đã kiểm từng byte, xem G1); chạy bằng `migrate()` của drizzle-orm (`src/db/migrate.ts:28`); chỉ tiến. Migration không có `CREATE ROLE`, `ALTER ROLE`, `SECURITY DEFINER`; `BYPASSRLS` chỉ xuất hiện trong chú thích chép từ DDL (`0000_init.sql:287-288`). Không có schema TypeScript cho bảng.
+- **D3/H3:** lệnh migrate riêng `dist/migrate.js` (script `migrate`); `deploy/values.yaml` có `migration.enabled: true`, `migration.command: ["node", "dist/migrate.js"]`; test hành vi DDL có trong PID.
+- **Đầu ra (quy tắc 1.4.13):** O1 `apps/audit/migrations/0000_init.sql` (đã xóa `.gitkeep` theo S01), O2 `apps/audit/src/` (`config/database.ts`, `db/database.module.ts`, `db/migrate.ts`, `migrate.ts`), O3 `apps/audit/README.md`; test ở `src/db/*.spec.ts`, `src/migrate.spec.ts`. Đúng đường dẫn.
+- **Ranh giới:** diff so với `main` chỉ `apps/audit/`, `agent/execution/PID-00018/`, `pnpm-lock.yaml`; `docs/` không đổi. `apps/audit/vitest.config.ts` (trần timeout) theo quy ước PO 24/11/2026, đã ghi ở `report.md` mục 5 (YC3), không tính `unrequested`.
+
+### Thử đột biến
+
+Sửa tạm trong worktree QC, chạy `vitest run src/db/migration.spec.ts src/db/ddl-behaviour.spec.ts --maxWorkers=1`, hoàn tác bằng `git checkout`; `git status` sạch sau mỗi lần.
+
+| M | Đột biến | Kỳ vọng | Kết quả |
+| --- | --- | --- | --- |
+| M1 | Trả ba hàm về bản trước PR #94 (`80a6626~1`) ở cả `00-common.sql` và `0000_init.sql` | N1–N5 đỏ, so schema vẫn xanh | 30 test: 20 đạt, 10 lỗi — đúng N1–N5 × `actor`/`created_by` (INSERT thành công thay vì 23514). So schema, đối chứng synthesis và các EC khác đạt |
+| M2 | Bẫy `COALESCE` nêu ở Lần 1: giữ `COALESCE` ngoài, bỏ `COALESCE` ở vế `instance` (cả hai file) | Đối chứng synthesis không `instance` đỏ | 30 test: 28 đạt, 2 lỗi — đúng hai đối chứng synthesis (`audit_event_actor_check`, `audit_export_created_by_check`); N1–N5 vẫn bị từ chối |
+| M3 | DDL mới, migration giữ hàm cũ (migration lỗi thời so với nguồn — đúng tình huống Lần 3 sửa) | So schema đỏ | `schema khớp DDL tham chiếu` lỗi (dump khác). Cùng lượt, `ddl-behaviour.spec.ts` lỗi ở hook trước khi chạy ca nào (reporter JSON không ghi lý do; nghi do tải Docker). Chạy lại riêng file này: 16 đạt, 10 lỗi đúng N1–N5 |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git worktree add --detach <scratchpad>/qc-66 origin/audit/pid-00018-migration` | HEAD `28a4f7b` |
+| `pnpm install --frozen-lockfile` | Đạt, lockfile không đổi |
+| `pnpm nx run @sires/audit:test --skip-nx-cache` (PowerShell; `DOCKER_HOST=tcp://127.0.0.1:2375`, `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`, `NX_DAEMON=false`) | Đạt, kèm 5 task phụ thuộc (gồm build của contracts, testing, platform, audit): **4 file, 35/35**, 171,6 s |
+| Dựng `00-common.sql` + `\n` + `audit.sql` từ blob `origin/main`, `cmp` với blob `0000_init.sql` của `28a4f7b`; lặp lại với `main` `5e66d14` | Trùng từng byte. Bản trong worktree Windows khác blob vì `core.autocrlf=true` đổi sang CRLF lúc checkout; DDL và migration cùng CRLF nên phép so trong test vẫn cân; image build trên Linux dùng LF |
+| Đột biến M1–M3, chạy lại M3 | Như bảng trên |
+| `node dist/main.js` chỉ với `DATABASE_APP_URL`, `DATABASE_SYSTEM_URL` (mật khẩu giả, host không tới được), không có `DATABASE_MIGRATOR_URL` | `/health` 200 `{"service":"audit","status":"ok"}`; stdout, stderr không chứa mật khẩu |
+| `pnpm nx show project @sires/audit --json` | Như EC05 |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: audit, repo`, exit 0 |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00018 --result` | KẾT QUẢ ĐỦ, 0 cảnh báo; trạng thái `Xong — chờ QC` |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu thông báo giấy phép |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard khớp) |
+| `git diff origin/main...HEAD` | 30 file; ngoài `apps/audit/`, `agent/execution/PID-00018/` chỉ có `pnpm-lock.yaml`; `docs/` rỗng |
+| `git merge-tree --write-tree HEAD origin/main` | Gộp sạch với `main` `5e66d14` (PID-00029 #82; không đổi `docs/database/ddl/`, chỉ đổi `pnpm-lock.yaml` ở importer research) |
+| `pnpm nx affected -t lint typecheck test build` | Không chạy cục bộ — máy tải cao; theo chỉ đạo chỉ chạy lại test audit, project khác không đổi so với `main`. Dùng CI run `45450603901` trên `28a4f7b`: mọi job success; trong job `typescript`, bốn target `@sires/audit` chạy thật (không lấy cache): lint, build, typecheck, test 35/35; 59/63 task còn lại lấy cache Nx |
+| `docker build` image audit, `validate-production.cjs`, `validate-cache.cjs`, Helm cục bộ | Không chạy — máy tải cao; CI `images (audit)`, `helm` đạt trên `28a4f7b`; kết quả Lần 1 còn áp dụng (xem EC13, EC05) |
+
+### Lệch với Self-QC
+
+- **G7 của Dev (LOW):** QC đồng ý không phải khoảng trống của PR: CI Linux trên `28a4f7b` success, các project đó không đổi so với `main`. Đóng.
+- **So byte (Self-QC Lần 3):** đúng. Lưu ý thêm: trên Windows phải so blob Git (hoặc bản LF), vì file checkout là CRLF.
+- **`report.md`:** Self-QC Lần 3 kết luận Đạt, nhưng mục 3, 4, 6 của `report.md` còn ghi trạng thái chặn của Lần 1 (G8).
+- Không có lệch khác: các ca N1–N5, đối chứng synthesis, G3 và EC02 `migrator-only` khớp lời khai của Dev.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. (Dev hoặc phiên điều phối) Gộp `main` mới (`5e66d14`) vào nhánh trước khi merge: nhánh đang sau `main` 1 commit, ruleset đòi check CI trên nhánh đã cập nhật. Gộp sạch, không đổi DDL nên `0000_init.sql` vẫn trùng nguồn; chờ CI xanh lại.
+2. (Dev, không chặn) G8.
+3. (PO) Review, merge PR #66.
+
+### Đề xuất cho PO
+
+- PID-00018 có thể nghiệm thu: không còn CRITICAL, HIGH; merge sau bước 1.
+- Ghi chú ngoài phạm vi, giữ từ Lần 1 (suy từ thân hàm sau PR #94, không chạy thử lại): `app.is_actor_ref` vẫn nhận agent khác analysis có `instance` ngoài A/B (ví dụ `"instance":"C"`) và researcher có `"accountId": null`. Nếu muốn chặn thì cần DBQ riêng cho DDL chung, không thuộc PID-00018.
+- Ghi chú cho PID-00045 ở Lần 1 (dùng `drizzle-kit generate --custom`, snapshot rỗng) vẫn giữ.
 
 ---
 
