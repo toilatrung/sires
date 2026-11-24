@@ -1,6 +1,7 @@
 # PID-00023 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH; còn 1 MEDIUM, 5 LOW không chặn merge (Lần 1, 22/11/2026).
+**Kết luận mới nhất:** Đã merge (PR #71, `8dee5ec` trên `develop`), kết luận nghiệm thu giữ nguyên — 0 CRITICAL, 0 HIGH; G1 (MEDIUM) và G2–G6 (LOW) của Lần 1 chưa xử lý (Lần 2, 24/11/2026).
+- Lần 2: mã planning trên `develop` trùng commit Lần 1. QC chạy lại trên Linux: 39/39 test, lint, typecheck, build đạt; helper state machine TS 63/63, Python 53/53. Không có khoảng trống mới; DBQ-10 vẫn mở, planning không có hàm `SECURITY DEFINER`.
 - Đủ 7 AC ở mức Khung (PH-01): domain chạy không cần mạng, database chạy trên PostgreSQL 16 thật qua Testcontainers. State machine Task khớp PRD 9.8 và 18.2 (28 cặp T-01–T-19, đúng mã, đúng actor, không có T-17). PlanVersion có đúng 4 cặp theo H4. Dòng `app.state_transition` do helper PID-00158 sinh, khớp từng dòng với DDL.
 - G1 (MEDIUM): hai test database không đặt timeout riêng, chạy sát mức mặc định 5 s của vitest. Khi Docker bận, cả hai quá hạn. Nên sửa trước khi merge để check `build` của CI không đỏ ngẫu nhiên; PO quyết có bắt sửa trước merge không.
 - DBQ-10 không cùng dạng: `00-common.sql` và `planning.sql` không có hàm `SECURITY DEFINER` hay view. QC chạy migration bằng vai trò migrator thật (PID-00159 H3, không phải superuser): đạt, mọi đối tượng thuộc `sires_planning_owner`, RLS và trigger đúng.
@@ -105,6 +106,77 @@ Edge case: EC01–EC24 có test và đạt. EC05 đã kiểm cấu hình: `nx sh
 - **Hồ sơ PID-00023 so với PID-00159 H3:** PID-00159 (mục “Phải sửa ở nguồn”) nói hồ sơ PID migration sẽ cập nhật tên `sires_<svc>_migrator` và DSN mẫu trong cùng lô. Hồ sơ PID-00023 chưa có tên này. PO cập nhật hồ sơ hoặc chấp nhận G3 làm việc tiếp sau.
 - **Spec mục 3 O1** ghi “File NNN_init.sql mới tạo 9 bảng”. Theo H1, file là `0000_init.sql` (drizzle-kit) và dựng 15 bảng (9 bảng planning, `replica.project_state`, 5 bảng nền). PO có thể sửa câu chữ O1 cho khớp H1 khi rà hồ sơ; mã không cần đổi.
 - **Đề xuất của Dev** (`report.md` mục 6): `pnpm-lock.yaml` được QC xác nhận chỉ đổi importer `apps/planning`, catalog giữ nguyên. Ghi chú bộ tách từ `app.sires_simple` tách `T-042` thành hai token là đúng DDL; nên chuyển cho PID-00116.
+
+## Lần 2 — 24/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do phiên điều phối giao (lô QC-B), không mang kết luận của Dev. Mục đích: kiểm mã đã merge và xem các khoảng trống G1–G6 của Lần 1 đã xử lý chưa.
+
+Mã nguồn:
+- `origin/develop` `083795b`. PR #71 đã vào `develop` bằng squash `8dee5ec`. QC chạy trên worktree riêng (nhánh `qc/t1xnth-batch-b`).
+- `git diff dc0710b 083795b -- apps/planning` rỗng: mã planning trên `develop` trùng từng byte với commit QC Lần 1 kiểm. Sau Lần 1 chỉ có thêm `qc-report.md` này. `docs/tickets/issues/PID-00023/`, `planning.sql`, `00-common.sql` không đổi.
+
+Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, uv 0.13.8, Python 3.12; Docker Engine 29.9.2 cục bộ, image có sẵn `pgvector/pgvector:pg16`. Load average lúc chạy khoảng 2–4; Docker không dùng chung với phiên QC khác lúc chạy.
+
+Kiểm độc lập:
+- **Dòng chuyển trạng thái:** `pnpm exec sires-state-transition-sql dist/task-state/index.js` trong `apps/planning`, so với `0001_state_transition.sql` bỏ bốn dòng đầu: trùng.
+- **DBQ-10:** `grep "SECURITY DEFINER"` trên `apps/planning/migrations/*.sql` và `docs/database/ddl/planning.sql`: không có kết quả. Kết luận Lần 1 giữ nguyên: không cùng dạng DBQ-10. DBQ-10 vẫn mở ở database 13.3. QC không chạy lại phép thử bằng migrator thật vì mã không đổi.
+- **Thời gian các test của G1** (`vitest run src/migrate.spec.ts src/db/state-transition.spec.ts --reporter=verbose`, máy ít tải): `plan_version` 1035 ms, `lệnh migrate trên database rỗng` 577 ms. Lần 1, khi Docker bận, hai test này quá hạn 5000 ms. Thời gian dao động nhiều theo tải, nên rủi ro G1 vẫn còn.
+
+### Trạng thái khoảng trống của Lần 1
+
+| Mã | Mức | Trạng thái | Bằng chứng (file:dòng) | Ghi chú |
+| --- | --- | --- | --- | --- |
+| G1 | MEDIUM | chưa xử lý; lần này không tái hiện | `apps/planning/src/db/state-transition.spec.ts:116`, `apps/planning/src/migrate.spec.ts:31`, `:35` (vẫn không có timeout riêng); `apps/planning` không có `vitest.config.*` | PO đã merge, không bắt sửa trước. Vẫn nên sửa: một PR nhỏ của luồng planning vào `develop` |
+| G2 | LOW | chưa xử lý | `apps/planning/src/db/database.testkit.ts:35`–`40` (không có `sires_planning_migrator`) | Cùng gốc với đề xuất OQ về testkit migrator (PID-00017 Lần 1, 2). Chưa có quyết định PO |
+| G3 | LOW | chưa xử lý, còn bị chặn | `apps/planning/README.md:51`–`55` | PID-00159 chưa có mã trên `develop` |
+| G4 | LOW | chưa xử lý | `apps/planning/src/migrate.spec.ts:59`–`84` | Chưa dựng image thật. PID-00009 (#57) thêm build image vào CI; QC không kiểm CI của `develop` trong lần này |
+| G5 | LOW | chưa xử lý, còn bị chặn | `agent/execution/PID-00023/report.md` mục 4 | Chờ PID-00159 |
+| G6 | LOW | chưa xử lý | `apps/planning/src/task-state/task-state.spec.ts:183` (`'missing_evidence'`), `:185` (`'blocked_input'`) | Vẫn là giá trị ngoài ReasonCode của PRD 18.2 |
+
+Không có khoảng trống mới. Không có CRITICAL, HIGH, không có `contradicts`.
+
+### AC
+
+Bảy AC giữ kết luận của Lần 1 (đạt, mức Khung). QC chạy lại toàn bộ test:
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00023-AC01, TASK-STATE-001-AC01, TASK-STATE-001-AC04 (domain) | đạt | Khung: domain | `src/task-state/task-state.spec.ts` | Đạt trong 39/39 của `@sires/planning:test` |
+| PID-00023-AC02 | đạt | PostgreSQL 16 thật, dựng bằng superuser (G2) | `src/db/migration.spec.ts › schema khớp DDL tham chiếu` | Đạt |
+| DATA-STATE-001-AC01, DATA-STATE-001-AC02 (planning), NFR-MAINT-003-AC01 (Task, PlanVersion) | đạt | domain + database | `src/db/state-transition.spec.ts`, `src/db/ddl-behaviour.spec.ts` | Đạt; `plan_version` 1035 ms |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/planning --skip-nx-cache --parallel=1` | Đạt cả bốn target. Test: 6 file, 39/39 đạt, 13,3 s |
+| `pnpm exec vitest run src/migrate.spec.ts src/db/state-transition.spec.ts --reporter=verbose` (trong `apps/planning`) | 8/8 đạt; thời gian ở mục Kiểm độc lập |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63 test |
+| `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip |
+| `pnpm exec sires-state-transition-sql dist/task-state/index.js` | Trùng `0001_state_transition.sql` (bỏ phần giấy phép) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00023 --result` | “KẾT QUẢ ĐỦ (0 cảnh báo)” |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | Sạch (chạy chung lô với PID-00017) |
+| `check-tracks.mjs`, `check-charts.mjs`, `docker build` | Không chạy: mã đã merge, không còn nhánh PR để so; Lần 1 đã có bằng chứng CI cho `check-charts.mjs`. Lần này không dựng image |
+
+### Lệch với Self-QC
+
+Không có điểm mới. Các điểm lệch của Lần 1 vẫn đúng, vì mã không đổi.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Giữ thứ tự của Lần 1. Không có việc nào chặn, vì PR đã merge:
+
+1. Đặt timeout riêng cho test, hook dùng database (G1). PR nhỏ của luồng planning vào `develop`.
+2. Đổi dữ liệu reasonCode trong test sang giá trị ReasonCode có thật (G6). Có thể gộp vào PR của G1.
+3. Theo quyết định PO về testkit migrator: G2.
+4. Khi PID-00159 có mã trên `develop`: G3, G5.
+5. Dựng image thật hoặc kiểm bước build image của CI (PID-00009): G4.
+
+### Đề xuất cho PO
+
+1. G1 ở PID-00017 (workspace) và PID-00023 (planning) cùng một gốc: `apps/<service>` không có `vitest.config` đặt `testTimeout`, `hookTimeout` cho test dùng container. Đề xuất một quy ước chung (cấu hình vitest dùng chung cho test có Testcontainers, hoặc timeout trong helper của `@sires/testing`), thay vì sửa từng service.
+2. Các đề xuất của Lần 1 (actor PlanVersion cho PID-00049, hồ sơ chưa ghi `sires_planning_migrator`, câu chữ O1) chưa có thay đổi ở `docs/`, giữ nguyên.
 
 ---
 
