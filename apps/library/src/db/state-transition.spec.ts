@@ -52,7 +52,6 @@ describe('dòng chuyển trạng thái library (PID-00024 S02)', () => {
   let pg: LibraryPostgres;
   const accountId = randomUUID();
   let projectId = '';
-  let trustedReferenceId = '';
 
   beforeAll(async () => {
     pg = await startLibraryPostgres();
@@ -60,10 +59,8 @@ describe('dòng chuyển trạng thái library (PID-00024 S02)', () => {
     await pg.createDatabase(REFERENCE);
     await runMigrations(pg.url(MIGRATED));
     await pg.applyReferenceDdl(REFERENCE);
-    await pg.asRole(MIGRATED, 'system', undefined, async (client) => {
-      projectId = await insertProjectState(client, accountId);
-      trustedReferenceId = await insertReference(client, accountId, { approvalStatus: 'Trusted' });
-    });
+    // Project Active để tg_project_writable không chặn _app ghi selection.
+    projectId = await pg.asRole(MIGRATED, 'system', undefined, (client) => insertProjectState(client, accountId));
   });
 
   afterAll(async () => {
@@ -117,7 +114,6 @@ describe('dòng chuyển trạng thái library (PID-00024 S02)', () => {
           client.query('UPDATE app.project_reference_selection SET status = $2 WHERE id = $1', [id, to]),
       },
     ];
-    expect(trustedReferenceId).not.toBe('');
 
     const outcomes: Record<string, string> = {};
     const expected: Record<string, string> = {};
