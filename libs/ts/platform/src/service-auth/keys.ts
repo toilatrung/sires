@@ -65,7 +65,11 @@ export function servicePublicKeysFromJwks(jwks: ServiceJwks | string): ServicePu
   const document = (typeof jwks === 'string' ? JSON.parse(jwks) : jwks) as ServiceJwks;
   if (!document || !Array.isArray(document.keys)) throw new TypeError('servicePublicKeysFromJwks: expected {"keys": [...]}');
   const keys: Partial<Record<ServiceName, JsonWebKey>> = {};
-  for (const jwk of document.keys) {
+  for (const item of document.keys as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      throw new TypeError('servicePublicKeysFromJwks: each key must be a JWK object');
+    }
+    const jwk = item as ServiceJwks['keys'][number];
     if (!isServiceName(jwk.kid)) throw new TypeError(`servicePublicKeysFromJwks: kid “${String(jwk.kid)}” is not a service name`);
     if (keys[jwk.kid]) throw new TypeError(`servicePublicKeysFromJwks: kid “${jwk.kid}” appears twice`);
     if ('d' in jwk) {

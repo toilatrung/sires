@@ -262,4 +262,21 @@ describe('bộ khóa', () => {
     expect(() => servicePublicKeys({ gateway: privateJwk })).toThrow(/“gateway” is a private JWK/);
     expect(servicePublicKeys({ gateway: dev.privateKeys.get('gateway') }).get('gateway')?.type).toBe('public');
   });
+
+  it('JWKS sai cấu trúc: lỗi nêu SERVICE_AUTH_PUBLIC_KEYS (QC PID-00003 Lần 2 G9)', () => {
+    const dev = generateServiceKeys(['gateway']);
+    const privateJwk = JSON.stringify(dev.privateKeys.get('gateway')?.export({ format: 'jwk' }));
+    for (const jwks of ['null', '[]', '{"keys":"gateway"}', '{"keys":[null]}', '{"keys":[1]}', '{"keys":[{"kid":"khong-phai-service"}]}']) {
+      let message = '';
+      try {
+        serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_PRIVATE_KEY: privateJwk, SERVICE_AUTH_PUBLIC_KEYS: jwks });
+      } catch (error) {
+        message = String(error);
+      }
+      expect(message, jwks).toMatch(/SERVICE_AUTH_PUBLIC_KEYS is not a valid JWKS/);
+      expect(message, jwks).not.toMatch(/Cannot read properties/);
+    }
+    // Called directly, an element that is not an object is refused with a clear message.
+    expect(() => servicePublicKeysFromJwks({ keys: [null] } as never)).toThrow(/each key must be a JWK object/);
+  });
 });

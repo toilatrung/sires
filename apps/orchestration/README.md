@@ -48,6 +48,7 @@ Quy ước (kiến trúc 6.10, quyết định D1 của PO 18/11/2026):
 
 - Migration nằm ở `migrations/`, là **custom migration SQL của drizzle-kit** (có `meta/_journal.json` do công cụ sinh), chỉ tiến: không sửa migration đã merge, thay đổi là migration mới.
 - Migration đầu `migrations/0000_init.sql` chép nguyên văn `docs/database/ddl/00-common.sql` rồi `orchestration.sql`, trừ khối `INSERT INTO app.state_transition` (dòng sinh từ khai báo, xem [State machine](#state-machine)). Không tạo vai trò.
+- `migrations/0001_ec09_jsonb_helpers.sql`: sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
 - Áp bằng `migrate()` của drizzle-orm (migrator node-postgres) trong một giao dịch: lỗi thì rollback toàn bộ; migration đã ghi sổ ở `drizzle.__drizzle_migrations` không áp lại. Lúc chạy không cần drizzle-kit.
 - Schema Drizzle TypeScript (`pgTable`, ở `src/db/schema.ts`) do PID tính năng viết; hiện chưa có bảng nào. Snapshot của drizzle-kit (`migrations/meta/*_snapshot.json`) không phản ánh SQL viết tay, nên migration mới tạo bằng `--custom` cho tới khi schema TypeScript khớp database.
 
