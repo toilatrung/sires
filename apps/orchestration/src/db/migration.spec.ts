@@ -96,13 +96,13 @@ describe('migration orchestration — PID-00019-AC01', () => {
 
   it('chạy lại không đổi schema (EC02)', async () => {
     const second = await runMigrations(pg.url(MIGRATED));
-    expect(second).toEqual({ applied: 0, total: 1 });
+    expect(second).toEqual({ applied: 0, total: 2 });
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const recorded = await pg.admin<{ n: string }>(
       MIGRATED,
       `SELECT count(*) AS n FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`,
     );
-    expect(recorded).toEqual([{ n: '1' }]);
+    expect(recorded).toEqual([{ n: '2' }]);
   });
 
   // S02, phần không cần helper: khai báo khớp đúng 43 dòng mà khối INSERT của DDL tạo ra (EC06).

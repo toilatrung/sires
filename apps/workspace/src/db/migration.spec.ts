@@ -18,7 +18,7 @@ import { MIGRATIONS_SCHEMA, MIGRATIONS_TABLE, runMigrationCommand, runMigrations
 const CONTAINER_TIMEOUT = 180_000;
 const MIGRATED = 'workspace_migrated';
 const REFERENCE = 'workspace_reference';
-const MIGRATION_COUNT = 2;
+const MIGRATION_COUNT = 3;
 
 describe('migration workspace — PID-00017-AC01', () => {
   let pg: WorkspacePostgres;
