@@ -1,9 +1,9 @@
 # PID-00029 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — ba hàm DDL nguồn còn lỗi SQL NULL (QC G1–G3 HIGH); Lần 2 bổ sung hồi quy, RLS đủ 12 bảng và sửa chú thích
+**Kết luận:** Đạt — Lần 3: ba hàm kiểm JSON đồng bộ theo PR #94 (EC09), test research 45/45, không còn CRITICAL/HIGH; PR #82 phụ thuộc PR #94
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 24/11/2026 (kết quả mới nhất ở Lần 2 cuối file)
+- **Cập nhật:** 24/11/2026 (kết quả mới nhất ở Lần 3 cuối file; Lần 1–2 giữ làm lịch sử)
 
 ## 1. Lệnh
 
@@ -67,7 +67,7 @@ không có timeout hoặc unhandled error; chỉ còn lỗi DDL EC09.
 - [x] Không làm thêm ngoài phạm vi; không có giao diện, API, service-auth, schema bảng Drizzle.
 - [x] Không console.log/TODO không chủ; helper test không vào build production.
 - [x] Đã tự đối chiếu bằng spec-converge-skill; không tạo qc-report.md độc lập.
-- [ ] Không còn HIGH: **G1 còn mở**, không đặt Xong — chờ QC.
+- [x] Không còn HIGH: Lần 1–2 **G1 còn mở**; Lần 3 đóng G1 (cùng QC G1–G3) nhờ PR #94, xem Lần 3 cuối file.
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
@@ -120,6 +120,82 @@ Các test còn lại (EC01–EC06, EC10–EC13, health, CLI) đạt. S02 vẫn k
 
 Giữ nguyên lịch sử kết quả trước đây. G2/G3 MEDIUM của Self-QC Lần 1 là mã riêng,
 không phải G2/G3 HIGH trong QC độc lập; QC đã ghi bằng chứng Helm CI và timeout platform.
+
+## Lần 3 — 24/11/2026 · Dev tự QC sau khi đồng bộ EC09 (PR #94)
+
+Người chạy: phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhhhhh2003`. Worktree riêng
+trong scratchpad, nhánh `research/pid-00029-migration` từ `origin` `328dfbf`, gộp (merge, không rebase)
+`origin/main` `343c7b9` rồi `origin/database/ec09-jsonb-helpers` `8839cde` (PR #94, PO đã duyệt): không xung đột.
+
+### Lệnh
+
+| Lệnh                                                                                                                                                | Kết quả                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-pid.mjs PID-00029`                                                                                                                           | Đủ để thực thi, 2 cảnh báo (đã có `qc-report.md`; `report.md` đã đặt Xong trong lần này)                                                                                                                                                                                                                                                                                                          |
+| So `0000_init.sql` với DDL sau khi gộp                                                                                                              | 312 dòng đầu trùng từng byte với `docs/database/ddl/00-common.sql` (`cmp` trên blob LF); `diff <(cat 00-common.sql research.sql) 0000_init.sql` chỉ còn một dòng trống sau phần chung và khối state_transition sinh bằng helper, như QC Lần 1 ghi                                                                                                                                                 |
+| `pnpm install --frozen-lockfile`                                                                                                                    | Đạt; cảnh báo build script bị bỏ qua (cấu hình sẵn có)                                                                                                                                                                                                                                                                                                                                            |
+| `pnpm nx run @sires/research:test --skip-nx-cache` (trước khi thêm V3)                                                                              | **44/44 đạt**, 4 file; `--reporter=verbose` liệt kê đủ I01–I17, V1/V2, EC01–EC13                                                                                                                                                                                                                                                                                                                  |
+| Đột biến: trả `0000_init.sql` về bản cũ (hàm chưa COALESCE), giữ DDL mới, chạy `migration.spec.ts`                                                  | **23 lỗi, 14 đạt / 37**: `schema khớp DDL` và đúng 22 ca I01–I17 (EC07–EC09); đã chép lại bản mới, `git diff --stat` khớp trước đột biến                                                                                                                                                                                                                                                          |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/research --skip-nx-cache` (sau V3, Prettier)                                               | Đạt cả bốn target; test **45/45**                                                                                                                                                                                                                                                                                                                                                                 |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --exclude=agent-core,eval,sires-common,knowledge --parallel=2 --skip-nx-cache`    | 16 project TS. Lỗi 2 task: `@sires/contracts:test` (ca Python EC06: `openapi-python-client` bị Smart App Control chặn, os error 4551 — môi trường) và `@sires/platform:test` (3 lỗi / 169: hook 10 s, test 5 s, relay RabbitMQ 30 s, “Unexpected close” khi máy tải). Mọi task còn lại đạt, gồm research 45/45, planning 40/40, workspace 26/26, orchestration 21 (+4 todo), sample-service 13/13 |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` (chạy riêng)                                                                                     | 168/169; chỉ `telemetry.spec.ts › span và log cùng mã yêu cầu` timeout 5 s (lỗi đã biết từ Lần 1); chạy riêng `telemetry.spec.ts`: 6/6. PR không đổi `libs/ts/platform` (0 file)                                                                                                                                                                                                                  |
+| Python `agent-core` (lint, typecheck, test) trong container `ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim`, `uv sync --all-packages --locked` | ruff đạt; mypy đạt (27 file); pytest **20 đạt, 1 skip** (`spikes/spk-08`: chưa sinh contracts Python, có từ trước). `eval`, `sires-common`, `knowledge` không chạy cục bộ — PR không đổi mã Python của chúng; Nx chọn vì `pnpm-lock.yaml`                                                                                                                                                         |
+| `node scripts/docs/add-license.mjs --check`                                                                                                         | 0 file thiếu giấy phép                                                                                                                                                                                                                                                                                                                                                                            |
+| `node scripts/docs/update-index.mjs --check`                                                                                                        | Khớp 159 PID, taskboard khớp                                                                                                                                                                                                                                                                                                                                                                      |
+| `check-tracks.mjs --base origin/main`                                                                                                               | `agent-core, docs, orchestration, planning, repo, research, workspace`, mã thoát 0 — do PR #94 chưa vào `main`. Mô phỏng sau khi #94 merge (`git merge-tree` của `main` + #94, so với HEAD, cộng file chưa theo dõi): `repo, research`                                                                                                                                                            |
+| `pnpm exec prettier --check --end-of-line auto apps/research agent/execution/PID-00029`                                                             | Chỉ báo `apps/research/tsconfig.json` (scaffold, PR không đổi) và `qc-report.md` (file của QC, Dev không sửa)                                                                                                                                                                                                                                                                                     |
+| `git diff --check`, `git diff --check origin/main...HEAD`                                                                                           | Sạch                                                                                                                                                                                                                                                                                                                                                                                              |
+| `helm template infra/helm/sires-service -f apps/research/deploy/values.yaml`                                                                        | Không chạy — không có Helm trên Windows và WSL. `values.yaml` không đổi từ lần CI job `helm` báo “OK Helm research”                                                                                                                                                                                                                                                                               |
+| UI                                                                                                                                                  | Không có màn hình                                                                                                                                                                                                                                                                                                                                                                                 |
+
+### AC → test
+
+| AC             | Test                                                                        | Kết quả                                                                                                                                                                      |
+| -------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PID-00029-AC01 | `apps/research/src/db/migration.spec.ts › schema khớp DDL (PID-00029-AC01)` | Đạt trên Testcontainers PostgreSQL 16 + pgvector, so `pg_dump --schema-only` với database dựng từ `00-common.sql` (bản EC09) rồi `research.sql`; đột biến bản cũ làm test đỏ |
+
+### Edge case
+
+| #          | Trạng thái | Test hoặc lưu ý                                                                                                                                                                                                         |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EC01       | Đã kiểm    | `chạy trên PostgreSQL 16 (EC01)`                                                                                                                                                                                        |
+| EC02       | Đã kiểm    | `thiếu vai trò thì dừng` (42704, rollback, không tạo vai trò)                                                                                                                                                           |
+| EC03       | Đã kiểm    | `chạy lại (EC03)`, `lệnh migrate trên database rỗng`                                                                                                                                                                    |
+| EC04       | Đã kiểm    | `RLS (EC04)` đủ 12 bảng                                                                                                                                                                                                 |
+| EC05, EC06 | Đã kiểm    | `bản sao trống chặn Evidence (EC05)`, `Evidence chỉ từ Reference Trusted được chọn (EC06)`                                                                                                                              |
+| EC07       | Đã kiểm    | `ràng buộc ArtifactVersion (EC07)`; ArtifactVersion Accepted thiếu `approvedBy`, `decision`, `apr`, `approvedBy.type`, chỉ bốn trường → 23514                                                                           |
+| EC08       | Đã kiểm    | `Claim Accepted cần đánh giá và phê duyệt (EC08)`; năm ca approval thiếu trường trên Claim → 23514                                                                                                                      |
+| EC09       | Đã kiểm    | `provenance bắt buộc (EC09)`, `provenance thiếu inputs phải bị từ chối (EC09)`, I02–I09, I14–I17 → 23514; đối chứng V1/V2 (agent writing, không instance, `inputs: []`) và V3 mới (agent analysis, instance A) ghi được |
+| EC10–EC12  | Đã kiểm    | `bản ghi bất biến (EC10)`, `chặn ghi theo vòng đời project (EC11)`, `liên kết khác project (EC12)`                                                                                                                      |
+| EC13       | Đã kiểm    | `state-transition.spec.ts`: đủ 34 cặp, 9 chuyển hợp lệ                                                                                                                                                                  |
+| Mới        | Cần lưu ý  | PR #82 đang chứa commit của PR #94 tới khi #94 vào `main`; merge #94 trước, cập nhật #82 với `main` rồi mới merge #82                                                                                                   |
+
+### Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+Đọc lại AC01, P1–P6, N1–N9, EC01–EC13, O1–O3, S01–S03, H1–H6 và việc còn lại của QC Lần 1; đối chiếu
+mã hiện tại (`0000_init.sql`, `src/db/`, `src/domain/`, `vitest.config.ts`, `deploy/values.yaml`, README) và
+các lệnh trên, không suy từ báo cáo cũ.
+
+| G         | Loại    | Mức    | Mô tả                                                                                                    | Bằng chứng                                                                                 | Đã xử lý                               |
+| --------- | ------- | ------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------- |
+| QC G1     | partial | HIGH   | `is_provenance` trả NULL khi thiếu `inputs`                                                              | `0000_init.sql:86`–`:93` = `00-common.sql:86`–`:93` (cùng số dòng); I01, I06, I07, I09 đạt | Đóng — chép bản PR #94                 |
+| QC G2     | partial | HIGH   | `is_actor_ref` trả NULL khi thiếu `agent`/`instance`                                                     | `0000_init.sql:52`–`:65`; I02, I03, I05, I08, I14–I17 đạt; V1–V3 ghi được                  | Đóng — chép bản PR #94                 |
+| QC G3     | partial | HIGH   | `is_approval_record` trả NULL khi thiếu trường                                                           | `0000_init.sql:67`–`:76`; 10 ca approval đạt                                               | Đóng — chép bản PR #94                 |
+| QC G4     | partial | MEDIUM | Thiếu hồi quy I01–I17, V1                                                                                | `behaviour.testkit.ts` (Lần 3 Dev) xanh; thêm V3                                           | Đóng                                   |
+| QC G5, G6 | partial | LOW    | EC04 hẹp; nhãn chú thích                                                                                 | Đóng ở Lần 2; chú thích G4 cập nhật ở Lần 3                                                | Đóng                                   |
+| L1        | partial | LOW    | Kiểm toàn repo cục bộ chưa sạch: `contracts:test` (Smart App Control), `platform:test` (timeout khi tải) | Bảng lệnh trên; PR không đổi `libs/`, `docs/api-design`                                    | Ngoài phạm vi PID; dựa vào CI của PR   |
+| L2        | partial | LOW    | Helm chưa chạy cục bộ                                                                                    | Không có Helm                                                                              | `values.yaml` không đổi; CI job `helm` |
+
+Không còn CRITICAL, HIGH. Không thấy `unrequested`: `vitest.config.ts` theo quy ước PO 24/11/2026 (YC02);
+V3 là test đối chứng trong P2/EC09. Không sửa `docs/`, `qc-report.md`, luồng khác.
+
+### Tự kiểm Lần 3
+
+- [x] Mọi slice Xong; AC01 và EC01–EC13 đạt trên PostgreSQL thật.
+- [x] Migration khớp DDL sau EC09; không sửa `docs/`, không sửa migration đã merge (research chưa merge nên sửa tại chỗ, H2).
+- [x] Không nới test hay giá trị mong đợi; chỉ thêm đối chứng V3 và cập nhật một chú thích.
+- [x] Không ghi công AI, không console.log/TODO; testkit không vào bản build.
+- [x] Không còn HIGH.
 
 ---
 

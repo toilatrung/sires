@@ -230,7 +230,7 @@ export function migrationBehaviourTests() {
       ).rejects.toMatchObject({ code: '23514' });
     });
 
-    // G4: giữ assertion từ chối (không skip/expected failure) trong lúc chờ PO sửa DDL G1–G3.
+    // G4: hồi quy QC Lần 1 (I02–I17) cho ba hàm kiểm JSON trả false thay vì NULL (EC09, PO 24/11/2026).
     const missingAgent = { type: 'agent', agentRunId: randomUUID() };
     const missingInstance = { ...missingAgent, agent: 'analysis' };
     const writingActor = { ...missingAgent, agent: 'writing' };
@@ -360,6 +360,24 @@ export function migrationBehaviourTests() {
         });
         const rows = await c.query('SELECT created_by, provenance FROM app.artifact_version WHERE id=$1', [versionId]);
         expect(rows.rows).toEqual([{ created_by: writingActor, provenance }]);
+        expect(evidenceId).toBeTypeOf('string');
+        expect(claimId).toBeTypeOf('string');
+      });
+    });
+
+    it('V3: agent analysis có instance A hợp lệ vẫn ghi được (EC09)', async () => {
+      // Đối chứng nhánh instance của is_actor_ref: analysis bắt buộc có instance A hoặc B.
+      await asApp(async (c) => {
+        const provenance = { createdBy: AGENT_ACTOR, inputs: [] };
+        const artifactId = await insertArtifact(c, accountId, projectId, AGENT_ACTOR);
+        const versionId = await insertVersion(c, accountId, projectId, artifactId, { actor: AGENT_ACTOR, provenance });
+        const evidenceId = await insertEvidence(c, accountId, projectId, referenceId, {
+          actor: AGENT_ACTOR,
+          provenance,
+        });
+        const claimId = await insertClaim(c, accountId, projectId, { actor: AGENT_ACTOR, provenance });
+        const rows = await c.query('SELECT created_by, provenance FROM app.artifact_version WHERE id=$1', [versionId]);
+        expect(rows.rows).toEqual([{ created_by: AGENT_ACTOR, provenance }]);
         expect(evidenceId).toBeTypeOf('string');
         expect(claimId).toBeTypeOf('string');
       });
