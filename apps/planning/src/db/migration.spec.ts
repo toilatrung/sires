@@ -18,7 +18,7 @@ import { MIGRATIONS_SCHEMA, MIGRATIONS_TABLE, runMigrationCommand, runMigrations
 const CONTAINER_TIMEOUT = 180_000;
 const MIGRATED = 'planning_migrated';
 const REFERENCE = 'planning_reference';
-const MIGRATION_COUNT = 2;
+const MIGRATION_COUNT = 3;
 
 describe('migration planning — PID-00023-AC02', () => {
   let pg: PlanningPostgres;

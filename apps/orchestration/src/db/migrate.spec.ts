@@ -76,7 +76,7 @@ describe('lệnh migrate', () => {
     const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as {
       entries: { tag: string }[];
     };
-    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init']);
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_ec09_jsonb_helpers']);
 
     // migration.command của deploy/values.yaml trùng script migrate (cùng điểm vào dist/migrate.js).
     const values = readFileSync(join(APP_ROOT, 'deploy', 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
