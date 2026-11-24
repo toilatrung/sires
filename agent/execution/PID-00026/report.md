@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00026](../../../docs/tickets/issues/PID-00026/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
-- **Nhánh:** `knowledge/migration-skeleton` (tạo từ `origin/main` `80a6626`, có PR #94 EC09; mã ở `0c18660`, gộp `origin/main` `5e66d14` (#95 chỉ `docs/`, #82 chỉ `apps/research`) ở `68d5c38`; đã commit có chữ ký và push) · **PR:** chưa mở
+- **Nhánh:** `knowledge/migration-skeleton` (tạo từ `origin/main` `80a6626`, có PR #94 EC09; mã ở `0c18660`, gộp `origin/main` `5e66d14` (#95 chỉ `docs/`, #82 chỉ `apps/research`) ở `68d5c38`; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#99](https://github.com/toilatrung/sires/pull/99) vào `main`, chưa merge
 - **Cập nhật:** 25/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
