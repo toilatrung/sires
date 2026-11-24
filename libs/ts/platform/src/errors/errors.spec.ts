@@ -147,13 +147,6 @@ describe('ProblemJsonFilter', () => {
       ['/err/echo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"a":' }, 400, 'validation_failed'],
       // Content-Type the route does not accept (Fastify FST_ERR_CTP_INVALID_MEDIA_TYPE; PR #31).
       ['/err/echo', { method: 'POST', headers: { 'content-type': 'text/x-unknown' }, body: 'abc' }, 415, 'unsupported_media_type'],
-      // Last: Fastify answers 413 before reading the body and closes the connection.
-      [
-        '/err/echo',
-        { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a: 'x'.repeat(2_000_000) }) },
-        413,
-        'payload_too_large',
-      ],
     ];
     for (const [path, init, status, code] of cases) {
       const { res, body, requestId } = await call(path, init);
@@ -164,6 +157,30 @@ describe('ProblemJsonFilter', () => {
       expect(body['correlationId']).toBe(requestId);
       expect(res.headers.get('content-type')).toMatch(/^application\/problem\+json/);
     }
+  });
+
+  it('body quá giới hạn trả problem 413 với mã thuộc danh mục (NFR-OBS-005-AC01)', async () => {
+    const requestId = uuidv7();
+    // Fastify can close a socket with an unread oversized body before fetch reads the response
+    // (ECONNRESET on Windows). Inject exercises the real body parser, route and global filter
+    // without depending on that transport race; the other catalogue cases use real HTTP above.
+    const res = await app.inject({
+      method: 'POST',
+      url: '/err/echo',
+      headers: { 'content-type': 'application/json', 'x-request-id': requestId },
+      payload: JSON.stringify({ a: 'x'.repeat(2_000_000) }),
+    });
+    expect(res.statusCode).toBe(413);
+    expect(res.headers['content-type']).toMatch(/^application\/problem\+json/);
+    const body = res.json<Record<string, unknown>>();
+    expect(body).toMatchObject({
+      status: 413,
+      code: 'payload_too_large',
+      type: `${PROBLEM_TYPE_BASE}payload_too_large`,
+      correlationId: requestId,
+    });
+    expect(isErrorCode(body['code'])).toBe(true);
+    expect(body['status']).toBe(ERROR_STATUS[body['code'] as keyof typeof ERROR_STATUS]);
   });
 
   it('lỗi 4xx không có mã: 500 internal_error, log mức warn kèm status (QC G4)', async () => {
