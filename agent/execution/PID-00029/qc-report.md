@@ -1,6 +1,6 @@
 # PID-00029 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 3 HIGH, 1 MEDIUM, 2 LOW; chưa merge được. Mã migration khớp DDL (PID-00029-AC01 đạt), S02, S03 đạt; ba HIGH (G1–G3) đều do hàm kiểm trong `docs/database/ddl/00-common.sql` trả SQL NULL nên CHECK cho qua — PO quyết sửa nguồn trước, Dev đồng bộ sau. CI `typescript`, `build` đỏ vì test EC09 (Lần 1, 23/11/2026)
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 2 LOW (G7, G8; không chặn). G1–G6 của Lần 1 đã đóng: ba hàm kiểm JSON trong `0000_init.sql` trùng từng byte bản EC09 trên `main` (PR #94), PID-00029-AC01 và EC01–EC13 đạt, test research 45/45 trên PostgreSQL 16 + pgvector, bỏ từng `COALESCE` đều làm đỏ đúng ca. Ba điểm Dev ghi “cần PO quyết” (`inputs: []`, các kiểm lỏng, FORCE RLS với owner) là chờ PO, không tính là khoảng trống. CI 25/25 xanh trên `2e83234` (Lần 2, 25/11/2026)
 
 - **Ticket:** [PID-00029](../../../docs/tickets/issues/PID-00029/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -153,6 +153,119 @@ Không thấy `unrequested`: `drizzle.config.ts`, `src/db/schema.ts` (rỗng), `
 - **Cần PO xác nhận:** `inputs: []` có hợp lệ theo PRD 18.3 (“inputs[] bắt buộc”) không — test của Dev và hàm hiện tại đều nhận.
 - **Kiểm lỏng, không ra NULL** (PO quyết có gộp vào cùng DBQ không): `location ? 'page'` nhận cả `"page"`, `["page"]`; `is_versioned_refs` nhận phần tử `["type","id","version"]`; `is_actor_ref` nhận researcher có `accountId: null`.
 - **Ghi chú cho PID sau:** FORCE RLS áp cả owner. QC chạy bằng migrator: `SELECT count(*) FROM app.claim` = 0 và `UPDATE app.claim …` = 0 dòng trong khi bảng có 1 dòng. Migration dữ liệu sau này chạy bằng migrator sẽ lặng lẽ không đụng dòng nào trên bảng tenant nếu không xử lý riêng.
+
+## Lần 2 — 25/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao (không mang kết luận của Dev). Mã nguồn: nhánh `research/pid-00029-migration` (PR #82, draft, vào `main`), commit `2e83234`; nhánh đã gộp `origin/main` `f28424c` (`git rev-list --count HEAD..origin/main` = 0). Đánh giá trong worktree tách riêng; mọi đột biến tạm đều khôi phục bằng `git checkout`, `git status` sạch trước khi ghi báo cáo này.
+
+Phạm vi đã đối chiếu: như Lần 1 (PID-00029-AC01, P1–P6, N1–N9, EC01–EC13, S01–S03, spec mục 3, 5, 6, 7, `designs/notes.html`, H1–H6 với D1 migration và D3 phạm vi), cộng việc còn lại G1–G6 của Lần 1 và `docs/database/ddl/00-common.sql` trên `main` sau PR #94 (`80a6626`).
+
+### Tóm tắt đánh giá
+
+- **Đồng bộ EC09 (G1–G3 Lần 1).** 312 dòng đầu của blob `apps/research/migrations/0000_init.sql` trùng từng byte (`cmp`) với `origin/main:docs/database/ddl/00-common.sql`. `diff` giữa `00-common.sql` + `research.sql` (đều của `main`) và migration chỉ còn hai chỗ như Lần 1: một dòng trống sau phần chung và khối `app.state_transition` sinh bằng helper. PR không đổi `docs/`. Ba hàm đúng bản PO duyệt: `COALESCE((…), false)` bọc ngoài `app.is_actor_ref`, `app.is_approval_record`, `app.is_provenance` (`0000_init.sql:55`, `:68`, `:87`), vế instance là `COALESCE(a->>'instance' IN ('A','B'), false)`.
+- **Gọi trực tiếp hàm (QC tự dựng, vai trò `sires_research_app`).** 45 ca: N1–N11, V1–V2 của Lần 1 (N6 tách hai ca), V3–V5 và 28 ca mới Q1–Q28 (agent không phải analysis có `instance`; analysis với instance `C`, `null`, số; `type` null hoặc số; ActorRef là chuỗi, mảng, `{}`, jsonb `null`; approval jsonb `null`, `approvedBy` null hoặc chuỗi, `decision` null, `apr` `APR-11` hoặc số; provenance thiếu hoặc null `createdBy`, `inputs` null, `[null]`, phần tử thiếu `version`, provenance jsonb `null` hoặc mảng; analysis instance A hợp lệ; `is_versioned_refs` với `[]`, `[null]`, `{}`, jsonb `null`). Kết quả: **0 NULL, 0 lệch kỳ vọng**. SQL NULL: `is_actor_ref`, `is_provenance` → false; `is_approval_record`, `is_versioned_refs` → true (đúng thiết kế: cột cho phép thiếu, CHECK theo trạng thái như `claim_accept_ck`, `artifact_version_accepted_ck` bắt thiếu approval).
+- **Schema (PID-00029-AC01), QC tự dựng.** PostgreSQL 16.15 + pgvector (`pgvector/pgvector:pg16`) riêng, vai trò như database 3.2. Database A: `node dist/migrate.js` của bản build, `DATABASE_MIGRATOR_URL` là DSN migrator không thêm `-c role` (dựa vào `ALTER ROLE … SET role`): “áp 1 migration mới, đã ghi sổ 1”, mã 0; chạy lần hai “áp 0 migration mới, đã ghi sổ 1” (EC03); thiếu DSN mã 1. Database B: `psql` hai file DDL của `main` bằng migrator. `pg_dump --schema-only` (A bỏ schema `drizzle`) chạy và so bằng `cmp` ngay trong container: giống hệt sau khi bỏ hai dòng `\restrict`/`\unrestrict` và ký tự CR (xem ghi chú CRLF ở Đề xuất). 9 dòng `app.state_transition` cùng digest ở A và B; mọi đối tượng trong `app`, `replica`, `drizzle` thuộc `sires_research_owner`. SQL migration không có `CREATE/ALTER ROLE`, `SECURITY DEFINER`, `BYPASSRLS` (chỉ có trong chú thích).
+- **Test của Dev.** 45/45 (4 file) trên Testcontainers PostgreSQL 16 + pgvector; `--reporter=verbose` liệt kê đủ EC01–EC13, I01–I17, V1–V3. Phép so schema `pg_dump` qua `container.exec` không chập chờn trong 8 lần chạy của QC (lần chuẩn, M1–M5 xanh ở AC01, M6 đỏ đúng vì đột biến).
+- **D1 (H2).** Custom migration drizzle-kit: `migrations/meta/_journal.json` một mục `0000_init` (`breakpoints: true`), snapshot rỗng, `src/db/schema.ts` rỗng (N8); áp bằng `migrate()` của drizzle-orm (node-postgres) trong một giao dịch; chỉ tiến. Sửa `0000_init.sql` tại chỗ hợp lệ vì migration research chưa merge. Bản build có `dist/migrate.js`, `dist/db/migrate.js`, không có `*.spec`, `*.testkit`.
+- **D3 (H3).** Test hành vi DDL EC02–EC12 trong `migration.spec.ts` (đăng ký từ `behaviour.testkit.ts`); script `migrate` = `node dist/migrate.js`; `deploy/values.yaml` có `migration.enabled: true`, `command: ['node', 'dist/migrate.js']` (test `migrate.spec.ts` kiểm trùng). CI run `45443495879` trên `2e83234`: job `helm` “OK Helm research” (`check-charts.mjs`), `images (research)` đạt.
+- **S02, S03.** S02: test đủ 34 cặp, 9 chuyển hợp lệ, SQL sinh bằng `renderStateTransitionSql(stateMachines)` có nguyên văn trong migration (M7 làm đỏ cả hai test). S03: sáu module khung nạp vào `AppModule`, `/health` qua HTTP trả `{ service: 'research', status: 'ok' }`; README ghi entity sở hữu, ba bản sao chỉ đọc kèm sự kiện nguồn, cách chạy migration.
+- **Ranh giới.** `check-tracks.mjs --base origin/main`: `repo, research`; `pnpm-lock.yaml` chỉ thêm vào importer `apps/research` bốn gói qua `catalog:` (`drizzle-orm`, `pg`, `@types/pg`, `drizzle-kit`). Không đổi `docs/`, `libs/`.
+
+### Đột biến (QC đổi tạm rồi khôi phục)
+
+| Mã | Đổi | Ở đâu | Test | Kết quả |
+| --- | --- | --- | --- | --- |
+| M1 | Ba hàm về dạng trước EC09 (bỏ mọi `COALESCE`) | `00-common.sql` và `0000_init.sql` cùng đổi, nên phép so schema không bắt được; chỉ còn test hành vi | `migration.spec.ts` | 23 lỗi / 38: đúng 22 ca EC07–EC09 (I01–I09, I14–I17 và 10 ca approval); ca thứ 23 là EC11 hết 30 s khi máy tải (G7), không do đột biến |
+| M2 | `is_provenance` bỏ `COALESCE` ngoài | cả hai file | `migration.spec.ts` | 4 ca do đột biến: I01, I06, I07, I09. Thêm V1/V2 lỗi `ECONNRESET` sau 30 s (máy tải), không do đột biến |
+| M3 | `is_actor_ref` bỏ `COALESCE` của vế instance | cả hai file | `migration.spec.ts` | 1 lỗi / 38: V1/V2 bị `artifact_created_by_check` từ chối — đối chứng bắt được việc siết quá tay |
+| M4 | `is_approval_record` bỏ `COALESCE` ngoài | cả hai file | `migration.spec.ts` | 10 lỗi / 38: đúng 10 ca approval (Claim và ArtifactVersion Accepted, mỗi bên 5 ca) |
+| M5 | `is_actor_ref` bỏ `COALESCE` ngoài, giữ vế instance | cả hai file | `migration.spec.ts` | 4 lỗi / 38: I05, I15, I16, I17 (CHECK gọi thẳng hàm trên `created_by`, `updated_by`); I02, I08 vẫn bị từ chối nhờ `COALESCE` của `is_provenance` |
+| M6 | Phần chung của migration về `00-common.sql` trước EC09 (`80a6626^`) | chỉ `0000_init.sql`, DDL giữ bản `main` (đột biến của Dev) | `migration.spec.ts` | 23 lỗi, 15 đạt / 38: `schema khớp DDL (PID-00029-AC01)` và đúng 22 ca như M1. Lần chạy đầu khối hành vi bị bỏ qua cả 35 ca vì `beforeAll` không xong khi máy tải; chạy lại cho kết quả trên |
+| M7 | Thêm `Rejected → Draft` vào `claimApprovalMachine` | chỉ `src/domain/state-machines.ts` | `state-transition.spec.ts` | 2 lỗi / 2: `khớp DDL tham chiếu và khai báo` và `ngoài bảng bị từ chối (EC13)` |
+
+Mỗi hàm và mỗi lớp `COALESCE` đều có ít nhất một test đỏ khi bỏ đi; test đối chứng V1–V3 chặn việc siết quá tay. Tải WSL trong lúc chạy: load average 17–47 do nhiều phiên Testcontainers song song.
+
+### Việc còn lại của Lần 1
+
+| G | Lần 2 | Bằng chứng |
+| --- | --- | --- |
+| G1 | Đóng | `0000_init.sql:87`–`:93` = `00-common.sql` trên `main`; I01, I06, I07, I09 bị từ chối 23514; M2 |
+| G2 | Đóng | `0000_init.sql:55`–`:65`; I02, I03, I05, I08, I14–I17 bị từ chối; V1–V3 ghi được; M3, M5 |
+| G3 | Đóng | `0000_init.sql:68`–`:76`; 10 ca approval bị từ chối; M4 |
+| G4 | Đóng | `apps/research/src/db/behaviour.testkit.ts:222`–`:384`: I01–I17, V1–V3 |
+| G5 | Đóng | `behaviour.testkit.ts:68`–`:135`: mồi đủ 12 bảng có `account_id`, đối chứng tài khoản A thấy dữ liệu, danh sách so với catalog |
+| G6 | Đóng | `migration.spec.ts:38` ghi AC01; nhãn EC03, EC04 trong `database.testkit.ts` đã sửa; `behaviour.testkit.ts:420` ghi đúng superuser. Hai nhãn nhỏ khác ghi ở G8 |
+
+### Edge case
+
+| EC | QC | Căn cứ |
+| --- | --- | --- |
+| EC01 | Đạt | PostgreSQL 16.15 (QC); test kiểm `server_version_num` 16x, migrator và owner không đặc quyền |
+| EC02 | Đạt | Test `thiếu vai trò thì dừng`: 42704, rollback toàn bộ, không tạo vai trò; lệnh migrate mã 1, không in DSN |
+| EC03 | Đạt | Test; QC chạy lại `node dist/migrate.js`: áp 0, schema không đổi |
+| EC04 | Đạt | Test 12 bảng, so catalog |
+| EC05, EC06 | Đạt | Test |
+| EC07, EC08 | Đạt | Test gồm 10 ca approval thiếu trường (G3 Lần 1 đóng); M4 |
+| EC09 | Đạt | I01–I09, I14–I17 bị từ chối 23514, V1–V3 ghi được (G1, G2 Lần 1 đóng); M1–M3, M5, M6 |
+| EC10, EC11, EC12 | Đạt | Test (EC11 xanh ở lần chạy chuẩn 623 ms; hết giờ khi máy tải, G7) |
+| EC13 | Đạt | Test đủ 34 cặp; M7 |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G7 | Độ ổn định test; quy ước timeout PO 24/11/2026 (YC02 trong `report.md`) | partial | LOW | `apps/research/src/db/behaviour.testkit.ts:450` (EC11), `apps/research/src/migrate.spec.ts:48`, `apps/research/src/app.module.spec.ts:39` đặt `30_000`, thấp hơn trần `testTimeout: 60_000` ở `apps/research/vitest.config.ts` và thắng trần đó; ở M1 EC11 hết 30 s (lần chạy chuẩn 623 ms; CI đạt) | Tùy chọn, không chặn: bỏ timeout riêng 30 s hoặc nâng lên ít nhất bằng trần chung khi PID sau của luồng chạm các file này |
+| G8 | Truy vết trong chú thích (H1–H6, slice) | partial | LOW | `apps/research/drizzle.config.ts:5` ghi “PID-00029 H1” cho drizzle-kit (đúng là H2; H1 là helper state_transition); `apps/research/src/db/database.testkit.ts:8` ghi test hành vi DDL và trigger “(S02, S03)” (đúng là S01, S02; S03 không có test database) | Sửa khi chạm file lần sau |
+
+Không thấy `unrequested`: `apps/research/vitest.config.ts` theo quy ước PO 24/11/2026 đã ghi ở `report.md` mục 5 (YC02); V3 là đối chứng trong P2, EC09.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00029-AC01 | Đạt | Testcontainers PostgreSQL 16 + pgvector; QC tự dựng PostgreSQL 16.15 + pgvector, database A bằng `node dist/migrate.js` của bản build | `apps/research/src/db/migration.spec.ts › schema khớp DDL (PID-00029-AC01)` | Đạt (QC chạy, CI đạt); `pg_dump` của QC giống hệt (bỏ CR); M6 làm test đỏ |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git worktree add --detach … origin/research/pid-00029-migration` | `2e83234`; 0 commit của `origin/main` chưa gộp |
+| `pnpm install --frozen-lockfile` | Đạt; cảnh báo build script bị bỏ qua (cấu hình sẵn có) |
+| `pnpm nx run @sires/research:build --skip-nx-cache` | Đạt; kéo theo `@sires/contracts:generate-ts`, build contracts, testing, platform |
+| `pnpm nx run @sires/research:test --skip-nx-cache -- --reporter=verbose` | **45/45 đạt**, 4 file, 35,8 s |
+| `pnpm nx run-many -t lint typecheck -p @sires/research --skip-nx-cache` | Đạt |
+| `cmp` 312 dòng đầu blob `0000_init.sql` với `origin/main:docs/database/ddl/00-common.sql`; `diff` hai DDL nối với migration | Trùng từng byte; diff chỉ một dòng trống và khối state_transition |
+| `vitest run src/db/migration.spec.ts` với M1–M6; `vitest run src/db/state-transition.spec.ts` với M7 | Như bảng đột biến; khôi phục bằng `git checkout`, `git status` sạch |
+| QC tự dựng: `node dist/migrate.js` (hai lần, thiếu DSN), `psql` DDL `main`, `pg_dump --schema-only` và `cmp`, 45 ca gọi hàm, 5 biểu thức kiểm lỏng | Như phần tóm tắt và Đề xuất |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00029 --result` | KẾT QUẢ ĐỦ, 0 cảnh báo |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: repo, research` |
+| `node scripts/docs/add-license.mjs --check`; `node scripts/docs/update-index.mjs --check` | 0 file thiếu giấy phép; khớp 159 PID, taskboard khớp |
+| `git diff --check origin/main...HEAD` | Sạch |
+| `pnpm exec prettier --check --end-of-line auto apps/research agent/execution/PID-00029` | Chỉ báo `apps/research/tsconfig.json` (scaffold, PR không đổi) và `qc-report.md` (bảng Lần 1 không căn cột; giữ nguyên để không ghi đè lần cũ) |
+| `pnpm nx affected -t lint typecheck test build` | Không chạy cục bộ — WSL load average 17–47 do nhiều phiên Testcontainers, đã thấy test hết giờ vì tải (M1, M2, lần đầu M6). Dùng CI run `45443495879` trên `2e83234`: 25/25 check đạt, `@sires/research:test` 45/45 |
+| `helm template infra/helm/sires-service -f apps/research/deploy/values.yaml` | Không chạy — máy QC không có Helm. CI job `helm` trên `2e83234`: “OK Helm research” |
+| `gh pr view 82` | Draft, base `main`, `BLOCKED` (draft, chưa có review); 25/25 check SUCCESS |
+
+### Lệch với Self-QC
+
+- Self-QC Lần 3 ghi đột biến về hàm cũ “23 lỗi, 14 đạt / 37” (trước khi thêm V3). QC M6 sau V3: 23 lỗi, 15 đạt / 38 — khớp (V3 đạt cả với hàm cũ vì analysis có instance A không ra NULL).
+- Self-QC không nêu timeout riêng 30 s thấp hơn trần chung (G7) và hai nhãn chú thích (G8).
+- Self-QC L1 (`nx affected` cục bộ chưa sạch), L2 (Helm chưa chạy cục bộ): QC cũng không chạy cục bộ; CI trên `2e83234` xanh, gồm job `helm`.
+- Còn lại khớp: 45/45, lint, typecheck, build đạt; 312 dòng đầu trùng `00-common.sql`; G1–G6 Lần 1 đóng; lockfile chỉ importer research.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. Chuyển PR #82 sang sẵn sàng (QC làm sau khi đẩy báo cáo này); PO review và merge.
+2. Tùy chọn, không chặn: G7, G8 khi PID sau của luồng research (PID-00052 trở đi) chạm các file liên quan.
+3. PO quyết ba điểm chờ PO dưới đây; nếu siết thì cấp DBQ, sửa `00-common.sql`, giao migration tiến cho mọi luồng dùng phần chung.
+
+### Đề xuất cho PO
+
+- **Chờ PO (Dev đã ghi ở `report.md` Lần 4, không tính là khoảng trống của PID này):**
+  - `inputs: []` có hợp lệ theo PRD 18.3 (“inputs[] bắt buộc”) không — `is_provenance` hiện trả true, test V1–V3 dựa vào đó.
+  - Có siết các kiểm lỏng không: QC xác nhận trên database của mình cả năm biểu thức đều trả true — `'"page"' ? 'page'`, `'["page"]' ? 'page'` (CHECK `location ? 'page'`), `is_versioned_refs('[["type","id","version"]]')`, `is_actor_ref('{"type":"researcher","accountId":null}')`.
+  - FORCE RLS áp cả owner: migration dữ liệu sau này chạy bằng migrator sẽ không thấy dòng tenant nếu không xử lý riêng (Lần 1 đã tái hiện).
+- **Ghi chú CRLF (không thuộc PID này, không chặn):** `.gitattributes` chỉ ép LF cho `*.sh`; checkout Windows với `core.autocrlf=true` làm `0000_init.sql` và file DDL thành CRLF. Chạy migrate từ checkout Windows tạo thân hàm chứa ký tự CR (dump database A có 149 dòng chứa CR) và hash trong `drizzle.__drizzle_migrations` khác bản LF (`1d8dc8c8…` so với `aa7643fc…` của blob git). Không đổi ngữ nghĩa SQL; drizzle không so hash nên không áp lại; image dựng trên Linux dùng LF; test so schema của Dev đọc cả hai phía từ cùng checkout và chuẩn hóa `\r\n` nên không thấy khác biệt. PO cân nhắc thêm `*.sql text eol=lf` vào `.gitattributes` (luồng repo) để migration chạy từ Windows ra cùng schema từng byte với CI.
 
 ---
 
