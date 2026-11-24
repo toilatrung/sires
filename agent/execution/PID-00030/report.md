@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00030](../../../docs/tickets/issues/PID-00030/index.html) · **Luồng:** `manuscript` · **Giai đoạn:** PH-01
-- **Nhánh:** `manuscript/pid-00030-migration` (đã commit, có chữ ký) · **PR:** chưa mở
+- **Nhánh:** `manuscript/pid-00030-migration` (đã commit, có chữ ký) · **PR:** [#97](https://github.com/toilatrung/sires/pull/97) vào `main`
 - **Cập nhật:** 25/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -57,7 +57,7 @@ Không có trong phạm vi.
     - (6) `tg_project_writable` chỉ gắn vào INSERT của `manuscript_revision` (đúng EC13). Ghi `manuscript_file`, `change_proposal`, `build`, `bibliography_entry` bằng `_app` khi project Archived không bị database chặn; nếu PRD 18.2 cần chặn rộng hơn thì PO xem lại (PID-00053, PID-00079).
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có.
-- **Bước tiếp theo:** PO review PR, QC độc lập chạy `spec-converge-skill PID-00030`, rồi merge.
+- **Bước tiếp theo:** PO review PR #97, QC độc lập chạy `spec-converge-skill PID-00030`, rồi merge.
 - **Tài liệu đi kèm:** không có.
 
 ---
