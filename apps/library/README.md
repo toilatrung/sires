@@ -31,7 +31,14 @@ Ngoài ra có các bảng nền tảng của `00-common.sql`: `app.state_transit
 | `ImportersModule` | `src/importers/` | Parser BibTeX, RIS cho nhập tay và kết quả nguồn (PID-00024 S04–S07, kiến trúc 8.7) |
 | `ReferencesModule` | `src/references/` | Reference, duyệt APR-04, chọn vào project (PID-00076 và sau) |
 
-Bốn module gắn vào `AppModule` (PID-00024 S03); hiện là khung rỗng, PID tính năng thêm nội dung.
+Bốn module gắn vào `AppModule` (PID-00024 S03). `ImportersModule` đã có parser (dưới); ba module còn lại là khung rỗng, PID tính năng thêm nội dung.
+
+## Parser BibTeX, RIS (`src/importers/`)
+
+`ReferenceImporter.parse(nội dung, 'bibtex' | 'ris')` (inject từ `ImportersModule`) trả kết quả từng mục theo thứ tự trong file: `ReferenceMetadata` (PRD 17.6, type sinh của `@sires/contracts`) đã chuẩn hóa, hoặc lỗi kèm mã và lý do (`syntax_error`, `unterminated_entry`, `missing_type`, `missing_end`, `missing_fields`, `duplicate_key`), để một mục hỏng không làm hỏng cả file (PID-00024-AC01). Không tạo Reference, không kiểm trùng với Trusted Library, không giới hạn số mục — việc của API nhập (PID-00076).
+
+- Chuẩn hóa (H1, H2): `source` = `bibtex` | `ris`; `identifiers.sourceId` = citation key | `ID`; `identifiers.url` = `url` | `UR`, không có thì `https://doi.org/` + DOI; DOI chữ thường, không tiền tố; LaTeX → Unicode, công thức toán giữ nguyên; `publicationType` theo bảng ánh xạ của PID-00024; `authors[].name` = “Họ, Tên”, tên tập thể giữ nguyên; thiếu năm thì `yearMissing: true`; `raw` = bản gốc.
+- Thư viện: Citation.js 0.9.0 (MIT, `THIRD_PARTY_NOTICES.md`) — **tạm thời** theo PC-04 A10, chờ PO chốt SPK-03 (PID-00025); kiến trúc 2.3 nêu `@retorquere/bibtex-parser` nhưng SPK-03 chưa thử. Chỉ `src/importers/citation-js/` import thư viện; mã khác dùng giao diện `ReferenceParser` (`reference-parser.ts`), nên đổi thư viện là viết một bản hiện thực khác. Thư viện cần Node ≥ 22.12.0.
 
 ## State machine
 
