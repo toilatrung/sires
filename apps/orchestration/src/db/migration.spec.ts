@@ -45,6 +45,9 @@ type JournalEntry = { idx: number; when: number; tag: string };
 function readJournal(folder: string = MIGRATIONS_FOLDER): { entries: JournalEntry[] } & Record<string, unknown> {
   return JSON.parse(readFileSync(join(folder, 'meta', '_journal.json'), 'utf8')) as { entries: JournalEntry[] };
 }
+const UTF8_PROBE = 'orch_utf8_probe';
+// Trộn ký tự 1, 2, 3 và 4 byte; 20 000 lần (720 KB) để stdout của pg_dump qua nhiều khúc của docker exec.
+const UTF8_PROBE_TEXT = 'đã kết thúc, bất biến 𝄞 '.repeat(20_000);
 
 describe('migration orchestration — PID-00019-AC01', () => {
   let pg: OrchestrationPostgres;
@@ -134,6 +137,18 @@ describe('migration orchestration — PID-00019-AC01', () => {
     // SQL đồng bộ của helper chạy lại không đổi dòng nào (sổ phiên bản đã chặn chạy lại; đây là lớp thứ hai).
     expect(await pg.admin<StateTransitionDbRow>(MIGRATED, ROWS_SQL)).toHaveLength(43);
   });
+
+  it('dumpSchema giữ nguyên ký tự UTF-8 nhiều byte (phép so schema không chập chờn)', async () => {
+    // Ký tự bị cắt giữa hai khúc stdout thành U+FFFD; với chú thích dài, cách giải mã từng khúc gần như chắc chắn lỗi.
+    await pg.createDatabase(UTF8_PROBE);
+    await pg.admin(
+      UTF8_PROBE,
+      `CREATE TABLE public.utf8_probe (id int); COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}'`,
+    );
+    const dump = await pg.dumpSchema(UTF8_PROBE);
+    expect(dump.split(String.fromCodePoint(0xfffd)).length - 1).toBe(0);
+    expect(dump.includes(`COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}';`)).toBe(true);
+  }, 60_000);
 
   // S02 (PID-00019-AC01 phần dữ liệu, EC06): ba nguồn bằng nhau — tập helper sinh từ khai báo, dòng của database
   // dựng từ migration, dòng của database dựng từ DDL (43 dòng của bảy machine).

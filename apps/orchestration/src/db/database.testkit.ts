@@ -96,21 +96,14 @@ export async function startOrchestrationPostgres(options: { withRoles?: boolean 
       await admin(database, sql);
     },
     async dumpSchema(database) {
-      // exec của Testcontainers giải mã stdout theo từng chunk (`chunk.toString()`): ký tự UTF-8 nhiều byte nằm vắt
-      // qua ranh giới chunk thành U+FFFD, làm hai lần dump cùng schema khác nhau ngẫu nhiên. Dump ra file trong
-      // container rồi đọc dạng base64 (chỉ ASCII), giải mã UTF-8 một lần ở đây.
-      const file = `/tmp/sires-dump-${database}.sql`;
+      // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD.
       const result = await server.container.exec([
-        'sh', '-c',
-        'pg_dump --schema-only --exclude-schema="$1" -U "$2" -d "$3" -f "$4" && base64 -w 0 "$4"; code=$?; rm -f "$4"; exit $code',
-        'sh', MIGRATIONS_SCHEMA, server.username, database, file,
+        'bash', '-o', 'pipefail', '-c', 'pg_dump "$@" | base64 -w 0', 'pg_dump',
+        '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
+        '-U', server.username, '-d', database,
       ]);
       if (result.exitCode !== 0) throw new Error(`pg_dump ${database} lỗi: ${result.stderr || result.output}`);
-      const dump = Buffer.from(result.stdout.trim(), 'base64').toString('utf8');
-      // Bản dump đọc thiếu hoặc giải mã hỏng thì báo lỗi rõ, không để phép so schema lệch âm thầm.
-      if (dump.includes('�')) throw new Error(`pg_dump ${database}: bản dump có ký tự U+FFFD`);
-      if (!dump.includes('-- PostgreSQL database dump complete')) throw new Error(`pg_dump ${database}: bản dump không đủ`);
-      return normalizeDump(dump);
+      return normalizeDump(Buffer.from(result.stdout.trim(), 'base64').toString('utf8'));
     },
     stop: () => server.stop(),
   };
