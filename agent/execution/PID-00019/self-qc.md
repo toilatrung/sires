@@ -1,9 +1,9 @@
 # PID-00019 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — S02 và ca 1 của PID-00019-AC03 bị chặn bởi PID-00158 (helper sinh app.state_transition chưa có trên main); phần làm được đạt, kiểm lại sau merge `main` đạt (Lần 2, 21/11/2026)
+**Kết luận:** Đạt — S02, S05 xong (Lần 3, 24/11/2026): 23 test đạt, 0 todo; tự đối chiếu không còn CRITICAL, HIGH; một đề xuất cho PO về câu chữ ca 1 của PID-00019-AC03 với machine `prompt` (G8, MEDIUM)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
+- **Cập nhật:** 24/11/2026 (Lần 3); Lần 2 21/11/2026; Lần 1 19/11/2026
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -61,19 +61,19 @@ Môi trường: Windows 11 (máy PO), Node 24.21, pnpm 10.34.9; Docker Engine 29
 
 ## 4. Tự kiểm
 
-- [ ] Mọi slice đã chạy lệnh ở mục “Kiểm”, kết quả ở trên. — S01, S03, S04, S05 (phần làm được), S06 đã chạy; S02 chỉ phần khai báo; `check-charts.mjs` của S04 không chạy (PID-00010 chưa có trên main).
+- [x] Mọi slice đã chạy lệnh ở mục “Kiểm”, kết quả ở trên. — Lần 1–2: S01, S03, S04, S05 (phần làm được), S06 đã chạy; S02 chỉ phần khai báo; `check-charts.mjs` của S04 không chạy (PID-00010 chưa có trên main). Lần 3: S02, S05 chạy đủ (mục “Lần 3”); chart render bằng helm trong container, CI chạy `check-charts.mjs`.
 - [x] Agent đề xuất, System kiểm soát, Researcher quyết định; thao tác APR chỉ Researcher thực hiện. — Không có hành vi mới; schema giữ `app.is_actor_ref`, `app.is_approval_record` như DDL.
-- [x] Chuyển trạng thái khớp PRD 18.2 (Task: T-01–T-19 ở 9.8); ghi actor và provenance khi PRD yêu cầu. — Khai báo khớp 43 cặp của DDL (database 10.2); chưa nạp dòng (S02 chặn).
+- [x] Chuyển trạng thái khớp PRD 18.2 (Task: T-01–T-19 ở 9.8); ghi actor và provenance khi PRD yêu cầu. — Khai báo khớp 43 cặp của DDL (database 10.2); Lần 3: migration `0001` nạp đúng 43 dòng do helper sinh.
 - [x] Context cách ly theo project và task; dữ liệu trong phạm vi tài khoản và project. — RLS đã kiểm ở 14 bảng (ca 8).
 - [x] Gọi model qua Model Gateway; API key không xuất hiện trong log, trace hay thông báo lỗi. — Không gọi model; lệnh migrate không in DSN (test kiểm).
 - [x] Không import mã, không đọc database của service khác; dùng đúng hợp đồng trong `docs/api-design`. — Chỉ import `@sires/platform`, `@sires/testing`; không dùng hợp đồng.
-- [x] Sự kiện ghi qua outbox trong cùng giao dịch; bên nghe xử lý trùng không sai. — Không áp dụng (không có sự kiện).
+- [ ] Sự kiện ghi qua outbox trong cùng giao dịch; bên nghe xử lý trùng không sai. — không áp dụng (không có sự kiện; Lần 1–2 đánh `[x]`, Lần 3 sửa cách ghi theo khung như QC nêu).
 - [x] Migration là file mới; schema khớp `docs/database/ddl/`; không sửa migration đã có.
-- [x] Giao diện theo `docs/ui-design/design.md`; có trạng thái trống, đang tải, lỗi, chạy lâu. — Không áp dụng.
+- [ ] Giao diện theo `docs/ui-design/design.md`; có trạng thái trống, đang tải, lỗi, chạy lâu. — không áp dụng (không có màn hình).
 - [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`. — Ngoài `apps/orchestration/` chỉ có `pnpm-lock.yaml` (S01 dự kiến) và `agent/execution/PID-00019/`.
 - [x] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5. — Phần thêm nhỏ có lý do kỹ thuật ghi ở mục 5 dưới (G6) và implement.md mục 3.
-- [x] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC. — `it.todo` đều ghi chủ “chờ PID-00158”.
-- [ ] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH. — Đã chạy; còn G1, G2 (HIGH) do chặn phụ thuộc, không sửa được trong phạm vi (D6).
+- [x] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC. — Lần 1–2: `it.todo` đều ghi chủ “chờ PID-00158”; Lần 3: không còn `it.todo`.
+- [x] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH. — Lần 1–2: còn G1, G2 (HIGH) do chặn phụ thuộc (D6). Lần 3: chạy lại, G1, G2 đã sửa; không còn CRITICAL, HIGH (mục “Lần 3”).
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
@@ -106,6 +106,82 @@ Kiểm lại phần đã làm sau khi merge `origin/main` (11 commit) vào nhán
 | `git log --format=%G?` | `5f816fa`, `8b6379b`: `G`; `960270b`, `134f276` (report.md, đã push): `N`, để nguyên |
 
 Khoảng trống của Lần 1 (mục 5) và của QC độc lập Lần 1 không đổi; G1, G2, G3, G8 của `qc-report.md` làm ở Lần 3 khi PID-00158 lên `main`. G4 của QC: chart PID-00010 nhận `migration.command` dạng mảng, đã render đúng (trên).
+
+## Lần 3 — 24/11/2026
+
+Người làm: phiên do PO `toilatrung` giao (24/11/2026, chuyển việc còn lại của PH-01 về PO). Worktree `.claude/worktrees/pid-00033-571df3`, nhánh `orchestration/state-transition-rows` cắt từ `main` `1947571`, đã gộp `main` `0153261` (PR #88, #89). Việc: S02 và phần còn lại của S05 (G1, G2, G3, G8 của `qc-report.md`), sau khi helper PID-00158 lên `main` (PR #52, 21/11/2026).
+
+Môi trường như Lần 1; `pnpm install --frozen-lockfile` trong worktree; Docker Engine 29.8.2 trong WSL `Ubuntu-24.04` được giữ sống trong lúc chạy test.
+
+### Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git grep defineStateMachine compareStateTransitionRows sires-state-transition-sql` trên `origin/main` | Có trong `libs/ts/platform` (`src/state-machine/`, `bin/sires-state-transition-sql.mjs`); `apps/planning`, `apps/workspace` đã dùng. PR #52 `MERGED` 21/11/2026 |
+| `pnpm install --frozen-lockfile` | Đạt (“Done in 19.2s”), lockfile không đổi |
+| `NX_DAEMON=false pnpm nx run @sires/orchestration:build --skip-nx-cache` | Đạt, kèm 4 task phụ thuộc (contracts, testing, platform) |
+| `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` (trong `apps/orchestration`) | Mã 0; SQL của 7 machine, 43 cặp: `DELETE` cặp không khai báo, `--> statement-breakpoint`, `INSERT … ON CONFLICT DO UPDATE` |
+| `pnpm exec drizzle-kit generate --custom --name state_transition` | Tạo `migrations/0001_state_transition.sql` (rỗng), `meta/0001_snapshot.json` (bằng `0000_snapshot.json` trừ `id`, `prevId`), mục journal `0001_state_transition` |
+| Chép đầu ra của lệnh helper vào `0001`, `node scripts/docs/add-license.mjs` | 1 file thêm giấy phép; `cmp` thân file (bỏ 4 dòng đầu) với đầu ra helper: giống từng byte |
+| `pnpm --filter @sires/orchestration typecheck`, `lint` | Đạt, 0 lỗi, không cảnh báo |
+| `pnpm --filter @sires/orchestration test` (lần đầu) | 1 lỗi ở test mới của chính Lần 3: phép kiểm “chỉ `0001` có `INSERT INTO app.state_transition`” bắt cả dòng chú thích của `0000_init.sql:8`, `:727`. Sửa test để bỏ dòng chú thích `--` (không đổi migration) |
+| `pnpm --filter @sires/orchestration test` | **5 file, 23 passed, 0 todo**, 0 lỗi (Lần 2: 21 passed, 4 todo). Ca 1 của AC03: 142 giao dịch, 1,26 s |
+| Thử đột biến: bỏ dòng `('workflow', 'Running', 'Paused', NULL)` khỏi `0001`, chạy test, chép lại file gốc | 5 test lỗi: ca 1 (`workflow: Running → Paused` bị `23514`), `state_transition sinh từ khai báo` (`missing` 1 cặp), EC07 đối chứng, `chạy lại không đổi schema` và `lệnh migrate trên database rỗng` (42 dòng thay vì 43). File đã khôi phục (`cmp` giống bản sao) |
+| `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` (trước khi gộp `main`) | Đạt: chỉ `@sires/orchestration` bị ảnh hưởng, “Successfully ran targets lint, typecheck, test, build … and 4 tasks it depends on”; 23 passed |
+| `git merge origin/main` (`0153261`, PR #88, #89) | Không xung đột; commit merge `000eac4` có chữ ký |
+| `NX_DAEMON=false pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=1 --skip-nx-cache` (sau khi gộp) | Đạt: chỉ `@sires/orchestration` (+ 4 task phụ thuộc); test 5 file, 23 passed, 14,35 s |
+| `git diff --name-only origin/main...HEAD \| node scripts/development/check-tracks.mjs --stdin` | `tracks touched: orchestration, repo` (`repo` là `agent/execution/PID-00019/`); không còn `infra` vì lockfile không đổi |
+| `node scripts/docs/add-license.mjs --check` | “0 file chưa có thông báo giấy phép.” |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard 159 task) |
+| `git diff --check origin/main` | Sạch |
+| `git grep "INSERT INTO app.state_transition" -- apps/orchestration ':!*.spec.ts'` | Mã: chỉ `migrations/0001_state_transition.sql`; còn lại là chú thích (`0000_init.sql:8`, `:727`) và README. Không có bộ sinh SQL trong `apps/orchestration` |
+| `helm lint`, `helm template orchestration infra/helm/sires-service -f apps/orchestration/deploy/values.yaml` bằng image `alpine/helm:3.19.0` | “1 chart(s) linted, 0 chart(s) failed”; Job `orchestration-migration`, hook `pre-install,pre-upgrade`, `command: [node, dist/migrate.js]` |
+| `node scripts/development/check-charts.mjs` | Không chạy — máy không có `helm` trong PATH; CI chạy vì PR đổi `apps/orchestration/deploy/` |
+| EC09: dựng lại image, chạy `node dist/migrate.js` trong image | Không chạy lại — Docker dùng chung với các phiên PID chạy song song hôm nay; Lần 3 không đổi phụ thuộc hay `files` của `package.json`, image chép cả thư mục `migrations/` nên có `0001`; `migrate.spec.ts` kiểm journal hai mục và lệnh migrate (cùng hàm) nạp 43 dòng (G9) |
+| `git log --format='%h %G?' origin/main..HEAD` | `1ea27e7`, `eea178f`, `000eac4`: `G` |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00019 --result` (sau khi ghi xong ba file) | “PID-00019: KẾT QUẢ ĐỦ (0 cảnh báo).”, mã 0 |
+
+### AC → test (Lần 3)
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00019-AC01 (cấu trúc) | `apps/orchestration/src/db/migration.spec.ts › schema khớp DDL`; `› schema khớp DDL — extension và bảng sổ phiên bản (EC04, EC05)`; `› chạy lại không đổi schema (EC02)`; `› thiếu vai trò thì rollback` | Đạt. Dump schema vẫn bằng DDL sau khi có `0001` (migration chỉ thêm dòng); chạy lại: áp 0, sổ 2 dòng, vẫn 43 dòng chuyển trạng thái |
+| PID-00019-AC01 (dữ liệu chuyển trạng thái) | `migration.spec.ts › state_transition sinh từ khai báo` | Đạt: `compareStateTransitionRows` rỗng cho database migration và database DDL; hai tập dòng bằng nhau, 43 dòng, `code` NULL; số cặp mỗi machine 16/11/5/3/2/3/3; file `0001` bằng `renderStateTransitionSql(stateMachines)`; chỉ `0001` có `INSERT`; khai báo cố ý lệch → `missing` `Succeeded → Running`, `unexpected` `Running → Paused` (EC06) |
+| PID-00019-AC01 (EC07) | `migration.spec.ts › chuyển ngoài bảng bị từ chối` | Đạt: `Running → Created` → `23514`, “Chuyển trạng thái không hợp lệ cho workflow: Running → Created”; đối chứng `Running → Paused` đi qua |
+| PID-00019-AC02 | `engine-boundary.spec.ts › luật chặn import nội bộ engine` (2 test); `app.module.spec.ts › nạp đủ module con` | Đạt (không đổi) |
+| PID-00019-AC03 ca 1 | `apps/orchestration/src/db/ddl-behaviour.spec.ts › chuyển ngoài bảng bị từ chối (ca 1)` | Đạt theo DDL, bằng `_app`: 142 cặp của bảy machine; 43 cặp trong bảng đi qua (đối chứng); cặp ngoài bảng bị trigger `*_state` từ chối với `check_violation` ở workflow 40, workflow_step 19, agent_run 3, context_item 4, deliberation 9, deliberation_entry 3; agent_run đã kết thúc (12 cặp) và prompt đã rời Open (9 cặp) bị trigger chạy trước chặn với `23000`. **Machine `prompt` không có cặp ngoài bảng nào ra `check_violation`** như câu chữ `acceptance.html` — G8, đề xuất cho PO |
+| PID-00019-AC03 ca 2–9 | `ddl-behaviour.spec.ts`: ca 2, `› bản ghi bất biến (ca 3–7)` (5 test), ca 8, ca 9 | Đạt. Ca 6 thêm đối chứng: `Active → Superseded` cùng `superseded_by_id` (ContextItem mới) đi qua, trả `status`, `superseded_by_id` mới; đổi `status` kèm `content` → `23000` |
+
+### Edge case (Lần 3)
+
+| # | Trạng thái | Cách giải quyết (test) hoặc lưu ý |
+| --- | --- | --- |
+| EC06 | Đã giải quyết | `migration.spec.ts › state_transition sinh từ khai báo`: ba nguồn bằng nhau; khai báo lệch thì `compareStateTransitionRows` chỉ ra đúng cặp thiếu, thừa (test có ca lệch cố ý) |
+| EC07 | Đã giải quyết | `migration.spec.ts › chuyển ngoài bảng bị từ chối` (`23514` + thông báo của `tg_state_transition`; đối chứng đi qua) |
+| EC01–EC05, EC09 | Đã giải quyết (không đổi) | Như mục 3; EC02 nay kiểm cả hai migration và 43 dòng; EC09 xem G9 |
+| EC08 | Cần lưu ý (không đổi) | DBQ-01, thao tác tay trên PostgreSQL managed; Tech lead, trước PH-07 |
+| Mới (Lần 1) “database dựng từ migration từ chối mọi lần đổi `status`” | Đã giải quyết | `0001` nạp 43 dòng; ca 1 kiểm 43 cặp đi qua bằng `_app`. Ghi Workflow bằng `_app` vẫn cần dòng `replica.project_state` (consumer N7, PID sau) |
+| Mới (Lần 3) | Cần lưu ý | `prompt_state` không bao giờ là trigger từ chối: Open → mọi trạng thái khác đều có trong bảng, còn từ trạng thái đã rời Open thì `prompt_answer_once` (tên đứng trước theo thứ tự chữ) chặn trước với `23000`. Database vẫn từ chối mọi cặp ngoài bảng (G8) |
+| Mới (Lần 3) | Đã giải quyết | Ca 1 chạy 142 giao dịch; orchestration không có `vitest.config.ts` (mặc định 5 s/test), nên test đặt trần riêng 60 s để runner CI có tải không báo sai (cùng lý do PR #88, #89 của planning, workspace) |
+| Lỗi đã biết EC09 của `app.is_actor_ref` (agent `analysis` thiếu `instance`, PO chưa chốt) | Không chạm | Test của PID này không tạo `agent_run` với agent `analysis`; không sửa DDL nguồn |
+
+### Tự đối chiếu (spec-converge-skill, Lần 3)
+
+Chạy lại theo `agent/skills/qc/spec-converge-skill` ở chế độ Dev tự QC: AC, scope (P1–P7, N1–N9, EC01–EC09), S02, S05, S06, spec mục 3–7, `qc-report.md` Lần 1–2; đọc lại `apps/orchestration/` và tự chạy lệnh ở trên. Không có `contradicts` với Đầu ra (quy tắc 1.4.13): `0001_state_transition.sql` nằm trong `apps/orchestration/migrations/`, tên test đúng `acceptance.html`.
+
+| G | Nguồn | Loại | Mức | Lần 3 | Bằng chứng |
+| --- | --- | --- | --- | --- | --- |
+| G1 (= G1 QC) | AC01 dữ liệu, S02, EC06, EC07 | missing | HIGH | **Đã sửa** | `migrations/0001_state_transition.sql`; `migration.spec.ts:129`, `:174` |
+| G2 (= G2 QC) | AC03 ca 1, đối chứng ca 6, S05 | partial | HIGH | **Đã sửa** | `ddl-behaviour.spec.ts:292`, `:457` |
+| G3 (= G3 QC) | S02 bước 1 | partial | MEDIUM | **Đã sửa**: bảy machine bọc bằng `defineStateMachine`, bỏ interface cục bộ | `src/domain/state-machines.ts:14`, `:17` |
+| G4 (= G4 QC) | S04 | partial | LOW | Đã đóng ở QC Lần 2; Lần 3 sửa chú thích cũ ở `values.yaml:14`–`15`, render lại chart | `deploy/values.yaml` |
+| G5 (= G6 QC) | EC08 | partial | LOW | Còn mở, như Lần 1 | — |
+| G6 (= G7 QC) | Ticket “Gồm” | unrequested | LOW | Giữ. Lần 3 thêm trong test: `attempt` (câu chuẩn bị trong cùng giao dịch, `asApp` dùng lại), trần 60 s cho ca 1, ca thêm ở ca 6 (đổi `status` kèm `content` → `23000`) — đều chỉ trong test, có lý do ở implement.md mục 3 | `ddl-behaviour.spec.ts:250`, `:347` |
+| G7 (= G8 QC) | S06 | partial | LOW | **Đã sửa**: README mục Migration, State machine, bảng test | `apps/orchestration/README.md` |
+| G8 (mới) | AC03 ca 1 (câu chữ `acceptance.html`: “mỗi machine — check_violation”) | partial | MEDIUM | **Để PO.** Với machine `prompt`, không cặp ngoài bảng nào tới được `prompt_state`: mọi cặp ngoài bảng xuất phát từ trạng thái đã rời Open, và `prompt_answer_once` (`tg_immutable()`, `orchestration.sql:242`–`243`) chạy trước `prompt_state` (`orchestration.sql:430`) theo thứ tự tên trigger, nên database từ chối bằng `23000`. Database xếp trên ticket, spec trong thứ tự nguồn (`docs/tickets/README.md`), nên test ghim hành vi thật của DDL, không đổi DDL. Không có trong `docs/` nào câu cho thấy PO muốn khác | `ddl-behaviour.spec.ts:292`–`:347` (bảng đếm `prompt: 3/0/9`) |
+| G9 (mới) | EC09 (thao tác tay trong image) | partial | LOW | Không dựng lại image ở Lần 3 (lý do ở bảng lệnh). Phụ thuộc, `files`, Dockerfile không đổi; QC độc lập có thể dựng lại nếu muốn | `migrate.spec.ts` |
+
+Không còn CRITICAL, HIGH.
 
 ---
 

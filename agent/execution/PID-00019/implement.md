@@ -1,28 +1,38 @@
 # PID-00019 — Triển khai
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 19/11/2026
+- **Cập nhật:** 24/11/2026 (Lần 3: S02, phần còn lại của S05); 19/11/2026
 
 File này mô tả mã **đang thật sự chạy**, đọc từ mã sau khi làm, để người sau hiểu nhanh và QC biết nên soi ở đâu. Không chép lại spec. Sửa mã thì sửa file này cho đúng.
 
 ## 1. Luồng đã triển khai
 
-Ticket không có API, sự kiện hay logic nghiệp vụ. Có ba luồng: Job migration áp schema; test dựng database và so với DDL; khung module con nạp vào `AppModule`.
+Ticket không có API, sự kiện hay logic nghiệp vụ. Có bốn luồng: Job migration áp schema và dòng chuyển trạng thái; sinh SQL dòng chuyển trạng thái từ khai báo (lúc phát triển); test dựng database và so với DDL; khung module con nạp vào `AppModule`.
 
 **Job migration (PID-00010) áp schema của `sires_orchestration`** — System chạy trước mỗi lần deploy:
 
 1. Điểm vào `node dist/migrate.js` (`migration.command` ở `apps/orchestration/deploy/values.yaml:18`, script `migrate` ở `apps/orchestration/package.json:14`) — `apps/orchestration/src/migrate.ts:8` gọi `runMigrationCommand` với `process.env`, ghi mã thoát vào `process.exitCode`.
 2. `runMigrationCommand` (`apps/orchestration/src/db/migrate.ts:79`) đọc DSN ở `DATABASE_MIGRATOR_URL` (`migrate.ts:15`); thiếu → stderr, mã 1.
-3. `runMigrations` (`migrate.ts:38`) mở một `pg.Client`, đếm dòng trong sổ `drizzle.__drizzle_migrations`, gọi `migrate()` của drizzle-orm (`migrate.ts:46`) với thư mục `migrations/` (`migrate.ts:21`). Migrator đọc `migrations/meta/_journal.json`, tạo schema `drizzle` và bảng sổ (ngoài giao dịch), rồi trong **một giao dịch** chạy mỗi migration có `when` lớn hơn bản ghi cuối của sổ và ghi sổ.
+3. `runMigrations` (`migrate.ts:38`) mở một `pg.Client`, đếm dòng trong sổ `drizzle.__drizzle_migrations`, gọi `migrate()` của drizzle-orm với thư mục `migrations/` (`migrate.ts:21`). Migrator đọc `migrations/meta/_journal.json` (hai mục: `0000_init`, `0001_state_transition`), tạo schema `drizzle` và bảng sổ (ngoài giao dịch), rồi trong **một giao dịch** chạy mỗi migration có `when` lớn hơn bản ghi cuối của sổ và ghi sổ. Database rỗng: cả hai migration chạy trong cùng giao dịch; lỗi ở `0000` thì `0001` cũng không còn.
 4. `migrations/0000_init.sql` là nguyên văn `docs/database/ddl/00-common.sql` rồi `orchestration.sql`, bỏ ba dòng giấy phép đầu mỗi file và khối `INSERT INTO app.state_transition` (thay bằng chú thích ở `0000_init.sql:727`). Không có dấu `--> statement-breakpoint` nên cả file là một câu nhiều lệnh (giao thức simple query của node-postgres). Cuối file `app.enable_tenant_rls()`, `app.grant_standard('orchestration')` (`0000_init.sql:747`), `REVOKE UPDATE` trên `checkpoint`, `usage_ledger`.
-5. Kết quả: stdout `orchestration migrate: áp N migration mới, đã ghi sổ M`, mã 0. Lỗi PostgreSQL (ví dụ thiếu vai trò → `42704` ở `GRANT`) làm cả giao dịch rollback; `describeError` (`migrate.ts:96`) in chuỗi `message` kèm SQLSTATE theo `cause`, không in DSN; mã 1.
+5. `migrations/0001_state_transition.sql` là đầu ra của `sires-state-transition-sql` (helper PID-00158) sau ba dòng giấy phép: migrator tách theo `--> statement-breakpoint` (`0001_state_transition.sql:53`) thành hai câu — `DELETE` các cặp của bảy machine không còn khai báo (`:7`), rồi `INSERT … ON CONFLICT DO UPDATE SET code` 43 dòng (`:54`, `:98`). Chạy lại trên bảng đã đủ không đổi dòng nào.
+6. Kết quả: stdout `orchestration migrate: áp N migration mới, đã ghi sổ M` (database rỗng: `áp 2 …, đã ghi sổ 2`), mã 0. Lỗi PostgreSQL (ví dụ thiếu vai trò → `42704` ở `GRANT`) làm cả giao dịch rollback; `describeError` (`migrate.ts:96`) in chuỗi `message` kèm SQLSTATE theo `cause`, không in DSN; mã 1.
+
+**Sinh dòng `app.state_transition` từ khai báo** — Dev chạy lúc đổi khai báo (không chạy lúc deploy):
+
+1. `apps/orchestration/src/domain/state-machines.ts` khai báo bảy machine bằng `defineStateMachine` của `@sires/platform` (`state-machines.ts:14`, `:17`…): helper kiểm khai báo khi nạp module và trả đối tượng đóng băng; `stateMachines` (`state-machines.ts:116`) theo thứ tự khối INSERT của DDL.
+2. `pnpm nx run @sires/orchestration:build` → `dist/domain/state-machines.js`.
+3. Trong `apps/orchestration`: `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` in SQL (dòng sắp theo machine, `from_state`, `to_state`; thứ tự khai báo không đổi đầu ra).
+4. Lần 3: `pnpm exec drizzle-kit generate --custom --name state_transition` tạo `0001_state_transition.sql`, `meta/0001_snapshot.json` (rỗng như `0000`), mục journal; nội dung file thay bằng đúng SQL ở bước 3; `node scripts/docs/add-license.mjs` thêm ba dòng giấy phép.
 
 **Test dựng database và so với DDL** (`apps/orchestration/src/db/database.testkit.ts`):
 
 1. `startOrchestrationPostgres` (`database.testkit.ts:60`) khởi động PostgreSQL 16 + pgvector bằng `startPostgres()` của `@sires/testing` và tạo `sires_orchestration_app` (LOGIN, NOBYPASSRLS), `_system`, `_purge` (LOGIN, BYPASSRLS) theo database 3.2 (`database.testkit.ts:32`; D4).
 2. Mỗi test tạo database mới từ `template1` (không có extension `vector` của database mặc định — EC05); database migration chạy `runMigrations`, database tham chiếu chạy hai file DDL đọc từ `docs/database/ddl/` (`applyReferenceDdl`, `database.testkit.ts:94`).
 3. `dumpSchema` (`database.testkit.ts:98`) chạy `pg_dump --schema-only --exclude-schema=drizzle` trong container; `normalizeDump` (`database.testkit.ts:115`) chỉ bỏ dòng `\restrict`/`\unrestrict` và chú thích phiên bản. Hai chuỗi dump so bằng `toBe`.
-4. Test hành vi DDL (`ddl-behaviour.spec.ts`) ghi dữ liệu mồi bằng `_system`, rồi chạy từng câu bằng `_app` qua `withAccountTransaction` của `@sires/platform` (đặt `app.account_id`) và luôn rollback; kiểm SQLSTATE theo `sqlState` (`database.testkit.ts:142`).
+4. Dòng chuyển trạng thái (`migration.spec.ts:129`): đọc `app.state_transition` của hai database; `compareStateTransitionRows` của helper so từng tập với `stateMachines` (cả ba mảng rỗng), hai tập dòng bằng nhau (43, `code` NULL), file `0001` bằng `renderStateTransitionSql(stateMachines)`, chỉ `0001` có `INSERT INTO app.state_transition` (bỏ dòng chú thích). Phép so với khai báo cố ý lệch (`migration.spec.ts:158`) chứng minh test chỉ ra đúng cặp thiếu, thừa (EC06). EC07 (`migration.spec.ts:174`): superuser, giao dịch riêng rồi rollback, `Running → Created` → `23514` với thông báo của `tg_state_transition`; `Running → Paused` đi qua.
+5. Test hành vi DDL (`ddl-behaviour.spec.ts`) ghi dữ liệu mồi bằng `_system`, rồi chạy từng ca bằng `_app` qua `withAccountTransaction` của `@sires/platform` (đặt `app.account_id`) và luôn rollback (`attempt`, `ddl-behaviour.spec.ts:250`): câu chuẩn bị của ca (lỗi thì ném, là lỗi của test) rồi câu cần kiểm (trả kết quả hoặc lỗi). Kiểm SQLSTATE theo `sqlState` (`database.testkit.ts:142`), thông báo theo `pgMessage` (`ddl-behaviour.spec.ts:550`).
+6. Ca 1 (`ddl-behaviour.spec.ts:292`): với mỗi machine và mỗi cặp trạng thái khác nhau (142 cặp), `transitionCase` (`ddl-behaviour.spec.ts:129`) tạo trong giao dịch một dòng ở trạng thái `từ` (đủ cột mà CHECK của trạng thái đó cần) rồi đổi sang `đến`. Mong đợi (`:301`): cặp khai báo đi qua (`RETURNING status`); agent_run đã kết thúc → `23000` của `agent_run_final`; prompt đã rời Open → `23000` của `prompt_answer_once`; còn lại → `23514` với thông báo `Chuyển trạng thái không hợp lệ cho <machine>: <từ> → <đến>`. Bảng đếm theo machine (`:337`) ghim số cặp đi qua (43), bị trigger `*_state` chặn, bị trigger khác chặn trước.
 
 **Khung module con** — `AppModule` (`apps/orchestration/src/app.module.ts:16`) nạp `HealthModule` và năm module `EngineModule`, `PromptsModule`, `ContextStoreModule`, `DeliberationModule`, `UsageModule`, mỗi module import qua `index.ts` của thư mục. `EngineModule` (`src/engine/engine.module.ts:12`) cung cấp và xuất token `WORKFLOW_ENGINE` (lớp rỗng `WorkflowEngineService`). Bốn module còn lại rỗng.
 
@@ -31,12 +41,14 @@ Ticket không có API, sự kiện hay logic nghiệp vụ. Có ba luồng: Job 
 | Thành phần | Loại | Vị trí | Làm gì | Vì sao ảnh hưởng cao | Giữ bất biến gì | Test |
 | --- | --- | --- | --- | --- | --- | --- |
 | `migrations/0000_init.sql` | migration SQL | `apps/orchestration/migrations/0000_init.sql` | Tạo toàn bộ schema theo DDL tham chiếu | Ghi dữ liệu khó đảo ngược; mọi PID sau của luồng dựa vào; chỉ tiến | Schema = DDL (DEC-57); RLS, `tg_immutable`, `tg_agent_run_final`, `tg_project_writable`, `workflow_one_active_per_task_uq` | `src/db/migration.spec.ts › schema khớp DDL`; `src/db/ddl-behaviour.spec.ts` |
+| `migrations/0001_state_transition.sql` | migration SQL (sinh) | `apps/orchestration/migrations/0001_state_transition.sql` | Nạp 43 dòng `app.state_transition` của bảy machine | Thiếu dòng thì trigger `*_state` chặn mọi lần đổi `status` (database dựng từ `main` trước Lần 3); chỉ tiến | Dòng = khai báo = DDL (DEC-57, NFR-MAINT-003); không viết tay | `migration.spec.ts › state_transition sinh từ khai báo`, `› chuyển ngoài bảng bị từ chối`; `ddl-behaviour.spec.ts › chuyển ngoài bảng bị từ chối (ca 1)` |
+| `stateMachines` và bảy `*StateMachine` | dữ liệu (`defineStateMachine`) | `apps/orchestration/src/domain/state-machines.ts:17`–`:124` | Bảy machine, 43 cặp từ → đến của DDL | Nơi khai báo duy nhất; PID-00046, 00065, 00066, 00087 dùng lại (`assertTransition`, `findTransition`); nguồn của `0001` | Chuyển trạng thái PRD 18.2 (DATA-STATE-001); helper từ chối khai báo sai lúc nạp | `migration.spec.ts › state_transition sinh từ khai báo` |
 | `runMigrations` | hàm | `apps/orchestration/src/db/migrate.ts:38` | Áp migration chưa ghi sổ trong một giao dịch, trả số migration áp mới và tổng | Job migration và mọi test database gọi | Lỗi thì rollback toàn bộ; không áp lại migration đã ghi sổ | `migration.spec.ts › chạy lại không đổi schema`, `› thiếu vai trò thì rollback` |
 | `runMigrationCommand` | hàm | `apps/orchestration/src/db/migrate.ts:79` | Lệnh migrate: DSN từ `DATABASE_MIGRATOR_URL`, mã thoát 0/1 | Điểm nối với Job migration của PID-00010 (`migration.command`) | Không in DSN (mật khẩu) | `src/db/migrate.spec.ts › lệnh migrate trên database rỗng` |
-| `stateMachines` | dữ liệu | `apps/orchestration/src/domain/state-machines.ts:121` | Bảy machine, 43 cặp từ → đến của DDL | Nơi khai báo duy nhất; PID-00046, 00065, 00066, 00087 dùng lại; nguồn của migration dòng `app.state_transition` (S02) | Chuyển trạng thái PRD 18.2 (DATA-STATE-001) | `migration.spec.ts › state_transition sinh từ khai báo — khai báo khớp dòng của DDL (43 cặp)` |
 | `WorkflowEngine`, `WORKFLOW_ENGINE` | interface, token DI | `apps/orchestration/src/engine/workflow-engine.ts:11`, `:14` | Giao diện engine cho module khác, xuất ở `engine/index.ts` | Điểm nối giữa engine và bốn module con (tickets 1.6) | Module khác chỉ đổi trạng thái Workflow qua engine | `src/app.module.spec.ts › nạp đủ module con` |
 | Luật `no-restricted-imports` | cấu hình lint | `apps/orchestration/eslint.config.mjs:14` | File ngoài `src/engine/` chỉ import `engine/index` | Giữ ranh giới module con (PID-00019-AC02) | — | `src/engine/engine-boundary.spec.ts › luật chặn import nội bộ engine` |
 | `startOrchestrationPostgres`, `dumpSchema` | hàm test | `apps/orchestration/src/db/database.testkit.ts:60`, `:98` | Container, vai trò, DDL tham chiếu, dump schema | Mọi test database của orchestration dùng; phép so của AC01 | — | `migration.spec.ts`, `migrate.spec.ts`, `ddl-behaviour.spec.ts` |
+| `transitionCase`, `attempt` | hàm test | `apps/orchestration/src/db/ddl-behaviour.spec.ts:129`, `:250` | Dựng dòng ở một trạng thái và câu đổi trạng thái cho từng machine; chạy ca bằng `_app` rồi rollback | Ca 1 của AC03 phủ mọi cặp của bảy machine | Lỗi khi dựng dòng không bị tính là “bị từ chối” | `ddl-behaviour.spec.ts › chuyển ngoài bảng bị từ chối (ca 1)` |
 
 ### Thuật toán: so schema bằng `pg_dump --schema-only`
 
@@ -45,20 +57,30 @@ Ticket không có API, sự kiện hay logic nghiệp vụ. Có ba luồng: Job 
 - **Phạm vi bắt được:** bảng, cột (kiểu, NULL, mặc định, cột sinh), ràng buộc PK/UQ/FK/CHECK kể cả `DEFERRABLE`, index (partial, `INCLUDE`, GIN), trigger, thân hàm, RLS (bật, `FORCE`, policy), `GRANT` cho từng vai trò, extension, cấu hình tìm kiếm. Không so dữ liệu (dòng `app.state_transition` so riêng ở S02). Đã thử đột biến: bỏ `WHERE` của `workflow_heartbeat_idx` trong migration thì test báo đúng dòng lệch.
 - **Trường hợp biên đã xử lý:** EC04 (schema `drizzle` loại khỏi dump; kiểm bảng sổ không có `GRANT` cho vai trò dịch vụ), EC05 (database mới từ `template1`; kiểm extension của database migration là `pg_trgm`, `pgcrypto`, `plpgsql`, `unaccent`).
 
+### Thuật toán: ca 1 — mọi cặp trạng thái của bảy machine
+
+- **Vào, ra:** `stateMachines`; với mỗi machine, mọi cặp `(từ, đến)` khác nhau trong `states` (workflow 56, workflow_step 30, agent_run 20, prompt 12, context_item 6, deliberation 12, deliberation_entry 6; tổng 142). Ra: kết quả của từng cặp và bảng đếm theo machine.
+- **Mong đợi rút từ DDL:** PostgreSQL chạy trigger `BEFORE` cùng sự kiện theo thứ tự tên. `agent_run_final` < `agent_run_row_version` < `agent_run_state`; `prompt_answer_once` < `prompt_row_version` < `prompt_state`; `context_item_append_only`, `deliberation_entry_append_only` cho đổi `status` nên không chặn. CHECK của bảng xét sau mọi trigger `BEFORE`.
+- **Kết quả đếm (đi qua / trigger `*_state` / trigger khác chặn trước):** workflow 16/40/0, workflow_step 11/19/0, agent_run 5/3/12, prompt 3/0/9, context_item 2/4/0, deliberation 3/9/0, deliberation_entry 3/3/0.
+- **Đã thử đột biến:** bỏ dòng `('workflow', 'Running', 'Paused', NULL)` khỏi `0001`: 5 test lỗi (ca 1 báo đúng cặp `workflow: Running → Paused`, phép so dòng báo `missing`, EC07 đối chứng, hai test đếm 43 dòng). Đã khôi phục file.
+
 ## 3. Quyết định kỹ thuật trong phạm vi
 
 - Tên migration `0000_init.sql` (cách đặt tên của `drizzle-kit generate --custom --name init`) thay cho `NNN_init.sql` của spec — acceptance cho đổi tên, ghi ở đây.
-- `drizzle.config.ts` bắt buộc có `schema`; trỏ tới `src/db/schema.ts` rỗng (`export {}`), chỗ PID tính năng viết `pgTable` (N6). Snapshot `migrations/meta/0000_snapshot.json` do công cụ sinh, rỗng.
+- `drizzle.config.ts` bắt buộc có `schema`; trỏ tới `src/db/schema.ts` rỗng (`export {}`), chỗ PID tính năng viết `pgTable` (N6). Snapshot `migrations/meta/0000_snapshot.json`, `0001_snapshot.json` do công cụ sinh, rỗng.
 - Không thêm `--> statement-breakpoint` vào SQL chép từ DDL để giữ nguyên nội dung; cả file chạy như một câu nhiều lệnh. Đã chạy được trên PostgreSQL 16 (Testcontainers) và trong image.
+- Dòng chuyển trạng thái đặt ở custom migration thứ hai `0001_state_transition.sql` (S02 cho chọn “nối vào migration đầu hay một custom migration thứ hai”): `0000_init.sql` đã merge ở PR #50, không sửa migration đã có (spec mục 7). Nội dung là đúng đầu ra của lệnh helper, không sửa tay; test so file với `renderStateTransitionSql`.
 - Sổ phiên bản giữ mặc định của drizzle (`drizzle.__drizzle_migrations`), nằm ngoài `app`, `replica` (EC04).
-- DSN của migrator: biến `DATABASE_MIGRATOR_URL` (cùng tên nhánh agent-core trước đó dùng, để các service giống nhau). `migration.command` dạng danh sách argv `["node", "dist/migrate.js"]`; kiểu giá trị kiểm lại khi chart PID-00010 có trên main.
+- DSN của migrator: biến `DATABASE_MIGRATOR_URL` (cùng tên agent-core dùng). `migration.command` dạng danh sách argv `["node", "dist/migrate.js"]`, đúng kiểu mà chart chung bắt (`infra/helm/sires-service/templates/migration-job.yaml`; chú thích ở `values.yaml` sửa Lần 3).
 - Điểm vào tách đôi: `src/migrate.ts` (chạy, như `main.ts`) và `src/db/migrate.ts` (hàm, để test gọi trong tiến trình). `MIGRATIONS_FOLDER` tính từ `__dirname` hai cấp lên (đúng cho `src/db` và `dist/db`); `package.json` có `files: ["dist", "migrations"]` để `pnpm deploy --prod` chép thư mục migration vào image.
-- Khai báo state machine đặt ở `src/domain/` (ngoài năm module) để mọi module import mà không phạm luật import nội bộ engine; dạng dữ liệu `{ machine, states, transitions: [{ from, to }] }` theo spec 4.2 của PID-00158, kiểm hình dạng bằng một interface cục bộ (`satisfies`), không viết hàm kiểm hay bộ sinh SQL.
+- Khai báo state machine đặt ở `src/domain/` (ngoài năm module) để mọi module import mà không phạm luật import nội bộ engine. Lần 3 bọc bằng `defineStateMachine` (G3 của QC), bỏ interface cục bộ. Không thêm hàm kiểm chuyển riêng (`assert…Transition`): logic engine là của PID-00046 (N1); PID đó gọi thẳng `assertTransition`/`findTransition` của `@sires/platform` với machine đã export.
 - Giao diện engine: `interface WorkflowEngine {}` rỗng (dòng `eslint-disable` cho `no-empty-object-type` có lý do) và token `Symbol('orchestration.WorkflowEngine')`; `EngineModule` cung cấp lớp rỗng `WorkflowEngineService` để token tiêm được ngay.
 - Luật ranh giới bằng `no-restricted-imports` (mẫu gitignore `**/engine/**`, trừ `**/engine/index`) trong `apps/orchestration/eslint.config.mjs` (nạp cấu hình gốc rồi thêm luật); luật chỉ áp khi `eslint` chạy trong thư mục app (target `lint`). Test luật tắt `@nx/enforce-module-boundaries` vì luật đó cần project graph.
 - `eslint` thêm vào devDependencies của app vì test luật import `ESLint` (Node API).
-- Test hành vi DDL chạy mỗi câu trong giao dịch rồi rollback (ném lỗi nội bộ `Rollback`) để các ca không ảnh hưởng nhau; dùng `withAccountTransaction` của `@sires/platform` như repository thật.
-- Dòng chuyển trạng thái chưa có trong migration (S02 chặn): các test cần dòng để `it.todo` có ghi “chờ PID-00158”, hiện trong kết quả test là todo, không bị bỏ qua im lặng.
+- Test hành vi DDL chạy mỗi ca trong giao dịch rồi rollback (ném lỗi nội bộ `Rollback`) để các ca không ảnh hưởng nhau; dùng `withAccountTransaction` của `@sires/platform` như repository thật. Lần 3 thêm câu chuẩn bị trong cùng giao dịch (`attempt`), để ca 1 và đối chứng ca 6 tạo dòng riêng mà không đổi dữ liệu mồi (test tiền đề đếm đúng 2 `agent_run`).
+- Ca 1 kiểm mọi cặp, không chỉ một cặp mỗi machine, và so thông báo lỗi để biết trigger nào từ chối: `check_violation` của CHECK cột `status` cũng là `23514`, nên chỉ SQLSTATE không đủ phân biệt.
+- Machine `prompt`: không cặp ngoài bảng nào tới được `prompt_state` (xem thuật toán ca 1); test ghim hành vi thật của DDL (`23000` của `prompt_answer_once`) và `report.md` Lần 3 ghi đề xuất cho PO về câu chữ của `acceptance.html`.
+- EC07 kiểm bằng superuser (trigger áp cho mọi vai trò); ca 1 của AC03 kiểm bằng `_app`.
 
 ---
 
