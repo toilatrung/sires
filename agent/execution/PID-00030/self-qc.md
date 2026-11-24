@@ -90,6 +90,25 @@ Lỗi nguồn agent nêu thêm, ngoài văn bản EC: nội dung approval không
 
 Sau khi xử lý: không còn CRITICAL, HIGH.
 
+
+## Lần 2 — 25/11/2026
+
+**Kết luận:** Đạt. Sửa G1, G2 của `qc-report.md` Lần 1.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git merge --no-edit origin/main` (`eafd885`) | Không xung đột, commit `0ee36b7` có chữ ký |
+| `pnpm install --frozen-lockfile` | Đạt |
+| `pnpm exec prettier --check` hai file sửa | Đạt |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/manuscript --skip-nx-cache` | Lần 1: `@sires/contracts:generate` lỗi `EPERM` khi đổi tên `libs/ts/contracts/src/generated` (Nx daemon giữ handle, Windows). Sau `pnpm nx daemon --stop`, chạy với `NX_DAEMON=false`: đạt, 3 file, 23/23 test |
+
+| G (qc-report) | Đã xử lý |
+| --- | --- |
+| G1 MEDIUM | `dumpSchema` dùng base64 như #100; thêm ca `dumpSchema giữ nguyên ký tự UTF-8 nhiều byte` (đạt). Phép so `› schema khớp DDL (PID-00030-AC01)`, `› chạy lại (EC03)` đạt với cách đọc mới |
+| G2 LOW | Đã gộp `main` `eafd885` |
+
+Không còn khoảng trống CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

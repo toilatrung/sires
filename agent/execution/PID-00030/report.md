@@ -1,6 +1,6 @@
 # PID-00030 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Xong — chờ QC (Lần 2)
 
 - **Ticket:** [PID-00030](../../../docs/tickets/issues/PID-00030/index.html) · **Luồng:** `manuscript` · **Giai đoạn:** PH-01
 - **Nhánh:** `manuscript/pid-00030-migration` (đã commit, có chữ ký) · **PR:** [#97](https://github.com/toilatrung/sires/pull/97) vào `main`
@@ -59,6 +59,20 @@ Không có trong phạm vi.
 - **Còn mở:** không có.
 - **Bước tiếp theo:** PO review PR #97, QC độc lập chạy `spec-converge-skill PID-00030`, rồi merge.
 - **Tài liệu đi kèm:** không có.
+
+
+## Lần 2 — 25/11/2026
+
+Sửa theo `qc-report.md` Lần 1 (QC độc lập: có thể nghiệm thu, 0 CRITICAL, 0 HIGH, 1 MEDIUM, 1 LOW), phiên điều phối chuyển lại.
+
+| G (qc-report) | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- |
+| G1 MEDIUM | `dumpSchema` theo bản sửa #100: stdout của `pg_dump` qua base64 vì exec của Testcontainers giải mã từng khúc | `apps/manuscript/src/db/database.testkit.ts` `dumpSchema`: `bash -o pipefail -c 'pg_dump "$@" | base64 -w 0' pg_dump …`, giải mã bằng `Buffer.from(stdout.trim(), 'base64').toString('utf8')`. Thêm `src/db/migration.spec.ts › dumpSchema giữ nguyên ký tự UTF-8 nhiều byte (phép so schema không chập chờn)` (chú thích bảng 720 KB, ký tự 1–4 byte), như ca của orchestration ở #100. Commit `3286241` |
+| G2 LOW | Gộp `main` mới nhất (`eafd885`: #66, #100, #87, #90, #101) | Merge thường, không force, không xung đột: `0ee36b7`. `pnpm install --frozen-lockfile` đạt |
+
+Kết quả: `pnpm nx run-many -t lint typecheck test build -p @sires/manuscript --skip-nx-cache` đạt; 3 file, 23/23 test (22 cũ + ca UTF-8). Lần chạy đầu sau khi gộp lỗi `EPERM` lúc `contracts:generate` đổi tên `libs/ts/contracts/src/generated`, do Nx daemon của worktree giữ handle trên Windows; dừng daemon (`pnpm nx daemon --stop`) rồi chạy lại thì đạt. Không phải lỗi của mã.
+
+DBQ-11 ở database 13.3: phiên điều phối ghi ở PR docs riêng, PR này không làm.
 
 ---
 
