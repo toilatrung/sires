@@ -1,6 +1,6 @@
 ﻿# PID-00009 — Self-QC
 
-**Kết luận:** Lần 9 (24/11/2026): AC01 đạt. T3 với cache `main` xong trong 182 giây trên PR thử #96, đóng G5. Lần 8 (24/11/2026): T5 đạt trên `main`; sửa G18 (EC06 cho project không phụ thuộc project nào) và số giây job skipped. Còn một HIGH: G19 (mã hợp đồng sinh ra không nằm trong hash Nx, cần PO chọn cách sửa), nên chưa đặt `Xong — chờ QC`.
+**Kết luận:** Đạt — Lần 10 (25/11/2026): G19 đã sửa theo PC-04 A12. Thêm trường vào schema `library` làm đổi hash của 12/17 task kiểm, gồm consumer TS và `sires-common:test`; hoàn lại thì cache trúng 12/12. Không còn CRITICAL hay HIGH; còn G20, G21 (LOW, luồng contracts), G16 (LOW, chờ PO) và các mục MEDIUM của QC. Lần 9 (24/11/2026): AC01 đạt. T3 với cache `main` xong trong 182 giây trên PR thử #96, đóng G5. Lần 8 (24/11/2026): T5 đạt trên `main`; sửa G18 (EC06 cho project không phụ thuộc project nào) và số giây job skipped; phát hiện G19.
 
 ## 1. Lệnh và kết quả
 
@@ -204,6 +204,51 @@ Người chạy: phiên do PO `toilatrung` giao. Số đo chi tiết ở `report
 | G12 (QC) | MEDIUM | Lần chạy toàn bộ đỏ ngẫu nhiên | Còn mở — thêm lần push `main` của #94 đỏ vì `@sires/orchestration:test` (UTF-8 trong dump); lần sau đạt với cùng mã. Ngoài mã PID này |
 | G19 | HIGH | Như Lần 8 | Còn mở — cần PO |
 | G16 (QC) | LOW | EC15/S11 | Cần PO, chưa có trả lời |
+
+## Lần 10 — 25/11/2026 · Sửa G19 (PC-04 A12), tự đối chiếu
+
+Người chạy: phiên do PO `toilatrung` giao. Chi tiết ở `report.md` Lần 10.
+
+### Lệnh và kết quả
+
+| Lệnh | Kết quả thật |
+| --- | --- |
+| `git merge -S origin/main` (`62c0d03`) | Không xung đột; `main` không đổi `nx.json`, `ci.yml` |
+| `pnpm exec nx run-many -t build --projects=tag:lang:ts` | Đạt, 16 task (2 từ cache) |
+| `node libs/ts/contracts/scripts/generate.mjs --python-only` trên Windows | Lỗi: Application Control chặn `openapi-python-client` |
+| Cùng lệnh trong container Linux (`uv:0.13.7-python3.12-trixie-slim` và `node:22`, `pnpm install --filter @sires/contracts`) | Đạt: 9 API nội bộ, 42 message, 572 file |
+| Hash 17 task bằng API Nx, ba cấu hình `nx.json`, trước và sau khi thêm `pid9Probe` vào `ReferenceMetadata` | Hiện tại: 0 task đổi; chỉ `targetDefaults`: 8; `namedInputs.default`: 12, gồm `sires-common:test` và `platform`, `planning`, `audit:test` |
+| Hoàn lại YAML, `nx run @sires/contracts:build --skip-nx-cache`, sinh lại Python | Bản chốt: 16/17 task về hash cũ; `sires-common:test` khác vì đầu ra Python không giống nhau giữa các lần sinh |
+| Sinh Python hai lần không cố định seed, rồi hai lần với `PYTHONHASHSEED=0` | 34 file khác (thứ tự dòng import); với seed: 0 file khác |
+| `nx run-many -t lint typecheck test build -p @sires/gateway @sires/library`: hai lần không đổi gì, thêm trường, rồi hoàn lại | 12/12, 12/12 từ cache; 2/12 (10 task chạy lại); 12/12 |
+| Cùng thay đổi YAML với `nx.json` cũ | `@sires/contracts:build` `[local cache]`, `dist` thiếu trường mới (tái hiện G19) |
+| `pnpm exec prettier --check` bản `nx.json` đã stage | Đạt |
+| CI #91 run 45465050271 attempt 1 (`c0d1f4d`) | 25 job đạt, 172 giây; 63 task TS, 13 task Python chạy mới (hash mới) |
+| `gh run rerun 45465050271`: attempt 2 | 25 job đạt, 160 giây; 63/63 TS, 13/13 Python đọc từ cache `nx-*-Linux-91/merge-c982f4e…` |
+| Không chạy | `@sires/contracts:test` trên Windows (`check-drift.spec` cần `openapi-python-client`) |
+
+### AC thay đổi trong Lần 10
+
+| AC | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| PID-00009-AC06 | Đạt | Task có input đổi chạy lại, kể cả khi thứ đổi là mã sinh ra từ `docs/api-design` (G19 đã sửa); task không đổi input đọc từ cache: 12/12 trên máy, 63/63 TS và 13/13 Python ở attempt 2 của CI #91 |
+| AC01–AC05, AC07, AC08 | Như Lần 9 | AC04, AC05 trên mã CI `develop` cũ (G7, không chặn theo YC Lần 10) |
+
+### Ranh giới
+
+File đổi: `nx.json` (luồng infra) và `agent/execution/PID-00009/` (repo). Không có `docs/`, không có file của luồng contracts hay platform. File thử (YAML, các biến thể `nx.json`) đã hoàn lại; mã sinh ra nằm trong `.gitignore`.
+
+### Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| Mã | Mức | Phát hiện | Trạng thái |
+| --- | --- | --- | --- |
+| G19 | HIGH | Mã hợp đồng sinh ra không nằm trong hash của task dùng nó | Đóng — `namedInputs.default` (PC-04 A12), đã kiểm bằng hash và lần chạy thật |
+| G20 | LOW | Đầu ra `openapi-python-client` không giống nhau giữa các lần sinh (thứ tự import) | Mở — luồng contracts; không làm sai cache |
+| G21 | LOW | `@sires/contracts:test` đọc `docs/api-design` thật nhưng không khai trong `inputs` | Mở — luồng contracts; job `contracts` chạy `check-drift` không cache mỗi khi `docs/api-design` đổi |
+| G16 (QC) | LOW | EC15/S11 | Còn mở — chờ PO, không chặn |
+| G7, G8, G9, G10, G12 (QC) | MEDIUM | Như Lần 9 | G7: phiên điều phối chạy lại T1, T2 sau khi đồng bộ `develop`. G8: số âm sửa ở #91, chờ lần chạy có job skipped. G12: lỗi ngẫu nhiên của Lần 9 đã sửa ở #100 |
+
+Không còn CRITICAL hay HIGH.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).
