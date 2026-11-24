@@ -4,10 +4,10 @@
 
 - **Ticket:** [PID-00026](../../../docs/tickets/issues/PID-00026/index.html) · **Luồng:** `knowledge` · **Giai đoạn:** PH-01
 - **Nhánh:** `knowledge/migration-skeleton` (tạo từ `origin/main` `80a6626`, có PR #94 EC09; mã ở `0c18660`, gộp `origin/main` `5e66d14` (#95 chỉ `docs/`, #82 chỉ `apps/research`) ở `68d5c38` và `eafd885` (#66, #87, #90, #100, #101; không chạm knowledge, DDL, `uv.lock`) ở `686edbb`; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#99](https://github.com/toilatrung/sires/pull/99) vào `main`, chưa merge
-- **Cập nhật:** 25/11/2026
-- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
+- **Cập nhật:** 25/11/2026 (Lần 2, sửa theo QC độc lập Lần 1); Lần 1 25/11/2026
+- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md) · **QC độc lập:** [qc-report.md](qc-report.md)
 
-Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
+Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè. Mục 1–6 dưới là kết quả **Lần 1**, giữ nguyên; việc sửa theo QC (điều kiện extension `vector` của EC01, log của Job migration) ở mục [Lần 2](#lần-2--25112026) cuối file.
 
 Người làm: phiên do PO `toilatrung` giao (PID-00026 giao cho `toilatrung`). Căn cứ PO ngày 24/11/2026: “Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01” và “Hãy thực hiện đi nhé!”; PO chốt bắt đầu PID-00026 sau khi PR #94 vào `main` (phiếu chốt PC-04 mục A9).
 
@@ -52,6 +52,37 @@ Không có.
 - **Còn mở:** EC01 — DBQ-01 (extension `vector` ≥ 0.8, `pgcrypto`, `unaccent`, `pg_trgm` và vai trò BYPASSRLS trên PostgreSQL managed) không kiểm được trên Testcontainers; image test `pgvector/pgvector:pg16` là PostgreSQL 16.15, pgvector 0.8.7 (`sha256:0dd3149a06e4579a0d70d8fef9945636cd514005e7237deb27f9b67886f8dc4f`). Tech lead, trước PH-07; không chặn mã.
 - **Bước tiếp theo:** PO review PR, QC độc lập `spec-converge-skill PID-00026` (ghi `qc-report.md`) rồi merge. PID-00105 dùng lại `knowledge.domain.state_machines`; PID-00035 dùng `migration.command` của knowledge.
 - **Tài liệu đi kèm:** không có.
+
+## Lần 2 — 25/11/2026
+
+Người làm: phiên do PO `toilatrung` giao. Căn cứ: QC độc lập Lần 1 ([qc-report.md](qc-report.md), commit `cf70e03`, “Có thể nghiệm thu”, 0 CRITICAL, 0 HIGH, 1 MEDIUM, 2 LOW), phiên điều phối của PO chuyển việc sửa: G1 bắt buộc trước khi merge, G2 tùy chọn, gộp `origin/main`. Nhánh đã ở `cf70e03` (gộp nhanh); `origin/main` không có commit mới sau `eafd885`. Mã Lần 2 ở commit `61d7917` (có chữ ký).
+
+### Việc đã làm
+
+| QC | Việc | Trạng thái | File |
+| --- | --- | --- | --- |
+| G1 (MEDIUM) | Ghi điều kiện tiên quyết: chạy migration bằng `sires_knowledge_migrator` (database 3.2, không superuser) thì extension `vector` phải được hạ tầng tạo sẵn bằng superuser trong `sires_knowledge`; thiếu → `permission denied to create extension "vector"`, rollback hết. Đúng cả với PostgreSQL tự dựng, không chỉ managed. Sửa câu “migrator (chủ sở hữu database)” cho đúng database 3.2. Thêm test chạy revision bằng migrator | Xong | sửa: `apps/knowledge/README.md` (mục Migration: điều kiện tiên quyết, cục bộ, trong test, trong image; bảng Kiểm thử), `apps/knowledge/tests/test_migrations.py` (`test_migrator_role_needs_vector_preinstalled`) |
+| G2 (LOW) | Job migration in từng revision đã chạy: `env.py` nạp logging của `alembic.ini` khi chạy bằng lệnh; test gọi Alembic trong tiến trình tắt việc này (`configure_logger = False`) | Xong | sửa: `apps/knowledge/migrations/env.py`, `apps/knowledge/tests/migration_support.py`, `apps/knowledge/tests/test_migrations.py` (`test_migrate_command` kiểm log) |
+| G3 (LOW) | Ca EC04 đổi tên vai trò trên container dùng chung | Không đổi mã | Đã ghi ở `implement.md` mục 3 (test chạy tuần tự); QC đồng ý là đúng khi chạy tuần tự |
+
+`test_migrator_role_needs_vector_preinstalled`: tạo `sires_knowledge_owner` (NOLOGIN) và `sires_knowledge_migrator` (LOGIN, thành viên của owner, `ALTER ROLE … SET role` owner, không SUPERUSER, CREATEDB, CREATEROLE, REPLICATION, BYPASSRLS) như database 3.2, hai database thuộc owner. Database không có `vector`: revision bị từ chối với `permission denied to create extension "vector"`, không còn schema, extension, `alembic_version`. Database có `vector` do superuser tạo sẵn: revision chạy tới `0002` hai lần, schema khớp DDL (bỏ các dòng quyền của chính owner), dòng danh mục bằng DDL, 7 dòng chuyển trạng thái, mọi schema, bảng, index, hàm thuộc `sires_knowledge_owner`.
+
+### Kết quả
+
+- `apps/knowledge/tests/` **17/17 đạt** trong container uv (Linux, Testcontainers `pgvector/pgvector:pg16`); ruff, `mypy src`, `mypy src migrations tests` sạch. Chi tiết ở [self-qc.md](self-qc.md) mục Lần 2.
+- AC: 2/2 đạt (không đổi). Edge case: 8/9 đã giải quyết; EC01 cần lưu ý, nay ghi rõ điều kiện extension.
+
+### EC01 (cập nhật)
+
+- Extension `vector` **do hạ tầng tạo sẵn bằng superuser** trong `sires_knowledge` trước Job migration của knowledge; migration chạy bằng migrator không tự tạo được (pgvector không phải extension trusted). `pgcrypto`, `unaccent`, `pg_trgm` là extension trusted nên owner tạo được. Không sửa DDL: `CREATE EXTENSION IF NOT EXISTS vector` bỏ qua khi extension đã có.
+- Liên quan: PID-00159-AC04 (compose cục bộ có `vector` trong `sires_knowledge`), PID-00011-AC02 (module PostgreSQL khai báo extension theo DDL), Job migration ở PID-00035. DBQ-01 (extension, BYPASSRLS trên dịch vụ managed) vẫn mở; Tech lead, trước PH-07.
+
+### Cần PO
+
+- **Đề xuất cho PO:** (1) xác nhận PID-00159-AC04 và PID-00011-AC02 là điều kiện trước Job migration của knowledge ở PID-00035 (như QC đề xuất 1). (2) Theo QC đề xuất 2: một PID cho luồng platform thêm owner, migrator vào `create_service_database` của `sires_common.testing.fixtures`; tới khi có, test của knowledge tự tạo hai vai trò này. (3) agent-core (luồng khác) vẫn chưa nạp logging trong `env.py`; nếu PO muốn Job của agent-core cũng in log thì là việc của luồng agent-core.
+- **Yêu cầu hợp đồng:** không có.
+- **Còn mở:** EC01/DBQ-01 như trên; không chặn mã.
+- **Bước tiếp theo:** PO review lại PR #99, QC độc lập Lần 2 nếu cần, rồi merge.
 
 ---
 
