@@ -5,8 +5,9 @@
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
 import { manifest } from './manifest';
+import { DatabaseModule } from './db/database.module';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  imports: [HealthModule.forService(manifest), DatabaseModule],
 })
 export class AppModule {}

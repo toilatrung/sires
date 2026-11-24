@@ -4,7 +4,7 @@
 
 import { decodeJwt, decodeProtectedHeader } from 'jose';
 import { describe, expect, it } from 'vitest';
-import { deriveDevServiceKeys, generateServiceKeys, publicJwk, serviceAuthKeysFromEnv, servicePublicKeysFromJwks } from './keys';
+import { deriveDevServiceKeys, generateServiceKeys, publicJwk, serviceAuthKeysFromEnv, servicePublicKeys, servicePublicKeysFromJwks } from './keys';
 import {
   issueAgentRunToken,
   issueServiceToken,
@@ -230,6 +230,37 @@ describe('bộ khóa', () => {
     expect(() =>
       serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_DEV_SEED: 'sires-local-development-seed', NODE_ENV: 'production' }),
     ).toThrow(/refused/);
+  });
+  it('bộ khóa công khai từ chối JWK riêng có "d", lỗi không nêu giá trị khóa', () => {
+    const dev = generateServiceKeys(['gateway', 'planning']);
+    const privateJwk = { ...dev.privateKeys.get('gateway')?.export({ format: 'jwk' }), kid: 'gateway' };
+    const secret = String(privateJwk.d);
+    const publicOnly = publicJwk('planning', dev.privateKeys.get('planning') as never);
+    const jwks = JSON.stringify({ keys: [publicOnly, privateJwk] });
+
+    let message = '';
+    try {
+      servicePublicKeysFromJwks(jwks);
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/kid “gateway” is a private JWK/);
+    expect(message).not.toContain(secret);
+
+    // From the environment the error names the variable and the kid, never the value.
+    const signer = JSON.stringify(dev.privateKeys.get('gateway')?.export({ format: 'jwk' }));
+    message = '';
+    try {
+      serviceAuthKeysFromEnv('gateway', { SERVICE_AUTH_PRIVATE_KEY: signer, SERVICE_AUTH_PUBLIC_KEYS: jwks });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/SERVICE_AUTH_PUBLIC_KEYS is not a valid JWKS: kid “gateway” is a private JWK/);
+    expect(message).not.toContain(secret);
+
+    // A JWK handed to servicePublicKeys directly is refused the same way; KeyObjects (dev key sets) still work.
+    expect(() => servicePublicKeys({ gateway: privateJwk })).toThrow(/“gateway” is a private JWK/);
+    expect(servicePublicKeys({ gateway: dev.privateKeys.get('gateway') }).get('gateway')?.type).toBe('public');
   });
 
   it('JWKS sai cấu trúc: lỗi nêu SERVICE_AUTH_PUBLIC_KEYS (QC PID-00003 Lần 2 G9)', () => {
