@@ -11,11 +11,10 @@ import { AUDIT_DATABASE_CONFIG, readDatabaseConfig } from './config/database';
 const ENV = {
   DATABASE_APP_URL: 'postgres://sires_audit_app:test@127.0.0.1/sires_audit',
   DATABASE_SYSTEM_URL: 'postgres://sires_audit_system:test@127.0.0.1/sires_audit',
-  DATABASE_MIGRATOR_URL: 'postgres://sires_audit_migrator:test@127.0.0.1/sires_audit',
 };
 
 describe('audit AppModule', () => {
-  it('wires the health endpoint with this service manifest', async () => {
+  it('khởi động và trả health khi chỉ có DSN app/system', async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(AUDIT_DATABASE_CONFIG).useValue(readDatabaseConfig(ENV)).compile();
     try { expect(moduleRef.get(HealthController).check()).toEqual({ service: 'audit', status: 'ok' }); }

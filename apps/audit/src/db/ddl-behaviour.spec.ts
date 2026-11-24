@@ -7,7 +7,7 @@ import { HealthController } from '@sires/platform';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
-import { AUDIT_DATABASE_CONFIG } from '../config/database';
+import { AUDIT_DATABASE_CONFIG, readDatabaseConfig } from '../config/database';
 import { AuditDatabase } from './database.module';
 import { ACCOUNT_A, ACCOUNT_B, PROJECT, type AuditPostgres, insertEvent, startAuditPostgres } from './database.testkit';
 import { runMigrations } from './migrate';
@@ -56,13 +56,43 @@ describe('audit DDL — PID-00018-AC01, CTX-AUDIT-001-AC04', () => {
 
   const invalidCases = [
     {name:'agent thiếu agentRunId', input:{actor:{type:'agent',agent:'synthesis'}}},
-    {name:'analysis thiếu instance', input:{actor:{type:'agent',agent:'analysis',agentRunId:EVENT}}},
     {name:'APR-11', input:{apr:'APR-11'}},
     {name:'summary 2001 ký tự', input:{summary:'a'.repeat(2001)}},
   ];
   it.each(invalidCases)('check — $name (EC09)', async ({input}) => {
     await expect(pg.asRole(DATABASE, 'system', undefined, (client) => insertEvent(client, input)))
       .rejects.toMatchObject(rejectCode('23514'));
+  });
+
+  const invalidActors = [
+    {name:'analysis thiếu instance (N1)', actor:{type:'agent',agent:'analysis',agentRunId:EVENT}},
+    {name:'analysis instance null (N2)', actor:{type:'agent',agent:'analysis',agentRunId:EVENT,instance:null}},
+    {name:'thiếu agent (N3)', actor:{type:'agent',agentRunId:EVENT}},
+    {name:'agent null (N4)', actor:{type:'agent',agent:null,agentRunId:EVENT}},
+    {name:'thiếu agent có instance (N5)', actor:{type:'agent',agentRunId:EVENT,instance:'A'}},
+  ];
+  const insertExport = (createdBy: unknown) => pg.asRole(DATABASE, 'system', undefined,
+    (client) => client.query(`INSERT INTO app.audit_export (account_id,project_id,format,status,created_by)
+      VALUES ($1,$2,'json','Queued',$3::jsonb) RETURNING id`, [ACCOUNT_A,PROJECT,JSON.stringify(createdBy)]));
+
+  describe.each(['actor', 'created_by'] as const)('check — %s (EC09)', (field) => {
+    it.each(invalidActors)('$name bị từ chối', async ({actor}) => {
+      const result = field === 'actor'
+        ? pg.asRole(DATABASE, 'system', undefined, (client) => insertEvent(client, {actor}))
+        : insertExport(actor);
+      await expect(result).rejects.toMatchObject(rejectCode('23514'));
+    });
+
+    it('agent synthesis không instance hợp lệ', async () => {
+      const actor = {type:'agent',agent:'synthesis',agentRunId:EVENT};
+      if (field === 'actor') {
+        const result = await pg.asRole(DATABASE, 'system', undefined, (client) => insertEvent(client, {actor}));
+        expect(result.rowCount).toBe(1);
+        expect(result.rows[0].actor_type).toBe('agent');
+      } else {
+        expect((await insertExport(actor)).rowCount).toBe(1);
+      }
+    });
   });
 
   it('check — ActorRef hợp lệ sinh actor_type và summary 2000 ký tự (EC09)', async () => {
@@ -112,7 +142,9 @@ describe('audit DDL — PID-00018-AC01, CTX-AUDIT-001-AC04', () => {
 
   it('module database — helper tenancy cách ly tài khoản, pool được đóng (S03)', async () => {
     const moduleRef = await Test.createTestingModule({imports:[AppModule]})
-      .overrideProvider(AUDIT_DATABASE_CONFIG).useValue({appUrl:pg.url(DATABASE,'app'), systemUrl:pg.url(DATABASE,'system'), migratorUrl:pg.url(DATABASE,'migrator')}).compile();
+      .overrideProvider(AUDIT_DATABASE_CONFIG).useValue(readDatabaseConfig({
+        DATABASE_APP_URL:pg.url(DATABASE,'app'), DATABASE_SYSTEM_URL:pg.url(DATABASE,'system'),
+      })).compile();
     await moduleRef.init();
     const db = moduleRef.get(AuditDatabase);
     try {

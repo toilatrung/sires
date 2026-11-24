@@ -40,14 +40,16 @@ describe('migration audit — PID-00018-AC01', () => {
   });
 });
 
-it('thiếu vai trò thì dừng', async () => {
-  const pg = await startAuditPostgres(false);
+it.each([false, 'migrator-only'] as const)('thiếu vai trò thì dừng — %s (EC02)', async (roles) => {
+  const pg = await startAuditPostgres(roles);
   try {
     await pg.createDatabase('audit_no_roles');
-    await expect(runMigrations(pg.url('audit_no_roles'))).rejects.toSatisfy((error: unknown) => sqlState(error) === '42704');
+    await expect(runMigrations(pg.url('audit_no_roles', roles ? 'migrator' : undefined)))
+      .rejects.toSatisfy((error: unknown) => sqlState(error) === '42704');
     expect(await pg.query('audit_no_roles', "SELECT nspname FROM pg_namespace WHERE nspname IN ('app', 'replica')")).toEqual([]);
     expect(await pg.query('audit_no_roles', "SELECT extname FROM pg_extension WHERE extname <> 'plpgsql'")).toEqual([]);
     expect(await pg.query('audit_no_roles', 'SELECT count(*)::integer AS n FROM drizzle.__drizzle_migrations')).toEqual([{n:0}]);
-    expect(await pg.query('audit_no_roles', "SELECT rolname FROM pg_roles WHERE rolname LIKE 'sires_audit_%'")).toEqual([]);
+    expect(await pg.query('audit_no_roles', "SELECT rolname FROM pg_roles WHERE rolname LIKE 'sires_audit_%' ORDER BY rolname"))
+      .toEqual(roles ? [{rolname:'sires_audit_migrator'}, {rolname:'sires_audit_owner'}] : []);
   } finally { await pg.stop(); }
 }, 180_000);

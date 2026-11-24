@@ -1,7 +1,7 @@
 # PID-00018 — Triển khai
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 24/11/2026
 
 ## 1. Luồng đã triển khai
 
@@ -16,7 +16,8 @@
 3. `src/migrate.ts` gọi `runMigrationCommand`: đọc `DATABASE_MIGRATOR_URL`, in số
    migration hoặc lỗi an toàn kèm SQLSTATE; thiếu cấu hình/lỗi trả exit 1. Không in
    DSN, params hoặc lỗi SQL tùy ý có thể mang credentials.
-4. `src/config/database.ts:13` kiểm đủ ba URL PostgreSQL khi Nest tạo module.
+4. `src/config/database.ts:12` kiểm hai URL PostgreSQL app/system khi Nest tạo module.
+   DSN migrator chỉ do lệnh migrate đọc.
    `src/db/database.module.ts` gắn vào AppModule, tạo hai pool `_app`/`_system`,
    chưa mở kết nối trước khi được dùng. `AuditDatabase.forAccount` dùng helper
    `withAccountTransaction`; System dùng handle riêng. Shutdown đóng cả hai pool.

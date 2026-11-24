@@ -20,7 +20,7 @@
 | `pnpm nx run @sires/audit:typecheck` | Đạt |
 | `pnpm nx run @sires/audit:test` | **22 passed, 1 failed**, 4 file, 35,47 giây; chỉ ca Analysis Agent thiếu instance ở EC09 lỗi |
 | Test migration riêng | 3 passed; dump schema bằng DDL, chạy lại không đổi, thiếu role rollback |
-| `pnpm --filter @sires/audit deploy --legacy --prod D:/sires/.nx/pid00018-prod` | Đạt; có dist/SQL/journal, không có node_modules/drizzle-kit |
+| `pnpm --filter @sires/audit deploy --legacy --prod .nx/pid00018-prod` | Đạt; có dist/SQL/journal, không có node_modules/drizzle-kit |
 | `node agent/execution/PID-00018/validate-production.cjs` | Đạt trên gói production: CLI áp 1 rồi 0 migration, không cần drizzle-kit; khởi động service thật, HTTP `/health` 200; kết quả JSON đi kèm |
 | `node agent/execution/PID-00018/validate-cache.cjs` | Đạt EC05 trong workspace cô lập: test schema đạt, lặp dùng cache, đổi DDL bản sao làm test chạy lại và exit 1; docs gốc không đổi |
 | `pnpm nx affected -t lint typecheck test build --base=origin/main --parallel=2 --nxBail` | Không đạt: agent-core SPK-08 gọi os.path.relpath giữa D: và C: (ValueError); 20 passed, 1 failed. Nx bail, audit:test chưa chạy trong lượt này; đã kiểm audit riêng như trên |
@@ -85,6 +85,46 @@ deploy/values.yaml và README.
 | G1 | contradicts | HIGH | `00-common.sql` → is_actor_ref trả NULL khi analysis thiếu instance; test EC09 INSERT thành công thay vì SQLSTATE 23514 | Không sửa nguồn theo lựa chọn người dùng; ghi [blocker-ec09.md](blocker-ec09.md) cho PO. Không đặt Xong |
 | G2 | partial | MEDIUM | Kiểm tổng thể lỗi SPK-08 vì relpath khác ổ đĩa Windows | Ghi kết quả thật, không sửa luồng agent-core; audit đã kiểm riêng đầy đủ |
 | G3 | partial | LOW | Thiếu helm nên không chạy được check-charts local | Ghi hạn chế; command là mảng argv theo template chung, cần CI có Helm kiểm tiếp |
+
+## Lần 2 — 24/11/2026 · Sửa theo QC PR #66
+
+Trạng thái vẫn Bị chặn. Các mã G dưới đây theo **QC độc lập Lần 1**.
+Đối chiếu AC, scope P1–P4, EC01–EC13 và slice S03; không sửa `docs/`, migration,
+`qc-report.md` hoặc taskboard.
+
+| Kiểm | Kết quả thật |
+| --- | --- |
+| `check-pid.mjs PID-00018` | Đủ; cảnh báo đọc QC đã có |
+| `pnpm --filter @sires/audit... install --frozen-lockfile --ignore-scripts` | Đạt; cài dependency cho audit và các thư viện phụ thuộc, không đổi lockfile |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/audit --skip-nx-cache` | Lint/typecheck/build đạt; test **25 passed, 10 failed**, 4 file, 99,25 giây trên PostgreSQL thật |
+| EC09 N1–N5 × `actor`/`created_by` | 10 lỗi: INSERT vẫn thành công thay vì SQLSTATE 23514; tái hiện G1, không skip hoặc nới expected |
+| EC09 synthesis không `instance` | Cả hai đối chứng hợp lệ đạt; `actor_type` = `agent` ở Audit Event |
+| EC02 | Cả biến thể không role và chỉ owner/migrator đạt; trường hợp sau chạy bằng migrator, rollback schema/extension, không tạo role ứng dụng |
+| AppModule và test module DB | Đạt chỉ với DSN app/system; test RLS, truy vấn System và đóng pool đạt |
+| Khởi động `dist/app.module.js` qua `createServiceApp`, xóa biến migrator trong tiến trình | HTTP `/health` 200, JSON `{service: 'audit', status: 'ok'}`; không dùng DSN migrator |
+| `node scripts/docs/update-index.mjs --check` | Đạt |
+| `node scripts/docs/add-license.mjs --check` | Toàn repo còn 14 file cache/report bị ignore thiếu thông báo như trước; các file sửa trong lượt này đều có SPDX |
+| Ranh giới | `audit, repo`; repo là hồ sơ thực thi; không đổi lockfile hoặc service khác |
+
+Chuẩn bị lần đầu: install toàn workspace lỗi EACCES ở dependency `bibtex-parse-js`
+của library; dùng install có filter ở trên thì đạt. Lượt build trước install lỗi thiếu
+dependency audit; lượt kiểm đầy đủ sau install chỉ còn audit:test lỗi EC09.
+Lệnh health ban đầu lỗi truyền dấu nháy qua PowerShell, đã chạy lại bằng stdin và đạt.
+Không ghi các lượt chuẩn bị lỗi thành đạt. Không chạy lại kiểm tổng thể/Helm/cache/image
+trong lượt sửa này; các hạn chế của Lần 1 giữ nguyên.
+
+### Tự đối chiếu — spec-converge-skill (Dev)
+
+| G của QC độc lập | Kết quả |
+| --- | --- |
+| G1 — HIGH | Còn mở: PO chưa chốt nguồn `is_actor_ref` và cách đồng bộ migration. Hai AC về append-only/schema vẫn đạt phần database; EC09 chặn nghiệm thu toàn ticket |
+| G2 — MEDIUM | Đã bổ sung N1–N5 và đối chứng synthesis cho cả hai trường; test bắt đủ lỗi nguồn đang có |
+| G3 — HIGH | Đã sửa cấu hình, AppModule test, module DB test và README; service khởi động không cần DSN migrator, migrate CLI vẫn đọc riêng DSN này và test CLI đạt |
+| G4 — LOW | Đạt EC02 khi chỉ có owner/migrator và đăng nhập bằng migrator |
+| G5 — LOW | Đã thay đường dẫn máy ở lệnh deploy bằng đường dẫn tương đối trong repo |
+
+Cần PO xử lý G1, sau đó đồng bộ migration theo quyết định và chạy lại test/QC.
+Giữ nguyên kết luận chưa đạt, chưa chuyển PR khỏi draft.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).

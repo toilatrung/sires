@@ -5,7 +5,6 @@
 export interface AuditDatabaseConfig {
   readonly appUrl: string;
   readonly systemUrl: string;
-  readonly migratorUrl: string;
 }
 
 export const AUDIT_DATABASE_CONFIG = Symbol('audit.database.config');
@@ -24,5 +23,5 @@ export function readDatabaseConfig(env: NodeJS.ProcessEnv = process.env): AuditD
     }
     return value;
   };
-  return Object.freeze({ appUrl: read('DATABASE_APP_URL'), systemUrl: read('DATABASE_SYSTEM_URL'), migratorUrl: read('DATABASE_MIGRATOR_URL') });
+  return Object.freeze({ appUrl: read('DATABASE_APP_URL'), systemUrl: read('DATABASE_SYSTEM_URL') });
 }

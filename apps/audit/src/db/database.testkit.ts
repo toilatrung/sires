@@ -16,7 +16,7 @@ export const ACCOUNT_B = '0193a000-0000-7000-8000-00000000000b';
 export const PROJECT = '0193a000-0000-7000-8000-000000000001';
 const PASSWORD = 'audit-test-password';
 
-export async function startAuditPostgres(withRoles = true) {
+export async function startAuditPostgres(withRoles: boolean | 'migrator-only' = true) {
   const server = await startPostgres({ extensions: [] });
   const url = (database: string, role?: 'app' | 'system' | 'purge' | 'migrator') => {
     const parsed = new URL(server.connectionUri);
@@ -32,12 +32,14 @@ export async function startAuditPostgres(withRoles = true) {
   try {
     if (withRoles) await query(server.database, `
       CREATE ROLE ${ROLES.owner} NOLOGIN;
-      CREATE ROLE ${ROLES.app} LOGIN NOBYPASSRLS PASSWORD '${PASSWORD}';
-      CREATE ROLE ${ROLES.system} LOGIN BYPASSRLS PASSWORD '${PASSWORD}';
-      CREATE ROLE ${ROLES.purge} LOGIN BYPASSRLS PASSWORD '${PASSWORD}';
       CREATE ROLE sires_audit_migrator LOGIN PASSWORD '${PASSWORD}';
       GRANT ${ROLES.owner} TO sires_audit_migrator;
       ALTER ROLE sires_audit_migrator SET role = '${ROLES.owner}';
+    `);
+    if (withRoles === true) await query(server.database, `
+      CREATE ROLE ${ROLES.app} LOGIN NOBYPASSRLS PASSWORD '${PASSWORD}';
+      CREATE ROLE ${ROLES.system} LOGIN BYPASSRLS PASSWORD '${PASSWORD}';
+      CREATE ROLE ${ROLES.purge} LOGIN BYPASSRLS PASSWORD '${PASSWORD}';
     `);
   } catch (error) { await server.stop(); throw error; }
   return {

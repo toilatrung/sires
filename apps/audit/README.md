@@ -24,7 +24,7 @@ mật khẩu hoặc file `.env` cục bộ. Không log DSN.
 | --- | --- |
 | `DATABASE_APP_URL` | `sires_audit_app`: truy vấn theo tài khoản, RLS có hiệu lực |
 | `DATABASE_SYSTEM_URL` | `sires_audit_system`: consumer/job, BYPASSRLS |
-| `DATABASE_MIGRATOR_URL` | `sires_audit_migrator`: thành viên `sires_audit_owner`, mỗi phiên có role mặc định owner theo database 3.2 |
+| `DATABASE_MIGRATOR_URL` | Chỉ cấp cho lệnh migrate; `sires_audit_migrator`: thành viên `sires_audit_owner`, mỗi phiên có role mặc định owner theo database 3.2 |
 
 `sires_audit_owner` không LOGIN và sở hữu database/schema; `sires_audit_purge`
 chỉ dành cho quy trình xóa dữ liệu của hạ tầng, không có pool trong service.
@@ -38,7 +38,8 @@ pnpm --filter @sires/audit migrate
 pnpm --filter @sires/audit dev
 ```
 
-Lệnh migrate chỉ cần `DATABASE_MIGRATOR_URL`; service cần cả ba DSN trên.
+Lệnh migrate chỉ cần `DATABASE_MIGRATOR_URL`; service chỉ cần `DATABASE_APP_URL`
+và `DATABASE_SYSTEM_URL`.
 `DatabaseModule` cấp `AuditDatabase.forAccount(accountId, work)` qua helper
 `withAccountTransaction` của platform và `AuditDatabase.system` cho System.
 Hai pool mở kết nối khi được dùng và đóng khi service shutdown. `/health` là

@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00018](../../../docs/tickets/issues/PID-00018/index.html) · **Luồng:** `audit` · **Giai đoạn:** PH-01
 - **Nhánh:** `audit/pid-00018-migration` · **PR:** [#66 — Draft](https://github.com/toilatrung/sires/pull/66)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 24/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
@@ -59,6 +59,25 @@ Chạy migration trên Compose chờ PID-00159 (H2). Máy hiện thiếu Helm đ
 - **Tài liệu đi kèm:** `blocker-ec09.md` — nguồn lỗi, tái hiện và việc PO cần xử lý;
   `validate-production.cjs`, `production-validation.json` — kiểm gói production và health;
   `validate-cache.cjs`, `cache-validation.json` — kiểm EC05 trên bản sao cô lập.
+
+## Lần 2 — 24/11/2026 · Sửa theo QC PR #66
+
+- Kiểm PR và `origin/main`: chưa có quyết định PO xử lý G1/EC09; bình luận PO ngày
+  23/11 vẫn yêu cầu chờ sửa nguồn. Giữ trạng thái Bị chặn và nguyên DDL/migration.
+- G3: cấu hình service chỉ đọc DSN app/system; CLI migrate tiếp tục đọc riêng DSN
+  migrator. Sửa AppModule test, test module với PostgreSQL và README tương ứng.
+- G2: kiểm N1–N5 cho cả `audit_event.actor`, `audit_export.created_by`; thêm đối chứng
+  synthesis không `instance` hợp lệ ở cả hai bảng. Không skip, không đổi expected.
+- G4: thêm biến thể EC02 chỉ có owner/migrator, chạy migration bằng DSN migrator;
+  kiểm rollback schema/extension, sổ rỗng và không sinh role ứng dụng.
+- G5: bỏ đường dẫn máy khỏi lệnh deploy trong Self-QC.
+- Bản build khởi động chỉ với DSN app/system, không có biến migrator; HTTP `/health`
+  trả 200 và `{service: 'audit', status: 'ok'}`. Chi tiết kiểm ở Self-QC Lần 2.
+- Lint/typecheck/build đạt. Test PostgreSQL: **25 passed, 10 failed**; toàn bộ ca lỗi
+  là N1–N5 ở hai trường ActorRef, vẫn INSERT lọt do G1 trong DDL chung.
+- Còn mở: G1 cần PO chốt nguồn và cách đồng bộ migration; PR vẫn chưa đủ merge.
+  Người dùng yêu cầu “đẩy lên đi”: commit có chữ ký và push thay đổi lượt này lên
+  nhánh `audit/pid-00018-migration` của PR #66; giữ draft vì EC09 còn chặn.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; see [LICENSES.md](../../../LICENSES.md).
