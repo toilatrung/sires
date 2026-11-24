@@ -1,6 +1,6 @@
 ﻿# PID-00009 — Self-QC
 
-**Kết luận:** T1/T2/T3/T4/T6/T7 đã có bằng chứng Actions; còn T5 và T3 dùng cache main sau merge. Không merge theo yêu cầu PO. Có test outbox không ổn định cần platform theo dõi.
+**Kết luận:** Lần 8 (24/11/2026): T5 đạt trên `main` (6 lần push, cache Nx nối tiếp, hai push gần nhau cùng chạy hết); sửa G18 (EC06 cho project không phụ thuộc project nào) và số giây job skipped. Còn hai HIGH: G5 (T3 với cache `main`, chờ PO đồng bộ `develop` theo EC11) và G19 (mã hợp đồng sinh ra không nằm trong hash Nx, cần PO chọn cách sửa). Chưa đặt `Xong — chờ QC`.
 
 ## 1. Lệnh và kết quả
 
@@ -97,6 +97,72 @@ Các file nghiệp vụ của service và hợp đồng ở docs giữ theo upst
 ## Lần 7 — 22/11/2026 · Gitleaks trên báo cáo
 
 CI của commit báo cáo `add5003` nhận nhầm nhãn trạng thái trong `qc-report.md:18`. Allowlist chỉ khớp chính xác giá trị `skipped/concurrency`; Gitleaks 8.24.3 quét lịch sử PR đạt và fixture token giả vẫn bị chặn với mã thoát 1. Không có ngoại lệ theo toàn bộ file/commit và không tắt quét lịch sử. Chi tiết ở report Lần 7.
+
+## Lần 8 — 24/11/2026 · T5, EC06, tự đối chiếu
+
+Người chạy: phiên do PO `toilatrung` giao. Nhánh `infra/pid-00009-t5-cache-main` từ `origin/main` `0153261`. Chi tiết số đo ở `report.md` Lần 8.
+
+### Lệnh và kết quả
+
+| Lệnh | Kết quả thật |
+| --- | --- |
+| `gh run list --branch main --event push`, API `runs/<id>`, `runs/<id>/jobs`, `gh run view --job <id> --log` | 6 lần push sau #57 (45033510448, 45036410342, 45040139870, 45203674571, 45416191365, 45416543323): cả 6 `success` ở attempt 1, 25 job, `tracks` skipped; log Nx đọc từ cache 0/63, 61/63, 62/63, 29/63, 59/63, 59/63 task TS |
+| `node infra/ci/measure.mjs toilatrung/sires` | Thoát 0: “PR vào develop chỉ đổi tài liệu: 2/20 lần”, “Push toàn bộ vào main: 6/20 lần”; không in p95 |
+| `git rev-list --count origin/develop..origin/main` | 2 (#88, #89) → dừng T3 theo EC11 |
+| `pnpm install --frozen-lockfile` | Đạt (36 giây) |
+| Hash task bằng API Nx 22.7.12 (`createTaskHasher`, script tạm ngoài repo) | Trước sửa: đổi `pyproject.toml` gốc không đổi hash `sires-common:lint`, `typecheck`. Sau sửa: `pyproject.toml`, `uv.lock`, `.python-version`, `eslint.config.mjs` đều đổi hash 12/12 task kiểm; sửa `apps/gateway/src/main.ts` chỉ đổi hash task của `gateway`. Thêm schema vào `docs/api-design/components/schemas/library.yaml`: chỉ đổi hash `generate-ts` (G19) |
+| `pnpm exec nx run-many -t lint -p @sires/contracts @sires/testing` | Đạt: 2 project, 2 task phụ thuộc (`generate-ts`, `contracts:build`) |
+| `pnpm exec nx run @sires/contracts:lint`, trước và sau khi đổi `pyproject.toml` gốc | `nx.json` cũ: vẫn đọc từ cache. `nx.json` mới: chạy lại; hoàn lại file thì đọc từ cache (1/1) |
+| `gh api runs/45416543323/attempts/1/jobs --jq '<biểu thức mới của build>'` và run 45024785948 | Job skipped in 0 thay cho −1 |
+| Parse `ci.yml` bằng gói `yaml`, `nx.json` bằng `JSON.parse` | Hợp lệ |
+| `check-pid.mjs PID-00009` | ĐỦ để thực thi, 1 cảnh báo (có `qc-report.md`, đã đọc Lần 4, 5) |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID, taskboard 159 task) |
+| `git diff --check origin/main` | Sạch |
+| `ci-changes.mjs --event pull_request --target main --stdin` với file của nhánh | `mode: full`, 20 project |
+| Không chạy | `pnpm nx affected -t lint typecheck test build` đầy đủ và task Python cục bộ: Windows chặn `python.exe` trong `.venv`; CI của PR vào `main` chạy toàn bộ thay. `actionlint`: không có trên máy, không tải image mới. T3: bị chặn (EC11) |
+
+### AC
+
+| AC | Kết quả | Bằng chứng |
+| --- | --- | --- |
+| PID-00009-AC01 | Chưa kết luận | T3 với cache `main` chưa chạy: `develop` thiếu #88, #89 (EC11). Tham khảo: 141 giây không cache, 60 giây cache PR (#75) |
+| PID-00009-AC02 | Đạt (bộ tự kiểm T6) | `contract-test` đạt ở cả 6 lần push `main` |
+| PID-00009-AC03 | Đạt | T7 (Lần 6); `secrets` đạt ở 6 lần push `main` |
+| PID-00009-AC04 | Đạt trên mã CI `develop` cũ | T1 45024781831; chưa chạy lại trên `develop` mới (G7 của QC) |
+| PID-00009-AC05 | Đạt trên mã CI `develop` cũ | T2 45024785948; chưa chạy lại (G7) |
+| PID-00009-AC06 | Đạt theo input đã khai; còn G19 | T4 (Lần 6), T5 6 lần: mọi job, mọi project; task không đổi input đọc từ cache, task đổi input chạy lại; G18 đã sửa |
+| PID-00009-AC07 | Đạt | PR: 45024755723 cancelled khi có push 2 (Lần 6). Push `main`: 45416191365 và 45416543323 chồng nhau 99 giây, cả hai chạy hết |
+| PID-00009-AC08 | Đạt; phần sửa chưa chạy trên Actions | Log `build` của 6 lần push in bảng 25 job, có `tracks` skipped; số giây −1 của job skipped sửa thành 0 trong nhánh này |
+
+### Edge case thay đổi trong Lần 8
+
+| EC | Trạng thái |
+| --- | --- |
+| EC06 | Đã giải quyết: `nx.json` khai `inputs` cho `lint`, `typecheck`, `test`; kiểm bằng hash và chạy thật (bảng lệnh) |
+| EC11 | Đang chặn T3: `develop..main` = 2; cần PO đồng bộ |
+| EC15 | Không đổi: cần PO làm rõ smoke image khi chỉ đổi chart (G16 của QC) |
+| Mới — mã hợp đồng sinh ra | Chưa xử lý: G19 |
+| Mới — job skipped ra số giây âm | Đã sửa trong `ci.yml` (G8 của QC) |
+
+### Ranh giới
+
+File đổi: `.github/workflows/ci.yml`, `nx.json` (luồng infra) và `agent/execution/PID-00009/` (repo). Không có `docs/`, không có file của luồng khác. `check-tracks.mjs --stdin` với bốn file: `infra, repo`, không cảnh báo.
+
+### Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+Đánh số tiếp sau G17 của `qc-report.md` để không trùng.
+
+| Mã | Mức | Phát hiện | Trạng thái |
+| --- | --- | --- | --- |
+| G5 (QC) | HIGH | AC01 chưa có T3 với cache `main` | Còn mở — bị chặn bởi EC11, cần PO đồng bộ `develop` |
+| G6 (QC) | HIGH | T5 trên `main` | Đóng — 6 lần push, xem `report.md` Lần 8 |
+| G7 (QC) | MEDIUM | T1–T3 chạy trên mã CI `develop` cũ | Còn mở — chạy lại cùng đợt T3 |
+| G8 (QC) | MEDIUM | Bảng job có job skipped; số giây âm | Một phần — bảng có job skipped trong log `build` của lần push; số giây âm đã sửa, chờ CI xác nhận |
+| G9 (QC) | MEDIUM | Phép thử tay của slice | Một phần — EC06 đã kiểm; các phép thử khác chưa chạy |
+| G10, G12 (QC) | MEDIUM | Checkout đầu nhánh PR; lần chạy toàn bộ đỏ ngẫu nhiên | Còn mở; 6/6 lần push `main` đạt ngay lần đầu |
+| G18 | HIGH | `sires-common:lint`, `typecheck` và `@sires/contracts:*` không nhận `pyproject.toml`, `uv.lock`, `.python-version`, `eslint.config.mjs` gốc (trái EC06) | Đã sửa trong `nx.json`, đã kiểm |
+| G19 | HIGH | `docs/api-design/**/*.yaml` và mã sinh ra không nằm trong hash của `@sires/contracts:typecheck`, `build`, `test`, các service TS và `sires-common:test`; PR làm hỏng consumer qua hợp đồng có thể xanh nhờ cache | Còn mở — cần PO chọn phương án (a) luồng contracts, platform hoặc (b) luồng infra (`report.md` Lần 8) |
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. See [LICENSES.md](../../../LICENSES.md).
