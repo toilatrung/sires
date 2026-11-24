@@ -69,7 +69,7 @@ flowchart LR
 ### Thuật toán: so schema migration với DDL tham chiếu
 
 - **Vào, ra:** hai database trong cùng container: A dựng bằng `runMigrations`, B bằng `00-common.sql` + `library.sql` (superuser). Ra: hai chuỗi `pg_dump --schema-only --exclude-schema=drizzle`.
-- **Các bước:** dump, bỏ dòng `\restrict`/`\unrestrict` (khóa ngẫu nhiên từ pg_dump 16.10) và chú thích phiên bản, so bằng nhau từng ký tự; kiểm thêm danh sách 10 bảng và 13 mảnh tiêu biểu để chặn hai dump cùng rỗng.
+- **Các bước:** dump (stdout qua `base64` rồi giải mã một lần, vì `exec` của Testcontainers giải mã từng khúc làm vỡ ký tự UTF-8 nằm giữa hai khúc — như #100), bỏ dòng `\restrict`/`\unrestrict` (khóa ngẫu nhiên từ pg_dump 16.10) và chú thích phiên bản, so bằng nhau từng ký tự; kiểm thêm danh sách 10 bảng và 13 mảnh tiêu biểu để chặn hai dump cùng rỗng.
 - **Độ phức tạp, chi phí:** một container mỗi file test; dump chạy bằng `docker exec`.
 - **Trường hợp biên đã xử lý:** EC01 (PostgreSQL 16), EC03 (chạy lại không đổi dump). Dòng `app.state_transition` là dữ liệu nên so ở `state-transition.spec.ts`.
 

@@ -79,7 +79,7 @@ Phiên được PO giao (“Pr nào còn dang dở thì hoàn thiện luôn đi,
 ## Lần 2 — 25/11/2026
 
 - Phiên điều phối của PO chốt phương án (a) — Citation.js 0.9.0, ghi vào PC-04 mục A10 kèm bốn điều kiện (YC1, mục 5). Làm S04–S07 theo điều kiện đó; trạng thái `Xong — chờ QC`.
-- Sửa thêm trong Lần 2: chạy được `check-charts.mjs` bằng helm 3.19.0 trong container (đóng G3 của Lần 1).
+- Sửa thêm trong Lần 2: chạy được `check-charts.mjs` bằng helm 3.19.0 trong container (đóng G3 của Lần 1); gộp `origin/main` (#66, #87, #100) và áp bản sửa của #100 cho `library` (`pg_dump` trong test qua base64 để ký tự UTF-8 không vỡ giữa hai khúc stdout, kèm test kiểm).
 
 ---
 
