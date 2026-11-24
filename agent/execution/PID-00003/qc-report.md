@@ -1,6 +1,6 @@
 # PID-00003 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 2, 18/11/2026). G1–G5 của Lần 1 đã đóng, G6 PO giữ; G7–G9 là LOW, không chặn merge PR #34.
+**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 4 LOW còn mở (G7, G8 chờ PO, G9, G10) (Lần 3, 24/11/2026). Đã merge vào `develop` (PR #34); mã `service-auth` trên `develop` `083795b` không đổi so với Lần 2, `@sires/platform:test` 169/169
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -186,6 +186,66 @@ Không có việc bắt buộc trước merge. Việc LOW, Dev làm cùng PR nà
 - Hồ sơ `docs/tickets/issues/PID-00003/` vẫn chưa ghi các quyết định 18/11/2026 (G2 body 401, G3 title, G4, G5, G6); PO ghi khi tiện (R-01–R-07), kèm các việc đã giao cho PID-00005, PID-00008, PID-00065, PID-00007, PID-00020.
 - Kiểm khởi động không có trong hồ sơ, PO cân nhắc cho PID-00035 hoặc PID sau: (1) khóa riêng không khớp mục `kid = <service>` của JWKS hiện vẫn khởi động bình thường và mọi lời gọi đi bị bên nhận từ chối `bad_signature` (QC thử); (2) JWKS chứa JWK riêng (có `d`) được nhận lặng lẽ, phần `d` bị bỏ — an toàn khi kiểm nhưng che lỗi cấu hình làm lộ khóa riêng vào cấu hình dùng chung.
 - PID-00005: `tests/test_messaging.py:215` chập chờn (1/4 lần tại chỗ) vì `_outbox_rows` sắp `ORDER BY created_at, id` (`:113`) mà `app.outbox.created_at` là `DEFAULT now()` (`docs/database/ddl/00-common.sql:186`, thời điểm bắt đầu giao dịch), nên hai dòng ghi trong cùng giao dịch trùng `created_at` và thứ tự rơi vào `id`. Đề xuất sửa ở lượt sau của PID-00005 để CI không đỏ ngẫu nhiên.
+
+## Lần 3 — 24/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC độc lập `sires-13` do điều phối `sires-c2` giao (task QC-A), không mang kết luận của Dev. Mã nguồn: `origin/develop` commit `083795b`, worktree riêng, nhánh `qc/t1xnth-batch-a`. Lần 2 đã kết luận có thể nghiệm thu và PR #34 đã merge, nên lần này chỉ kiểm phần còn mở (G7, G8, G9) và chạy lại test của project.
+
+Phạm vi đã đọc: `libs/ts/platform/src/service-auth/token.ts` (`:20–30`), `guard.ts` (`:78–90`), `keys.ts` (`:60–72`, `:176–190`); đầu `report.md`, `self-qc.md`; `docs/tickets/issues/PID-00003/` (tìm quyết định G8 và quyết định PO 18/11/2026); `git log` của `libs/ts/platform/src/service-auth` và `agent/execution/PID-00003` trên `develop`: commit cuối là `4b88ea1` (QC Lần 2), không có commit mã nào sau Lần 2.
+
+### Kiểm các G còn mở
+
+| G | Mức | Kết luận Lần 3 | Bằng chứng |
+| --- | --- | --- | --- |
+| G7 | LOW | Còn mở | `token.ts:26` vẫn “Logged and returned as `detail`; never contains the token.”, trái hành vi body 401 không có `detail` (quyết định PO G2) |
+| G8 | LOW | Còn mở, chờ PO | `guard.ts:85` vẫn đặt `detail` cho `403 caller_not_allowed`; bản Python không có `detail`. Hồ sơ `docs/tickets/issues/PID-00003/` không ghi quyết định nào cho điểm này (grep `caller_not_allowed` chỉ ra AC02, EC09, P4, H4) |
+| G9 | LOW | Còn mở | `keys.ts:183` gọi `servicePublicKeysFromJwks` ngoài khối bọc; lỗi cấu trúc ở `:66` (`expected {"keys": [...]}`) và `:68–69` (phần tử `null` → `Cannot read properties of null`) không nêu `SERVICE_AUTH_PUBLIC_KEYS` |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G7 | Như Lần 2 | partial | LOW | `libs/ts/platform/src/service-auth/token.ts:26` | Như Lần 2 |
+| G8 | Như Lần 2 | partial | LOW | `libs/ts/platform/src/service-auth/guard.ts:85` | Chờ PO chốt (như Lần 2) |
+| G9 | Như Lần 2 | partial | LOW | `libs/ts/platform/src/service-auth/keys.ts:66`, `:68–69`, `:183` | Như Lần 2 |
+| G10 | `report.md` dòng 10 (“Lần chạy sau cập nhật trạng thái ở trên”) · `spec-execution-skill` | partial | LOW | `agent/execution/PID-00003/report.md:3` vẫn `Xong — chờ QC` dù PR #34 đã merge và QC Lần 2 kết luận có thể nghiệm thu; `check-pid --result` không phát hiện vì chỉ kiểm có đủ mục | Dev (hoặc PO khi nghiệm thu) đặt trạng thái sau merge theo `spec-execution-skill`; QC không sửa `report.md` |
+
+### AC
+
+Mã của PID-00003 không đổi từ Lần 2, nên QC không đọc lại từng AC; kết luận AC của Lần 2 giữ nguyên, xác nhận lại bằng toàn bộ test của `@sires/platform` trên `develop` (gồm `token.spec.ts`, `guard.spec.ts`, `client.spec.ts`).
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00003-AC01…AC08, NFR-AUTHZ-001-AC01 (phần thư viện) | đạt | stub (như Lần 2) | Như Lần 2 | Đạt: `@sires/platform:test` 21 file, 169/169 |
+| NFR-TRANSIT-001-AC01 | không áp dụng | — | — | Như Lần 2 (PID-00048, PID-00153) |
+
+### Lệnh đã chạy
+
+Worktree `/home/trong-hung/sires-wt/qc-a` (Ubuntu, Linux 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Lệnh test, lint chạy chung một lượt với QC PID-00002 Lần 4 trên cùng commit.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169, 33,6 s |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00003 --result` | `PID-00003: KẾT QUẢ ĐỦ (0 cảnh báo).`, trạng thái `Xong — chờ QC` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` (trước và sau khi ghi file này) |
+
+### Lệch với Self-QC
+
+Không có lệch mới. Self-QC không nêu G7–G10.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. G7: sửa chú thích `token.ts:26`.
+2. G9: lỗi cấu trúc `SERVICE_AUTH_PUBLIC_KEYS` nêu tên biến.
+3. G8: theo quyết định của PO.
+4. G10: đặt trạng thái `report.md` sau merge.
+
+### Đề xuất cho PO
+
+- **Cần PO chốt G8** (từ Lần 2): bỏ `detail` của body 403 cho khớp Python và ví dụ hợp đồng, hay giữ và ghi cho PID-00005.
+- Hồ sơ `docs/tickets/issues/PID-00003/` vẫn chưa ghi các quyết định PO 18/11/2026 (G2–G6, lệch đồng hồ 30 s, tên biến `SERVICE_AUTH_*`) — như Lần 2.
+- Kiểm khởi động khóa riêng không khớp JWKS và JWKS chứa `d` (đề xuất Lần 2) vẫn chưa có chủ.
 
 ---
 
