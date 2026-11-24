@@ -29,6 +29,9 @@ const REFERENCE = 'library_reference';
 const MIGRATION_COUNT = 1;
 /** Số dòng app.state_transition của bốn machine (khối INSERT của library.sql). */
 const TRANSITION_ROWS = 18;
+const UTF8_PROBE = 'library_utf8_probe';
+// Trộn ký tự 1, 2, 3 và 4 byte; 20 000 lần (720 KB) để stdout của pg_dump qua nhiều khúc của docker exec (#100).
+const UTF8_PROBE_TEXT = 'đã kết thúc, bất biến 𝄞 '.repeat(20_000);
 
 /** Chạy `work` trong giao dịch của vai trò; trả SQLSTATE khi lỗi, undefined khi qua. */
 type Outcome = Promise<string | undefined>;
@@ -113,6 +116,18 @@ describe('migration library — PID-00024-AC02', () => {
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const rows = await pg.admin<{ n: string }>(MIGRATED, 'SELECT count(*) AS n FROM app.state_transition');
     expect(rows).toEqual([{ n: String(TRANSITION_ROWS) }]);
+  });
+
+  it('dumpSchema giữ nguyên ký tự UTF-8 nhiều byte (phép so schema không chập chờn)', async () => {
+    // Ký tự bị cắt giữa hai khúc stdout thành U+FFFD; với chú thích dài, cách giải mã từng khúc gần như chắc chắn lỗi.
+    await pg.createDatabase(UTF8_PROBE);
+    await pg.admin(
+      UTF8_PROBE,
+      `CREATE TABLE public.utf8_probe (id int); COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}'`,
+    );
+    const dump = await pg.dumpSchema(UTF8_PROBE);
+    expect(dump.split(String.fromCodePoint(0xfffd)).length - 1).toBe(0);
+    expect(dump.includes(`COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}';`)).toBe(true);
   });
 
   it('RLS', async () => {
