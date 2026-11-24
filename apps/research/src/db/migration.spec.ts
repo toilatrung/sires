@@ -14,6 +14,9 @@ const CONTAINER_TIMEOUT = 180_000;
 const MIGRATED = 'research_migrated';
 const REFERENCE = 'research_reference';
 const MIGRATION_COUNT = 1;
+const UTF8_PROBE = 'research_utf8_probe';
+// Trộn ký tự 1, 2, 3 và 4 byte; 20 000 lần (720 KB) để stdout của pg_dump qua nhiều khúc của docker exec.
+const UTF8_PROBE_TEXT = 'đã kết thúc, bất biến 𝄞 '.repeat(20_000);
 
 describe('migration research — PID-00029-AC01', () => {
   let pg: ResearchPostgres;
@@ -77,6 +80,18 @@ describe('migration research — PID-00029-AC01', () => {
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const rows = await pg.admin<{ n: string }>(MIGRATED, 'SELECT count(*) AS n FROM app.state_transition');
     expect(rows).toEqual([{ n: '9' }]);
+  });
+
+  it('dumpSchema giữ nguyên ký tự UTF-8 nhiều byte (phép so schema không chập chờn)', async () => {
+    // Ký tự bị cắt giữa hai khúc stdout thành U+FFFD; với chú thích dài, cách giải mã từng khúc gần như chắc chắn lỗi.
+    await pg.createDatabase(UTF8_PROBE);
+    await pg.admin(
+      UTF8_PROBE,
+      `CREATE TABLE public.utf8_probe (id int); COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}'`,
+    );
+    const dump = await pg.dumpSchema(UTF8_PROBE);
+    expect(dump.split(String.fromCodePoint(0xfffd)).length - 1).toBe(0);
+    expect(dump.includes(`COMMENT ON TABLE public.utf8_probe IS '${UTF8_PROBE_TEXT}';`)).toBe(true);
   });
 });
 

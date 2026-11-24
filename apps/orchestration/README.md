@@ -47,8 +47,9 @@ Consumer cập nhật bản sao (vai trò `_system`, cùng giao dịch với `ap
 Quy ước (kiến trúc 6.10, quyết định D1 của PO 18/11/2026):
 
 - Migration nằm ở `migrations/`, là **custom migration SQL của drizzle-kit** (có `meta/_journal.json` do công cụ sinh), chỉ tiến: không sửa migration đã merge, thay đổi là migration mới.
-- Migration đầu `migrations/0000_init.sql` chép nguyên văn `docs/database/ddl/00-common.sql` rồi `orchestration.sql`, trừ khối `INSERT INTO app.state_transition` (dòng sinh từ khai báo, xem [State machine](#state-machine)). Không tạo vai trò.
+- Migration đầu `migrations/0000_init.sql` chép nguyên văn `docs/database/ddl/00-common.sql` rồi `orchestration.sql`, trừ khối `INSERT INTO app.state_transition`. Không tạo vai trò.
 - `migrations/0001_ec09_jsonb_helpers.sql`: sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
+- `migrations/0002_state_transition.sql` nạp dòng `app.state_transition` sinh từ khai báo (xem [State machine](#state-machine)).
 - Áp bằng `migrate()` của drizzle-orm (migrator node-postgres) trong một giao dịch: lỗi thì rollback toàn bộ; migration đã ghi sổ ở `drizzle.__drizzle_migrations` không áp lại. Lúc chạy không cần drizzle-kit.
 - Schema Drizzle TypeScript (`pgTable`, ở `src/db/schema.ts`) do PID tính năng viết; hiện chưa có bảng nào. Snapshot của drizzle-kit (`migrations/meta/*_snapshot.json`) không phản ánh SQL viết tay, nên migration mới tạo bằng `--custom` cho tới khi schema TypeScript khớp database.
 
@@ -84,11 +85,18 @@ Vai trò `sires_orchestration_app`, `_system`, `_purge` phải có trước khi 
 
 ## State machine
 
-Bảy state machine (workflow, workflow_step, agent_run, prompt, context_item, deliberation, deliberation_entry; 43 cặp từ → đến của DDL, không có điều kiện chuyển) khai báo dạng dữ liệu ở [`src/domain/state-machines.ts`](src/domain/state-machines.ts), export `stateMachines`. Đây là nơi khai báo duy nhất (NFR-MAINT-003, DEC-57): engine và các module con dùng lại để kiểm chuyển trạng thái, không khai báo lại.
+Bảy state machine (workflow, workflow_step, agent_run, prompt, context_item, deliberation, deliberation_entry; 43 cặp từ → đến của DDL, không có điều kiện chuyển) khai báo dạng dữ liệu bằng `defineStateMachine` của `@sires/platform` (helper PID-00158) ở [`src/domain/state-machines.ts`](src/domain/state-machines.ts), export `stateMachines` và từng machine (`workflowStateMachine`, …). Đây là nơi khai báo duy nhất (NFR-MAINT-003, DEC-57): engine và các module con dùng lại để kiểm chuyển trạng thái (`assertTransition`, `findTransition` của `@sires/platform`), không khai báo lại.
 
-Bảng `app.state_transition` là bản sinh từ khai báo bằng helper của PID-00158 (`sires-state-transition-sql` trong `@sires/platform`), không viết tay; trigger `*_state` của DDL là lớp bảo vệ thứ hai. **Hiện chưa có migration nạp dòng**: helper chưa có trên main (PID-00019 S02 bị chặn), nên database dựng từ migration chưa cho đổi `status` của bảng nào. Khi helper có: bọc từng machine bằng `defineStateMachine`, build, sinh SQL vào một custom migration mới.
+Bảng `app.state_transition` là bản sinh từ khai báo, không viết tay; trigger `*_state` của DDL là lớp bảo vệ thứ hai. Migration [`migrations/0002_state_transition.sql`](migrations/0002_state_transition.sql) là đầu ra của helper, sau ba dòng giấy phép:
 
-Đổi state machine về sau: sửa khai báo, sinh lại SQL vào migration mới (cùng migration sửa `CHECK` nếu thêm trạng thái); không sửa tay bảng, không sửa migration cũ.
+```bash
+pnpm nx run @sires/orchestration:build
+cd apps/orchestration && pnpm exec sires-state-transition-sql dist/domain/state-machines.js
+```
+
+Test `src/db/migration.spec.ts › state_transition sinh từ khai báo` báo cặp lệch giữa khai báo, database dựng từ migration và DDL, và báo khi file migration khác SQL helper sinh.
+
+Đổi state machine về sau: sửa khai báo, build, chạy lại lệnh trên rồi đặt SQL vào một custom migration mới (`pnpm exec drizzle-kit generate --custom --name <tên>`; cùng migration sửa `CHECK` nếu thêm trạng thái); không sửa tay bảng, không sửa migration cũ.
 
 ## Module con
 
@@ -114,9 +122,9 @@ Test database cần Docker (Linux, hoặc Docker trong WSL2 với `DOCKER_HOST=t
 
 | File | Kiểm |
 | --- | --- |
-| `src/db/migration.spec.ts` | Schema dựng từ migration khớp schema dựng từ DDL (so `pg_dump --schema-only`); chạy lại không đổi; thiếu vai trò thì rollback; khai báo state machine khớp dòng của DDL |
+| `src/db/migration.spec.ts` | Schema dựng từ migration khớp schema dựng từ DDL (so `pg_dump --schema-only`); chạy lại không đổi; thiếu vai trò thì rollback; dòng `app.state_transition` bằng nhau ở khai báo (helper), database dựng từ migration và DDL; `Running → Created` bị từ chối; journal tăng dần, database đã ở `0001_ec09` nhận `0002` |
 | `src/db/migrate.spec.ts` | Lệnh migrate trên database rỗng, chạy hai lần; thiếu DSN; image có `dist/`, `migrations/`, không cần drizzle-kit |
-| `src/db/ddl-behaviour.spec.ts` | Hành vi DDL bằng vai trò `_app`: một Workflow chưa kết thúc cho mỗi Task, bản ghi bất biến, RLS chặn đọc chéo tài khoản, project không `Active` chặn ghi Workflow |
+| `src/db/ddl-behaviour.spec.ts` | Hành vi DDL bằng vai trò `_app`: chuyển trạng thái ngoài bảng bị từ chối (mọi cặp của bảy machine), một Workflow chưa kết thúc cho mỗi Task, bản ghi bất biến, RLS chặn đọc chéo tài khoản, project không `Active` chặn ghi Workflow |
 | `src/engine/engine-boundary.spec.ts` | Luật lint chặn import nội bộ engine |
 | `src/app.module.spec.ts` | `/health`, `AppModule` nạp đủ năm module |
 
