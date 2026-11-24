@@ -44,6 +44,14 @@ function clearLibraryLog(): void {
   if (Array.isArray(log)) log.length = 0;
 }
 
+/**
+ * Chuỗi đưa cho thư viện dùng LF: Citation.js không coi CR đơn (file Mac cũ) là xuống dòng. `text` của mục vẫn là bản
+ * gốc trong file (CRLF, LF hay CR).
+ */
+function forLibrary(text: string): string {
+  return text.replace(/\r\n?/g, '\n');
+}
+
 /** Thông điệp lỗi của thư viện: dòng đầu, bỏ vị trí dòng/cột (tính trên đoạn đưa vào, không phải trên file). */
 function libraryMessage(error: unknown): string {
   const first = (error instanceof Error ? error.message : String(error)).split('\n')[0] ?? '';
@@ -182,7 +190,7 @@ export class CitationJsBibtexParser implements ReferenceParser {
       }
       let entries: ReturnType<typeof plugins.input.data<'@biblatex/text', string>>;
       try {
-        entries = plugins.input.data([...strings, block.text].join('\n'), '@biblatex/text');
+        entries = plugins.input.data(forLibrary([...strings, block.text].join('\n')), '@biblatex/text');
       } catch (error) {
         results.push(failure('bibtex', 'syntax_error',
           `Mục BibTeX sai cú pháp (thiếu dấu phẩy, dấu bằng hoặc ngoặc): ${libraryMessage(error)}`, block.text, block.key));
@@ -204,7 +212,7 @@ export class CitationJsBibtexParser implements ReferenceParser {
 
   private readable(text: string): boolean {
     try {
-      plugins.input.data(text, '@biblatex/text');
+      plugins.input.data(forLibrary(text), '@biblatex/text');
       return true;
     } catch {
       return false;
@@ -275,7 +283,7 @@ export class CitationJsRisParser implements ReferenceParser {
         }
         if (!block.hasEnd) return failure('ris', 'missing_end', 'Bản ghi RIS thiếu thẻ ER', block.text, block.id);
         try {
-          const records = plugins.input.data(block.text, '@ris/file');
+          const records = plugins.input.data(forLibrary(block.text), '@ris/file');
           const record = records.length === 1 ? (records[0] as unknown as Record<string, unknown>) : undefined;
           if (!record) return failure('ris', 'syntax_error', 'Không đọc được bản ghi RIS', block.text, block.id);
           const options = { forceType: '@ris/record', generateGraph: false } as ChainOptions;

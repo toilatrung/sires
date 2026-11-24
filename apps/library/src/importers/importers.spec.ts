@@ -480,6 +480,39 @@ describe('importers — edge case', () => {
   });
 });
 
+describe('importers — xuống dòng', () => {
+  it('xuống dòng CRLF giữ văn bản gốc', () => {
+    // G1 của QC độc lập Lần 1: file xuất trên Windows dùng CRLF (RIS thật thường vậy). Cùng nội dung với LF thì cùng kết
+    // quả; mọi `text` và `raw.text` là đoạn nguyên của chuỗi vào (H1: `raw` = bản gốc), nên bỏ mục hỏng theo `text`
+    // vẫn được. Không phụ thuộc fixture được checkout LF hay CRLF.
+    const cases = [
+      ['multidisciplinary.bib', parseBib, ['\r\n', '\r']],
+      ['multidisciplinary.ris', parseRis, ['\r\n', '\r']],
+    ] as const;
+    for (const [name, parse, endings] of cases) {
+      const lf = fixture(name).replace(/\r\n?/g, '\n');
+      const base = parse(lf);
+      const withoutRaw = (results: ReferenceImportResult[]) => accepted(results).map((r) => ({ ...r.metadata, raw: undefined }));
+      for (const ending of endings) {
+        const label = `${name} ${JSON.stringify(ending)}`;
+        const input = lf.replace(/\n/g, ending);
+        const results = parse(input);
+        expect(results.map(outline), label).toEqual(base.map(outline));
+        expect(withoutRaw(results), label).toEqual(withoutRaw(base));
+        for (const result of results) {
+          const text = result.ok ? result.entry.text : result.text;
+          expect(input.includes(text), `${label} ${result.index}`).toBe(true);
+          if (result.ok) expect(result.metadata.raw?.['text'], `${label} ${result.index}`).toBe(text);
+        }
+        expect(accepted(results).some((r) => r.entry.text.includes(ending)), label).toBe(true);
+        const cleaned = rejected(results).reduce((text, r) => text.replace(r.text, ''), input);
+        expect(rejected(parse(cleaned)), label).toEqual([]);
+        expect(accepted(parse(cleaned)).map((r) => r.metadata), label).toEqual(accepted(results).map((r) => r.metadata));
+      }
+    }
+  });
+});
+
 describe('importers — giao diện và module (PC-04 A10)', () => {
   it('parser sau giao diện ReferenceParser', () => {
     // Điều kiện 1: chỉ thư mục citation-js/ import Citation.js; mã nghiệp vụ dùng ReferenceParser, ReferenceImporter.

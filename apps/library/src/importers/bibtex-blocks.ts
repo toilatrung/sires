@@ -68,7 +68,7 @@ export function splitBibtex(input: string): BibtexBlock[] {
       } else if (char === ')' && paren && depth === 0) {
         end = position + 1;
         break;
-      } else if (char === '\n') {
+      } else if (char === '\n' || char === '\r') {
         LINE_STARTS_BLOCK.lastIndex = position + 1;
         if (LINE_STARTS_BLOCK.test(input)) {
           cut = position + 1;

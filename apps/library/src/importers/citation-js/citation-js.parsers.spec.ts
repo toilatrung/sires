@@ -9,9 +9,18 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as citationCore from '@citation-js/core';
-import { plugins } from '@citation-js/core';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { plugins, util } from '@citation-js/core';
+import { describe, expect, it, vi } from 'vitest';
 import { CitationJsBibtexParser, CitationJsRisParser, citationJsParsers } from './citation-js.parsers';
+
+// Citation.js tải URL đồng bộ qua sync-fetch-undici, module này giữ `require('child_process').execFileSync` ngay lúc
+// nạp. Spy phải đặt trước khi thư viện được nạp (vi.hoisted chạy trước các import ở trên) và chặn mọi lần gọi; test
+// “không tải URL” có ca đối chứng chứng minh spy bắt được đường tải này (G2 của QC độc lập Lần 1).
+const execFileSync = vi.hoisted(() =>
+  vi.spyOn(process.getBuiltinModule('node:child_process'), 'execFileSync').mockImplementation(() => {
+    throw new Error('test chặn tiến trình con (đường tải đồng bộ của Citation.js)');
+  }),
+);
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..', '..');
 const APP_ROOT = join(__dirname, '..', '..', '..');
@@ -25,10 +34,6 @@ function atLeast(version: string, minimum: string): boolean {
 }
 
 describe('parser Citation.js (PC-04 A10)', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('chỉ nạp hai plugin định dạng', () => {
     // Không có plugin DOI, URL, Wikidata, ISBN: thư viện không thể tự tra cứu nguồn ngoài.
     expect(plugins.list()).toEqual(['@else', '@bibtex', '@ris']);
@@ -40,16 +45,30 @@ describe('parser Citation.js (PC-04 A10)', () => {
   });
 
   it('không tải URL hay DOI đưa vào', () => {
-    // Kiểu đầu vào ép rõ: URL, DOI trơn không phải mục BibTeX/RIS → [] và không có request nào.
+    // Đối chứng: hàm tải đồng bộ của thư viện (util.fetchFile, dùng bởi plugin DOI/URL) đi qua execFileSync — spy bắt.
+    execFileSync.mockClear();
+    expect(() => util.fetchFile('https://example.org/refs.bib')).toThrow('test chặn tiến trình con');
+    expect(execFileSync).toHaveBeenCalledTimes(1);
+
+    // Kiểu đầu vào ép rõ: URL, DOI trơn, mục có trường url/doi → không tải gì (cả đồng bộ lẫn fetch).
+    execFileSync.mockClear();
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    for (const [parser, input] of [
-      [new CitationJsBibtexParser(), 'https://doi.org/10.1126/science.1225829'],
-      [new CitationJsBibtexParser(), '10.1126/science.1225829'],
-      [new CitationJsRisParser(), 'https://example.org/refs.ris'],
-    ] as const) {
-      expect(parser.parse(input)).toEqual([]);
+    try {
+      for (const [parser, input] of [
+        [new CitationJsBibtexParser(), 'https://doi.org/10.1126/science.1225829'],
+        [new CitationJsBibtexParser(), '10.1126/science.1225829'],
+        [new CitationJsRisParser(), 'https://example.org/refs.ris'],
+      ] as const) {
+        expect(parser.parse(input)).toEqual([]);
+      }
+      const [bibtex, ris] = citationJsParsers();
+      expect(bibtex?.parse('@misc{u, title = {T}, author = {A, B}, url = {https://example.org/u}, doi = {10.1/u}}')).toHaveLength(1);
+      expect(ris?.parse('TY  - JOUR\nTI  - T\nAU  - A, B\nUR  - https://example.org/r\nDO  - 10.1/r\nER  - \n')).toHaveLength(1);
+      expect(execFileSync).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
     }
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('dọn log của thư viện sau mỗi lần đọc', () => {

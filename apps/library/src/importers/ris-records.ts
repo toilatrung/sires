@@ -7,7 +7,10 @@
 // Không phụ thuộc thư viện parser nào.
 
 export interface RisRecordBlock {
-  /** Văn bản của bản ghi: từ dòng mở (thường là `TY`) tới `ER`, hoặc tới trước `TY` kế tiếp / hết file. */
+  /**
+   * Văn bản của bản ghi: từ dòng mở (thường là `TY`) tới `ER`, hoặc tới trước `TY` kế tiếp / hết file. Là đoạn cắt
+   * nguyên của chuỗi vào (giữ xuống dòng CRLF, LF hay CR như trong file), chỉ bỏ khoảng trắng ở cuối.
+   */
   readonly text: string;
   /** Bản ghi mở bằng `TY`. */
   readonly hasType: boolean;
@@ -31,41 +34,51 @@ function withoutBom(input: string): string {
  * trong bản ghi là phần nối của giá trị trước; nằm ngoài bản ghi thì là rác và bị bỏ qua.
  */
 export function splitRis(input: string): RisRecordBlock[] {
+  const source = withoutBom(input);
   const records: RisRecordBlock[] = [];
-  let lines: string[] | undefined;
+  // Vị trí đầu dòng mở bản ghi đang đọc (undefined: không có bản ghi mở) và vị trí cuối dòng cuối của nó.
+  let start: number | undefined;
+  let end = 0;
   let hasType = false;
   let id: string | undefined;
   const close = (hasEnd: boolean) => {
-    if (!lines) return;
-    const text = lines.join('\n').replace(/\s+$/, '');
+    if (start === undefined) return;
+    // Cắt theo vị trí (như splitBibtex), không ghép lại dòng: `text` và `raw.text` là bản gốc của bản ghi (H1).
+    const text = source.slice(start, end).replace(/\s+$/, '');
     records.push({ text, hasType, hasEnd, ...(id === undefined ? {} : { id }) });
-    lines = undefined;
+    start = undefined;
     hasType = false;
     id = undefined;
   };
-  for (const raw of withoutBom(input).split(/\r\n|\r|\n/)) {
-    const match = TAG_LINE.exec(raw.replace(/\s+$/, ''));
+  const newline = /\r\n|\r|\n/g;
+  let position = 0;
+  while (position < source.length) {
+    newline.lastIndex = position;
+    const found = newline.exec(source);
+    const lineEnd = found ? found.index : source.length;
+    const next = found ? found.index + found[0].length : source.length;
+    const line = source.slice(position, lineEnd);
+    const match = TAG_LINE.exec(line.replace(/\s+$/, ''));
     if (!match) {
-      lines?.push(raw);
-      continue;
+      if (start !== undefined) end = lineEnd;
+    } else {
+      const tag = match[1] as string;
+      if (tag === 'TY') {
+        close(false);
+        start = position;
+        hasType = true;
+      } else if (start === undefined) {
+        start = position;
+        hasType = false;
+      }
+      end = lineEnd;
+      if (tag === 'ID' && id === undefined) {
+        const value = (match[2] ?? '').trim();
+        if (value !== '') id = value;
+      }
+      if (tag === 'ER') close(true);
     }
-    const tag = match[1] as string;
-    if (tag === 'TY') {
-      close(false);
-      lines = [raw];
-      hasType = true;
-      continue;
-    }
-    if (!lines) {
-      lines = [];
-      hasType = false;
-    }
-    lines.push(raw);
-    if (tag === 'ID' && id === undefined) {
-      const value = (match[2] ?? '').trim();
-      if (value !== '') id = value;
-    }
-    if (tag === 'ER') close(true);
+    position = next;
   }
   close(false);
   return records;
