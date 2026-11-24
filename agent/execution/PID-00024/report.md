@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — S04–S07: thư viện parser BibTeX, RIS chưa chốt (SPK-03, PID-00025 chưa merge; PC-04 B4)
 
 - **Ticket:** [PID-00024](../../../docs/tickets/issues/PID-00024/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
-- **Nhánh:** `library/pid-00024-migration-parsers` (đã commit, đã push) · **PR:** chưa mở
+- **Nhánh:** `library/pid-00024-migration-parsers` (đã commit, đã push) · **PR:** [#98](https://github.com/toilatrung/sires/pull/98)
 - **Cập nhật:** 25/11/2026
 - **Người làm:** phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhhhhh2003` (PC-04 B1, A9)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
