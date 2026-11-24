@@ -1,6 +1,6 @@
 # PID-00024 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — S04–S07: thư viện parser BibTeX, RIS chưa chốt (SPK-03, PID-00025 chưa merge; PC-04 B4)
+**Trạng thái:** Đang làm — Lần 2: S04–S07 với Citation.js 0.9.0 (PC-04 A10, YC1)
 
 - **Ticket:** [PID-00024](../../../docs/tickets/issues/PID-00024/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
 - **Nhánh:** `library/pid-00024-migration-parsers` (đã commit, đã push) · **PR:** [#98](https://github.com/toilatrung/sires/pull/98)
@@ -45,7 +45,11 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 ## 5. Yêu cầu thêm
 
-Không có. Phiên được PO giao (“Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01”, “Hãy thực hiện đi nhé!”; PC-04 A9: bắt đầu ngay sau khi #94 vào `main`); việc làm đúng hồ sơ, không có yêu cầu ngoài hồ sơ.
+Phiên được PO giao (“Pr nào còn dang dở thì hoàn thiện luôn đi, mục tiêu là xong được PH-01”, “Hãy thực hiện đi nhé!”; PC-04 A9: bắt đầu ngay sau khi #94 vào `main`).
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC1 | Phiên điều phối của PO (“Tiến độ sires hiện tại”), 25/11/2026, theo ủy quyền của PO 24/11/2026: “Hãy cứ chốt theo đề xuất của bạn, rồi xuất ra phiếu chốt (PC) để tôi theo dõi sau khi còn việc hoàn tất” | “PID-00024: chốt phương án (a), làm S04–S07 ngay với Citation.js 0.9.0 (`@citation-js/core` + `@citation-js/plugin-bibtex` + `@citation-js/plugin-ris`, MIT) … Quyết định này sẽ ghi vào phiếu chốt PC-04 mục A10, kèm điều kiện dưới đây. Điều kiện bắt buộc: 1. Đặt parser sau một interface/adapter trong `apps/library` (ví dụ `ReferenceParser` cho BibTeX, RIS). Mã nghiệp vụ không import thẳng Citation.js, để đổi thư viện được nếu SPK-03 chính thức kết luận khác. 2. Làm đủ phần báo cáo nháp #38 mục 3.4 yêu cầu: chỉ nạp hai plugin định dạng, dùng `forceType`, không nạp plugin DOI/URL; chuẩn hóa CSL-JSON sang metadata library; validation riêng (RIS thiếu `ER`, file rỗng hoặc rác, BibTeX hỏng); xử lý theo từng bản ghi; giữ MIT notice. Kiểm Node >= 22.12.0 với cấu hình repo. 3. Trong `report.md` và mô tả PR ghi rõ: kiến trúc 2.3 đang nêu `@retorquere/bibtex-parser` nhưng chưa được SPK-03 thử; lựa chọn Citation.js là tạm thời theo PC-04 A10, chờ PO chốt SPK-03 (PR #38, PC-03). Không sửa `docs/`. 4. Thêm phụ thuộc bằng pnpm theo catalog của repo nếu repo dùng catalog; lockfile cập nhật trong cùng PR; `add-license --check` sạch.” | Trong phạm vi: chọn thư viện S04, S05 cần (“thư viện SPK-03 đề xuất” — báo cáo nháp #38 mục 3.4); điều kiện 1–4 là chi tiết hiện thực, không đổi AC | Làm. Gỡ chặn H9 cho S04, S05 theo PC-04 A10 (tạm thời, chờ SPK-03) | Lần 2 |
 
 ## 6. Cần PO và tài liệu đi kèm
 
