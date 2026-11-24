@@ -1,10 +1,10 @@
 # PID-00019 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — PID-00158 (S02 và phần S05 cần dòng app.state_transition sinh bằng helper chưa có trên main); phần làm được đã QC độc lập, PO cho merge trước (21/11/2026)
+**Trạng thái:** Đang làm — Lần 3: S02 và phần còn lại của S05 (helper PID-00158 đã có trên main, PR #52)
 
 - **Ticket:** [PID-00019](../../../docs/tickets/issues/PID-00019/index.html) · **Luồng:** `orchestration` · **Giai đoạn:** PH-01
-- **Nhánh:** `orchestration/migration-skeleton` (đã commit mã phần làm được, đã push) · **PR:** [#50](https://github.com/toilatrung/sires/pull/50) (vào `main`, chưa merge)
-- **Cập nhật:** 21/11/2026 (Lần 2); Lần 1 19/11/2026
+- **Nhánh:** `orchestration/state-transition-rows` (Lần 3, cắt từ `main` `1947571`); Lần 1–2: `orchestration/migration-skeleton`, PR [#50](https://github.com/toilatrung/sires/pull/50) (đã merge 21/11/2026)
+- **Cập nhật:** 24/11/2026 (Lần 3); Lần 2 21/11/2026; Lần 1 19/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
