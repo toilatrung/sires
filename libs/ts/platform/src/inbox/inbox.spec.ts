@@ -632,4 +632,50 @@ describe('start() khi broker không tới được (QC PID-00002 G5)', () => {
     expect(logs).toHaveLength(1);
     expect(consumer.isConsuming).toBe(false);
   });
+
+  it('stop() giữa lần kết nối đang dở (broker nhận TCP mà không trả lời) trả về ngay, đóng socket (PC-05 P25)', async () => {
+    // A mute broker: accepts the TCP connection and never answers the AMQP handshake.
+    const sockets: Socket[] = [];
+    const mute = createServer((socket) => {
+      socket.on('error', () => undefined);
+      // Reads and drops the handshake, so that the client closing the socket is seen.
+      socket.resume();
+      sockets.push(socket);
+    });
+    await new Promise<void>((resolve) => mute.listen(0, '127.0.0.1', resolve));
+    const { port } = mute.address() as { port: number };
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'mute-broker',
+      db: {} as never,
+      amqpUrl: `amqp://guest:guest@127.0.0.1:${port}`,
+      handlers: [{ routingKeys: ['project.lifecycle_changed.*'], handle: async () => undefined }],
+      reconnectDelayMs: 200,
+      reconnectMaxDelayMs: 200,
+      logger: recordingLogger(logs),
+    });
+    try {
+      const starting = consumer.start();
+      await waitUntil(() => sockets.length === 1, 'kết nối TCP tới broker câm', 5_000);
+      const closed = new Promise<void>((resolve) => sockets[0]!.once('close', () => resolve()));
+
+      const before = Date.now();
+      await consumer.stop();
+      // Well under CONNECT_TIMEOUT_MS (10 s): the attempt was cancelled, not waited for.
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await expect(starting).resolves.toBeUndefined();
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await closed;
+      expect(consumer.isConsuming).toBe(false);
+      expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeUndefined();
+      // A cancelled attempt is not a failure to report, and no new attempt follows stop().
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      expect(logs).toEqual([]);
+      expect(sockets).toHaveLength(1);
+    } finally {
+      await consumer.stop();
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => mute.close(resolve));
+    }
+  });
 });
