@@ -1,34 +1,36 @@
 # PID-00014 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — DBQ-10 (H7), chưa được merge PR #63
+**Trạng thái:** Bị chặn — G8: chờ PO quyết sửa `infra/ci/check-helm-images.sh` trong PR #63 (DBQ-10 đã đóng theo DBD-14)
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
 - **Nhánh:** `gateway/pid-00014-session` · **PR:** [#63](https://github.com/toilatrung/sires/pull/63) vào `main`
-- **Cập nhật:** 24/11/2026
+- **Cập nhật:** 25/11/2026
+- **Người làm:** phiên do PO `toilatrung` giao (24/11/2026), làm thay assignee cũ `Vietanhhhhhh2003`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
-Đang sửa theo QC độc lập Lần 1 và H7–H9 (PR #67 đã merge). G1 đã bỏ sửa spike ngoài luồng;
-G3 dùng route đã khớp dưới `/api/v1`; G6 giữ kết quả handler khi gia hạn lỗi; G7 cảnh báo custom migration.
-G2 HIGH vẫn chờ PO/Tech lead chốt DBQ-10; G4 chờ PO xác nhận người làm.
-Lần 9 xử lý G9, G10 của QC độc lập Lần 2; G8 HIGH chờ PO quyết phạm vi sửa infra.
-Các số liệu ở Lần 2–3 là lịch sử, không chứng minh bản hiện tại đủ điều kiện merge. Xem Lần 4.
+Lần 10 (25/11/2026) đóng G2: DBQ-10 đã đóng bằng DBD-14 (PO 24/11/2026, DDL ở #107); migration đầu
+dựng lại từ `00-common.sql` (sau EC09, #94) và `gateway.sql` (có policy `owner_lookup`) hiện tại trên `main`.
+Mọi test, kể cả fixture HTTP, migrate bằng migrator thật và chạy service bằng `_app`; test DBQ-10 đạt với
+assertion không đổi. G1, G3, G5–G7 (QC Lần 1) và G9, G10 (QC Lần 2) đã đóng từ các lần trước; G4 đóng theo
+phân công của PO ngày 24/11/2026. Còn G8 HIGH: sửa `infra/ci/check-helm-images.sh` (luồng infra) chờ PO quyết.
+Các số liệu ở Lần 2–9 là lịch sử; kết quả hiện tại ở Lần 10.
 
 ## 2. Trạng thái công việc
 
-| Slice | Mục tiêu                                  | Trạng thái    | File tạo / sửa                                                                                                                                                                     |
-| ----- | ----------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S01   | Migration, lệnh migrate, Helm và test DDL | Chặn — DBQ-10 | `apps/gateway/migrations/`, `src/db/`, `src/migrate.ts`, `src/migration.spec.ts`, `drizzle.config.ts`, `package.json`, `deploy/values.yaml`, `README.md`; `pnpm-lock.yaml` tự sinh |
-| S02   | Tra phiên, hết hạn và gia hạn             | Chặn — DBQ-10 | `apps/gateway/src/session/`, `src/app.module.ts`, `src/app.module.spec.ts`                                                                                                         |
-| S03   | Kiểm CSRF                                 | Xong          | `apps/gateway/src/session/session.service.ts`, `session.guard.ts`, `session.interceptor.ts`, `session.spec.ts`                                                                     |
-| S04   | Gia hạn GET /auth/session                 | Xong          | `apps/gateway/src/session/session.guard.ts`, `session.spec.ts`                                                                                                                     |
-| S05   | Tạo phiên, CSRF token và cookie           | Xong          | `apps/gateway/src/session/session.crypto.ts`, `session.schema.ts`, `session.service.ts`, `session.spec.ts`, `README.md`                                                            |
+| Slice | Mục tiêu                                  | Trạng thái | File tạo / sửa                                                                                                                                                                                         |
+| ----- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S01   | Migration, lệnh migrate, Helm và test DDL | Xong       | `apps/gateway/migrations/`, `src/db/`, `src/migrate.ts`, `src/migration.spec.ts`, `drizzle.config.ts`, `package.json`, `vitest.config.ts`, `deploy/values.yaml`, `README.md`; `pnpm-lock.yaml` tự sinh |
+| S02   | Tra phiên, hết hạn và gia hạn             | Xong       | `apps/gateway/src/session/`, `src/app.module.ts`, `src/app.module.spec.ts`                                                                                                                             |
+| S03   | Kiểm CSRF                                 | Xong       | `apps/gateway/src/session/session.service.ts`, `session.guard.ts`, `session.interceptor.ts`, `session.spec.ts`                                                                                         |
+| S04   | Gia hạn GET /auth/session                 | Xong       | `apps/gateway/src/session/session.guard.ts`, `session.spec.ts`                                                                                                                                         |
+| S05   | Tạo phiên, CSRF token và cookie           | Xong       | `apps/gateway/src/session/session.crypto.ts`, `session.schema.ts`, `session.service.ts`, `session.spec.ts`, `README.md`                                                                                |
 
 ## 3. Kết quả
 
 Kết quả Lần 1–3 dưới đây dùng fixture migration bằng superuser; không phải nghiệm thu quyền production.
-Kết quả mới nhất được ghi riêng ở Lần 4.
+Kết quả mới nhất, với mọi fixture migrate bằng vai trò thật, ghi ở Lần 10.
 
 - Migration custom drizzle-kit dựng schema khớp nguyên văn DDL trên PostgreSQL 16 + pgvector; thiếu vai trò lỗi,
   chạy lại không áp lại. RLS kiểm bằng vai trò `_app` thật (không SUPERUSER/BYPASSRLS).
@@ -43,10 +45,12 @@ Kết quả mới nhất được ghi riêng ở Lần 4.
 
 ## 4. Việc còn lại
 
-G2/DBQ-10 chặn S01/S02 và merge: chờ PO/Tech lead chốt, sửa DDL rồi migration và chạy lại test vai trò thật.
-G4: PO xác nhận assignee; code owner gateway duyệt theo quy trình. Đoạn sau chỉ là lịch sử lượt trước.
-G8: PO quyết giữ sửa Helm smoke trong PR này kèm code owner `/infra/` duyệt,
-hoặc tách PR infra merge trước #63. Chưa có quyết định PO khi kiểm ngày 24/11/2026.
+G2/DBQ-10: đã đóng ở Lần 10 (DBD-14). G4: đã đóng (PO giao PID-00014 cho `toilatrung` ngày 24/11/2026;
+`/apps/gateway/` có code owner `T1xNTH`, PO duyệt hoặc bypass khi merge).
+G8 (còn mở, HIGH): PO quyết giữ sửa Helm smoke trong PR này kèm code owner `/infra/` duyệt hoặc PO bypass,
+hoặc tách PR infra merge trước #63. Job `build` bắt buộc cần job `helm`, nên bỏ sửa này khỏi #63 mà chưa có PR
+infra thì CI đỏ. Chưa có quyết định PO khi kiểm ngày 25/11/2026. Sau đó QC độc lập Lần 3.
+Đoạn sau chỉ là lịch sử lượt trước.
 
 Kết quả lượt đầu (đã được giải quyết ở Lần 2): `nx affected` chọn 19 project do lockfile, dừng ở
 `apps/knowledge/spikes/spk_05/test_text_layer.py:152` (`test_corrupt_never_hangs`: expected `exited`, actual `timeout`).
@@ -56,10 +60,11 @@ Nhận định ban đầu về diff knowledge đã sai sau YC1; Lần 4 khôi ph
 
 ## 5. Yêu cầu thêm
 
-| #   | Người yêu cầu                | Nguyên văn                           | Phân loại                     | Quyết định                                        | Đã làm, kiểm bằng                                                                                                                                                                                                                 |
-| --- | ---------------------------- | ------------------------------------ | ----------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| YC1 | Người dùng trong phiên       | “test nốt đi”, “tìm lỗi và sửa luôn” | Mở rộng ngoài gateway ở Lần 2 | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR      | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử                                                                                                                                                                |
-| YC2 | Người dùng trong phiên trước | “Giữ blocker, sửa phần còn lại”      | Sửa ngoài gateway ở Lần 7     | Chờ PO quyết theo G8; chưa phải lời đồng ý của PO | Commit `2355737` sửa `infra/ci/check-helm-images.sh`: cấp DSN thử và khóa CSRF ngẫu nhiên để gateway khởi động trong Helm smoke; CI Helm đạt. Cần PO quyết giữ kèm code owner `/infra/` duyệt, hoặc tách PR infra merge trước #63 |
+| #   | Người yêu cầu                                                 | Nguyên văn                                                                     | Phân loại                                        | Quyết định                                               | Đã làm, kiểm bằng                                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YC1 | Người dùng trong phiên                                        | “test nốt đi”, “tìm lỗi và sửa luôn”                                           | Mở rộng ngoài gateway ở Lần 2                    | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR             | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử                                                                                                                                                                |
+| YC2 | Người dùng trong phiên trước                                  | “Giữ blocker, sửa phần còn lại”                                                | Sửa ngoài gateway ở Lần 7                        | Chờ PO quyết theo G8; chưa phải lời đồng ý của PO        | Commit `2355737` sửa `infra/ci/check-helm-images.sh`: cấp DSN thử và khóa CSRF ngẫu nhiên để gateway khởi động trong Helm smoke; CI Helm đạt. Cần PO quyết giữ kèm code owner `/infra/` duyệt, hoặc tách PR infra merge trước #63 |
+| YC3 | PO Trịnh Quang Trung, 25/11/2026, qua phiên điều phối giao PR | “Còn một số pr chưa xong, hãy qc và hoàn thiện cho tới khi đủ điều kiện merge” | Trong phạm vi: sửa theo QC Lần 1–2, H7 và DBD-14 | Làm trong gateway; không sửa `docs/`, infra; không merge | Lần 10: gộp `main`, dựng lại migration đầu theo DDL hiện tại, fixture vai trò thật, timeout chung PC-04 A6; G8 không tự quyết                                                                                                     |
 
 ## Lần 2 — 22/11/2026
 
@@ -98,8 +103,17 @@ GitHub xác nhận `verified: true`. Chưa merge; PO review và QC độc lập 
 - **Đề xuất cho PO:** Các mục “Phải sửa ở nguồn” của hồ sơ vẫn do PO xử lý (mô tả getSession, PID-00012,
   kiến trúc cookie/CSRF, secret PID-00035, điểm nối PID-00038 và job dọn phiên); không sửa docs ở lần này.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** G2 HIGH — DBQ-10/H7 chặn merge; G4 MEDIUM — PO xác nhận người làm.
-- **Bước tiếp theo:** PO/Tech lead chốt DBQ-10, cập nhật DDL; Dev sửa migration và chạy lại test vai trò thật, QC độc lập kiểm lại G1–G7.
+- **Đề xuất cho PO (Lần 10):** issue [#83](https://github.com/toilatrung/sires/issues/83) (DBQ-10) vẫn mở
+  trên GitHub dù DBQ-10 đã đóng bằng DBD-14; PO đóng khi #63 merge. Hồ sơ ticket mục 3, mục 5 “Còn mở”
+  vẫn ghi “DBQ-10 chặn merge PR #63” và G4; PO cập nhật khi nghiệm thu. Repo nên thêm `*.sql text eol=lf`
+  (đã có trong phiếu PC-04 mục C): trên checkout Windows, test so schema chỉ đạt vì migration và DDL cùng CRLF.
+  Đề xuất của QC Lần 2 `REVOKE ALL ON FUNCTION app.find_session(bytea) FROM PUBLIC` chưa có trong `gateway.sql`
+  sau DBD-14; migration chép đúng DDL nên cũng chưa có. PO quyết có thêm vào DDL không.
+- **Yêu cầu hợp đồng:** Không có.
+- **Còn mở:** G8 HIGH — sửa `infra/ci/check-helm-images.sh` ngoài luồng gateway, chờ PO quyết (xem mục 4).
+  G2 (DBQ-10) và G4 đã đóng ở Lần 10.
+- **Bước tiếp theo:** PO quyết G8; nếu giữ trong PR này thì ghi lời đồng ý vào mục 5 và đặt `Xong — chờ QC`;
+  rồi QC độc lập Lần 3 và PO merge.
 - **Tài liệu đi kèm:** Không có.
 
 ## Lần 4 — 22/11/2026 · Sửa PR #63 theo QC độc lập
@@ -224,6 +238,39 @@ test DBQ-10 hoặc hồ sơ QC độc lập.
 
 PR tiếp tục bị chặn: G2 HIGH, G8 HIGH, G4 MEDIUM; G9, G10 đã sửa để QC kiểm lại.
 Chưa commit/push bản sửa hoặc merge PR.
+
+## Lần 10 — 25/11/2026 · DBD-14, vai trò thật, gộp main
+
+Yêu cầu: YC3 (PO, 25/11/2026). Người làm: phiên do PO `toilatrung` giao, làm thay assignee cũ `Vietanhhhhhh2003`.
+Làm trong worktree riêng, không chuyển nhánh của checkout chính.
+
+- Gộp `origin/main` hai lần bằng merge (không rebase, không force-push): `a53e3c9` (#105, #107: DBD-14,
+  `gateway.sql` có `owner_lookup`) rồi `8c5581d` (#106, #108: hằng timeout chung). Không có xung đột.
+- G2/DBQ-10: dựng lại `apps/gateway/migrations/0000_init.sql` từ `00-common.sql` (sau EC09, #94) và `gateway.sql`
+  hiện tại trên `main`, bỏ ba dòng giấy phép đầu mỗi file, theo cách `apps/identity` (#107). Journal, snapshot giữ
+  nguyên (một mục `0000_init`); gateway không có state machine nên không cần helper PID-00158.
+- H7: testkit dựng năm vai trò theo database 3.2, owner sở hữu database; cả `migration.spec.ts` và fixture HTTP
+  migrate bằng `sires_gateway_migrator` thật, service chạy bằng `_app`. Database tham chiếu cũng dựng bằng migrator
+  nên phép so `pg_dump --schema-only` giữ cả chủ sở hữu, quyền, policy; `dumpSchema` qua base64 như #100.
+  EC13 chạy ở container riêng chưa có vai trò. Lệnh migrate in thêm SQLSTATE (không in DSN).
+- `apps/gateway/vitest.config.ts` dùng `TESTCONTAINERS_TIMEOUTS` của `@sires/testing/vitest` (PC-04 A6, #108).
+- README: bỏ đoạn “Chặn merge — DBQ-10”, ghi DBD-14, SQLSTATE `42704`, cách so schema và timeout.
+
+Kết quả (chi tiết ở `self-qc.md` Lần 10):
+
+- Gateway `lint`, `typecheck`, `test`, `build` (`--skip-nx-cache`) đạt; test **35/35**, gồm
+  `DBQ-10 / G2: app.find_session phải đọc được phiên trước tenant context với vai trò thật` với assertion không đổi.
+  Thử bỏ policy `owner_lookup` thì 15/35 lỗi (test DBQ-10, so schema, 13 test HTTP), nên test bắt được lỗi cũ.
+- `nx affected` (20 project do lockfile): mọi tác vụ TypeScript đạt, pytest của agent-core, knowledge, eval đạt;
+  10 tác vụ lỗi đều do Windows chặn công cụ Python (Smart App Control): ruff, mypy kiểm lại riêng đều đạt;
+  `@sires/contracts:test`, `sires-common:test` không chạy được ở máy này, dựa vào CI Linux.
+- `add-license --check` 0 thiếu, `update-index --check` đạt, `git diff --check` đạt;
+  `check-pid.mjs PID-00014 --result`: KẾT QUẢ ĐỦ, 0 cảnh báo.
+- AC01, AC02, NFR-AUTH-001-AC01 và EC01–EC17 đạt ở mức Xây với quyền database thật; chưa có staging.
+
+G1–G7, G9, G10 đã đóng (G2, G4 ở lượt này). **G8 HIGH còn mở**, chờ PO quyết; trạng thái giữ `Bị chặn — G8`.
+Khi PO chọn giữ sửa infra trong PR này, Dev ghi nguyên văn lời đồng ý vào mục 5 và đặt `Xong — chờ QC`.
+Không sửa `docs/`, `qc-report.md`; không merge PR.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 

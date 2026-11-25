@@ -80,14 +80,14 @@ Owner là NOLOGIN, không SUPERUSER/BYPASSRLS; owner phải sở hữu database 
 hoặc được cấp `CREATE` trên database đó để tạo schema và các extension trusted.
 Terraform/PID-00159 cấp quyền này trước khi chạy Job; nếu database thuộc vai trò khác,
 quản trị viên cấp `GRANT CREATE ON DATABASE sires_gateway TO sires_gateway_owner`.
-Thiếu quyền này khiến migration thất bại với SQLSTATE `42501` (permission denied for database).
+Thiếu quyền này khiến migration thất bại với SQLSTATE `42501` (permission denied for database);
+thiếu vai trò thì SQLSTATE `42704`. Lệnh migrate in mã SQLSTATE, không in DSN hay thông báo lỗi thô.
 
-**Chặn merge — DBQ-10 (H7):** DDL hiện tại khiến `app.find_session` trả 0 dòng khi
-migration chạy bằng migrator/owner không BYPASSRLS và bảng bật FORCE RLS. Chờ PO/Tech lead
-chốt và cập nhật DDL; chưa dùng mã này để nghiệm thu xác thực trên staging/production.
-`migration.spec.ts` chạy bằng vai trò thật và có test hồi quy đang lỗi vì blocker này.
-Fixture HTTP còn dùng migration bằng superuser để kiểm riêng guard/CSRF; kết quả HTTP
-không chứng minh DDL chạy được với quyền production.
+`app.find_session` là hàm `SECURITY DEFINER` chạy bằng owner trước khi có tenant context.
+Owner không BYPASSRLS và `app.session` bật FORCE RLS, nên hàm đọc bảng qua policy
+`owner_lookup` (FOR SELECT, chỉ cho owner) theo DBD-14, đóng DBQ-10. `_app` đọc thẳng bảng
+vẫn bị RLS chặn. Mọi test (migration và HTTP) chạy migration bằng migrator thật và service
+kết nối bằng `_app`; không dùng superuser của container để migrate (H7).
 
 ```bash
 # Đặt DATABASE_MIGRATOR_URL riêng trong môi trường trước khi chạy.
@@ -107,8 +107,10 @@ Target Nx build service trước khi chạy. Image mang `dist/`, `migrations/` q
 `DATABASE_MIGRATOR_URL` bằng secret. Chạy lại lệnh không áp lại migration đã ghi sổ.
 
 Kiểm: `pnpm nx run @sires/gateway:test` (Docker, PostgreSQL 16 + pgvector thật),
-`pnpm nx affected -t lint typecheck test build`. Test so schema migration với DDL
-tham chiếu, RLS bằng vai trò `_app` và HTTP Fastify qua module thực.
+`pnpm nx affected -t lint typecheck test build`. Test so `pg_dump --schema-only` đầy đủ
+(cả chủ sở hữu, quyền, policy) của database migrate với database dựng từ DDL tham chiếu,
+RLS bằng vai trò `_app` và HTTP Fastify qua module thực. `vitest.config.ts` dùng trần timeout chung
+`TESTCONTAINERS_TIMEOUTS` của `@sires/testing/vitest` (PC-04 A6: test 60 s, hook 180 s).
 
 ## Ranh giới
 

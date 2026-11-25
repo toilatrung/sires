@@ -2,6 +2,11 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+// Migration sires_gateway (PID-00014 S01): schema khớp DDL tham chiếu, thiếu vai trò (EC13), RLS (EC16), lệnh
+// migrate; app.find_session tra phiên trước tenant context (DBD-14, đóng DBQ-10, H7). Mọi migration chạy bằng vai trò
+// migrator thật theo database 3.2 (không SUPERUSER, không BYPASSRLS), không bằng superuser của container.
+// Cần Docker (Testcontainers).
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { uuidv7, withAccountTransaction } from '@sires/platform';
@@ -10,10 +15,45 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { appRoleUrl, createRoles, migratorRoleUrl } from './db/database.testkit';
-import { runMigrationCommand, runMigrations } from './db/migrate';
+import {
+  appRoleUrl,
+  applyReferenceDdl,
+  createRoles,
+  dumpSchema,
+  GATEWAY_DATABASE,
+  migratorRoleUrl,
+  ownDatabase,
+  ROLES,
+} from './db/database.testkit';
+import {
+  MIGRATIONS_FOLDER,
+  MIGRATIONS_SCHEMA,
+  MIGRATIONS_TABLE,
+  runMigrationCommand,
+  runMigrations,
+} from './db/migrate';
 
-describe('gateway migration — PostgreSQL 16 + pgvector', () => {
+const APP_ROOT = join(__dirname, '..');
+const REFERENCE = 'gateway_reference';
+
+/** 2 bảng của gateway.sql và 5 bảng nền tảng của 00-common.sql (gateway không có bản sao chỉ đọc). */
+const EXPECTED_TABLES = [
+  'app.idempotency_key',
+  'app.inbox',
+  'app.job_lock',
+  'app.outbox',
+  'app.session',
+  'app.sse_event_log',
+  'app.state_transition',
+];
+
+function capture() {
+  const lines: string[] = [];
+  const write = (line: string) => lines.push(line);
+  return { lines, write };
+}
+
+describe('gateway migration — PostgreSQL 16 + pgvector, vai trò thật (database 3.2)', () => {
   let postgres: StartedPostgres;
   let admin: Pool;
   let app: Pool;
@@ -21,71 +61,67 @@ describe('gateway migration — PostgreSQL 16 + pgvector', () => {
   const accountB = uuidv7();
 
   beforeAll(async () => {
-    postgres = await startPostgres({ database: 'sires_gateway' });
+    postgres = await startPostgres({ database: GATEWAY_DATABASE, extensions: [] });
     admin = new Pool({ connectionString: postgres.connectionUri });
-  }, 300_000);
+    await createRoles(admin);
+    await ownDatabase(admin, GATEWAY_DATABASE);
+    // Lệnh migrate của service (cùng hàm mà node dist/migrate.js gọi), đăng nhập bằng migrator như Job ở cụm.
+    const run = capture();
+    expect(
+      await runMigrationCommand(
+        { DATABASE_MIGRATOR_URL: migratorRoleUrl(postgres.connectionUri) },
+        run.write,
+        run.write,
+      ),
+    ).toBe(0);
+    expect(run.lines).toEqual(['gateway migrate: migrations applied\n']);
+    app = new Pool({ connectionString: appRoleUrl(postgres.connectionUri) });
+  });
 
   afterAll(async () => {
     await app?.end();
     await admin?.end();
     await postgres?.stop();
-  }, 60_000);
-
-  it('thiếu vai trò thì migration lỗi (EC13) và rollback DDL', async () => {
-    await expect(runMigrations(postgres.connectionUri)).rejects.toThrow();
-    expect((await admin.query("select to_regclass('app.session') as name")).rows[0].name).toBeNull();
-    // Drizzle creates its journal before the DDL transaction; discard that superuser-owned test artifact.
-    await admin.query('DROP SCHEMA drizzle CASCADE');
   });
 
   it('áp lên database rỗng: schema khớp DDL, lệnh chạy lại không áp lại', async () => {
-    await createRoles(admin);
-    const output: string[] = [];
-    expect(
-      await runMigrationCommand(
-        { DATABASE_MIGRATOR_URL: migratorRoleUrl(postgres.connectionUri) },
-        (s) => output.push(s),
-        (s) => output.push(s),
-      ),
-    ).toBe(0);
-    await runMigrations(migratorRoleUrl(postgres.connectionUri));
-    expect((await admin.query('select count(*)::int as n from drizzle.__drizzle_migrations')).rows[0].n).toBe(1);
-    await admin.query('CREATE DATABASE gateway_reference');
-    const referenceUrl = new URL(postgres.connectionUri);
-    referenceUrl.pathname = '/gateway_reference';
-    const reference = new Pool({ connectionString: referenceUrl.toString() });
-    try {
-      const ddl = join(__dirname, '../../../docs/database/ddl');
-      await reference.query(readFileSync(join(ddl, '00-common.sql'), 'utf8'));
-      await reference.query(readFileSync(join(ddl, 'gateway.sql'), 'utf8'));
-      const dump = async (database: string) => {
-        const result = await postgres.container.exec([
-          'pg_dump',
-          '-U',
-          postgres.username,
-          '-d',
-          database,
-          '--schema-only',
-          '--no-owner',
-          '--schema=app',
-          '--schema=replica',
-        ]);
-        expect(result.exitCode).toBe(0);
-        return result.output
-          .split('\n')
-          .filter((line) => !line.startsWith('--') && !line.startsWith('\\') && line.trim())
-          .join('\n');
-      };
-      expect(await dump(postgres.database)).toBe(await dump('gateway_reference'));
-      const extensions = await admin.query(
-        "select extname from pg_extension where extname in ('pgcrypto','unaccent','pg_trgm') order by extname",
-      );
-      expect(extensions.rows.map((row) => row.extname)).toEqual(['pg_trgm', 'pgcrypto', 'unaccent']);
-      app = new Pool({ connectionString: appRoleUrl(postgres.connectionUri) });
-    } finally {
-      await reference.end();
+    // Database tham chiếu dựng từ 00-common.sql + gateway.sql cũng bằng migrator, nên phép so giữ cả OWNER TO, GRANT,
+    // policy và extension (pg_dump đầy đủ, chỉ bỏ schema sổ của drizzle).
+    await admin.query(`CREATE DATABASE ${REFERENCE}`);
+    await ownDatabase(admin, REFERENCE);
+    await applyReferenceDdl(migratorRoleUrl(postgres.connectionUri, REFERENCE));
+    const migrated = await dumpSchema(postgres, GATEWAY_DATABASE);
+    expect(migrated).toBe(await dumpSchema(postgres, REFERENCE));
+    for (const fragment of [
+      'SECURITY DEFINER',
+      'ALTER TABLE ONLY app.session FORCE ROW LEVEL SECURITY',
+      `CREATE POLICY owner_lookup ON app.session FOR SELECT TO ${ROLES.owner} USING (true)`,
+      `ALTER FUNCTION app.find_session(p_sid_hash bytea) OWNER TO ${ROLES.owner}`,
+      `GRANT ALL ON FUNCTION app.find_session(p_sid_hash bytea) TO ${ROLES.app}`,
+      `GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE app.session TO ${ROLES.app}`,
+    ]) {
+      expect(migrated).toContain(fragment);
     }
-  }, 60_000);
+    const tables = await admin.query<{ name: string }>(
+      `select table_schema || '.' || table_name as name from information_schema.tables
+       where table_schema in ('app', 'replica') and table_type = 'BASE TABLE' order by 1`,
+    );
+    expect(tables.rows.map((row) => row.name)).toEqual(EXPECTED_TABLES);
+    const extensions = await admin.query(
+      "select extname from pg_extension where extname in ('pgcrypto','unaccent','pg_trgm') order by extname",
+    );
+    expect(extensions.rows.map((row) => row.extname)).toEqual(['pg_trgm', 'pgcrypto', 'unaccent']);
+    // Chạy lại không áp lại: sổ một dòng, schema không đổi.
+    await runMigrations(migratorRoleUrl(postgres.connectionUri));
+    const ledger = await admin.query(`select count(*)::int as n from "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`);
+    expect(ledger.rows[0].n).toBe(1);
+    expect(await dumpSchema(postgres, GATEWAY_DATABASE)).toBe(migrated);
+    const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as {
+      entries: { tag: string }[];
+    };
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init']);
+    expect(MIGRATIONS_FOLDER).toBe(join(APP_ROOT, 'migrations'));
+  });
 
   it('RLS gateway (EC16): đúng tài khoản, khác tài khoản và thiếu context', async () => {
     await admin.query(
@@ -112,13 +148,16 @@ describe('gateway migration — PostgreSQL 16 + pgvector', () => {
   });
 
   it('lệnh migrate thiếu DSN hoặc DSN sai trả lỗi và không in bí mật', async () => {
-    const lines: string[] = [];
-    const write = (line: string) => lines.push(line);
-    expect(await runMigrationCommand({}, write, write)).toBe(1);
+    const run = capture();
+    expect(await runMigrationCommand({}, run.write, run.write)).toBe(1);
     expect(
-      await runMigrationCommand({ DATABASE_MIGRATOR_URL: 'postgres://hidden-password@127.0.0.1:1/db' }, write, write),
+      await runMigrationCommand(
+        { DATABASE_MIGRATOR_URL: 'postgres://hidden-password@127.0.0.1:1/db' },
+        run.write,
+        run.write,
+      ),
     ).toBe(1);
-    expect(lines.join('')).not.toContain('hidden-password');
+    expect(run.lines.join('')).not.toContain('hidden-password');
   });
 
   it('DBQ-10 / G2: app.find_session phải đọc được phiên trước tenant context với vai trò thật', async () => {
@@ -134,8 +173,39 @@ describe('gateway migration — PostgreSQL 16 + pgvector', () => {
        values ($1, $2, $3, now() + interval '1 day')`,
       [accountA, sidHash, Buffer.alloc(32, 84)],
     );
-    // Do not skip or mark as expected failure: H7 explicitly blocks merge until the approved DDL fixes this.
+    // DBD-14: hàm chạy bằng owner đọc app.session qua policy owner_lookup; _app gọi khi chưa có app.account_id.
     const result = await app.query('select account_id from app.find_session($1)', [sidHash]);
     expect(result.rows).toEqual([{ account_id: accountA }]);
+    // Policy chỉ cho owner và chỉ SELECT: _app đọc thẳng bảng khi chưa có context vẫn thấy 0 dòng (không nới RLS).
+    expect((await app.query('select id from app.session where sid_hash = $1', [sidHash])).rows).toEqual([]);
+  });
+});
+
+describe('gateway migration — thiếu vai trò (EC13)', () => {
+  let postgres: StartedPostgres;
+  let admin: Pool;
+
+  beforeAll(async () => {
+    postgres = await startPostgres({ database: GATEWAY_DATABASE, extensions: [] });
+    admin = new Pool({ connectionString: postgres.connectionUri });
+  });
+
+  afterAll(async () => {
+    await admin?.end();
+    await postgres?.stop();
+  });
+
+  it('thiếu vai trò thì migration lỗi (EC13) và rollback DDL', async () => {
+    // Chưa có vai trò sires_gateway_* nào nên không có migrator: chạy bằng superuser của container, để lỗi đến từ
+    // DDL (vai trò trong CREATE POLICY, GRANT) chứ không từ đăng nhập.
+    const run = capture();
+    expect(await runMigrationCommand({ DATABASE_MIGRATOR_URL: postgres.connectionUri }, run.write, run.write)).toBe(1);
+    expect(run.lines.join('')).toContain('SQLSTATE 42704');
+    expect(run.lines.join('')).not.toContain(postgres.password);
+    const leftovers = await admin.query(
+      `select nspname as name from pg_namespace where nspname in ('app', 'replica')
+       union all select rolname from pg_roles where rolname like 'sires\\_gateway\\_%'`,
+    );
+    expect(leftovers.rows).toEqual([]);
   });
 });
