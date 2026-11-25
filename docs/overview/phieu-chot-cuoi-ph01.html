@@ -58,7 +58,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <main id="main-content">
 <p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
 <h1>Phiếu chốt cuối PH-01</h1>
-<p class="meta">Số phiếu đề nghị: PC-05 · Lập 25/11/2026 theo yêu cầu PO (“để vấn đề cuối đưa về PC tôi chốt trong một lần”) · Gộp <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (đề nghị PC-02, 12 mục), <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (đề nghị PC-03, 19 mục) và 33 điểm PH-01 còn chờ PO · Tổng 64 mục</p>
+<p class="meta">Số phiếu đề nghị: PC-05 · Lập 25/11/2026 theo yêu cầu PO (“để vấn đề cuối đưa về PC tôi chốt trong một lần”) · Gộp <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (đề nghị PC-02, 12 mục), <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (đề nghị PC-03, 19 mục) và 41 điểm PH-01 còn chờ PO · Tổng 72 mục</p>
 <div class="note"><p><strong>Bối cảnh.</strong> Sau đợt hoàn tất PH-01 (xem <a href="bao-cao-hoan-tat-ph01.html">báo cáo</a> và <a href="phieu-chot-ph01.html">PC-04</a>), PH-01 còn chờ: SPK-01 (key chính thức, PO chọn chạy Lần 3 — PC-04 B8), SPK-03 (PO chốt PC-03 — B9), PID-00012, PID-00013, PID-00159. Phiếu này gom mọi câu còn chờ PO để chốt trong một lần. Nhóm I và II giữ nguyên nội dung phiếu gốc (mã mục thêm tiền tố S-, GS-); nhóm III, IV là các điểm PH-01 còn lại. Câu trả lời ở phiếu này là căn cứ (R-02) để áp dụng vào PRD, kiến trúc, database, api-design, ui-design, hồ sơ ticket và mã. Khi PO chốt phiếu này, phiếu SPK-01 và phiếu Google Scholar coi như đã chốt theo phiếu này.</p></div>
 <div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của người lập phiếu, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
 
@@ -1327,6 +1327,128 @@ const GROUPS = [
     "opts": [
      "Có: thêm vào gateway.sql, identity.sql và migration mới của hai service, có test vai trò khác không gọi được.",
      "Không: GRANT cho _app là đủ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P34",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "libs/ts/contracts/scripts/generate.mjs (G20 LOW của PID-00009)",
+    "ctx": "Hai lần sinh mã Python khác nhau 42 file vì không cố định PYTHONHASHSEED; chỉ làm đổi hash sires-common:test, không làm sai cache.",
+    "q": "Cố định PYTHONHASHSEED khi sinh mã?",
+    "opts": [
+     "Có, PR nhỏ của luồng contracts.",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P35",
+    "kind": "Quyết định",
+    "refs": [
+     "p_dbd14",
+     "p_p14"
+    ],
+    "impact": "GitHub issue #83 (DBQ-10)",
+    "ctx": "DBQ-10 đã đóng theo DBD-14 (24/11/2026); issue #83 trên GitHub vẫn mở.",
+    "q": "Đóng issue #83?",
+    "opts": [
+     "Đóng, kèm bình luận dẫn DBD-14 và PR #107, #63.",
+     "Giữ mở tới khi #63 merge."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P36",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p02"
+    ],
+    "impact": "libs/ts/platform inbox/consumer.ts (G9 LOW của PID-00002, có từ trước)",
+    "ctx": "Gọi stop() không await rồi start() ngay có thể làm consumer kẹt, không kết nối lại nữa (consumer.ts:200, :213, :225).",
+    "q": "Sửa?",
+    "opts": [
+     "Có, PR nhỏ của luồng platform: start() chờ stop() đang chạy xong; có test.",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P37",
+    "kind": "Quy ước",
+    "refs": [
+     "p_pc04"
+    ],
+    "impact": "DEC-58, spec-execution-skill",
+    "ctx": "QC #106, #108 (G10, G11): PR sửa theo phát hiện QC không có mục tự QC trong self-qc.md.",
+    "q": "PR sửa theo QC có bắt buộc thêm mục self-QC không?",
+    "opts": [
+     "Bắt buộc: thêm mục “Lần N” vào self-qc.md của PID liên quan; ghi vào spec-execution-skill.",
+     "Không bắt buộc với PR nhỏ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P38",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p02"
+    ],
+    "impact": "libs/ts/platform, libs/ts/sample-service (G9 LOW của QC #108)",
+    "ctx": "Timeout khai tại chỗ thấp hơn hằng chung vẫn đè lên config: describe 30 s ở 4 file platform, afterAll 60 s ở 8 file, beforeAll 120 s ở sample-service.",
+    "q": "Bỏ các timeout tại chỗ thấp hơn hằng chung?",
+    "opts": [
+     "Có, PR nhỏ của luồng platform.",
+     "Giữ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P39",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "PID-00009 G7",
+    "ctx": "T1, T2 (PR thử vào develop) chạy trên mã CI develop cũ; develop nay đã đồng bộ.",
+    "q": "Chạy lại T1, T2?",
+    "opts": [
+     "Chạy lại trên develop đã đồng bộ trước khi đóng PH-01.",
+     "Không cần, AC đã đạt."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P40",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p16",
+     "p_p159"
+    ],
+    "impact": "apps/identity (G1–G3 LOW của QC PID-00016)",
+    "ctx": "G1: test EC07 bỏ cả owner nên ca “có owner, thiếu vai trò khác” không còn được đi qua; G2: describe AC02 migrate bằng superuser; G3: report.md còn ghi “chưa push, PR chưa mở”.",
+    "q": "Làm khi nào?",
+    "opts": [
+     "Cùng PID-00159 (có compose tạo vai trò).",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P41",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "apps/gateway README",
+    "ctx": "PR #63 dựng lại 0000_init.sql của gateway; database dev nào đã áp bản cũ sẽ lệch.",
+    "q": "Ghi hướng dẫn dựng lại database gateway cục bộ?",
+    "opts": [
+     "Ghi vào README gateway (xóa database sires_gateway cục bộ rồi migrate lại).",
+     "Không cần."
     ],
     "rec": 0
    }
