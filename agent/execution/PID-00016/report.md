@@ -12,14 +12,14 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 ## 1. Tóm tắt
 
 - Slice: 4/4 xong. DBQ-10 đã đóng bằng DBD-14 (PO 24/11/2026); policy `owner_lookup` có trong DDL và `0000_init.sql`, test bằng vai trò migrator thật đạt (Lần 2).
-- AC: 3/3 đạt (PID-00016-AC01, AC02, NFR-SECRETS-001-AC01 phần identity), test trên PostgreSQL 16 thật qua Testcontainers. Edge case: 10/10 đã giải quyết; điều mới cần PO: `_app` không xóa được `provider_secret` theo `connection_id` (DBQ-10 đã đóng bằng DBD-14).
+- AC: 3/3 đạt (PID-00016-AC01, AC02, NFR-SECRETS-001-AC01 phần identity), test trên PostgreSQL 16 thật qua Testcontainers. Edge case: 10/10 đã giải quyết. DBQ-10 đã đóng bằng DBD-14 (Lần 2). Điều mới, vẫn chờ PO: `_app` không xóa được `provider_secret` theo `connection_id` (self-qc.md G2, mục 6 điểm 2).
 - Yêu cầu thêm: 3 (YC-01 sửa DDL nguồn theo DBD-14, YC-02 `vitest.config.ts` theo PC-04 A6, YC-03 dump qua base64 như #100), xem mục 5.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Migration sires_identity, lệnh migrate, giá trị Helm, quyền, RLS, README | Xong (Lần 2: DBD-14, EC09 trong `0000_init.sql`) | tạo: `apps/identity/drizzle.config.ts`, `migrations/0000_init.sql`, `migrations/meta/{_journal,0000_snapshot}.json`, `src/db/{schema,migrate,database.testkit}.ts`, `src/migrate.ts`, `src/migration.spec.ts`; xóa: `migrations/.gitkeep`; sửa: `package.json` (drizzle-orm, pg; dev: drizzle-kit, @types/pg; `files`, `migrate`; input DDL của target test), `tsconfig.build.json`, `deploy/values.yaml`, `README.md`, `pnpm-lock.yaml` (luồng infra) |
+| S01 | Migration sires_identity, lệnh migrate, giá trị Helm, quyền, RLS, README | Xong (Lần 2: DBD-14, EC09 trong `0000_init.sql`) | tạo: `apps/identity/drizzle.config.ts`, `migrations/0000_init.sql`, `migrations/meta/{_journal,0000_snapshot}.json`, `src/db/{schema,migrate,database.testkit}.ts`, `src/migrate.ts`, `src/migration.spec.ts`; xóa: `migrations/.gitkeep`; sửa: `package.json` (drizzle-orm, pg; dev: drizzle-kit, @types/pg; `files`, `migrate`; input DDL của target test), `tsconfig.build.json`, `deploy/values.yaml`, `README.md`, `pnpm-lock.yaml` (`check-tracks` tính là `repo`) |
 | S02 | Khai báo state machine; dòng state_transition sinh bằng helper PID-00158 | Xong | tạo: `src/domain/state-machines.ts`, `migrations/0001_state_transition.sql`, `migrations/meta/0001_snapshot.json`; test trong `src/migration.spec.ts` |
 | S03 | Module envelope: chỉ lưu bản mã, kek_version = id khóa, không log key | Xong | tạo: `src/envelope/{kms,provider-secret.service,envelope.module,index}.ts`, `src/envelope/envelope.spec.ts`; sửa: `src/app.module.ts`, `src/app.module.spec.ts` |
 | S04 | KMS cục bộ cho dev | Xong | tạo: `src/envelope/local-kms.ts`; test trong `envelope.spec.ts`, `app.module.spec.ts`; README |
@@ -49,7 +49,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 - **Đề xuất cho PO:**
   1. **DBQ-10 đã đóng** bằng DBD-14; Lần 2 sửa DDL nguồn (YC-01). PO ghi nhật ký thay đổi DDL vào `docs/docs_context.md` khi duyệt PR (Dev không ghi `docs_context.md`).
   2. **Quyền xóa `app.provider_secret`:** DDL cấp `DELETE` cho `_app` nhưng thu `SELECT`; PostgreSQL cần quyền SELECT trên cột dùng trong `WHERE`, nên `_app` chỉ xóa được qua ON DELETE CASCADE khi xóa `provider_connection`. “Thay key” (NFR-SECRETS-003, PID-00042) cần xóa hay ghi đè dòng cũ của cùng `connection_id` — đề xuất ghi DBQ: cấp `SELECT (connection_id)` cho `_app`, hoặc thay key bằng `_system`, hoặc hàm SECURITY DEFINER thay key.
-  3. `pnpm-lock.yaml` (luồng infra) đổi vì thêm drizzle-orm, pg, drizzle-kit, @types/pg bằng `catalog:` — quy tắc 1.4.7.
+  3. `pnpm-lock.yaml` (`check-tracks` tính là `repo`) đổi vì thêm drizzle-orm, pg, drizzle-kit, @types/pg bằng `catalog:` — quy tắc 1.4.7.
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có. PID-00014 (gateway, PR #63) cập nhật migration gateway theo `gateway.sql` mới sau khi PR này vào `main` (PC-04 B3).
 - **Bước tiếp theo:** Dev mở PR khi được yêu cầu (vào `main`, cổng PH-01 chưa đạt); QC độc lập `spec-converge-skill PID-00016`. PID chờ PID này: PID-00041, PID-00042, PID-00043.

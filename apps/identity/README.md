@@ -64,7 +64,7 @@ Cần `IDENTITY_LOCAL_KEK`, `IDENTITY_LOCAL_KEK_ID`. Kiểm tra: `curl http://lo
 
 ## Database và migration
 
-Bốn vai trò theo database 3.2, do hạ tầng tạo (staging, production: Terraform; máy Dev: compose của PID-00159); migration không tạo vai trò: `sires_identity_owner` (sở hữu đối tượng, Job migration), `sires_identity_app` (request; RLS theo `app.account_id`), `sires_identity_system` (API nội bộ, consumer, job; BYPASSRLS), `sires_identity_purge`.
+Bốn vai trò theo database 3.2, do hạ tầng tạo (staging, production: Terraform; máy Dev: compose của PID-00159); migration không tạo vai trò: `sires_identity_owner` (NOLOGIN, sở hữu schema, bảng, hàm), `sires_identity_migrator` (LOGIN, thành viên owner, `ALTER ROLE … SET role = 'sires_identity_owner'`: Job migration đăng nhập bằng vai trò này nên đối tượng thuộc owner; không SUPERUSER, không BYPASSRLS), `sires_identity_app` (request; RLS theo `app.account_id`), `sires_identity_system` (API nội bộ, consumer, job; BYPASSRLS), `sires_identity_purge`.
 
 Migration ở `migrations/` là custom migration SQL của drizzle-kit (có journal), chỉ tiến:
 
