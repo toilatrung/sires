@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { TESTCONTAINERS_TIMEOUTS } from '@sires/testing/vitest';
+import { TESTCONTAINERS_TIMEOUTS } from '@sires/testing';
 
 // PC-05 P38 (QC PID-00006 G9): timeout khai tại chỗ đè lên vitest.config.ts, nên chỉ được khai khi lớn hơn hằng chung
 // (PC-04 A6). describe, it, test so với testTimeout; hook so với hookTimeout. Chỉ xét số viết trực tiếp.
