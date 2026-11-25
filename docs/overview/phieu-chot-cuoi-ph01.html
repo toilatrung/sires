@@ -58,7 +58,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <main id="main-content">
 <p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
 <h1>Phiếu chốt cuối PH-01</h1>
-<p class="meta">Số phiếu đề nghị: PC-05 · Lập 25/11/2026 theo yêu cầu PO (“để vấn đề cuối đưa về PC tôi chốt trong một lần”) · Gộp <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (đề nghị PC-02, 12 mục), <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (đề nghị PC-03, 19 mục) và 41 điểm PH-01 còn chờ PO · Tổng 72 mục</p>
+<p class="meta">Số phiếu đề nghị: PC-05 · Lập 25/11/2026 theo yêu cầu PO (“để vấn đề cuối đưa về PC tôi chốt trong một lần”) · Gộp <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (đề nghị PC-02, 12 mục), <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (đề nghị PC-03, 19 mục) và 44 điểm PH-01 còn chờ PO · Tổng 75 mục</p>
 <div class="note"><p><strong>Bối cảnh.</strong> Sau đợt hoàn tất PH-01 (xem <a href="bao-cao-hoan-tat-ph01.html">báo cáo</a> và <a href="phieu-chot-ph01.html">PC-04</a>), PH-01 còn chờ: SPK-01 (key chính thức, PO chọn chạy Lần 3 — PC-04 B8), SPK-03 (PO chốt PC-03 — B9), PID-00012, PID-00013, PID-00159. Phiếu này gom mọi câu còn chờ PO để chốt trong một lần. Nhóm I và II giữ nguyên nội dung phiếu gốc (mã mục thêm tiền tố S-, GS-); nhóm III, IV là các điểm PH-01 còn lại. Câu trả lời ở phiếu này là căn cứ (R-02) để áp dụng vào PRD, kiến trúc, database, api-design, ui-design, hồ sơ ticket và mã. Khi PO chốt phiếu này, phiếu SPK-01 và phiếu Google Scholar coi như đã chốt theo phiếu này.</p></div>
 <div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của người lập phiếu, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
 
@@ -1306,7 +1306,7 @@ const GROUPS = [
      "p_p14"
     ],
     "impact": "PR #63 (PID-00014); infra/ci/check-helm-images.sh (luồng infra)",
-    "ctx": "G8 (HIGH) của self-QC Lần 10: PR #63 sửa check-helm-images.sh của luồng infra để job helm khởi động được gateway (cần DSN và khóa CSRF). Bỏ bản sửa thì job helm và job build bắt buộc đỏ. CI của #63 xanh, test gateway 35/35.",
+    "ctx": "G8 (HIGH) của self-QC Lần 10: PR #63 sửa check-helm-images.sh của luồng infra để job helm khởi động được gateway (cần DSN và khóa CSRF). Bỏ bản sửa thì job helm và job build bắt buộc đỏ. CI của #63 xanh, test gateway 35/35. QC độc lập Lần 3 (25/11/2026): không còn lỗi mã chặn merge; bản sửa infra cần và đúng (chỉ áp cho gateway, DSN giả, khóa ngẫu nhiên, không có secret).",
     "q": "Bản sửa infra của PR #63 xử lý thế nào?",
     "opts": [
      "Giữ trong PR #63: PO đồng ý (ghi nguyên văn vào report.md mục 5), PR chạm hai luồng có chủ đích; QC độc lập rồi merge.",
@@ -1448,6 +1448,53 @@ const GROUPS = [
     "q": "Ghi hướng dẫn dựng lại database gateway cục bộ?",
     "opts": [
      "Ghi vào README gateway (xóa database sires_gateway cục bộ rồi migrate lại).",
+     "Không cần."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P42",
+    "kind": "Quyết định",
+    "refs": [
+     "p_dbd14",
+     "p_p14"
+    ],
+    "impact": "DBD-14 (database 13.1)",
+    "ctx": "QC PID-00014 Lần 3: vai trò migrator là thành viên của owner nên qua policy owner_lookup đọc được mọi dòng app.session (và app.account ở identity). DBD-14 chưa ghi điều này.",
+    "q": "Ghi ngoại lệ vào DBD-14?",
+    "opts": [
+     "Ghi: migrator kế thừa quyền đọc của owner; migrator chỉ dùng cho Job migration, không cấp cho người hay service khác.",
+     "Không ghi."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P43",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "Job dọn app.session hết hạn (N5 của PID-00014)",
+    "ctx": "N5 của PID-00014: việc dọn phiên hết hạn trong app.session chưa có PID nào nhận.",
+    "q": "Giao cho đâu?",
+    "opts": [
+     "Thêm PID mới luồng gateway ở PH-02 (Job dọn phiên hết hạn, chạy bằng _system hoặc _purge).",
+     "Gộp vào PID-00038 (đăng nhập eTroy OIDC).",
+     "Để sau, ghi rủi ro."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P44",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "apps/gateway testkit (G11 LOW của QC PID-00014)",
+    "ctx": "Fixture HTTP (database.testkit.ts:142) không tự kiểm đang chạy bằng vai trò thật: đổi fixture sang superuser thì 27/27 test vẫn đạt; test migration vẫn chặn được lỗi DBQ-10.",
+    "q": "Thêm chốt vai trò cho fixture HTTP?",
+    "opts": [
+     "Có, PR nhỏ sau khi #63 merge.",
      "Không cần."
     ],
     "rec": 0
