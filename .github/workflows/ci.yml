@@ -389,7 +389,7 @@ jobs:
       - name: Tổng hợp kết quả
         run: |
           if ! gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" --paginate \
-            --jq '.jobs[] | [.name, (.conclusion // .status), (if .started_at and .completed_at then ((.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601) | tostring) else "—" end)] | @tsv' > "$RUNNER_TEMP/jobs.tsv"; then
+            --jq '.jobs[] | [.name, (.conclusion // .status), (if .started_at and .completed_at then ([(.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601), 0] | max | tostring) else "—" end)] | @tsv' > "$RUNNER_TEMP/jobs.tsv"; then
             echo '::warning::Không đọc được thời gian job qua API.'
             jq -r 'to_entries[] | [.key, .value.result, "—"] | @tsv' <<< "$JOB_RESULTS" > "$RUNNER_TEMP/jobs.tsv"
           fi

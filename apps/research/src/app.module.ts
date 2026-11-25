@@ -4,9 +4,23 @@
 
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
+import { EvidenceModule } from './evidence/evidence.module';
+import { ClaimsModule } from './claims/claims.module';
+import { VerificationModule } from './verification/verification.module';
+import { ArtifactsModule } from './artifacts/artifacts.module';
+import { DiagramsModule } from './diagrams/diagrams.module';
+import { KpiModule } from './kpi/kpi.module';
 import { manifest } from './manifest';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  imports: [
+    HealthModule.forService(manifest),
+    EvidenceModule,
+    ClaimsModule,
+    VerificationModule,
+    ArtifactsModule,
+    DiagramsModule,
+    KpiModule,
+  ],
 })
 export class AppModule {}

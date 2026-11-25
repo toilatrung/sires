@@ -45,6 +45,8 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | `sections/NN-slug.html` | 21 section, số `01`–`21` (mục MVP Delivery Plan cũ bỏ ngày 01/11/2026, DEC-49); anchor dạng `s-16-10`, `req-nfr-eval-001`, `oq-096` |
 | `back-log.html` | Nguồn theo dõi chính: trạng thái section, việc `BL-NN-MM`, sổ OQ, việc đồng bộ `SYNC-NN`, nhật ký |
 | `phieu-chot-backlog.html` | Phiếu chốt để PO trả lời OQ và duyệt hàng loạt |
+| `bao-cao-hoan-tat-ph01.html` | Báo cáo đợt hoàn tất PH-01 đêm 24–25/11/2026: PR đã merge, trạng thái 36 PID, cổng ra còn thiếu, việc PO cần làm |
+| `phieu-chot-ph01.html` | Phiếu chốt PC-04: quyết định ngày 24/11/2026 để hoàn tất PH-01 (DBD-14, EC09, điểm QC luồng platform, #85, thứ tự merge, H10 của PID-00019); đã chốt theo ủy quyền của PO, chờ PO xem lại |
 | `phieu-chot-spk-01.html` | Phiếu chốt sau SPK-01 (PID-00021): key proxy, OQ-113, G5–G10, PID-00070; lập 21/11/2026, chờ PO chốt (đề nghị PC-02) |
 | `bao-cao-khao-sat-nguon-hoc-thuat.html` | Báo cáo khảo sát nguồn học thuật cho discovery (OpenAlex, Semantic Scholar, Google Scholar qua SerpApi), căn cứ DEC-60 (22/11/2026) |
 | `phieu-chot-google-scholar.html` | Phiếu chốt chi tiết Google Scholar trong discovery và connector kế hoạch công bố (DEC-60, DEC-61); lập 22/11/2026, chờ PO chốt (đề nghị PC-03) |

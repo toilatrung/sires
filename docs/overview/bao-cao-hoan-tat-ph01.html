@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Báo cáo đợt hoàn tất PH-01 đêm 24–25/11/2026: PR đã merge, trạng thái 36 PID PH-01, điều kiện cổng ra còn thiếu và việc PO cần làm.">
+<title>Báo cáo hoàn tất PH-01 | SIRes</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="phieu-chot-ph01.html">Phiếu chốt PC-04</a> · Báo cáo hoàn tất PH-01</span></header>
+<main id="main-content">
+<p class="eyebrow">Kế hoạch triển khai · Báo cáo</p>
+<h1>Báo cáo hoàn tất PH-01 (24–25/11/2026)</h1>
+<p class="meta">Lập 25/11/2026 theo yêu cầu PO (“Khi nào xong viết báo cáo và PC”) · Nguồn: GitHub (PR, CI), <a href="../../agent/execution/taskboard.html">taskboard</a>, <a href="../docs_context.md">docs_context.md</a> · Quyết định: <a href="phieu-chot-ph01.html">phiếu chốt PC-04</a></p>
+
+<h2 id="ket-luan">1. Kết luận</h2>
+<div class="note"><p><strong>Phần mã của PH-01: 29/36 PID xong</strong> (đã merge vào <code>main</code> và có QC độc lập kết luận nghiệm thu được). 7 PID còn lại đều đang chờ việc của PO hoặc của T1xNTH, không chờ thêm mã của phiên này. <strong>Cổng ra PH-01 chưa đạt</strong>: còn bốn điều kiện chỉ PO làm được (mục 2). Chưa tới mốc DEC-59: PR vẫn vào <code>main</code>, <code>develop</code> vẫn chỉ được đồng bộ theo <code>main</code>.</p></div>
+
+<h2 id="cong-ra">2. Cổng ra PH-01</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Điều kiện (tickets 2, PH-01)</th><th>Trạng thái</th><th>Còn thiếu</th></tr></thead>
+<tbody>
+<tr><td>Service mẫu: trạng thái + Audit Event + outbox trong một giao dịch; inbox đúng một lần; RLS chặn đọc chéo; có test</td><td>Đạt</td><td>PID-00006 merge (#62), QC độc lập đạt; G3 của QC sửa ở #86</td></tr>
+<tr><td>PR chạm một service NestJS chạy CI dưới 10 phút (SPK-10)</td><td>Đạt</td><td>PID-00009: T3 với cache <code>main</code> 182 s (PR thử #96), T5 trên <code>main</code>; #91</td></tr>
+<tr><td>Hợp đồng baseline: DBQ-03, DBQ-04 sửa vào api-design; type sinh không lỗi; PO duyệt baseline</td><td>Chờ PO</td><td>PO duyệt baseline (PID-00007, PID-00008 đã merge, type sinh không lỗi)</td></tr>
+<tr><td>Báo cáo SPK-01–SPK-08, SPK-10</td><td>Chưa đủ</td><td>SPK-01 (PID-00021) chờ key chính thức và <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (PC-02); SPK-03 (PID-00025, PR #38 nháp) chờ <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (PC-03). SPK-02, 04, 05, 06, 07, 08, 10 đã có báo cáo và QC</td></tr>
+<tr><td>Máy Home Lab sẵn sàng dựng staging ở PH-02 (OQ-108)</td><td>Chờ PO</td><td>PO dựng máy, cấp URL HTTPS</td></tr>
+</tbody></table></div>
+
+<h2 id="pr">3. PR đã merge trong đợt này</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>PR</th><th>Nội dung</th></tr></thead>
+<tbody>
+<tr><td>#88, #89</td><td>Trần timeout cho test Testcontainers của planning, workspace (G1 PID-00023, G3 PID-00017)</td></tr>
+<tr><td>#93, #95, #102</td><td>Phân công PH-01 cho <code>toilatrung</code>; DBD-14 (đóng DBQ-10); DBQ-11; phiếu chốt PC-04; H10 của PID-00019; nhật ký</td></tr>
+<tr><td>#86, #87</td><td>Platform: sửa phát hiện QC của PID-00002, 00003, 00006, 00158; bộ khóa công khai từ chối JWK riêng</td></tr>
+<tr><td>#92</td><td>Đồng bộ <code>develop</code> theo <code>main</code></td></tr>
+<tr><td>#94</td><td>EC09: ba hàm kiểm JSON của <code>00-common.sql</code> trả false thay vì NULL; migration mới cho workspace, planning, orchestration, agent-core, sample-service</td></tr>
+<tr><td>#100</td><td><code>pg_dump</code> qua base64 trong testkit, sửa phép so schema chập chờn do vỡ UTF-8</td></tr>
+<tr><td>#82, #66</td><td>PID-00029 (research), PID-00018 (audit): migration và khung, sau EC09</td></tr>
+<tr><td>#90</td><td>PID-00019 (orchestration): dòng <code>app.state_transition</code>, migration 0002</td></tr>
+<tr><td>#97, #98, #99</td><td>PID-00030 (manuscript, kèm DBQ-11), PID-00024 (library, parser Citation.js sau adapter), PID-00026 (knowledge, Alembic)</td></tr>
+<tr><td>#101</td><td>QC độc lập Lần 1 của PID-00004</td></tr>
+<tr><td>#91</td><td>PID-00009: T5 trên <code>main</code>, T3 với cache <code>main</code>, G18, G19 (cache Nx gồm đầu ra của task phụ thuộc, PC-04 A12)</td></tr>
+</tbody></table></div>
+
+<h2 id="pid">4. Trạng thái 36 PID PH-01</h2>
+<p><strong>Xong (29):</strong> PID-00001, 00002, 00003, 00004, 00005, 00006, 00007, 00008, 00009, 00010, 00011, 00015, 00017, 00018, 00019, 00020, 00022, 00023, 00024, 00026, 00027, 00028, 00029, 00030, 00031, 00032, 00033, 00034, 00158 — đã merge, QC độc lập kết luận nghiệm thu được (còn LOW/MEDIUM không chặn, ghi ở <code>qc-report.md</code> từng PID).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>PID chưa xong</th><th>Người làm</th><th>Đang chờ</th></tr></thead>
+<tbody>
+<tr><td>PID-00012 Shell</td><td>toilatrung</td><td>PO sửa nguồn S11 (<code>design.md</code> §3), S12 (<code>/events</code>), S14 (TopBar, <code>/auth/logout</code>), rồi đặt Sẵn sàng</td></tr>
+<tr><td>PID-00013 Mock theo OpenAPI</td><td>toilatrung</td><td>Client API, client SSE của PID-00012 (S04, S05)</td></tr>
+<tr><td>PID-00014 Gateway, PR #63</td><td>toilatrung</td><td>PR DDL của T1xNTH (<code>gateway.sql</code>, <code>identity.sql</code> theo DBD-14), rồi cập nhật migration gateway, chép <code>00-common.sql</code> sau EC09, QC</td></tr>
+<tr><td>PID-00016 Identity</td><td>T1xNTH</td><td>T1xNTH push bản sửa DBQ-10 (nhánh <code>identity/pid-00016-dbq-10</code>) theo DBD-14</td></tr>
+<tr><td>PID-00021 SPK-01</td><td>toilatrung</td><td>Key chính thức Anthropic, Google; PO chốt PC-02</td></tr>
+<tr><td>PID-00025 SPK-03, PR #38</td><td>toilatrung</td><td>PO chốt PC-03 (CI của #38 đã xanh, giữ nháp theo PC-04 B4)</td></tr>
+<tr><td>PID-00159 Môi trường cục bộ</td><td>toilatrung</td><td>PO xác nhận hồ sơ</td></tr>
+</tbody></table></div>
+
+<h2 id="viec-po">5. Việc PO cần làm, theo thứ tự</h2>
+<ol>
+<li>Xem lại <a href="phieu-chot-ph01.html">phiếu chốt PC-04</a> (17 mục, đã áp dụng). Mục cần xem kỹ: A7 (PR #85 không merge như QC độc lập), A10 (parser Citation.js tạm thời, lệch kiến trúc 2.3), A11 (DBQ-11), A12 (cache Nx).</li>
+<li>Gửi T1xNTH câu trả lời đã soạn trong phiên (DBQ-10 theo DBD-14, G5, G8, G2, <code>kid</code>, timeout, PID-00038). Nhắn thêm: PID-00016 làm nốt và PR DDL gồm cả <code>gateway.sql</code> (PC-04 B3); PR #85 chuyển kết quả sang <code>self-qc.md</code> (A7); nhánh #86, #87 đã có commit gộp <code>main</code> do phiên này thêm.</li>
+<li>Báo Vietanhhhhhh2003 và congminh1705: 10 PID PH-01 đã chuyển sang <code>toilatrung</code> (PC-04 B1); PR #66, #82 của Vietanhhhhhh2003 đã được hoàn tất và merge.</li>
+<li>Chốt PC-02 và cấp key chính thức cho SPK-01; chốt PC-03 cho SPK-03.</li>
+<li>Sửa nguồn cho PID-00012; xác nhận hồ sơ PID-00159.</li>
+<li>Duyệt baseline hợp đồng; chuẩn bị Home Lab. Khi cổng ra đạt: làm các việc tại mốc DEC-59.</li>
+<li>Các điểm QC nêu cho PO ở PC-04 mục C (không chặn cổng ra).</li>
+</ol>
+
+<h2 id="ghi-chu">6. Ghi chú vận hành</h2>
+<ul>
+<li>Máy cục bộ tải cao khi nhiều phiên cùng chạy Testcontainers: test platform (<code>telemetry.spec.ts</code>, trần 5 s), workspace, orchestration có lúc lỗi <code>ECONNRESET</code> hoặc hết thời gian; chạy riêng thì đạt. Quy ước timeout chung (PC-04 A6) chưa áp cho mọi project.</li>
+<li>Lệnh merge bằng quyền bypass của PO: lần đầu bị bộ phân loại chặn, PO tự chạy (#88, #89); sau yêu cầu “Hãy thực hiện đi nhé!” các lần sau chạy được.</li>
+<li>Trên checkout Windows, <code>core.autocrlf=true</code> đổi xuống dòng của file SQL và fixture; đề xuất thêm <code>*.sql text eol=lf</code> (PC-04 mục C).</li>
+<li>Sau báo cáo này: <code>develop</code> được đồng bộ theo <code>main</code> bằng PR head <code>main</code> → base <code>develop</code> (merge kiểu <code>--merge</code>); worktree tạm của phiên điều phối trong scratchpad được gỡ. Worktree của các phiên PID (pid-00009, 00019, 00024, 00026, 00030) do app quản lý, có thể lưu trữ (archive) khi không cần.</li>
+</ul>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="phieu-chot-ph01.html">← Phiếu chốt PC-04</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Báo cáo hoàn tất PH-01. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a> · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

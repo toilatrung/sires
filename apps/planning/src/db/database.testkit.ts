@@ -121,12 +121,14 @@ export async function startPlanningPostgres(options: { withRoles?: boolean } = {
       await admin(database, sql);
     },
     async dumpSchema(database) {
+      // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD.
       const result = await server.container.exec([
-        'pg_dump', '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
+        'bash', '-o', 'pipefail', '-c', 'pg_dump "$@" | base64 -w 0', 'pg_dump',
+        '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
         '-U', server.username, '-d', database,
       ]);
       if (result.exitCode !== 0) throw new Error(`pg_dump ${database} lỗi: ${result.stderr || result.output}`);
-      return normalizeDump(result.stdout);
+      return normalizeDump(Buffer.from(result.stdout.trim(), 'base64').toString('utf8'));
     },
     stop: () => server.stop(),
   };
@@ -191,36 +193,48 @@ export interface SeededPlan {
 export async function seedPlan(
   pg: PlanningPostgres,
   database: string,
-  options: { accountId?: string; projectStatus?: 'Active' | 'Archived' | 'none'; projectDeleted?: boolean } = {},
+  options: SeedPlanOptions = {},
 ): Promise<SeededPlan> {
+  return pg.asRole(database, 'system', undefined, (client) => seedPlanWith(client, options));
+}
+
+export interface SeedPlanOptions {
+  accountId?: string;
+  projectStatus?: 'Active' | 'Archived' | 'none';
+  projectDeleted?: boolean;
+}
+
+/**
+ * Như `seedPlan` nhưng chạy trên phiên `_system` đang mở giao dịch (của asRole), để test dựng nhiều plan mà không mở
+ * mỗi plan một kết nối mới.
+ */
+export async function seedPlanWith(client: Client, options: SeedPlanOptions = {}): Promise<SeededPlan> {
   const accountId = options.accountId ?? randomUUID();
   const projectId = randomUUID();
   const planId = randomUUID();
   const planVersionId = randomUUID();
   const phaseId = randomUUID();
-  await pg.asRole(database, 'system', undefined, async (client) => {
-    if ((options.projectStatus ?? 'Active') !== 'none') {
-      await client.query(
-        `INSERT INTO replica.project_state (project_id, account_id, status, deleted_at, source_version)
-         VALUES ($1, $2, $3, $4, 1)`,
-        [projectId, accountId, options.projectStatus ?? 'Active', options.projectDeleted ? new Date() : null],
-      );
-    }
+  if ((options.projectStatus ?? 'Active') !== 'none') {
     await client.query(
-      'INSERT INTO app.research_plan (id, account_id, project_id, created_by) VALUES ($1, $2, $3, $4)',
-      [planId, accountId, projectId, SYSTEM_ACTOR],
+      `INSERT INTO replica.project_state (project_id, account_id, status, deleted_at, source_version)
+       VALUES ($1, $2, $3, $4, 1)`,
+      [projectId, accountId, options.projectStatus ?? 'Active', options.projectDeleted ? new Date() : null],
     );
-    await client.query(
-      `INSERT INTO app.plan_version (id, account_id, project_id, plan_id, version_number, context_version_id, created_by)
-       VALUES ($1, $2, $3, $4, 1, $5, $6)`,
-      [planVersionId, accountId, projectId, planId, randomUUID(), SYSTEM_ACTOR],
-    );
-    await client.query(
-      `INSERT INTO app.phase (id, account_id, project_id, plan_version_id, "order", name, created_by)
-       VALUES ($1, $2, $3, $4, 1, 'Giai đoạn 1', $5)`,
-      [phaseId, accountId, projectId, planVersionId, SYSTEM_ACTOR],
-    );
-  });
+  }
+  await client.query(
+    'INSERT INTO app.research_plan (id, account_id, project_id, created_by) VALUES ($1, $2, $3, $4)',
+    [planId, accountId, projectId, SYSTEM_ACTOR],
+  );
+  await client.query(
+    `INSERT INTO app.plan_version (id, account_id, project_id, plan_id, version_number, context_version_id, created_by)
+     VALUES ($1, $2, $3, $4, 1, $5, $6)`,
+    [planVersionId, accountId, projectId, planId, randomUUID(), SYSTEM_ACTOR],
+  );
+  await client.query(
+    `INSERT INTO app.phase (id, account_id, project_id, plan_version_id, "order", name, created_by)
+     VALUES ($1, $2, $3, $4, 1, 'Giai đoạn 1', $5)`,
+    [phaseId, accountId, projectId, planVersionId, SYSTEM_ACTOR],
+  );
   return { accountId, projectId, planId, planVersionId, phaseId };
 }
 

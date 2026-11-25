@@ -1,10 +1,10 @@
 # PID-00009 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được theo quyết định PO 22/11/2026 (“Merge ngay, chạy T5”) — 0 CRITICAL; G5, G6 (HIGH) là phần spec đặt sau merge: T5 trên `main`, đo lại T3 với cache của `main` sau khi đồng bộ `develop`. PO nhận nâng vitest 4 và bản vá (G11 đóng), xác nhận hai câu trích là lời PO (GP2 đóng). Còn G7–G10, G12 (MEDIUM), GP1 (qc-report Lần 1–3 do Dev ghi) và LOW (Lần 5, 22/11/2026)
+**Kết luận mới nhất:** Có thể merge PR #91 và nghiệm thu PID-00009 — 0 CRITICAL, 0 HIGH. G19 sửa đúng PC-04 A12; QC tự kiểm bằng API hash của Nx: thêm schema thì hash consumer đổi, hoàn lại thì về như cũ, không đổi gì thì đọc cache. AC01–AC08 đạt (AC04, AC05 trên mã CI `develop` cũ, G7 PO cho không chặn). Còn MEDIUM: G7, G9 (chờ PO), G21 (luồng contracts); LOW: G8, G10, G12, G13–G17 (G16 chờ PO), G20, G22, G23. Trước merge cập nhật nhánh theo `main` (chậm 4 commit, gộp sạch) và chờ CI xanh (Lần 6, 25/11/2026)
 
 - **Ticket:** [PID-00009](../../../docs/tickets/issues/PID-00009/index.html)
-- **PR:** https://github.com/toilatrung/sires/pull/57
-- **Mã nguồn:** `infra/pid-00009-ci`, commit `aac981070e0f666d657b664b2b0aea33886f8db8`.
+- **PR:** https://github.com/toilatrung/sires/pull/57 (Lần 1–5); https://github.com/toilatrung/sires/pull/91 (Lần 6)
+- **Mã nguồn:** `infra/pid-00009-ci`, commit `aac981070e0f666d657b664b2b0aea33886f8db8` (Lần 1–5); `infra/pid-00009-t5-cache-main`, commit `548e5e241844c352176d952641a160f6e6ce28b1` (Lần 6).
 - **Kết quả Dev:** `report.md`, `implement.md`, `self-qc.md`.
 
 ## Lần 1 — 22/11/2026 · spec-converge-skill
@@ -229,6 +229,137 @@ Quyết định PO (trả lời ba câu hỏi của phiên PO, 22/11/2026):
 | GP2 | “Có, tôi đã nói”: hai câu trích ở `report.md` Lần 6 là lời PO; Dev ghi nguồn (phiên, comment) khi cập nhật | Đóng |
 | GP1 | DEC-58: `qc-report.md` chỉ do QC độc lập ghi; Dev ghi kết quả tự kiểm ở `self-qc.md` | Nhắc Dev |
 | G7–G10, G12 | Như Lần 4 | Còn mở |
+
+## Lần 6 — 25/11/2026 · spec-converge-skill (QC độc lập)
+
+- **Người chạy:** QC độc lập do PO `toilatrung` giao, không mang kết luận của Dev.
+- **Mã nguồn:** PR #91, nhánh `infra/pid-00009-t5-cache-main`, đầu nhánh `548e5e241844c352176d952641a160f6e6ce28b1`, worktree tách riêng, detached. Mã đổi so với `main`: `nx.json` (G18 ở `targetDefaults`, G19 ở `namedInputs.default`) và `.github/workflows/ci.yml:392` (số giây của job skipped); còn lại là `agent/execution/PID-00009/`. Lúc ghi, `origin/main` `414545f` đi trước nhánh 4 commit (#102, #97, #98, #99); `git merge-tree` sạch, `main` không đổi `nx.json`, `ci.yml`.
+- **Căn cứ quyết định:** PC-04 A12, phương án (b) (có ở `docs/overview/phieu-chot-ph01.html` trên `main` từ #102); EC15/S11 (G16) “Còn mở — chờ PO” và G7 không chặn (`report.md` mục 6, YC Lần 10).
+- Không sửa mã, `docs/` hay lời khai của Dev; không chạy lại workflow, không comment PR. Các file thử (schema trong `docs/api-design/internal/library.yaml`, `pyproject.toml` gốc, `nx.json` của `main`) chỉ đổi trong worktree QC và đã hoàn lại; `git status` sạch.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả thật |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt (39 giây) |
+| `check-pid.mjs PID-00009 --result` | KẾT QUẢ ĐỦ, 0 cảnh báo; trạng thái “Xong — chờ QC” |
+| `node scripts/docs/add-license.mjs --check`; `node scripts/docs/update-index.mjs --check` | 0 file thiếu; khớp (159 PID, taskboard 159 task) |
+| `check-tracks.mjs --base origin/main` | `infra, repo` |
+| `git diff --check origin/main...HEAD` | Sạch |
+| `node infra/ci/measure.mjs toilatrung/sires` | Lần đầu: “PR vào develop chỉ đổi tài liệu: 2/20 lần”, “Push toàn bộ vào main: 16/20 lần”, không in p95. Chạy lại sau 4 lần push `main` (#102, #97, #98, #99): “Push toàn bộ vào main: 20/20 lần”, “p95 8.45 phút · p95 + 20% 10.14 phút”; QC tính lại từ `gh run list`: hạng 19/20 = 507 giây, mẫu gồm lần đỏ #94 (410 giây, G17) |
+| `gh api` (`runs/<id>`, `attempts/N`, `…/jobs`) và `gh run view --job <id> --log` cho 15 run được trích; attempt 1 của 45465050271 lấy bằng `gh run view --attempt 1 --log` | Bảng bằng chứng dưới |
+| Biểu thức `--jq` mới ở `ci.yml:392`, chạy bằng `gh api` trên T3 45442437182 | `python`, `contracts`, `dependencies`, `terraform`, `helm` skipped đều ra 0; log `build` của run đó (mã cũ) in −1 và −16 |
+| `nx run-many -t build --projects=tag:lang:ts` (Windows) | Đạt, 16 task |
+| `generate.mjs --python-only` trong container `node:22` có `uv` 0.13.7, trên bản `git archive` của đầu nhánh; chép `generated/` về worktree | Đạt: 9 API nội bộ, 42 message, 572 file. Hai lần với `PYTHONHASHSEED=0`: 0 file khác; hai lần không cố định seed: 42 file khác (G20) |
+| Script hash tạm ngoài repo (`InProcessTaskHasher` của Nx 22.7.12, `NX_DAEMON=false`) trên 29 task của `@sires/contracts`, `gateway`, `library`, `platform`, `audit`, `testing`, `sires-common`, `agent-core` | Bảng G19 dưới |
+| `nx run-many -t lint typecheck test build -p @sires/gateway @sires/library`, hai lần liền không đổi gì | Lần 1: 6/12 task từ cache (máy chưa có cache của `lint`, `typecheck`, `test`); lần 2: `Nx read the output from the cache instead of running the command for 12 out of 12 tasks.` |
+| `nx run-many -t build --projects=tag:lang:ts --skip-nx-cache`, rồi hash lại | 29/29 hash như trước: build lại `tsc` cho đầu ra giống hệt |
+| `ci-changes.mjs --event pull_request --target develop --stdin` với `docs/api-design/internal/library.yaml`, `docs/api-design/events/asyncapi.yaml`; `nx graph --file` | Cả hai: `contracts: true`, `ts: true`, `python: false`, 16 project TS; trong đồ thị, `sires-common` không có cạnh nào (G22) |
+| Không chạy | `sires-common:test`, `@sires/contracts:test` thật: Windows chặn Python trong `.venv` và `openapi-python-client`; dùng hash và log Actions thay. `actionlint`: không có trên máy |
+
+### Bằng chứng Actions, tính lại từ API
+
+Giây = `updated_at − created_at`; attempt 2 tính từ `run_started_at`.
+
+| Ca | Run | Commit | Kết quả | Giây | Cache Nx khôi phục | Nx đọc từ cache: TS · Python | So với `report.md` |
+| --- | --- | --- | --- | ---: | --- | --- | --- |
+| T3 (AC01) | 45442437182 | `5237827` (#96 vào `develop`) | success; 9 job đạt, 5 skipped | 182 | `Cache hit for restore-key: nx-ts-Linux-main-4578236…` | 4/8 · skipped | Khớp. Job `changes`: `mode` `filtered`, `base` `c11bba3…`, `affected` `@sires/gateway`, image chỉ `gateway`; #96 chỉ đổi `apps/gateway/src/main.ts`, đóng 16:59:44Z, không merge |
+| T5, lần 1–6 | 45033510448, 45036410342, 45040139870, 45203674571, 45416191365, 45416543323 | `29edd87` … `0153261` | mỗi lần 24 success, `tracks` skipped | 182, 188, 171, 191, 215, 228 | Lần 1 `Cache not found`; mỗi lần sau khôi phục đúng khóa `main` của lần trước | 0·0, 61·11, 62·12, 29·13, 59·13, 59·13 (trên 63 · 13) | Khớp |
+| T5, lần 7–10 | 45422174396, 45441520021, 45441635225, 45442384648 | `343c7b9`, `4578236`, `80a6626`, `f28424c` | success; success; failure (`typescript`, `build`); success | 205, 393, 410, 268 | TS: `0153261`, `343c7b9`, `4578236`, `4578236` (lần 9 đỏ nên không lưu cache TS) | 63·13, 15·13, —·6, 46·13 | Khớp |
+| CI #91, `b4acaa4` | 45445130739 | | 25 success | 273 | | | Khớp |
+| CI #91, `c0d1f4d`, attempt 1 | 45465050271 | merge `c982f4e` | 25 success | 173 | `main-eafd885…` (hash cũ); lưu khóa `nx-*-Linux-91/merge-c982f4e…` | 0/63 · 0/13 | `report.md:286` ghi 172 giây |
+| CI #91, attempt 2 | 45465050271 | như trên | 25 success | 160 | `Cache hit for: nx-ts-Linux-91/merge-c982f4e…` (khớp khóa chính, máy runner mới) | 63/63 · 13/13 | Khớp |
+| Đầu nhánh `548e5e2` | 45466599386 | merge `1634b32` | 25 success | 201 | `main-eafd885…` (hash cũ) | 0 · 0, mọi task chạy và đạt | Không có trong lời khai (push sau Lần 10) |
+
+- Sau #95 có thêm 10 lần push `main` (#82, #66, #100, #87, #90, #101, #102, #97, #98, #99; run 45452442149 … 45472764144), đều success ở attempt 1. Từ #57 tới #99 có 20 lần push `main`: 19 đạt ngay lần đầu, 1 đỏ (#94).
+- AC07, phần push `main`: 45416191365 (14:37:34–14:41:09Z) và 45416543323 (14:39:30–14:43:18Z) chồng nhau 99 giây; 45441520021, 45441635225, 45442384648 cùng chạy trong 16:53:39–16:55:40Z. Cả năm lần `completed`, không lần nào `cancelled`; cấu hình ở `ci.yml:14-16`. Job `typescript` của 45416191365 xong 14:38:51Z, job của 45416543323 bắt đầu 14:40:01Z và khôi phục `nx-ts-Linux-main-10ee7a6…`.
+- Thời gian job `typescript` khi mọi task chạy: 150 giây (45033510448), 168 giây (45420184190, bản G18), 138 giây (45465050271 attempt 1, bản G19). Băm thêm đầu ra của task phụ thuộc không làm chậm thấy được.
+
+### G19 — QC tự kiểm bằng API hash của Nx
+
+Thay đổi thử: thêm schema mới `QcProbeG19` (object, một trường `probe`) vào `components.schemas` của `docs/api-design/internal/library.yaml`. Sau đó `nx run-many -t build --projects=tag:lang:ts` chạy lại `generate-ts`, `@sires/contracts:build` và 14 build phụ thuộc (`dist` của contracts có `QcProbeG19`); sinh lại Python có cố định seed thì thêm `library/models/qc_probe_g19.py` (573 file). Hoàn lại YAML: build đọc cache 16/16, `dist` không còn schema thử, mã Python sinh lại giống hệt bản gốc (0 file khác). Mỗi trạng thái được hash với `nx.json` của nhánh và với `nx.json` của `main`; chỉ so trong cùng một cấu hình, vì Nx băm cả `nx.json`.
+
+| Trạng thái | `nx.json` của nhánh (bản sửa) | `nx.json` của `main` |
+| --- | --- | --- |
+| Không đổi gì, hash hai lần | 29/29 giống nhau | — |
+| Đổi YAML, chưa sinh lại | 2 task đổi: `generate-ts`, `generate-python` | — |
+| Thêm schema, đã sinh lại | **22/29 đổi**: `lint`, `typecheck`, `test`, `build` của `gateway`, `library`, `platform`, `audit`; `@sires/contracts:typecheck`, `build`; `@sires/testing:build`; `sires-common:test`; 2 task sinh mã | **2/29 đổi**, chỉ 2 task sinh mã: tái hiện G19 |
+| Hoàn lại, sinh lại | 29/29 về hash gốc | 29/29 về hash gốc |
+
+- Không đổi với bản sửa: `@sires/contracts:lint`, `@sires/contracts:test`, `sires-common:lint`, `sires-common:typecheck`, `agent-core:lint`, `typecheck`, `test`. `lint`, `typecheck` không đọc mã sinh ra (`eslint.config.mjs:11` bỏ `**/src/generated/**`; mypy của `sires-common` có `exclude` `src/sires_common/generated/`; ruff theo `.gitignore`). Mã Python ngoài `generated/` không import `sires_common.generated`, chỉ spike `apps/agent-core/spikes/spk-08`. `@sires/contracts:test`: xem G21.
+- G20: cùng YAML, hai lần sinh Python không cố định seed thì chỉ hash `sires-common:test` đổi (1/29). Trên CI cache vẫn trúng, vì đầu ra của `generate-python` được khôi phục từ cache chứ không sinh lại.
+- EC06 (G18) kiểm lại: đổi `line-length` trong `pyproject.toml` gốc thì bản sửa đổi hash 27/29 task (mọi task trừ 2 task sinh mã), gồm `sires-common:lint`, `typecheck` và `@sires/contracts:lint`, `typecheck`, `test`; với `nx.json` của `main`, 7 task này giữ nguyên hash.
+- Kết luận: bản sửa đúng PC-04 A12 và đạt cả ba điều kiện: hash consumer đổi khi thêm schema, hoàn lại thì về như cũ, không đổi gì thì đọc cache (cục bộ 12/12; trên Actions 63/63 và 13/13 ở runner mới). Đóng G19, G18.
+
+### Trạng thái khoảng trống của Lần 4–5
+
+| G | Trạng thái Lần 6 |
+| --- | --- |
+| G5 | Đóng: T3 45442437182, 182 giây, cache của `main` |
+| G6 | Đóng: T5 với 20 lần push `main`, cache nối tiếp (10 lần đầu QC đọc log), hai nhóm push chồng nhau |
+| G7 | Còn mở, MEDIUM: T1, T2 vẫn chạy trên mã CI `develop` cũ; PO cho không chặn |
+| G8 | Đóng phần chính, còn LOW: bảng có job skipped (log `build` T3: 14 job, 5 skipped); `max(…, 0)` ở `ci.yml:392` đúng trên dữ liệu thật qua `gh api`; chưa có lần chạy Actions nào có job skipped với bản sửa, vì PR vào `main` không có job skipped |
+| G9 | Còn mở, MEDIUM: ngoài EC06, các phép thử tay EC01, EC16, EC19, EC21, lint lỗi cố ý (S04), EC20 trên runner, values hỏng (S11), `fmt` lệch (S12) vẫn chưa chạy; chưa có quyết định PO; `report.md` mục 5, 7 không nêu |
+| G10 | Hạ xuống LOW: rủi ro đã qua, các nhánh PR đang mở (#38, #63, #85) đều có `ci-changes.mjs`, ruleset buộc cập nhật nhánh; vẫn chưa ghi lý do giữ checkout `pull_request.head.sha` (`ci.yml:49`, `:204`) |
+| G12 | Hạ xuống LOW: 19/20 lần push `main` đạt ở attempt 1; lần đỏ (#94, `migration.spec.ts`) đã sửa ở #100; test outbox vẫn là việc của luồng platform |
+| G13, G14, G15, G17 | Như Lần 4, LOW |
+| G16 | Còn mở — chờ PO, LOW; đúng YC Lần 10 |
+| GP1 | Đóng: từ #57 không có commit nào của Dev vào `qc-report.md` |
+| GP3 | Đóng cho #91: 8/8 commit có chữ ký hợp lệ (`G`), không có dòng ghi công AI |
+| GP4 | Đóng: PC-04 B1 chuyển PID-00009 sang `toilatrung`; `report.md:6` ghi người làm từ Lần 8 |
+
+### Khoảng trống mới hoặc đổi mức
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G20 | AC06; S02 | partial | LOW | `libs/ts/contracts/scripts/generate.mjs:31`: `spawnSync` không đặt `PYTHONHASHSEED`; QC đo 42 file khác giữa hai lần sinh; chỉ đổi hash `sires-common:test`, không làm sai cache | Luồng contracts đặt `PYTHONHASHSEED=0` trong env của `run()` |
+| G21 | AC06 (task có input đổi chạy lại); EC08 | partial | MEDIUM (Dev ghi LOW) | `libs/ts/contracts/package.json:21`: `test` chạy `check-drift.spec.mjs`, không khai `inputs` nên dùng `default`, `^default` của `targetDefaults`, không có `docs/api-design`; `check-drift.spec.mjs:94-96`, `:112`, `:130`, `:171` sinh và kiểm từ `docs/api-design` thật. QC đo: thêm schema thì hash `@sires/contracts:test` không đổi. PR chỉ đổi hợp đồng mà làm hỏng các test này vẫn xanh nhờ cache của `main`, và `main` giữ kết quả cũ tới khi file trong `libs/ts/contracts` đổi. Job `contracts` (`ci.yml:168-195`) chạy `check-drift` không cache nhưng không chạy các test này | Luồng contracts khai `{workspaceRoot}/docs/api-design/**/*.yaml` vào `inputs` của `test` (file của luồng contracts, ngoài phạm vi sửa của PID này); PO giao trước mốc DEC-59; không chặn merge #91 |
+| G22 | EC08 (`@sires/contracts` và project phụ thuộc chạy lint, typecheck, test, build); S01 | partial | LOW | PR vào `develop` chỉ đổi `docs/api-design`: `ci-changes.mjs` ra `python: false` (`scripts/development/ci-changes.mjs:77`), job Python skipped (`ci.yml:126`). `sires-common:test` dùng mã Python sinh ra qua `dependsOn` ở mức task (`libs/py/sires_common/project.json:29-30`; `tests/test_contracts_import.py:18`), nhưng đồ thị project không có cạnh `sires-common` → `@sires/contracts`. Giảm nhẹ: job `contracts` chạy phần Python của `check-drift` (mypy trên các project Python, giữ kiểu sinh ra). Hiện mọi PR vào `main` chạy toàn bộ nên chưa lộ; lộ từ mốc DEC-59 | Luồng infra: `ci-changes.mjs` bật Python và chọn `sires-common` khi nhóm hợp đồng đổi, hoặc plugin `nx-uv-workspace.cjs` thêm cạnh; PO quyết cùng G15 tại mốc DEC-59 |
+| G23 | Ghi kết quả (spec-execution-skill) | partial | LOW | `report.md:14-15` vẫn ghi “Cache của main và T5 còn chờ sau merge”; `:35`, `:55` ghi 10 lần push `main` (nay 20/20, đã có p95); `:3` ghi “AC01–AC08 đạt” trong khi `:20` ghi AC04, AC05 trên mã `develop` cũ; `:286` ghi 172 giây (API 173); mục 5, 7 (`:59-65`, `:79-81`) không nêu G9, G10, G12 còn mở | Dev cập nhật ở lần ghi sau |
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Bằng chứng |
+| --- | --- | --- | --- |
+| PID-00009-AC01 | Đạt | Actions, cache `main` | T3 45442437182: 182 giây, dưới 10 phút; 4/8 task từ cache `main`. EC11: lúc chạy `develop..main` = 1 vì #95 merge lúc 16:53:35Z, chỉ 6 file trong `docs/`, không file nào là input Nx hay CI; QC chấp nhận, không ảnh hưởng kết luận. Lần không cache tham khảo: 141 giây (#75, mã cũ) |
+| PID-00009-AC02 | Đạt (T6) | Actions | `contract-test` đạt ở mọi lần chạy toàn bộ, gồm 45466599386 trên đầu nhánh |
+| PID-00009-AC03 | Đạt | Actions | T7 (Lần 4), không đổi |
+| PID-00009-AC04 | Đạt trên mã CI `develop` cũ | Actions | T1 45024781831 (G7) |
+| PID-00009-AC05 | Đạt trên mã CI `develop` cũ | Actions | T2 45024785948 (G7) |
+| PID-00009-AC06 | Đạt | Actions, hash Nx, chạy thật | T4; T5 20 lần; G18, G19 kiểm bằng hash; 45465050271 attempt 2: 63/63, 13/13 từ cache trên runner mới; cục bộ 12/12. Còn G21 (MEDIUM, luồng contracts) |
+| PID-00009-AC07 | Đạt | Actions | PR: 45024755723 cancelled (Lần 4); push `main`: hai nhóm chồng nhau ở trên, không lần nào bị hủy |
+| PID-00009-AC08 | Đạt | Actions, `gh api` | Bảng của job `build` có mọi job, kể cả skipped; số giây âm đã sửa và kiểm bằng `gh api --jq` (G8, LOW) |
+
+### Lệch với Self-QC và lời khai
+
+- Số liệu T3, T5, AC07, CI #91 tính lại từ API khớp `report.md` Lần 8–10, trừ 45465050271 attempt 1: 173 giây, report ghi 172.
+- G21: Dev xếp LOW vì job `contracts` chạy `check-drift` không cache. QC xếp MEDIUM, vì job đó không chạy `check-drift.spec.mjs`, nên các test dùng hợp đồng thật vẫn có thể lấy kết quả cũ từ cache.
+- G20: Dev đo 34 file khác, QC đo 42; cùng hiện tượng, số file tùy seed ngẫu nhiên.
+- G19: Dev đếm 12/17 task đổi hash, QC đếm 22/29 trên tập task rộng hơn (thêm `lint`, `build`, `audit`, `testing:build`); cùng kết luận.
+- G22 chưa có trong `self-qc.md`. G9, G10, G12 có trong `self-qc.md` nhưng không có ở mục việc còn lại và cần PO của `report.md` (G23).
+
+### Kết luận về merge
+
+- 0 CRITICAL, 0 HIGH: PO có thể merge #91 và nghiệm thu PID-00009 (H5: AC01–AC08 đạt; AC04, AC05 ở mức mã `develop` cũ theo quyết định G7).
+- Trước merge: nhánh chậm `main` 4 commit (#102, #97, #98, #99), gộp sạch; cập nhật nhánh và chờ CI xanh trên đầu mới (ruleset). Vì `nx.json` đổi nên mọi hash đổi: lần chạy đó và lần push `main` đầu tiên sau merge chạy lại mọi task một lần, khoảng 3 phút như 45465050271 attempt 1 và 45466599386.
+- Sau merge: bảng job của lần push `main` đầu tiên phải in 0 giây cho `tracks` skipped (G8).
+
+### PO cần quyết
+
+1. G9: yêu cầu chạy các phép thử tay còn lại, hay chấp nhận mức kiểm hiện có và ghi lại.
+2. G21, G20: giao luồng contracts, trước mốc DEC-59.
+3. G22 cùng G15: việc của luồng infra tại mốc DEC-59.
+4. G16 (EC15/S11): như trước.
+5. OQ-112 (N10, H5, không thuộc nghiệm thu PID này): nhóm push `main` đã đủ 20 lần, `measure.mjs` in p95 8.45 phút, ngưỡng 10.14 phút; mẫu gồm một lần đỏ (G17). PO quyết có thêm AC hay không, và có tính lần đỏ vào mẫu không.
+
+### Việc còn lại
+
+1. Phiên điều phối: cập nhật #91 theo `main`, chờ CI xanh; PO merge.
+2. Sau merge: kiểm G8 trên lần push `main` đầu tiên; đồng bộ `develop`, chạy lại T1, T2 (G7).
+3. Luồng contracts: G21, G20.
+4. Luồng infra tại mốc DEC-59: G15, G22; khi tiện: ghi lý do G10, G13, G17.
+5. Dev: cập nhật `report.md` (G23) ở lần ghi sau.
+6. PO: G9, G16.
 
 ---
 

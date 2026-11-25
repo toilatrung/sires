@@ -36,14 +36,14 @@ describe('lệnh migrate', () => {
     const first = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...first.io })).toBe(0);
     expect(first.stderr).toEqual([]);
-    expect(first.stdout).toEqual(['planning migrate: áp 2 migration mới, đã ghi sổ 2']);
+    expect(first.stdout).toEqual(['planning migrate: áp 3 migration mới, đã ghi sổ 3']);
     expect(await listTables(pg, database)).toEqual([...EXPECTED_TABLES]);
     const schema = await pg.dumpSchema(database);
 
     // Job migration chạy trước mỗi lần deploy: lần hai không áp gì, không lỗi, schema giữ nguyên (EC01).
     const second = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...second.io })).toBe(0);
-    expect(second.stdout).toEqual(['planning migrate: áp 0 migration mới, đã ghi sổ 2']);
+    expect(second.stdout).toEqual(['planning migrate: áp 0 migration mới, đã ghi sổ 3']);
     expect(await pg.dumpSchema(database)).toBe(schema);
   });
 
@@ -76,7 +76,7 @@ describe('lệnh migrate', () => {
     const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as {
       entries: { tag: string }[];
     };
-    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition']);
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition', '0002_ec09_jsonb_helpers']);
 
     // migration.command của deploy/values.yaml trùng script migrate (cùng điểm vào dist/migrate.js).
     const values = readFileSync(join(APP_ROOT, 'deploy', 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
