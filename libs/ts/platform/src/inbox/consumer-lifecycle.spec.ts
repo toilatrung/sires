@@ -29,7 +29,10 @@ const broker = vi.hoisted(() => {
       this.consumers += 1;
       return { consumerTag: `tag-${this.consumers}` };
     };
+    /** Set by a test to keep cancel() (and so stop()) pending until it resolves. */
+    held?: Promise<void>;
     cancel = async () => {
+      await this.held;
       this.consumers -= 1;
       return {};
     };
@@ -91,14 +94,12 @@ describe('start() ngay sau stop() không await (PC-05 P36)', () => {
     const stopping = subject.stop();
     const second = subject.start();
     await flush();
-    // The second attempt opens only once stop() is done.
-    const opened = broker.attempts.length;
-    broker.attempts.at(-1)!.accept();
+    // stop() cancelled the first attempt (PC-05 P25), then the second one opened.
+    expect(broker.attempts).toHaveLength(2);
+    broker.attempts[1]!.accept();
+    // No-op here (already cancelled); before PC-05 it ended the first attempt after the second.
     broker.attempts[0]!.accept();
-    await Promise.all([first, stopping]);
-    await flush();
-    if (broker.attempts.length > opened) broker.attempts.at(-1)!.accept();
-    await second;
+    await Promise.all([first, stopping, second]);
     await flush();
 
     expect(live()).toHaveLength(1);
@@ -124,8 +125,17 @@ describe('start() ngay sau stop() không await (PC-05 P36)', () => {
     await first;
     expect(subject.isConsuming).toBe(true);
 
+    // stop() stays pending on the consumer cancel until the test releases it.
+    let release!: () => void;
+    broker.attempts[0]!.connection.channel.held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const stopping = subject.stop();
     const second = subject.start();
+    await flush();
+    // start() waits for the stop() in progress: no new attempt yet (consumer.ts start(), PC-05 P36).
+    expect(broker.attempts).toHaveLength(1);
+    release();
     await stopping;
     await flush();
     expect(broker.attempts).toHaveLength(2);

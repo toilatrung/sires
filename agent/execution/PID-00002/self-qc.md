@@ -3,7 +3,7 @@
 **Kết luận:** Đạt (Lần 5, 25/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G8, QC-G9 sửa theo PC-05 P25, P36 ở nhánh `platform/consumer-stop-start`
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 25/11/2026 (Lần 5: `stop()` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36)
+- **Cập nhật:** 25/11/2026 (Lần 5: `stop(; bổ sung test sau QC sires-w3)` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -209,7 +209,7 @@ Thay đổi:
 - `libs/ts/platform/README.md:46`: thay câu "gọi khi lần mở đầu còn chạy thì chờ lần đó xong, tối đa 10 s" bằng hành vi mới.
 - Test mới, viết đỏ trước, đỏ lại khi trả `consumer.ts` về `origin/main`:
   - `inbox.spec.ts:636` (P25): TCP server câm thật.
-  - `consumer-lifecycle.spec.ts:84–160` (P36): amqplib giả, test quyết định khi nào từng lần kết nối xong.
+  - `consumer-lifecycle.spec.ts:87–163` (P36): amqplib giả, test quyết định khi nào từng lần kết nối xong.
 
 ### 1. Lệnh
 
@@ -232,9 +232,9 @@ AC của Lần 1–4 giữ nguyên, xác nhận lại bằng 178/178 test của 
 - `stop()` khi broker nhận TCP mà không trả lời: trả về < 1 s, `start()` đang chờ cũng trả về, không log, không còn timer, không thử lại (`inbox.spec.ts:636`).
 - `stop()` không await khi lần mở đầu còn dở, rồi `start()`:
   - còn đúng một kết nối consume và đó là link của consumer;
-  - mất link thì kết nối lại (`consumer-lifecycle.spec.ts:85`).
-- `stop()` không await khi đang consume, rồi `start()`: kết nối cũ đóng, kết nối mới consume (`:119`).
-- `start()`, `stop()`, `start()`, `stop()` không await: không còn kết nối nào (`:141`).
+  - mất link thì kết nối lại (`consumer-lifecycle.spec.ts:88`).
+- `stop()` không await khi đang consume, rồi `start()`: kết nối cũ đóng, kết nối mới consume (`:120`).
+- `start()`, `stop()`, `start()`, `stop()` không await: không còn kết nối nào (`:151`).
 
 ### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
 
@@ -244,6 +244,26 @@ AC của Lần 1–4 giữ nguyên, xác nhận lại bằng 178/178 test của 
 | QC-G9 | partial | LOW | `stop()` không await rồi `start()` ngay có thể làm consumer kẹt: lần mở cũ thấy `running` true lại, ghi đè link, `stop()` đóng link đó, không kết nối lại | `origin/main` `consumer.ts:200`, `:213`, `:225`; test P36 đỏ | PC-05 P36: `start()` chờ `stop()` đang chạy (`consumer.ts:148–150`, `:177–180`); test P36 xanh |
 
 Không có G mới, không có CRITICAL, HIGH, MEDIUM. `start()` trên mạng chết vẫn chờ tối đa 10 s rồi mới trả về (README ghi rõ; P25 chỉ chốt phần `stop()`). Các điểm còn chờ PO của Lần 1–4 giữ nguyên.
+
+#### Bổ sung sau QC của sires-w3 (25/11/2026)
+
+QC nhánh này ĐẠT, có 1 LOW (G1): không test nào giữ dòng `consumer.ts:149` (`while (this.stopping) await this.stopping;`). Bỏ dòng này đi thì 4 test mới vẫn xanh. Ở `consumer-lifecycle.spec.ts:94–95`, biến `opened` được gán nhưng không có expect nào dùng.
+
+Đã sửa trong `consumer-lifecycle.spec.ts`:
+
+- **FakeChannel:** thêm `held` để `cancel()`, và vì thế cả `stop()`, còn chờ tới khi test cho chạy tiếp.
+- **Test "stop() khi đang consume, start() lại không await":** khi `stop()` còn chờ, assert `broker.attempts` dài 1, tức là `start()` chưa mở lần kết nối mới. Cho `stop()` chạy tiếp thì có lần thứ 2.
+- **Test "stop() khi lần mở đầu còn dở…":** bỏ biến `opened` và nhánh `if`. Thay bằng `expect(broker.attempts).toHaveLength(2)`: lần đầu bị `stop()` hủy, rồi lần thứ hai mở.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| Bỏ dòng `consumer.ts:149`, chạy `npx vitest run src/inbox/consumer-lifecycle.spec.ts` | Đỏ 1/3: `expected [ …, … ] to have a length of 1 but got 2`; đã trả lại dòng |
+| Trả `consumer.ts` về `origin/main`, chạy lại file trên | Đỏ 2/3 (`isConsuming` false; độ dài 2), không treo; đã trả lại bản sửa |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/platform --skip-nx-cache` | Đạt cả bốn: 22 file, 178/178 |
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Sau sửa |
+| --- | --- | --- | --- | --- | --- |
+| QC-w3-G1 | test | LOW | Dòng `consumer.ts:149` không có test giữ; biến `opened` không được assert | Bỏ dòng `:149` thì 4 test vẫn xanh (QC sires-w3) | Đã thêm assert như trên; bỏ `:149` thì test đỏ |
 
 ---
 
