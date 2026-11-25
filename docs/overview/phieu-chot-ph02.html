@@ -1,0 +1,748 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu chốt PH-02 (đề nghị PC-06): các điểm còn mở của PH-02 (lát 1: đăng nhập eTroy OIDC, lệnh ghi chuẩn, realtime) để PO chốt trước khi làm rõ và giao PID PH-02.">
+<title>Phiếu chốt PH-02 | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .ctx{font-size:.88rem;margin:.3rem 0 .5rem}
+.item .ctx ol{margin:.3rem 0;padding-left:1.4rem}
+.item .q{margin:.3rem 0 .6rem;font-weight:600}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="phieu-chot-cuoi-ph01.html">Phiếu chốt cuối PH-01</a> · Phiếu chốt PH-02</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
+<h1>Phiếu chốt PH-02</h1>
+<p class="meta">Số phiếu đề nghị: PC-06 · Lập 25/11/2026 theo yêu cầu PO (“Rà soát các điểm còn mở của PH-02, sau đó xuất ra PC để tôi chốt”) · Phạm vi: 21 PID PH-02 (<a href="../tickets/index.html#pids">PID-00035–PID-00055</a>), <a href="../tickets/sections/02-phases-and-gates.html#ph-02">cổng ra PH-02</a>, điều kiện ngoài · Tổng 17 mục</p>
+<div class="note"><p><strong>Bối cảnh.</strong> PH-02 là lát 1: đăng nhập eTroy OIDC (F-01), lệnh ghi chuẩn (F-02), realtime qua SSE (F-03); cổng ra kiểm trên staging. Cả 21 PID PH-02 đều “Chưa làm rõ” (soạn 05/11/2026). Rà ngày 25/11/2026 thấy ba điểm chặn cổng PH-02 chưa nằm trong phiếu nào: (1) eTroy_OIDC không đưa <code>nonce</code> vào ID token và chỉ có <code>POST /logout</code> cần CSRF của eTroy, nên đăng nhập và đăng xuất với eTroy thật sẽ lỗi (nhóm C); (2) staging đã dời sang máy PO nhưng chưa có nền, người dựng, URL HTTPS, và quy tắc 2.9 cấm kiểm cổng trên máy cá nhân (nhóm B); (3) chưa có môi trường eTroy OIDC thử, client SIRes, tài khoản thử (C3). Câu trả lời ở phiếu này là căn cứ (R-02) để sửa kế hoạch triển khai, kiến trúc, PRD và hồ sơ PID khi làm rõ; phiếu không tự thay đổi tài liệu nào.</p></div>
+<div class="note"><p><strong>Mục của <a href="phieu-chot-cuoi-ph01.html">PC-05</a> mà PH-02 cần</strong> (không lặp lại ở đây): P31 (đóng PH-01, mốc DEC-59); P1–P5 → PID-00036, PID-00037; P2 → PID-00040; P3 → PID-00038 (phụ thuộc C2 của phiếu này); P6, P24, P26, P29 → PID-00035; P19 → ngưỡng CI ở cổng PH-02; P22 → PID-00042; P43 → PID mới của luồng gateway ở PH-02 (Job dọn phiên hết hạn); S-OQ-113, S-K2 → PID-00048; nhóm II Google Scholar → PID-00050.</p></div>
+<div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của người lập phiếu, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="PC-06"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Điền đề xuất cho mục còn trống</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<button type="button" id="b-reset">Xóa phiếu</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="phieu-chot-cuoi-ph01.html">← Phiếu chốt cuối PH-01</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt PH-02. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+const R = {
+ "t_ph01": [
+  "Tickets 2, PH-01",
+  "../tickets/sections/02-phases-and-gates.html#ph-01"
+ ],
+ "t_ph02": [
+  "Tickets 2, PH-02",
+  "../tickets/sections/02-phases-and-gates.html#ph-02"
+ ],
+ "t_29": [
+  "Tickets 2.9",
+  "../tickets/sections/02-phases-and-gates.html#s-2-9"
+ ],
+ "t_41": [
+  "Tickets 4.1",
+  "../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1"
+ ],
+ "t_oq108": [
+  "OQ-108",
+  "../tickets/sections/04-dependencies-risks-and-questions.html#oq-108"
+ ],
+ "t_dlr09": [
+  "DLR-09",
+  "../tickets/sections/04-dependencies-risks-and-questions.html#dlr-09"
+ ],
+ "t_pids": [
+  "Danh sách PID",
+  "../tickets/index.html#pids"
+ ],
+ "board": [
+  "Taskboard (task-registry)",
+  "../../agent/execution/taskboard.html"
+ ],
+ "dec58": [
+  "DEC-58",
+  "sections/20-assumptions-constraints-and-open-questions.html#dec-58"
+ ],
+ "dec59": [
+  "DEC-59",
+  "sections/20-assumptions-constraints-and-open-questions.html#dec-59"
+ ],
+ "asm13": [
+  "ASM-13",
+  "sections/20-assumptions-constraints-and-open-questions.html#asm-13"
+ ],
+ "asm15": [
+  "ASM-15",
+  "sections/20-assumptions-constraints-and-open-questions.html#asm-15"
+ ],
+ "oidc1": [
+  "INT-OIDC-001",
+  "sections/17-integrations-and-external-dependencies.html#req-int-oidc-001"
+ ],
+ "oidc3": [
+  "INT-OIDC-003",
+  "sections/17-integrations-and-external-dependencies.html#req-int-oidc-003"
+ ],
+ "a113": [
+  "Kiến trúc 11.3",
+  "../architecture/sections/11-deployment-and-operations.html#s-11-3"
+ ],
+ "a122": [
+  "Kiến trúc 12.2",
+  "../architecture/sections/12-decisions-risks-and-open-issues.html#s-12-2"
+ ],
+ "etr07": [
+  "ETR-07",
+  "../architecture/sections/12-decisions-risks-and-open-issues.html#etr-07"
+ ],
+ "db4": [
+  "Database 4",
+  "../database/sections/04-identity-gateway-workspace.html"
+ ],
+ "spk02r": [
+  "SPK-02 report.md",
+  "../../agent/execution/PID-00015/report.md"
+ ],
+ "spk02q": [
+  "QC SPK-02",
+  "../../agent/execution/PID-00015/qc-report.md"
+ ],
+ "etroy": [
+  "eTroy_OIDC e5fa331",
+  "https://github.com/toilatrung/eTroy_OIDC/tree/e5fa331"
+ ],
+ "pc04": [
+  "PC-04",
+  "phieu-chot-ph01.html"
+ ],
+ "pc05": [
+  "PC-05",
+  "phieu-chot-cuoi-ph01.html"
+ ],
+ "pc05_p3": [
+  "PC-05 P3",
+  "phieu-chot-cuoi-ph01.html#it-P3"
+ ],
+ "pc05_p31": [
+  "PC-05 P31",
+  "phieu-chot-cuoi-ph01.html#it-P31"
+ ],
+ "pc05_sk2": [
+  "PC-05 S-K2",
+  "phieu-chot-cuoi-ph01.html#it-S-K2"
+ ],
+ "report": [
+  "Báo cáo PH-01",
+  "bao-cao-hoan-tat-ph01.html"
+ ],
+ "p23": [
+  "PID-00023",
+  "../tickets/issues/PID-00023/index.html"
+ ],
+ "p35": [
+  "PID-00035",
+  "../tickets/issues/PID-00035/index.html"
+ ],
+ "p38": [
+  "PID-00038",
+  "../tickets/issues/PID-00038/index.html"
+ ],
+ "p41": [
+  "PID-00041",
+  "../tickets/issues/PID-00041/index.html"
+ ],
+ "p42": [
+  "PID-00042",
+  "../tickets/issues/PID-00042/index.html"
+ ],
+ "p48": [
+  "PID-00048",
+  "../tickets/issues/PID-00048/index.html"
+ ],
+ "p49": [
+  "PID-00049",
+  "../tickets/issues/PID-00049/index.html"
+ ],
+ "p50": [
+  "PID-00050",
+  "../tickets/issues/PID-00050/index.html"
+ ],
+ "p55": [
+  "PID-00055",
+  "../tickets/issues/PID-00055/index.html"
+ ],
+ "p74": [
+  "PID-00074",
+  "../tickets/issues/PID-00074/index.html"
+ ]
+};
+const APPROVE_OPTS = ['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'];
+// rec: index của phương án đề xuất
+const GROUPS = [
+ {
+  "title": "A. Bắt đầu PH-02 và thứ tự làm rõ",
+  "items": [
+   {
+    "id": "A1",
+    "kind": "Quyết định",
+    "refs": [
+     "t_ph01",
+     "dec59",
+     "pc05_p31",
+     "pc04"
+    ],
+    "impact": "Thời điểm giao PID PH-02; nhánh và đích pull request",
+    "ctx": "21 PID PH-02 (PID-00035–PID-00055) đều “Chưa làm rõ”, soạn 05/11/2026; chưa PID nào Sẵn sàng. Cổng ra PH-01 chưa đạt (PC-05 P31). DEC-59: từ khi PO xác nhận cổng ra PH-01, mọi pull request vào develop; ticket PH-02 xong trước mốc thì chờ mốc. Ba Dev hiện không còn PID PH-01 nào đang làm (PC-04 B1 đã chuyển phần còn lại sang toilatrung).",
+    "q": "Làm rõ và giao PID PH-02 từ khi nào?",
+    "opts": [
+     "Ngay sau khi PO chốt phiếu này: làm rõ theo đợt ở A2, giao Dev theo sổ task-registry; Dev làm trên nhánh riêng, mở pull request vào develop sau mốc DEC-59.",
+     "Chờ PO xác nhận cổng ra PH-01 (PC-05 P31) rồi mới làm rõ và giao."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "A2",
+    "kind": "Quyết định",
+    "refs": [
+     "t_pids",
+     "board",
+     "pc05"
+    ],
+    "impact": "Thứ tự chạy spec-clarify-skill; PID chờ mục của PC-05",
+    "ctx": "Dev chỉ chạy spec-execution-skill sau khi PO làm rõ PID bằng spec-clarify-skill. Một số PID PH-02 cần mục PC-05 chưa chốt hoặc PID PH-01 chưa xong. Đề xuất chia ba đợt:",
+    "ctxList": [
+     "Đợt 1, không chờ PC-05: PID-00041 (sau D1), PID-00043, PID-00044, PID-00045, PID-00049 (sau D3) của T1xNTH; PID-00046, PID-00047, PID-00051 của toilatrung; PID-00052, PID-00053, PID-00054 của Vietanhhhhhh2003.",
+     "Đợt 2, chờ mục PC-05 hoặc PID PH-01: PID-00036, PID-00037 (P1–P5, PID-00012, PID-00013); PID-00039, PID-00040 (PID-00014 ở PR #63; P2 cho PID-00040); PID-00042 (P22); PID-00048 (S-OQ-113, S-K2); PID-00050 (nhóm II Google Scholar); PID mới của luồng gateway cho Job dọn phiên hết hạn, nếu PO chọn đề xuất của PC-05 P43.",
+     "Đợt 3, chờ nhóm B, C của phiếu này: PID-00035 (B1–B4; PC-05 P6, P24, P26, P29); PID-00038 (C1–C4; PC-05 P3); PID-00055 (F1, F2; sau khi các PID hội tụ đã có hồ sơ)."
+    ],
+    "q": "Thứ tự làm rõ PID PH-02?",
+    "opts": [
+     "Theo ba đợt trên.",
+     "Làm rõ cả 21 PID một lần, sau khi PC-05 và phiếu này đều chốt.",
+     "Chỉ làm rõ 13 PID hội tụ của cổng PH-02 (PID-00035–PID-00045, PID-00048, PID-00055); 8 PID “Xây với stub” để sang PH-03."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "B. Staging trên máy PO (PC-04 B7)",
+  "note": "PO chọn staging tạm chạy cục bộ trên máy PO (PC-04 B7). Hồ sơ PID-00035, OQ-108, DLR-09, quy tắc 2.9 và kiến trúc 11 vẫn mô tả Home Lab.",
+  "items": [
+   {
+    "id": "B1",
+    "kind": "Quyết định",
+    "refs": [
+     "p35",
+     "t_oq108",
+     "a113",
+     "report"
+    ],
+    "impact": "PID-00035 (congminh1705); Helm chart chung (PID-00010); PID-00112",
+    "ctx": "OQ-108 chọn Kubernetes một node và Argo CD trên Home Lab: runner của GitHub build và đẩy image, Argo CD trong cụm kéo về, nên runner không cần vào mạng nội bộ. Chạy thử cục bộ 25/11/2026 trên máy PO (Docker Engine trong WSL) đã chạy được 12 service cùng PostgreSQL, RabbitMQ, MinIO (báo cáo PH-01 mục 6). DLR-09 ghi 16 GB RAM là sát giới hạn khi chạy đủ 13 service. Cấu hình máy PO chưa được ghi ở tài liệu nào.",
+    "q": "Staging trên máy PO dựng trên nền nào?",
+    "opts": [
+     "Kubernetes một node trong WSL (k3s hoặc k3d), Argo CD và Helm chart chung, giữ thiết kế OQ-108; khi Home Lab sẵn sàng chỉ chuyển cụm. PO ghi cấu hình máy (CPU, RAM, ổ đĩa) ở ghi chú.",
+     "docker compose mở rộng từ infra/local: dựng nhanh hơn, nhưng không kiểm được Helm, Argo CD; chuyển sang Home Lab phải làm lại PID-00035.",
+     "Chờ Home Lab; PH-02 chưa có staging nên cổng PH-02 chưa kiểm được."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "B2",
+    "kind": "Quyết định",
+    "refs": [
+     "p35",
+     "board",
+     "dec58"
+    ],
+    "impact": "Người làm PID-00035; quyền vào máy PO",
+    "ctx": "PID-00035 thuộc luồng infra (congminh1705, DEC-58). Staging nằm trên máy PO nên Dev không vào được máy để dựng cụm, tạo vai trò database theo service hay xem log.",
+    "q": "Ai dựng staging trên máy PO?",
+    "opts": [
+     "congminh1705 viết script dựng cụm chạy lặp lại được (kể cả vai trò database theo database 3.2) và Argo CD Application trong repo, thử trên máy của mình; PO chạy script một lần trên máy PO. Sau đó deploy đi qua Argo CD, Dev không cần vào máy; PO gửi log khi Dev cần.",
+     "PO, hoặc phiên PO giao, làm PID-00035.",
+     "PO cấp cho congminh1705 quyền truy cập từ xa vào máy PO."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "B3",
+    "kind": "Quyết định",
+    "refs": [
+     "t_41",
+     "etr07",
+     "spk02r"
+    ],
+    "impact": "Đăng ký client SIRes ở eTroy (K13); ETR-07; PID-00038, PID-00055",
+    "ctx": "eTroy so redirect_uri và post_logout_redirect_uri khớp từng ký tự (K13 của SPK-02), nên staging cần URL HTTPS cố định trước khi đăng ký client SIRes và gửi ETR-07. OQ-108 để PO cấp URL khi Dev yêu cầu; hiện chưa có URL.",
+    "q": "Staging có URL HTTPS cố định bằng cách nào?",
+    "opts": [
+     "Cloudflare Tunnel với tên miền PO quản lý (ví dụ staging.<miền>); khi chuyển sang Home Lab chỉ chạy lại connector, URL và client eTroy giữ nguyên. PO cấp tên miền trước khi làm rõ PID-00035.",
+     "Tailscale Funnel (tên *.ts.net gắn với máy): không cần tên miền, nhưng đổi máy thì đổi URL và phải đăng ký lại client eTroy.",
+     "Giữ như OQ-108: PO cấp khi Dev yêu cầu."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "B4",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "t_29",
+     "t_ph01",
+     "t_ph02",
+     "t_dlr09",
+     "t_oq108",
+     "a113",
+     "p35"
+    ],
+    "impact": "Tickets 2 (PH-01, PH-02, 2.9), 4.1, DLR-09, OQ-108; kiến trúc 11; PID-00035, PID-00055",
+    "ctx": "Quy tắc 2.9 ghi “Cổng kiểm trên staging, không kiểm trên máy cá nhân”, trong khi staging nay chạy trên máy PO. Đề xuất sửa:",
+    "ctxList": [
+     "2.9: staging trên máy PO được tính cho cổng khi deploy tự động từ develop qua pipeline của PID-00035, truy cập qua URL HTTPS cố định (B3), số đo ghi kèm cấu hình máy; máy cá nhân của Dev không tính.",
+     "DLR-09: thêm rủi ro máy PO tắt hoặc mất mạng thì staging dừng; chỉ kiểm cổng khi máy chạy, lần kiểm hỏng vì máy không tính là đạt.",
+     "Tickets 2 (PH-01, PH-02), 4.1, OQ-108, kiến trúc 11: ghi staging tạm trên máy PO theo B1–B3; Home Lab là nơi chuyển tới sau.",
+     "PID-00035: tiêu đề, phần “Gồm”, bước B1 và thư mục infra/homelab/ theo B1–B3; sổ task-registry và trang ticket dùng cùng một tiêu đề."
+    ],
+    "q": "Duyệt các sửa trên?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "C. eTroy OIDC: đăng nhập, đăng xuất và ASM-13 (PID-00038)",
+  "note": "Nguồn: báo cáo và QC của SPK-02 (PID-00015), đối chiếu lại mã eTroy_OIDC tại commit e5fa331 (17/05/2026), vẫn là commit mới nhất ngày 25/11/2026. Repo eTroy_OIDC thuộc tài khoản GitHub của PO.",
+  "items": [
+   {
+    "id": "C1",
+    "kind": "Quyết định",
+    "refs": [
+     "spk02q",
+     "etroy",
+     "oidc1",
+     "asm13"
+    ],
+    "impact": "Đăng nhập thật (TS-12-07); INT-OIDC-001; PID-00038; kiến trúc 12.5",
+    "ctx": "eTroy nhận và kiểm nonce ở /authorize nhưng không đưa vào ID token: endpoint /token gọi issueIdToken chỉ với audience, scope, user (oidc.service.ts, quanh dòng 1652). INT-OIDC-001 bắt SIRes kiểm nonce; openid-client với expectedNonce từ chối ID token thiếu nonce, nên đăng nhập vào eTroy thật sẽ lỗi. SPK-02 chỉ chạy trên stub có trả nonce.",
+    "q": "Xử lý nonce thế nào?",
+    "opts": [
+     "Sửa eTroy_OIDC: lưu nonce cùng authorization code và đưa vào ID token (OIDC Core: yêu cầu có nonce thì ID token phải có claim nonce). Ghi yêu cầu mới ETR-10 ở kiến trúc 12.5; PO xếp người sửa trước khi PID-00038 nối eTroy thật.",
+     "SIRes bỏ kiểm nonce khi ID token không có, chỉ dựa vào state và PKCE: sửa INT-OIDC-001, ghi DEC mới; kém an toàn hơn chuẩn OIDC."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "C2",
+    "kind": "Quyết định",
+    "refs": [
+     "spk02r",
+     "etroy",
+     "oidc3",
+     "pc05_p3",
+     "etr07"
+    ],
+    "impact": "INT-OIDC-003, DEC-55, ADR-27, ETR-07; PC-05 P3 (TopBar, /auth/logout)",
+    "ctx": "eTroy chỉ có POST /logout (server.ts, dòng 97), cần cookie phiên và CSRF token của eTroy, không có end_session dạng GET, không nhận id_token_hint (K4). Gateway của SIRes không lấy được CSRF của eTroy nên chưa làm được RP-initiated logout: đăng xuất SIRes sẽ không kết thúc phiên eTroy như INT-OIDC-003 và DEC-55 yêu cầu. Phương án đề xuất của PC-05 P3 (/auth/logout trả 303 tới end_session của eTroy) chỉ chạy được nếu ở đây chọn phương án đầu.",
+    "q": "Đăng xuất RP-initiated với eTroy làm thế nào?",
+    "opts": [
+     "Sửa eTroy_OIDC: thêm end_session theo OpenID Connect RP-Initiated Logout 1.0 (GET và POST, id_token_hint, post_logout_redirect_uri đã đăng ký, state), gộp vào ETR-07 phần RP-initiated; gateway gọi thêm /revoke cho refresh token khi đăng xuất (K5).",
+     "SIRes chỉ kết thúc phiên SIRes và thu hồi refresh token qua /revoke; phiên eTroy còn tới khi hết hạn (8 giờ). Sửa INT-OIDC-003, DEC-55; PC-05 P3 chọn lại."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "C3",
+    "kind": "Quyết định",
+    "refs": [
+     "t_41",
+     "etr07",
+     "t_ph02",
+     "asm13"
+    ],
+    "impact": "Cổng PH-02 (TS-12-07, TS-12-01); PID-00038-AC03; kết luận ASM-13",
+    "ctx": "Cổng PH-02 cần đăng nhập, đăng xuất với eTroy thật trên staging và hai tài khoản eTroy thử (tài khoản B không đọc được project của A). Chưa có môi trường thử eTroy OIDC, client SIRes hay tài khoản thử; ETR-07 ghi “Chưa gửi”. Nếu đội eTroy đã có môi trường thử chạy bản có C1, C2 thì phương án thứ hai rẻ hơn.",
+    "q": "Staging PH-02 nối với eTroy OIDC nào?",
+    "opts": [
+     "Chạy eTroy_OIDC (bản đã sửa theo C1, C2) trên cùng máy staging, sau tunnel với tên riêng (ví dụ auth-staging.<miền>); PO đăng ký client SIRes staging và tạo hai tài khoản thử. Tốn thêm RAM của máy PO.",
+     "Dùng môi trường eTroy OIDC dùng chung do đội eTroy vận hành; PO cấp issuer, client SIRes staging và hai tài khoản thử.",
+     "Cổng PH-02 kiểm bằng FakeOidcProvider; nối eTroy thật dời sang PH-08 (PID-00156). ASM-13 mở tới PH-08, trái cổng PH-02 hiện tại."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "C4",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "p38",
+     "spk02r",
+     "spk02q",
+     "a122"
+    ],
+    "impact": "Hồ sơ PID-00038; kiến trúc 12.2; FakeOidcProvider (luồng platform)",
+    "ctx": "Kết quả SPK-02 chưa vào hồ sơ PID-00038 (trang ticket chỉ ghi ETR-07). Đề xuất ghi khi làm rõ PID-00038:",
+    "ctxList": [
+     "Danh sách kiểm lại K1–K14 (report.md mục 3.3): cấu hình tĩnh vì eTroy không có discovery (K1), JWKS ở /jwks (K2), client_secret_basic (K7), hạn token và phiên eTroy 8 giờ (K8), giá trị iss thật (K9), xoay khóa ký (K11), cách nhận biết eTroy không khả dụng (K12).",
+     "Tuần tự hóa refresh theo phiên bằng khóa trên dòng phiên (SELECT … FOR UPDATE): hai refresh đồng thời làm eTroy thu hồi cả family và đăng xuất người dùng (K10).",
+     "G4 (phân loại lỗi mạng), G5 (hạn và dùng một lần của pending login) của QC SPK-02.",
+     "Kiến trúc 12.2, dòng SPK-02: “Đã chạy trên stub 18/11/2026 (PID-00015); ASM-13 còn mở tới PID-00038” (hiện còn ghi “Chưa chạy”).",
+     "Sửa FakeOidcProvider cho giống eTroy (không discovery, refresh trả id_token, logout theo C2) sau khi eTroy sửa theo C1, C2: luồng platform, PID mới hoặc làm cùng PID-00038."
+    ],
+    "q": "Duyệt các sửa trên?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "D. Settings, Provider Connection và Project",
+  "items": [
+   {
+    "id": "D1",
+    "kind": "Quyết định",
+    "refs": [
+     "asm15",
+     "p41",
+     "db4"
+    ],
+    "impact": "PID-00041; VerificationThresholds; hiệu chỉnh ở PH-06",
+    "ctx": "ASM-15: giá trị mặc định của Ngưỡng kiểm chứng được hiệu chỉnh trên bộ dữ liệu nghiệm thu, chỉ có từ PH-06. PID-00041 (PH-02) phải lưu bộ mặc định ngay. Hợp đồng có ba ngưỡng (claimSupport.supported, claimSupport.partiallySupported, citationMismatch.mismatch, từ 0 đến 1) nhưng chưa có giá trị; DDL identity chỉ ghi ví dụ 0,8 / 0,5 / 0,6. Bảng có cột is_default.",
+    "q": "Giá trị mặc định ở PH-02 và cách cập nhật khi hiệu chỉnh?",
+    "opts": [
+     "Mặc định tạm 0,80 / 0,50 / 0,60, ghi “tạm, hiệu chỉnh ở PH-06”. Khi hiệu chỉnh, tài khoản còn isDefault = true theo bộ mới; tài khoản đã tự chỉnh giữ giá trị của mình.",
+     "Cùng giá trị tạm, nhưng mọi tài khoản giữ giá trị lúc tạo; bộ hiệu chỉnh chỉ áp dụng cho tài khoản mới.",
+     "Chưa đặt giá trị; PID-00041 làm phần Ngưỡng kiểm chứng sau PH-06."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "D2",
+    "kind": "Quyết định",
+    "refs": [
+     "p42",
+     "p48",
+     "t_ph02",
+     "pc05_sk2"
+    ],
+    "impact": "Cổng PH-02 (một phần REL-07); PID-00042, PID-00048",
+    "ctx": "Cổng PH-02 có “lưu và kiểm tra Provider Connection”. Chưa có key chính thức Anthropic, Google (PC-04 B8, PC-05 S-K2); key PO đang có là key của proxy tổng hợp, chỉ kênh OpenAI dùng được. Cổng PH-03 đã yêu cầu Agent Run chạy được với cả ba provider.",
+    "q": "Cổng PH-02 kiểm Provider Connection tới mức nào?",
+    "opts": [
+     "Mỗi provider có ca key sai → Invalid kèm lý do; ít nhất một provider Valid bằng key thật (OpenAI, hoặc proxy với base URL nhập ở Settings, không ghi vào repo); key không có trong log, phản hồi, sự kiện. Đủ ba provider Valid kiểm ở cổng PH-03.",
+     "Cả ba provider Valid bằng key chính thức ngay ở cổng PH-02."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "D3",
+    "kind": "Quyết định",
+    "refs": [
+     "p23",
+     "p49",
+     "p74"
+    ],
+    "impact": "PID-00049, PID-00074; cách làm tương tự cho PID-00052, PID-00053",
+    "ctx": "Trigger tg_project_writable của planning chỉ cho ghi plan_version, task khi replica.project_state của project là Active. Consumer project.lifecycle_changed điền bảng này nằm ở PID-00074 (PH-03), trong khi PID-00049 (PH-02) đã ghi Plan Version; QC PID-00023 nêu điểm này, chưa có quyết định. library, research, manuscript cũng có trigger này, consumer ở các PID PH-04–PH-06.",
+    "q": "Consumer project.lifecycle_changed của planning đặt ở đâu?",
+    "opts": [
+     "Đưa vào PID-00049; PID-00074 bỏ phần này. Khi làm rõ PID-00052, PID-00053 áp dụng cùng cách nếu PID đó ghi bảng có trigger.",
+     "Giữ ở PID-00074; PID-00049 test bằng cách chèn replica.project_state bằng vai trò _system; trên staging planning chưa ghi được Plan tới PH-03."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "E. Phân công và hồ sơ",
+  "items": [
+   {
+    "id": "E1",
+    "kind": "Quyết định",
+    "refs": [
+     "board",
+     "dec58",
+     "pc04"
+    ],
+    "impact": "Sổ task-registry; tiến độ cổng PH-02",
+    "ctx": "Theo DEC-58, T1xNTH giữ 10/21 PID PH-02, trong đó 8 PID hội tụ của cổng PH-02 (gateway 3, identity 3, workspace, audit); thêm một PID gateway nếu PO chọn đề xuất của PC-05 P43 (Job dọn phiên hết hạn). congminh1705 giữ 4 PID hội tụ (staging, settings, global, e2e). Vietanhhhhhh2003 giữ 4 PID, đều “Xây với stub”. toilatrung giữ 4 PID (orchestration 2, agent-core, knowledge) cùng việc của PO (làm rõ, QC độc lập, merge). Ngày 24/11/2026 PO đã chuyển PID-00014, PID-00018 của T1xNTH sang toilatrung để kịp đóng PH-01 (PC-04 B1).",
+    "q": "Phân công PID PH-02?",
+    "opts": [
+     "Chuyển PID-00045 (audit) sang Vietanhhhhhh2003 cho PH-02, để T1xNTH tập trung gateway, identity, workspace; luồng audit từ PH-03 giữ theo DEC-58; CODEOWNERS không đổi.",
+     "Giữ theo luồng (DEC-58); PO xem lại tiến độ của T1xNTH sau đợt 1.",
+     "Chuyển cả luồng audit sang Vietanhhhhhh2003 (sửa DEC-58, CODEOWNERS)."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "E2",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "p50",
+     "board",
+     "t_pids"
+    ],
+    "impact": "Sổ task-registry; trang PID-00050; spec của 21 PID",
+    "ctx": "Hồ sơ PH-02 lệch các quyết định sau ngày soạn (05/11/2026):",
+    "ctxList": [
+     "Sổ task-registry ghi PID-00050 là “Scholar trung gian, OpenAlex, Semantic Scholar”; DEC-60 đã bỏ Semantic Scholar và trang ticket đã đổi tiêu đề. Trang PID-00050 còn ghi “chờ OQ-115” dù OQ-115 đã trả lời ở DEC-61.",
+     "Sổ task-registry và trang PID-00035 dùng hai tiêu đề khác nhau (sửa theo B4).",
+     "Spec của 21 PID ghi các PID tiền đề là “Chưa làm”, phần lớn nay đã xong ở PH-01; spec-clarify-skill cập nhật khi làm rõ từng PID."
+    ],
+    "q": "Duyệt sửa sổ task-registry và trang ticket theo trên (PO ghi, cùng lúc làm rõ từng PID)?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "F. Cổng ra PH-02",
+  "items": [
+   {
+    "id": "F1",
+    "kind": "Quyết định",
+    "refs": [
+     "oidc3",
+     "p38",
+     "t_ph02"
+    ],
+    "impact": "Cách kiểm INT-OIDC-003-AC02 ở cổng PH-02; PID-00055",
+    "ctx": "Cổng PH-02 có “phiên hết hạn sau 12 giờ không hoạt động”. Gateway (PR #63) cố định 12 giờ trong câu SQL; test hiện có lùi last_seen_at, idle_expires_at trong database để giả lập, không có biến cấu hình rút ngắn.",
+    "q": "Kiểm hạn 12 giờ trên staging thế nào?",
+    "opts": [
+     "Tạo phiên thật trên staging, lùi idle_expires_at của phiên đó trong database gateway (như test hiện có), kiểm request tiếp theo bị từ chối và web về màn đăng nhập; không sửa mã.",
+     "Chờ đủ 12 giờ trên staging (máy PO chạy liên tục).",
+     "Thêm biến cấu hình rút ngắn hạn, chỉ dùng cho staging."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "F2",
+    "kind": "Duyệt",
+    "refs": [
+     "t_ph02",
+     "p55",
+     "asm13",
+     "pc05_p31"
+    ],
+    "impact": "Cổng ra PH-02; PID-00055",
+    "ctx": "Cổng ra PH-02 (tickets 2) cụ thể hóa thành danh sách PID-00055 kiểm. PH-02 xong khi đạt cả tám điều kiện:",
+    "ctxList": [
+     "Các PID hội tụ (PID-00035–PID-00045, PID-00048) đã merge vào develop, có QC độc lập nghiệm thu được; staging tự deploy theo B1–B3; CI của develop xanh trong ngưỡng OQ-112 (PC-05 P19).",
+     "TS-12-07 trên staging với eTroy thật (C3): đăng nhập; đăng xuất kết thúc cả phiên eTroy (C2).",
+     "Phiên hết hạn sau 12 giờ không hoạt động, kiểm theo F1.",
+     "Tạo, lưu trữ, xóa mềm project; tài khoản B không đọc được project của A (hai tài khoản eTroy thử).",
+     "Provider Connection theo D2; key không xuất hiện trong log, phản hồi hay sự kiện.",
+     "Sự kiện từ outbox tới web qua SSE: ví dụ project vừa lưu trữ đổi trạng thái trên web mà không cần tải lại.",
+     "PID-00038-AC03 đạt; PO ghi kết luận ASM-13 vào PRD 20.2, và đổi nhãn INT-OIDC-004, NFR-AUTH-001 nếu không còn là Assumption.",
+     "PO xác nhận cổng ra PH-02; kết quả ghi vào nhật ký docs_context.md (quy tắc 2.9)."
+    ],
+    "q": "Duyệt danh sách điều kiện đóng PH-02?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ }
+];
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-ph02-v1';
+let state = {head:{}, items:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const refLinks = it => it.refs.map(k => `<a href="${R[k][1]}">${esc(R[k][0])}</a>`).join(' · ');
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ctx = (it.ctx ? `<p>${esc(it.ctx)}</p>` : '') + (it.ctxList ? `<ol>${it.ctxList.map(c => `<li>${esc(c)}</li>`).join('')}</ol>` : '');
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${esc(it.id)}</h3><p class="ref">${esc(it.kind)} · ${refLinks(it)} · Ảnh hưởng: ${esc(it.impact)}</p>
+<div class="ctx">${ctx}</div><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${esc(it.id)}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${esc(it.id)}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  const n = ALL.filter(it => isDone(it.id)).length;
+  document.getElementById('progress').textContent = `Đã chốt ${n}/${ALL.length}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status:'Đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = new Date().toISOString().slice(0, 10);
+  if (!state.head.no) state.head.no = 'PC-06';
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-ph02-${state.head.date || new Date().toISOString().slice(0, 10)}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, done = ALL.filter(it => isDone(it.id)).length;
+  const L = ['# Phiếu chốt PH-02 — SIRes', '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    '- Phạm vi: các điểm còn mở của PH-02, rà ngày 25/11/2026', `- Đã chốt: ${done}/${ALL.length}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id} — ${a.status}`, '', `- Loại: ${it.kind}`, `- Ảnh hưởng: ${it.impact}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-ph02', source:'docs/overview@2026-11-25', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, type:it.kind, impact:it.impact, question:it.q,
+        status:a.status, decision:a.text || null, followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+function confirmGaps() {
+  const left = ALL.length - ALL.filter(it => isDone(it.id)).length;
+  return left === 0 || confirm(`Còn ${left} mục chưa chốt. Các mục này sẽ được xuất với trạng thái “Chưa chốt”. Tiếp tục?`);
+}
+
+document.getElementById('b-md').onclick = () => { if (confirmGaps()) download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8'); };
+document.getElementById('b-json').onclick = () => { if (confirmGaps()) download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8'); };
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  for (const it of ALL) if (!isDone(it.id)) state.items[it.id] = {...(state.items[it.id] || {other:'', note:''}), choice: String(it.rec)};
+  save(); render();
+};
+document.getElementById('b-reset').onclick = () => {
+  if (!confirm('Xóa toàn bộ lựa chọn và ghi chú trên phiếu này?')) return;
+  state = {head:{}, items:{}}; save(); bindHead(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>
