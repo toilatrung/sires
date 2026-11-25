@@ -1,9 +1,9 @@
 # PID-00158 — Self-QC của Dev
 
-**Kết luận:** Đạt — 6/6 AC có test và đạt; 20/20 EC đã giải quyết; tự đối chiếu không còn CRITICAL, HIGH (G1–G3 mức LOW)
+**Kết luận:** Đạt (Lần 2, 24/11/2026) — 6/6 AC đạt; 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G3 đã sửa ở PR #86; QC-G1, QC-G2 chờ PO ghi vào hồ sơ
 
 - **Ticket:** [PID-00158](../../../docs/tickets/issues/PID-00158/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 2: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -94,6 +94,50 @@ Chạy 21/11/2026 ở chế độ Dev tự QC, giao một subagent đọc độc
 | G1 | unrequested | LOW | Hằng số, kiểu export thêm ngoài bảng 4.2 (TS `STATE_MACHINE_ACTORS`, `MACHINE_NAME_PATTERN`, `STATEMENT_BREAKPOINT`, `STATE_MACHINES_EXPORT`; Python `STATE_MACHINE_ACTORS`, `MACHINE_NAME_PATTERN`, `STATEMENT_BREAKPOINT`, `STATE_MACHINES_ATTR`, `Actor`): đã export thì phải giữ tương thích (1.4.5) | `libs/ts/platform/src/state-machine/index.ts`; `libs/py/sires_common/src/sires_common/state_machine.py` (`__all__`) | Giữ; lý do ghi `implement.md` mục 3 |
 | G2 | unrequested | LOW | Từ chối giá trị có surrogate lẻ, ngoài danh sách ca sai của spec 4.7 | `define.ts` (`LONE_SURROGATE`), `state_machine.py` (`_SURROGATE`); ca “trạng thái có surrogate lẻ” ở hai bộ test | Giữ (không có nó Python lỗi khi ghi UTF-8, PostgreSQL từ chối); PO xác nhận — `report.md` mục 6 |
 | G3 | partial | LOW | PR chạm `pnpm-lock.yaml` (luồng infra) và `agent/execution/`: `check-tracks` cảnh báo 2 luồng | `check-tracks.mjs --stdin` | Không đổi: lock file đổi theo `pnpm install` đúng S03 (“không sửa tay”), chỉ thêm 3 dòng link `@sires/testing`; CI chạy `check-tracks` không `--strict` |
+
+## Lần 2 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 2 ở commit `e1ff995` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+Mã của PID này (`libs/ts/platform/src/state-machine/`, `libs/ts/platform/bin/`, `state_machine.py`, `tests/test_state_machine*.py`, hai README) trên `develop` trùng commit đã rà ở Lần 1 của QC (`git diff b5d859c c640182`, `git diff c640182 083795b` rỗng). Lần 1 của QC chạy trên Windows; lần này chạy lại trên Linux. Môi trường thêm uv 0.13.8, Python 3.12.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt; sau lệnh `libs/ts/platform/bin/sires-state-transition-sql.mjs` đổi mode (QC-G3) |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63 |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169 |
+| `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip |
+| `pnpm nx run sires-common:test --skip-nx-cache` | Đạt: 132 passed, 2 warnings (không còn lỗi MAX_PATH của Windows) |
+| `pnpm nx run-many -t lint typecheck -p sires-common @sires/platform --skip-nx-cache` | Đạt |
+| `node libs/ts/platform/dist/state-machine/cli.js …/testdata/state-machines.mjs \| cmp - …/testdata/golden.txt` | Trùng |
+| `pnpm nx graph --file=…` | Có cạnh `agent-core`, `knowledge` → `sires-common` |
+| `git checkout` file bin, `pnpm install --frozen-lockfile --offline`, `git status` | Tái hiện QC-G3: `old mode 100644 / new mode 100755`; đã khôi phục mode |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | Sạch |
+| `check-tracks.mjs`, fuzz TS/Python | Không chạy: mã đã merge và không đổi; Lần 1 của QC đã chạy fuzz trên đúng mã này |
+
+### 2. AC và edge case
+
+| AC | Kết quả |
+| --- | --- |
+| PID-00158-AC01–AC03, AC05 (phần đơn vị) | Đạt: `check.spec.ts`, `define.spec.ts`, `sql.spec.ts`; `test_state_machine.py` |
+| PID-00158-AC04, AC05 (database) | Đạt: `ddl.pg.spec.ts`; `test_state_machine_pg.py` (PostgreSQL 16 thật) |
+| PID-00158-AC06 | Đạt: `cli.spec.ts`; `test_state_machine_cli.py`; CLI TS in đúng `golden.txt` |
+
+Đầu ra helper trùng `0001_state_transition.sql` của workspace (PID-00017) và planning (PID-00023). Bảng edge case mục 3 giữ nguyên.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G1 | unrequested | LOW | Hằng số, kiểu export thêm ngoài bảng 4.2; đã merge nên là API phải giữ tương thích (1.4.5) (trùng G1 mục 5) | `libs/ts/platform/src/state-machine/index.ts:8–31`; `state_machine.py` `__all__` | Chờ PO bổ sung bảng 4.2; không sửa mã |
+| QC-G2 | unrequested | LOW | Từ chối surrogate lẻ, ngoài danh sách ca sai của spec 4.7, AC02 (trùng G2 mục 5) | `define.ts:53`, `:89–91`; `state_machine.py:97`, `:116–117` | Chờ PO thêm ca vào spec 4.7, AC02; không sửa mã |
+| QC-G3 | partial | LOW | File bin có shebang, khai ở `bin` nhưng git ghi mode `100644`: pnpm chmod 755 nên cây làm việc trên Linux bẩn sau `pnpm install` (AC06, O3, S04) | `libs/ts/platform/bin/sires-state-transition-sql.mjs:1`; `git ls-files -s` → `100644` | Đã sửa ở PR [#86](https://github.com/toilatrung/sires/pull/86) (`4578236`): `git ls-files -s` trên `main` → `100755` |
+
+Không có CRITICAL, HIGH, `contradicts`. Đề xuất “CI không kéo service Python khi `sires-common` đổi” của Lần 1 đã xử lý ở nguồn (đồ thị Nx có cạnh). Đề xuất timeout cho `telemetry.spec.ts` (cùng nhóm QC-G3 của PID-00017, QC-G1 của PID-00023): PO chốt quy ước chung ở PC-04 A6 (`testTimeout` 60 s, `hookTimeout` 180 s, khai ở `@sires/testing`); luồng platform đang áp cho project của mình, chưa vào `main`.
 
 ---
 

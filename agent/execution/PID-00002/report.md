@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36)
-- **Cập nhật:** 22/11/2026 (Lần 3: sửa G4 của QC độc lập Lần 2)
+- **Nhánh:** `platform/ts-outbox-inbox` (đã commit, đã push) · **PR:** [#36](https://github.com/toilatrung/sires/pull/36) · đã merge, sửa thêm ở [#70](https://github.com/toilatrung/sires/pull/70)); sửa sau rà 24/11: [#86](https://github.com/toilatrung/sires/pull/86)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 4, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
