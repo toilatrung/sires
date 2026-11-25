@@ -158,6 +158,10 @@ CREATE TRIGGER account_state BEFORE UPDATE OF status ON app.account
   FOR EACH ROW EXECUTE FUNCTION app.tg_state_transition('account');
 
 SELECT app.enable_tenant_rls();
+-- DBD-14 (PO 24/11/2026, đóng DBQ-10): app.find_account_by_identity là SECURITY DEFINER, chạy bằng owner trước khi có
+-- tenant context; owner không BYPASSRLS và bảng FORCE RLS, nên owner đọc app.account qua policy riêng, chỉ đọc.
+-- Ứng dụng không kết nối bằng owner và không cấp owner cho vai trò khác (3.2).
+CREATE POLICY owner_lookup ON app.account FOR SELECT TO sires_identity_owner USING (true);
 SELECT app.grant_standard('identity', ARRAY['provider_connection','provider_secret','agent_model_assignment']);
 -- provider_secret: _app chỉ INSERT/DELETE (lưu key mới, xóa khi xóa connection); đọc ciphertext qua _system
 -- cho API nội bộ của agent-core, knowledge (10.3). Không vai trò nào có quyền UPDATE.
