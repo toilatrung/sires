@@ -1,10 +1,10 @@
 # PID-00016 — Báo cáo thực thi
 
-**Trạng thái:** Xong — chờ QC
+**Trạng thái:** Xong — chờ QC (Lần 3, 25/11/2026: PR #107 đã merge; QC độc lập Lần 1 “có thể nghiệm thu”, còn G1, G2 LOW chờ PC-05 P40)
 
 - **Ticket:** [PID-00016](../../../docs/tickets/issues/PID-00016/index.html) · **Luồng:** `identity` · **Giai đoạn:** PH-01
-- **Nhánh:** `identity/pid-00016-migration-kms-dbd14` (từ `origin/main` `a367f0b`; đã commit, chưa push) · **PR:** chưa mở. Nhánh cũ `identity/pid-00016-migration-kms` không dùng nữa
-- **Cập nhật:** 25/11/2026 (Lần 2)
+- **Nhánh:** `identity/pid-00016-migration-kms-dbd14` (từ `origin/main` `a367f0b`) · **PR:** #107, đã merge 25/11/2026 vào `main` (`a53e3c9`). Nhánh cũ `identity/pid-00016-migration-kms` không dùng nữa. Lần 3 (chỉ sửa hồ sơ): nhánh `identity/pid-00016-report`
+- **Cập nhật:** 25/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -52,7 +52,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
   3. `pnpm-lock.yaml` (`check-tracks` tính là `repo`) đổi vì thêm drizzle-orm, pg, drizzle-kit, @types/pg bằng `catalog:` — quy tắc 1.4.7.
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có. PID-00014 (gateway, PR #63) cập nhật migration gateway theo `gateway.sql` mới sau khi PR này vào `main` (PC-04 B3).
-- **Bước tiếp theo:** Dev mở PR khi được yêu cầu (vào `main`, cổng PH-01 chưa đạt); QC độc lập `spec-converge-skill PID-00016`. PID chờ PID này: PID-00041, PID-00042, PID-00043.
+- **Bước tiếp theo:** PR #107 đã merge (`a53e3c9`); QC độc lập Lần 1 ([qc-report.md](qc-report.md)): có thể nghiệm thu, 0 CRITICAL/HIGH/MEDIUM. Còn G1 (test EC07 có owner, thiếu vai trò khác), G2 (cả `migration.spec.ts` chạy bằng migrator) LOW: chờ PO chốt PC-05 P40 (đề xuất làm cùng PID-00159). Quyền xóa, thay `app.provider_secret` (mục 6 điểm 2): chờ PO chốt PC-05 P22 (đề xuất mở DBQ-13 trước PID-00042). PID chờ PID này: PID-00041, PID-00042, PID-00043.
 - **Tài liệu đi kèm:** không có.
 
 ## Lần 2 — 25/11/2026
@@ -62,6 +62,13 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 - **Đã làm:** đổi tên policy `definer_lookup` → `owner_lookup` đúng DBD-14; sửa `identity.sql`, `gateway.sql` (YC-01); gộp policy vào `0000_init.sql` và chép lại `00-common.sql` sau EC09 (#94), bỏ migration `0002_dbq10_definer_lookup` (PID-00016 chưa merge nên chưa database nào áp, như các service khác chép `00-common.sql` mới vào migration đầu); bỏ `PENDING_REFERENCE_PATCHES`, phép so `pg_dump` khớp hoàn toàn với DDL tham chiếu; `enableMigratorLogin` thay `enableOwnerLogin` (vai trò `sires_identity_migrator` đúng database 3.2); `vitest.config.ts` (YC-02); dump qua base64 (YC-03); README.
 - **Kết quả:** 3 file, 20/20 test của `@sires/identity`; `nx affected` 20 project đạt. Đột biến bỏ policy khỏi `0000_init.sql`: 2 test đỏ (so schema, tra cứu bằng vai trò thật).
 - **Ảnh hưởng ngoài luồng:** `gateway.sql` đổi; trên `main` `apps/gateway` chưa có migration hay test so schema nên không có test nào lệch; `sample-service` (`ddl-pg16.spec.ts` chạy mọi file DDL) đạt.
+
+## Lần 3 — 25/11/2026
+
+- **Lý do:** QC độc lập Lần 1 (qc-report.md, G3 LOW): `report.md` còn ghi “chưa push · PR: chưa mở” sau khi PR #107 đã mở và merge.
+- **Nhánh:** `identity/pid-00016-report` từ `origin/main` `c9e745b`.
+- **Đã làm:** sửa dòng Trạng thái, Nhánh/PR (#107 merge 25/11/2026, `a53e3c9`), Cập nhật, Bước tiếp theo (G1, G2 chờ PC-05 P40; `provider_secret` chờ PC-05 P22); thêm mục Lần 3 vào `self-qc.md` (PC-05 P37, đề xuất). Không sửa mã, `qc-report.md`, `docs/`.
+- **Kết quả:** `check-pid.mjs PID-00016 --result` đủ; chi tiết lệnh ở [self-qc.md](self-qc.md) Lần 3.
 
 ---
 
