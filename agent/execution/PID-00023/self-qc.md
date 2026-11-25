@@ -1,9 +1,9 @@
 # PID-00023 — Self-QC của Dev
 
-**Kết luận:** Đạt
+**Kết luận:** Đạt (Lần 2, 24/11/2026) — 0 CRITICAL, 0 HIGH; QC-G1 (MEDIUM) đã sửa ở PR #88; QC-G2–G6 (LOW) còn mở
 
 - **Ticket:** [PID-00023](../../../docs/tickets/issues/PID-00023/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 2: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -90,6 +90,52 @@ Chạy trên Linux, Docker cho Testcontainers (PostgreSQL 16 + pgvector), ngày 
 | G2 | partial | LOW | S07: chưa chạy migration trên PostgreSQL của `pnpm local:up` | Spec S07 bước 5 | Chờ PID-00159 (compose tạo vai trò, H5) |
 | G3 | partial | LOW | `check-charts.mjs` không chạy được trên máy Dev (thiếu `helm`) | Mục 1 | CI chạy |
 | G4 | partial | LOW | Test chạy migration bằng superuser, không bằng vai trò thành viên của `sires_planning_owner` như Job thật | `database.testkit.ts` | Như PID-00019; đối chiếu khi có môi trường staging (DBQ-01) |
+
+## Lần 2 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 2 ở commit `983d26b` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+`git diff dc0710b 083795b -- apps/planning` rỗng: mã planning trên `develop` trùng commit đã rà ở Lần 1 của QC. Môi trường thêm uv 0.13.8, Python 3.12; load average 2–4.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/planning --skip-nx-cache --parallel=1` | Đạt cả bốn; test 6 file, 39/39, 13,3 s |
+| `pnpm exec vitest run src/migrate.spec.ts src/db/state-transition.spec.ts --reporter=verbose` (trong `apps/planning`) | 8/8 đạt; `plan_version` 1035 ms, `lệnh migrate trên database rỗng` 577 ms |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63 |
+| `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip |
+| `pnpm exec sires-state-transition-sql dist/task-state/index.js` | Trùng `0001_state_transition.sql` (bỏ phần giấy phép) |
+| `grep "SECURITY DEFINER"` trên `apps/planning/migrations/*.sql`, `planning.sql` | Không có kết quả: không cùng dạng DBQ-10 |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00023 --result` | “KẾT QUẢ ĐỦ (0 cảnh báo)” |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check` | Sạch |
+| `check-tracks.mjs`, `check-charts.mjs`, `docker build` | Không chạy: mã đã merge; không dựng image |
+
+### 2. AC và edge case
+
+| AC | Kết quả |
+| --- | --- |
+| PID-00023-AC01, TASK-STATE-001-AC01, TASK-STATE-001-AC04 | Đạt: `src/task-state/task-state.spec.ts` trong 39/39 |
+| PID-00023-AC02 | Đạt: `src/db/migration.spec.ts › schema khớp DDL tham chiếu`; dựng bằng superuser (QC-G2) |
+| DATA-STATE-001-AC01, DATA-STATE-001-AC02, NFR-MAINT-003-AC01 (Task, PlanVersion) | Đạt: `src/db/state-transition.spec.ts`, `src/db/ddl-behaviour.spec.ts` |
+
+Bảng edge case mục 3 giữ nguyên. Không có edge case mới.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G1 | partial | MEDIUM | Test `plan_version` mở khoảng 60 kết nối; test và hook dùng database không đặt timeout (mặc định 5000/10000 ms); 24/11 không tái hiện | `apps/planning/src/db/state-transition.spec.ts:116`; `src/migrate.spec.ts:31`, `:35` | Đã sửa ở PR [#88](https://github.com/toilatrung/sires/pull/88) (`10ee7a6`): gom kết nối ca `plan_version`; `apps/planning/vitest.config.ts:12–13` `testTimeout: 60_000`, `hookTimeout: 180_000` (PC-04 A6) |
+| QC-G2 | partial | LOW | Không có `sires_planning_migrator`; migration trong test chạy bằng superuser (trùng G4 mục 5) | `apps/planning/src/db/database.testkit.ts:35–40` | Còn mở; cùng gốc QC-G1 của PID-00017 |
+| QC-G3 | partial | LOW | README chưa nêu `sires_planning_migrator` và DSN mẫu | `apps/planning/README.md:51–55` | Còn mở, chờ PID-00159 |
+| QC-G4 | partial | LOW | EC25 chưa dựng image thật (trùng G1 mục 5) | `apps/planning/src/migrate.spec.ts:59–84` | Còn mở |
+| QC-G5 | partial | LOW | Chưa chạy migration trên `pnpm local:up` (trùng G2 mục 5) | `report.md` mục 4 | Còn mở, chờ PID-00159 |
+| QC-G6 | partial | LOW | Dữ liệu test dùng reasonCode ngoài PRD 18.2 | `apps/planning/src/task-state/task-state.spec.ts:183` (`'missing_evidence'`), `:185` (`'blocked_input'`) | Còn mở |
+
+Không có G mới, không có CRITICAL, HIGH, `contradicts`.
 
 ---
 

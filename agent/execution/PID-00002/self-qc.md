@@ -1,9 +1,9 @@
 # PID-00002 — Self-QC của Dev
 
-**Kết luận:** Đạt (Lần 2, 21/11/2026) — đã sửa G1, G2, G3 của QC độc lập Lần 1; tự đối chiếu không còn CRITICAL, HIGH
+**Kết luận:** Đạt (Lần 4, 24/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G6 đã sửa ở PR #86; QC-G5 PO chốt (PC-04 A2), đang sửa; QC-G7 cập nhật ở lần này
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 4: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -160,6 +160,38 @@ Sửa G4 của QC độc lập Lần 2.
 | `pnpm nx run-many -t lint typecheck test build -p @sires/platform --skip-nx-cache` | Đạt cả bốn; 105/105 test |
 
 G5 (LOW) giữ nguyên, chờ PO.
+
+## Lần 4 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 4 ở commit `1f616db` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+Mã của PID-00002 trên `develop` chỉ có `1da4b16` (#36) và `79075b4` (#70), không đổi so với Lần 3; lần này kiểm phần còn mở và chạy lại test của project.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt; cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169, 33,6 s (PostgreSQL 16 + pgvector, RabbitMQ 4 qua Testcontainers) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+
+### 2. AC và edge case
+
+Bảng mục 2, 3 của Lần 1–3 giữ nguyên: AC01…AC06 và các AC requirement phần thư viện đạt, xác nhận lại bằng 169/169 test của `@sires/platform` (`outbox.spec.ts`, `inbox.spec.ts`, `idempotency.spec.ts`, `audit.spec.ts`, `jobs.spec.ts`). Không có edge case mới.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G5 | partial | LOW | `start()` lần đầu lỗi thì ném lỗi, không vào vòng kết nối lại (kiến trúc 11.6) | `libs/ts/platform/src/inbox/consumer.ts:134–147`; README `libs/ts/platform/README.md:46` chỉ ghi hành vi | PO chốt (PC-04 A2): `start()` không chặn khởi động, lần kết nối đầu thất bại thì vào vòng thử lại có backoff như khi mất kết nối, `stop()` hủy lần thử đang chờ. Đang sửa ở luồng platform, chưa vào `main` (`consumer.ts:138` vẫn như cũ) |
+| QC-G6 | partial | LOW | `onOutcome` async bị từ chối vẫn sinh unhandled rejection | `consumer.ts:71`, `:263–268` (chỉ `try/catch` lời gọi đồng bộ) | Đã sửa ở PR [#86](https://github.com/toilatrung/sires/pull/86) (`4578236`): `consumer.ts:267–275` bắt cả promise bị từ chối, log `warn`; test `inbox.spec.ts › onOutcome async bị từ chối không gây unhandled rejection (QC PID-00002 Lần 3 G6)` |
+| QC-G7 | partial | LOW | Đầu `report.md`, `self-qc.md` chưa cập nhật sau Lần 3 và sau merge | `report.md:3`, `:6`; `self-qc.md:3`, `:6`, `:153` | Sửa ở lần này: kết luận, ngày cập nhật đầu `self-qc.md` và mục này; `report.md` dòng PR (#36, #70, #86), ngày cập nhật. Trạng thái giữ `Xong — chờ QC` tới khi PO QC độc lập và nghiệm thu |
+
+Không có G mới, không có CRITICAL, HIGH, MEDIUM. Các điểm của Lần 1–3 còn chờ PO giữ nguyên (`request_hash` slice S03, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`/`correlation_id`, `uuid7()` Python của PID-00005).
 
 ---
 
