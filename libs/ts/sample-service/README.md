@@ -24,10 +24,12 @@ transaction. Trigger database tăng `row_version`; cả hai envelope mang phiên
 `createSampleConsumer(systemDb, amqpUrl)` nhận kết nối `sires_sample_system`; inbox khử trùng
 theo tên consumer cố định `sample-service` và event id, cùng transaction với tăng bộ đếm.
 
-Đây là mẫu cho các luồng chép theo: dùng identity có sẵn `planning` và envelope `task.activated`
-để minh họa, không tạo ServiceName hay hợp đồng mới. `app.sample_record` và route
-`GET /internal/sample/ready` chỉ thuộc mẫu. Khi chép vào service thật, dùng đúng identity,
-schema và payload từ hợp đồng của service đó.
+Đây là mẫu cho các luồng chép theo. Sự kiện có loại riêng của mẫu `sample_record.activated`
+(`SAMPLE_EVENT_TYPE`, data `{ sampleRecordId }`), không nằm trong `docs/api-design`: theo spec 2.3, mẫu
+không dùng hợp đồng hay bảng của service thật (QC PID-00006 G2, PO chốt 24/11/2026). Danh tính `planning`
+chỉ mượn vì `producer` và service-auth chỉ nhận `ServiceName`; mẫu không deploy và không tạo ServiceName
+mới. `app.sample_record`, route `GET /internal/sample/ready` và loại sự kiện chỉ thuộc mẫu. Khi chép vào
+service thật, dùng đúng identity, loại sự kiện, schema và payload từ hợp đồng của service đó.
 
 Route gắn `@UseGuards(ServiceAuthGuard)` và `@InternalCallers('workspace')`; module nhập
 `ServiceAuthModule.forRoot(auth)`. `ServiceTokenClient.authorization('planning', { component })`

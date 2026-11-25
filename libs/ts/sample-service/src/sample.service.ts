@@ -10,10 +10,12 @@ import {
 } from '@sires/platform';
 import { sampleRecord } from './schema';
 
-// Demonstration uses the existing planning identity and task.activated envelope, without deploying a new service
-// or extending ServiceName/contracts. The table and endpoint belong only to this sample.
+// The sample has its own event type, outside docs/api-design (spec 2.3: no contract or table of a real service; QC
+// PID-00006 G2, PO 24/11/2026). `planning` is borrowed only because `producer` and service-auth accept a ServiceName
+// alone; the sample is not deployed. The table, endpoint and event type belong only to this sample.
 export const SAMPLE_SERVICE_IDENTITY = 'planning' as const;
 export const SAMPLE_CONSUMER = 'sample-service';
+export const SAMPLE_EVENT_TYPE = 'sample_record.activated';
 
 @Injectable()
 export class SampleService {
@@ -26,12 +28,12 @@ export class SampleService {
       if (!record) throw new Error('Không thấy bản ghi mẫu trong tài khoản');
       const actor = { type: 'system', component: 'sample-service' } as const;
       await writeEvent(tx, {
-        producer: SAMPLE_SERVICE_IDENTITY, type: 'task.activated', accountId, actor,
+        producer: SAMPLE_SERVICE_IDENTITY, type: SAMPLE_EVENT_TYPE, accountId, actor,
         aggregate: { type: 'sample_record', id, version: record.rowVersion },
-        data: { taskId: id },
+        data: { sampleRecordId: id },
       });
       await emitAudit(tx, {
-        producer: SAMPLE_SERVICE_IDENTITY, accountId, actor, action: 'task.activated',
+        producer: SAMPLE_SERVICE_IDENTITY, accountId, actor, action: SAMPLE_EVENT_TYPE,
         objectType: 'sample_record', objectId: id, objectVersion: record.rowVersion,
         fromState: 'Created', toState: 'Active',
       });
@@ -44,7 +46,7 @@ export function createSampleConsumer(db: TenantDatabase, amqpUrl: string): Event
   return new EventConsumer({
     service: SAMPLE_CONSUMER, db, amqpUrl,
     handlers: [{
-      routingKeys: ['task.activated'],
+      routingKeys: [SAMPLE_EVENT_TYPE],
       handle: async (event, tx) => {
         const updated = await tx.update(sampleRecord)
           .set({ effects: sql`${sampleRecord.effects} + 1` })

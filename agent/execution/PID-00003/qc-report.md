@@ -1,6 +1,6 @@
 # PID-00003 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 2, 18/11/2026). G1–G5 của Lần 1 đã đóng, G6 PO giữ; G7–G9 là LOW, không chặn merge PR #34.
+**Kết luận mới nhất:** Merge được PR #106 (phần G8) — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 1 LOW (Lần 3, 25/11/2026). G8 đóng theo PC-04 A3: body 403 `caller_not_allowed` của bản TS không còn `detail`, log `warn` giữ nguyên, khớp bản Python và hợp đồng (có test, đột biến thêm lại `detail` thì đỏ); G7, G9 đã sửa ở PR #86. Còn G11 (chưa có self-QC cho lượt G8), LOW
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -186,6 +186,73 @@ Không có việc bắt buộc trước merge. Việc LOW, Dev làm cùng PR nà
 - Hồ sơ `docs/tickets/issues/PID-00003/` vẫn chưa ghi các quyết định 18/11/2026 (G2 body 401, G3 title, G4, G5, G6); PO ghi khi tiện (R-01–R-07), kèm các việc đã giao cho PID-00005, PID-00008, PID-00065, PID-00007, PID-00020.
 - Kiểm khởi động không có trong hồ sơ, PO cân nhắc cho PID-00035 hoặc PID sau: (1) khóa riêng không khớp mục `kid = <service>` của JWKS hiện vẫn khởi động bình thường và mọi lời gọi đi bị bên nhận từ chối `bad_signature` (QC thử); (2) JWKS chứa JWK riêng (có `d`) được nhận lặng lẽ, phần `d` bị bỏ — an toàn khi kiểm nhưng che lỗi cấu hình làm lộ khóa riêng vào cấu hình dùng chung.
 - PID-00005: `tests/test_messaging.py:215` chập chờn (1/4 lần tại chỗ) vì `_outbox_rows` sắp `ORDER BY created_at, id` (`:113`) mà `app.outbox.created_at` là `DEFAULT now()` (`docs/database/ddl/00-common.sql:186`, thời điểm bắt đầu giao dịch), nên hai dòng ghi trong cùng giao dịch trùng `created_at` và thứ tự rơi vào `id`. Đề xuất sửa ở lượt sau của PID-00005 để CI không đỏ ngẫu nhiên.
+
+## Lần 3 — 25/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao (không mang kết luận của Dev, không sửa mã). Mã nguồn: PR #106 (tác giả `T1xNTH`), nhánh `platform/qc-g5-g8`, commit `faef12ad61fcbc34ae1f86d21993ed746215a980`; base `origin/main` `a367f0b`. Phần G8 là commit `534c4fb` (có chữ ký, `verified: true`): `libs/ts/platform/src/service-auth/guard.ts` (+3/−4), `guard.spec.ts` (+7/−1). Hai commit còn lại của PR là G5 của PID-00002 (ghi ở `PID-00002/qc-report.md` Lần 4). Lúc QC, `main` đã có thêm `74f25d1` (#105, chỉ `report.md`, `self-qc.md`); `git merge-tree` không xung đột.
+
+Căn cứ: PC-04 A3 (`docs/overview/phieu-chot-ph01.html` trên `main`, PO chọn phương án đề xuất): “Bỏ `detail` khỏi body 403 của bản TS, giữ log `warn` (khớp bản Python và hợp đồng).” Hồ sơ `docs/tickets/issues/PID-00003/` chưa ghi A3 (PC-04 ghi “chưa làm”).
+
+Phạm vi đã đọc: `service-auth/guard.ts` (toàn bộ), `guard.spec.ts`, `token.ts:24–29`, `keys.ts:60–80`, `:180–200`; `docs/api-design/internal/responses.yaml:20–31` (`CallerNotAllowed`), `components/schemas/common.yaml` (`Problem`); `libs/py/sires_common/src/sires_common/service_auth.py:59–62`; chỗ khác trả `caller_not_allowed` trong repo (chỉ guard này; `apps/workspace/src/auth/service-auth.ts` gọi lại `ServiceAuthGuard`, test `service-auth.spec.ts:74` chỉ kiểm `code`); Lần 2 của file này; `self-qc.md` Lần 3 trên `main` (#105); mô tả PR #106.
+
+Lưu ý đánh số: `self-qc.md` Lần 3 có “QC-G10” (trạng thái `report.md`) chép từ bản rà PR #85 mà PO không nhận làm QC độc lập (PC-04 A7). Để không dùng lại mã, khoảng trống mới của file này bắt đầu từ G11.
+
+### Kiểm các G của Lần 2
+
+| G Lần 2 | Mức | Kết luận Lần 3 | Bằng chứng |
+| --- | --- | --- | --- |
+| G7 | LOW | Đóng (sửa ở PR #86, có trên `main`) | `token.ts:26–29`: “Logged at `warn` only, never returned: the `401` body is the same for every reason” |
+| G8 | LOW | Đóng theo PC-04 A3 | `guard.ts:80–86`: `ProblemException('caller_not_allowed', { title })`, không còn `detail`; log `warn` `{ caller, declared }` “service không có trong x-callers” giữ ở `:83`. QC ghi body thật của ca ngoài `x-callers` (sửa tạm test để ghi ra file, đã trả lại): `{type, title, status, code, correlationId}` — đúng các trường của ví dụ `responses.yaml:27–31` (cộng `correlationId` như body 401 ở Lần 2), không nêu tên service gọi; bản Python cũng không có `detail` (`service_auth.py:59–62`). Test `guard.spec.ts:117–125` (không `detail`, body không chứa `library`, log có dòng `warn`), `:141–149` (route chưa khai `x-callers`, ba service, không `detail`). Đột biến QC M4, M5 đều làm 2 test đỏ (mục Lệnh) |
+| G9 | LOW | Đóng (sửa ở PR #86, có trên `main`) | `keys.ts:68–71` từ chối phần tử không phải JWK; `:187–200` bọc lỗi cấu trúc thành “`SERVICE_AUTH_PUBLIC_KEYS` is not a valid JWKS: …”, không trích giá trị |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G11 | DEC-58 (Dev tự QC trước khi mở PR, ghi `self-qc.md`) | partial | LOW | PR #106 không chạm `agent/execution/PID-00003/`; lượt sửa G8 chỉ có trong mô tả PR. `self-qc.md` Lần 3 trên `main` (#105) vẫn ghi G8 “đang sửa, chưa vào `main`” | Không chặn. Dev thêm mục self-QC cho lượt G8 sau khi cập nhật nhánh theo `main`, hoặc PO nhận mô tả PR #106 làm bản tự QC |
+
+Không có CRITICAL, HIGH, MEDIUM.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00003-AC02 (service ngoài `x-callers` → 403 `caller_not_allowed`, handler không chạy) | đạt | Xây · thật (Nest + Fastify, khóa thật) | `guard.spec.ts › service ngoài x-callers (PID-00003-AC02)` | Đạt ở mọi lượt QC chạy |
+| EC09 (route chưa khai `x-callers`) | đạt | Như trên | `guard.spec.ts › route thiếu x-callers (EC09)` | Như trên |
+| Các AC, EC còn lại của PID-00003 | đạt | Như Lần 2 | 12 test `guard.spec.ts`, `token.spec.ts`, `client.spec.ts` | Đạt trong `@sires/platform:test` 174/174; `client.spec.ts` lỗi môi trường ở lượt `nx affected`, chạy lại riêng đạt (mục Lệnh) |
+
+### Lệnh đã chạy
+
+Cùng worktree, môi trường với `PID-00002/qc-report.md` Lần 4 (detached ở `faef12a`, Windows 11, Node 24.21.0, pnpm 10.34.9, Docker Engine 29.8.2 trong WSL).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | 21 file, 174/174 |
+| `npx vitest run src/inbox/inbox.spec.ts src/service-auth/guard.spec.ts --reporter=verbose` | 24/24; `guard.spec.ts` 12/12 |
+| Đột biến QC trên `guard.ts` (sửa tạm, `git checkout` lại sau mỗi ca) | **M4** đặt lại `detail` như mã cũ (“Endpoint chưa khai x-callers” / “<sub> không có trong x-callers”): `service ngoài x-callers`, `route thiếu x-callers` đỏ (“expected … to not have property "detail"”). **M5** `detail` chung không nêu tên service: cùng 2 test đỏ. Sau khi trả lại mã, `git status` sạch |
+| Ghi body 403 thật (sửa tạm `guard.spec.ts:119` để ghi `refused.body` ra file trong scratchpad, đã trả lại) | `{"type":"https://sires.etroy.local/problems/caller_not_allowed","title":"Service không được phép gọi endpoint này","status":403,"code":"caller_not_allowed","correlationId":"…"}` |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --skip-nx-cache` | 12 project; mọi tác vụ đạt trừ hai lỗi hết giờ mặc định trong `@sires/platform:test` (`telemetry.spec.ts`, `client.spec.ts` ở `beforeAll`) khi máy tải cao; chạy lại riêng hai file: 10/10. `guard.spec.ts` đạt trong lượt này. Chi tiết ở `PID-00002/qc-report.md` Lần 4 |
+| `git merge-tree --write-tree` PR #106 với `origin/main` (`74f25d1`) và với PR #108 | Không xung đột |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: platform` |
+| `node scripts/docs/add-license.mjs --check`; `node scripts/docs/update-index.mjs --check` | Sạch; khớp 159 PID |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00003 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `gh pr checks 106`, `gh api …/pulls/106/commits` | Mọi check CI đạt trên `faef12a`; 3 commit `T1xNTH`, `verified: true`, không có trailer ghi công AI |
+
+### Lệch với Self-QC
+
+- PR #106 không có mục self-QC trong `self-qc.md` (G11); QC đối chiếu với mô tả PR.
+- Mô tả PR ghi body 403 “chỉ còn `type`, `title`, `status`, `code`”: thiếu `correlationId` mà bộ lọc lỗi luôn thêm (như body 401) — không phải lỗi, chỉ là mô tả chưa đủ.
+- Mô tả PR ghi “gỡ từng bản sửa thì test đỏ”: khớp đột biến M4 của QC.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không còn việc chặn merge PR #106 cho PID-00003. G11 (LOW): Dev bổ sung self-QC của lượt G8, hoặc PO nhận mô tả PR #106.
+
+### Đề xuất cho PO
+
+- **Merge được PR #106 theo DEC-58** (phần PID-00003): 0 CRITICAL, 0 HIGH, 0 MEDIUM; G11 LOW. Bản TS và Python nay cùng body 403.
+- Ghi PC-04 A3 vào mục 5 hồ sơ PID-00003 cùng các quyết định 18/11/2026 còn chưa ghi (Lần 2 đã nêu); R-01–R-07.
 
 ---
 
