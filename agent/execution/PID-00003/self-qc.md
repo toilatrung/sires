@@ -1,9 +1,9 @@
 # PID-00003 — Self-QC của Dev
 
-**Kết luận:** Đạt
+**Kết luận:** Đạt (Lần 3, 24/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G7, QC-G9 đã sửa ở PR #86; QC-G8 PO chốt (PC-04 A3), đang sửa; QC-G10 cập nhật ở lần này
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 18/11/2026 (Lần 2)
+- **Cập nhật:** 25/11/2026 (Lần 3: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -102,6 +102,40 @@ Sửa QC Lần 1 (G1–G5; G6 PO giữ). Kết luận: **Đạt** — không cò
 | G6 | giữ (PO) | `token.ts:147` |
 
 EC08 nay đúng P5: token Agent Run có `aud` một giá trị bị 401, cùng hành vi bản Python (`service_auth.py:331`).
+
+## Lần 3 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 3 ở commit `8389e31` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+Mã `service-auth` trên `develop` không đổi từ Lần 2 (commit cuối `4b88ea1`); lần này kiểm phần còn mở và chạy lại test của project, chung lượt với PID-00002.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | Đạt: 21 file, 169/169, 33,6 s (gồm `token.spec.ts`, `guard.spec.ts`, `client.spec.ts`) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00003 --result` | `PID-00003: KẾT QUẢ ĐỦ (0 cảnh báo).` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+
+### 2. AC và edge case
+
+PID-00003-AC01…AC08, NFR-AUTHZ-001-AC01 (phần thư viện) giữ kết luận đạt của Lần 2, xác nhận lại bằng 169/169. NFR-TRANSIT-001-AC01 không áp dụng (PID-00048, PID-00153). Không có edge case mới.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G7 | partial | LOW | Chú thích nói lý do từ chối “returned as `detail`”, trái body 401 không có `detail` (quyết định PO G2) | `libs/ts/platform/src/service-auth/token.ts:26` | Đã sửa ở PR [#86](https://github.com/toilatrung/sires/pull/86) (`4578236`): `token.ts:27` “Logged at `warn` only, never returned” |
+| QC-G8 | partial | LOW | Body `403 caller_not_allowed` bản TS có `detail`, bản Python không | `libs/ts/platform/src/service-auth/guard.ts:85` | PO chốt (PC-04 A3): bỏ `detail` khỏi body 403, giữ log `warn`. Đang sửa ở luồng platform, chưa vào `main` (`guard.ts:85` vẫn như cũ) |
+| QC-G9 | partial | LOW | Lỗi cấu trúc `SERVICE_AUTH_PUBLIC_KEYS` không nêu tên biến | `keys.ts:66`, `:68–69` (phần tử `null` → `Cannot read properties of null`), `:183` | Đã sửa ở PR [#86](https://github.com/toilatrung/sires/pull/86): `keys.ts:68–71` từ chối phần tử không phải JWK; `:187–200` bọc lỗi thành “`SERVICE_AUTH_PUBLIC_KEYS` is not a valid JWKS: …”, không trích giá trị |
+| QC-G10 | partial | LOW | `report.md:3` vẫn `Xong — chờ QC` dù PR #34 đã merge | `agent/execution/PID-00003/report.md:3` | Sửa ở lần này: `report.md` dòng PR (#34, #86, #87), ngày cập nhật. Trạng thái giữ `Xong — chờ QC` tới khi PO QC độc lập và nghiệm thu |
+
+Đề xuất Lần 2 “kiểm khởi động JWKS chứa `d`” (ngày 24/11 chưa có chủ): đã làm ở PR [#87](https://github.com/toilatrung/sires/pull/87) (`e18a389`) cho cả TS (`keys.ts:75`, `:219`) và Python (`service_auth.py:180`), test `token.spec.ts › bộ khóa công khai từ chối JWK riêng có "d", lỗi không nêu giá trị khóa`; thông báo nêu `kid`, không nêu giá trị khóa theo PC-04 A5 (bổ sung quyết định G4). Hồ sơ `docs/tickets/issues/PID-00003/` vẫn chưa ghi các quyết định PO 18/11/2026 và PC-04 A3, A5 — việc của PO.
+
+Không có G mới, không có CRITICAL, HIGH, MEDIUM.
 
 ---
 
