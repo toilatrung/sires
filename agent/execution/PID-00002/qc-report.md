@@ -1,6 +1,6 @@
 # PID-00002 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được PR #70 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 3, 22/11/2026). G4 đã sửa cho `onOutcome` ném lỗi đồng bộ (có test, QC kiểm thêm bằng probe trên mã cũ và mã mới); còn mở G5 (chờ PO), G6 (`onOutcome` async bị từ chối vẫn sinh unhandled rejection), G7 (đầu `report.md`, `self-qc.md` chưa cập nhật cho Lần 3), đều LOW, không chặn merge theo DEC-58. Test outbox TS không chập chờn qua 9 lượt; lỗi thứ tự PID-00009 gặp là test Python của PID-00005
+**Kết luận mới nhất:** Merge được PR #106 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 4, 25/11/2026). G5 đóng theo PC-04 A2: `start()` không ném khi broker chưa tới được, lần đầu lỗi vào cùng vòng thử lại có backoff, `stop()` hủy timer đang chờ (có test thật, đột biến đưa `start()` về kiểu cũ thì đỏ); G6, G7 đã đóng. Còn G8 (`stop()` giữa lần thử đang kết nối dở vẫn chờ tới 10 s — cần PO xác nhận phạm vi “hủy lần thử đang chờ”), G9 (`stop()` không `await` rồi `start()` có thể làm consumer kẹt, có từ trước), G10 (chưa có self-QC cho lượt G5), đều LOW, không chặn merge theo DEC-58
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -276,6 +276,85 @@ Không còn việc chặn merge PR #70. Ba việc LOW, làm ở PR này hoặc l
 - **G6 trước khi service đầu tiên gắn metric vào `onOutcome`** (PID-00057 và các service dùng `EventConsumer`): nếu PO muốn merge ngay, nên ghi vào README của `@sires/platform` rằng `onOutcome` phải đồng bộ, không trả promise, cho tới khi G6 xong.
 - **PID-00005 (Python, luồng platform) — test chập chờn PID-00009 gặp:** `test_envelope_and_rollback` (`libs/py/sires_common/tests/test_messaging.py:113`, `:215`) so thứ tự dòng outbox theo `created_at, id` trong khi `uuid7()` (`tenancy.py:35–45`) không tăng chặt trong cùng mili giây. Hai cách: test so theo tập (hoặc theo `kind`) thay vì thứ tự; hoặc `uuid7()` Python dùng bộ đếm trong cùng mili giây như bản TS (RFC 9562 §6.2, method 1) — cách này còn làm relay Python (`messaging.py:293`, `ORDER BY created_at, id`) publish đúng thứ tự gọi trong một giao dịch như bản TS. Cần chủ luồng platform chọn và sửa ở PID-00005 trước khi CI của PID-00009 bắt buộc; không chặn PR #70.
 - Các đề xuất của Lần 1, Lần 2 còn chờ PO: `request_hash` (slice S03), publish `mandatory`, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`, `correlation_id`, gộp ActorRef, ServiceName, heartbeat AMQP cho PID-00057, span cho relay và job dọn, khôi phục quyền cho EC01 (nay `outbox.spec.ts:90–95` đã khôi phục trong `finally`; kết nối của `recordQueue` (`outbox/messaging.testkit.ts:61`) và `admin` (`outbox.spec.ts:125`) vẫn chưa gắn `on('error')`).
+
+## Lần 4 — 25/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao (không mang kết luận của Dev, không sửa mã). Mã nguồn: PR #106 (tác giả `T1xNTH`), nhánh `platform/qc-g5-g8`, commit `faef12ad61fcbc34ae1f86d21993ed746215a980`; base `origin/main` `a367f0b`. PR có 3 commit, cả ba có chữ ký (`verified: true`): `a7ae5f5` (G5: `inbox/consumer.ts` +11/−8, `inbox.spec.ts` +100, README +1/−1), `534c4fb` (G8 của PID-00003, ghi ở `PID-00003/qc-report.md` Lần 3), `faef12a` (README `libs/ts/platform/README.md:46`). Lúc QC, `main` đã có thêm `74f25d1` (#105, chỉ `report.md`, `self-qc.md` của 7 PID); PR không chứa commit này, `git merge-tree` không xung đột (mục Lệnh).
+
+Căn cứ: PC-04 A2 (`docs/overview/phieu-chot-ph01.html` trên `main`, PO chọn phương án đề xuất): “`start()` không chặn khởi động service; lần kết nối đầu lỗi thì vào vòng thử lại có backoff như khi mất kết nối; `stop()` hủy lần thử đang chờ.” Ngữ cảnh của A2 nêu cả hai vấn đề của G5 Lần 2: `start()` lần đầu ném lỗi, và “`stop()` khi đang có lần thử chờ hết `CONNECT_TIMEOUT_MS` 10 s”. Hồ sơ `docs/tickets/issues/PID-00002/` chưa ghi A2 (PC-04 tự ghi “chưa làm”), nên QC đối chiếu với phiếu chốt.
+
+Phạm vi đã đọc: `inbox/consumer.ts` (toàn bộ), `inbox.spec.ts` (helper `:36–80`, test G5 `:409–472`, `:603–635`, test G6 `:299`), README `:46`; mục Lần 2, Lần 3 của file này; `self-qc.md` Lần 4 trên `main` (#105); mô tả PR #106; `amqplib` 2.2.0 `lib/connect.js:147–190` (ý nghĩa của tùy chọn `timeout`); chỗ dùng `EventConsumer` trong repo (chỉ `libs/ts/sample-service`, không gọi `start()`; chưa service nào trong `apps/` dùng).
+
+### Kiểm các G của Lần 3
+
+| G Lần 3 | Mức | Kết luận Lần 4 | Bằng chứng |
+| --- | --- | --- | --- |
+| G5 | LOW | Đóng theo PC-04 A2 (phần `stop()` khi đang có lần thử: G8 dưới đây) | `consumer.ts:147–153`: lần mở đầu lỗi thì không đặt lại `running`, không ném; log `warn` `consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại` (có `queue`, `err`) rồi `scheduleReconnect()` — cùng hàm, cùng backoff (`reconnectDelayMs` 1 s gấp đôi tới 30 s, ±20 %) với nhánh mất kết nối (`:222–242`); lần sau lỗi đi qua `reconnect()` (`:244–258`). `start()` gọi lần hai khi lần đầu còn mở không ném (`:141–143`). `stop()` xóa timer đang chờ (`:158–160`); `reconnect()` và `connectAndConsume()` kiểm `running` nên lần thử đang chạy dở không consume sau `stop()` (`:200–203`, `:245`, `:250`). Test `inbox.spec.ts:409` (proxy TCP chưa lắng nghe → `start()` resolve, `isConsuming` false, một dòng `warn`, có lần thử lại lỗi; proxy lên → consume, sự kiện `applied`, đúng một dòng `info` kết nối lại) và `:604` (không có broker: `stop()` trong lúc chờ backoff → hết timer, không thêm lần thử nào sau 700 ms). Đột biến QC M1–M3 đều đỏ (mục Lệnh) |
+| G6 | LOW | Đóng (sửa ở PR #86, có trên `main`) | `consumer.ts:270–279` bắt cả lỗi ném đồng bộ và promise bị từ chối của `onOutcome`; test `inbox.spec.ts:299 › onOutcome async bị từ chối không gây unhandled rejection (QC PID-00002 Lần 3 G6)` đạt trong mọi lượt QC chạy |
+| G7 | LOW | Đóng trên `main` (#105) | Đầu `report.md`, `self-qc.md` đã cập nhật ở `74f25d1`; PR #106 không chạm hai file này (xem G10) |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G8 | PC-04 A2 (“`stop()` hủy lần thử đang chờ”; ngữ cảnh A2: `stop()` chờ hết `CONNECT_TIMEOUT_MS` 10 s) · kiến trúc 11.6 | partial | LOW | `consumer.ts:161` `stop()` vẫn `await this.opening`: chỉ hủy lần thử đang chờ timer, còn lần thử đang kết nối dở thì chờ nó hết hạn `CONNECT_TIMEOUT_MS` (`:90`). Probe QC với broker “câm” (nhận TCP, không trả lời bắt tay AMQP, như mạng chết): `stop()` giữa một lần thử lại mất 9 200 ms, `stop()` giữa lần mở đầu mất 8 990 ms; sau `stop()` không có kết nối mới. Cùng probe: `start()` trên mạng chết mất 10 008 ms mới resolve (không ném), nên service nào `await start()` trước khi mở HTTP sẽ chậm khởi động tới 10 s cho mỗi consumer. README `:46` ghi “gọi khi lần mở đầu còn chạy thì chờ lần đó xong, tối đa 10 s” — thực tế áp cho mọi lần thử đang chạy, không chỉ lần đầu. Với broker từ chối kết nối (ECONNREFUSED) thì `start()`, `stop()` đều xong trong 1 ms. Vẫn dưới thời gian chờ dừng mặc định 30 s của Kubernetes; không mất dữ liệu | PO xác nhận “lần thử đang chờ” của A2 có gồm lần thử đang kết nối dở không. Nếu có: `stop()` không chờ `opening` (hoặc chỉ chờ có giới hạn ngắn), để lần thử dở tự đóng kết nối khi xong nhờ kiểm `running` sẵn có, kèm test broker câm đo `stop()` < 1 s. Nếu không: sửa README `:46` thành “mọi lần thử đang chạy” và nói rõ không nên `await start()` |
+| G9 | Dev tự nêu ở mô tả PR #106 (“Còn để sau”) · P3 | partial | LOW | Có từ trước PR, QC suy từ mã, không tái hiện: `stop()` không được `await` rồi gọi ngay `start()` trong lúc lần mở cũ chưa xong thì lần mở cũ thấy `running` đúng trở lại (`:200`) và gán `this.link` (`:213`), phần còn lại của `stop()` (`:162–166`) đóng link đang là hiện hành. Ngoài rò kết nối Dev nêu, QC thấy thêm khả năng consumer kẹt: `lose()` gặp `this.link` đã bị `stop()` đặt `undefined` thì trả về sớm (`:225`), không lên lịch kết nối lại, `running` vẫn đúng, `isConsuming` false mãi | Không chặn. Khi sửa G8 hoặc ở lượt sau của luồng platform: mỗi lần `start()` mang số thế hệ, lần mở cũ thấy lệch thế hệ thì tự đóng; hoặc ghi rõ trong README là phải `await stop()` trước khi `start()` lại |
+| G10 | DEC-58 (Dev tự QC trước khi mở PR, ghi `self-qc.md`) · `report.md` (“Lần chạy sau cập nhật trạng thái”) | partial | LOW | PR #106 không chạm `agent/execution/PID-00002/`; lượt sửa G5 chỉ có trong mô tả PR (mục “Kiểm tra”, kể cả câu “QC độc lập đạt” — đó là lời khai của phía Dev, không phải QC độc lập của PO). `self-qc.md` Lần 4 trên `main` (#105) vẫn ghi G5 “đang sửa, chưa vào `main`” | Không chặn. Dev thêm mục self-QC cho lượt G5 (lệnh, đột biến, probe) sau khi cập nhật nhánh theo `main`, hoặc PO nhận mô tả PR #106 làm bản tự QC |
+
+Không có CRITICAL, HIGH, MEDIUM.
+
+### AC
+
+Mức kiểm: ô Xây, test tích hợp thật trên PostgreSQL 16 + pgvector và RabbitMQ 4 qua Testcontainers (Docker Engine trong WSL), QC tự chạy. Lần này chỉ đổi nhánh lỗi của `start()`; QC chạy lại toàn bộ test của `@sires/platform` và các project bị ảnh hưởng.
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00002-AC01…AC06, CTX-AUDIT-001-AC01…AC05, NFR-RET-008-AC01 (phần thư viện) | đạt | Xây · thật | Như Lần 3 (`outbox.spec.ts`, `inbox.spec.ts`, `idempotency.spec.ts`, `audit.spec.ts`, `jobs.spec.ts`) | Đạt trong `@sires/platform:test` 174/174 và lượt `nx affected` |
+| Kiến trúc 11.6 (phần consumer: pod mới khởi động khi RabbitMQ chưa tới được) — G5, PC-04 A2 | đạt | Xây · thật (proxy TCP tới RabbitMQ thật) | `inbox.spec.ts › lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)`; `› start() khi broker không tới được (QC PID-00002 G5) › stop() trong lúc chờ backoff: dừng sạch, không còn timer, không kết nối lại` | Đạt ở mọi lượt (mục Lệnh) |
+
+Edge case EC01–EC18 vẫn có test đúng tên ở `scope.html`, đạt. Không có giao diện nên không chạy `sires-ui-review`.
+
+### Lệnh đã chạy
+
+Worktree riêng (detached ở `faef12a`) trong scratchpad của phiên QC, Windows 11, Node 24.21.0, pnpm 10.34.9, `DOCKER_HOST=tcp://localhost:2375` (Docker Engine 29.8.2 trong WSL `Ubuntu-24.04`). Image có sẵn: `pgvector/pgvector:pg16`, `rabbitmq:4-management`, `testcontainers/ryuk`.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt (22 s); cảnh báo bỏ qua build script như các lần trước |
+| `pnpm nx run-many -t lint typecheck build -p @sires/platform --skip-nx-cache` | Đạt cả ba (kèm 3 tác vụ phụ thuộc) |
+| `pnpm nx run @sires/platform:test --skip-nx-cache` | 21 file, 174/174, 51 s |
+| `npx vitest run src/inbox/inbox.spec.ts src/service-auth/guard.spec.ts --reporter=verbose` (trong `libs/ts/platform`) | 24/24; test G5 `:409` 441 ms, `:604` 706 ms |
+| `npx vitest run src/inbox/inbox.spec.ts -t G5`, 5 lượt | 5/5 lượt đạt 2/2 (15–26 s mỗi lượt, gồm dựng container) |
+| Đột biến QC (sửa tạm `consumer.ts` trong worktree, chạy `vitest -t G5`, `git checkout` lại sau mỗi ca) | **M1** `start()` ném như mã cũ (`running = false; throw error`): 2/2 test G5 đỏ (“promise rejected … ECONNREFUSED instead of resolving”). **M2** lần đầu lỗi chỉ log, không vào vòng thử lại: 2/2 đỏ (“timeout: a failed retry”; timer không được đặt). **M3** `stop()` không xóa timer: test `:604` đỏ. Sau khi trả lại mã, `git status` sạch |
+| Probe G5 của QC (`probe-g5.cjs` trong scratchpad, không thuộc repo; nạp `dist/inbox/consumer.js` vừa build; `reconnectDelayMs` 200 ms) | Broker câm: `start()` resolve sau 10 008 ms, `isConsuming` false, một dòng `warn`; `stop()` giữa lần thử lại 9 200 ms; `stop()` giữa lần mở đầu 8 990 ms (`start()` vẫn resolve, không ném); sau `stop()` 1,5 s không có kết nối mới; tiến trình tự thoát (không còn timer). Cổng từ chối kết nối: `start()` 1 ms, `stop()` 1 ms (G8) |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --skip-nx-cache` | 12 project TS (`platform`, `sample-service` và 10 service), 51 tác vụ, mọi tác vụ đạt trừ `@sires/platform:test`: 169 đạt, 1 lỗi, 4 bỏ qua — `telemetry.spec.ts › span và log cùng mã yêu cầu` quá 5 s mặc định, `service-auth/client.spec.ts` hết hạn hook 10 s mặc định ở `beforeAll` (test của PID-00001 và service-auth, PR không sửa; cùng loại lỗi tải như Lần 3, Docker trong WSL tải khoảng 17 trên 16 lõi khi Nx chạy song song; PR #108 đặt trần 60 s / 180 s cho đúng loại lỗi này). Chạy lại riêng hai file: 10/10. `inbox.spec.ts` (cả hai test G5) và `guard.spec.ts` đạt trong lượt này |
+| `git merge-tree --write-tree origin/main origin/platform/qc-g5-g8`; với `origin/platform/testcontainers-timeouts-g2` (PR #108); hai nhánh với nhau | Cả ba không xung đột (`main` lúc kiểm: `74f25d1`). Hai PR không chung file nào |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: platform` |
+| `node scripts/docs/add-license.mjs --check`; `node scripts/docs/update-index.mjs --check` | `0 file chưa có thông báo giấy phép.`; khớp 159 PID, taskboard khớp |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `gh pr view 106`, `gh pr checks 106`, `gh api …/pulls/106/commits` | `OPEN`, base `main`, `MERGEABLE`, `BLOCKED` (chưa có review); mọi check CI đạt trên `faef12a` (gồm `tracks`, `build`, `typescript`); 3 commit tác giả `T1xNTH`, `verified: true`, không có trailer ghi công AI |
+
+### Lệch với Self-QC
+
+- PR #106 không có mục self-QC trong `self-qc.md` (G10); QC đối chiếu với mô tả PR.
+- Mô tả PR ghi 174/174 cho `@sires/platform`: khớp lượt QC.
+- Mô tả PR ghi “`stop()` hủy lần thử đang chờ” và probe “mạng chết (10 s rồi vào vòng thử lại) … không rò timer”: khớp probe QC (không rò timer). Mô tả không nói `stop()` giữa lần thử dở vẫn chờ tới 10 s; README có nói nhưng chỉ cho lần mở đầu (G8).
+- Mô tả PR tự nêu rủi ro `stop()` rồi `start()`: QC đồng ý mức LOW, ghi thành G9 kèm hệ quả consumer kẹt.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+Không còn việc chặn merge PR #106.
+
+1. G8: PO xác nhận phạm vi “hủy lần thử đang chờ”; Dev sửa `stop()` hoặc README theo đó.
+2. G9: sửa cùng G8 hoặc ở lượt sau của luồng platform.
+3. G10: Dev bổ sung self-QC của lượt G5, hoặc PO nhận mô tả PR #106.
+
+### Đề xuất cho PO
+
+- **Merge được PR #106 theo DEC-58:** 0 CRITICAL, 0 HIGH, 0 MEDIUM; G8, G9, G10 LOW. PR đang `BLOCKED` vì chưa có review; commit đã ký, CI đạt.
+- **Cần PO trả lời một câu (G8):** “`stop()` hủy lần thử đang chờ” có gồm lần thử đang kết nối dở (hiện chờ tới 10 s) không.
+- Ghi PC-04 A2 vào mục 5 hồ sơ PID-00002 (PC-04 ghi “chưa làm”; R-01–R-07).
+- Bản Python (`sires_common`, PID-00005): mô tả PR nêu `EventConsumer.start(connection)` nhận kết nối do bên gọi mở, không có vòng thử lại; A2 chỉ nói bản TS. QC không đọc mã Python lần này — ghi như lời khai để PO quyết có cần A2 cho bản Python.
 
 ---
 

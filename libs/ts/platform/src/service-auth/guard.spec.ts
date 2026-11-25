@@ -118,6 +118,10 @@ describe('ServiceAuthGuard', () => {
     const library = await issueServiceToken(keys.signer('library'), { audience: 'planning', actor: { type: 'system', component: 'indexer' } });
     const refused = await call('/internal/only-planning', library);
     expect(refused).toMatchObject({ status: 403, body: { code: 'caller_not_allowed', status: 403, title: 'Service không được phép gọi endpoint này' } });
+    // No detail in the body, as the Python guard and the contract (PO, QC PID-00003 G8): the caller is in the log only.
+    expect(refused.body).not.toHaveProperty('detail');
+    expect(JSON.stringify(refused.body)).not.toContain('library');
+    expect(lines.join('\n')).toContain('service không có trong x-callers');
     expect(handled).toBe(0);
     const planning = await issueServiceToken(keys.signer('planning'), { audience: 'planning', actor: { type: 'system', component: 'readiness' } });
     expect(await call('/internal/only-planning', planning)).toMatchObject({ status: 200, body: { ok: true } });
@@ -137,7 +141,9 @@ describe('ServiceAuthGuard', () => {
   it('route thiếu x-callers (EC09)', async () => {
     for (const service of ['planning', 'workspace', 'gateway'] as const) {
       const token = await issueServiceToken(keys.signer(service), { audience: 'planning', actor: { type: 'system', component: 'x' } });
-      expect(await call('/internal/undeclared', token)).toMatchObject({ status: 403, body: { code: 'caller_not_allowed' } });
+      const refused = await call('/internal/undeclared', token);
+      expect(refused).toMatchObject({ status: 403, body: { code: 'caller_not_allowed' } });
+      expect(refused.body).not.toHaveProperty('detail');
     }
     expect(handled).toBe(0);
   });
