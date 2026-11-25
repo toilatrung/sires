@@ -264,6 +264,10 @@ Kết quả (chi tiết ở `self-qc.md` Lần 10):
 - `nx affected` (20 project do lockfile): mọi tác vụ TypeScript đạt, pytest của agent-core, knowledge, eval đạt;
   10 tác vụ lỗi đều do Windows chặn công cụ Python (Smart App Control): ruff, mypy kiểm lại riêng đều đạt;
   `@sires/contracts:test`, `sires-common:test` không chạy được ở máy này, dựa vào CI Linux.
+- [CI run 45641867310](https://github.com/toilatrung/sires/actions/runs/45641867310) trên `4980f6f` (commit mã của
+  lượt này): **mọi job đạt**, gồm `typescript` (gateway chạy mới, 35/35), `python`, `contracts`, `contract-test`,
+  `asyncapi-payload`, 12 image, `helm` (smoke gateway với sửa của G8), `terraform`, `tracks`, `build` bắt buộc.
+  `@sires/contracts:test` và `sires-common:test` (133 đạt) trúng cache Nx vì đầu vào không đổi so với `main`.
 - `add-license --check` 0 thiếu, `update-index --check` đạt, `git diff --check` đạt;
   `check-pid.mjs PID-00014 --result`: KẾT QUẢ ĐỦ, 0 cảnh báo.
 - AC01, AC02, NFR-AUTH-001-AC01 và EC01–EC17 đạt ở mức Xây với quyền database thật; chưa có staging.
