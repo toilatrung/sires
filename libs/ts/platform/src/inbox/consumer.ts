@@ -26,9 +26,9 @@ import type { TenantDatabase, TenantTransaction } from '../tenancy/transaction';
 // EventEnvelope is nacked without requeue, to the dead-letter of the queue (EC08). The inbox does not compare versions:
 // replica tables do, through applyReplica (H1).
 //
-// Recovery (architecture 11.6: work waits in the queue until the broker is back): once started, losing the
-// connection, the channel or the consumer (broker restart, failover, network, queue deleted) is logged and followed by
-// reconnect attempts with exponential backoff until one succeeds or stop() is called; each attempt declares the
+// Recovery (architecture 11.6: work waits in the queue until the broker is back): once started, failing the first
+// connection or losing the connection, the channel or the consumer (broker restart, failover, network, queue deleted)
+// is logged and followed by reconnect attempts with exponential backoff until one succeeds or stop() is called; each attempt declares the
 // exchange, queue, bindings and prefetch again. Messages unacked on the lost channel come back from the broker and
 // the inbox drops the ones already applied.
 //
@@ -132,12 +132,14 @@ export class EventConsumer {
   }
 
   /**
-   * Declares the exchange, the queue and its bindings, then consumes with manual ack. Rejects when this first
-   * connection fails (the consumer stays stopped); after it, a lost connection is reconnected until {@link stop}.
+   * Declares the exchange, the queue and its bindings, then consumes with manual ack. Never blocks the start of the
+   * service on the broker (PO, QC PID-00002 G5): when this first attempt fails, it is logged and retried with the same
+   * backoff as a lost connection, and `start()` resolves with {@link isConsuming} false; {@link stop} cancels the
+   * pending attempt.
    */
   async start(): Promise<void> {
     if (this.running) {
-      await this.opening;
+      await this.opening?.catch(() => undefined);
       return;
     }
     this.running = true;
@@ -145,8 +147,9 @@ export class EventConsumer {
     try {
       await this.open();
     } catch (error) {
-      this.running = false;
-      throw error;
+      if (!this.running) return;
+      this.logger.warn({ queue: this.queue, err: error }, 'consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại');
+      this.scheduleReconnect();
     }
   }
 
