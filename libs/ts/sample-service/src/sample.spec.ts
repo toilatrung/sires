@@ -42,7 +42,7 @@ beforeAll(async () => {
   });
   await app.listen(0, '127.0.0.1');
   service = app.get(SampleService);
-}, 120_000);
+});
 
 afterAll(async () => { await app?.close(); await database?.stop(); vi.unstubAllEnvs(); });
 beforeEach(async () => {

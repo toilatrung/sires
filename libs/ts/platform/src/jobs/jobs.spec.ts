@@ -12,7 +12,7 @@ import { OUTBOX_AGE_METRIC, oldestUnpublishedOutboxAgeSeconds, registerOutboxAge
 
 const ACCOUNT = uuidv7();
 
-describe('lease, job dọn và metric outbox trên PostgreSQL thật (PID-00002 S05)', { timeout: 60_000 }, () => {
+describe('lease, job dọn và metric outbox trên PostgreSQL thật (PID-00002 S05)', () => {
   let stack: MessagingTestStack;
   const admin = <R extends Record<string, unknown> = Record<string, unknown>>(text: string, values?: unknown[]) =>
     stack.database.admin<R>(text, values);
@@ -36,7 +36,7 @@ describe('lease, job dọn và metric outbox trên PostgreSQL thật (PID-00002 
 
   afterAll(async () => {
     await stack?.stop();
-  }, 60_000);
+  });
 
   beforeEach(async () => {
     await admin('DELETE FROM app.job_lock; DELETE FROM app.outbox; DELETE FROM app.inbox; DELETE FROM app.idempotency_key');

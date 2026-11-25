@@ -176,6 +176,45 @@ Sửa lệch của mục 1, 3 Lần 1 (QC-G7): dòng `nx affected` dẫn log c�
 
 Không có G mới, không có CRITICAL, HIGH. Đề xuất cho PO (ngày 24/11, chưa có quyết định): đưa `{workspaceRoot}/docs/database/ddl/*.sql` vào một named input chung trong `nx.json` cho mọi project chạy DDL — việc của luồng infra.
 
+## Lần 4 — 25/11/2026
+
+Sửa QC PID-00006 G9 theo PC-05 P38 (phương án đề xuất 1; quyết định của điều phối 25/11/2026: bỏ cả timeout bằng hằng chung). Ghi ở PID-00006 vì G9 nằm trong `qc-report.md` của PID này (QC PR #108, PC-04 A6); các file test đổi phần lớn là test của PID-00002 nhưng không đổi hành vi hay ca test nào của PID-00002.
+
+Người chạy: Dev T1xNTH (spec-converge-skill, chế độ Dev tự QC). Nhánh `platform/drop-local-timeouts` từ `origin/main` `c9e745b`, worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Docker Engine.
+
+### 1. Đã đổi
+
+Bỏ timeout khai tại chỗ nhỏ hơn hoặc bằng `TESTCONTAINERS_TIMEOUTS` (test 60 s, hook 180 s), để `vitest.config.ts` là nguồn duy nhất:
+
+| Nhóm | Chỗ | Xử lý |
+| --- | --- | --- |
+| A — thấp hơn hằng chung (14) | `describe(…, { timeout: 30_000 })`: `libs/ts/platform/src/audit/audit.spec.ts:39`, `idempotency/idempotency.spec.ts:47`, `inbox/inbox.spec.ts:85`, `outbox/outbox.spec.ts:33`; `afterAll(…, 60_000)`: `audit.spec.ts:58`, `idempotency.spec.ts:81`, `inbox.spec.ts:176`, `jobs/jobs.spec.ts:39`, `outbox.spec.ts:61`, `state-machine/ddl.pg.spec.ts:120`, `tenancy/concurrency.spec.ts:107`, `tenancy/tenancy.spec.ts:35`; `beforeAll(…, 120_000)`: `libs/ts/sample-service/src/migration.spec.ts:18`, `sample.spec.ts:45` | Bỏ |
+| B — bằng hằng chung (3) | `jobs.spec.ts:15` `describe { timeout: 60_000 }`; `inbox.spec.ts:409`, `:474` `it { timeout: 60_000 }` | Bỏ (không đổi hành vi) |
+| C — cao hơn, giữ | `beforeAll(…, 300_000)` ở 8 file platform (dựng PostgreSQL, RabbitMQ; lần đầu có thể kéo image); `inbox.spec.ts:534` `it { timeout: 180_000 }` (chờ broker khởi động lại); `sample-service/src/migration.spec.ts:44` `it(…, 120_000)` (dựng thêm một container PostgreSQL rỗng); `ddl-pg16.spec.ts:71` `it(…, 180_000)` (dựng 11 database); `libs/ts/testing/src/containers/containers.spec.ts:14` `CONTAINER_TIMEOUT` 600 s | Giữ |
+| D — không phải timeout của vitest | `inbox/consumer.ts` `CONNECT_TIMEOUT_MS`, `outbox/relay.ts` `confirmTimeoutMs`, các helper chờ `waitUntil`, `waitFor` | Không đụng |
+
+Thêm test chặn tái phát: `libs/ts/platform/src/local-timeouts.spec.ts`, `libs/ts/sample-service/src/local-timeouts.spec.ts` đọc mọi `*.spec.ts` trong `src` bằng AST của TypeScript; `describe`, `it`, `test` có số timeout viết trực tiếp ≤ `testTimeout`, hay hook ≤ `hookTimeout`, thì đỏ. Không sửa `consumer.ts`; ở `inbox.spec.ts` chỉ đổi bốn dòng khai timeout.
+
+### 2. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t test -p @sires/platform @sires/sample-service --skip-nx-cache` trên `c9e745b` (trước khi sửa) | platform 21 file, 174/174; sample-service 3 file, 14/14 |
+| `vitest run src/local-timeouts.spec.ts` trước khi sửa (TDD) | Đỏ đúng: platform 15 chỗ (A 12, B 3), sample-service 2 chỗ (`migration.spec.ts:14`, `sample.spec.ts:33` — dòng mở `beforeAll`) |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/platform @sires/sample-service --skip-nx-cache` sau khi sửa | Đạt: platform 22 file, 175/175; sample-service 4 file, 15/15 (mỗi project thêm đúng 1 test chặn; số test cũ không đổi) |
+| Probe tạm (không commit): `it` ngủ 31 s trong `describe` của `audit.spec.ts` | Đạt (37 s); trước khi sửa khối này chỉ có 30 s |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `node scripts/development/check-tracks.mjs --base origin/main` (sau commit) | `tracks touched: platform, repo` (`repo`: `agent/` và `libs/ts/sample-service` chưa gắn luồng, như QC-G4) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00006 --result` | `PID-00006: KẾT QUẢ ĐỦ (0 cảnh báo).` |
+
+### 3. Đối chiếu
+
+| G | Trạng thái | Bằng chứng |
+| --- | --- | --- |
+| G9 LOW | Đã sửa, chờ QC độc lập | Mục 1, 2 ở trên; test chặn đỏ trước, xanh sau |
+
+Không có G mới, không có CRITICAL, HIGH. `qc-report.md` không đổi.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

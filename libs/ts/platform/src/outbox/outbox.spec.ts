@@ -30,7 +30,7 @@ function taskActivated(overrides: Partial<OutboxEventInput> = {}): OutboxEventIn
   };
 }
 
-describe('outbox và relay trên PostgreSQL và RabbitMQ thật (PID-00002 S01)', { timeout: 30_000 }, () => {
+describe('outbox và relay trên PostgreSQL và RabbitMQ thật (PID-00002 S01)', () => {
   let stack: MessagingTestStack;
   const relays: OutboxRelay[] = [];
 
@@ -58,7 +58,7 @@ describe('outbox và relay trên PostgreSQL và RabbitMQ thật (PID-00002 S01)'
   afterAll(async () => {
     context.disable();
     await stack?.stop();
-  }, 60_000);
+  });
 
   it('relay publish có confirm (PID-00002-AC06)', async () => {
     const queue = await recordQueue(stack.rabbit.amqpUrl, { patterns: ['task.#'] });

@@ -36,7 +36,7 @@ function approval(overrides: Partial<AuditInput> = {}): AuditInput {
   };
 }
 
-describe('audit-emit qua outbox trên PostgreSQL và RabbitMQ thật (PID-00002 S04)', { timeout: 30_000 }, () => {
+describe('audit-emit qua outbox trên PostgreSQL và RabbitMQ thật (PID-00002 S04)', () => {
   let stack: MessagingTestStack;
   let relay: OutboxRelay;
   const outboxRows = (ids: string[]) =>
@@ -55,7 +55,7 @@ describe('audit-emit qua outbox trên PostgreSQL và RabbitMQ thật (PID-00002 
     await relay?.stop();
     context.disable();
     await stack?.stop();
-  }, 60_000);
+  });
 
   it('rollback không để lại outbox và Audit Event (PID-00002-AC01, DATA-PERSIST-001-AC01, NFR-DUR-001-AC01)', async () => {
     const everything = await recordQueue(stack.rabbit.amqpUrl, { patterns: ['#'] });

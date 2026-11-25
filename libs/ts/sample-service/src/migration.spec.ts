@@ -15,7 +15,7 @@ beforeAll(async () => {
   postgres = await startPostgres();
   admin = new Pool({ connectionString: postgres.connectionUri });
   await createRoles(admin, 'sample');
-}, 120_000);
+});
 afterAll(async () => { await admin?.end(); await postgres?.stop(); });
 
 it('áp lên database rỗng', async () => {
