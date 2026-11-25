@@ -67,7 +67,11 @@ export interface EventConsumerOptions {
   /** Longest wait between two reconnect attempts; default 30 s. */
   reconnectMaxDelayMs?: number;
   logger?: Pick<Logger, 'info' | 'warn' | 'error'>;
-  /** Called after each message is acked or nacked, e.g. for metrics. */
+  /**
+   * Called after each message is acked or nacked, e.g. for metrics. May be async (a `void` return type still accepts it):
+   * the consumer does not wait for it, and an error it throws or a promise it rejects is logged as `warn`, never an
+   * unhandled rejection.
+   */
   onOutcome?: (outcome: ConsumeOutcome, messageId: string | undefined) => void;
 }
 
@@ -260,11 +264,15 @@ export class EventConsumer {
       // Channel closed meanwhile: the broker gives the message again and the inbox drops it if it was applied.
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: không ack được message');
     }
-    try {
-      this.options.onOutcome?.(outcome, messageId(message));
-    } catch (error) {
-      // A failing callback (metrics) must not become an unhandled rejection that stops the process (QC Lần 2 G4).
+    const onOutcomeFailed = (error: unknown) =>
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: onOutcome lỗi');
+    try {
+      const result: unknown = this.options.onOutcome?.(outcome, messageId(message));
+      // A failing callback (metrics) must not become an unhandled rejection that stops the process: a sync throw
+      // (QC Lần 2 G4) and a rejected promise (QC Lần 3 G6) are both logged. The consumer does not await it.
+      if (isPromiseLike(result)) Promise.resolve(result).catch(onOutcomeFailed);
+    } catch (error) {
+      onOutcomeFailed(error);
     }
     return outcome;
   }
@@ -343,4 +351,8 @@ function parseEnvelope(content: Buffer): EventEnvelope | undefined {
   }
   const parsed = eventEnvelopeSchema.safeParse(value);
   return parsed.success ? (parsed.data as EventEnvelope) : undefined;
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return typeof value === 'object' && value !== null && typeof (value as PromiseLike<unknown>).then === 'function';
 }

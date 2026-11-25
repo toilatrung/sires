@@ -63,6 +63,7 @@ Migration ở `migrations/` là custom migration SQL của drizzle-kit (có jour
 
 - `0000_init.sql`: nguyên văn `00-common.sql` rồi `planning.sql`, trừ khối `INSERT INTO app.state_transition`.
 - `0001_state_transition.sql`: dòng `app.state_transition` của `task`, `plan_version` sinh từ khai báo.
+- `0002_ec09_jsonb_helpers.sql`: sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
 
 Tạo migration mới: `pnpm --filter @sires/planning exec drizzle-kit generate --custom --name <tên>`, rồi `node scripts/docs/add-license.mjs`. Áp migration: `pnpm --filter @sires/planning build` rồi `DATABASE_MIGRATOR_URL=postgres://… pnpm --filter @sires/planning migrate` (`node dist/migrate.js`, dùng `migrate()` của drizzle-orm, không cần drizzle-kit). Job migration của chart chạy cùng lệnh (`migration.enabled`, `migration.command` ở `deploy/values.yaml`). Chạy lại khi đã ở bản mới nhất không làm gì.
 

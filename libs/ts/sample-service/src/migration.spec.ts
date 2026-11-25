@@ -45,14 +45,20 @@ it('thiếu vai trò thì migration lỗi (EC08)', async () => {
 
 it('chạy lại migrate không áp lại (EC09)', async () => {
   await runMigrations(postgres.connectionUri);
+  const dumpSchema = async () => {
+    // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD.
+    const result = await postgres.container.exec(['bash', '-o', 'pipefail', '-c', 'pg_dump "$@" | base64 -w 0',
+      'pg_dump', '-U', postgres.username, '-d', postgres.database, '--schema-only', '--schema=app', '--schema=replica']);
+    expect(result.exitCode, result.stderr).toBe(0);
+    return Buffer.from(result.stdout.trim(), 'base64').toString('utf8');
+  };
   const snapshot = async () => ({
     journal: (await admin.query('SELECT * FROM drizzle.__drizzle_migrations ORDER BY id')).rows,
-    schema: (await postgres.container.exec(['pg_dump', '-U', postgres.username, '-d', postgres.database,
-      '--schema-only', '--schema=app', '--schema=replica'])).output
+    schema: (await dumpSchema())
       .split('\n').filter((line) => !line.startsWith('\\restrict') && !line.startsWith('\\unrestrict')).join('\n'),
   });
   const before = await snapshot();
   expect(await runMigrationCommand({ DATABASE_MIGRATOR_URL: postgres.connectionUri })).toBe(0);
   expect(await snapshot()).toEqual(before);
-  expect(before.journal).toHaveLength(1);
+  expect(before.journal).toHaveLength(2);
 });

@@ -117,7 +117,8 @@ CREATE TABLE app.change_proposal (
   updated_at               timestamptz,
   updated_by               jsonb CHECK (updated_by IS NULL OR app.is_actor_ref(updated_by)),
   row_version              integer NOT NULL DEFAULT 1,
-  CONSTRAINT change_proposal_accept_ck CHECK (status <> 'Accepted' OR (citation_check_passed AND approval IS NOT NULL)),
+  -- NULL (chưa có kết quả citation check) không được coi là đạt: EC10 PID-00030; DBQ-11, PO 25/11/2026.
+  CONSTRAINT change_proposal_accept_ck CHECK (status <> 'Accepted' OR (citation_check_passed IS TRUE AND approval IS NOT NULL)),
   FOREIGN KEY (manuscript_id, base_revision_id) REFERENCES app.manuscript_revision (manuscript_id, id),
   FOREIGN KEY (account_id, project_id, manuscript_id) REFERENCES app.manuscript (account_id, project_id, id)
 );

@@ -66,7 +66,7 @@ auth = config.service_auth(settings)          # ServiceAuth; PID-00048 gắn gua
 
 ## Migration
 
-Quy ước D1 (kiến trúc 6.10): revision đầu `migrations/versions/0001_initial_schema.py` chạy SQL chép nguyên từ `docs/database/ddl/00-common.sql` rồi `agent-core.sql` (file `0001_initial_schema.sql` cạnh revision), bằng Alembic trên SQLAlchemy async và asyncpg. Chỉ tiến: `downgrade` báo lỗi, không xóa bảng; DDL đổi thì viết revision mới. Revision không tạo vai trò: `sires_agent_core_app`, `_system`, `_purge` do hạ tầng tạo trước (database 3.2), thiếu thì `GRANT` lỗi và cả giao dịch rollback. Bảng `alembic_version` nằm ở schema `public`.
+Quy ước D1 (kiến trúc 6.10): revision đầu `migrations/versions/0001_initial_schema.py` chạy SQL chép nguyên từ `docs/database/ddl/00-common.sql` rồi `agent-core.sql` (file `0001_initial_schema.sql` cạnh revision), bằng Alembic trên SQLAlchemy async và asyncpg. Chỉ tiến: `downgrade` báo lỗi, không xóa bảng; DDL đổi thì viết revision mới. Revision không tạo vai trò: `sires_agent_core_app`, `_system`, `_purge` do hạ tầng tạo trước (database 3.2), thiếu thì `GRANT` lỗi và cả giao dịch rollback. Bảng `alembic_version` nằm ở schema `public`. Revision `0002_ec09_jsonb_helpers.py` (SQL ở `0002_ec09_jsonb_helpers.sql`) sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
 
 Lệnh (DSN của migrator trong `DATABASE_MIGRATOR_URL`):
 

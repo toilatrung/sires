@@ -23,7 +23,10 @@ import type { ServicePublicKeys, ServiceSigner } from './keys';
 /** Clock skew accepted on `exp` and on the 5-minute lifetime, in seconds (EC04: chosen by Dev, see report.md). */
 export const SERVICE_TOKEN_CLOCK_TOLERANCE_SECONDS = 30;
 
-/** Why a token was refused. Logged and returned as `detail`; never contains the token. */
+/**
+ * Why a token was refused. Logged at `warn` only, never returned: the `401` body is the same for every reason (PO, QC
+ * Lần 1 G2). Never contains the token.
+ */
 export type ServiceTokenFailure =
   | 'missing'
   | 'malformed'
