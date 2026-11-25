@@ -1,6 +1,6 @@
 # PID-00014 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Còn việc — 0 CRITICAL, 2 HIGH (G2 `app.find_session` vẫn trả 0 dòng dưới vai trò thật, DBQ-10 còn mở, H7 chặn merge; G8 PR sửa `infra/ci/check-helm-images.sh` của luồng infra khi chưa có lời PO), 1 MEDIUM (G4 người làm khác sổ), 2 LOW (G9 testkit lọt vào bản build production; G10 README thiếu điều kiện vai trò của migration). G1, G3, G5, G6, G7 của Lần 1 đã xử lý. Migration khớp DDL cả owner, quyền, RLS khi chạy bằng migrator thật; mã phiên và CSRF đạt AC ở mức Xây. Chưa merge được tới khi DBQ-10 được chốt và PO quyết G8 (Lần 2, 23/11/2026)
+**Kết luận mới nhất:** Mã đạt; merge được sau khi PO chốt G8. Còn 0 CRITICAL, 1 HIGH, 0 MEDIUM, 1 LOW. HIGH là G8: PR sửa `infra/ci/check-helm-images.sh` của luồng infra; việc này chờ PO chốt ở phiếu chốt cuối PH-01 và không tính là lỗi mã. Về nội dung, bản sửa cần và đúng. LOW là G11: fixture HTTP không tự kiểm rằng nó chạy bằng vai trò thật; không chặn merge. G2 (DBQ-10, theo DBD-14), G4, G9, G10 đã xử lý. Với vai trò thật theo database 3.2, migration khớp DDL trên `main` cả owner, quyền và policy `owner_lookup`. `app.find_session` tra được phiên trước tenant context. Thử đột biến cho thấy test bắt được khi bỏ policy, đổi `TO PUBLIC` hoặc migrate bằng superuser. AC01, AC02, NFR-AUTH-001-AC01 và EC01–EC17 đạt ở mức Xây (Lần 3, 25/11/2026)
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -199,6 +199,119 @@ Máy PO, Windows 11, Node 24.21.0, pnpm 10.34.9. Docker Engine 29.8.2 trong WSL 
 - **DBQ mới (đề xuất, chưa cấp mã): hàm kiểm CHECK trong `00-common.sql` trả SQL NULL.** Các ca cụ thể ở ghi nhận 4. Hệ quả: CHECK nhận ActorRef agent thiếu `agent` hoặc analysis thiếu `instance`, ApprovalRecord thiếu `approvedBy`, `decision` hay `apr`, Provenance thiếu `inputs`. Ca cuối trái DATA-PROV-001 (“thiếu → từ chối ghi”). Lỗi không ảnh hưởng gateway, vì gateway không dùng các hàm này trong CHECK. Nhưng nó đã nằm trong migration của planning, workspace, orchestration, agent-core trên `main`, và trong DDL của identity, library, knowledge, research, manuscript, audit. Hướng sửa gợi ý: bọc kết quả bằng `coalesce(…, false)` hoặc so `IS TRUE` trong từng hàm. Sửa DDL rồi thêm migration mới cho các service đã merge.
 - **Điều kiện hạ tầng (G10).** Terraform (staging, production) và compose (PID-00159) cần cho `sires_<svc>_owner` sở hữu database hoặc có `CREATE` trên database. Thiếu quyền này thì mọi migration theo kiến trúc 6.10 đều lỗi ngay ở `CREATE EXTENSION`, `CREATE SCHEMA`.
 - **Ranh giới (G8).** Lần sửa infra là cần thiết để CI Helm smoke đạt, và nội dung an toàn. Chỉ thiếu căn cứ: lời PO cùng duyệt của chủ luồng infra.
+- **Ghi chú:** job dọn `app.session` hết hạn (N5) vẫn chưa có PID nhận.
+
+## Lần 3 — 25/11/2026 · spec-converge-skill
+
+Người chạy: QC độc lập do PO `toilatrung` giao, không mang kết luận của Dev. Mã nguồn: PR #63, nhánh `gateway/pid-00014-session`, commit `316fd63` (`316fd63b5a0e4a8a69a43716decb0f5e21546d5e`). QC kiểm trong một worktree tách riêng, không có thay đổi chưa commit. Gốc so ranh giới: `origin/main` = `8c5581d`, cũng là merge-base của nhánh. Nhánh đã gộp #94 (EC09), #100 (`dumpSchema` qua base64), #107 (DBD-14), #108 (`TESTCONTAINERS_TIMEOUTS`).
+
+Đã đối chiếu: trang ticket (mục 1, 3, mục 5 H1–H9, mục 7, 8), `specs/acceptance.html`, `specs/scope.html`, slice S01–S05. DBD-14 và DBQ-10 (`docs/database/sections/13-decisions-risks-and-open-issues.html`). Database 3.2 (vai trò migrator) và 11.1. DDL `00-common.sql`, `gateway.sql` trên `main`. Hợp đồng `openapi.yaml` (servers `/api/v1`) và `paths/15-settings-and-sign-in.yaml` (chỉ `startLogin`, `completeLogin` có `security: []`). Chart chung `infra/helm/sires-service`. `.github/workflows/ci.yml` (job `helm`, `build`), `.github/CODEOWNERS`, sổ task-registry. `report.md`, `implement.md`, `self-qc.md` (Lần 10). Toàn bộ diff của PR so với `origin/main` (30 file).
+
+### Kiểm lại việc còn lại của Lần 2
+
+| G Lần 2 | Kết quả Lần 3 | Bằng chứng |
+| --- | --- | --- |
+| G2 HIGH: `find_session` trả 0 dòng dưới vai trò thật (DBQ-10, H7) | Đã xử lý | DBQ-10 đã đóng theo DBD-14 (PO, 24/11/2026). `apps/gateway/migrations/0000_init.sql:385` giống `docs/database/ddl/gateway.sql:58`: `CREATE POLICY owner_lookup ON app.session FOR SELECT TO sires_gateway_owner USING (true)`, đặt sau `SELECT app.enable_tenant_rls()` (`0000_init.sql:381`). Test `src/migration.spec.ts:163-181` đạt, assertion `[{ account_id: accountA }]` giữ như Lần 2. Test kiểm thêm `_app` đọc thẳng bảng khi chưa có context thì thấy 0 dòng (`:180`). Cả `migration.spec.ts` (`:63-79`) và fixture HTTP (`src/db/database.testkit.ts:142`) đều migrate bằng `sires_gateway_migrator`. Service trong test kết nối bằng `_app` (`src/session/session.spec.ts:93`). QC tự dựng vai trò, thử đột biến và đối chiếu riêng: xem mục Thử đột biến và Ghi nhận 1–2 |
+| G4 MEDIUM: người làm khác người trong sổ | Đã xử lý | Sổ task-registry ghi `toilatrung` (`agent/execution/taskboard.html:53`, `:385`). PO đổi ngày 24/11/2026 (`docs/docs_context.md:227`, PC-04 B1). Code owner của `/apps/gateway/` vẫn là `@T1xNTH` (`.github/CODEOWNERS:26`), nên PO duyệt hoặc bypass khi merge |
+| G8 HIGH: sửa `infra/ci/check-helm-images.sh` | Còn mở, chờ PO chốt ở phiếu chốt cuối PH-01 | Xem bảng Khoảng trống và mục Đánh giá bản sửa infra |
+| G9 LOW: testkit lọt vào bản build | Đã xử lý | `apps/gateway/tsconfig.build.json:3-6` loại `src/**/*.testkit.ts`. Sau khi build, `dist/db/` chỉ có `migrate.*` |
+| G10 LOW: README thiếu migrator và quyền CREATE | Đã xử lý | `apps/gateway/README.md:72-84`. Lệnh migrate in SQLSTATE, không in DSN (`src/db/migrate.ts:55-62`). EC13 kiểm `SQLSTATE 42704` (`migration.spec.ts:203`) |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G8 | Ticket mục 7 (“Không được sửa: … `infra/` (luồng infra)”), quy tắc 1.4.1, CODEOWNERS (`/infra/ @congminh1705`) | quy trình, **chờ PO**; không tính là lỗi mã | HIGH | `infra/ci/check-helm-images.sh:15-21` cấp `DATABASE_URL` thử và `GATEWAY_CSRF_KEY` ngẫu nhiên cho container gateway trong Helm smoke. `check-tracks.mjs --base origin/main` báo `PR touches 2 tracks (gateway, infra)`; đây là file duy nhất thuộc infra. `report.md` mục 5, YC2 ghi “Chờ PO quyết theo G8; chưa phải lời đồng ý của PO”. Về nội dung, bản sửa cần và đúng (xem mục Đánh giá bản sửa infra) | PO chốt một trong hai. (a) Giữ trong PR này: Dev ghi nguyên văn lời PO vào `report.md` mục 5 và đặt `Xong — chờ QC`; `@congminh1705` duyệt với vai code owner `/infra/`, hoặc PO bypass. (b) Tách thành PR của luồng infra với cùng nội dung, merge trước, rồi bỏ file khỏi #63. Chỉ đổi phần này thì không cần QC chạy lại mã gateway, chỉ cần job `helm` và `build` đạt trên đầu nhánh mới |
+| G11 | H7 (“test DDL chạy migration và gọi hàm bằng vai trò thật thay cho superuser”), DBD-14 (“Test của hai hàm chạy bằng vai trò thật”) | partial | LOW | Fixture HTTP không tự kiểm rằng nó chạy bằng vai trò thật. Đột biến M5: đổi `database.testkit.ts:142` sang DSN superuser thì 27/27 test của `migration.spec.ts` và `session.spec.ts` vẫn đạt. Đột biến M6: M5 cộng bỏ `owner_lookup` ở cả migration lẫn DDL thì 13 test HTTP vẫn đạt, chỉ 2 test của `migration.spec.ts` bắt được. Bộ test hiện vẫn chặn được lỗi DBQ-10 nhờ `migration.spec.ts`, nên G11 không chặn merge | Dev làm khi tiện, PR sau cũng được: trong `startGatewayDatabase`, hoặc trong một test HTTP, kiểm owner của `app.find_session` là `sires_gateway_owner` và vai trò service không SUPERUSER/BYPASSRLS, giống `migration.spec.ts:164-169`, `:146-147` |
+
+### Đánh giá bản sửa infra (G8)
+
+- **Có cần không: cần.** Từ PR này gateway dừng lúc khởi động khi thiếu `DATABASE_URL` (`src/session/session.module.ts:18`) hoặc khóa CSRF hợp lệ (`src/session/session.crypto.ts:53`). QC chạy `dist/main.js` đã build chỉ với `PORT` thì tiến trình thoát mã 1, lỗi `DATABASE_URL is required…`. Có DSN mà không có khóa thì thoát mã 1, lỗi `GATEWAY_CSRF_KEY must contain…`. Script trên `main` chỉ cấp `PORT`, nên `curl /health` sẽ hỏng và job `helm` đỏ. Job `build` bắt buộc có `needs: [..., helm, ...]` (`.github/workflows/ci.yml:379`), nên bỏ bản sửa thì CI của #63 đỏ. Để gateway khởi động khi thiếu cấu hình thì trái README (`README.md:34`, “không dùng khóa mặc định”) và H2, nên sửa phía smoke là đúng chỗ.
+- **Có đúng không: đúng.** Biến thêm chỉ áp cho `gateway` (`:16`). DSN trỏ `127.0.0.1:1` với tài khoản giả, không phải secret triển khai. Khóa CSRF sinh ngẫu nhiên mỗi lần chạy, không in ra. `/health` không truy vấn PostgreSQL. QC chạy `dist/main.js` với đúng hai biến đó: `/health` trả 200 `{"service":"gateway","status":"ok"}` dù DSN không tới được, log không chứa DSN hay khóa. `bash -n` đạt. Trên CI run 45642767821 (đầu `316fd63`), job `helm` in `OK gateway: /health 200, PID 1 non-root` và `OK Helm gateway`. Job `secrets` đạt. Mở rộng mảng `"${run_env[@]}"` dưới `set -u` không lỗi vì mảng luôn có `PORT`.
+- **Gợi ý cho chủ luồng infra, không bắt buộc:** script chung đang ghi riêng tên `gateway`. Khi thêm service khác vào smoke (identity cũng cần DSN), có thể cho script đọc biến smoke từ `apps/<svc>/deploy/` thay vì thêm nhánh `if` cho từng service.
+
+### Thử đột biến
+
+QC sửa tạm file trong worktree, chạy `pnpm exec vitest run src/migration.spec.ts src/session/session.spec.ts` (27 test, PostgreSQL thật), rồi khôi phục bằng `git checkout`. Sau mỗi lần, `git status` sạch. Công cụ sửa giữ nguyên CRLF của checkout Windows, để kết quả không lẫn lỗi xuống dòng.
+
+| Mã | Đột biến | Kết quả |
+| --- | --- | --- |
+| M1 | Bỏ dòng `owner_lookup` khỏi migration | **15 lỗi/27**: so schema, `DBQ-10 / G2`, 13 test HTTP cần phiên hợp lệ. Khớp lời khai của Dev (15/35 khi tính cả 8 test không chạm database) |
+| M4 | Bỏ `owner_lookup` ở cả migration lẫn `gateway.sql` (DDL đổi theo nên phép so `pg_dump` không còn bắt) | **15 lỗi/27**: `DBQ-10 / G2`, 13 test HTTP, và test so schema (lỗi ở kiểm đoạn `CREATE POLICY owner_lookup … TO sires_gateway_owner`, `migration.spec.ts:98`) |
+| M2 | Đổi `TO sires_gateway_owner` thành `TO PUBLIC` chỉ ở migration | **3 lỗi/27**: so schema, EC16 (`_app` thiếu context thấy dòng, `:137`), `DBQ-10 / G2` (`_app` đọc thẳng bảng, `:180`) |
+| M3 | Đổi `TO PUBLIC` ở cả migration lẫn DDL | **3 lỗi/27**, như M2. Phép so schema không còn tác dụng, nhưng `:98`, `:137`, `:180` vẫn bắt |
+| M10 | Đổi `FOR SELECT` thành `FOR ALL` ở cả migration lẫn DDL | 1 lỗi/27: chỉ kiểm đoạn ở `:98` bắt được. Đủ để chặn, nhưng chỉ có một chốt |
+| M7 | `migration.spec.ts` migrate bằng superuser | 2 lỗi/27: so schema (owner khác) và kiểm owner của hàm (`:164-169`) |
+| M8 | M7 cộng bỏ `owner_lookup` ở cả hai nơi | 15 lỗi/27 |
+| M9 | Pool `_app` của `migration.spec.ts` dùng superuser | 2 lỗi/27: EC16 (`rolsuper`, `rolbypassrls`) và `DBQ-10 / G2` |
+| M5 | Fixture HTTP migrate bằng superuser | **0 lỗi/27** (G11) |
+| M6 | M5 cộng bỏ `owner_lookup` ở cả hai nơi | 2 lỗi/27, chỉ ở `migration.spec.ts`; 13 test HTTP vẫn đạt (G11) |
+| M0 | Chỉ đổi migration sang LF (DDL vẫn CRLF trên checkout Windows) | 0 lỗi/27. `normalizeDump` bỏ `\r` (`database.testkit.ts:120`), nên phép so không phụ thuộc kiểu xuống dòng; xem Lệch với Self-QC |
+
+Ghi nhận thêm, không tính là khoảng trống:
+
+1. **Migration so với DDL trên `main`.** Bỏ ba dòng giấy phép đầu mỗi file DDL rồi `diff`: `0000_init.sql` chỉ thêm giấy phép và khối chú thích đầu file (dòng 1–16), một dòng trống, `--> statement-breakpoint` (`:327`) và khối tiêu đề phần `gateway.sql` (`:328-330`). Mọi dòng DDL khác giống nguyên văn, gồm COALESCE của EC09 và `owner_lookup` của DBD-14. QC dựng PostgreSQL 16.15 (`pgvector/pgvector:pg16`, image đã có) với vai trò theo 3.2: owner `NOLOGIN NOBYPASSRLS` sở hữu database; migrator `LOGIN`, `IN ROLE` owner, `SET role` owner; `_app`; `_system` và `_purge` là `LOGIN BYPASSRLS`. Chạy `node dist/migrate.js` của bản build bằng migrator: hai lần đều exit 0, sổ drizzle 1 dòng. Dựng database tham chiếu bằng `psql -f 00-common.sql -f gateway.sql`, cũng bằng migrator. So `pg_dump --schema-only` đầy đủ, giữ owner, ACL, policy: giống hệt sau khi bỏ `\r`. Phần khác duy nhất là `\r` trong thân hàm, vì migration lấy từ checkout Windows; xem ghi nhận 5. Có 24 lệnh `OWNER TO sires_gateway_owner`.
+2. **Vai trò thật, không qua test của Dev.** `app.find_session` thuộc `sires_gateway_owner`, `prosecdef = true`. Policy trên `app.session`: `owner_lookup` (SELECT, owner) và `tenant_isolation` (ALL, public). Seed hai phiên ở hai tài khoản. `_app` đăng nhập thật (`rolsuper/rolbypassrls = false/false`) gọi hàm khi chưa có context: 1 dòng. Id không tồn tại: 0 dòng. `_app` đọc thẳng `app.session` khi chưa có context: 0 dòng. `_system` gọi hàm: 1 dòng (Lần 2 là 0). Owner đọc thẳng bảng thấy 2 dòng; `UPDATE` bằng owner được `UPDATE 0`, nên policy chỉ cho đọc. Migrator đăng nhập (`current_user = sires_gateway_owner`) đọc thẳng thấy 2 dòng. Đây là hệ quả đã ghi ở DBD-14 cộng 3.2 (migrator là thành viên owner); xem Đề xuất. Vai trò lạ có `CONNECT` gọi hàm thì bị `permission denied for schema app`, dù PUBLIC vẫn có EXECUTE (`has_function_privilege('public', …) = true`).
+3. **Route và guard (H8).** Guard đọc route đã khớp `request.routeOptions.url` (`src/session/session.guard.ts:27`), không đọc URL thô. Route công khai chỉ cho GET, HEAD tới `/health`, `/api/v1/auth/login`, `/api/v1/auth/callback` (`:10`, `:28`). Danh sách này khớp hai operation có `security: []` dưới servers `/api/v1`; `logout` (POST) và `getSession` cần phiên. Chỉ gia hạn ở GET `/api/v1/auth/session` (`:35`). Test HTTP gắn controller dưới `api/v1` (`session.spec.ts:19`). Test đơn vị chặn route tham số có URL giống route công khai, query, mã hóa phần trăm và POST tới route công khai (`session.guard.spec.ts:21-47`). Platform dùng Fastify (`libs/ts/platform/src/bootstrap.ts:63`), không đặt global prefix. Chạy bản build thì `/health` trả 200, `/api/v1/x` trả 404.
+4. **Phiên, CSRF, Helm.** Phần mã phiên và CSRF không đổi so với Lần 2, trừ fixture; ghi nhận 7 của Lần 2 vẫn đúng. `alpine/helm:3.19.0` (image đã có) render chart chung với `deploy/values.yaml`: có Job `gateway-migration` (hook `pre-install,pre-upgrade`) chạy `node dist/migrate.js`, non-root, `automountServiceAccountToken: false`.
+5. **Xuống dòng.** Migration áp từ checkout Windows (`core.autocrlf=true`) lưu `\r` trong thân hàm (`pg_proc.prosrc`). Image chạy ở cụm được dựng trên CI Linux nên là LF. Không ảnh hưởng chức năng. Đề xuất `*.sql text eol=lf` đã có ở PC-04 mục C.
+6. **Journal.** Nội dung `0000_init.sql` đổi trước khi merge nhưng giữ `when` cũ (`migrations/meta/_journal.json`). Database nào đã áp bản cũ sẽ không áp lại. Hiện chỉ có database trên máy Dev, `implement.md` mục 4 đã ghi.
+7. **Commit.** 24/24 commit của PR có `verified: true`, reason `valid`. Không có trailer ghi công AI; mô tả PR cũng không có câu ghi công. Diff không chạm `docs/`, `apps/knowledge`, `apps/agent-core`. `pnpm-lock.yaml` so với `main` chỉ đổi importer `apps/gateway` (12 dòng). Không có `.only`, `.skip`, `.todo`, `console.log`, `debugger` trong `apps/gateway`.
+8. **Chân giấy phép** của `report.md`, `self-qc.md`, `implement.md` là bản rút gọn, thiếu câu “Sole decision-maker …”, khác khung `PID-Template`. `add-license --check` vẫn đạt; `PID-00018`, `PID-00034` trên `main` cũng dùng bản này. Không tính G.
+
+### AC
+
+| AC | Trạng thái | Mức kiểm | Test | Kết quả lệnh |
+| --- | --- | --- | --- | --- |
+| PID-00014-AC01 | Đạt ở mức Xây, với quyền database thật | Testcontainers PostgreSQL 16 + pgvector; migrate bằng migrator, service bằng `_app`; Fastify thật qua `inject`, route thử dưới `/api/v1`; chưa có staging | `src/session/session.spec.ts › hết hạn sau 12 giờ không hoạt động (PID-00014-AC01)` | Đạt. Quá 12 giờ thì 401 `unauthenticated` và `last_seen_at` không đổi. 11 giờ thì POST trả 201, hạn idle = lúc gọi + 12 giờ. Bỏ `owner_lookup` thì test lỗi (M1, M4), nên test chạy trên quyền thật |
+| PID-00014-AC02 | Đạt ở mức Xây, với quyền database thật | như trên | `session.spec.ts › lệnh ghi thiếu CSRF bị từ chối (PID-00014-AC02), có token đúng đi qua` | Đạt. POST, PUT, PATCH, DELETE thiếu token: 403 `forbidden` problem+json, handler không chạy, phiên không được gia hạn. Có token đúng thì đi tiếp |
+| NFR-AUTH-001-AC01 (phần gateway) | Đạt ở mức Xây | như trên | `session.spec.ts › không có phiên (NFR-AUTH-001-AC01, EC02)` | Đạt: 401, không có dữ liệu. Quét toàn bộ endpoint thuộc PID-00039 |
+
+Edge case: EC01–EC17 đều có test và đạt. EC03–EC06 nay chạy với `find_session` thuộc owner thật, không còn hàm thuộc superuser như Lần 2. EC13 chạy bằng superuser ở container chưa có vai trò; điều này hợp lý vì chưa có vai trò thì cũng chưa có migrator. EC16 chạy bằng `_app` thật. Slice: S01–S05 đạt ở mức Xây. Mục Xong khi “chạy được trong cụm” của S01 nay chỉ còn phụ thuộc môi trường (Terraform, secret của PID-00035), không còn chờ DDL.
+
+### Lệnh đã chạy
+
+Máy PO, Windows 11, Node 24, pnpm 10. Docker Engine 29.8.2 trong WSL Ubuntu-24.04 (`DOCKER_HOST` cổng 2375). Container PostgreSQL riêng của QC dùng `pgvector/pgvector:pg16`, Helm dùng `alpine/helm:3.19.0`; cả hai image đã có, không pull mới. Container đã xóa sau khi kiểm.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt (37 giây) |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/gateway --skip-nx-cache` | Đạt cả bốn target và 4 tác vụ phụ thuộc. Test **35/35**, 5 file (30 giây) |
+| `pnpm exec vitest run --reporter=verbose` trong `apps/gateway` | 35/35: `migration.spec.ts` 5/5 (gồm `DBQ-10 / G2`, EC13, EC16), `session.spec.ts` 22/22, `session.guard.spec.ts` 3/3, `app.module.spec.ts` 1/1, SPK-02 4/4. Không có test skip hay todo |
+| Thử đột biến M0–M10 (mục trên) | Như bảng Thử đột biến. Worktree sạch sau mỗi lần |
+| `diff` `0000_init.sql` với `00-common.sql` + `gateway.sql` của `origin/main` (bỏ 3 dòng giấy phép mỗi file) | Chỉ khác khối chú thích đầu, tiêu đề phần, `--> statement-breakpoint` |
+| Dựng vai trò theo 3.2; `node dist/migrate.js` hai lần bằng migrator; `psql` dựng database tham chiếu bằng migrator; `pg_dump --schema-only` đầy đủ; gọi `find_session` bằng `_app`, `_system` đăng nhập thật; kiểm owner, migrator, vai trò lạ | Như ghi nhận 1–2: schema giống hệt sau khi bỏ `\r`; `_app` và `_system` tra được phiên; `_app` đọc thẳng thấy 0 dòng; owner chỉ đọc |
+| `PORT=… node dist/main.js` (không biến khác; chỉ có DSN; DSN thử cộng khóa ngẫu nhiên như smoke) | Exit 1 `DATABASE_URL is required…`; exit 1 `GATEWAY_CSRF_KEY must contain…`; `/health` 200, log không có DSN hay khóa |
+| `bash -n infra/ci/check-helm-images.sh` | Đạt |
+| `helm template` (image `alpine/helm:3.19.0`) chart chung với `apps/gateway/deploy/values.yaml` | Render đạt; Job migration chạy `node dist/migrate.js` |
+| `pnpm nx affected -t lint typecheck test build --base=origin/main --exclude=agent-core,knowledge,sires-common,eval --parallel=2 --skip-nx-cache` (16 project TS, do lockfile; 4 project Python không chạy, xem dòng Python) | Exit 1 sau 7 phút 20 giây. Chạy 63 tác vụ, 62 đạt. Test đạt hết ở gateway 35, platform 174, testing 16, sample-service 14, workspace 27, planning 41, orchestration 25, research 46, audit 35, library 46, manuscript 23, identity 20, sandbox-runner 1, web 10. Tác vụ lỗi duy nhất là `@sires/contracts:test`, 13/14: ca Python EC06 cần `openapi-python-client`, bị Smart App Control chặn (`os error 4551`). PR không sửa `libs/ts/contracts`; CI Linux đạt. QC coi đây là giới hạn môi trường, không tính cho PR |
+| `node scripts/development/check-tracks.mjs --base origin/main` | Exit 0, cảnh báo `PR touches 2 tracks (gateway, infra); rule 1.4.1 expects one` (G8). `pnpm-lock.yaml`, `agent/execution/PID-00014/` tính là `repo` |
+| `git diff --stat origin/main...HEAD` | 30 file: `apps/gateway/` (24), `agent/execution/PID-00014/` (4), `pnpm-lock.yaml`, `infra/ci/check-helm-images.sh`. `git diff --check` đạt |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu, cả trước và sau khi thêm mục Lần 3 này |
+| `node scripts/docs/update-index.mjs --check` | Đạt: 159 PID, 15 đợt; taskboard khớp |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00014 --result` | KẾT QUẢ ĐỦ (0 cảnh báo), trạng thái “Bị chặn — G8: chờ PO quyết …” |
+| `gh api repos/toilatrung/sires/pulls/63/commits` | 24/24 `verified: true`, reason `valid`; không có trailer ghi công AI |
+| `gh pr checks 63` (bằng chứng phụ, run 45642767821 trên `316fd63`) | Mọi job đạt: `typescript`, `python`, `contracts`, `contract-test`, `asyncapi-payload`, 12 image, `helm` (`OK gateway: /health 200, PID 1 non-root`), `terraform`, `dependencies`, `secrets`, `docs`, `tracks`, `build`. Log job `typescript` có gateway 35/35. Nx lấy 59/63 tác vụ từ cache. Run 45641867310 trên `4980f6f` (cùng mã gateway) đã chạy mới gateway test |
+| Python (`knowledge`, `agent-core`, `sires_common`, `eval`) | Không chạy: PR không sửa các project này (diff trống); Smart App Control chặn công cụ Python trên máy này. CI `python` đạt |
+
+### Lệch với Self-QC
+
+- `self-qc.md` Lần 10 ghi một LOW: “Trên checkout Windows (`core.autocrlf=true`), phép so schema chỉ đạt vì migration và DDL cùng CRLF trong thân hàm”. QC thấy không đúng. `normalizeDump` thay `\r\n` bằng `\n` trước khi so (`database.testkit.ts:120`). Đổi riêng migration sang LF (M0) thì test vẫn đạt. Phần đúng của ghi chú: database migrate từ checkout Windows lưu `\r` trong thân hàm (ghi nhận 5).
+- `self-qc.md` Lần 10 ghi bỏ `owner_lookup` thì “15 lỗi / 35”, và fixture HTTP “đã chạy bằng quyền thật”. QC xác nhận cả hai (M1). Nhưng fixture không tự kiểm điều đó, và hồi quy sang superuser không bị test HTTP phát hiện (M5, M6, G11).
+- Về gateway, các kết quả còn lại của QC khớp lời khai: 35/35 test; lint, typecheck, build đạt; CI đạt trên đầu nhánh.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. PO chốt G8 ở phiếu chốt cuối PH-01: (a) giữ trong #63, hoặc (b) tách PR luồng infra merge trước. Chọn (a): Dev ghi nguyên văn lời PO vào `report.md` mục 5, đặt `Xong — chờ QC`; `@congminh1705` duyệt `/infra/` hoặc PO bypass. Chọn (b): Dev bỏ file khỏi #63 sau khi PR infra đã merge, rồi chờ CI `helm`, `build` đạt.
+2. Khi merge: PO duyệt hoặc bypass với vai code owner `/apps/gateway/` (`@T1xNTH`).
+3. Không chặn merge: Dev thêm kiểm vai trò cho fixture HTTP (G11), trong PR này hoặc PR sau của luồng gateway.
+
+### Đề xuất cho PO
+
+- **G8.** Về kỹ thuật, bản sửa cần và đúng; QC không thấy lý do kỹ thuật để tách. Tách chỉ để giữ quy tắc 1.4.1 và quyền duyệt của chủ luồng infra. Đây là việc PO quyết.
+- **Sau khi merge, cập nhật hồ sơ (`docs/`, PO ghi).** Trang ticket PID-00014 mục 3 vẫn ghi “DBQ-10 chặn merge PR #63 (H7)”. Mục 5 “Còn mở” vẫn ghi DBQ-10 và “G4 … chờ PO xác nhận”. Database 13.3, dòng DBQ-10 ghi “PR #63 vẫn chờ DDL và test sửa theo”. Cả ba đã cũ.
+- **DBD-14, câu “không cấp owner cho vai trò khác”.** Theo 3.2, `sires_<svc>_migrator` là thành viên owner, nên đọc được mọi dòng `app.session` qua `owner_lookup`; QC đã thử (ghi nhận 2). Điều này hợp với thiết kế vì DSN migrator chỉ cấp cho Job migration. Nên ghi rõ ngoại lệ “trừ migrator” trong DBD-14, để Terraform và PID-00159 không hiểu sai.
+- **DDL.** PUBLIC vẫn có EXECUTE trên `app.find_session`; thực tế chỉ bị giới hạn nhờ quyền `USAGE` trên schema `app`. Đề xuất ở Lần 2 vẫn còn: thêm `REVOKE ALL ON FUNCTION app.find_session(bytea) FROM PUBLIC` vào `gateway.sql` (tương tự `find_account_by_identity` ở `identity.sql`), rồi đưa vào migration mới của mỗi service.
 - **Ghi chú:** job dọn `app.session` hết hạn (N5) vẫn chưa có PID nhận.
 
 ---
