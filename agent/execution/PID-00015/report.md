@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00015](../../../docs/tickets/issues/PID-00015/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
-- **Nhánh:** `gateway/spk-02-oidc-stub` (đã commit, đã push) · **PR:** [#29](https://github.com/toilatrung/sires/pull/29)
-- **Cập nhật:** 18/11/2026
+- **Nhánh:** `gateway/spk-02-oidc-stub` (đã commit, đã push) · **PR:** [#29](https://github.com/toilatrung/sires/pull/29) · đã merge
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 2, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.

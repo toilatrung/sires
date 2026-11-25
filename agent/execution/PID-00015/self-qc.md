@@ -1,9 +1,9 @@
 # PID-00015 — Self-QC của Dev
 
-**Kết luận:** Đạt
+**Kết luận:** Đạt (Lần 2, 24/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; 6 LOW còn mở (QC-G4, QC-G5 chuyển PID-00038)
 
 - **Ticket:** [PID-00015](../../../docs/tickets/issues/PID-00015/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 18/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 2: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -70,6 +70,53 @@ Chế độ Dev tự QC, 18/11/2026. Đối chiếu với `acceptance.html`, `sc
 | G4 | unrequested | LOW | Thêm kiểm sai `state`, sai `nonce`, refresh đồng thời và chế độ metadata tĩnh, ngoài danh sách bước của P1 | `flow.spec.ts:112–170`, `flow.spec.ts:207–245` | Giữ: phục vụ INT-OIDC-001-AC02 (ASM-13), bước refresh của P1 và K1; không đổi phạm vi hay hành vi service |
 
 Không có CRITICAL, HIGH, MEDIUM.
+
+## Lần 2 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 2 ở commit `53abe59` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+Lần 1 của QC không tự chạy được test (không có mạng tới npm); lần này chạy lại các lệnh ở ticket mục 8 trên worktree mới (`pnpm install --frozen-lockfile`, `--skip-nx-cache`).
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt |
+| `pnpm --filter @sires/gateway exec vitest run --dir spikes/spk-02` (trước khi build phụ thuộc) | **Lỗi** — 1 suite fail, 0 test: `Failed to resolve entry for package "@sires/testing"` (QC-G6) |
+| `pnpm nx run @sires/gateway:lint` | Đạt |
+| `pnpm nx run @sires/gateway:typecheck` | Đạt (không phủ `spikes/`, QC-G2) |
+| `pnpm nx run @sires/gateway:test` | Đạt — 2 file, 5/5 (`spikes/spk-02/flow.spec.ts` 4, `src/app.module.spec.ts` 1) |
+| `pnpm nx run @sires/gateway:build` | Đạt |
+| `SPK02_TIMINGS=1 pnpm --filter @sires/gateway exec vitest run --dir spikes/spk-02` (sau khi build phụ thuộc) | Đạt — 1 file, 4/4 |
+| `tsc --noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 --skipLibCheck --types node spikes/spk-02/rp.ts spikes/spk-02/flow.spec.ts` (trong `apps/gateway`) | Đạt, exit 0 — bù cho QC-G2 |
+| `eslint spikes` (trong `apps/gateway`) | Đạt, exit 0 |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00015 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `check-tracks.mjs`, `nx affected` | Không chạy — PR #29 đã merge, không còn diff riêng của PID này |
+
+### 2. AC và edge case
+
+| AC | Kết quả |
+| --- | --- |
+| PID-00015-AC01 | Đạt: `flow.spec.ts › luồng đầy đủ trên stub (discovery)`, `› (static)` trong 4/4 (sau khi build phụ thuộc, QC-G6) |
+| PID-00015-AC02 | Đạt (đọc báo cáo): `report.md` mục 3.3, ASM-13 chưa kết luận, bảng K1–K14 không đổi |
+
+EC02 `› không khả dụng` (`flow.spec.ts:172`), EC03 `› hết hạn` (`flow.spec.ts:207`) đạt; EC01 thao tác tay, không đổi.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G1 | partial | LOW | Tên test AC01 có hậu tố `(discovery)`, `(static)` so với `acceptance.html` (trùng G1 mục 5) | `apps/gateway/spikes/spk-02/flow.spec.ts:111` | Còn mở; PO đổi tên trong `acceptance.html` khi tiện |
+| QC-G2 | partial | LOW | `nx typecheck` không kiểm `spikes/` (trùng G2 mục 5) | `apps/gateway/tsconfig.json` `include: ["src"]` | Còn mở; bù bằng `tsc` riêng ở mục 1. PID-00038 viết mã trong `src/` |
+| QC-G3 | partial | LOW | `check-tracks` báo `infra` chỉ do `pnpm-lock.yaml` (trùng G3 mục 5) | lệnh `check-tracks.mjs` của Lần 1 | Còn mở; cần ticket luồng infra |
+| QC-G4 | partial | LOW | Mọi `TypeError` trong chuỗi `cause` bị xếp là “không khả dụng” (EC02, INT-OIDC-004) | `apps/gateway/spikes/spk-02/rp.ts:262` | Chuyển PID-00038 |
+| QC-G5 | partial | LOW | `PendingLogin.createdAt` không được kiểm hạn ở callback (INT-OIDC-001) | `rp.ts:39`, `rp.ts:123` | Chuyển PID-00038 |
+| QC-G6 | partial | LOW | Hướng dẫn chạy lại (O1, B2) thiếu bước build `@sires/testing`: lệnh spike lỗi trên worktree mới | `agent/execution/PID-00015/report.md:30–31`; lệnh ở mục 1 | Còn mở; đề xuất PO ghi `pnpm nx run @sires/gateway:test` ở ticket mục 8, spec mục 6, slice S01 |
+
+Không có `contradicts`, không có CRITICAL, HIGH, MEDIUM. Lệch với mục 1 Lần 1: lệnh spike ghi chạy được ngay sau `pnpm install`; trên worktree mới cần build `@sires/testing` trước (QC-G6). Số test 4/4 khớp. Đề xuất 1 của Lần 1 (`nonce` trong ID token của eTroy) vẫn là điều kiện cho PID-00038.
 
 ---
 

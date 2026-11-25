@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00158](../../../docs/tickets/issues/PID-00158/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/state-machine-helper` (tạo từ `origin/main` `5587a86`; mã ở `aab47f9`, gộp `main` `1fe6d66` ở `06aa890`; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#52](https://github.com/toilatrung/sires/pull/52) vào `main`, chưa merge
-- **Cập nhật:** 21/11/2026
+- **Nhánh:** `platform/state-machine-helper` (tạo từ `origin/main` `5587a86`; mã ở `aab47f9`, gộp `main` `1fe6d66` ở `06aa890`; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#52](https://github.com/toilatrung/sires/pull/52) vào `main`, đã merge (`c640182`); sửa sau rà 24/11: [#86](https://github.com/toilatrung/sires/pull/86)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 2, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
