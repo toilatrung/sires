@@ -3,13 +3,11 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import { defineConfig } from 'vitest/config';
+import { TESTCONTAINERS_TIMEOUTS } from '@sires/testing/vitest';
 
 // Test của planning chạm PostgreSQL thật qua Testcontainers (migration, trigger, pg_dump qua docker exec).
-// Mặc định của vitest (test 5 s, hook 10 s) quá sát: trên máy hay runner CI có tải, các ca này
-// vượt 5 s dù mã đúng. Đặt trần rõ cho cả app; beforeAll dựng container vẫn giữ 180 s riêng.
+// Trần timeout chung của test dùng Testcontainers (PC-04 A6): test 60 s, hook 180 s; beforeAll dựng container vẫn giữ
+// 180 s riêng.
 export default defineConfig({
-  test: {
-    testTimeout: 60_000,
-    hookTimeout: 180_000,
-  },
+  test: { ...TESTCONTAINERS_TIMEOUTS },
 });
