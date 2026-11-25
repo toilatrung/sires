@@ -4,7 +4,7 @@
 
 // Migration sires_identity (PID-00016 S01, S02): schema khớp DDL tham chiếu (PID-00016-AC02), quyền provider_secret
 // (EC05), RLS (EC06), thiếu vai trò (EC07), state machine (EC08); lệnh migrate và values cho Job migration; hàm
-// app.find_account_by_identity khi migration chạy bằng vai trò migrator thật (DBQ-10). Cần Docker (Testcontainers).
+// app.find_account_by_identity khi migration chạy bằng vai trò migrator thật (DBD-14). Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -58,7 +58,7 @@ describe('migration identity — PID-00016-AC02', () => {
     // Lệnh migrate của service (cùng hàm mà node dist/migrate.js gọi), DSN ở DATABASE_MIGRATOR_URL.
     const run = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(MIGRATED) }, ...run.io })).toBe(0);
-    expect(run.stdout).toEqual(['identity migrate: áp 3 migration mới, đã ghi sổ 3']);
+    expect(run.stdout).toEqual(['identity migrate: áp 2 migration mới, đã ghi sổ 2']);
     await pg.applyReferenceDdl(REFERENCE);
     migratedDump = await pg.dumpSchema(MIGRATED);
   }, CONTAINER_TIMEOUT);
@@ -81,15 +81,15 @@ describe('migration identity — PID-00016-AC02', () => {
       'CREATE TRIGGER provider_connection_state BEFORE UPDATE OF test_status ON app.provider_connection',
       `GRANT SELECT,INSERT,UPDATE ON TABLE app.account TO ${ROLES.app}`,
       `GRANT INSERT,DELETE ON TABLE app.provider_secret TO ${ROLES.app}`,
-      `CREATE POLICY definer_lookup ON app.account FOR SELECT TO ${ROLES.owner} USING (true)`,
+      `CREATE POLICY owner_lookup ON app.account FOR SELECT TO ${ROLES.owner} USING (true)`,
     ]) {
       expect(migratedDump).toContain(fragment);
     }
     // Chạy lại không đổi.
-    expect(await runMigrations(pg.url(MIGRATED))).toEqual({ applied: 0, total: 3 });
+    expect(await runMigrations(pg.url(MIGRATED))).toEqual({ applied: 0, total: 2 });
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const ledger = await pg.admin(MIGRATED, `SELECT count(*)::int AS n FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`);
-    expect(ledger).toEqual([{ n: 3 }]);
+    expect(ledger).toEqual([{ n: 2 }]);
   });
 
   it('áp lên database rỗng — lệnh migrate và giá trị Helm (S01)', () => {
@@ -103,7 +103,7 @@ describe('migration identity — PID-00016-AC02', () => {
     expect(Object.keys(pkg.dependencies)).not.toContain('drizzle-kit');
     expect(pkg.scripts.migrate).toBe('node dist/migrate.js');
     const journal = JSON.parse(readFileSync(join(MIGRATIONS_FOLDER, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string }[] };
-    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition', '0002_dbq10_definer_lookup']);
+    expect(journal.entries.map((entry) => entry.tag)).toEqual(['0000_init', '0001_state_transition']);
     const values = readFileSync(join(APP_ROOT, 'deploy', 'values.yaml'), 'utf8').replace(/\r\n/g, '\n');
     expect(values).toMatch(/^migration:\n {2}enabled: true\n {2}command: \["node", "dist\/migrate\.js"\]$/m);
   });
@@ -181,13 +181,24 @@ describe('migration identity — PID-00016-AC02', () => {
     }
   });
 
+
+  it('dumpSchema giữ nguyên ký tự UTF-8 nhiều byte (phép so schema không chập chờn, #100)', async () => {
+    // Ký tự bị cắt giữa hai khúc stdout của docker exec thành U+FFFD; chú thích 720 KB đi qua nhiều khúc.
+    const database = 'identity_utf8_probe';
+    const text = 'đã kết thúc, bất biến 𝄞 '.repeat(20_000);
+    await pg.createDatabase(database);
+    await pg.admin(database, `CREATE TABLE public.utf8_probe (id int); COMMENT ON TABLE public.utf8_probe IS '${text}'`);
+    const dump = await pg.dumpSchema(database);
+    expect(dump.split(String.fromCodePoint(0xfffd)).length - 1).toBe(0);
+    expect(dump.includes(`COMMENT ON TABLE public.utf8_probe IS '${text}';`)).toBe(true);
+  });
 });
 
-// DBQ-10 (mở 22/11/2026, chờ PO chốt): app.find_account_by_identity là SECURITY DEFINER nên chạy bằng owner; owner
-// không BYPASSRLS (database 3.2) và app.account bị FORCE RLS, nên trước khi có tenant context hàm trả 0 dòng. Các test
-// khác chạy migration bằng superuser nên không thấy. Ở đây migration chạy bằng vai trò migrator thật (thành viên owner,
-// SET role owner) và request gọi hàm bằng _app không có app.account_id, như lúc đăng nhập.
-describe('migration identity — tra cứu trước tenant context bằng vai trò thật (DBQ-10)', () => {
+// DBD-14 (PO 24/11/2026, đóng DBQ-10): app.find_account_by_identity là SECURITY DEFINER nên chạy bằng owner; owner
+// không BYPASSRLS (database 3.2) và app.account bị FORCE RLS, nên hàm đọc qua policy owner_lookup (FOR SELECT TO owner).
+// Các test khác chạy migration bằng superuser nên không phân biệt được; ở đây migration chạy bằng vai trò migrator thật
+// (thành viên owner, SET role owner) và request gọi hàm bằng _app không có app.account_id, như lúc đăng nhập.
+describe('migration identity — tra cứu trước tenant context bằng vai trò thật (DBD-14)', () => {
   let pg: IdentityPostgres;
   const database = 'identity_migrator';
   const ISSUER = 'https://id.etroy.test';

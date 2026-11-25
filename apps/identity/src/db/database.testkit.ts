@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { startPostgres, type StartedPostgres } from '@sires/testing';
 import { Client } from 'pg';
-import { MIGRATIONS_FOLDER, MIGRATIONS_SCHEMA } from './migrate';
+import { MIGRATIONS_SCHEMA } from './migrate';
 
 /** Thư mục DDL tham chiếu (chỉ đọc): src/db → gốc repo là bốn cấp. */
 export const DDL_DIR = join(__dirname, '..', '..', '..', '..', 'docs', 'database', 'ddl');
@@ -19,12 +19,6 @@ export const DDL_DIR = join(__dirname, '..', '..', '..', '..', 'docs', 'database
 /** Thứ tự chạy của docs/database/README.md: 00-common.sql rồi file của service. */
 export const REFERENCE_DDL_FILES = ['00-common.sql', 'identity.sql'] as const;
 
-/**
- * Bản sửa DDL đề xuất, chưa có trong docs/database/ddl vì chờ PO chốt (DBQ-10): chạy sau DDL tham chiếu để phép so
- * dump vẫn bắt mọi lệch khác. Khi PO sửa identity.sql theo, bỏ phần tử tương ứng — để sót thì CREATE POLICY trùng tên
- * làm applyReferenceDdl lỗi, test báo ngay.
- */
-export const PENDING_REFERENCE_PATCHES = [join(MIGRATIONS_FOLDER, '0002_dbq10_definer_lookup.sql')] as const;
 
 export const ROLES = {
   owner: 'sires_identity_owner',
@@ -54,7 +48,7 @@ export const MIGRATOR_ROLE = 'sires_identity_migrator';
  * Dựng vai trò migrator như hạ tầng thật (database 3.2): LOGIN, thành viên của owner, `ALTER ROLE … SET role` về owner
  * nên mọi phiên chạy bằng quyền owner (không SUPERUSER, không BYPASSRLS) và đối tượng do migration tạo thuộc owner.
  * Owner được CREATE trên `database` (schema app, replica, drizzle) và schema public (extension tin cậy). Trả DSN của
- * migrator tới `database` — dùng cho test DBQ-10, nơi chạy migration bằng superuser che mất lỗi.
+ * migrator tới `database` — dùng cho test DBD-14, nơi chạy migration bằng superuser che mất lỗi (DBQ-10).
  */
 export async function enableMigratorLogin(pg: IdentityPostgres, database: string): Promise<string> {
   await pg.admin(pg.server.database, `
@@ -91,7 +85,7 @@ export interface IdentityPostgres {
    * thì rollback và ném lại. Dùng cho test trigger, quyền, RLS như service thật (withAccountTransaction).
    */
   asRole<T>(database: string, role: ServiceRole, accountId: string | undefined, work: (client: Client) => Promise<T>): Promise<T>;
-  /** Chạy 00-common.sql rồi identity.sql đọc từ docs/database/ddl, rồi PENDING_REFERENCE_PATCHES, bằng superuser. */
+  /** Chạy 00-common.sql rồi identity.sql đọc từ docs/database/ddl bằng superuser. */
   applyReferenceDdl(database: string): Promise<void>;
   /** pg_dump --schema-only trong container, bỏ schema sổ phiên bản của drizzle và dòng phụ thuộc lần chạy. */
   dumpSchema(database: string): Promise<string>;
@@ -150,18 +144,18 @@ export async function startIdentityPostgres(options: { withRoles?: boolean } = {
       await admin(server.database, `CREATE DATABASE ${name}`);
     },
     async applyReferenceDdl(database) {
-      const sql = [...REFERENCE_DDL_FILES.map((file) => join(DDL_DIR, file)), ...PENDING_REFERENCE_PATCHES]
-        .map((path) => readFileSync(path, 'utf8'))
-        .join('\n');
+      const sql = REFERENCE_DDL_FILES.map((file) => readFileSync(join(DDL_DIR, file), 'utf8')).join('\n');
       await admin(database, sql);
     },
     async dumpSchema(database) {
+      // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD (#100).
       const result = await server.container.exec([
-        'pg_dump', '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
+        'bash', '-o', 'pipefail', '-c', 'pg_dump "$@" | base64 -w 0', 'pg_dump',
+        '--schema-only', `--exclude-schema=${MIGRATIONS_SCHEMA}`,
         '-U', server.username, '-d', database,
       ]);
       if (result.exitCode !== 0) throw new Error(`pg_dump ${database} lỗi: ${result.stderr || result.output}`);
-      return normalizeDump(result.stdout);
+      return normalizeDump(Buffer.from(result.stdout.trim(), 'base64').toString('utf8'));
     },
     stop: () => server.stop(),
   };

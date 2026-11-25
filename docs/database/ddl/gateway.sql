@@ -52,5 +52,9 @@ CREATE INDEX sse_event_log_replay_idx ON app.sse_event_log (account_id, seq);
 CREATE INDEX sse_event_log_created_idx ON app.sse_event_log (created_at);
 
 SELECT app.enable_tenant_rls();
+-- DBD-14 (PO 24/11/2026, đóng DBQ-10): app.find_session là SECURITY DEFINER, chạy bằng owner trước khi có tenant
+-- context; owner không BYPASSRLS và bảng FORCE RLS, nên owner đọc app.session qua policy riêng, chỉ đọc.
+-- Ứng dụng không kết nối bằng owner và không cấp owner cho vai trò khác (3.2).
+CREATE POLICY owner_lookup ON app.session FOR SELECT TO sires_gateway_owner USING (true);
 SELECT app.grant_standard('gateway', ARRAY['session']);
 GRANT EXECUTE ON FUNCTION app.find_session(bytea) TO sires_gateway_app;

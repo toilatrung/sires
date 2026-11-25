@@ -1,7 +1,7 @@
 # PID-00016 — Triển khai
 
 - **Ticket:** [PID-00016](../../../docs/tickets/issues/PID-00016/index.html) · **Báo cáo:** [report.md](report.md)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 2)
 
 File này mô tả mã **đang thật sự chạy**, đọc từ mã sau khi làm, để người sau hiểu nhanh và QC biết nên soi ở đâu. Không chép lại spec. Sửa mã thì sửa file này cho đúng.
 
@@ -20,7 +20,9 @@ Mọi file ở `apps/identity/`. Chưa có API: PID-00042 gọi `ProviderSecretS
 
 **KMS cục bộ** (S04) — `src/envelope/local-kms.ts`: `EnvelopeModule` dựng `KMS_PORT` bằng `LocalKeyKms.fromEnv()` (`:44`) khi Nest khởi tạo: thiếu `IDENTITY_LOCAL_KEK` / `IDENTITY_LOCAL_KEK_ID` hay KEK không phải base64 của đúng 32 byte → `LocalKmsConfigError` nêu tên biến, identity không khởi động (EC10). `wrapDek` (`:58`): nonce 12 byte ngẫu nhiên, AES-256-GCM không AAD, trả `nonce | ciphertext | tag` (định dạng `sires_common.testing.LocalKms.encrypt`) và id khóa trong cấu hình.
 
-**Migration** (S01, S02): như PID-00019, PID-00023 — `node dist/migrate.js` → `runMigrationCommand` (`src/db/migrate.ts`) → `migrate()` của drizzle-orm áp `migrations/0000_init.sql` (nguyên văn `00-common.sql` + `identity.sql`, trừ khối INSERT state_transition) và `0001_state_transition.sql` (đầu ra `sires-state-transition-sql dist/domain/state-machines.js`).
+**Migration** (S01, S02): như PID-00019, PID-00023 — `node dist/migrate.js` → `runMigrationCommand` (`src/db/migrate.ts`) → `migrate()` của drizzle-orm áp `migrations/0000_init.sql` (nguyên văn `00-common.sql` sau EC09 + `identity.sql` có policy `owner_lookup` của DBD-14, trừ khối INSERT state_transition) và `0001_state_transition.sql` (đầu ra `sires-state-transition-sql dist/domain/state-machines.js`). Hai migration, không có migration riêng cho DBD-14.
+
+**Tra tài khoản trước tenant context** (DBD-14): `app.find_account_by_identity(issuer, subject)` là SQL `STABLE SECURITY DEFINER`, chạy bằng `sires_identity_owner`. `app.account` có FORCE RLS và owner không BYPASSRLS, nên lúc chưa có `app.account_id` policy `tenant_isolation` lọc hết; policy `owner_lookup` (`FOR SELECT TO sires_identity_owner USING (true)`, `migrations/0000_init.sql:485`, `docs/database/ddl/identity.sql:164`) cho owner đọc mọi dòng, chỉ đọc. Vai trò khác không bị policy này áp: `_app` đọc thẳng `app.account` vẫn theo `tenant_isolation`. Chưa có mã ứng dụng gọi hàm (PID-00041).
 
 ## 2. Hàm, thuật toán, class ảnh hưởng cao
 
@@ -31,6 +33,8 @@ Mọi file ở `apps/identity/`. Chưa có API: PID-00042 gọi `ProviderSecretS
 | `LocalKeyKms` | class | `src/envelope/local-kms.ts:30` | KMS cục bộ đọc KEK từ cấu hình | Định dạng phải khớp `sires_common` để Python mở được (H1) | Thiếu cấu hình thì không khởi động | `› KMS cục bộ dùng lại được sau khởi động lại`, `› thiếu cấu hình KEK thì không khởi động` |
 | `accountMachine`, `providerConnectionMachine`, `stateMachines` | khai báo | `src/domain/state-machines.ts:17`, `:32`, `:56` | 4 + 6 cặp | Nguồn sinh 10 dòng database; PID-00041, PID-00042 dùng lại | Chỉ cặp của DDL (DR-01) | `migration.spec.ts › state machine account và provider_connection` |
 | `migrations/0000_init.sql`, `0001_state_transition.sql` | migration | `apps/identity/migrations/` | Dựng schema, nạp dòng chuyển trạng thái | Ghi khó đảo ngược | Schema khớp DDL (DBD-02) | `migration.spec.ts › áp lên database rỗng` |
+| Policy `owner_lookup` trên `app.account` | policy RLS | `migrations/0000_init.sql:485` | Cho owner đọc `app.account` để `app.find_account_by_identity` chạy được trước tenant context | Thiếu thì mọi lần đăng nhập không tìm thấy tài khoản; nới sai thì lộ dữ liệu giữa tài khoản | Chỉ `FOR SELECT`, chỉ `TO sires_identity_owner`; giữ FORCE RLS; không cấp owner cho vai trò khác (DBD-14) | `migration.spec.ts › tra cứu trước tenant context bằng vai trò thật (DBD-14)` (3 test) |
+| `enableMigratorLogin` | hàm test | `src/db/database.testkit.ts:53` | Tạo `sires_identity_migrator` LOGIN, thành viên owner, `ALTER ROLE … SET role` owner, NOBYPASSRLS, không SUPERUSER | Test DBD-14 chỉ có nghĩa khi migration chạy bằng vai trò như hạ tầng thật (database 3.2) | Không chạy migration DBD-14 bằng superuser | như trên |
 
 ## 3. Quyết định kỹ thuật trong phạm vi
 
@@ -40,7 +44,10 @@ Mọi file ở `apps/identity/`. Chưa có API: PID-00042 gọi `ProviderSecretS
 - Tên biến cấu hình `IDENTITY_LOCAL_KEK` (base64), `IDENTITY_LOCAL_KEK_ID`; kiểm base64 chuẩn bằng biểu thức (Buffer.from bỏ qua ký tự lạ).
 - `EnvelopeModule` luôn dùng KMS cục bộ (chưa có KMS thật); đổi adapter khi có PID-00035, PID-00153.
 - Khai báo state machine ở `src/domain/state-machines.ts` (như PID-00019).
-- Test vai trò owner thật (DBQ-10): `enableOwnerLogin` trong `database.testkit.ts` bật LOGIN cho `sires_identity_owner`, cấp CREATE trên database, chạy migration bằng owner; test đánh dấu `it.fails`.
+- Test vai trò thật (DBD-14): `enableMigratorLogin` dựng `sires_identity_migrator` theo database 3.2 (tên chốt 21/11/2026); owner được CREATE trên database và schema public. Migration của describe DBD-14 chạy bằng migrator; các describe khác vẫn chạy bằng superuser.
+- DBD-14 gộp vào `0000_init.sql` thay vì migration riêng: PID-00016 chưa merge nên chưa database nào áp `0000`; chép lại `00-common.sql` sau EC09 cùng lúc, giống các service khác chép `00-common.sql` mới vào migration đầu.
+- `dumpSchema` (`src/db/database.testkit.ts:150`) đọc `pg_dump` qua `base64 -w 0` rồi giải mã một lần, như #100: exec của Testcontainers giải mã stdout từng khúc nên ký tự UTF-8 giữa hai khúc thành U+FFFD. Test `› dumpSchema giữ nguyên ký tự UTF-8 nhiều byte`.
+- `vitest.config.ts`: `testTimeout` 60 s, `hookTimeout` 180 s (PC-04 A6), đặt tại chỗ tới khi `@sires/testing` có hằng chung.
 
 ---
 
