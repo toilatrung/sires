@@ -11,8 +11,8 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | Lệnh | Kết quả |
 | --- | --- |
-| `pnpm nx affected -t lint typecheck test build` | Chạy theo project: `pnpm nx run-many -t lint typecheck -p @sires/web` đạt (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`); `pnpm nx run-many -t test build -p @sires/web` đạt: 26 file, 203 test, build `vite` đạt. `affected` không dùng vì nhánh xếp chồng trên `preview/ui-ph02` |
-| `pnpm nx run @sires/web:test` | 203 đạt, 0 lỗi; riêng `src/features/settings`: 6 file, 67 test đạt |
+| `pnpm nx affected -t lint typecheck test build` | Chạy theo project: `pnpm nx run-many -t lint typecheck -p @sires/web` đạt (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`); `pnpm nx run-many -t test build -p @sires/web` đạt: 26 file, 205 test, build `vite` đạt. `affected` không dùng vì nhánh xếp chồng trên `preview/ui-ph02` |
+| `pnpm nx run @sires/web:test` | 205 đạt, 0 lỗi; riêng `src/features/settings`: 6 file, 67 test đạt |
 | `node scripts/docs/add-license.mjs --check` | Đạt cho mọi file của ticket (`add-license.mjs` không phải thêm file nào) |
 | `scripts/development/check-tracks.mjs` trên file đã đổi | `web/settings`, `web/shell` — cảnh báo hai luồng: `shell/routes.spec.ts`, `shell/preferences.spec.ts` (report.md mục 5, YC1) |
 | `check-ui.mjs`, preview (khi có màn hình) | `check-ui.mjs apps/web/src/features/settings`: 0 lỗi, 4 cảnh báo (bo 32 px của avatar; bóng `--sires-shadow-float` của dialog — cả hai đúng design.md §2.3, §4). Preview `dev:mock` ở 1440×900, 1024×768, 390×844: không cuộn ngang trang, bảng cuộn trong thẻ, nút SignIn 48 px, console không lỗi. Ảnh: `pid-00036-mock-providers-invalid.jpg`, `pid-00036-mock-providers-table.jpg` (thư mục ghi chú của phiên điều phối) |

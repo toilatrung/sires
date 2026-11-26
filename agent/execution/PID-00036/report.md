@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00036](../../../docs/tickets/issues/PID-00036/index.html) · **Luồng:** `web/settings` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/settings-pid-00036` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131; đã commit) · **PR:** chưa mở
+- **Nhánh:** `web/settings-pid-00036` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131; đã commit) · **PR:** [#143](https://github.com/toilatrung/sires/pull/143) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** đọc từ nhánh `docs/pid-00036-clarify` (PR #122, chưa vào `main`); hợp đồng theo `preview/ui-ph02` (PR #126 sửa nguồn chưa merge, nên làm theo cách tạm ghi trong slice)
@@ -34,7 +34,7 @@ Mọi đường dẫn trên dưới `apps/web/src/features/settings/`. Ngoài kh
 ## 3. Kết quả
 
 - `pnpm --filter @sires/web dev:mock`, mở `/sign-in`, `/settings/profile`, `/settings/providers`, `/settings/agents`, `/settings/preferences`. Dữ liệu mẫu theo màn tham chiếu: Claude cá nhân, OpenAI cá nhân (Valid), Gemini cá nhân (Invalid `auth_failed`), “Proxy OpenAI tương thích” trên `https://llm-proxy.example/v1` (Valid). Thử key: chữ `wrong` (hoặc `invalid`, `sai`) trong key → Invalid `auth_failed`; `timeout`, `quota`, `limit`, `denied`, `down` → mã tương ứng.
-- Test: 6 file, 67 test của khu vực; toàn `@sires/web` 203 test đạt; lint, typecheck, build đạt. Chi tiết ở self-qc.md.
+- Test: 6 file, 67 test của khu vực; toàn `@sires/web` 205 test đạt; lint, typecheck, build đạt. Chi tiết ở self-qc.md.
 
 ## 4. Việc còn lại
 
@@ -45,7 +45,7 @@ Mọi đường dẫn trên dưới `apps/web/src/features/settings/`. Ngoài kh
 
 | # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
 | --- | --- | --- | --- | --- | --- |
-| YC1 | Dev | Sửa hai test của shell bám placeholder `sign-in`: `shell/routes.spec.ts` (EC17 của PID-00012) tìm chữ `sign-in` và đòi `/sign-in` không gửi request nào; `shell/preferences.spec.ts` (EC28) cũng đòi không request nào. SignIn thật thay placeholder (S01) và gọi `getSession` (H4) | Trong phạm vi về hành vi (không đổi AC); chạm luồng `web/shell` — điểm dừng “cần thêm gì ở shell → dừng, báo phiên điều phối” | Làm ở commit riêng để CI xanh; chờ phiên điều phối: giữ commit, hoặc để phiên web-shell sửa và bỏ commit này | `pnpm nx run @sires/web:test` 203 đạt; hai test giờ kiểm “không request nào khác `getSession`” |
+| YC1 | Dev | Sửa hai test của shell bám placeholder `sign-in`: `shell/routes.spec.ts` (EC17 của PID-00012) tìm chữ `sign-in` và đòi `/sign-in` không gửi request nào; `shell/preferences.spec.ts` (EC28) cũng đòi không request nào. SignIn thật thay placeholder (S01) và gọi `getSession` (H4) | Trong phạm vi về hành vi (không đổi AC); chạm luồng `web/shell` — điểm dừng “cần thêm gì ở shell → dừng, báo phiên điều phối” | Làm ở commit riêng để CI xanh; chờ phiên điều phối: giữ commit, hoặc để phiên web-shell sửa và bỏ commit này | `pnpm nx run @sires/web:test` 205 đạt; hai test giờ kiểm “không request nào khác `getSession`” |
 
 ## 6. Cần PO và tài liệu đi kèm
 
