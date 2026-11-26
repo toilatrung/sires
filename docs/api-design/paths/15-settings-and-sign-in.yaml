@@ -10,9 +10,13 @@
     operationId: startLogin
     summary: Bắt đầu đăng nhập qua eTroy OIDC
     description: |
-      Chuyển hướng tới eTroy OIDC theo luồng authorization code (có state, nonce, PKCE).
-      Không có phương thức đăng nhập khác (NFR-AUTH-001).
-    x-requirements: [INT-OIDC-001]
+      Chuyển hướng tới IdP đang cấu hình theo luồng authorization code (có state, nonce, PKCE): eTroy OIDC; cục bộ và
+      staging PH-02 là OIDC mock (PID-00160). Không có phương thức đăng nhập khác (NFR-AUTH-001).
+
+      Đây là điều hướng trình duyệt nên mọi kết quả đều là `302`. IdP không khả dụng (discovery hay JWKS không tải được)
+      thì chuyển về trang đăng nhập của web `/sign-in?error=oidc_unavailable`, giữ `returnTo` nếu có, thay cho `503`
+      (UX-AUTH-002; PID-00036 H3). Bộ mã `error` của trang đăng nhập ở mô tả `completeLogin`.
+    x-requirements: [INT-OIDC-001, INT-OIDC-004]
     x-priority: P0
     security: []
     parameters:
@@ -22,11 +26,11 @@
         schema: { type: string, pattern: '^/' }
     responses:
       '302':
-        description: Chuyển tới endpoint authorize của eTroy OIDC.
+        description: |
+          Chuyển tới endpoint authorize của IdP; hoặc, khi IdP không khả dụng, về `/sign-in?error=oidc_unavailable`
+          (kèm `returnTo` nếu có).
         headers:
-          Location: { schema: { type: string, format: uri } }
-      '503':
-        $ref: ../components/responses.yaml#/ServiceUnavailable
+          Location: { schema: { type: string } }
 
 /auth/callback:
   get:
@@ -36,15 +40,37 @@
     description: |
       Kiểm tra state, nonce, chữ ký, issuer, audience, thời hạn ID token rồi tạo phiên (INT-OIDC-001).
       Lần đầu với một `sub` mới tạo tài khoản SIRes (họ tên, email từ claim); các lần sau dùng lại (INT-OIDC-002).
-    x-requirements: [INT-OIDC-001, INT-OIDC-002]
+
+      IdP trả về hoặc `code` (thành công) hoặc `error` (theo OAuth 2.0, ví dụ người dùng hủy). Thất bại thì chuyển về
+      trang đăng nhập của web `/sign-in?error=<mã>`, giữ `returnTo` của lần đăng nhập, không tạo phiên. Bộ mã `error` của
+      trang đăng nhập (PID-00036 H3, chốt theo đề xuất, PO ủy quyền 26/11/2026):
+      - `login_cancelled`: IdP trả `error=access_denied` (người dùng hủy hoặc không đồng ý).
+      - `oidc_unavailable`: không gọi được IdP khi đổi `code` lấy token hay tải JWKS.
+      - `login_failed`: mọi lỗi khác (IdP trả `error` khác; `state` không khớp hoặc hết hạn; `nonce`, chữ ký, issuer,
+        audience, thời hạn ID token không đạt; thiếu `code`).
+      Web hiển thị mã lạ như `login_failed`.
+    x-requirements: [INT-OIDC-001, INT-OIDC-002, INT-OIDC-004]
     x-priority: P0
     security: []
     parameters:
-      - { name: code, in: query, required: true, schema: { type: string } }
+      - name: code
+        in: query
+        description: Authorization code; có khi IdP trả thành công (bắt buộc nếu không có `error`).
+        schema: { type: string }
       - { name: state, in: query, required: true, schema: { type: string } }
+      - name: error
+        in: query
+        description: Mã lỗi OAuth 2.0 IdP trả về thay cho `code` (ví dụ `access_denied`).
+        schema: { type: string }
+      - name: error_description
+        in: query
+        description: Mô tả lỗi của IdP; chỉ ghi log ở gateway, không đưa sang web.
+        schema: { type: string }
     responses:
       '302':
-        description: Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về trang đăng nhập kèm mã lỗi.
+        description: |
+          Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về `/sign-in?error=<mã>`
+          (`login_cancelled`, `oidc_unavailable`, `login_failed`), kèm `returnTo`; không đặt cookie.
         headers:
           Location: { schema: { type: string } }
           Set-Cookie: { schema: { type: string } }

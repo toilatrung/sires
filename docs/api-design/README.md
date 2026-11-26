@@ -4,7 +4,16 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — đăng nhập, ngưỡng, embedding, Profile cho PID-00036 (27/11/2026)
+
+Theo “Phải sửa ở nguồn” của PID-00036 (H3, H11, H14, H16), chốt theo đề xuất, PO ủy quyền 26/11/2026.
+
+- `paths/15-settings-and-sign-in.yaml#/auth/login` (`startLogin`): IdP không khả dụng → `302` tới `/sign-in?error=oidc_unavailable` (giữ `returnTo`), bỏ `503` vì đây là điều hướng trình duyệt; IdP là eTroy OIDC hoặc OIDC mock (PID-00160) ở cục bộ, staging PH-02.
+- `#/auth/callback` (`completeLogin`): thêm tham số `error`, `error_description` (IdP trả thay cho `code`); `code` hết bắt buộc. Thất bại chuyển về `/sign-in?error=` với `login_cancelled` (`access_denied`), `oidc_unavailable`, `login_failed`, giữ `returnTo`. Phía gateway: PID-00038.
+- `components/schemas/account.yaml`: `VerificationThresholds.defaults` (chỉ đọc, cùng cấu trúc ngưỡng; giá trị do PID-00041 giữ); `EmbeddingSettings.indexedReferenceCount` (chỉ đọc; số Reference phải index lại khi đổi model; phía knowledge); `Profile.googleScholarProfileUrl` nhận `null` (merge-patch xóa liên kết).
+- Tương thích ngược: chỉ thêm trường chỉ đọc, nới kiểu, thêm tham số tùy chọn; `startLogin` đổi `503` sang `302` khi chưa có hiện thực (PID-00038 chưa làm). `dist/openapi.bundled.yaml` dựng lại, lint sạch.
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).

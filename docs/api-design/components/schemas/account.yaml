@@ -24,10 +24,12 @@ Profile:
       format: uri
       readOnly: true
     googleScholarProfileUrl:
-      type: string
+      type: [string, 'null']
       format: uri
       pattern: '^https://'
-      description: Chỉ là liên kết, không phải đăng nhập Google (ASM-14).
+      description: |
+        Chỉ là liên kết, không phải đăng nhập Google (ASM-14). Gửi `null` trong `updateProfile` (merge-patch) để xóa liên kết
+        (PID-00036 H11).
 
 Preferences:
   type: object
@@ -88,6 +90,23 @@ VerificationThresholds:
       properties:
         mismatch: { type: number, minimum: 0, maximum: 1 }
     isDefault: { type: boolean, readOnly: true }
+    defaults:
+      type: object
+      readOnly: true
+      description: |
+        Giá trị mặc định hiện hành của hệ thống (cùng cấu trúc `claimSupport`, `citationMismatch`), để giao diện hiện mặc
+        định cạnh giá trị đang dùng và khôi phục mặc định (UX-SETTINGS-005; PID-00036 H16). Giá trị do identity giữ
+        (PID-00041), không ghi cứng ở web.
+      properties:
+        claimSupport:
+          type: object
+          properties:
+            supported: { type: number, minimum: 0, maximum: 1 }
+            partiallySupported: { type: number, minimum: 0, maximum: 1 }
+        citationMismatch:
+          type: object
+          properties:
+            mismatch: { type: number, minimum: 0, maximum: 1 }
     updatedAt: { $ref: common.yaml#/Timestamp }
     updatedBy: { $ref: common.yaml#/ActorRef }
 
@@ -251,6 +270,13 @@ EmbeddingSettings:
   properties:
     providerConnectionId: { $ref: common.yaml#/Id }
     model: { type: string, examples: [text-embedding-3-large, gemini-embedding-001] }
+    indexedReferenceCount:
+      type: integer
+      minimum: 0
+      readOnly: true
+      description: |
+        Số Reference đang có index bằng model hiện tại, tức số phải index lại nếu đổi model; dialog xác nhận đổi model nêu
+        số này trước khi gửi (UX-SETTINGS-003-AC01, EVID-INDEX-003; PID-00036 H14).
     reindex:
       type: object
       readOnly: true
