@@ -25,7 +25,7 @@ it('hiện lỗi khi không tải được dashboard', async () => {
 });
 ```
 
-`useMockServer` khởi động trước các test của file, đặt lại override và luồng `/events` sau mỗi test, báo lỗi khi test gọi URL không có mock.
+`useMockServer` khởi động trước các test của file, đặt lại override và luồng `/events` sau mỗi test, báo lỗi khi test gọi URL không có mock. Client của shell gọi đường dẫn tương đối `/api/v1/…`; trong test truyền `mockFetch` (cùng file `node.ts`) để mock trả lời: `new ApiClient({ fetch: mockFetch })`, `new EventStream({ url: 'http://localhost/api/v1/events' })`. Test chạy được ở cả môi trường `jsdom` (mặc định của `@sires/web`) và `node`.
 
 ## Mỗi request được trả lời thế nào
 
@@ -120,6 +120,7 @@ Id là số tăng dần; `0` là vị trí trước sự kiện đầu. `Last-Ev
 | `runtime.ts`, `types.ts` | Ghép handler MSW, override có type, fixture, kiểm trùng operation |
 | `session.ts`, `events.ts` | Mock của shell: phiên, tài khoản, `/events` |
 | `fixtures/` | Dữ liệu demo dùng chung, tiếng Việt và English, chia theo khu vực hiển thị nó |
+| `../../mocks/index.ts` | Điểm nối của shell: `startMocks()` chạy trước lần render đầu, chỉ bật mock khi dev có cờ |
 | `browser.ts`, `node.ts` | Bật mock trong dev (service worker do plugin `msw/vite` phục vụ, chỉ khi dev) và trong Vitest |
 | `*.spec.ts`, `__fixtures__/` | Test của PID-00013 và bản OpenAPI mẫu cho test |
 

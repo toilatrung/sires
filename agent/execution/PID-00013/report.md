@@ -72,6 +72,19 @@ Phiên điều phối trả lời phiếu I1 (nguyên văn): “Trả lời phi�
 - Phiếu I1: đánh dấu “Đã trả lời: chốt theo đề xuất (PO ủy quyền 26/11/2026), sửa ở PR A của docs-sources (#120)” trong file phiếu ở thư mục ghi chú của phiên điều phối (`PID-00013-issues.html`). Chưa đưa vào `docs/tickets/issues/PID-00013/others/issues.html`: thêm file đó làm `node scripts/docs/update-index.mjs --check` (CI) báo lệch, mà chạy `update-index.mjs` (dựng lại taskboard) là việc của PO; đề nghị đưa file vào PR #120 (PR tài liệu, đã chạy lại chỉ mục).
 - Self-QC: [self-qc.md](self-qc.md) mục “Lần 2”. G5 đã xử lý.
 
+
+## Lần 4 — 27/11/2026
+
+Phiên điều phối giao (nguyên văn, rút gọn): “PR #131 đang đỏ hai check: `contracts` … và `build` … sửa. Shell PID-00012 đã xong ở PR #138 … Merge `origin/web/shell-pid-00012` vào nhánh của bạn, bằng merge chứ không rebase … để mock gắn vào điểm nối của shell … Mô tả PR ghi ‘xếp chồng trên #120 và #138’. Kiểm `pnpm --filter @sires/web dev:mock`: shell hiện dữ liệu mock … Chụp một ảnh lưu vào thư mục ghi chú.”
+
+- **CI `contracts` đỏ:** `@sires/contracts:check-drift` typecheck mọi project dùng contracts theo tsconfig mà không chạy target `generate-mocks` của web, nên thiếu `shell/mock/generated`; `build` đỏ theo. Sửa trong luồng web: `postinstall` của `@sires/web` chạy bộ sinh (bỏ qua nếu checkout không có bundle), nên mọi `pnpm install` (CI, Docker, máy Dev) có module sinh trước khi typecheck. `node libs/ts/contracts/scripts/check-drift.mjs --ts-only` cục bộ: đạt (gồm `@sires/web`).
+- **Merge `origin/web/shell-pid-00012`** (`5d7d4a3`, PR #138, đã gồm #120), merge commit có chữ ký. Xung đột: `main.tsx` lấy bản của shell (điểm nối `import.meta.glob('./mocks/index.ts')`); thêm `apps/web/src/mocks/index.ts` xuất `startMocks()` gọi `shell/mock/browser` sau cùng điều kiện build như trước; `feature.ts` giữ cả `assistant?` (shell) và `mocks?`; `vite.config.ts` lấy cấu hình Vitest của shell, thêm plugin `msw()`; `package.json` gộp devDependencies (`jsdom` của shell); `pnpm-lock.yaml` lấy bản của shell rồi `pnpm install` (sau đó `--frozen-lockfile` đạt). `apps/web/README.md` tự gộp.
+- Test mock thuần Node ghi `// @vitest-environment node` (cấu hình Vitest của shell mặc định jsdom). Test AC01 so sánh bản OpenAPI mẫu theo LF (Git trên Windows có thể checkout CRLF).
+- **Nối client của shell:** `events.spec.ts` › client SSE của shell trên mock /events: `EventStream` của shell nhận sự kiện, mất kết nối, nối lại kèm `Last-Event-ID`, và phát `reload` khi mock gửi `replay.unavailable` (G1 xong). `shell-client.spec.ts` (jsdom): `ApiClient` của shell đọc phiên mẫu, tài khoản, gửi `X-CSRF-Token` khi ghi (G2 xong). Thêm `mockFetch` ở `shell/mock/node.ts` cho khu vực dùng client của shell trong test.
+- Danh sách có `openCount` (`listPendingActions`), `unreadCount` (`listNotifications`) theo hợp đồng: mock đếm số hàng đã lọc, nên số trên TopBar khớp dữ liệu demo.
+- Trình duyệt (`dev:mock`, cổng 5183, cấu hình tạm không commit): shell hiện TopBar với Pending Actions 4, 3 thông báo chưa đọc, avatar “NA”; bộ chuyển ngữ cảnh liệt kê 3 project đang hoạt động; vào project “Ứng dụng RAG…” thấy “Plan v2 · Approved”, active task T02, số Pending Actions theo tab; client SSE của shell kết nối `/events`, sau khi cắt nối lại kèm `Last-Event-ID: 1`; console không lỗi. Ảnh: `PID-00013-dev-mock-dashboard.jpg`, `PID-00013-dev-mock-project.jpg` ở thư mục ghi chú của phiên điều phối.
+- PR #131 xếp chồng trên #120 và #138.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

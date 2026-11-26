@@ -47,6 +47,15 @@ export async function startMockServer(options: MockServerOptions = {}): Promise<
   };
 }
 
+/** Origin relative URLs resolve against in tests (Node's fetch needs absolute URLs). */
+export const MOCK_ORIGIN = 'http://localhost';
+
+/**
+ * `fetch` for the shell's clients in tests (`new ApiClient({ fetch: mockFetch })`, `createShellServices({ fetch: mockFetch })`):
+ * resolves `/api/v1/…` against MOCK_ORIGIN so the mock server answers it.
+ */
+export const mockFetch = (input: string, init?: RequestInit): Promise<Response> => globalThis.fetch(new URL(input, MOCK_ORIGIN), init);
+
 /** Registers Vitest hooks: start before the file's tests, reset after each test, stop after all. */
 export function useMockServer(options: MockServerOptions = {}): MockServer {
   let current: MockServer | undefined;

@@ -9,6 +9,7 @@
 // replaces it once merged.
 
 import { describe, expect, it } from 'vitest';
+import { EventStream, type StreamEvent, type StreamSignal } from '../sse';
 import { eventTypes } from './generated';
 import { formatRecord, id, projectIds, REPLAY_UNAVAILABLE } from './index';
 import { useMockServer } from './node';
@@ -162,5 +163,52 @@ describe('mock /events khi Last-Event-ID không còn phát lại được (YC3, 
       client.close();
     }
     expect(() => mock.events.emit({ type: REPLAY_UNAVAILABLE })).toThrow(/sent by the stream/);
+  });
+});
+
+describe('client SSE của shell trên mock /events (S03, PID-00012 S05)', () => {
+  const mock = useMockServer({ events: { retain: 2 } });
+  const until = async (check: () => boolean) => {
+    for (let i = 0; i < 200 && !check(); i++) await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(check()).toBe(true);
+  };
+  const shellClient = () => {
+    const received: StreamEvent[] = [];
+    const signals: StreamSignal[] = [];
+    const stream = new EventStream({ url: 'http://localhost/api/v1/events', retryDelays: [20] });
+    stream.subscribe({}, (event) => received.push(event));
+    stream.onSignal((signal) => signals.push(signal));
+    stream.connect();
+    return { stream, received, signals };
+  };
+  const task = (n: number) => ({ type: 'task.status_changed' as const, projectId: projectIds.rag, objectType: 'task', objectId: id('task', n) });
+
+  it('nối lại', async () => {
+    // EC11 with the shell's client: sample events, connection lost, reconnect with Last-Event-ID, the next events.
+    const { stream, received, signals } = shellClient();
+    await until(() => mock.events.connections === 1);
+    mock.events.emit(task(1));
+    await until(() => received.length === 1);
+    mock.events.disconnect();
+    mock.events.emit(task(2));
+    await until(() => received.length === 2 && signals.includes('reconnected'));
+    expect(received.map((event) => event.id)).toEqual(['1', '2']);
+    expect(mock.events.lastEventIds).toEqual([null, '1']);
+    expect(signals).not.toContain('reload');
+    stream.close();
+  });
+
+  it('tải lại khi không còn phát lại được', async () => {
+    // PC-05 P2 with the shell's client: events missed beyond retain → replay.unavailable → "reload".
+    const { stream, received, signals } = shellClient();
+    await until(() => mock.events.connections === 1);
+    mock.events.emit(task(1));
+    await until(() => received.length === 1);
+    mock.events.disconnect();
+    for (const n of [2, 3, 4]) mock.events.emit(task(n));
+    await until(() => signals.includes('reload'));
+    expect(mock.events.lastEventIds).toEqual([null, '1']);
+    expect(stream.lastEventId).toBe('4');
+    stream.close();
   });
 });

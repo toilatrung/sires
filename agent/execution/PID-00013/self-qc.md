@@ -108,6 +108,29 @@ Sau khi merge nhánh của PR #120 (`Event` trong `components.schemas`, `replay.
 
 EC11 cập nhật: `events.spec.ts` › Last-Event-ID quá xa thì gửi tín hiệu trước, không phát lại; › Last-Event-ID không đúng định dạng hoặc lạ thì gửi tín hiệu; › nối lại trong thời gian giữ log thì không có tín hiệu. EC04 cập nhật: `mock.spec.ts` › phản hồi không phải JSON qua mock (logout 303 về `/`). Không có CRITICAL, HIGH.
 
+
+## Lần 4 — 27/11/2026
+
+Sau khi sửa check `contracts` của CI và merge `origin/web/shell-pid-00012` (PR #138).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt; `postinstall` của `@sires/web` sinh 165 operation |
+| `node libs/ts/contracts/scripts/check-drift.mjs --ts-only` | Đạt (mọi project TS, gồm `@sires/web`) — đây là lệnh làm CI `contracts` đỏ trước khi sửa |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/web` | Đạt: lint, typecheck, build; test 20 file, 138 test đạt (shell và mock) |
+| `npx vitest run src/shell/mock` | 5 file (`mock`, `events`, `build`, `shell-client`), đạt |
+| `add-license.mjs --check`, `update-index.mjs --check` | 0 file thiếu; khớp |
+| `check-ui.mjs apps/web/src` | 0 lỗi; 9 cảnh báo đều ở file của shell (PID-00012), không có ở `shell/mock`, `src/mocks` |
+| Preview `dev:mock` | Xem report.md Lần 4; ảnh ở thư mục ghi chú |
+
+| G | Loại | Mức | Mô tả | Đã xử lý |
+| --- | --- | --- | --- | --- |
+| G1 | partial | MEDIUM | Client SSE của shell | Đã xử lý: `events.spec.ts` › client SSE của shell trên mock /events (nối lại; tải lại khi không còn phát lại được) |
+| G2 | partial | MEDIUM | Kiểm phiên qua client của shell | Đã xử lý: `shell-client.spec.ts` › phiên mẫu qua client của shell; trình duyệt: khung của PID-00012 tải phiên, tài khoản từ mock |
+| G6 | contradicts (CI) | HIGH | CI `contracts` đỏ vì web cần module sinh khi `check-drift` typecheck | Đã xử lý: `postinstall` của `@sires/web` |
+
+EC08, EC11 chuyển từ “cần lưu ý” sang “đã giải quyết”. Không còn CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

@@ -151,7 +151,10 @@ function fromFixtures(descriptor: OperationDescriptor, fixtures: Fixtures, param
   const page = filtered.slice(start, start + limit);
   const nextCursor = start + limit < filtered.length ? String(start + limit) : null;
   const sample = generatedBody(descriptor, descriptor.success) as Record<string, unknown>;
-  return HttpResponse.json({ ...sample, items: clone(page), nextCursor }, { status: descriptor.success, headers });
+  // Counts next to the page (listPendingActions.openCount, listNotifications.unreadCount) count the filtered rows.
+  const counts = Object.fromEntries(Object.keys(sample).filter((name) => /Count$/.test(name) && typeof sample[name] === 'number')
+    .map((name) => [name, filtered.length]));
+  return HttpResponse.json({ ...sample, ...counts, items: clone(page), nextCursor }, { status: descriptor.success, headers });
 }
 
 // Shallow echo of scalar fields the client sent, so a created or edited row shows what the user typed.

@@ -299,6 +299,12 @@ describe('mock khi chạy test (S02)', () => {
     expect(await task.json()).toMatchObject({ id: id('task', 2), status: 'In Progress' });
     const unknown = await api(`/projects/${projectIds.rag}/tasks/${id('task', 999)}`);
     expect(unknown.status).toBe(404);
+    // The shell's TopBar counts (PID-00012 H1): openCount, unreadCount follow the demo rows, not the page size.
+    const pending = await (await api('/pending-actions?status=Open&limit=1')).json() as { items: unknown[]; openCount: number };
+    expect(pending.items).toHaveLength(1);
+    expect(pending.openCount).toBe((demoFixtures.PendingAction ?? []).filter((row) => row.status === 'Open').length);
+    const unread = await (await api('/notifications?status=Unread&limit=1')).json() as { unreadCount: number };
+    expect(unread.unreadCount).toBe((demoFixtures.Notification ?? []).filter((row) => row.status === 'Unread').length);
   });
 
   it('mọi operation của OpenAPI công khai có mock', async () => {
