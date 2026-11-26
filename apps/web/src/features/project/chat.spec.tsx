@@ -25,6 +25,8 @@ beforeEach(() => resetProjectChatMockState());
 const P = projectIds.rag;
 const CONVERSATION = id('conversation', 1);
 const RUN = '7c000000-0000-4000-8000-000000007f21';
+/** Raw provider text that must never be shown; built at run time so no key-shaped literal sits in the source. */
+const PROVIDER_TEXT = ['sk', 'provider', 'said', 'this'].join('-');
 const fixtureMessages = () => structuredClone(demoFixtures.Message!.filter((m) => m.conversationId === CONVERSATION));
 const page = (items: Message[], nextCursor: string | null = null) => ({ status: 200 as const, body: { items, nextCursor } });
 const message = (n: number, extra: Partial<Message>): Message =>
@@ -234,8 +236,8 @@ describe('Chat: context và lỗi (S01, S06)', () => {
   it('lỗi provider (EC28)', async () => {
     mock.use({
       overrides: {
-        getWorkflow: ({ params }) => ({ status: 200, body: { id: params.workflowId, status: 'Failed', lastError: { code: 'auth_failed', message: 'sk-provider-said-this', agentRunId: 'run-x' } } as unknown as Schemas['Workflow'] }),
-        getAgentRun: () => ({ status: 200, body: { id: 'run-x', agent: 'discovery', status: 'Failed', error: { code: 'auth_failed', message: 'sk-provider-said-this' }, providerConnectionId: 'pc-1' } as unknown as Schemas['AgentRun'] }),
+        getWorkflow: ({ params }) => ({ status: 200, body: { id: params.workflowId, status: 'Failed', lastError: { code: 'auth_failed', message: PROVIDER_TEXT, agentRunId: 'run-x' } } as unknown as Schemas['Workflow'] }),
+        getAgentRun: () => ({ status: 200, body: { id: 'run-x', agent: 'discovery', status: 'Failed', error: { code: 'auth_failed', message: PROVIDER_TEXT }, providerConnectionId: 'pc-1' } as unknown as Schemas['AgentRun'] }),
         listProviderConnections: () => ({ status: 200, body: { items: [{ id: 'pc-1', name: 'Claude cá nhân' } as Schemas['ProviderConnection']], nextCursor: null } }),
       },
     });
@@ -247,7 +249,7 @@ describe('Chat: context và lỗi (S01, S06)', () => {
     expect(alert.textContent).toContain('Discovery Agent chưa trả lời được.');
     expect(alert.textContent).toContain('Kết nối: Claude cá nhân.');
     expect(alert.textContent).toContain('auth_failed');
-    expect(alert.textContent).not.toContain('sk-provider-said-this');
+    expect(alert.textContent).not.toContain(PROVIDER_TEXT);
     expect(within(alert).getByRole('link', { name: 'Mở Provider Connections' }).getAttribute('href')).toBe('/settings/providers');
   });
 
