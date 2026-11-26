@@ -6,6 +6,8 @@
 // Tổng hợp mọi PID vào docs/tickets/index.html (vùng PID-SUMMARY): số lượng theo giai đoạn, sơ đồ làn
 // có PID, đợt song song, chuỗi dài nhất, danh sách đầy đủ. Dữ liệu đọc từ docs/tickets/issues/PID-*/index.html.
 // Đợt tính từ dòng “Phụ thuộc PID”: đợt = 1 + đợt lớn nhất của các PID phụ thuộc; ghi lại vào dòng “Đợt song song”.
+// Giai đoạn là mã PH-NN đầu tiên của dòng “Giai đoạn”. PID kéo lên sớm theo D-UI (26/11/2026) ghi dạng
+// “PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-06”: tính vào PH-02; cột “Hội tụ ở” lấy mã PH-NN đứng sau “Hội tụ”.
 // update-index.mjs gọi file này; chạy riêng: node scripts/docs/update-pid-summary.mjs [--check] [--root <gốc kho>]
 //   --check: không ghi, thoát 1 khi trang hoặc dòng đợt lệch.
 // Phụ thuộc trỏ tới PID không có, có chu trình, hoặc trang thiếu dấu mốc: thoát 2.
@@ -18,9 +20,17 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const COMMAND = 'node scripts/docs/update-index.mjs';
 const MARK = { start: '<!-- PID-SUMMARY:START -->', end: '<!-- PID-SUMMARY:END -->' };
 const FIG_LANES = ['platform', 'contracts', 'infra', 'web', 'gateway', 'identity', 'workspace', 'audit', 'orchestration', 'agent-core', 'planning', 'library', 'knowledge', 'research', 'manuscript', 'sandbox-runner', 'eval', 'e2e'];
-const CELLS = { 'Khung, spike': 'K', 'Xây với stub': 'X', 'Hội tụ trên staging': 'H', 'Duy trì, hỗ trợ': 'D', 'Ổn định, nghiệm thu': 'O', 'Triển khai, trực': 'T' };
+const CELLS = { 'Khung, spike': 'K', 'Xây với stub': 'X', 'Xây với mock': 'X', 'Hội tụ trên staging': 'H', 'Duy trì, hỗ trợ': 'D', 'Ổn định, nghiệm thu': 'O', 'Triển khai, trực': 'T' };
 const PHASES = ['PH-01', 'PH-02', 'PH-03', 'PH-04', 'PH-05', 'PH-06', 'PH-07', 'PH-08'];
 
+const PHASE_RE = /PH-0[1-8]/;
+const CONVERGE_RE = /Hội tụ[^;]*?(PH-0[1-8])/;
+// Ô của PID theo nhãn đầu dòng “Ô trên FIG-301”; PID xây sớm mà hội tụ ngay trong giai đoạn đó tính là Hội tụ.
+const cellClass = (cell, phase, converge) => {
+  if (converge && converge === phase) return 'H';
+  const key = Object.keys(CELLS).find((k) => cell.startsWith(k));
+  return key ? CELLS[key] : '';
+};
 const fail = (msg) => { console.error(msg); process.exit(2); };
 const norm = (s) => s.replace(/\r\n/g, '\n');
 const text = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
@@ -39,15 +49,20 @@ function readPids(base) {
       const html = norm(readFileSync(path, 'utf8'));
       const row = (key) => { const m = html.match(rowRe(key)); return m ? text(m[1]) : ''; };
       const cell = row('Ô trên FIG-301');
+      const phaseText = row('Giai đoạn');
+      const phase = (phaseText.match(PHASE_RE) || [phaseText])[0];
+      const converge = (phaseText.match(CONVERGE_RE) || [])[1] || '';
       return {
         id: d.name,
         path,
         html,
         title: text((html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || [, d.name])[1]).replace(`${d.name} — `, ''),
         track: row('Luồng'),
-        phase: row('Giai đoạn'),
+        phase,
+        converge,
         cell,
-        cellClass: CELLS[cell.split(':')[0].trim()] || '',
+        cellClass: cellClass(cell, phase, converge),
+        cellLabel: converge && converge === phase ? 'Hội tụ trên staging' : (Object.keys(CELLS).find((k) => cell.startsWith(k)) || cell.split(':')[0]),
         deps: [...row('Phụ thuộc PID').matchAll(/PID-\d{5}/g)].map((m) => m[0]),
         status: row('Trạng thái'),
       };
@@ -105,9 +120,9 @@ function render(pids, byId) {
     return `<tr><td>Đ${w}</td><td>${list.length}</td><td>${groups.join(' · ')}</td></tr>`;
   });
   const chain = longestChain(pids, byId);
-  const all = pids.map((p) => `<tr><td><a href="issues/${p.id}/index.html">${p.id}</a></td><td>${esc(p.title)}</td><td><code>${esc(p.track)}</code></td><td>${p.phase}</td><td>${esc(p.cell.split(':')[0])}</td><td>Đ${p.wave}</td><td>${p.deps.map(link).join(' ') || '—'}</td></tr>`);
+  const all = pids.map((p) => `<tr><td><a href="issues/${p.id}/index.html">${p.id}</a></td><td>${esc(p.title)}</td><td><code>${esc(p.track)}</code></td><td>${p.phase}</td><td>${p.converge && p.converge !== p.phase ? p.converge : '—'}</td><td>${esc(p.cellLabel)}</td><td>Đ${p.wave}</td><td>${p.deps.map(link).join(' ') || '—'}</td></tr>`);
   return [
-    `<p>${pids.length} PID, xếp thành ${new Set(pids.map((p) => p.wave)).size} đợt song song. Mỗi PID thuộc đúng một luồng và một giai đoạn, nên nằm đúng một ô của sơ đồ làn; không PID nào sửa mã của luồng khác.</p>`,
+    `<p>${pids.length} PID, xếp thành ${new Set(pids.map((p) => p.wave)).size} đợt song song. Mỗi PID thuộc đúng một luồng và một giai đoạn, nên nằm đúng một ô của sơ đồ làn; không PID nào sửa mã của luồng khác. PID xây sớm với mock (D-UI, 26/11/2026) nằm ở ô của giai đoạn xây; cột “Hội tụ ở” của danh sách đầy đủ ghi giai đoạn hội tụ với backend thật.</p>`,
     '<h3 id="pid-phases">Theo giai đoạn</h3>',
     table(['Giai đoạn', 'PID', 'Khung', 'Xây', 'Hội tụ', 'Duy trì', 'Ổn định', 'Triển khai'], phaseRows),
     '<h3 id="fig-302">Sơ đồ làn có PID</h3>',
@@ -120,7 +135,7 @@ function render(pids, byId) {
     '<h3 id="pid-chain">Chuỗi dài nhất</h3>',
     `<p>Chuỗi này quyết định số đợt tối thiểu; chậm ở đây là chậm cả kế hoạch: ${chain.map((p) => `${link(p.id)} (<code>${esc(p.track)}</code>)`).join(' → ')}.</p>`,
     '<h3 id="pid-list">Danh sách đầy đủ</h3>',
-    table(['Mã', 'Task', 'Luồng', 'Giai đoạn', 'Ô', 'Đợt', 'Phụ thuộc'], all),
+    table(['Mã', 'Task', 'Luồng', 'Giai đoạn', 'Hội tụ ở', 'Ô', 'Đợt', 'Phụ thuộc'], all),
   ].join('\n');
 }
 
