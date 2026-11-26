@@ -26,6 +26,14 @@ pnpm --filter @sires/web dev
 
 Mở http://localhost:5173.
 
+Chạy không cần gateway, với mock theo OpenAPI công khai và dữ liệu demo (PID-00013; mặc định tắt, bản build không có mock):
+
+```bash
+pnpm --filter @sires/web dev:mock
+```
+
+Hoặc đặt `VITE_SIRES_MOCK=1` trước `dev`. Khu vực thêm mock của mình và dùng mock trong test theo [src/shell/mock/README.md](src/shell/mock/README.md).
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

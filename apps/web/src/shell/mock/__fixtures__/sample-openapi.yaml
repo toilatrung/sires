@@ -1,0 +1,220 @@
+# SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+# Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+# SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+# Small public OpenAPI for the mock tests (PID-00013 AC01, EC01–EC05). Not a SIRes contract; docs/api-design is
+# never changed by tests.
+openapi: 3.1.0
+info:
+  title: Mock test API
+  version: 0.0.1
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host:
+        default: localhost
+paths:
+  /notes:
+    get:
+      tags: [Notes]
+      operationId: listNotes
+      responses:
+        '200':
+          description: Page of notes.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Page'
+                  - properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Note'
+    post:
+      tags: [Notes]
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /notes/{noteId}:
+    parameters:
+      - name: noteId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags: [Notes]
+      operationId: getNote
+      responses:
+        '200':
+          description: The note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '404':
+          description: Not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    delete:
+      tags: [Notes]
+      operationId: deleteNote
+      responses:
+        '204':
+          description: Deleted.
+  /notes/{noteId}/author:
+    get:
+      tags: [People]
+      operationId: getNoteAuthor
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Author, with an example in the spec.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Person'
+              example:
+                id: 0b6f2f1e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
+                displayName: Trần Quốc Bảo
+                role: supervisor
+  /auth/login:
+    get:
+      tags: [Auth]
+      operationId: startLogin
+      responses:
+        '302':
+          description: Redirect to the identity provider.
+          headers:
+            Location:
+              schema:
+                type: string
+components:
+  responses:
+    BadRequest:
+      description: Invalid input.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/validation_failed
+            title: Dữ liệu không hợp lệ
+            status: 400
+            code: validation_failed
+  schemas:
+    Id:
+      type: string
+      format: uuid
+    Timestamp:
+      type: string
+      format: date-time
+    ErrorCode:
+      type: string
+      enum: [validation_failed, not_found, internal_error]
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+    Page:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {}
+        nextCursor:
+          type: [string, 'null']
+    Person:
+      type: object
+      required: [id, displayName]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [researcher, supervisor]
+    Meta:
+      type: object
+      required: [id, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+    Note:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - type: object
+          required: [title, status, body]
+          properties:
+            title:
+              type: string
+              minLength: 1
+              maxLength: 120
+            status:
+              type: string
+              enum: [Draft, Published]
+            summary:
+              type: [string, 'null']
+            tags:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+                enum: [rag, evidence, review]
+            author:
+              $ref: '#/components/schemas/Person'
+            body:
+              oneOf:
+                - type: object
+                  required: [kind, text]
+                  properties:
+                    kind:
+                      const: text
+                    text:
+                      type: string
+                - type: object
+                  required: [kind, url]
+                  properties:
+                    kind:
+                      const: link
+                    url:
+                      type: string
+                      format: uri
