@@ -41,6 +41,50 @@ Môi trường cục bộ (PostgreSQL 16 + pgvector, RabbitMQ, MinIO), chạy co
 pnpm local:up
 ```
 
+Trên Windows, Docker Engine chỉ chạy khi distro WSL còn chạy: WSL tắt distro khi không còn tiến trình nào, và container
+của compose dừng theo. Giữ một cửa sổ `wsl -d Ubuntu-24.04` mở trong lúc dùng môi trường cục bộ.
+
+## Database cục bộ
+
+`pnpm local:up` áp thêm vai trò database theo service (`infra/local/postgres/init/02-roles.sql`, PID-00159): bảng vai
+trò, mật khẩu cục bộ và DSN mẫu ở [infra/README.md](../../infra/README.md#môi-trường-cục-bộ). Volume tạo trước PID-00159
+được áp vai trò ở lần `local:up` đầu tiên; dữ liệu giữ nguyên.
+
+| Lệnh | Dùng để |
+| --- | --- |
+| `pnpm local:roles` | Áp lại `02-roles.sql` lên PostgreSQL đang chạy (chạy lại không đổi) |
+| `pnpm local:check-db` | Kiểm vai trò, chủ database, kết nối, mật khẩu, `vector`, chạy lại không đổi, áp thử DDL tham chiếu; có `LỖI` thì mã 1 |
+| `pnpm local:reset-db <service> --yes` | Xóa database `sires_<service>` cục bộ, tạo lại rỗng và áp vai trò; mọi dữ liệu của database đó mất |
+
+Các lệnh cần compose đang chạy; chưa chạy thì báo chạy `pnpm local:up` trước. Chạy thử trên volume riêng, không đụng
+volume `sires-local`: đặt `SIRES_LOCAL_PROJECT=<tên>` cho mọi lệnh `local:*`, rồi `local:down -v` với cùng tên để xóa
+(dừng project `sires-local` trước vì hai project dùng chung cổng).
+
+## Chạy cả hệ thống trên máy
+
+```powershell
+pnpm local:up
+pnpm local:migrate
+pnpm local:services
+```
+
+`local:migrate [service…]` build các service Node rồi chạy migration của mọi service có database (hoặc các service
+nêu tên) bằng vai trò `sires_<svc>_migrator`: Node `node dist/migrate.js`, Python
+`uv run --no-sync python -m alembic -c apps/<service>/alembic.ini upgrade head` (gọi bằng module vì Smart App Control
+chặn `alembic.exe`). Service chưa có lệnh migrate được bỏ qua và ghi ra màn hình. Chạy lại không áp lại migration đã
+ghi sổ.
+
+`local:services [service…]` build rồi chạy service (mặc định cả 12) với cổng ở `apps/<service>/deploy/values.yaml`:
+gateway 3000, identity…sandbox-runner 3101–3109, agent-core 8101, knowledge 8102; đợi `/health` trả 200, in bảng kết
+quả và chạy tới khi Ctrl+C. `--check` dừng mọi service sau khi kiểm và trả mã 0 khi cả 12 đạt; `--no-build` bỏ bước
+build. Web chạy riêng: `pnpm --filter @sires/web dev` (cổng 5173).
+
+Biến môi trường lấy từ `infra/local/.env.example`, ghi đè bằng `infra/local/.env` (không commit) rồi biến của shell.
+Mỗi tiến trình nhận `DATABASE_APP_URL`, `DATABASE_SYSTEM_URL` (`local:services`) hoặc `DATABASE_MIGRATOR_URL`
+(`local:migrate`) của đúng service đó, lấy từ dòng `<SERVICE>_DATABASE_*_URL`. `IDENTITY_LOCAL_KEK`,
+`SERVICE_AUTH_DEV_SEED`, `LOG_ACCOUNT_HASH_KEY`, `GATEWAY_CSRF_KEY` để trống thì lần chạy đầu sinh ngẫu nhiên và ghi
+vào `infra/local/.env`; giữ file này để KEK và seed không đổi giữa các lần chạy.
+
 ## Dọn môi trường thừa
 
 Hai script mặc định chỉ liệt kê; thêm `-Apply` / `--apply` mới xóa, hỏi từng mục.
@@ -72,7 +116,8 @@ Target Nx của dự án Python viết theo cách này. Không tắt Smart App C
 | File | Dùng để |
 | --- | --- |
 | `check-tracks.mjs` | Cảnh báo PR chạm nhiều luồng (quy tắc 1.4.1) |
-| `local-env.mjs` | `pnpm local:up`, `pnpm local:down`: docker compose cho `infra/local`, qua WSL khi ở Windows |
+| `local-env.mjs` | `pnpm local:up`, `local:down`, `local:roles`, `local:check-db`, `local:reset-db`, `local:migrate`, `local:services`: docker compose cho `infra/local` (qua WSL khi ở Windows), vai trò database, chạy cả hệ thống |
+| `local-lib.mjs`, `local-services.mjs` | Phần dùng chung (gọi compose, tên vai trò, DSN) và phần `local:migrate`, `local:services` của `local-env.mjs` |
 | `setup-windows.ps1`, `setup-wsl.sh` | Cài môi trường (trên) |
 | `clean-windows.ps1`, `clean-wsl.sh` | Dọn môi trường thừa (trên) |
 
