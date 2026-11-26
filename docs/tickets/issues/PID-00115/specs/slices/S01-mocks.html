@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00115.">
+<title>PID-00115 — S01 Mock của khu vực manuscript | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S01 — Mock của khu vực manuscript</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (nền cho mọi test của S02–S09)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2, O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC56 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00013 S01, S02, S03 và PID-00012 S04, S05 trên <code>develop</code> (H24)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc README mock của PID-00013 (<code>apps/web/src/shell/mock/</code>) và hợp đồng <code>Feature</code> của shell. Khai override qua hợp đồng <code>Feature</code> từ <code>apps/web/src/features/manuscript/__mocks__/</code> (tạo mới), dùng type sinh từ OpenAPI, không viết tay kiểu dữ liệu.</li>
+<li>Override có trạng thái, chung một kho dữ liệu, cho 20 operation path 12 theo H3: <code>getManuscript</code>, <code>initManuscript</code>, <code>listManuscriptFiles</code>, <code>getManuscriptFileContent</code>, <code>commitManuscriptChanges</code>, <code>listManuscriptRevisions</code>, <code>getManuscriptRevision</code>, <code>listChangeProposals</code>, <code>getChangeProposal</code>, <code>acceptChangeProposal</code>, <code>rejectChangeProposal</code>, <code>insertDiagramIntoManuscript</code>, <code>listBibliography</code>, <code>addBibliographyEntry</code>, <code>listBuilds</code>, <code>startBuild</code>, <code>getBuild</code>, <code>getBuildLog</code>, <code>getBuildPdf</code>, <code>exportManuscript</code>.</li>
+<li>Hành vi theo hợp đồng: commit tạo revision số tiếp theo, <code>baseRevisionId</code> lệch trả 409 <code>base_revision_mismatch</code>, Change Proposal Proposed trên file bị đổi chuyển Outdated; accept kiểm base và <code>citationCheck.passed</code> (409 <code>base_revision_mismatch</code>, <code>citation_check_failed</code>), tạo revision nguồn <code>change_proposal</code>; <code>addBibliographyEntry</code> idempotent theo reference, tạo revision actor System sinh lại <code>references.bib</code>; <code>startBuild</code> idempotent theo revision (200 khi đã có), Queued → Running → Succeeded hoặc Failed theo hẹn giờ ngắn; <code>exportManuscript</code> trả header <code>X-Build-Revision</code>; project Archived trả 409 <code>project_archived</code> cho lệnh ghi.</li>
+<li>Phát <code>manuscript.object_status_changed</code> (<code>objectType</code> <code>change_proposal</code>, <code>build</code>, <code>revision</code>) qua mock <code>/events</code> của PID-00013 khi trạng thái đổi.</li>
+<li>Fixture theo <a href="../../designs/notes.html#du-lieu">designs/notes.html › Dữ liệu</a> (khớp Manuscript.html): cây Default, revision r15–r18, proposal Proposed, proposal citation lỗi, proposal Outdated, build Succeeded r16 và Failed r17, bibliography và reference của project. PDF mẫu là file nhỏ tự tạo, không chứa nội dung có bản quyền. Có hàm cho test đặt kho về fixture, chọn kịch bản (chưa khởi tạo, Archived, build lỗi…).</li>
+<li>Không khai override cho operation của khu vực khác (<code>listProjectReferences</code>, <code>getClaim</code>, <code>getTask</code>, <code>listConversations</code>, <code>createConversation</code>, <code>sendMessage</code>, <code>uploadFile</code>); test của khu vực override cục bộ bằng helper của PID-00013.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/__mocks__/manuscript-mock.spec.ts</code> › đăng ký không trùng (EC56); › commit lệch base trả 409; › accept chuyển Accepted và tạo revision; › lưu file làm proposal Outdated; › build qua các trạng thái và phát sự kiện</li>
+<li><code>pnpm nx run @sires/web:typecheck</code> → đạt (override dùng type sinh)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Chạy dev với mock bật mở được Manuscript với dữ liệu mẫu; 20 override có trạng thái, không trùng operation với khu vực khác; test mock đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

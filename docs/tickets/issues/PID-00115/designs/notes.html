@@ -19,25 +19,35 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00115</p><h1>PID-00115 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
-<h2 id="giao-dien">Giao diện</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="../../../../ui-design/pages/Manuscript--building.html">Manuscript--building</a></td><td>building</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Manuscript--proposal-citation-error.html">Manuscript--proposal-citation-error</a></td><td>proposal-citation-error</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Manuscript--proposal-outdated.html">Manuscript--proposal-outdated</a></td><td>proposal-outdated</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Manuscript--rightPane-build-log.html">Manuscript--rightPane-build-log</a></td><td>rightPane-build-log</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Manuscript--rightPane-history.html">Manuscript--rightPane-history</a></td><td>rightPane-history</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Manuscript.html">Manuscript</a></td><td>Mặc định</td></tr>
-</tbody></table></div>
-<ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
-<li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này ghi màn, trạng thái cần dựng và điều đã chốt khi làm rõ ngày 27/11/2026 mà spec mục 4 chưa nói (H1… ở <a href="../index.html#s-5">trang ticket mục 5</a>). Trạng thái thiết kế chưa vẽ có ở sketch <a href="Manuscript-states.html">Manuscript-states.html</a>. Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Fixture của mock (S01) khớp Manuscript.html và dùng chung một project mẫu: bản thảo Default (pdfLaTeX, natbib), file <code>main.tex</code>, <code>bibliography/references.bib</code>, <code>sections/intro.tex</code>, <code>sections/method.tex</code> (được <code>\input</code> ở <code>main.tex</code> dòng 12), <code>figures/</code>; revision r15 (System, Khởi tạo Default), r16 (Researcher, Sửa trực tiếp · main.tex), r17 (Writing Agent, Proposal đã chấp nhận · T-2.1), r18 (Researcher, Sửa trực tiếp · method.tex) là hiện hành; một proposal Proposed trên <code>sections/intro.tex</code> (T-2.1, 2 claim, 3 evidence, 2 file, citation 2/2 phân giải), một proposal có citation lỗi <code>asai2024selfrg</code>, một proposal Outdated gốc r16; build r16 Succeeded, r17 Failed (thiếu package <code>booktabs</code> ở <code>main.tex</code> dòng 4, citation <code>gao2023survy</code> không phân giải ở <code>sections/intro.tex</code> dòng 7); bibliography có <code>lewis2020rag</code>, <code>gao2023survey</code>, một entry của reference Revoked; reference của project có <code>smith2020</code> chưa có entry. Có kịch bản chưa khởi tạo, Archived, xung đột khi lưu, build đang chạy. PDF mẫu tự tạo, không chứa nội dung có bản quyền. Dữ liệu mẫu theo design.md §6 (tổng khớp, cùng Task cùng mã ở mọi nơi).</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 16 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<ul><li>26 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>; khu vực khai override 20 operation path 12 (H3); gọi qua client API có type của shell; <code>Idempotency-Key</code> cho <code>initManuscript</code>, <code>commitManuscriptChanges</code>, <code>acceptChangeProposal</code>, <code>rejectChangeProposal</code>, <code>sendMessage</code>.</li>
+<li>Sự kiện qua client SSE của shell: <code>manuscript.object_status_changed</code> theo <code>objectType</code> (change_proposal → proposal; build → build, chip, PDF, log; revision → manuscript, cây file). Nhận sự kiện thì tải lại bằng GET; không dựng trạng thái từ payload; không polling. Shell báo đã nối lại hoặc cần tải lại (<code>replay.unavailable</code>, PC-05 P2) → tải lại dữ liệu của khu vực (H19).</li>
+<li>Liên kết đi: Task <code>/projects/{projectId}/tasks/{taskId}</code>; claim <code>/projects/{projectId}/claims/{claimId}</code>; workflow của Agent Run <code>/projects/{projectId}/activity/workflows/{workflowId}</code>; Project AI Chat <code>/projects/{projectId}/chat</code>; Overview <code>/projects/{projectId}/overview</code> (PRD 4.3). Liên kết đến: <code>/projects/{projectId}/manuscript/</code> kèm đường dẫn file, và <code>?proposal={proposalId}</code> cho pending action Manuscript change proposal (H11).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th><th scope="col">Điều đã chốt</th></tr></thead><tbody>
+<tr><td><a href="../../../../ui-design/pages/Manuscript.html">Manuscript</a></td><td>Mặc định: ba vùng, proposal Proposed trong editor, tooltip citation không phân giải, PDF</td><td>Thanh công cụ thuộc PID này, thêm nút phụ “Lưu”, “Export”, nút ẩn vùng phải (H2, H4, H6, H18); chân trang active task (H2); hộp proposal viền đứt brand, diff theo file (H11)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Manuscript--proposal-citation-error.html">Manuscript--proposal-citation-error</a></td><td>Proposal có citation lỗi</td><td>Chấp nhận vô hiệu khi <code>citationCheck.passed</code> không đúng bằng true; key lỗi đánh dấu trong dòng diff (H12)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Manuscript--proposal-outdated.html">Manuscript--proposal-outdated</a></td><td>Proposal Outdated</td><td>Hộp viền đứt muted, nền ground; lý do có số revision; chỉ “Yêu cầu tạo lại” (H13); chip Outdated do shell cấp (cảnh báo viền đứt, PC-05 P1)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Manuscript--building.html">Manuscript--building</a></td><td>Đang build</td><td>Thẻ thao tác dài trong vùng PDF; không có “Hủy build”, không có dòng hoạt động gần nhất (H15, N8)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Manuscript--rightPane-build-log.html">Manuscript--rightPane-build-log</a></td><td>Build lỗi, build log</td><td>Lớp 1 dịch theo <code>BuildIssue.code</code>; lớp 2 log gốc tải khi mở (H16)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Manuscript--rightPane-history.html">Manuscript--rightPane-history</a></td><td>Lịch sử revision, chọn hai để so sánh</td><td>So sánh tính ở giao diện; thêm “Khôi phục file này về rN” (H14)</td></tr>
+<tr><td>Chưa có màn tham chiếu</td><td>Khởi tạo; đang tải; lỗi vùng; Archived; thao tác file; xung đột khi lưu; khôi phục nháp; gợi ý citation; từ chối; yêu cầu tạo lại; so sánh và khôi phục; export; tablet; điện thoại</td><td>Theo sketch <a href="Manuscript-states.html">Manuscript-states.html</a> và design.md §4 (dialog, banner, trống, lỗi, đang tải); sửa nguồn thiết kế ở trang ticket mục 5, Phải sửa ở nguồn mục 8</td></tr>
+</tbody></table></div>
+<ul><li>Một nút chính tô màu trên màn: “Build PDF” (khi khởi tạo: “Khởi tạo bản thảo”). “Lưu”, “Export” là nút phụ; “Chấp nhận cả proposal”, “Yêu cầu tạo lại” là nút viền xanh trong thẻ quyết định; “Từ chối” là nút phụ (design.md §4).</li>
+<li>Chip trạng thái (Proposed, Outdated, Accepted, Rejected; Queued, Running, Succeeded, Failed) do chip của shell cấp (PID-00012 S06, S11); Proposed của Change Proposal là “cần bạn xử lý” (PC-05 P1). Chữ của chip build theo Manuscript.html (H15). Khu vực không tự đặt kiểu chip.</li>
+<li>ProjectRail ẩn, TopBar của shell ở chế độ project với khu vực Manuscript (PID-00012 EC16, H2).</li>
+<li>Diff, log, tin nhắn hiện dạng chữ thường; mono cho mã, đường dẫn file, rN, key; không mono cho giờ (design.md §8).</li>
+<li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>). Kiểm trên preview web ở 1440×900, 1024×768 (tablet ba tab), 390×844 và 375×812 (màn điện thoại duyệt proposal); vi và en.</li></ul>
 <h2 id="agent-va-model">Agent và model</h2>
-<p>Không có.</p>
+<p>Không gọi model. Change Proposal do Writing Agent tạo ở backend; yêu cầu tạo lại gửi tin nhắn tới Orchestrator trong hội thoại project (H13). Câu giải thích lỗi build do agent tạo (nếu có) hiện là gợi ý (H16).</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00115</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Ghi chú thiết kế PID-00115 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00115.">
+<title>PID-00115 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>PID-00115 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill (<code>references/brief-template.md</code>), <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H24, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc <code>H1</code>…</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Researcher soạn bản thảo LaTeX của project trong màn Manuscript (P8): cây file, editor, vùng PDF, build log, lịch sử revision. Mọi thay đổi do Writing Agent đề xuất hiện dạng diff ngay trong editor để Researcher chấp nhận hay từ chối cả proposal (APR-05); proposal hết hiệu lực nêu lý do và cho yêu cầu tạo lại. Researcher lưu thay đổi của mình thành revision, khôi phục file về revision cũ, compile ra PDF, hiểu lỗi build qua tóm tắt bằng ngôn ngữ giao diện, export PDF hoặc zip mã nguồn. Lượt này dựng giao diện chạy trên mock ở PH-02 (D-UI, H1); hội tụ với backend thật ở cổng PH-06.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Researcher là người duy nhất ghi trực tiếp vào file; agent chỉ tạo Change Proposal; mọi thay đổi file tạo một Manuscript Revision bất biến — PRD 12 (nguyên tắc chung); <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-editor-001">MS-EDITOR-001</a>, <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-revision-001">MS-REVISION-001</a>; H6</li>
+<li>Lưu chủ động (Ctrl/Cmd+S hoặc nút “Lưu”), mỗi lần lưu một revision chứa mọi file đang sửa; xung đột với revision mới hơn không làm mất nội dung đang sửa; thay đổi chưa lưu được giữ cục bộ qua kho nháp của shell và đề nghị khôi phục khi mở lại — UX-STATE-004; PID-00012 H7; H6, H7, H8</li>
+<li>Không sửa tay <code>bibliography/references.bib</code>; đường dẫn file không thoát khỏi Manuscript; đổi tên hay xóa file đang được <code>\input</code>, <code>\include</code> phải cảnh báo trước và sau; xóa là xóa mềm — MS-EDITOR-001 (AC01, AC03); H9</li>
+<li>Mỗi citation key phải phân giải về một Bibliography Entry gắn Trusted Reference (KPI-02 = 100%); key không phân giải và entry của reference bị thu hồi được đánh dấu; gợi ý key từ Trusted Reference của project, chọn reference chưa có entry thì thêm vào bibliography — UX-MS-001, UX-MS-005, <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-bib-001">MS-BIB-001</a>; H10</li>
+<li>Change Proposal chỉ chấp nhận hoặc từ chối nguyên khối; chấp nhận được khi Proposed, citation check đạt (<code>passed</code> đúng bằng true, cùng cách DBQ-11) và không file nào của proposal có thay đổi chưa lưu; không sửa nội dung diff trước khi chấp nhận (PRD 18); Outdated không chấp nhận, không từ chối, chỉ yêu cầu tạo lại qua Orchestrator — UX-MS-002, UX-MS-003, <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-diff-001">MS-DIFF-001</a>; H11, H12, H13</li>
+<li>Build chạy cô lập ở backend; giao diện chỉ yêu cầu build revision hiện hành, theo dõi qua sự kiện; không có hủy build; build mới của revision mới hơn thay build cũ — <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-build-001">MS-BUILD-001</a>; PRD 18.2; H15</li>
+<li>Build log hai lớp: tóm tắt lỗi bằng ngôn ngữ giao diện (dịch theo <code>BuildIssue.code</code>, kèm file và dòng, nhảy tới editor), log gốc mở rộng được và giữ nguyên văn — UX-MS-004; MS-BUILD-001; H16</li>
+<li>PDF preview ghi revision đã build, giữ vị trí cuộn; build lỗi vẫn giữ PDF cũ; export PDF cũ hơn revision hiện hành thì báo và đề nghị build — MS-BUILD-001-AC03, <a href="../../../../overview/sections/12-latex-manuscript-workspace.html#req-ms-export-001">MS-EXPORT-001</a>; H17, H18</li>
+<li>Lịch sử liệt kê actor, nguồn, Task; so sánh hai revision bất kỳ; khôi phục file văn bản tạo revision mới, không xóa lịch sử — UX-MS-006, MS-REVISION-001; H14</li>
+<li>Project Archived chỉ đọc — PRD 7 (PROJ-CRUD-002); H20</li>
+<li>Điện thoại: chỉ xem và quyết định proposal, không soạn — <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-resp-001">UX-RESP-001</a>; H21</li>
+<li>Khung: TopBar, ẩn ProjectRail, chip trạng thái, client API và SSE, kho nháp do shell cấp; thanh công cụ Manuscript thuộc PID này — PID-00012 H1, H4, H7, EC16; PC-05 P1, P2; H2, H19</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; mọi phê duyệt có ngữ cảnh và hệ quả; cách ly theo tài khoản và project; nội dung diff, log, tin nhắn hiện dạng chữ thường.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Hợp đồng path 12 (<code>docs/api-design/paths/12-latex-manuscript-workspace.yaml</code>; spec ghi đúng file, không phải 13): 22 operation có; khu vực gọi 19 (H3), giữ mock thêm <code>insertDiagramIntoManuscript</code>; không gọi <code>updateManuscriptBuildConfig</code>, <code>removeBibliographyEntry</code> (N9, N10)</li>
+<li>Operation của khu vực khác: <code>listProjectReferences</code> (path 10), <code>getClaim</code> (path 11), <code>getTask</code> (path 09), <code>listConversations</code>, <code>createConversation</code>, <code>sendMessage</code> (path 07), <code>uploadFile</code> (path 14, có MS-EDITOR-001 trong <code>x-requirements</code>) — có</li>
+<li>Schema <code>components/schemas/manuscript.yaml</code>: <code>Manuscript</code> (<code>currentRevisionId</code>, <code>currentRevisionNumber</code>, <code>latestBuild</code>), <code>ManuscriptFile</code> (<code>updatedInRevision</code>), <code>FileChange</code> (<code>beforeHash</code>, <code>fileUploadId</code>), <code>RevisionCreate</code>, <code>ManuscriptRevision</code>, <code>DiffHunk</code>, <code>ChangeProposal</code> (<code>citationCheck</code>, <code>provenance</code>), <code>BibliographyEntry</code>, <code>Build</code>, <code>BuildIssue</code> — có</li>
+<li>Sự kiện: <code>manuscript.object_status_changed</code> (Change Proposal, Build, Revision; phân biệt bằng <code>objectType</code>) — có; <code>replay.unavailable</code> theo PC-05 P2 (PR #120, chưa merge)</li>
+<li>Hợp đồng thiếu (đã chốt cách làm tạm, đề xuất sửa nguồn không chặn): danh mục <code>BuildIssue.code</code> và tham số (H16), ánh xạ citation tới claim và vị trí citation trong PDF (H10), khôi phục file nhị phân và toàn bộ (H14), lệnh hủy build (H15), quy ước dòng của <code>DiffHunk</code> (H11)</li>
+<li>Mã nguồn: <code>apps/web/src/features/manuscript/index.tsx</code> (route <code>projects/:projectId/manuscript/*</code> dạng Placeholder), <code>i18n/vi.json</code>, <code>i18n/en.json</code> — có; shell (PID-00012), mock (PID-00013) — chưa merge (H24)</li>
+<li>Màn tham chiếu: <code>docs/ui-design/pages/Manuscript.html</code> và năm biến thể (<code>--building</code>, <code>--proposal-citation-error</code>, <code>--proposal-outdated</code>, <code>--rightPane-build-log</code>, <code>--rightPane-history</code>) — có; trạng thái chưa vẽ: sketch <a href="../designs/Manuscript-states.html">designs/Manuscript-states.html</a></li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Màn trong <code>apps/web/src/features/manuscript/</code> → S02–S09</li>
+<li>O2 Override mock trong <code>apps/web/src/features/manuscript/__mocks__/</code> → S01</li>
+<li>O3 <code>apps/web/src/features/manuscript/proposal.spec.tsx</code> → S06; O4 <code>apps/web/src/features/manuscript/build.spec.tsx</code> → S08</li>
+<li>O5 <code>apps/web/src/features/manuscript/__mocks__/manuscript-mock.spec.ts</code> → S01; O6 <code>layout.spec.tsx</code> → S02; O7 <code>files.spec.tsx</code> → S03; O8 <code>editor.spec.tsx</code> → S04; O9 <code>citations.spec.tsx</code> → S05; O10 <code>history.spec.tsx</code> → S07; O11 <code>mobile.spec.tsx</code> → S09 (cùng thư mục <code>apps/web/src/features/manuscript/</code>)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>proposal = Change Proposal; revision = Manuscript Revision (rN là revision số N); entry = Bibliography Entry (PRD 5.8)</li>
+<li>build = Build (Queued, Running, Succeeded, Failed); log gốc = <code>getBuildLog</code></li>
+<li>vùng phải = vùng PDF, Build log, Lịch sử của màn Manuscript; P8 = Manuscript (mã ui-design ở tickets 1.5)</li>
+<li>kho nháp = kho nháp dùng chung của shell (PID-00012 H7, S09)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00115</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

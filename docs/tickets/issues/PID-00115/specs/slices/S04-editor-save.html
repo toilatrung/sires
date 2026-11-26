@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00115.">
+<title>PID-00115 — S04 Editor, lưu, xung đột, nháp | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S04 — Editor, lưu, xung đột, nháp</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Manuscript-states.html">designs/Manuscript-states.html</a> khối 6, 7.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-STATE-004-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O8</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B9, B10, B11</td></tr>
+<tr><th scope="row">Edge case</th><td>EC07, EC16, EC18–EC25, EC52 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03; PID-00012 S05, S09, S12 trên <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Editor theo Manuscript.html: tab các file đang mở, số dòng, tô cú pháp LaTeX, chữ mono; thư viện Dev chọn (ghi <code>implement.md</code>, khai gói theo H22). Nội dung lấy bằng <code>getManuscriptFileContent</code>; ghi nhớ hash gốc (<code>ETag</code>, <code>contentHash</code>) của mỗi file. Có hàm cho slice khác mở file tại dòng (S03, S08). Chỉ đọc khi Archived hoặc <code>references.bib</code>.</li>
+<li>Lưu (H6): Ctrl/Cmd+S hoặc nút “Lưu” (ghi số file chưa lưu); một <code>commitManuscriptChanges</code> gồm mọi file đang sửa (<code>modify</code> kèm <code>content</code> và <code>beforeHash</code>), <code>baseRevisionId</code> hiện hành, <code>Idempotency-Key</code> mỗi lần bấm, lưu lại sau lỗi dùng lại khóa (EC20); không có thay đổi thì không gửi (EC16). Thành công → nhãn “revision N · đã lưu HH:mm”, xóa nháp của file đã lưu. Tab file chưa lưu có dấu chấm và chữ cho trình đọc màn hình. Không tự lưu theo thời gian.</li>
+<li>Xung đột (H7): 409 <code>base_revision_mismatch</code> → tải lại <code>getManuscript</code>, <code>listManuscriptFiles</code>; mọi file đang lưu có <code>contentHash</code> trên server bằng hash gốc → tự gửi lại một lần với base mới, khóa mới (EC18); có file đã đổi → không gửi, hộp cảnh báo ở file đó nêu revision và actor đã đổi, “Xem khác biệt”, “Giữ bản của tôi” (gửi lại với base mới), “Dùng bản trên server” (xác nhận rồi bỏ thay đổi file đó) (EC19).</li>
+<li>Nháp (H8): đăng ký mỗi file đang mở với kho nháp của shell (khóa: route Manuscript của project và <code>fileId</code>; nội dung kèm revision gốc và hash gốc) theo README của PID-00012 S09; mở lại file có nháp khác nội dung server → banner “Có thay đổi chưa lưu từ HH:mm” với “Khôi phục”, “Bỏ nháp” (EC21); file đã đổi trên server sau thời điểm nháp → banner nói rõ (EC22). Không dùng <code>localStorage</code> riêng của khu vực.</li>
+<li>File đang có proposal Proposed mà có thay đổi chưa lưu → báo hộp proposal (S06) ghi “Lưu thay đổi ở file này sẽ làm proposal thành Outdated” (EC23).</li>
+<li>Sự kiện (H19): <code>manuscript.object_status_changed</code> loại revision → cập nhật revision hiện hành, cây file; file không có thay đổi chưa lưu và đã đổi trên server thì tải lại, có thay đổi thì giữ (EC24). Shell báo đã nối lại hoặc cần tải lại → tải lại dữ liệu khu vực, giữ thay đổi chưa lưu (EC52). Đang build vẫn sửa, lưu được (EC25).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/editor.spec.tsx</code> › đề nghị khôi phục nháp (UX-STATE-004-AC01, EC21); › nháp trên bản cũ (EC22); › lưu nhiều file một revision (EC16); › tự gửi lại khi chỉ file khác đổi (EC18); › xung đột khi file đã đổi (EC19); › lưu lỗi giữ nội dung (EC20); › sự kiện revision (EC24); <code>layout.spec.tsx</code> › đổi ngôn ngữ giữ nội dung (EC07)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Sửa và lưu được thành revision trên mock; xung đột không làm mất nội dung; nháp khôi phục được sau khi đóng và mở lại</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

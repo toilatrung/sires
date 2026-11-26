@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00115.">
+<title>PID-00115 — S06 Change Proposal | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S06 — Change Proposal: diff, chấp nhận, từ chối, Outdated</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Manuscript-states.html">designs/Manuscript-states.html</a> khối 9–11.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00115-AC01, UX-MS-002-AC01, UX-MS-003-AC01, MS-DIFF-001-AC01, MS-DIFF-001-AC02, MS-AIWRITE-001-AC01 (phần giao diện)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5, B9, B10, B11</td></tr>
+<tr><th scope="row">Edge case</th><td>EC23, EC30–EC39, EC52, EC55 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S04, S05; PID-00012 S06, S11 (chip Proposed, Outdated, Accepted, Rejected) trên <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Nạp <code>listChangeProposals</code> (Proposed; Outdated của file đang mở). File có proposal Proposed mang nhãn “đề xuất” ở cây file; file thêm mới hiện dòng nét đứt (EC35).</li>
+<li>Hộp proposal (H11) viền đứt brand ngay trong editor tại hunk đầu tiên của file đang mở: “Change Proposal · tên agent (<code>provenance.createdBy</code>) · chip trạng thái của shell”; Task (<code>stableKey</code> qua <code>getTask</code>, liên kết <code>/projects/{projectId}/tasks/{taskId}</code>); số claim, evidence, file; diff của file (<code>DiffHunk.lines</code> theo unified diff: dòng “-” nền diff-removed, “+” nền brand-tint, dạng chữ thường — EC36); “File khác trong proposal” mở rộng được, mỗi file một diff và liên kết mở file; chip citation (“Citation: n/n phân giải” hoặc “Citation lỗi: key”), key lỗi đánh dấu trong dòng diff, mismatches liệt kê; chip claim theo <code>supportStatus</code> (<code>getClaim</code>), liên kết <code>/projects/{projectId}/claims/{claimId}</code>; “Xem evidence”. Nội dung file trong editor không đổi khi chưa chấp nhận.</li>
+<li>Chấp nhận (H12): “Chấp nhận cả proposal” (viền xanh) bật khi Proposed, <code>citationCheck.passed</code> đúng bằng true, không file nào của proposal có thay đổi chưa lưu; vô hiệu thì ghi lý do cạnh nút (EC30, EC23). Không có nút theo khối, không sửa diff. <code>acceptChangeProposal</code> với <code>Idempotency-Key</code>, một request khi bấm nhiều lần (EC34); 200 → cập nhật revision, tải lại file bị đổi; 409 <code>base_revision_mismatch</code> → tải lại, hiện Outdated, file không đổi (EC32); 409 <code>citation_check_failed</code> hoặc đã xử lý nơi khác → tải lại, hiện trạng thái mới, không tô lỗi đỏ (EC33).</li>
+<li>Từ chối: hộp xác nhận nêu bản thảo không đổi, không hoàn tác được, ô lý do tùy chọn → <code>rejectChangeProposal</code>.</li>
+<li>Outdated (H13): hộp viền đứt muted, nền ground; lý do “Hết hiệu lực: file đã đổi từ revision gốc sang hiện hành” (số gốc từ <code>getManuscriptRevision(baseRevisionId)</code>, file là file của diff có <code>updatedInRevision</code> lớn hơn số gốc; không xác định được file thì ghi bản thảo đã đổi); không Chấp nhận, không Từ chối; “Yêu cầu tạo lại” mở hộp có chỉ dẫn soạn sẵn sửa được → <code>sendMessage</code> vào hội thoại project mới nhất (<code>listConversations</code> scope project; chưa có thì <code>createConversation</code>), kèm <code>activeTaskId</code> là Task của proposal, <code>Idempotency-Key</code>; 202 → “Đã gửi tới Orchestrator” và liên kết Project AI Chat; lỗi → giữ chỉ dẫn, hộp lỗi có mã (EC31, EC38). Mock hội thoại do khu vực project giữ, test override.</li>
+<li>Deep link <code>?proposal={proposalId}</code>: <code>getChangeProposal</code>, mở file đầu tiên của diff, đưa focus tới hộp; không thấy → “Không tìm thấy proposal”; đã xử lý → mở file và hiện trạng thái (EC37).</li>
+<li>Sự kiện loại change_proposal → tải lại danh sách và proposal đang mở (EC39); đã nối lại, cần tải lại → tải lại (EC52). Mọi nút dùng được bằng bàn phím, hộp thoại trả focus khi đóng (EC55).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/proposal.spec.tsx</code> › outdated hiện lý do, không chấp nhận (PID-00115-AC01, UX-MS-003-AC01, EC31); › citation lỗi (UX-MS-002-AC01, EC30); › chưa có kết quả citation (EC30); › yêu cầu tạo lại (UX-MS-003-AC01, EC38); › chấp nhận khi revision đã đổi (MS-DIFF-001-AC01, EC32); › chỉ chấp nhận cả proposal (MS-DIFF-001-AC02); › nội dung file không đổi trước khi chấp nhận (MS-AIWRITE-001-AC01); › file đang sửa chặn chấp nhận (EC23); › đã xử lý ở nơi khác (EC33); › không gửi trùng (EC34); › proposal nhiều file (EC35); › diff hiện dạng chữ (EC36); › deep link proposal (EC37); › sự kiện proposal (EC39); › bàn phím (EC55)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li>
+<li>Thao tác tay: so với <code>docs/ui-design/pages/Manuscript.html</code>, <code>Manuscript--proposal-citation-error.html</code>, <code>Manuscript--proposal-outdated.html</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Ba trạng thái proposal của màn tham chiếu chạy trên mock; chấp nhận, từ chối, yêu cầu tạo lại đúng điều kiện và lỗi 409</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
