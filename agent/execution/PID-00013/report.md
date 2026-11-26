@@ -56,9 +56,21 @@ Người làm: phiên do PO `toilatrung` giao (assignee `toilatrung`). `check-pi
   - `libs/ts/contracts/scripts/generate.mjs` lỗi `EPERM` khi đổi tên `src/generated` trên Windows (gặp 2 lần; xóa thư mục rồi chạy lại thì được; Nx báo task “flaky”): đề xuất PID nhỏ cho luồng contracts (thử lại khi EPERM).
   - Hồ sơ PID-00036 mục 2.3 liệt kê mock `getSession`, `getMe` cho settings; shell đã giữ hai operation này (S02, EC08), nên khu vực settings khai lại sẽ gặp lỗi EC10 như trang ticket đã báo trước. Cần PO chọn khi làm rõ PID-00036 (tương tự `answerPrompt` giữa PID-00058 và PID-00060).
 - **Yêu cầu hợp đồng:** `Event` (`components/schemas/orchestration.yaml#/Event`) chỉ được trỏ qua `x-event-schema` của `/events` nên không có trong `components.schemas`: `PublicApi` không có type `Event` (PID-00012 S05, PID-00013 S03 cần), bundle còn ref hỏng `common.yaml#/Id`, `common.yaml#/Timestamp`. Đề xuất thêm `Event` vào `components.schemas` của `openapi.yaml` cùng lượt PC-05 P2. Phiếu I1 (đã báo phiên điều phối 27/11/2026; file phiếu soạn sẵn ở thư mục ghi chú của phiên điều phối, chưa đưa vào `docs/` vì `update-index.mjs` là việc của PO). Không chặn: bộ sinh tạm suy type từ `x-event-schema`.
-- **Còn mở:** không có.
+- **Còn mở:** không có (I1 đã trả lời, xem Lần 2).
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00013`; nối client của PID-00012 khi PR đó merge (mục 4).
 - **Tài liệu đi kèm:** không có.
+
+
+## Lần 2 — 27/11/2026
+
+Phiên điều phối trả lời phiếu I1 (nguyên văn): “Trả lời phiếu I1 (PID-00013): chốt theo đề xuất của bạn. docs-sources sẽ sửa trong PR A cùng lượt P2 …” và “Phiếu I1 đã được sửa ở PR #120 … Merge `origin/docs/pc05-p1-p6-shell-sources` vào nhánh của bạn (merge, không rebase). Sinh lại type, bỏ đường dự phòng `x-event-schema` nếu không còn cần. Ghi trong mô tả PR: ‘xếp chồng trên #120 …; PO merge #120 trước’.”
+
+- Đã merge `origin/docs/pc05-p1-p6-shell-sources` (head `702d051`) vào `web/mock-pid-00013` (merge commit, có chữ ký). PR #128 xếp chồng trên #120: PO merge #120 trước.
+- Sinh lại `@sires/contracts` và mock: `PublicApi.components['schemas']['Event']` có `replay.unavailable`; module mock dùng type này. Bỏ đường suy type từ `x-event-schema` (`eventTypes` dùng `openapi-typescript`, file `generated/event-schema.ts`) và nhánh đọc ref tương đối trong `generator/openapi.mjs`; bộ sinh dừng với lỗi rõ nếu bundle thiếu `Event`, và xóa file sinh cũ trong `generated/` trước khi ghi.
+- `/events` theo mô tả mới của hợp đồng: `Last-Event-ID` không còn phát lại được (cũ hơn log còn giữ, lạ, sai định dạng) → bản ghi `replay.unavailable` đầu luồng có `id` = vị trí mới nhất của log (log trống: `0`), `data` chỉ `id`, `type`, `at`; nối lại trong khoảng giữ (kể cả `0`) không có tín hiệu. YC3 xong theo hợp đồng.
+- `/auth/logout` đổi sang `303` (PC-05 P3, cùng PR #120): mock trả `303` về `/` trong ứng dụng, không tới eTroy; test 204 chuyển sang `deleteProviderConnection`.
+- Phiếu I1: đánh dấu “Đã trả lời: chốt theo đề xuất (PO ủy quyền 26/11/2026), sửa ở PR A của docs-sources (#120)” trong file phiếu ở thư mục ghi chú của phiên điều phối (`PID-00013-issues.html`). Chưa đưa vào `docs/tickets/issues/PID-00013/others/issues.html`: thêm file đó làm `node scripts/docs/update-index.mjs --check` (CI) báo lệch, mà chạy `update-index.mjs` (dựng lại taskboard) là việc của PO; đề nghị đưa file vào PR #120 (PR tài liệu, đã chạy lại chỉ mục).
+- Self-QC: [self-qc.md](self-qc.md) mục “Lần 2”. G5 đã xử lý.
 
 ---
 

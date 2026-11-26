@@ -109,7 +109,7 @@ PO sửa hợp đồng và bundle lại → `pnpm nx run @sires/contracts:genera
 | `lastEventIds` | Header `Last-Event-ID` của từng lần kết nối |
 | `log` | Sự kiện bền còn giữ để phát lại (`retain`, mặc định 1000) |
 
-Id quá xa (đã ra khỏi `retain`) hoặc không biết: không phát lại. Tín hiệu “không còn phát lại được” (`replay.unavailable`, PC-05 P2) chỉ được gửi khi `Event.type` của hợp đồng có giá trị đó. Khi dev, mock phát vòng sự kiện mẫu mỗi 20 giây.
+Id là số tăng dần; `0` là vị trí trước sự kiện đầu. `Last-Event-ID` không còn phát lại được (cũ hơn sự kiện cũ nhất còn giữ, lớn hơn id mới nhất, hoặc không đúng định dạng): đầu luồng nhận bản ghi `replay.unavailable` (chỉ `id`, `type`, `at`; `id` là vị trí mới nhất của log) rồi chỉ sự kiện mới, như mô tả `GET /events` (PC-05 P2); client tải lại bằng các GET. `emit` không gửi được `replay.unavailable`. Khi dev, mock phát vòng sự kiện mẫu mỗi 20 giây.
 
 ## Thư mục
 

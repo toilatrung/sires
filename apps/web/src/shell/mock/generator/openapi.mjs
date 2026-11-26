@@ -31,25 +31,16 @@ export function basePath(doc) {
 
 const decode = (token) => token.replace(/~1/g, '/').replace(/~0/g, '~');
 
-/**
- * Resolves a local `#/…` reference. A reference the bundler left relative (for example `common.yaml#/Id` inside an
- * `x-` extension) falls back to the component schema with the same last segment, so it still means the schema the
- * source file pointed at.
- */
+/** Resolves a local `#/…` reference; the bundle has no other kind. */
 export function resolveRef(doc, ref) {
   const [file, pointer = ''] = ref.split('#');
-  if (!file) {
-    let node = doc;
-    for (const token of pointer.split('/').slice(1).map(decode)) {
-      node = node?.[token];
-      if (node === undefined) throw new Error(`Unresolved reference ${ref}`);
-    }
-    return node;
+  if (file) throw new Error(`Unexpected external reference ${ref} in the bundled OpenAPI`);
+  let node = doc;
+  for (const token of pointer.split('/').slice(1).map(decode)) {
+    node = node?.[token];
+    if (node === undefined) throw new Error(`Unresolved reference ${ref}`);
   }
-  const name = pointer.split('/').filter(Boolean).at(-1);
-  const schema = name && doc.components?.schemas?.[name];
-  if (!schema) throw new Error(`Unresolved external reference ${ref}`);
-  return schema;
+  return node;
 }
 
 /** Name of the component schema a `$ref` points at, if any. */

@@ -87,6 +87,27 @@ Ghi ở mục “Lần 1 — kết quả nx affected” cuối file khi lệnh x
 
 Không có `contradicts`. Không có CRITICAL, HIGH.
 
+
+## Lần 2 — 27/11/2026
+
+Sau khi merge nhánh của PR #120 (`Event` trong `components.schemas`, `replay.unavailable`, `/auth/logout` 303) và bỏ đường suy type dự phòng.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `node libs/ts/contracts/scripts/generate.mjs --ts-only`, build `@sires/contracts` | Đạt; `Event` có trong `public.ts`, enum có `replay.unavailable` |
+| `node apps/web/src/shell/mock/generate.mjs` | 165 operation; `generated/` chỉ còn `index.ts` (file `event-schema.ts` của lần trước đã bị xóa) |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/web @sires/contracts` | `@sires/web`: lint, typecheck, build đạt; test 5 file, 33 test đạt. `@sires/contracts`: lint, typecheck, build đạt; test 13/14 đạt, 1 lỗi ở phần Python (`openapi-python-client` bị Application Control của Windows chặn trên máy này, os error 4551) — môi trường cục bộ, không do PID này; CI chạy trên Linux |
+| `npx vitest run src/shell/mock` | 3 file, 23 test đạt |
+| `update-index.mjs --check`, `add-license.mjs --check`, `check-ui.mjs apps/web/src`, `check-tracks` (so với nhánh #120) | Khớp; 0 file thiếu; 0 lỗi (1 cảnh báo có sẵn); `repo`, `web/shell` |
+| `pnpm nx affected …` lần 1 (trước merge) | Dừng giữa chừng khi merge (đổi đầu vào); trước khi dừng: `@sires/contracts:test` lỗi vì `uv` (Python cục bộ, không liên quan PID này), không có lỗi ở `@sires/web`. Toàn repo kiểm trên CI |
+
+| G | Loại | Mức | Mô tả | Đã xử lý |
+| --- | --- | --- | --- | --- |
+| G5 | partial | LOW | Type `Event` không lấy từ `PublicApi` | Đã xử lý: `generated/index.ts` dùng `PublicApi.components['schemas']['Event']` |
+| G1, G2 | partial | MEDIUM | Nối client SSE và kiểm phiên của PID-00012 | Như Lần 1: chờ PR của PID-00012 |
+
+EC11 cập nhật: `events.spec.ts` › Last-Event-ID quá xa thì gửi tín hiệu trước, không phát lại; › Last-Event-ID không đúng định dạng hoặc lạ thì gửi tín hiệu; › nối lại trong thời gian giữ log thì không có tín hiệu. EC04 cập nhật: `mock.spec.ts` › phản hồi không phải JSON qua mock (logout 303 về `/`). Không có CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

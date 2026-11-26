@@ -118,30 +118,47 @@ describe('mock /events (S03)', () => {
     client.close();
   });
 
-  it('không còn phát lại được: chưa có trong hợp đồng thì không giả lập', async () => {
-    // N7 / YC3: the mock sends the PC-05 P2 signal only when Event.type of the contract lists it.
-    expect(eventTypes).not.toContain(REPLAY_UNAVAILABLE);
-    mock.events.emit(event(1));
-    const client = connect('stale-id');
+  it('nối lại trong thời gian giữ log thì không có tín hiệu', async () => {
+    // PC-05 P2: first connection and a replayable Last-Event-ID (including 0 before any event) get no signal.
+    const fresh = connect('0');
     await tick();
-    mock.events.emit(event(2));
-    expect((await client.until(1)).map((record) => record.event)).toEqual(['workflow.status_changed']);
-    client.close();
+    mock.events.emit(event(1));
+    expect((await fresh.until(1)).map((record) => [record.id, record.event])).toEqual([['1', 'workflow.status_changed']]);
+    fresh.close();
   });
 });
 
-describe('mock /events khi hợp đồng có replay.unavailable (YC3)', () => {
-  const mock = useMockServer({ events: { retain: 2, eventTypes: [...eventTypes, REPLAY_UNAVAILABLE] } });
+describe('mock /events khi Last-Event-ID không còn phát lại được (YC3, PC-05 P2)', () => {
+  const mock = useMockServer({ events: { retain: 2 } });
+  const task = (n: number) => ({ type: 'task.status_changed' as const, projectId: projectIds.rag, objectType: 'task', objectId: id('task', n) });
 
   it('Last-Event-ID quá xa thì gửi tín hiệu trước, không phát lại', async () => {
-    for (const n of [1, 2, 3, 4]) mock.events.emit({ type: 'task.status_changed', projectId: projectIds.rag, objectType: 'task', objectId: id('task', n) });
+    // The contract's Event.type lists the signal; it comes first, carries only id (latest position), type, at.
+    expect(eventTypes).toContain(REPLAY_UNAVAILABLE);
+    for (const n of [1, 2, 3, 4]) mock.events.emit(task(n));
     expect(mock.events.log.map((logged) => logged.id)).toEqual(['3', '4']);
     const client = connect('1');
     const records = await client.until(1);
-    expect(records[0]).toMatchObject({ event: REPLAY_UNAVAILABLE, data: { type: REPLAY_UNAVAILABLE } });
-    expect(records[0]).not.toHaveProperty('id');
-    mock.events.emit({ type: 'task.status_changed', projectId: projectIds.rag, objectType: 'task', objectId: id('task', 5) });
-    expect((await client.until(2)).map((record) => record.id)).toEqual([undefined, '5']);
+    expect(records[0]).toMatchObject({ id: '4', event: REPLAY_UNAVAILABLE });
+    expect(Object.keys(records[0]!.data).sort()).toEqual(['at', 'id', 'type']);
+    expect(records[0]!.data).toMatchObject({ id: '4', type: REPLAY_UNAVAILABLE });
+    mock.events.emit(task(5));
+    expect((await client.until(2)).map((record) => record.id)).toEqual(['4', '5']);
     client.close();
+
+    // Reconnecting from the signal's id replays normally, without a second signal.
+    mock.events.emit(task(6));
+    const again = connect('4');
+    expect((await again.until(2)).map((record) => record.id)).toEqual(['5', '6']);
+    again.close();
+  });
+
+  it('Last-Event-ID không đúng định dạng hoặc lạ thì gửi tín hiệu', async () => {
+    for (const lastEventId of ['stale-id', '99']) {
+      const client = connect(lastEventId);
+      expect((await client.until(1))[0]).toMatchObject({ id: '0', event: REPLAY_UNAVAILABLE });
+      client.close();
+    }
+    expect(() => mock.events.emit({ type: REPLAY_UNAVAILABLE })).toThrow(/sent by the stream/);
   });
 });
