@@ -60,9 +60,9 @@ describe('Overview (S02)', () => {
   it('tiến độ theo Phase (UX-OVERVIEW-001-AC01, EC04)', async () => {
     baselineWithPhases();
     await openOverview();
-    expect(await screen.findByText('4/4')).toBeTruthy();
-    expect(screen.getByText('2/5')).toBeTruthy();
-    expect(screen.getByText('0/3')).toBeTruthy();
+    expect(await screen.findByText('4/4 Completed')).toBeTruthy();
+    expect(screen.getByText('2/5 Completed')).toBeTruthy();
+    expect(screen.getByText('0/3 Completed')).toBeTruthy();
     expect(screen.getByRole('img', { name: '2 trên 5 Task Completed' })).toBeTruthy();
   });
 

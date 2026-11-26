@@ -193,6 +193,9 @@ describe('Chat: chữ xuất hiện dần (S04)', () => {
     mock.events.emit({ type: 'message.posted', projectId: P, objectType: 'message', objectId: saved.id });
     await waitFor(() => expect(screen.getAllByText('Readiness check Đạt. Discovery Agent bắt đầu.')).toHaveLength(1));
     expect(screen.getByText('Readiness check Đạt. Discovery Agent bắt đầu.').closest('li')!.hasAttribute('data-draft')).toBe(false);
+    delta(2, 'Đạt.');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(document.querySelectorAll('[data-draft]')).toHaveLength(0);
   });
 
   it('đang trả lời (EC13)', async () => {
@@ -233,6 +236,30 @@ describe('Chat: chữ xuất hiện dần (S04)', () => {
 });
 
 describe('Chat: context và lỗi (S01, S06)', () => {
+  it('tin đã lưu kết thúc dòng đang trả lời (EC13)', async () => {
+    const { user } = await openChat();
+    await send(user, 'Chỉ cần tin đã lưu');
+    await screen.findByText('Orchestrator đang trả lời…');
+    mock.events.emit({ type: 'message.posted', projectId: P, objectType: 'message', objectId: id('message', 999) });
+    await waitFor(() => expect(screen.queryByText('Orchestrator đang trả lời…')).toBeNull());
+  });
+
+  it('lỗi provider tạm thời (EC28)', async () => {
+    mock.use({
+      overrides: {
+        getWorkflow: ({ params }) => ({ status: 200, body: { id: params.workflowId, status: 'Failed', lastError: { code: 'timeout', agentRunId: 'run-t' } } as unknown as Schemas['Workflow'] }),
+        getAgentRun: () => ({ status: 200, body: { id: 'run-t', agent: 'evidence_retrieval', status: 'Failed', error: { code: 'timeout' } } as unknown as Schemas['AgentRun'] }),
+      },
+    });
+    const { user } = await openChat();
+    await send(user, 'Truy xuất evidence');
+    await screen.findByText('Truy xuất evidence');
+    mock.events.emit({ type: 'workflow.status_changed', projectId: P, objectType: 'workflow', objectId: id('workflow', 601), fromState: 'Running', toState: 'Failed' });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('System đã thử lại');
+    expect(within(alert).getByRole('link', { name: 'Mở Agent Activity' }).getAttribute('href')).toBe(`/projects/${P}/activity`);
+  });
+
   it('lỗi provider (EC28)', async () => {
     mock.use({
       overrides: {
@@ -254,10 +281,13 @@ describe('Chat: context và lỗi (S01, S06)', () => {
   });
 
   it('khung context (EC29)', async () => {
+    const selections = Array.from({ length: 14 }, (_, i) => ({ id: `sel-${i}`, referenceId: id('reference', i + 1), status: 'Active', reference: { indexingStatus: i < 12 ? 'Indexed' : 'Pending' } }));
+    mock.use({ overrides: { listProjectReferences: () => ({ status: 200, body: { items: selections, nextCursor: null } as never }) } });
     await openChat();
     const panel = within(screen.getByRole('complementary', { name: 'Context của cuộc trò chuyện' }));
     expect(await panel.findByText('phiên bản 4 · 1 giả định mở')).toBeTruthy();
-    expect(panel.getByText('14 · 0 Indexed', { exact: false })).toBeTruthy();
+    expect(panel.getByText('14 · 12 Indexed')).toBeTruthy();
+    expect(panel.getByText(/^(Gửi|Không gửi \(tắt trong Profile\))$/)).toBeTruthy();
     expect(panel.getByRole('link', { name: 'Xem workflow đang chạy' })).toBeTruthy();
     expect(panel.getByRole('link', { name: 'Đổi trong Profile' }).getAttribute('href')).toBe('/settings/profile');
   });

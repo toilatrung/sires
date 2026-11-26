@@ -11,6 +11,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import {
+  EmptyState,
   ErrorState,
   LoadingState,
   formatTime,
@@ -31,6 +32,8 @@ type Task = Schemas['Task'];
 type Delta = Omit<ChatDeltaMessage, 'accountId'>;
 
 const PAGE = 50;
+/** Provider errors the System retries itself (17.1): the block says so and points to Agent Activity. */
+const TEMPORARY: readonly string[] = ['rate_limited', 'quota_exceeded', 'timeout', 'provider_unavailable', 'network_error', 'interrupted'];
 const MAX_LENGTH = 20000;
 
 interface Draft {
@@ -90,6 +93,7 @@ export function ChatScreen() {
   const [waiting, setWaiting] = useState(false);
   const [failures, setFailures] = useState<Failure[]>([]);
   const workflows = useRef(new Set<string>());
+  const lastSeq = useRef(new Map<string, number>());
   const data = resource.value.state === 'ready' ? resource.value.data : null;
   const conversationId = data?.conversationId ?? null;
 
@@ -135,15 +139,18 @@ export function ChatScreen() {
       if (event.type === 'chat.delta') {
         const delta = asDelta(event);
         if (!delta || delta.conversationId !== conversationId) return;
+        // Duplicate or out of order, also after the draft was replaced by the saved message (EC14).
+        if (delta.seq <= (lastSeq.current.get(delta.agentRunId) ?? 0)) return;
+        lastSeq.current.set(delta.agentRunId, delta.seq);
         setWaiting(false);
         setDrafts((old) => {
           const current = old.find((d) => d.agentRunId === delta.agentRunId);
-          if (current && delta.seq <= current.seq) return old; // duplicate or out of order (EC14)
           if (!current) return [...old, { agentRunId: delta.agentRunId, seq: delta.seq, text: delta.text, at: event.at }];
           return old.map((d) => (d.agentRunId === delta.agentRunId ? { ...d, seq: delta.seq, text: d.text + delta.text } : d));
         });
       } else if (event.type === 'message.posted') {
-        void refresh(false);
+        setWaiting(false);
+        void refresh(false).catch(() => undefined);
       } else if (event.type === 'workflow.status_changed' && event.toState === 'Failed' && event.objectId && workflows.current.has(event.objectId)) {
         void api.get('/workflows/{workflowId}', { path: { workflowId: event.objectId } }).then(
           (res) => failureOf(res.data.lastError?.code, res.data.lastError?.agentRunId),
@@ -158,7 +165,10 @@ export function ChatScreen() {
   );
 
   // The stream reconnected or asks for a reload: drop the drafts and read the latest page (EC16).
-  useStreamSignal(() => void refresh(true));
+  useStreamSignal(() => {
+    setWaiting(false);
+    void refresh(true).catch(() => undefined);
+  });
 
   if (resource.value.state === 'loading') return <LoadingState what={t('chat.title')} />;
   if (resource.value.state === 'error' || !data) {
@@ -170,7 +180,9 @@ export function ChatScreen() {
   const loadOlder = async () => {
     if (!conversationId || !data.nextCursor) return;
     const page = await api.get('/conversations/{conversationId}/messages', { path: { conversationId }, query: { limit: PAGE, cursor: data.nextCursor } });
+    const before = document.documentElement.scrollHeight;
     resource.setData((d) => ({ ...d, messages: [...[...(page.data.items ?? [])].reverse(), ...d.messages], nextCursor: page.data.nextCursor ?? null }));
+    requestAnimationFrame(() => window.scrollBy(0, document.documentElement.scrollHeight - before));
   };
 
   return (
@@ -181,10 +193,10 @@ export function ChatScreen() {
             {t('chat.older')}
           </button>
         )}
-        {!data.messages.length && !drafts.length && <p className="sires-chat__empty">{t('chat.empty')}</p>}
-        <ol className="sires-chat__messages">
+        {!data.messages.length && !drafts.length && <EmptyState title={t('chat.emptyTitle')} reason={t('chat.empty')} />}
+        <ol className="sires-chat__messages" aria-live="polite">
           {data.messages.map((message) => (
-            <MessageItem key={message.id} projectId={projectId} message={message} tasks={data.tasks} archived={archived} />
+            <MessageItem key={message.id} projectId={projectId} message={message} tasks={data.tasks} />
           ))}
           {drafts.map((draft) => (
             <li key={draft.agentRunId} className="sires-chat__message" data-draft="">
@@ -255,7 +267,7 @@ function MessageHead({ projectId, name, at, agentRunId, taskCode, deliberation }
   );
 }
 
-function MessageItem({ projectId, message, tasks, archived }: { projectId: string; message: Message; tasks: Task[]; archived: boolean }) {
+function MessageItem({ projectId, message, tasks }: { projectId: string; message: Message; tasks: Task[] }) {
   const { t } = useTranslation(NS);
   const sender = message.sender;
   const who = agentKey(sender.agent, sender.instance);
@@ -276,7 +288,7 @@ function MessageItem({ projectId, message, tasks, archived }: { projectId: strin
           ))}
         </p>
       )}
-      {message.embeddedPromptId && <PromptInline projectId={projectId} promptId={message.embeddedPromptId} archived={archived} />}
+      {message.embeddedPromptId && <PromptInline projectId={projectId} promptId={message.embeddedPromptId} />}
     </li>
   );
 }
@@ -310,6 +322,7 @@ function Composer({
   const length = [...text].length;
   const task = project.activeTaskId ? tasks.find((x) => x.id === project.activeTaskId) : undefined;
   const canSend = text.trim().length > 0 && length <= MAX_LENGTH && !busy;
+  const countId = `sires-chat-count-${projectId}`;
 
   const send = async () => {
     if (!canSend) return;
@@ -372,11 +385,19 @@ function Composer({
       )}
       {taskError && <ErrorState error={taskError} ns={NS} notSaved={t('chat.taskNotCleared')} />}
       <label className="sires-field">
-        <span className="sires-field__label">{t('chat.composer')}</span>
-        <textarea className="sires-input" rows={3} value={text} aria-invalid={length > MAX_LENGTH} onChange={(e) => draft.setValue(e.currentTarget.value)} />
+        <span className="sires-visually-hidden">{t('chat.composer')}</span>
+        <textarea
+          className="sires-input"
+          rows={3}
+          value={text}
+          placeholder={t('chat.placeholder')}
+          aria-invalid={length > MAX_LENGTH}
+          aria-describedby={countId}
+          onChange={(e) => draft.setValue(e.currentTarget.value)}
+        />
       </label>
       <div className="sires-chat__composer-foot">
-        <span className="sires-chat__meta" aria-live="polite">
+        <span id={countId} className="sires-chat__meta">
           {length > MAX_LENGTH ? t('chat.tooLong', { max: MAX_LENGTH }) : t('chat.count', { count: length, max: MAX_LENGTH })}
         </span>
         <button type="submit" className="sires-button" data-variant="primary" disabled={!canSend}>
@@ -392,12 +413,13 @@ function ProviderFailure({ projectId, failure }: { projectId: string; failure: F
   const { t } = useTranslation(NS);
   const who = agentKey(failure.agent, failure.instance);
   const auth = failure.code === 'auth_failed' || failure.code === 'permission_denied';
+  const temporary = !!failure.code && TEMPORARY.includes(failure.code);
   return (
     <div role="alert" className="sires-chat__failure">
       <p>
         <strong>{t('chat.failure.title', { agent: failure.agent ? t(who.key) + (who.instance ? ` ${who.instance}` : '') : t('agent.orchestrator') })}</strong>{' '}
         {failure.connection && t('chat.failure.connection', { name: failure.connection })}{' '}
-        {auth ? t('chat.failure.auth') : t('chat.failure.retried')}
+        {auth ? t('chat.failure.auth') : temporary ? t('chat.failure.retried') : t('chat.failure.other')}
       </p>
       <p className="sires-chat__meta">
         {t('chat.failure.code')} <code className="sires-id">{failure.code ?? '—'}</code>
@@ -430,6 +452,9 @@ function ContextPanel({ projectId, project, tasks }: { projectId: string; projec
     return { context: context.data, plan, references: references.data.items ?? [], includeField: me.preferences.includeResearchFieldInContext ?? false };
   }, [projectId]);
   const task = useMemo(() => (project.activeTaskId ? tasks.find((x) => x.id === project.activeTaskId) : undefined), [project.activeTaskId, tasks]);
+  useStreamSignal((signal) => {
+    if (signal === 'reload') void resource.reload();
+  });
 
   if (resource.value.state !== 'ready') {
     return (
@@ -443,7 +468,7 @@ function ContextPanel({ projectId, project, tasks }: { projectId: string; projec
   const assumptions = (context.activeContextItems ?? []).filter((item) => item.kind === 'assumption' && item.status === 'Active').length;
   const baseline = plan?.baselineVersionId ? plan.versions?.find((v) => v.id === plan.baselineVersionId) : undefined;
   const selected = context.selectedReferenceIds ?? [];
-  const indexed = references.filter((r) => selected.includes(r.referenceId ?? r.id) && (r as { indexingStatus?: string }).indexingStatus === 'Indexed').length;
+  const indexed = references.filter((r) => selected.includes(r.referenceId) && r.reference?.indexingStatus === 'Indexed').length;
   const running = context.activeWorkflowIds?.[0];
   const none = t('chat.context.none');
   return (

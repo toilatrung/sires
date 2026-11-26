@@ -11,7 +11,12 @@
 .sires-project__head { display: flex; flex-direction: column; gap: 4px; }
 .sires-project__title { margin: 0; font-size: 26px; font-weight: 600; }
 .sires-project__meta { margin: 0; font-size: 13px; color: var(--sires-muted); }
-.sires-project__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; }
+/* Layout of Overview.dc.html: context full width; Plan wide with a side column; active Tasks full width. */
+.sires-project__layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+.sires-project__wide { grid-column: 1 / -1; }
+.sires-project__side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 1023px) { .sires-project__layout { grid-template-columns: minmax(0, 1fr); } }
+.sires-project__kind { font-size: 12px; color: var(--sires-muted); }
 .sires-project__card {
   min-width: 0;
   display: flex;
@@ -47,11 +52,12 @@
   gap: 12px;
   padding: 12px 16px;
   border: 1.5px solid var(--sires-line);
-  border-radius: var(--sires-radius-control);
+  border-radius: var(--sires-radius-card);
   background: var(--sires-surface);
   font-size: 14px;
   line-height: 1.55;
 }
+.sires-project__banner[data-tone="recovery"] strong { color: var(--sires-warn); }
 .sires-project__banner[data-tone="archived"] { border-color: var(--sires-muted); }
 .sires-project__banner[data-tone="recovery"] { border-color: var(--sires-warn); }
 .sires-project__form { display: flex; flex-direction: column; gap: 12px; }
@@ -82,7 +88,8 @@
 .sires-chat__facts dd { margin: 0; overflow-wrap: anywhere; }
 .sires-chat__messages { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; }
 .sires-chat__message { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; background: var(--sires-surface); border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); min-width: 0; }
-.sires-chat__message[data-sender="researcher"] { background: var(--sires-ground); }
+/* Researcher messages: right-aligned brand-tint bubble, as on Chat.dc.html. */
+.sires-chat__message[data-sender="researcher"] { align-self: flex-end; max-width: 80%; background: var(--sires-brand-tint); border-color: transparent; }
 .sires-chat__head { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; }
 .sires-chat__sender { font-weight: 600; }
 .sires-chat__meta { font-size: 12px; color: var(--sires-muted); }

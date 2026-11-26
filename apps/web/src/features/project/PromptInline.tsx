@@ -9,12 +9,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ErrorState, PromptCard, isApiError, useApi, useEvents, useShell, type ApiError, type InteractiveAgentPrompt } from '../../shell';
+import { ErrorState, LoadingState, PromptCard, isApiError, useApi, useEvents, useShell, useStreamSignal, type ApiError, type InteractiveAgentPrompt } from '../../shell';
 import { NS, agentKey, objectHref, useResource, type Schemas } from './shared';
 
 type PromptResponse = Schemas['PromptResponse'];
 
-export function PromptInline({ projectId, promptId, archived }: { projectId: string; promptId: string; archived: boolean }) {
+export function PromptInline({ projectId, promptId }: { projectId: string; promptId: string }) {
   const { t } = useTranslation(NS);
   const api = useApi();
   const { idempotency } = useShell();
@@ -27,6 +27,10 @@ export function PromptInline({ projectId, promptId, archived }: { projectId: str
   useEvents({ types: ['prompt.status_changed'], projectId }, (event) => {
     if (event.objectId === promptId) void reread();
   });
+  // Events may have been missed (replay unavailable): read the prompt again.
+  useStreamSignal((signal) => {
+    if (signal === 'reload') void reread();
+  });
 
   const reread = async () => {
     try {
@@ -37,7 +41,7 @@ export function PromptInline({ projectId, promptId, archived }: { projectId: str
     }
   };
 
-  if (resource.value.state === 'loading') return <p className="sires-chat__meta">{t('prompt.loading')}</p>;
+  if (resource.value.state === 'loading') return <LoadingState what={t('prompt.title')} rows={1} />;
   if (resource.value.state === 'error') {
     return (
       <p className="sires-chat__prompt-error" role="alert">
@@ -49,6 +53,7 @@ export function PromptInline({ projectId, promptId, archived }: { projectId: str
     );
   }
   const prompt: InteractiveAgentPrompt = resource.value.data;
+  const fieldLabels = Object.fromEntries(['title', 'authors', 'year', 'venue', 'doi', 'abstract'].map((f) => [f, t(`prompt.field.${f}`)]));
   const who = agentKey(prompt.agent ?? prompt.createdBy?.agent, prompt.createdBy?.instance);
   const objectLink = objectHref(projectId, prompt.pendingAction?.objectType, prompt.pendingAction?.objectId);
 
@@ -78,14 +83,15 @@ export function PromptInline({ projectId, promptId, archived }: { projectId: str
   return (
     <div className="sires-chat__prompt">
       <PromptCard
-        prompt={archived && prompt.status === 'Open' ? { ...prompt, status: 'Expired' } : prompt}
+        prompt={prompt}
+        fieldLabels={fieldLabels}
         submitting={submitting}
         agentLabel={t(who.key) + (who.instance ? ` ${who.instance}` : '')}
         onAnswer={answer}
       >
         {objectLink && (
           <Link to={objectLink} className="sires-project__link">
-            {t('prompt.related', { type: prompt.pendingAction?.objectType })}
+            {t('prompt.related', { type: t(`prompt.object.${prompt.pendingAction?.objectType}`, { defaultValue: t('prompt.object.other') }) })}
           </Link>
         )}
       </PromptCard>

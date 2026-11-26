@@ -19,7 +19,7 @@ type PlanVersion = Schemas['PlanVersion'];
 type Workflow = Schemas['Workflow'];
 type Build = Schemas['Build'];
 
-const ACTIVE: readonly string[] = ['In Progress', 'Queued', 'Waiting for User', 'Needs Review'];
+const ACTIVE: readonly Schemas['TaskStatus'][] = ['In Progress', 'Queued', 'Waiting for User', 'In Review'];
 
 interface Data {
   project: Project;
@@ -106,17 +106,21 @@ export function OverviewScreen() {
         </p>
       </header>
 
-      <div className="sires-project__grid">
-        <section className="sires-project__card" aria-labelledby="sires-overview-context">
+      <div className="sires-project__layout">
+        <section className="sires-project__card sires-project__wide" aria-labelledby="sires-overview-context">
           <div className="sires-project__card-head">
             <h2 id="sires-overview-context" className="sires-project__card-title">
               {t('overview.context.title')}
             </h2>
-            <button type="button" className="sires-button" disabled={archived || editing} title={archived ? t('overview.archived.readOnly') : undefined} onClick={() => setEditing(true)}>
+            <button type="button" className="sires-button" disabled={archived || editing} title={archived ? t('overview.archived.readOnly') : undefined} aria-describedby={archived ? 'sires-overview-readonly' : undefined} onClick={() => setEditing(true)}>
               {t('overview.context.edit')}
             </button>
           </div>
-          {archived && <p className="sires-project__hint">{t('overview.archived.readOnly')}</p>}
+          {archived && (
+            <p id="sires-overview-readonly" className="sires-project__hint">
+              {t('overview.archived.readOnly')}
+            </p>
+          )}
           {editing && data.context.researchContext ? (
             <ContextForm
               projectId={projectId}
@@ -133,7 +137,7 @@ export function OverviewScreen() {
           )}
         </section>
 
-        <section className="sires-project__card" aria-labelledby="sires-overview-plan">
+        <section className="sires-project__card sires-project__main" aria-labelledby="sires-overview-plan">
           {data.baseline ? (
             <>
               <div className="sires-project__card-head">
@@ -145,7 +149,6 @@ export function OverviewScreen() {
                 </Link>
               </div>
               <PhaseProgress baseline={data.baseline} tasks={data.tasks} />
-              <ActiveTasks projectId={projectId} tasks={data.tasks} />
             </>
           ) : (
             <div className="sires-project__empty">
@@ -160,6 +163,7 @@ export function OverviewScreen() {
           )}
         </section>
 
+        <div className="sires-project__side">
         <section className="sires-project__card" aria-labelledby="sires-overview-pending">
           <h2 id="sires-overview-pending" className="sires-project__card-title">
             {t('overview.pending.title', { count: data.pending.length })}
@@ -167,7 +171,9 @@ export function OverviewScreen() {
           {data.pending.length ? (
             <ul className="sires-project__list">
               {data.pending.slice(0, 5).map((p) => (
-                <li key={p.id}>{p.deepLink ? <Link to={p.deepLink}>{p.title ?? p.kind}</Link> : (p.title ?? p.kind)}</li>
+                <li key={p.id}>
+                  <span className="sires-project__kind">{t(`overview.pending.kind.${p.kind}`)}</span> {p.deepLink ? <Link to={p.deepLink}>{p.title ?? p.kind}</Link> : (p.title ?? p.kind)}
+                </li>
               ))}
             </ul>
           ) : (
@@ -192,6 +198,12 @@ export function OverviewScreen() {
             return proposals ? <p className="sires-project__hint">{t('overview.manuscript.proposals', { count: proposals })}</p> : null;
           })()}
         </section>
+        </div>
+        {data.baseline && (
+          <section className="sires-project__card sires-project__wide" aria-label={t('overview.tasks.title')}>
+            <ActiveTasks projectId={projectId} tasks={data.tasks} />
+          </section>
+        )}
       </div>
     </div>
   );
@@ -216,7 +228,7 @@ function ContextView({ context }: { context: SharedContext }) {
           <ul className="sires-project__list">
             {assumptions.map((item) => (
               <li key={item.id}>
-                <span className="sires-chip" data-tone="warning-flag">
+                <span className="sires-chip" data-tone="proposed-brand">
                   {t('overview.context.assumptionChip')}
                 </span>{' '}
                 {contentText(item.content)}
@@ -271,7 +283,7 @@ function ContextForm({ projectId, current, onClose, onSaved, onConflict }: { pro
     const { domain, keywords, scope, outputType, manuscriptLanguage, citationStyle } = current;
     const input: Schemas['ResearchContextInput'] = { researchQuestion: current.researchQuestion, domain, keywords, scope, outputType, manuscriptLanguage, citationStyle };
     try {
-      const res = await idempotency.run(`createContextVersion:${projectId}:${current.id}`, (key) =>
+      const res = await idempotency.run(`createContextVersion:${projectId}:${current.id}:${question.trim()}:${objectives}:${constraints}`, (key) =>
         api.post('/projects/{projectId}/context-versions', {
           path: { projectId },
           body: { ...input, researchQuestion: question.trim(), objectives: lines(objectives), constraints: lines(constraints), basedOnVersionId: current.id },
@@ -339,9 +351,9 @@ function PhaseProgress({ baseline, tasks }: { baseline: PlanVersion; tasks: Task
           <li key={phase.id} className="sires-project__phase">
             <span>{t('overview.plan.phase', { order: phase.order, name: phase.name })}</span>
             <span className="sires-project__count">{t('overview.plan.progress', { done, total: own.length })}</span>
-            <span className="sires-progress" role="img" aria-label={t('overview.plan.progressLabel', { done, total: own.length })}>
-              <span style={{ width: own.length ? `${(done / own.length) * 100}%` : 0 }} />
-            </span>
+            <div className="sires-progress" role="img" aria-label={t('overview.plan.progressLabel', { done, total: own.length })}>
+              <div data-progress="" className="sires-progress__fill" style={{ width: own.length ? `${(done / own.length) * 100}%` : 0 }} />
+            </div>
           </li>
         );
       })}
@@ -351,7 +363,7 @@ function PhaseProgress({ baseline, tasks }: { baseline: PlanVersion; tasks: Task
 
 function ActiveTasks({ projectId, tasks }: { projectId: string; tasks: Task[] }) {
   const { t } = useTranslation(NS);
-  const active = tasks.filter((task) => ACTIVE.includes(task.status));
+  const active = tasks.filter((task) => ACTIVE.includes(task.status) || task.needsReview);
   return (
     <div>
       <h3 className="sires-project__sub">{t('overview.tasks.title')}</h3>

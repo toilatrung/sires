@@ -41,7 +41,7 @@ describe('Prompt trong luồng chat (S05)', () => {
     }
     const card = (await question()).closest('.sires-chat__prompt') as HTMLElement;
     expect(within(card).getAllByText(/Synthesis Agent/).length).toBeGreaterThan(0);
-    expect(screen.getByRole('link', { name: 'Mở task liên quan' }).getAttribute('href')).toBe(`/projects/${projectIds.rag}/tasks/${id('task', 3)}`);
+    expect(screen.getByRole('link', { name: 'Mở Task liên quan' }).getAttribute('href')).toBe(`/projects/${projectIds.rag}/tasks/${id('task', 3)}`);
   });
 
   it('không chọn sẵn (UX-PROMPT-002-AC01, EC24)', async () => {
@@ -58,7 +58,9 @@ describe('Prompt trong luồng chat (S05)', () => {
     const { user, calls } = await openChat();
     await question();
     const radios = screen.getAllByRole('radio');
-    radios[0].focus();
+    screen.getByRole('link', { name: 'Mở Task liên quan' }).focus();
+    await user.tab();
+    expect(document.activeElement).toBe(radios[0]);
     await user.keyboard('{ArrowDown}');
     expect((radios[1] as HTMLInputElement).checked).toBe(true);
     await user.tab();
@@ -77,8 +79,9 @@ describe('Prompt trong luồng chat (S05)', () => {
     withPrompt(answered);
     mock.events.emit({ type: 'prompt.status_changed', projectId: projectIds.rag, objectType: 'prompt', objectId: PROMPT_ID, fromState: 'Open', toState: 'Answered' });
     await waitFor(() => expect(screen.getByText(/Đã chọn:/)).toBeTruthy());
+    expect(screen.getByText(/Đã chọn:/).closest('p, div')!.textContent).toContain('Độ chính xác trích dẫn (precision)');
+    expect(screen.getByText(/^Bạn · .+ · chỉ đọc$/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Xác nhận/ })).toBeNull();
-    expect(screen.getByText(/chỉ đọc/)).toBeTruthy();
     expect(calls('POST', `/prompts/${PROMPT_ID}/response`)).toHaveLength(0);
   });
 
@@ -148,5 +151,25 @@ describe('Prompt trong luồng chat (S05)', () => {
     const line = await screen.findByText('Không tải được prompt.');
     await user.click(within(line.closest('p')!).getByRole('button', { name: 'Thử lại' }));
     expect(await question()).toBeTruthy();
+  });
+
+  it('thẻ approval cho Plan Version (UX-PROMPT-001-AC01)', async () => {
+    const pv = id('planVersion', 4);
+    withPrompt({ ...base(), type: 'approval', question: 'Duyệt Plan Version v4?', choices: undefined, pendingAction: { objectType: 'plan_version', objectId: pv } });
+    await openChat();
+    const card = (await screen.findByText('Duyệt Plan Version v4?')).closest('.sires-chat__prompt') as HTMLElement;
+    expect(within(card).getByText(/approval · Open/)).toBeTruthy();
+    expect(within(card).getByRole('link', { name: 'Mở Plan Version liên quan' }).getAttribute('href')).toBe(`/projects/${projectIds.rag}/plan/versions/${pv}`);
+    expect(within(card).getAllByText(/Synthesis Agent/).length).toBeGreaterThan(0);
+  });
+
+  it('Expired khi project lưu trữ (EC27)', async () => {
+    await openChat();
+    await question();
+    withPrompt({ ...base(), status: 'Expired', statusReason: 'Project đã lưu trữ.' });
+    mock.events.emit({ type: 'prompt.status_changed', projectId: projectIds.rag, objectType: 'prompt', objectId: PROMPT_ID, fromState: 'Open', toState: 'Expired' });
+    expect(await screen.findByText(/Project đã lưu trữ\./)).toBeTruthy();
+    expect(screen.getByText('Không được tính là đồng ý.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^Xác nhận/ })).toBeNull();
   });
 });
