@@ -1,6 +1,6 @@
 # PID-00058 — Self-QC của Dev
 
-**Kết luận:** (điền sau lượt đối chiếu)
+**Kết luận:** Đạt — mọi AC có test đạt; lượt đối chiếu độc lập không có CRITICAL, HIGH; 7 MEDIUM và phần lớn LOW đã sửa, phần còn lại ghi ở mục 5
 
 - **Ticket:** [PID-00058](../../../docs/tickets/issues/PID-00058/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 27/11/2026
@@ -11,8 +11,8 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | Lệnh | Kết quả |
 | --- | --- |
-| `pnpm nx affected -t lint typecheck test build` | Chạy theo project, vì nhánh xếp chồng trên `preview/ui-ph02`: `pnpm nx run-many -t lint typecheck test build -p @sires/web` đạt — 23 file, 173 test; lint, typecheck, build đạt |
-| `pnpm nx run @sires/web:test` | 173 đạt, 0 lỗi; riêng `src/features/project`: 3 file, 35 test đạt |
+| `pnpm nx affected -t lint typecheck test build` | Chạy theo project, vì nhánh xếp chồng trên `preview/ui-ph02`: sau khi merge head mới của #138, `pnpm nx run-many -t lint typecheck test build -p @sires/web --skip-nx-cache` đạt — 24 file, 186 test; lint, typecheck, build đạt |
+| `pnpm nx run @sires/web:test` | 186 đạt, 0 lỗi; riêng `src/features/project`: 3 file, 39 test đạt |
 | `node scripts/docs/add-license.mjs --check` | Đạt (0 file thiếu) |
 | `scripts/development/check-tracks.mjs` trên file đã đổi | Chỉ `web/project` (và `agent/execution/PID-00058`) |
 | gitleaks (cùng lệnh CI, Docker trong WSL) trên `develop..web/project-pid-00058` | `no leaks found` |
@@ -87,11 +87,30 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 - [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`.
 - [x] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5.
 - [x] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC.
-- [ ] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH. (đang chạy)
+- [x] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH.
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
-(điền sau lượt đối chiếu)
+Lượt đọc độc lập: một agent đọc hồ sơ ở `docs/pid-00058-00059-clarify` và mã, không dựa vào báo cáo này; kết quả 0 CRITICAL, 0 HIGH, 7 MEDIUM, 8 LOW. Dev kiểm lại từng mục trong mã, sửa, chạy lại test.
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G1 | contradicts | MEDIUM | Số Indexed đọc sai trường qua ép kiểu, luôn 0 | `Chat.tsx` (`ContextPanel`) | Sửa: `reference.indexingStatus` có type; `chat.spec.tsx › khung context` ra “14 · 12 Indexed” |
+| G2 | partial | MEDIUM | Lọc Task đang hoạt động dùng “Needs Review” không phải TaskStatus | `Overview.tsx` (`ACTIVE`) | Sửa: `In Review` và cờ `needsReview`, type `TaskStatus`. Slice S02 ghi “Needs Review”: đề xuất PO sửa chữ ở hồ sơ |
+| G3 | partial | MEDIUM | Dòng “đang trả lời” không tắt khi có `message.posted` mà không có delta | `Chat.tsx` | Sửa; `› tin đã lưu kết thúc dòng đang trả lời` |
+| G4 | contradicts | MEDIUM | Prompt Open tự đổi Expired ở client khi Archived | `PromptInline.tsx` | Sửa: chỉ theo `prompt.status_changed` → getPrompt; `prompt.spec.tsx › Expired khi project lưu trữ` |
+| G5 | partial | MEDIUM | Tín hiệu `reload` chỉ đọc lại tin nhắn | `PromptInline.tsx`, `Chat.tsx` | Sửa: thẻ prompt và khung context cũng đọc lại |
+| G6 | partial | MEDIUM | Thanh tiến độ Phase không có phần tô | `Overview.tsx` (`PhaseProgress`) | Sửa theo markup của shell (`sires-progress__fill`, `data-progress`) |
+| G7 | partial | MEDIUM | Bố cục Overview khác màn tham chiếu | `Overview.tsx`, `project.css` | Sửa: context full width, Plan rộng cạnh cột phụ, Task đang hoạt động full width, loại việc chờ, “4/4 Completed”. Còn thiếu (LOW, để QC độc lập/PO xem): thông tin bản thảo ở đầu trang, agent của Task, phân bổ trạng thái dưới mỗi Phase |
+| G8 | missing | LOW | Không gọi `listContextVersions` | `Overview.tsx` | Để lại: form sửa đọc version hiện hành từ `getSharedContext`; lịch sử version không có ở màn tham chiếu |
+| G9 | partial | LOW | Khóa Idempotency của research context không theo nội dung | `Overview.tsx` | Sửa: khóa theo nội dung gửi |
+| G10 | partial | LOW | Delta trễ sau khi thay bản nháp tạo bản nháp ma | `Chat.tsx` | Sửa: nhớ `seq` theo Agent Run; `› chữ xuất hiện dần` kiểm thêm |
+| G11 | partial | LOW | Tải tin cũ không giữ vị trí cuộn | `Chat.tsx` | Sửa: bù chiều cao đã chèn |
+| G12 | partial | LOW | Trống, đang tải chưa dùng component của shell | `Chat.tsx`, `PromptInline.tsx` | Sửa: `EmptyState`, `LoadingState` |
+| G13 | partial | LOW | Nhãn trường `title` thô; tên đối tượng thô | `PromptInline.tsx` | Sửa: `fieldLabels`, tên đối tượng theo i18n |
+| G14 | partial | LOW | Khu vực chưa thêm fixture theo màn tham chiếu (T-2.3, Plan v3) | `__mocks__` | Để lại: dùng dữ liệu demo dùng chung của PID-00013 (T02…); kịch bản delta trùng, mất kết nối có trong test, chưa có trên dev |
+| G15 | partial | LOW | `refresh` lỗi không được bắt | `Chat.tsx` | Sửa |
+| UI | partial | LOW | Tin của Researcher, bán kính banner, chip giả định, `aria-live`, nhãn ô nhập | `project.css`, `Chat.tsx`, `Overview.tsx` | Sửa theo màn tham chiếu: bong bóng brand-tint bên phải, banner bo 8px, tiêu đề khôi phục màu warn, chip `proposed-brand`, `aria-live="polite"` cho luồng, nhãn ẩn và placeholder “Nhắn Orchestrator…”, lý do vô hiệu nối `aria-describedby` |
 
 ---
 
