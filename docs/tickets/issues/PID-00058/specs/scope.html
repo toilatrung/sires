@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00058.">
+<title>PID-00058 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>PID-00058 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc H1–H20 ở <a href="../index.html#s-5">trang ticket mục 5</a> (chốt theo đề xuất, PO ủy quyền 26/11/2026). Mọi test nằm trong <code>apps/web/src/features/project/</code> và chạy với mock của PID-00013.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Route <code>/projects/:projectId/overview</code>, <code>/projects/:projectId/chat</code> qua hợp đồng <code>Feature</code>; namespace i18n <code>project</code> vi, en; đang tải, trống, lỗi bằng component của shell</td><td>ticket “Gồm”; <code>apps/web/README.md</code>; spec B1, B4, B5</td><td>S01</td></tr>
+<tr><td>P2</td><td>Mock 9 operation của khu vực (override có trạng thái trên mock sinh từ OpenAPI), fixture theo dữ liệu mẫu của màn tham chiếu; kịch bản <code>chat.delta</code> qua mock <code>/events</code> của PID-00013</td><td>ticket Đầu ra (Mock); H5, H6</td><td>S01</td></tr>
+<tr><td>P3</td><td>Overview: research context hiện hành và giả định còn mở; nút Sửa tạo version mới</td><td>UX-OVERVIEW-001; H11, H12</td><td>S02</td></tr>
+<tr><td>P4</td><td>Overview: Plan baseline và tiến độ theo Phase (số Task Completed trên tổng), Task đang hoạt động, việc chờ của project, bản thảo và build gần nhất</td><td>UX-OVERVIEW-001; H12</td><td>S02</td></tr>
+<tr><td>P5</td><td>Overview: banner Archived (chỉ đọc, “Mở lại project”), chưa có Plan baseline (mở Project AI Chat), khôi phục (mở Recovery decision)</td><td>UX-OVERVIEW-002, UX-OVERVIEW-003; <code>Overview--state-*</code>; H13</td><td>S02</td></tr>
+<tr><td>P6</td><td>Chat: hội thoại của project, lịch sử tin nhắn có phân trang, gửi tin nhắn, ô nhập đăng ký với kho nháp</td><td>PROJ-CHAT-001; H2, H9</td><td>S03</td></tr>
+<tr><td>P7</td><td>Chat: câu trả lời hiện dần theo <code>chat.delta</code>, thay bằng tin nhắn đã lưu; nối lại SSE không nhân đôi</td><td>ticket AC01; spec 4.7; H6, H7</td><td>S04</td></tr>
+<tr><td>P8</td><td>Chat: tin nhắn nêu agent, giờ, liên kết Agent Run, tham chiếu Task, nhãn thảo luận</td><td>UX-CHAT-002; H8, H18</td><td>S03, S04</td></tr>
+<tr><td>P9</td><td>Chat: chỉ báo active task trên ô nhập, bỏ bằng một thao tác</td><td>UX-CHAT-001; H10</td><td>S03</td></tr>
+<tr><td>P10</td><td>Thẻ prompt của shell trong luồng chat: bốn trạng thái, trả lời qua <code>answerPrompt</code>, cập nhật ngay khi <code>prompt.status_changed</code></td><td>ticket AC02; UX-PROMPT-001–005; UX-A11Y-002; H3</td><td>S05</td></tr>
+<tr><td>P11</td><td>Khung “Context của cuộc trò chuyện” bên phải Chat</td><td><code>Chat.dc.html</code>; H11</td><td>S06</td></tr>
+<tr><td>P12</td><td>Lỗi provider trong Chat: agent, mã lỗi, tên Provider Connection, hành động</td><td>spec 4.7; UX-STATE-006; H15</td><td>S06</td></tr>
+<tr><td>P13</td><td>Archived trong Chat: ẩn ô nhập, nhãn chỉ đọc, prompt Expired chỉ đọc</td><td>spec 4.7; UX-OVERVIEW-003; H14</td><td>S03, S05</td></tr>
+<tr><td>P14</td><td>Khổ hẹp: không cuộn ngang; khung context xếp xuống dưới</td><td>design.md §5; H16</td><td>S01, S06</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Hội tụ với backend thật trên staging (gateway <code>chat.delta</code>, conversation, prompt, project)</td><td>D-UI: lượt này “Xây với mock”; Hội tụ ở cổng PH-03 (H1)</td><td>PID này lần sau, khi backend PH-03 (PID-00061, PID-00063, PID-00065…) xong và Phải sửa ở nguồn mục 1, 2 đã sửa</td></tr>
+<tr><td>N2</td><td>Thẻ đề xuất thảo luận (nút Thảo luận, Bỏ qua, chi phí, các bên)</td><td>Ticket “Không gồm”</td><td>PID-00084; tới lúc đó prompt loại này hiện bằng thẻ chuẩn của shell (H3, H18)</td></tr>
+<tr><td>N3</td><td>Khối “Bước tiếp theo gợi ý” của Overview</td><td>Hợp đồng không có nguồn dữ liệu; chờ PO (I1)</td><td>PO trả lời I1; slice S02 thêm khi có câu trả lời</td></tr>
+<tr><td>N4</td><td>Số trên TopBar, rail; ô Active task trên rail</td><td>Phần khung (PID-00012 H1, S07)</td><td>PID-00012</td></tr>
+<tr><td>N5</td><td>Thẻ prompt (component), khung điện thoại, MobilePrompt</td><td>Shell làm thẻ (PID-00012 H8); trả lời trên điện thoại ở khu vực global (PID-00060 H3, H9)</td><td>PID-00012, PID-00060</td></tr>
+<tr><td>N6</td><td>Lưu trữ, xóa project từ Overview</td><td>Thuộc màn Projects (PID-00037); Overview chỉ có “Mở lại project” trong banner Archived</td><td>PID-00037</td></tr>
+<tr><td>N7</td><td>Số citation needs review của bản thảo, cấu trúc file manuscript</td><td>Thuộc khu vực manuscript; Overview chỉ đọc build gần nhất và số change proposal chờ (H12)</td><td>PID-00115</td></tr>
+<tr><td>N8</td><td>Chi tiết dependency của Task trong khung context (“2 dependency Completed”)</td><td>Cần thêm lời gọi planning cho mỗi Task; khung chỉ hiện mã và tên Task (H11)</td><td>PID của planning nếu PO muốn</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Quét theo nhóm áp dụng cho Overview và Chat: dữ liệu rỗng và biên (chưa có Plan, chưa có hội thoại, chưa có tin nhắn, tin nhắn dài); thời gian và chạy lâu (Orchestrator đang trả lời, SSE mất giữa stream); đồng thời (gửi hai lần, prompt trả lời ở nơi khác, <code>409</code>); trạng thái (project Archived, prompt Expired, Cancelled, workflow Interrupted); sự kiện (delta trùng, sai thứ tự, đến trễ, mất); provider (lỗi provider khi trả lời); provenance (tin nhắn của agent có Agent Run); giao diện (trống, đang tải, lỗi, khổ hẹp, vi/en, reduced motion); nội dung nguy hiểm (HTML trong tin nhắn). Phân quyền theo tài khoản do gateway; migration không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Project chưa có Plan baseline (<code>baselineVersionId</code> = <code>null</code>)</td><td>Overview hiện khối <code>Overview--state-no-plan</code> với nút “Mở Project AI Chat”; không hiện tiến độ Phase</td><td>UX-OVERVIEW-002-AC01; H13</td><td><code>apps/web/src/features/project/overview.spec.tsx › chưa có Plan</code></td><td>S02</td></tr>
+<tr><td>EC02</td><td>Project Archived</td><td>Banner “Archived — chỉ đọc…”; nút Sửa research context và mọi nút thay đổi vô hiệu kèm lý do; “Mở lại project” gọi <code>unarchiveProject</code></td><td>UX-OVERVIEW-003-AC01; H13</td><td><code>apps/web/src/features/project/overview.spec.tsx › archived chỉ đọc</code></td><td>S02</td></tr>
+<tr><td>EC03</td><td>Project có workflow Interrupted</td><td>Banner khôi phục: Task, bước dừng (thứ tự trên tổng), số prompt chờ; nút “Mở Recovery decision” tới trang workflow của khu vực monitoring</td><td><code>Overview--state-recovery</code>; H13</td><td><code>apps/web/src/features/project/overview.spec.tsx › banner khôi phục</code></td><td>S02</td></tr>
+<tr><td>EC04</td><td>Baseline có 3 Phase</td><td>Mỗi Phase hiện số Task Completed trên tổng Task của Phase đó</td><td>UX-OVERVIEW-001-AC01; H12</td><td><code>apps/web/src/features/project/overview.spec.tsx › tiến độ theo Phase</code></td><td>S02</td></tr>
+<tr><td>EC05</td><td>Chưa có Manuscript (<code>getManuscript</code> <code>404</code>); build lỗi; đang build</td><td>Khối Bản thảo ghi “Chưa khởi tạo”, “Build lỗi”, “Đang build” theo <code>latestBuild</code>; lỗi khác ghi “—”, không chặn Overview</td><td>H12</td><td><code>apps/web/src/features/project/overview.spec.tsx › khối bản thảo</code></td><td>S02</td></tr>
+<tr><td>EC06</td><td>Sửa research context: câu hỏi nghiên cứu rỗng; <code>409</code>; gửi hai lần</td><td>Lỗi trường, không gửi; <code>409</code> đọc lại version hiện hành và báo; một <code>Idempotency-Key</code> cho mỗi lần lưu, nút vô hiệu khi đang gửi</td><td><code>createContextVersion</code>; <code>ResearchContextInput</code>; H11</td><td><code>apps/web/src/features/project/overview.spec.tsx › sửa research context</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Project chưa có hội thoại</td><td>Màn Chat trống có câu dẫn; gửi tin đầu tiên thì <code>createConversation</code> (<code>scope=project</code>) rồi <code>sendMessage</code></td><td><code>listConversations</code>; H9</td><td><code>apps/web/src/features/project/chat.spec.tsx › hội thoại đầu tiên</code></td><td>S03</td></tr>
+<tr><td>EC08</td><td>Lịch sử dài hơn một trang</td><td>Tải trang mới nhất; nút “Tải tin cũ hơn” theo <code>nextCursor</code>; giữ vị trí cuộn khi chèn tin cũ</td><td><code>listMessages</code> (mới nhất trước); H9</td><td><code>apps/web/src/features/project/chat.spec.tsx › tải tin cũ hơn</code></td><td>S03</td></tr>
+<tr><td>EC09</td><td>Gửi tin nhắn: rỗng, dài hơn 20000 ký tự, bấm gửi hai lần, lỗi mạng</td><td>Nút gửi vô hiệu khi rỗng hoặc quá dài (đếm ký tự); một <code>Idempotency-Key</code> cho mỗi tin, gửi lại dùng cùng khóa; lỗi thì nội dung giữ trong ô nhập, báo lỗi theo UX-STATE-003</td><td><code>MessageCreate</code>; <code>sendMessage</code></td><td><code>apps/web/src/features/project/chat.spec.tsx › gửi tin nhắn</code></td><td>S03</td></tr>
+<tr><td>EC10</td><td>Gửi khi có active task</td><td>Body có <code>activeTaskId</code>; tin nhắn trong lịch sử ghi mã Task (ví dụ <code>T-2.3</code>)</td><td>UX-CHAT-001-AC01; H10</td><td><code>apps/web/src/features/project/chat.spec.tsx › tham chiếu active task</code></td><td>S03</td></tr>
+<tr><td>EC11</td><td>Bỏ active task</td><td>Một thao tác (nút ×) gọi <code>setActiveTask</code> với <code>taskId = null</code>; chỉ báo biến mất; lỗi thì chỉ báo giữ và báo lỗi</td><td>UX-CHAT-001; H10</td><td><code>apps/web/src/features/project/chat.spec.tsx › bỏ active task</code></td><td>S03</td></tr>
+<tr><td>EC12</td><td>Phiên hết hạn khi đang gõ</td><td>Nội dung ô nhập trong kho nháp của shell, khôi phục sau khi đăng nhập lại; gửi xong thì xóa nháp</td><td>PID-00012 H7, AC05; UX-STATE-004; H2</td><td><code>apps/web/src/features/project/chat.spec.tsx › nháp</code></td><td>S03</td></tr>
+<tr><td>EC13</td><td>Đang chờ câu trả lời (đã gửi, chưa có delta)</td><td>Dòng “Orchestrator đang trả lời…” có <code>role="status"</code>, chấm Đang chạy theo design.md 2.4.1</td><td>DEC-52; H7</td><td><code>apps/web/src/features/project/chat.spec.tsx › đang trả lời</code></td><td>S04</td></tr>
+<tr><td>EC14</td><td>Delta đến trùng <code>seq</code>, sai thứ tự hoặc của hội thoại khác</td><td>Bỏ delta có <code>seq</code> không lớn hơn <code>seq</code> đã ghép; bỏ delta của <code>conversationId</code> khác; không chèn HTML</td><td>H7; asyncapi chatDelta</td><td><code>apps/web/src/features/project/chat.spec.tsx › delta trùng, sai thứ tự</code></td><td>S04</td></tr>
+<tr><td>EC15</td><td>Có <code>message.posted</code> cho tin nhắn của Orchestrator</td><td>Đọc lại trang mới nhất của <code>listMessages</code>, thay bản nháp từ delta bằng tin nhắn đã lưu (theo <code>agentRunId</code>); không còn hai bản</td><td><code>MessageAccepted</code>; asyncapi <code>message.posted</code>; H7</td><td><code>apps/web/src/features/project/chat.spec.tsx › thay bản nháp bằng tin đã lưu</code></td><td>S04</td></tr>
+<tr><td>EC16</td><td>SSE mất giữa stream rồi nối lại</td><td>Khi client SSE của shell báo đã nối lại hoặc cần tải lại: bỏ bản nháp, đọc lại <code>listMessages</code>; tin nhắn không bị nhân đôi</td><td>spec 4.7; PID-00012 S05, S12; H7</td><td><code>apps/web/src/features/project/chat.spec.tsx › mất SSE giữa stream</code></td><td>S04</td></tr>
+<tr><td>EC17</td><td>Tin nhắn của agent có <code>agentRunId</code>; agent là Analysis Agent</td><td>Dòng đầu tin: tên agent (Analysis Agent A, B theo <code>instance</code>), giờ <code>HH:mm</code>, liên kết “Agent Run” mã ngắn tới route Agent Run của monitoring</td><td>UX-CHAT-002-AC01; H8</td><td><code>apps/web/src/features/project/chat.spec.tsx › tên agent và Agent Run</code></td><td>S03</td></tr>
+<tr><td>EC18</td><td>Tin nhắn của Orchestrator có <code>deliberation</code></td><td>Nhãn “Qua thảo luận” hoặc “Không qua thảo luận” như <code>Chat--deliberation-skipped</code>; <code>null</code> thì không có nhãn</td><td><code>Message.deliberation</code>; H18</td><td><code>apps/web/src/features/project/chat.spec.tsx › nhãn thảo luận</code></td><td>S03</td></tr>
+<tr><td>EC19</td><td>Tin nhắn chứa HTML, script, Markdown</td><td>Hiển thị dạng chữ; không chèn HTML; xuống dòng giữ nguyên</td><td>Nhóm nội dung nguy hiểm</td><td><code>apps/web/src/features/project/chat.spec.tsx › nội dung có HTML</code></td><td>S03</td></tr>
+<tr><td>EC20</td><td>Tin nhắn có <code>embeddedPromptId</code></td><td><code>getPrompt</code> rồi hiện thẻ prompt của shell trong luồng; lỗi tải thẻ thì dòng lỗi có “Thử lại”, tin nhắn vẫn hiện</td><td>UX-PROMPT-001; H3</td><td><code>apps/web/src/features/project/prompt.spec.tsx › thẻ trong luồng</code></td><td>S05</td></tr>
+<tr><td>EC21</td><td>Prompt được trả lời ở nơi khác (Pending Actions, Agent Activity)</td><td><code>prompt.status_changed</code> có <code>objectId</code> của prompt đang hiện → <code>getPrompt</code> → thẻ chuyển Answered, chỉ đọc, không cần tải lại trang</td><td>ticket AC02; UX-PROMPT-005-AC01; H3</td><td><code>apps/web/src/features/project/prompt.spec.tsx › Answered ở nơi khác</code></td><td>S05</td></tr>
+<tr><td>EC22</td><td>Trả lời prompt đã Answered, Expired, Cancelled ở nơi khác (<code>409</code>)</td><td>Đọc lại prompt; thẻ chuyển trạng thái mới, báo đã được xử lý ở nơi khác; không gửi lại</td><td><code>answerPrompt</code>; PROMPT-LIFECYCLE-001; H3</td><td><code>apps/web/src/features/project/prompt.spec.tsx › trả lời trễ 409</code></td><td>S05</td></tr>
+<tr><td>EC23</td><td>Prompt Cancelled vì Plan Version đã có phiên bản mới; prompt Expired vì project lưu trữ</td><td>Thẻ chỉ đọc, nêu lý do (<code>statusReason</code>), “Không được tính là đồng ý”</td><td>UX-PROMPT-004-AC01; H3</td><td><code>apps/web/src/features/project/prompt.spec.tsx › Cancelled, Expired</code></td><td>S05</td></tr>
+<tr><td>EC24</td><td>Prompt choice có phương án đề xuất; prompt edit_and_approve; dùng bàn phím</td><td>Không chọn sẵn; nút xác nhận vô hiệu tới khi chọn; edit_and_approve sửa trong thẻ rồi duyệt, gửi cả nội dung đã sửa; chỉ dùng bàn phím vẫn trả lời được (theo thẻ của shell)</td><td>UX-PROMPT-002-AC01, UX-PROMPT-003-AC01, UX-A11Y-002-AC01; H3</td><td><code>apps/web/src/features/project/prompt.spec.tsx › không chọn sẵn</code></td><td>S05</td></tr>
+<tr><td>EC25</td><td>Thẻ của shell chưa nhận một loại prompt cần dùng (ví dụ edit_and_approve, information_request)</td><td>Dừng phần đó của S05, ghi “Cần PO” trong <code>report.md</code> và báo phiên điều phối; không tự làm thẻ trong khu vực</td><td>PID-00012 H8; quy tắc 1.4.9; H3</td><td>thao tác tay (rà mã)</td><td>S05</td></tr>
+<tr><td>EC26</td><td>Prompt <code>purpose = deliberation_proposal</code></td><td>Hiện bằng thẻ chuẩn của shell (phương án Thảo luận, Bỏ qua là <code>choices</code>) tới khi PID-00084 làm thẻ riêng</td><td>Ticket “Không gồm”; H3, H18</td><td><code>apps/web/src/features/project/prompt.spec.tsx › đề xuất thảo luận thẻ chuẩn</code></td><td>S05</td></tr>
+<tr><td>EC27</td><td>Project Archived khi đang mở Chat</td><td>Ô nhập ẩn, thay bằng nhãn “Archived — chỉ đọc”; prompt Open của project hiện Expired khi có sự kiện</td><td>spec 4.7; UX-OVERVIEW-003; H14</td><td><code>apps/web/src/features/project/chat.spec.tsx › archived chỉ đọc</code></td><td>S03, S05</td></tr>
+<tr><td>EC28</td><td>Orchestrator trả lời lỗi do provider</td><td>Khối lỗi trong luồng: agent, mã lỗi (8.6), tên Provider Connection; <code>auth_failed</code>, <code>permission_denied</code> → “Mở Provider Connections”; lỗi tạm thời → câu “System đã thử lại” và “Mở Agent Activity”</td><td>spec 4.7; UX-STATE-006; ORCH-FAILURE-001-AC02; H15</td><td><code>apps/web/src/features/project/chat.spec.tsx › lỗi provider</code></td><td>S06</td></tr>
+<tr><td>EC29</td><td>Khung context: chưa có Plan baseline, không có active task, không có Reference được chọn, công tắc lĩnh vực nghiên cứu tắt</td><td>Mỗi dòng ghi “Chưa có”; lĩnh vực nghiên cứu ghi “Không gửi (tắt trong Profile)” kèm liên kết <code>/settings/profile</code></td><td><code>Chat.dc.html</code>; <code>SharedContextView</code>; H11</td><td><code>apps/web/src/features/project/chat.spec.tsx › khung context</code></td><td>S06</td></tr>
+<tr><td>EC30</td><td>Khổ dưới 1280 px và 390 px</td><td>Khung context xếp xuống dưới luồng chat; không cuộn ngang; Overview các khối xếp một cột</td><td>design.md §5; UX-RESP-001; H16</td><td>Thao tác tay trên preview web 1440×900, 1024×768, 390×844</td><td>S01, S06</td></tr>
+<tr><td>EC31</td><td>Đổi VI/EN khi đang gõ; đang tải; tải lỗi</td><td>Nhãn đổi, nội dung ô nhập giữ; skeleton của shell; lỗi theo UX-STATE-003 kèm “Thử lại”</td><td>UX-I18N-002; UX-STATE-001, UX-STATE-003</td><td><code>apps/web/src/features/project/chat.spec.tsx › đổi ngôn ngữ, đang tải, lỗi</code></td><td>S01</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00058</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

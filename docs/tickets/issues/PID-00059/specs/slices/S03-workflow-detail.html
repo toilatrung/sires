@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00059.">
+<title>S03 — Chi tiết workflow và Recovery decision | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>S03 — Chi tiết workflow và Recovery decision</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H2, H4, H5, H8, H10, H11, H20 (chốt theo đề xuất, PO ủy quyền 26/11/2026). Recovery decision theo PRD và hợp đồng, không theo lựa chọn “Chạy lại toàn bộ” của thiết kế (Phải sửa ở nguồn mục 1).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00059-AC02, UX-MONITOR-002-AC01, UX-MONITOR-004-AC01, UX-MONITOR-005-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Workflow), O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4, B6, B8; H2, H4, H5, H8, H10, H11, H20</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08, EC09, EC10, EC11, EC12, EC13, EC14, EC15, EC16, EC17, EC18, EC19, EC20, EC36 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01, S02 (điều khiển, dialog Hủy); thẻ prompt của shell (PID-00012 S10); mock <code>getPrompt</code>, <code>answerPrompt</code> của PID-00060 khi chạy dev</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đầu trang theo <code>Workflow</code>: Task (mã, tên), mã workflow, loại, baseline (<code>planVersionId</code>), người kích hoạt (<code>triggeredBy</code>) và giờ, liên kết “Tất cả workflow của project”; điều khiển như S02.</li>
+<li>Banner: Cancelled (người, giờ, hệ quả cho Task, đầu ra giữ Draft); Failed (<code>lastError</code> mã và Agent Run); Interrupted → khối Recovery decision (EC12–EC14): bước dừng, agent, thời điểm, <code>lastCheckpoint</code> (sau bước nào, số đầu ra đã lưu); ba lựa chọn radio không chọn sẵn: “Tiếp tục từ checkpoint” (<code>continue</code>), “Chạy lại bước” (<code>rerun_step</code> kèm chọn bước, mặc định bước dừng), “Hủy” (<code>cancel</code>, nêu hệ quả); nút xác nhận vô hiệu tới khi chọn; xác nhận gọi <code>decideWorkflowRecovery</code> với <code>Idempotency-Key</code>. Không gửi gì trước khi xác nhận.</li>
+<li>Hai chế độ xem (tab): Dòng thời gian (EC16) dựng từ <code>steps</code> và <code>listAgentRuns</code>: Orchestrator giao việc, handoff (đầu ra bước trước là đầu vào bước sau), đầu ra, prompt, lỗi, theo thời gian; Danh sách bước (EC17): thứ tự trên tổng, mô tả, agent, chip, đầu vào, đầu ra theo <code>TypedRef</code>, Agent Run dưới tên bước (bấm mở khung Agent Run của S04).</li>
+<li>Bước có <code>openPromptId</code> → thẻ prompt của shell (<code>getPrompt</code>, <code>answerPrompt</code>), câu “Cũng trả lời được trong Project AI Chat”, cập nhật theo <code>prompt.status_changed</code> (EC18). Bước deliberation hiện như bước thường (EC19).</li>
+<li>Đang chạy: chấm Đang chạy cạnh bước hiện tại, thanh tiến độ xác định (bước Succeeded trên tổng), thời gian chạy của Agent Run; reduced motion đứng yên (EC20). Kết thúc: chỉ xem (EC15).</li>
+<li>SSE như S02 cho workflow đang mở. Khổ 390 px: hai chế độ xem một cột, khối Recovery decision đủ dùng (EC36).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/workflow.spec.tsx › recovery decision</code> (PID-00059-AC02, EC12); <code>› dòng thời gian giao việc và handoff</code> (UX-MONITOR-002-AC01, EC16); <code>› nút theo trạng thái</code> (UX-MONITOR-004-AC01, EC08); <code>› hủy cần xác nhận</code> (EC09); <code>› 409 invalid_transition</code> (EC10); <code>› tạm dừng từ Waiting for User</code> (EC11); <code>› không gửi trước khi quyết định</code> (EC13); <code>› không có checkpoint</code> (EC14); <code>› kết thúc chỉ xem</code> (EC15); <code>› danh sách bước</code> (EC17); <code>› prompt trong chi tiết</code> (EC18); <code>› bước thảo luận</code> (EC19); <code>› đang chạy</code> (EC20)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/monitoring/</code></li>
+<li>Thao tác tay trên mock: <code>Workflow--state-running</code>, <code>--state-interrupted</code>, <code>--view-steps</code> ở 1440×900 và 390×844</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PID-00059-AC02, UX-MONITOR-002-AC01, UX-MONITOR-004-AC01 đạt; Recovery decision đúng ba lựa chọn của hợp đồng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00059</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

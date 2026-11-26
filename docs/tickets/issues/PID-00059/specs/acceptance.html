@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00059.">
+<title>PID-00059 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>PID-00059 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test Vitest trong Nx project <code>@sires/web</code> (chạy <code>pnpm nx run @sires/web:test</code>), dùng mock của khu vực (<code>apps/web/src/features/monitoring/__mocks__/</code>), mock dùng chung và mock <code>/events</code> của PID-00013; operation của khu vực khác override cục bộ trong test (H6). Gồm AC của ticket và phần giao diện của AC requirement thuộc khu vực monitoring. Số liệu lấy từ ticket, PRD, hợp đồng và H1–H20 (chốt theo đề xuất, PO ủy quyền 26/11/2026); dữ liệu mẫu lấy từ <code>GlobalActivity.dc.html</code>, <code>Workflow.dc.html</code>, <code>AgentList.dc.html</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00059-AC01</td><td>Given <code>/projects/p1/activity</code> đang mở với wf-52d <code>Running</code> ở bước 3/5, When mock <code>/events</code> phát <code>workflow.status_changed</code> với <code>objectId</code> của wf-52d, <code>toState = Waiting for User</code> và <code>getWorkflow</code> trả trạng thái mới, Then dòng wf-52d đổi chip sang Waiting for User, cột prompt chờ cập nhật, dòng “Cập nhật” đổi giờ, không có lần tải lại trang nào.</td><td><code>apps/web/src/features/monitoring/activity.spec.tsx › tự cập nhật theo SSE</code></td><td>S02</td><td>Ticket; H9</td></tr>
+<tr><td>PID-00059-AC02</td><td>Given wf-52d <code>Interrupted</code> ở bước 3 với <code>lastCheckpoint</code> sau bước 2, When mở chi tiết, Then có khối Recovery decision với ba lựa chọn tiếp tục, chạy lại bước, hủy (không chọn sẵn, nút xác nhận vô hiệu tới khi chọn) và không có nút Tạm dừng, Tiếp tục; chọn “Chạy lại bước” rồi xác nhận thì gửi <code>decideWorkflowRecovery</code> với <code>decision = rerun_step</code> và <code>stepId</code> của bước 3.</td><td><code>apps/web/src/features/monitoring/workflow.spec.tsx › recovery decision</code></td><td>S03</td><td>Ticket; CTX-RECOVERY-001; H8, H11</td></tr>
+<tr><td>UX-MONITOR-001-AC01</td><td>Given <code>listWorkflows</code> trả 2 workflow Running và 3 đã kết thúc, When mở <code>/activity</code>, Then 2 workflow đang chạy ở trên cùng kèm bước và agent hiện tại, 3 workflow kết thúc ở dưới.</td><td><code>apps/web/src/features/monitoring/activity.spec.tsx › đang chạy ở trên</code></td><td>S02</td><td>PRD 15; H7</td></tr>
+<tr><td>UX-MONITOR-002-AC01</td><td>Given workflow có 3 bước do Discovery Agent và Evidence Retrieval Agent làm, When mở chế độ Dòng thời gian, Then thấy ba mục Orchestrator giao việc cho từng bước và mục handoff từ bước của Discovery Agent sang bước của Evidence Retrieval Agent.</td><td><code>apps/web/src/features/monitoring/workflow.spec.tsx › dòng thời gian giao việc và handoff</code></td><td>S03</td><td>PRD 15; H10</td></tr>
+<tr><td>UX-MONITOR-003-AC01</td><td>Given Agent Run Succeeded với <code>provider = openai</code>, <code>model = gpt-4.1-mini</code> trên kết nối “OpenAI cá nhân”, When mở chi tiết, Then thấy “OpenAI cá nhân” và <code>gpt-4.1-mini</code>; DOM không chứa chuỗi key mẫu <code>sk-test-KNOWN</code> hay trường key nào.</td><td><code>apps/web/src/features/monitoring/agent-run.spec.tsx › provider và model, không có key</code></td><td>S04</td><td>PRD 15; NFR-SECRETS-001-AC01 (key mẫu); H12</td></tr>
+<tr><td>UX-MONITOR-003-AC02</td><td>Given Agent Run <code>hasDebugTranscript = false</code>, When mở chi tiết, Then thấy context manifest, đầu ra có cấu trúc và dòng “Không lưu toàn văn (chế độ debug tắt)”; Given <code>hasDebugTranscript = true</code>, Then có phần toàn văn thu gọn kèm ngày tự xóa, mở ra thì gọi <code>getAgentRunDebugTranscript</code>.</td><td><code>apps/web/src/features/monitoring/agent-run.spec.tsx › debug</code></td><td>S04</td><td>PRD 15; H12</td></tr>
+<tr><td>UX-MONITOR-004-AC01</td><td>Given workflow <code>Succeeded</code>, When xem chi tiết và dòng trong danh sách, Then không có nút Tạm dừng, Tiếp tục hay Hủy; với Running có Tạm dừng, Hủy; Paused có Tiếp tục, Hủy.</td><td><code>apps/web/src/features/monitoring/workflow.spec.tsx › nút theo trạng thái</code></td><td>S03</td><td>PRD 15; 18.2; DEC-53; H8</td></tr>
+<tr><td>UX-MONITOR-005-AC01</td><td>Given Agent Activity đang mở, When <code>agent_run.status_changed</code> báo bước 3 kết thúc, Then trạng thái bước và dòng workflow cập nhật trong giới hạn NFR-PERF-003 tính từ lúc nhận sự kiện (test: ngay sau khi xử lý sự kiện, không chờ chu kỳ); không có delta token nào.</td><td><code>apps/web/src/features/monitoring/activity.spec.tsx › tự cập nhật theo SSE</code></td><td>S02, S03</td><td>PRD 15; NFR-PERF-003; H9</td></tr>
+<tr><td>NFR-USAGE-002-AC01</td><td>Phần workflow (thêm khi làm rõ, H14): Given 10 Agent Run mẫu với usage đã biết, When xem tổng usage của workflow, Then tổng token in, token out, số lời gọi bằng tổng của 10 Agent Run. Phần theo project, Task, agent, kết nối, thời gian chờ I1.</td><td><code>apps/web/src/features/monitoring/agent-run.spec.tsx › tổng usage khớp</code></td><td>S04</td><td>PRD 16; H14; I1</td></tr>
+<tr><td>NFR-USAGE-003-AC01</td><td>Given Agent Run không có <code>usage.extra.cost</code>, When xem usage, Then chỉ hiện token, không có chi phí; Given có <code>extra.cost</code>, Then chi phí có nhãn “ước tính”.</td><td><code>apps/web/src/features/monitoring/agent-run.spec.tsx › chi phí ước tính</code></td><td>S04</td><td>PRD 16; H14</td></tr>
+<tr><td>NFR-USAGE-004-AC01</td><td>Given Agent Run mẫu có usage lớn trên một kết nối, When xem Agent Activity và chi tiết, Then không có chặn, cảnh báo hay giới hạn ngân sách nào; usage vẫn hiển thị.</td><td><code>apps/web/src/features/monitoring/agent-run.spec.tsx › không cảnh báo ngân sách</code></td><td>S04</td><td>PRD 16; H14</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00059</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Tiêu chí nghiệm thu · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

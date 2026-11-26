@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00059.">
+<title>S05 — Agent List | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>S05 — Agent List</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H4, H15 (chốt theo đề xuất, PO ủy quyền 26/11/2026). Dựng theo design.md §4 (Agent List) và ngoại lệ nhãn ở §3.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng của ticket; phủ màn AgentList, AgentListPreview của thiết kế</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (AgentList), O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B6, B8; H4, H15</td></tr>
+<tr><th scope="row">Edge case</th><td>EC30, EC31, EC32 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03; mock khi chạy dev: <code>listAgents</code>, <code>listAgentModelAssignments</code>, <code>listProviderConnections</code> (PID-00036)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Component Agent List dùng trong ProjectActivity (bên phải) và chi tiết workflow, theo <code>AgentList</code>: tiêu đề “Agents”, câu tóm tắt (số đang chạy, chờ bạn, lỗi, gián đoạn, đang rảnh), phạm vi (project, giờ); đủ 10 dòng: Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, Analysis Agent A, Analysis Agent B; mỗi dòng: vòng tròn chữ viết tắt, tên và vai trò (<code>listAgents</code>), chip, liên kết Task và bước khi không rảnh.</li>
+<li>Trạng thái mỗi agent (EC30) từ workflow đang hoạt động của project (<code>listWorkflows</code> với <code>projectId</code>, trạng thái Running, Waiting for User, Paused, Interrupted; bước hiện tại và <code>assignedAgent</code>; Agent Run Failed của bước): bước Waiting for User → Chờ bạn; Agent Run Failed hoặc kết nối hiệu lực Invalid (<code>listAgentModelAssignments</code> và <code>listProviderConnections</code>, EC31) → Lỗi; workflow Interrupted → Gián đoạn; bước Running → Đang chạy; còn lại Đang rảnh. Nhiều việc thì lấy việc khẩn nhất: Chờ bạn > Lỗi > Gián đoạn > Đang chạy > Đang rảnh.</li>
+<li>Nhãn trạng thái agent theo ngôn ngữ giao diện (EN: Running, Needs you, Interrupted, Error, Idle), mỗi nhãn đúng một kiểu của design.md §3 (EC32); chấm Đang chạy theo 2.4.1.</li>
+<li>Token sáng; biến thể tối chỉ qua <code>[data-theme="dark"]</code> của token (design.md §2.1), không thêm công tắc. Cập nhật theo SSE như S02.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/agent-list.spec.tsx › trạng thái theo việc khẩn nhất</code> (EC30); <code>› kết nối Invalid</code> (EC31); <code>› nhãn theo ngôn ngữ</code> (EC32)</li>
+<li>Thao tác tay trên mock: so với <code>AgentList--wfState-*</code> (waiting, interrupted, cancelled) ở 1440×900</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Agent List đủ 10 dòng, trạng thái đúng thứ tự ưu tiên, hai ngôn ngữ</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00059</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

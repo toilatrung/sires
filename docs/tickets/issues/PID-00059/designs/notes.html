@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00059</p><h1>PID-00059 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ ghi ở mục “Chốt khi làm rõ 27/11/2026” (H1–H20 ở <a href="../index.html#s-5">trang ticket</a>, chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
 <h2 id="giao-dien">Giao diện</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
 <tr><td><a href="../../../../ui-design/pages/GlobalActivity.html">GlobalActivity</a></td><td>Mặc định</td></tr>
@@ -54,11 +54,20 @@
 </tbody></table></div>
 <ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
 <li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<li>Kiểm trên preview <code>web</code> ở 1440×900 và 1024×768; GlobalActivity và chi tiết workflow kiểm thêm 390×844 (H17).</li></ul>
+<h3 id="chot-27-11">Chốt khi làm rõ 27/11/2026</h3>
+<p>Dựng theo token, component và mẫu của design.md §2–§4; chỗ thiết kế lệch PRD hay hợp đồng theo PRD, hợp đồng (thứ tự ưu tiên ở docs/tickets/README.md) và ghi ở “Phải sửa ở nguồn” của trang ticket.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn</th><th scope="col">Điều đã chốt</th><th scope="col">Nguồn</th></tr></thead><tbody>
+<tr><td>GlobalActivity, ProjectActivity</td><td>Bộ lọc Đang hoạt động, Đã kết thúc, Tất cả có số đếm trên mục đã tải (“+” khi còn trang); dòng “Cập nhật” giờ của lần cập nhật gần nhất; nút chỉ hiện khi hợp lệ; dialog Hủy nêu hệ quả cho Task (design.md §4 Dialog, nút hủy “Giữ workflow”). 390 px: mỗi workflow một thẻ.</td><td>H7–H9, H17</td></tr>
+<tr><td>Workflow</td><td>Tab Dòng thời gian, Danh sách bước; Recovery decision ba lựa chọn theo hợp đồng (tiếp tục từ checkpoint, chạy lại bước kèm chọn bước, hủy), không chọn sẵn; không dựng các trang <code>Workflow--view-deliberation-*</code> (PID-00083). Chấm Đang chạy, một thanh tiến độ xác định theo bước (design.md 2.4.1).</td><td>H4, H5, H10, H11</td></tr>
+<tr><td>Workflow — Agent Run</td><td>Khung Agent Run (mở từ bước hoặc <code>?agentRun=</code>): các trường của UX-MONITOR-003, phần debug thu gọn kèm ngày tự xóa (<code>Workflow--debug</code>), usage, chi phí chỉ khi có và ghi “ước tính”; câu “Không hiển thị suy luận nội bộ của model và không hiển thị API key”.</td><td>H12–H14</td></tr>
+<tr><td>AgentList</td><td>10 dòng, nhãn trạng thái agent theo ngôn ngữ giao diện, thứ tự Chờ bạn > Lỗi > Gián đoạn > Đang chạy > Đang rảnh; token sáng, biến thể tối chỉ qua token (không công tắc).</td><td>H15</td></tr>
+<tr><td>History</td><td>Lọc Actor đủ bốn mục; Loại sự kiện chỉ “Phê duyệt”, “Sự kiện agent” tới khi PO trả lời I2; lọc Task; chỉ đọc.</td><td>H16; I2</td></tr>
+</tbody></table></div>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Fixture mock lấy dữ liệu mẫu của màn tham chiếu; không có key hay host thật.</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 12 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<p>Gọi 17 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>: 10 khai mock ở khu vực này, 7 dùng mock của khu vực khác (H6, H20).</p>
 <h2 id="agent-va-model">Agent và model</h2>
 <p>Không có.</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00059</a><a href="../../index.html">Danh sách ticket</a></nav>
