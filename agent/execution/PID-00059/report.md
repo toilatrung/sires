@@ -3,7 +3,7 @@
 **Trạng thái:** Đang làm
 
 - **Ticket:** [PID-00059](../../../docs/tickets/issues/PID-00059/index.html) · **Luồng:** `web/monitoring` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/monitoring-pid-00059` (tạo từ `preview/ui-ph02` 1df54a9, xếp chồng trên #120, #138, #131) · **PR:** chưa mở
+- **Nhánh:** `web/monitoring-pid-00059` (tạo từ `preview/ui-ph02` 1df54a9, xếp chồng trên #120, #138, #131, #148; đã merge `web/monitoring-pid-00083` 5c1a766) · **PR:** chưa mở
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** đọc từ nhánh `docs/pid-00058-00059-clarify` (PR #127, chưa vào `main`); nhánh sửa nguồn `docs/pid-00058-00059-sources` sẽ merge vào khi PR mở (theo phiên điều phối)
@@ -13,8 +13,8 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 ## 1. Tóm tắt
 
-- Slice: 0/6 xong. Bị chặn: không có.
-- AC: chưa kiểm.
+- Slice: S01–S06 đã dựng, test của khu vực đạt (activity 8, workflow 14, agent-run 10, agent-list 4, history 4). Chưa xong: chạy lại toàn `@sires/web` (lần chạy bị EPERM khi sinh contracts), self-QC độc lập, ảnh preview, gitleaks, PR.
+- AC: 11/11 có test đạt riêng từng file.
 - Yêu cầu thêm: 0.
 
 ## 2. Trạng thái công việc
@@ -34,7 +34,9 @@ Chưa có.
 
 ## 4. Việc còn lại
 
-S01–S06.
+- Chạy lại `pnpm nx run-many -t lint typecheck test build -p @sires/web --skip-nx-cache` (lần trước: 1 test của PID-00083 so file i18n khu vực với placeholder, đã nới thành “không chứa khóa deliberation.*”).
+- Self-QC độc lập (báo cáo ở scratchpad `pid-00059-selfqc.md` nếu lượt QC chạy xong), self-qc.md, ảnh 1440×900 và 390×844, gitleaks, PR vào `develop` ghi “xếp chồng trên #120, #138, #131, #148”.
+- Báo phiên điều phối: runtime mock của shell gộp tham số lặp trong `query` (chỉ giữ giá trị cuối); bảng route ở `apps/web/README.md` chưa có route Agent Run.
 
 ## 5. Yêu cầu thêm
 
