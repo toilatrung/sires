@@ -45,6 +45,27 @@ Preferences:
       type: boolean
       default: false
       description: Bật thì lưu toàn văn prompt/phản hồi model 30 ngày (OQ-062, CTX-REGISTRY-002).
+    googleScholarDiscovery:
+      type: object
+      description: |
+        Mặc định Google Scholar trong discovery của tài khoản (PRD 18.1 `Account.googleScholarDiscovery`; UX-SETTINGS-006,
+        DISC-SCHOLAR-003; PC-05 GS-A2, GS-A3): dùng Google Scholar cho tài liệu OpenAlex không có hay không, và số lượt tối
+        đa mỗi lần chạy discovery. Mỗi lần chạy ghi đè được bằng `googleScholar` của `DiscoverySearchRequest`,
+        `AuthorSearchRequest` (Discover, chỉ dẫn cho agent); ghi đè không đổi giá trị ở đây. Giá trị ngoài 0–20 hoặc không
+        nguyên trả `400 validation_failed`, không lưu. Không có trường SerpApi API key: hệ thống trả phí lượt tìm trong hạn
+        mức tháng của tài khoản (`DiscoverySource.monthlyQuota`; PC-05 GS-A6). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy
+        quyền 26/11/2026; PID-00098 mục 1).
+      properties:
+        enabled:
+          type: boolean
+          default: false
+          description: Mặc định không dùng vì Google Scholar chỉ dùng khi Researcher chọn (DEC-61).
+        searchLimitPerRun:
+          type: integer
+          minimum: 0
+          maximum: 20
+          default: 5
+          description: Số lượt Google Scholar tối đa mỗi lần chạy discovery; một lượt là một trang kết quả SerpApi; 0 là tắt.
 
 Account:
   allOf:

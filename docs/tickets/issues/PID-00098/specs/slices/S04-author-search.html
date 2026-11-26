@@ -28,16 +28,16 @@
 <tr><th scope="row">AC</th><td>DISC-AUTHOR-001-AC01, DISC-AUTHOR-001-AC02, DISC-AUTHOR-001-AC03, DISC-AUTHOR-001-AC04, DISC-ADAPTER-001-AC01, INT-SCHOLAR-004-AC01</td></tr>
 <tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
 <tr><th scope="row">Bước spec</th><td>B2, B7, B8</td></tr>
-<tr><th scope="row">Edge case</th><td>EC06, EC12, EC19–EC21</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC12, EC19–EC21, EC49</td></tr>
 <tr><th scope="row">Phụ thuộc</th><td>S03; PID-00012 S10 (thẻ prompt <code>choice</code>)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
-<ol><li>Tab “Tác giả” chỉ hiện khi có nguồn available với <code>supportsAuthorSearch</code> (EC20); ô nhập tên tác giả; Tìm → <code>startAuthorSearch</code> với nguồn theo H11 (<code>Idempotency-Key</code>), dùng lại thẻ thao tác dài và cách theo dõi workflow của S02.</li>
+<ol><li>Tab “Tác giả” chỉ hiện khi có nguồn available với <code>supportsAuthorSearch</code> (EC20); ô nhập tên tác giả; Tìm → <code>startAuthorSearch</code> với nguồn theo H22 (tên tác giả: không gửi <code>source</code>, hợp đồng dùng nguồn <code>primary</code>) (<code>Idempotency-Key</code>), dùng lại thẻ thao tác dài và cách theo dõi workflow của S02.</li>
 <li>Workflow sang Waiting for User → <code>listPrompts</code> (<code>workflowId</code>, <code>status = Open</code>) → thẻ prompt của shell dưới thẻ thao tác, mỗi hồ sơ một phương án, không chọn sẵn; xác nhận → <code>answerPrompt</code>; nghe <code>prompt.status_changed</code>. Không gọi <code>listDiscoveredResults</code> trước khi có câu trả lời (EC19).</li>
 <li>Kết quả dùng danh sách, nhãn, chọn và gửi lô của S03; thêm ghi chú “Danh sách có thể không đầy đủ” luôn hiện; lọc năm, từ khóa trên mục đã tải; “Chọn tất cả kết quả đủ điều kiện” theo H11 (chưa trùng, có tiêu đề và ít nhất một tác giả, tối đa 50; EC12).</li>
-<li>Lối tắt “Công bố của tôi”: hiện khi <code>Profile.googleScholarProfileUrl</code> có giá trị (từ <code>getMe</code> của shell) và nguồn <code>google_scholar</code> available, có <code>supportsAuthorSearch</code> (EC06, EC20); gửi URL với <code>source = google_scholar</code>, bỏ bước chọn hồ sơ.</li>
+<li>Lối tắt “Công bố của tôi”: hiện khi <code>Profile.googleScholarProfileUrl</code> có giá trị (từ <code>getMe</code> của shell) và nguồn <code>google_scholar</code> available, có <code>supportsAuthorSearch</code> (EC06, EC20); gửi URL với <code>source = google_scholar</code> và <code>googleScholar</code> của điều khiển ở S02, bỏ bước chọn hồ sơ; Google Scholar tắt hoặc số lượt 0 → lối tắt vô hiệu kèm lý do, <code>400</code> → lý do (EC49, H22).</li>
 <li>0 kết quả → thông báo và gợi ý tìm theo từ khóa (EC21).</li>
-<li>Test trong <code>apps/web/src/features/library/discover.spec.tsx</code> (override <code>listPrompts</code>, <code>answerPrompt</code>, <code>getMe</code> cục bộ): hai hồ sơ cùng tên, danh sách có thể không đầy đủ, chọn tất cả đủ điều kiện, công bố của tôi, ẩn tìm theo tác giả, tác giả không có dữ liệu.</li></ol>
+<li>Test trong <code>apps/web/src/features/library/discover.spec.tsx</code> (override <code>listPrompts</code>, <code>answerPrompt</code>, <code>getMe</code> cục bộ): hai hồ sơ cùng tên, danh sách có thể không đầy đủ, chọn tất cả đủ điều kiện, công bố của tôi, ẩn tìm theo tác giả, tác giả không có dữ liệu, công bố của tôi khi Google Scholar tắt.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/web:test</code> → test của S04 đạt</li>
 <li>Test: <code>apps/web/src/features/library/discover.spec.tsx › hai hồ sơ cùng tên</code> (DISC-AUTHOR-001-AC01); <code>› danh sách có thể không đầy đủ</code> (DISC-AUTHOR-001-AC02, INT-SCHOLAR-004-AC01); <code>› chọn tất cả đủ điều kiện</code> (DISC-AUTHOR-001-AC03); <code>› công bố của tôi</code> (DISC-AUTHOR-001-AC04); <code>› ẩn tìm theo tác giả</code> (DISC-ADAPTER-001-AC01)</li>

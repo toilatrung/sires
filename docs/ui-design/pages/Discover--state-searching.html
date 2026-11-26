@@ -72,7 +72,7 @@ body{margin:0}
     <main style="flex: 999 1 560px; min-width: 0; padding: 28px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 18px">
       <div style="display: flex; flex-direction: column; gap: 6px">
         <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Discover</h1>
-        <p style="margin: 0; font-size: 14px; color: #4D4A44">Google Scholar qua dịch vụ trung gian. Kết quả chỉ vào Trusted Library sau khi bạn duyệt; không tự gắn vào project.</p>
+        <p style="margin: 0; font-size: 14px; color: #4D4A44">Nguồn: OpenAlex (mặc định) · Google Scholar chỉ khi bạn bật cho lần tìm, cho phần OpenAlex không có. Kết quả chỉ vào Trusted Library sau khi bạn duyệt; không tự gắn vào project.</p>
       </div>
       <form style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
         <div role="tablist" aria-label="Kiểu tìm" style="display: flex; flex-wrap: wrap; gap: 2px">
@@ -87,13 +87,22 @@ body{margin:0}
           
           <button type="button" style="height: 44px; padding: 0 20px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy tìm</button>
         </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 12px; border-top: 1px solid #DBD3C7">
+          <span style="display: flex; align-items: center; gap: 10px">
+            <button type="button" role="switch" aria-checked="false" aria-labelledby="gs-label" style="flex-shrink: 0; width: 44px; height: 26px; padding: 3px; border: 1px solid #4D4A44; border-radius: 6px; background: #FFFFFF; display: flex; justify-content: flex-start"><span style="width: 18px; height: 18px; border-radius: 9px; background: #4D4A44"></span></button>
+            <span id="gs-label" style="font-size: 13px; font-weight: 600">Google Scholar cho lần tìm này · Tắt</span>
+          </span>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4D4A44">Số lượt <input value="5" inputmode="numeric" aria-label="Số lượt Google Scholar của lần tìm, từ 0 đến 20" style="background: #E5DED5; width: 56px; height: 40px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif; font-variant-numeric: tabular-nums"> / 20</label>
+          <span style="flex: 1 1 280px; font-size: 12px; line-height: 1.5; color: #4D4A44">Điền sẵn theo Settings › Preferences; đổi ở đây chỉ cho lần tìm này. Chỉ tìm phần OpenAlex không có; mỗi trang kết quả là một lượt. Tháng này tài khoản còn [212] lượt.</span>
+        </div>
       </form>
+
       
         <div role="status" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
-          <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span data-running style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #0277DD; background: #EAF4FE; font-size: 12px; font-weight: 600">Đang tìm</span><span style="font-size: 14px; font-weight: 600">Google Scholar qua dịch vụ trung gian</span></span>
+          <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span data-running style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px solid #0277DD; background: #EAF4FE; font-size: 12px; font-weight: 600">Đang tìm</span><span style="font-size: 14px; font-weight: 600">OpenAlex</span></span>
           <span style="font-size: 13px; color: #4D4A44">Discovery Agent · đã chạy 00:08 · rời trang được, kết quả báo qua notification</span>
           <div data-progress="indeterminate" role="img" aria-label="Chưa biết thời lượng còn lại"></div>
-          <span style="font-size: 12px; color: #4D4A44">Gần nhất 09:52:14 — đã gửi truy vấn, chờ dịch vụ trả kết quả</span>
+          <span style="font-size: 12px; color: #4D4A44">Gần nhất 09:52:14 — đã gửi truy vấn tới OpenAlex, chờ kết quả</span>
         </div>
         <ul aria-hidden="true" style="margin: 0; padding: 0; list-style: none; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
           
@@ -129,25 +138,37 @@ body{margin:0}
           
         </ul>
       
+
+      
+
+      
+
       
     </main>
 
     <aside style="flex: 1 1 340px; max-width: 400px; box-sizing: border-box; background: #FCF9F5; border-left: 1px solid #DBD3C7; padding: 24px; display: flex; flex-direction: column; gap: 24px">
       <section aria-labelledby="sel" style="display: flex; flex-direction: column; gap: 12px">
         <h2 id="sel" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 21px">Đã chọn · 0</h2>
-        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Reference Processing Agent chuẩn hóa metadata, kiểm tra trùng, rồi tạo yêu cầu duyệt theo lô trong Trusted Library.</p>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Reference Processing Agent chuẩn hóa metadata, kiểm tra trùng, rồi tạo yêu cầu duyệt theo lô trong Trusted Library. Mỗi lô tối đa 50 mục.</p>
         
         <button disabled style="min-height: 44px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Gửi vào luồng duyệt</button><span style="font-size: 12px; color: #4D4A44">Chưa có kết quả để chọn; đợi lượt tìm xong.</span>
       </section>
-      <section aria-labelledby="imp" style="display: flex; flex-direction: column; gap: 12px; padding-top: 20px; border-top: 1px solid #DBD3C7">
+      <section id="nhap-thu-cong" aria-labelledby="imp" style="display: flex; flex-direction: column; gap: 12px; padding-top: 20px; border-top: 1px solid #DBD3C7">
         <h2 id="imp" style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 21px">Nhập thủ công</h2>
-        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Dùng khi dịch vụ không trả kết quả. Mục nhập cũng đi qua luồng duyệt.</p>
-        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">DOI
-          <input placeholder="10.xxxx/xxxxx" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace">
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Dùng khi nguồn không trả kết quả, hoặc bạn đã có DOI, BibTeX, RIS hay PDF. Mục nhập cũng đi qua luồng duyệt.</p>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">DOI · mỗi dòng một DOI, tối đa 50
+          <textarea rows="3" placeholder="10.xxxx/xxxxx" style="background: #E5DED5; padding: 10px 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 13px/1.5 'JetBrains Mono', monospace; resize: vertical"></textarea>
         </label>
-        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">BibTeX
-          <textarea rows="4" placeholder="@article{key, ...}" style="background: #E5DED5; padding: 10px 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 13px/1.5 'JetBrains Mono', monospace; resize: vertical"></textarea>
-        </label>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div role="radiogroup" aria-label="Định dạng" style="display: flex; gap: 2px">
+            <button type="button" role="radio" aria-checked="true" style="height: 32px; padding: 0 12px; border: 1px solid #1C1B18; border-radius: 6px; background: #1C1B18; color: #FFFFFF; font: 600 13px Montserrat, sans-serif">BibTeX</button>
+            <button type="button" role="radio" aria-checked="false" style="height: 32px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #4D4A44; font: 500 13px Montserrat, sans-serif">RIS</button>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Nội dung BibTeX</span>
+            <textarea rows="4" placeholder="@article{key, ...}" style="background: #E5DED5; padding: 10px 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 13px/1.5 'JetBrains Mono', monospace; resize: vertical"></textarea>
+          </label>
+          <button type="button" style="align-self: flex-start; height: 36px; padding: 0 12px; border: 0; background: transparent; color: #025FAC; font: 500 13px Montserrat, sans-serif">Chọn tệp .bib</button>
+        </div>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px; border: 1.5px dashed #DBD3C7; border-radius: 6px; text-align: center">
           <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Chọn PDF</button>
           <span style="font-size: 12px; color: #4D4A44">PDF có lớp văn bản, tối đa 50 MB</span>
