@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00013](../../../docs/tickets/issues/PID-00013/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
-- **Nhánh:** `web/mock-pid-00013-v3` (tạo từ `origin/main` `c9e745b`, lịch sử dựng lại từ `web/mock-pid-00013`; đã commit) · **PR:** PR mới từ nhánh này (thay [#128](https://github.com/toilatrung/sires/pull/128) và [#129](https://github.com/toilatrung/sires/pull/129)), base `main`, xếp chồng trên #120
+- **Nhánh:** `web/mock-pid-00013-v3` (tạo từ `origin/main` `c9e745b`, lịch sử dựng lại từ `web/mock-pid-00013`; đã commit) · **PR:** [#131](https://github.com/toilatrung/sires/pull/131) (thay [#128](https://github.com/toilatrung/sires/pull/128) và [#129](https://github.com/toilatrung/sires/pull/129)), base `main`, xếp chồng trên #120
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -81,5 +81,5 @@ SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. So
 Check `secrets` của PR #128 (gitleaks `generic-api-key`) báo dương tính giả ở commit đầu: hai khóa BibTeX mẫu (dòng 35 và 47 của `apps/web/src/shell/mock/fixtures/library.ts`, trường `key` của kiểu cục bộ `Paper`). Gitleaks quét mọi commit của PR nên commit sửa sau không xóa được. Phiên điều phối chọn (nguyên văn): “Chọn A, chốt theo đề xuất của bạn. Đẩy lịch sử sạch sang `web/mock-pid-00013-v2` và mở PR mới vào `main` … Không force-push, không sửa `infra/ci/gitleaks.toml`.”
 
 - Lịch sử dựng lại: cùng các commit, mọi commit ký SSH; nội dung khác `web/mock-pid-00013` đúng một chỗ: trường `key` của kiểu cục bộ `Paper` (chỉ dùng trong file fixture) đổi thành `cite`. Trường của hợp đồng là `Reference.bibtexKey` (`components/schemas/library.yaml`), vẫn giữ nguyên; `mock.spec.ts` › dữ liệu demo hợp lệ theo schema đạt.
-- Lần đẩy đầu sang `web/mock-pid-00013-v2` (PR #129) lại bị `secrets` báo, vì chính ghi chú Lần 3 trong `report.md` chép nguyên hai giá trị đó. Không force-push được, nên dựng lại thêm một lần ở `web/mock-pid-00013-v3` với ghi chú không chép giá trị, kiểm trước khi đẩy bằng bộ quét theo luật `generic-api-key` (regex và entropy) trên mọi dòng thêm của dải commit. PR mới từ `v3` thay #128 và #129; hai PR cũ đóng sau khi `secrets` của PR mới xanh.
+- Lần đẩy đầu sang `web/mock-pid-00013-v2` (PR #129) lại bị `secrets` báo, vì chính ghi chú Lần 3 trong `report.md` chép nguyên hai giá trị đó. Không force-push được, nên dựng lại thêm một lần ở `web/mock-pid-00013-v3` với ghi chú không chép giá trị, kiểm trước khi đẩy bằng bộ quét theo luật `generic-api-key` (regex và entropy) trên mọi dòng thêm của dải commit. PR #131 (từ `v3`) thay #128 và #129; hai PR cũ đóng sau khi `secrets` của PR mới xanh.
 
