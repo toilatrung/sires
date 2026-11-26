@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
 - **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#138](https://github.com/toilatrung/sires/pull/138) vào `main`
-- **Cập nhật:** 27/11/2026 (Lần 4: ba LOW của QC Lần 2, claims → Evidence, client đọc phản hồi không phải JSON, Dialog dùng chung)
+- **Cập nhật:** 27/11/2026 (Lần 5: client gửi FormData, chuyển từ #144 sang luồng web/shell)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -134,6 +134,19 @@ Việc từ `qc-report.md` Lần 2 (G4–G6, LOW) và từ phiên điều phối
 QC G1 (“Phase 2/3” trên rail) chờ PO xem C1; G2 hết khi #120 vào `main`; G3 do PID-00036 thay màn giữ chỗ `/sign-in`. Các khu vực đang tự làm dialog (planning ở #145) chuyển sang `ConfirmDialog` của shell khi #138 vào `develop`.
 
 Kết quả: 17 file, 121 test đạt; typecheck, lint đạt (self-qc.md Lần 4). Trạng thái giữ “Xong — chờ QC”.
+
+
+## Lần 5 — 27/11/2026
+
+Phiên điều phối chốt theo QC chéo #144 (G1 HIGH, PID-00098 sửa shell trong `78baa91`): phần client API của commit đó chuyển sang luồng web/shell, làm lại trên #138; phần `shell/mock/**` (gồm `MockRequest.emit`, chú thích `Feature.mocks`, `quiet: true` ở `browser.ts`) do phiên web-mocks làm trên #131.
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L5-1 | Phiên điều phối: “đưa vào các thay đổi `client.ts` (gửi FormData) … thêm test cho FormData (CSRF, idempotency, không đặt Content-Type tay)” | `ApiClient` gửi `FormData` nguyên, không đặt `Content-Type` (trình duyệt đặt kèm boundary), vẫn gửi `X-CSRF-Token`, `Idempotency-Key`. Ở mức type, thao tác `multipart/form-data` (`importReferenceFromPdf`, `uploadReferenceDocument`, `uploadFile`) nhận `body: FormData` thay cho object của schema. README ghi cách dùng | `api/client.ts`; `api.spec.ts › FormData gửi nguyên…` (gửi lại sau lỗi mạng dùng lại khóa), `› ở mức type: thao tác multipart nhận FormData…`; đột biến bỏ nhánh FormData làm đỏ test |
+| L5-2 | Như trên: `feature.ts` | Không làm ở đây: trên nhánh này `Feature` chưa có trường `mocks` (do #131 thêm), nên chú thích thuộc #131 | — |
+| L5-3 | Như trên: `topbar.spec` “nếu cần” | Không cần: test của shell dùng `renderShellFrame` (Lần 3), `/discover` luôn là `Placeholder` | `topbar.spec.tsx` đạt |
+
+Kết quả: 17 file, 123 test đạt; typecheck, lint đạt (self-qc.md Lần 5). Trạng thái giữ “Xong — chờ QC”.
 
 ---
 

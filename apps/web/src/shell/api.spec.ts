@@ -178,3 +178,47 @@ describe('client API: phản hồi không phải JSON', () => {
     expect(onUnauthenticated).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('client API: tải tệp (multipart/form-data)', () => {
+  it('FormData gửi nguyên kèm X-CSRF-Token và Idempotency-Key, không đặt Content-Type tay; gửi lại sau lỗi mạng dùng lại khóa', async () => {
+    let attempt = 0;
+    const stub = new FetchStub()
+      .on('GET', '/api/v1/auth/session', () => json(fx.session))
+      .on('POST', '/api/v1/references/pdf-imports', () => {
+        attempt += 1;
+        if (attempt === 1) throw new TypeError('offline');
+        return json({ id: 'imp-1' }, { status: 202 });
+      });
+    const { api } = setup(stub);
+    const keys = new IdempotencyKeys(() => 'key-upload');
+    const form = new FormData();
+    form.append('file', new Blob(['%PDF-1.7'], { type: 'application/pdf' }), 'bai-bao.pdf');
+    const send = () => keys.run('importReferenceFromPdf:bai-bao.pdf', (idempotencyKey) => api.post('/references/pdf-imports', { body: form, idempotencyKey }));
+
+    await expect(send()).rejects.toMatchObject({ kind: 'network' });
+    await send();
+
+    const posts = stub.calls('/api/v1/references/pdf-imports', 'POST');
+    expect(posts).toHaveLength(2);
+    for (const post of posts) {
+      expect(post.formData).toBe(form);
+      expect(post.body).toBeUndefined();
+      expect(post.headers['X-CSRF-Token']).toBe('csrf-1');
+      expect(post.headers['Idempotency-Key']).toBe('key-upload');
+      // fetch sets multipart/form-data with its boundary; the client never sets Content-Type for a FormData.
+      expect(Object.keys(post.headers).some((h) => h.toLowerCase() === 'content-type')).toBe(false);
+    }
+    expect((posts[1]!.formData!.get('file') as File).name).toBe('bai-bao.pdf');
+  });
+
+  it('ở mức type: thao tác multipart nhận FormData, không nhận object', () => {
+    const api = new ApiClient({ fetch: async () => json({}) });
+    const typed = () => {
+      // @ts-expect-error an upload takes a FormData, not the JSON-like body of the schema
+      void api.post('/references/pdf-imports', { body: { file: 'x' }, idempotencyKey: 'k' });
+      void api.post('/references/pdf-imports', { body: new FormData(), idempotencyKey: 'k' });
+      void api.post('/references/pdf-imports', { body: new FormData(), contentType: 'multipart/form-data', idempotencyKey: 'k' });
+    };
+    expect(typeof typed).toBe('function');
+  });
+});

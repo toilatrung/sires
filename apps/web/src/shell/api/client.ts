@@ -57,7 +57,11 @@ type BodyPart<Op> =
     ? { body?: never; contentType?: never }
     : HasKey<BodyContent<Op>, 'application/json'> extends true
       ? { body: BodyContent<Op>[keyof BodyContent<Op>]; contentType?: keyof BodyContent<Op> & string }
-      : { body: BodyContent<Op>[keyof BodyContent<Op>]; contentType: keyof BodyContent<Op> & string };
+      : HasKey<BodyContent<Op>, 'multipart/form-data'> extends true
+        ? // Uploads (importReferenceFromPdf, uploadReferenceDocument, uploadFile): a FormData, sent as is.
+          // contentType is accepted for clarity and ignored: the browser sets it with the boundary.
+          { body: FormData; contentType?: 'multipart/form-data' }
+        : { body: BodyContent<Op>[keyof BodyContent<Op>]; contentType: keyof BodyContent<Op> & string };
 type IdempotencyPart<Op> = HasKey<HeaderParams<Op>, 'Idempotency-Key'> extends true ? { idempotencyKey: string } : { idempotencyKey?: string };
 type IfMatchPart<Op> = HasKey<HeaderParams<Op>, 'If-Match'> extends true ? { ifMatch: string } : { ifMatch?: string };
 
@@ -207,8 +211,11 @@ export class ApiClient {
     }
     if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
     if (opts.ifMatch) headers['If-Match'] = opts.ifMatch;
-    let body: string | undefined;
-    if (opts.body !== undefined) {
+    let body: string | FormData | undefined;
+    if (typeof FormData !== 'undefined' && opts.body instanceof FormData) {
+      // multipart/form-data: sent as is; fetch sets Content-Type with its boundary, so the client never sets it.
+      body = opts.body;
+    } else if (opts.body !== undefined) {
       headers['Content-Type'] = opts.contentType ?? 'application/json';
       body = JSON.stringify(opts.body);
     }
