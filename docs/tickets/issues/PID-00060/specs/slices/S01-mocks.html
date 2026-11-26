@@ -28,13 +28,14 @@
 <tr><th scope="row">AC</th><td>— (nền cho test của S02–S06)</td></tr>
 <tr><th scope="row">Output spec</th><td>O2</td></tr>
 <tr><th scope="row">Bước spec</th><td>B1, B6</td></tr>
-<tr><th scope="row">Edge case</th><td>EC02, EC20 (hành vi mock)</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC20 (hành vi mock); H13 (prompt mẫu)</td></tr>
 <tr><th scope="row">Phụ thuộc</th><td>PID-00037 S01 (kho chung); PID-00013 S02, S03</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
 <ol><li>Mở rộng kho chung trong <code>apps/web/src/features/global/__mocks__/</code> của PID-00037: pending action Open và Expired, notification, prompt theo designs/notes.html; <code>getDashboard</code> của PID-00037 đọc cùng pending action.</li>
 <li>Override có trạng thái: <code>listPendingActions</code> (lọc <code>status</code>, <code>kind</code>, <code>projectId</code>, <code>cursor</code>, <code>openCount</code>), <code>acknowledgePendingAction</code> (Expired → Resolved; khác → 409), <code>listNotifications</code> (<code>status</code>, <code>unreadCount</code>), <code>markNotificationsRead</code> (<code>ids</code>, <code>all</code>, <code>projectId</code>), <code>listPrompts</code>, <code>getPrompt</code> (404 khi không thấy), <code>answerPrompt</code> (Open → Answered; Expired, Cancelled, Answered → 409; thiếu trường theo loại → 400).</li>
 <li>Khi trạng thái đổi, đẩy sự kiện qua mock <code>/events</code> của PID-00013 (<code>pending_action.changed</code>, <code>notification.created</code>, <code>prompt.status_changed</code>).</li>
+<li>Prompt mẫu đủ loại theo H13: <code>choice</code>, <code>approval</code>, <code>information_request</code>, <code>edit_and_approve</code>, và một prompt <code>choice</code> có <code>purpose=deliberation_proposal</code> với <code>deliberationProposal</code>, phương án <code>deliberate</code>, <code>skip</code>.</li>
 <li>Kiểu từ <code>PublicApi</code> của <code>@sires/contracts</code>; không khai override cho operation của khu vực khác (H8).</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/web:typecheck</code> → đạt</li>
