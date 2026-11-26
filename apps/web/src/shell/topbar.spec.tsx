@@ -116,7 +116,7 @@ describe('TopBar', () => {
     stub.on('GET', '/api/v1/notifications', () => new Response(null, { status: 503 }));
     renderShell({ path: '/dashboard', stub });
     await waitForFrame();
-    await waitFor(() => expect(stub.calls('/api/v1/notifications')).toHaveLength(1));
+    await waitFor(() => expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1));
     expect(banner().getByRole('link', { name: /^Pending Actions/ }).textContent).toBe('Pending Actions');
     expect(banner().getByRole('link', { name: 'Notifications' }).textContent).toBe('');
   });

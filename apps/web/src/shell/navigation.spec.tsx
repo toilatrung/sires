@@ -18,10 +18,10 @@ describe('dữ liệu điều hướng (H1)', () => {
     await waitForFrame();
     await waitFor(() => expect(banner().getByRole('link', { name: 'Pending Actions 8' })).toBeTruthy());
     expect(banner().getByRole('link', { name: 'Notifications, 3 chưa đọc' })).toBeTruthy();
-    const pending = stub.calls('/api/v1/pending-actions')[0];
+    const pending = stub.calls('/api/v1/pending-actions', 'GET', { limit: '1' })[0];
     expect(pending.query.get('status')).toBe('Open');
     expect(pending.query.get('projectId')).toBeNull();
-    expect(stub.calls('/api/v1/notifications')[0].query.get('status')).toBe('Unread');
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1);
   });
 
   it('cập nhật số qua SSE: pending_action.changed, notification.created (EC24)', async () => {
@@ -78,8 +78,7 @@ describe('dữ liệu điều hướng (H1)', () => {
   it('bộ chuyển chỉ có project Active (EC34)', async () => {
     const { user, stub } = renderShell({ path: '/dashboard' });
     await waitForFrame();
-    await waitFor(() => expect(stub.calls('/api/v1/projects')).toHaveLength(1));
-    expect(stub.calls('/api/v1/projects')[0].query.get('status')).toBe('Active');
+    await waitFor(() => expect(stub.calls('/api/v1/projects', 'GET', { status: 'Active' })).toHaveLength(1));
     await user.click(banner().getByRole('button', { name: /Chuyển ngữ cảnh/ }));
     const options = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent);
     expect(options).toEqual(['Global', 'RAG trong tổng quan tài liệu', 'Độ tin cậy của LLM trong giáo dục']);
@@ -121,7 +120,7 @@ describe('dữ liệu điều hướng (H1)', () => {
     await waitFor(() => expect(stub.sse).toHaveLength(1));
     const before = {
       pending: stub.calls('/api/v1/pending-actions').length,
-      unread: stub.calls('/api/v1/notifications').length,
+      unread: stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' }).length,
       project: stub.calls('/api/v1/projects/p1').length,
       session: stub.calls('/api/v1/auth/session').length,
     };
@@ -132,7 +131,7 @@ describe('dữ liệu điều hướng (H1)', () => {
 
     await waitFor(() => expect(stub.calls('/api/v1/projects/p1').length).toBe(before.project + 1));
     expect(stub.calls('/api/v1/pending-actions').length).toBeGreaterThan(before.pending);
-    expect(stub.calls('/api/v1/notifications').length).toBe(before.unread + 1);
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' }).length).toBe(before.unread + 1);
     // Background reloads never touch the session (S13).
     expect(stub.calls('/api/v1/auth/session').length).toBe(before.session);
   });
@@ -142,10 +141,10 @@ describe('dữ liệu điều hướng (H1)', () => {
     renderShell({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.sse).toHaveLength(1));
-    await waitFor(() => expect(stub.calls('/api/v1/notifications')).toHaveLength(1));
+    await waitFor(() => expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1));
     stub.sse[0].end();
     await waitFor(() => expect(stub.sse).toHaveLength(2));
     await new Promise((r) => setTimeout(r, 30));
-    expect(stub.calls('/api/v1/notifications')).toHaveLength(1);
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1);
   });
 });

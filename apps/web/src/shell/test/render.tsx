@@ -15,12 +15,16 @@ import { ShellProvider } from '../hooks';
 import { createRoutes } from '../routes';
 import { createShellServices, type BrowserNavigator } from '../services';
 import type { DraftStorage } from '../drafts/store';
+import { neutralFeatures } from './features';
 import { shellStub, type FetchStub } from './stub';
 
 export interface RenderShellOptions {
   path?: string;
   stub?: FetchStub;
-  /** Extra feature areas (e.g. a test screen with an input). */
+  /**
+   * Feature areas mounted before the neutral ones (e.g. a test screen with an input). The areas' real screens are
+   * never mounted: every other path shows the shell's Placeholder (test/features.tsx, neutralFeatures).
+   */
   features?: Feature[];
   storage?: DraftStorage;
 }
@@ -41,8 +45,7 @@ export function renderShell(options: RenderShellOptions = {}) {
   const browser = testBrowser();
   const services = createShellServices({ fetch: stub.fetch, browser, i18n: i18next, storage: options.storage, sseRetryDelays: [10] });
   const { features: extra = [] } = options;
-  const base = createRoutes();
-  const routes: RouteObject[] = extra.length ? withExtraRoutes(base, extra) : base;
+  const routes: RouteObject[] = createRoutes([...extra, ...neutralFeatures]);
   const router = createMemoryRouter(routes, { initialEntries: [options.path ?? '/dashboard'] });
   const detach = services.attachRouter(router as never);
   const user = userEvent.setup();
@@ -65,12 +68,6 @@ export function renderShell(options: RenderShellOptions = {}) {
       view.unmount();
     },
   };
-}
-
-function withExtraRoutes(base: RouteObject[], extra: Feature[]): RouteObject[] {
-  return base.map((route) =>
-    route.path === '/' ? ({ ...route, children: [...extra.flatMap((f) => f.routes), ...(route.children ?? [])] } as RouteObject) : route,
-  );
 }
 
 /** Wait until the frame shows the routed screen (session checked). */
