@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
 - **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main` (Lần 1, 2)
-- **Nhánh Lần 3:** `agent-core/spk-01-lan-3`, xếp chồng trên [#118](https://github.com/toilatrung/sires/pull/118) (nhánh `dev-tools/provider-keys`: đọc file key, sửa G9) → `main`
+- **Nhánh Lần 3:** `agent-core/spk-01-lan-3`, xếp chồng trên [#118](https://github.com/toilatrung/sires/pull/118) (nhánh `dev-tools/provider-keys`: đọc file key, sửa G9) · **PR:** [#139](https://github.com/toilatrung/sires/pull/139) → `main`
 - **Cập nhật:** 27/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
