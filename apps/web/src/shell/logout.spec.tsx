@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DraftStore } from './drafts/store';
 import * as fx from './test/fixtures';
 import { renderShell, waitForFrame } from './test/render';
-import { problem, shellStub } from './test/stub';
+import { json, problem, shellStub } from './test/stub';
 
 const avatar = () => within(screen.getByRole('banner')).getByRole('button', { name: 'Tài khoản: Nguyễn Thanh' });
 
@@ -21,12 +21,18 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
     const close = vi.spyOn(services.events, 'close');
 
     await user.click(avatar());
-    const menu = screen.getByRole('menu');
+    const menu = screen.getByRole('menu', { name: 'Tài khoản' });
     expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Hồ sơ', 'Đăng xuất']);
+    expect(within(menu).getByText('Nguyễn Thanh')).toBeTruthy();
+    expect(within(menu).getByText('nthanh@example.edu')).toBeTruthy();
+    // The form carries a token read from GET /auth/session right before sending (logout contract).
+    stub.on('GET', '/api/v1/auth/session', () => json({ ...fx.session, csrfToken: 'csrf-fresh' }));
+    const sessionCalls = stub.calls('/api/v1/auth/session').length;
     await user.click(within(menu).getByRole('menuitem', { name: 'Đăng xuất' }));
 
     await waitFor(() => expect(browser.forms).toHaveLength(1));
-    expect(browser.forms[0]).toEqual({ action: '/api/v1/auth/logout', fields: { csrfToken: 'csrf-1' } });
+    expect(browser.forms[0]).toEqual({ action: '/api/v1/auth/logout', fields: { csrfToken: 'csrf-fresh' } });
+    expect(stub.calls('/api/v1/auth/session')).toHaveLength(sessionCalls + 1);
     expect(close).toHaveBeenCalled();
     expect(services.events.status).toBe('closed');
     expect(localStorage.getItem(DraftStore.key(fx.ACCOUNT_ID, '/projects/p1/chat', 'chat.composer'))).toBeNull();

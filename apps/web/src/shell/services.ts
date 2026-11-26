@@ -141,7 +141,8 @@ export function createShellServices(options: ShellServicesOptions = {}): ShellSe
       started = false;
       let token: string;
       try {
-        token = await session.csrfToken();
+        // A fresh token right before the form is sent (logout contract: “lấy từ GET /auth/session ngay trước khi gửi”).
+        ({ csrfToken: token } = (await api.get('/auth/session', { skipUnauthenticatedHandler: true })).data);
       } catch (error) {
         session.markSignedOut();
         if (isApiError(error) && error.unauthenticated) {

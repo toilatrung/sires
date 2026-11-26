@@ -10,7 +10,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useSession, useShell } from '../hooks';
-import { PersonIcon } from '../icons';
+import { PersonIcon, SignOutIcon } from '../icons';
 
 export function initials(displayName: string | undefined): string | undefined {
   const words = displayName?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -32,7 +32,9 @@ export function AvatarMenu() {
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
   const focusIndex = useRef(0);
 
-  const name = session.status === 'signed-in' ? session.account?.profile?.displayName : undefined;
+  const profile = session.status === 'signed-in' ? session.account?.profile : undefined;
+  const name = profile?.displayName;
+  const email = profile?.email;
   const short = initials(name);
 
   useEffect(() => {
@@ -122,7 +124,13 @@ export function AvatarMenu() {
         {short ?? <PersonIcon />}
       </button>
       {open && (
-        <ul id={menuId} role="menu" data-popover="" data-side="bottom" className="sires-menu sires-menu--end" aria-label={t('account.menuUnknown')} onKeyDown={onMenuKey}>
+        <ul id={menuId} role="menu" data-popover="" data-side="bottom" className="sires-menu sires-menu--end sires-menu--account" aria-label={t('account.menuUnknown')} onKeyDown={onMenuKey}>
+          {(name || email) && (
+            <li role="none" className="sires-menu__account">
+              {name && <span className="sires-menu__account-name">{name}</span>}
+              {email && <span className="sires-menu__account-email">{email}</span>}
+            </li>
+          )}
           <li role="none">
             <Link
               ref={(el) => {
@@ -133,6 +141,7 @@ export function AvatarMenu() {
               className="sires-menu__item"
               onClick={() => close(false)}
             >
+              <PersonIcon size={16} />
               {t('account.profile')}
             </Link>
           </li>
@@ -146,6 +155,7 @@ export function AvatarMenu() {
               className="sires-menu__item"
               onClick={() => void signOut()}
             >
+              <SignOutIcon />
               {t('account.signOut')}
             </button>
           </li>

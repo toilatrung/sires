@@ -48,6 +48,20 @@ describe('phiên', () => {
     expect(flush).toHaveBeenCalledTimes(1);
   });
 
+  it('sau khi phiên hết hạn, quay lại màn có khung thì kiểm phiên lại (không treo ở “đang kiểm phiên”)', async () => {
+    const stub = shellStub();
+    const { router, services } = renderShell({ path: '/dashboard', stub });
+    await waitForFrame();
+    await router.navigate('/discover');
+    await waitFor(() => expect(stub.calls('/api/v1/auth/session')).toHaveLength(2));
+    stub.on('GET', '/api/v1/auth/session', () => problem(401, 'unauthenticated'));
+    services.session.expire();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/sign-in'));
+    // The expiry replaced /discover; Back lands on /dashboard, a framed screen.
+    await router.navigate(-1);
+    await waitFor(() => expect(where(router)).toBe('/sign-in?returnTo=%2Fdashboard'));
+  });
+
   it('lỗi mạng khi kiểm phiên: báo lỗi trong khung, không chuyển SignIn', async () => {
     const stub = shellStub();
     stub.on('GET', '/api/v1/auth/session', () => {

@@ -104,11 +104,12 @@ export class SessionController {
     for (const listener of [...this.listeners]) listener(next);
   }
 
-  /** Check the session once on app load (UX-AUTH-001). Concurrent calls share one request. */
+  /**
+   * Check the session when the frame mounts (UX-AUTH-001). Concurrent calls share one request. After an expiry or
+   * a 401 (e.g. Back from /sign-in to a framed screen) it checks again instead of waiting forever.
+   */
   ensureChecked(): Promise<SessionState> {
-    if (this.state.status === 'signed-in' || this.state.status === 'signed-out' || this.state.status === 'expired') {
-      return Promise.resolve(this.state);
-    }
+    if (this.state.status === 'signed-in') return Promise.resolve(this.state);
     return this.check();
   }
 
