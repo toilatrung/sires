@@ -16,11 +16,12 @@ export function createRoutes(features: readonly Feature[] = allFeatures): RouteO
   const areaRoutes = features.flatMap((f) => f.routes);
   const frameless = areaRoutes.filter((r) => r.path && FRAMELESS_PATHS.includes(r.path));
   const framed = areaRoutes.filter((r) => !(r.path && FRAMELESS_PATHS.includes(r.path)));
+  const assistant = features.find((f) => f.assistant)?.assistant;
   return [
     { element: <Frameless />, children: frameless.map((r) => ({ ...r, path: `/${r.path}` })) },
     {
       path: '/',
-      element: <App />,
+      element: <App assistant={assistant} />,
       // The redirect runs in the router, before the session gate, so / always lands on /dashboard.
       children: [{ index: true, loader: () => redirect('/dashboard') }, ...framed, { path: '*', element: <NotFound /> }],
     },

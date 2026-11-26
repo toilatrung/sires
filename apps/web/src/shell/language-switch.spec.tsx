@@ -6,13 +6,13 @@ import { screen, waitFor, within } from '@testing-library/react';
 import i18next from 'i18next';
 import { describe, expect, it } from 'vitest';
 import { composerFeature } from './test/features';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 
 const banner = () => screen.getByRole('banner');
 
 describe('đổi ngôn ngữ', () => {
   it('đổi ngôn ngữ giữ trạng thái (PID-00012-AC01, UX-I18N-002-AC01, EC03)', async () => {
-    const { user, router } = renderShell({ path: '/dashboard', features: [composerFeature] });
+    const { user, router } = renderShellFrame({ path: '/dashboard', features: [composerFeature] });
     await waitForFrame();
     const input = await screen.findByLabelText('Câu hỏi');
     await user.type(input, 'câu hỏi đang gõ');
@@ -48,7 +48,7 @@ describe('đổi ngôn ngữ', () => {
   });
 
   it('nhãn ProjectRail đổi theo ngôn ngữ, tên khu vực giữ tiếng Anh (PID-00012-AC01, S03)', async () => {
-    const { user } = renderShell({ path: '/projects/p1/chat', features: [composerFeature] });
+    const { user } = renderShellFrame({ path: '/projects/p1/chat', features: [composerFeature] });
     await waitForFrame();
     await user.type(await screen.findByLabelText('Câu hỏi'), 'câu hỏi');
     const rail = await screen.findByRole('complementary', { name: 'Khu vực Project' });

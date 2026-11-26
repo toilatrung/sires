@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
 - **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#138](https://github.com/toilatrung/sires/pull/138) vào `main`
-- **Cập nhật:** 27/11/2026 (Lần 2: xếp chồng trên #120, thẻ prompt đủ bốn loại, đăng xuất khi phiên đã hết)
+- **Cập nhật:** 27/11/2026 (Lần 3: test của shell không phụ thuộc màn của khu vực, PC-05 P37)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -101,6 +101,21 @@ Việc sửa theo phiên điều phối và phiên docs-sources (không có `qc-
 Phiên docs-sources ghi `replay.unavailable` luôn có `id` (“0” khi log trống); nhánh xử lý không có `id` giữ lại làm phòng thủ, không đổi hành vi theo hợp đồng.
 
 Kết quả: 112 test đạt (hai lượt song song), typecheck, lint, build đạt, `check-ui.mjs` 0 lỗi, `add-license.mjs --check` sạch (self-qc.md Lần 2). Trạng thái giữ “Xong — chờ QC”.
+
+
+## Lần 3 — 27/11/2026
+
+Việc sửa theo phiên điều phối (PC-05 P37, chốt theo đề xuất của phiên web-global; không có `qc-report.md`). Nguyên nhân: khi các khu vực dựng màn thật, `renderShell` mở `/dashboard` thật (PID-00037, PID-00060) và Trợ lý thật của global; `/sign-in` là SignIn thật (PID-00036). Test của shell vì thế gọi thêm API của khu vực và thấy thêm `alert`, `status`: 11 test đỏ với #142, 2 với #143.
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L3-1 | Phiên điều phối: “renderShell mặc định dùng bộ feature test của shell … không nạp feature thật của khu vực” | Làm theo cách bền hơn: `renderShell` **giữ** khu vực thật (test của global, settings mở màn thật qua chính hàm này, đổi mặc định sẽ làm đỏ #141–#143); thêm `renderShellFrame` gắn `neutralFeatures` (đủ route và i18n của mọi khu vực, mỗi route là `Placeholder`, không Trợ lý, không mock); mọi test của shell dùng `renderShellFrame` | 10 file spec của shell; `test/render.tsx`, `test/features.tsx` |
+| L3-2 | Như trên: Trợ lý thật render trong test của shell | `App` nhận nội dung Trợ lý qua `createRoutes` (prop `assistant`), không tự import `features`; bộ trung tính không có Trợ lý | `App.tsx`, `routes.tsx`; `topbar.spec.tsx › trợ lý` |
+| L3-3 | Phiên điều phối: `navigation.spec` lọc `calls` theo query | `FetchStub.calls(path, method, query)`; đếm `notifications?status=Unread&limit=1`, `projects?status=Active`, `pending-actions?limit=1` | `navigation.spec.tsx`, `topbar.spec.tsx` |
+| L3-4 | Phiên điều phối: `shellStub` trả 200 rỗng cho GET của khu vực | `/dashboard`, `/provider-connections`, `/workflows`, `/conversations` | `test/stub.ts` |
+| L3-5 | Phiên điều phối: hai test `/sign-in` (#143) | Không cần sửa test: `renderShellFrame` đặt Placeholder ở `/sign-in`, không gọi `GET /auth/session`. Commit `eb8ca71` của #143 (sửa hai test này) thành thừa, gộp vẫn sạch | `routes.spec.ts › sign-in không khung (EC17)`, `preferences.spec.ts › chưa đăng nhập không lưu (EC28)` |
+
+Kết quả: trên nhánh này 16 file, 112 test đạt; trên cây gộp thêm `origin/web/global-pid-00060` (`77a9971`, đã gồm #141) và `origin/web/settings-pid-00036` (`eb8ca71`): 33 file, 273 test đạt, typecheck, lint sạch (self-qc.md Lần 3). Trạng thái giữ “Xong — chờ QC”.
 
 ---
 

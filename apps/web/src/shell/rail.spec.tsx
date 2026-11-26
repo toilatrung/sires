@@ -4,7 +4,7 @@
 
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 
 const AREAS = [
   ['Overview', '/projects/p1/overview'],
@@ -19,7 +19,7 @@ const AREAS = [
 
 describe('ProjectRail', () => {
   it('tám khu vực và mục đang chọn; tên project, Plan, Active task', async () => {
-    renderShell({ path: '/projects/p1/evidence' });
+    renderShellFrame({ path: '/projects/p1/evidence' });
     await waitForFrame();
     const rail = await screen.findByRole('complementary', { name: 'Khu vực Project' });
     const links = within(rail).getAllByRole('link');
@@ -33,7 +33,7 @@ describe('ProjectRail', () => {
   });
 
   it('manuscript ẩn rail (EC16)', async () => {
-    const { router } = renderShell({ path: '/projects/p1/manuscript/sections/intro.tex' });
+    const { router } = renderShellFrame({ path: '/projects/p1/manuscript/sections/intro.tex' });
     await waitForFrame();
     await screen.findByRole('navigation', { name: 'Vị trí' });
     expect(screen.queryByRole('complementary', { name: 'Khu vực Project' })).toBeNull();
@@ -42,7 +42,7 @@ describe('ProjectRail', () => {
   });
 
   it('nhãn giữ tiếng Anh (EC05)', async () => {
-    const { user } = renderShell({ path: '/projects/p1/overview' });
+    const { user } = renderShellFrame({ path: '/projects/p1/overview' });
     await waitForFrame();
     const names = () =>
       within(screen.getByRole('complementary', { name: /Khu vực Project|Project areas/ }))
@@ -55,7 +55,7 @@ describe('ProjectRail', () => {
   });
 
   it('Bỏ active task gửi setActiveTask với taskId null', async () => {
-    const { user, stub } = renderShell({ path: '/projects/p1/overview' });
+    const { user, stub } = renderShellFrame({ path: '/projects/p1/overview' });
     await waitForFrame();
     const button = await screen.findByRole('button', { name: 'Bỏ active task' });
     await user.click(button);
