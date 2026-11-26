@@ -346,8 +346,8 @@ export default defineMocks({
       return { status: 202, body: workflow };
     },
 
-    listProjectReferences: ({ params }) => ({ status: 200, body: { items: structuredClone(store.selections(params.projectId)), nextCursor: null } }),
-
+    // listProjectReferences and removeReferenceFromProject belong to the research mock (H31, PID-00114 H12); library
+    // tests answer them locally (test-utils.tsx). Two areas claiming one operation stops the mock (EC10).
     selectReferencesForProject: ({ params, body, request, emit }) => {
       record('selectReferencesForProject', request, body);
       const ids = body?.referenceIds ?? [];
@@ -364,11 +364,6 @@ export default defineMocks({
         return row;
       });
       return { status: 200, body: { items } };
-    },
-
-    removeReferenceFromProject: ({ params, request }) => {
-      record('removeReferenceFromProject', request);
-      return store.removeSelection(params.projectId, params.referenceId) ? { status: 204 } : { status: 409, body: problem(409, 'invalid_transition') };
     },
   },
 });
