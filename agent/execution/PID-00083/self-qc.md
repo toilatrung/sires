@@ -3,7 +3,7 @@
 **Kết luận:** Đạt (phần gắn vào trang workflow, danh sách bước và Agent List chờ PID-00059)
 
 - **Ticket:** [PID-00083](../../../docs/tickets/issues/PID-00083/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 27/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 2)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -70,6 +70,25 @@ Dev tự chạy trên mã và hồ sơ của #134.
 | G3 | partial, LOW | Trên `dev:mock` chưa có mock của trang workflow, nên prompt quyết định là dữ liệu sinh tự động | Giữ: `getPrompt` thuộc PID-00058, PID-00059; test override cục bộ |
 
 Kết quả: 0 CRITICAL, 0 HIGH; 2 MEDIUM chờ PID-00059, 1 LOW.
+
+
+## Lần 2 — 27/11/2026
+
+Sửa theo QC Lần 1 (report.md Lần 2). Đã merge `b157d02` (#138) vào nhánh.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run src/features/monitoring` (apps/web) | 1 file, 29 test đạt (22 cũ, 7 mới) |
+| `npx vitest run` (toàn bộ apps/web, sau khi merge #138) | 22 file, 178 test đạt |
+| `tsc --noEmit -p tsconfig.json`, `eslint src/features/monitoring` (apps/web) | Đạt, 0 lỗi |
+| `check-ui.mjs apps/web/src/features/monitoring` | 0 lỗi, 0 cảnh báo |
+| `git diff 3c05b2d -- apps/web/src/features/monitoring/i18n` | Rỗng (file i18n của khu vực không đổi) |
+| Đột biến G2: mọi trạng thái khác Open vào “Bạn đã chọn” | `› prompt quyết định Expired, Cancelled…` đỏ |
+| Đột biến G7: bỏ lọc entry theo vòng đã đóng | `› entry của vòng đang mở…` đỏ |
+| Thao tác tay trên `dev:mock`, gắn tạm tab và ghi chú bước vào route workflow (không commit) | `completed` 1440 và 390, `round1` 1440, `failed` 1440 và 390, `completed` với prompt quyết định Expired 1440: không cuộn ngang (`scrollWidth` = `clientWidth`); chấm chạy ở ô đang viết và chip; ô bên lỗi kiểu danger có liên kết Agent Run; thẻ các bên còn ở 390; prompt Expired ghi “Không được tính là đồng ý”; cạnh bước 4 có “Xem thảo luận” và “Qua thảo luận”. Ảnh `screenshots/01-…` – `06-…` |
+| `add-license --check` | 0 file thiếu |
+
+Edge case đổi so với Lần 1: EC06, EC13 liên kết đúng route (G3); EC13 ô lỗi theo kiểu danger (G4); EC15 thêm Expired, Cancelled (G2); EC18, EC21 giao sẵn phần hiển thị (G6); EC22 giữ thông tin bên dưới 768 px (G5); EC23 lỗi tải danh sách vẫn hiện tab (G10).
 
 ---
 
