@@ -20,6 +20,8 @@ Mỗi khu vực giữ route và namespace i18n (`i18n/vi.json`, `i18n/en.json`) 
 
 Khu vực dùng shell (route, i18n, client API, SSE, kho nháp, trạng thái dùng chung, thẻ prompt) theo [src/shell/README.md](src/shell/README.md).
 
+**Thêm route của khu vực:** khai trong `routes` của `src/features/<khu vực>/index.tsx` (đường dẫn tương đối gốc, ví dụ khu vực monitoring thêm `projects/:projectId/activity/agent-runs/:agentRunId` cho chi tiết Agent Run). Shell tự ghép route của mọi khu vực, tự đặt khung (TopBar, ProjectRail theo URL) và báo trùng đường dẫn bằng test `routes.spec.ts`. Khu vực không sửa file của shell; bảng trên chỉ là tóm tắt lúc dựng khung, không phải nơi đăng ký route và không bắt buộc cập nhật. Khu vực mới (chưa có thư mục) thêm đúng một dòng import và một phần tử vào `src/shell/features.ts`.
+
 ## Chạy
 
 ```bash

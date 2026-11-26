@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
 - **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#138](https://github.com/toilatrung/sires/pull/138) vào `main`
-- **Cập nhật:** 27/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 2: xếp chồng trên #120, thẻ prompt đủ bốn loại, đăng xuất khi phiên đã hết)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -48,7 +48,7 @@ Chung cho mọi slice: `apps/web/src/shell/index.ts` (API công khai của shell
 
 ## 4. Việc còn lại
 
-- Khi PR sửa nguồn của PC-05 (design.md §3, Components, TopBar, `/events`, `/auth/logout`) merge: rebase, sinh lại `@sires/contracts`, đối chiếu tên tín hiệu SSE, tên trường CSRF của form đăng xuất, bảng nhãn bổ sung và câu chữ menu avatar với nguồn mới; `check-pid.mjs PID-00012` khi đó phải hết `LỖI` cổng sẵn sàng.
+- PO merge #120 trước #138 (PR này xếp chồng trên #120).
 - Kiểm số trên TopBar, rail với backend thật ở cổng PH-02, PH-03 (H1).
 
 ## 5. Yêu cầu thêm
@@ -72,18 +72,35 @@ Chung cho mọi slice: `apps/web/src/shell/index.ts` (API công khai của shell
 | C4 | Tín hiệu SSE | `event: replay.unavailable`; có `id` thì dùng làm `Last-Event-ID` tiếp theo, không có thì bỏ id cũ (không lặp tải lại); không giao cho nơi đăng ký | PC-05 P2 |
 | C5 | Kiểu Accepted | Viền liền `ink` theo chữ của design.md §3 (“Accepted, Trusted, Completed, Succeeded (ink)”); Supported (bảng H4) viền `brand` như màn Components | Components vẽ Accepted của Artifact viền brand: lệch với design.md, design.md là luật |
 | C6 | Số trên TopBar | Pending Actions hiện cả khi 0; chấm số của chuông chỉ khi lớn hơn 0 | Nhãn đọc màn hình của chuông luôn nêu số |
-| C7 | Thẻ prompt không có phương án | Thẻ của shell giữ bốn trạng thái và khung cho mọi loại prompt; radio kèm hệ quả cho prompt có `choices` (H8); prompt `approval`, `edit_and_approve`, `information_request` nhận điều khiển của khu vực qua `children` (ô sửa, “Sửa và duyệt”, “Từ chối”, ô trả lời) và khu vực tự gửi `decision`, `text` | H8 chỉ giao phần radio; màn `Chat` vẽ thẻ `edit_and_approve` với ô sửa riêng của đối tượng, là việc của khu vực (PID-00058–00060) |
-| C8 | Đăng xuất gặp lỗi khi lấy CSRF | Lỗi mạng, 5xx: giữ phiên, nháp, SSE; menu hiện `ErrorState` “Chưa đăng xuất được” có “Thử lại”. 401: dọn nháp, đóng SSE, về `/sign-in`, không gửi form | S14: lỗi hiển thị bằng trạng thái lỗi dùng chung; hợp đồng mới: không còn phiên thì không cần kết thúc phiên ở gateway |
+| C7 | Thẻ prompt cho mọi `PromptType` | Thẻ của shell trả lời được cả bốn loại: `choice` (radio), `approval` (“Duyệt”, “Từ chối”), `edit_and_approve` (ô sửa `editablePayload`, “Sửa và duyệt”, “Từ chối”), `information_request` (ô “Câu trả lời”); một callback `onAnswer(PromptResponse)`; nút trong thẻ dùng kiểu viền xanh (hành động trong thẻ quyết định), không dùng nút chính | Lần 2: phiên điều phối ghi nhận từ PR #127 (PID-00058 S05 cần thẻ của shell nhận `edit_and_approve`); màn `Chat` vẽ “Sửa và duyệt” viền xanh; nhiều thẻ trong một màn không được thành nhiều nút chính (design.md §4) |
+| C8 | Đăng xuất gặp lỗi khi lấy CSRF | Lỗi mạng, 5xx: giữ phiên, nháp, SSE; menu hiện `ErrorState` “Chưa đăng xuất được” có “Thử lại”. 401 (phiên đã hết): dọn nháp, đóng SSE và vẫn gửi form (trường `csrfToken` rỗng), gateway trả 303 tới `post_logout_redirect_uri` | S14 và hợp đồng `logout` ở #120 |
 
 - **Đề xuất cho PO:**
-  1. Hợp đồng: thêm `Event: { $ref: components/schemas/orchestration.yaml#/Event }` vào `components.schemas` của `openapi.yaml` để `PublicApi` sinh type `Event` (hiện chỉ có trong `x-event-schema` của `/events`; brief của PID-00012 ghi là đã sinh được). Shell đang dùng type viết tay, tự chuyển sang type sinh khi có. Nhánh sửa nguồn `docs/pc05-p1-p6-shell-sources` (commit `702d051`) đã thêm; đã thử sinh type từ `docs/api-design` của nhánh đó: web typecheck sạch, test SSE, điều hướng, hoạt động đạt.
+  1. Hợp đồng: thêm `Event: { $ref: components/schemas/orchestration.yaml#/Event }` vào `components.schemas` của `openapi.yaml` để `PublicApi` sinh type `Event` (hiện chỉ có trong `x-event-schema` của `/events`; brief của PID-00012 ghi là đã sinh được). Shell đang dùng type viết tay, tự chuyển sang type sinh khi có. Đã có ở #120 (commit `702d051`); Lần 2 merge #120 vào nhánh này và `sse.ts` dùng type sinh `components["schemas"]["Event"]`, bỏ type viết tay.
   2. Tickets 1.5, khu vực shell: cột “Path API chính” thêm `GET /projects/{projectId}/plan`, `GET /projects/{projectId}/tasks/{taskId}` (C1), cùng các path H1 đã nêu ở trang ticket mục 5.
   3. design.md §3 và Components: thống nhất kiểu Accepted (C5). Nhánh sửa nguồn ghi rõ “Accepted … (ink)”, khớp với shell; màn Components vẫn vẽ Accepted của Artifact viền brand.
   4. Spec PID-00012 mục 2.4 ghi PID-00007 “Chặn: Có”, trang ticket mục 3 ghi “không chặn (H10)”: sửa spec cho khớp.
 - **Yêu cầu hợp đồng:** không có yêu cầu mới ngoài đề xuất 1 (không chặn: có type viết tay).
-- **Còn mở:** nguồn của S11 (design.md §3, Components), S12 (`/events`), S14 (TopBar, `/auth/logout`) chưa merge vào `main` lúc mở PR; `check-pid.mjs PID-00012` còn `LỖI` ở cổng sẵn sàng (ghi nhận, không chặn theo phiên điều phối). Khi PR sửa nguồn merge: rebase và đối chiếu (mục 4).
+- **Còn mở:** PR #138 xếp chồng trên #120 (nguồn của S11, S12, S14): PO merge #120 trước, khi đó diff của #138 tự thu lại. Trên nhánh này `check-pid.mjs PID-00012` đã ĐỦ để thực thi.
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00012`; PO merge PR vào `main`; sau khi nhánh sửa nguồn merge: rebase, sinh lại type, chạy lại test.
 - **Tài liệu đi kèm:** ảnh shell chạy thật (Vite + gateway giả cục bộ trả dữ liệu như `test/fixtures.ts`), dùng cho S02, S03, S06, S14: `screenshots/01-global-tro-ly-1440.png` (Global, khung Trợ lý), `screenshots/02-project-rail-1440.png` (Project, ProjectRail), `screenshots/03-bo-chuyen-ngu-canh-1440.png`, `screenshots/04-menu-avatar-1440.png` (menu có họ tên, email theo `TopBar--menu-vi` của nhánh sửa nguồn), `screenshots/05-project-en-1440.png` (English), `screenshots/06-tablet-1024.jpg`, `screenshots/07-dien-thoai-390.jpg`, `screenshots/08-dien-thoai-menu-project-390.jpg`, `screenshots/09-route-la-1440.png`.
+
+
+## Lần 2 — 27/11/2026
+
+Việc sửa theo phiên điều phối và phiên docs-sources (không có `qc-report.md`):
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L2-1 | Phiên điều phối: “merge `origin/docs/pc05-p1-p6-shell-sources` vào nhánh của bạn (merge, không rebase) … ghi trong mô tả PR: xếp chồng trên #120; PO merge #120 trước” | Merge #120 (`66cc148`), sinh lại type | `check-pid.mjs PID-00012`: ĐỦ để thực thi; mô tả PR #138 có dòng xếp chồng |
+| L2-2 | Phiên docs-sources: `Event` đã có trong `components.schemas` (#120) | `sse.ts` dùng type sinh, bỏ type viết tay | typecheck sạch; `sse.spec.ts` đạt |
+| L2-3 | Phiên docs-sources, S14 ở #120: getSession 401 khi đăng xuất thì vẫn gửi form | `signOut()` gửi form `csrfToken` rỗng sau khi dọn nháp, đóng SSE | `logout.spec.tsx › phiên đã hết khi đăng xuất (GET /auth/session 401): vẫn gửi form…` |
+| L2-4 | Phiên điều phối (ghi nhận từ PR #127): thẻ prompt nhận cả `edit_and_approve`, `information_request`, test cho từng loại | `PromptCard` cho đủ bốn `PromptType`, `onAnswer(PromptResponse)` (C7) | `prompt-card.spec.tsx`: mọi loại PromptType (kiểm cả ở mức type), approval, edit_and_approve, renderEditor, information_request, Answered theo loại |
+| L2-5 | Phiên điều phối: khu vực tự đăng ký route (ví dụ Agent Run của monitoring), README ghi cách | `apps/web/README.md` mục “Thêm route của khu vực” | rà tay |
+
+Phiên docs-sources ghi `replay.unavailable` luôn có `id` (“0” khi log trống); nhánh xử lý không có `id` giữ lại làm phòng thủ, không đổi hành vi theo hợp đồng.
+
+Kết quả: 112 test đạt (hai lượt song song), typecheck, lint, build đạt, `check-ui.mjs` 0 lỗi, `add-license.mjs --check` sạch (self-qc.md Lần 2). Trạng thái giữ “Xong — chờ QC”.
 
 ---
 

@@ -5,7 +5,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { PromptCard, type InteractiveAgentPrompt } from './prompt-card/PromptCard';
+import { PromptCard, type InteractiveAgentPrompt, type PromptType } from './prompt-card/PromptCard';
 
 function prompt(overrides: Partial<InteractiveAgentPrompt> = {}): InteractiveAgentPrompt {
   return {
@@ -38,10 +38,11 @@ describe('thẻ Interactive Agent Prompt', () => {
   it('bàn phím: Tab vào nhóm, mũi tên chọn, Tab tới nút, Enter xác nhận (UX-A11Y-002-AC01)', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
+    const onAnswer = vi.fn();
     render(
       <>
         <button type="button">trước</button>
-        <PromptCard prompt={prompt()} onConfirm={onConfirm} agentLabel="Discovery Agent" />
+        <PromptCard prompt={prompt()} onConfirm={onConfirm} onAnswer={onAnswer} agentLabel="Discovery Agent" />
       </>,
     );
     const radios = screen.getAllByRole('radio');
@@ -64,6 +65,7 @@ describe('thẻ Interactive Agent Prompt', () => {
     await user.keyboard('{Enter}');
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm).toHaveBeenCalledWith(['c2']);
+    expect(onAnswer).toHaveBeenCalledWith({ choiceIds: ['c2'] });
 
     // Space on the button works too.
     await user.keyboard(' ');
@@ -112,17 +114,111 @@ describe('thẻ Interactive Agent Prompt', () => {
     }
   });
 
-  it('prompt không có phương án (edit_and_approve): khung và trạng thái của shell, điều khiển do khu vực truyền', () => {
+  it('mọi loại PromptType của hợp đồng đều trả lời được trong thẻ (S10)', () => {
+    // Compile-time: this list must be exactly PromptType of the contract.
+    const all = ['approval', 'choice', 'edit_and_approve', 'information_request'] as const satisfies readonly PromptType[];
+    type Missing = Exclude<PromptType, (typeof all)[number]>;
+    const none: Missing[] = [];
+    expect(none).toEqual([]);
+    for (const type of all) {
+      const { container, unmount } = render(
+        <PromptCard prompt={prompt({ type, choices: type === 'choice' ? prompt().choices : [], editablePayload: { title: 'x' } })} onAnswer={() => undefined} />,
+      );
+      expect(container.querySelector('article')?.getAttribute('data-type')).toBe(type);
+      // Every Open prompt offers at least one action; none is a dead, forever-disabled button only.
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThan(0);
+      unmount();
+    }
+  });
+
+  it('approval: Duyệt, Từ chối gửi decision (kèm objectVersion)', async () => {
+    const user = userEvent.setup();
+    const onAnswer = vi.fn();
+    const base = prompt({ type: 'approval', choices: [], question: 'Duyệt 3 reference mới?', pendingAction: { objectType: 'reference', objectId: 'r1', objectVersion: 4 } });
+    const { rerender } = render(<PromptCard prompt={base} onAnswer={onAnswer} />);
+    expect(screen.getByText('approval · Open')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Duyệt' }));
+    expect(onAnswer).toHaveBeenLastCalledWith({ decision: 'approved', objectVersion: 4 });
+    await user.click(screen.getByRole('button', { name: 'Từ chối' }));
+    expect(onAnswer).toHaveBeenLastCalledWith({ decision: 'rejected', objectVersion: 4 });
+
+    // With choices: “Duyệt” waits for one, nothing pre-selected.
+    rerender(<PromptCard prompt={{ ...base, id: 'pr-2', choices: prompt().choices }} onAnswer={onAnswer} key="b" />);
+    const approve = screen.getByRole('button', { name: 'Duyệt — chọn một phương án' }) as HTMLButtonElement;
+    expect(approve.disabled).toBe(true);
+    await user.click(screen.getByRole('radio', { name: /Không giới hạn/ }));
+    await user.click(screen.getByRole('button', { name: 'Duyệt' }));
+    expect(onAnswer).toHaveBeenLastCalledWith({ decision: 'approved', choiceIds: ['c3'], objectVersion: 4 });
+  });
+
+  it('edit_and_approve: sửa editablePayload trong thẻ rồi “Sửa và duyệt”; nội dung gốc giữ nguyên (UX-PROMPT-003)', async () => {
+    const user = userEvent.setup();
+    const onAnswer = vi.fn();
+    const original = { title: 'Benchmarking LLMs in RAG', year: 2024 };
+    const p = prompt({ type: 'edit_and_approve', choices: [], question: 'Kiểm tra metadata trước khi duyệt', editablePayload: original });
+    render(<PromptCard prompt={p} onAnswer={onAnswer} fieldLabels={{ title: 'Tiêu đề', year: 'Năm' }} />);
+    expect(screen.getByText('Nội dung gốc và nội dung đã sửa đều được lưu.')).toBeTruthy();
+    const title = screen.getByLabelText('Tiêu đề');
+    await user.clear(title);
+    await user.type(title, 'Benchmarking Large Language Models in Retrieval-Augmented Generation');
+    await user.click(screen.getByRole('button', { name: 'Sửa và duyệt' }));
+    expect(onAnswer).toHaveBeenCalledWith({
+      decision: 'approved',
+      editedPayload: { title: 'Benchmarking Large Language Models in Retrieval-Augmented Generation', year: 2024 },
+    });
+    expect(original.title).toBe('Benchmarking LLMs in RAG');
+    await user.click(screen.getByRole('button', { name: 'Từ chối' }));
+    expect(onAnswer).toHaveBeenLastCalledWith({ decision: 'rejected' });
+  });
+
+  it('edit_and_approve: khu vực thay bộ sửa bằng renderEditor', async () => {
+    const user = userEvent.setup();
+    const onAnswer = vi.fn();
     render(
-      <PromptCard prompt={prompt({ type: 'edit_and_approve', choices: [] })}>
-        <button type="button">Sửa và duyệt</button>
-        <button type="button">Từ chối</button>
-      </PromptCard>,
+      <PromptCard
+        prompt={prompt({ type: 'edit_and_approve', choices: [], editablePayload: { tags: ['a'] } })}
+        onAnswer={onAnswer}
+        renderEditor={(value, onChange) => (
+          <button type="button" onClick={() => onChange({ tags: [...(value as { tags: string[] }).tags, 'b'] })}>
+            Thêm tag
+          </button>
+        )}
+      />,
     );
-    expect(screen.getByText('edit_and_approve · Open')).toBeTruthy();
-    expect(screen.getByText('Giới hạn năm xuất bản cho Task T-2.3?')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Xác nhận/ })).toBeNull();
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Sửa và duyệt', 'Từ chối']);
+    await user.click(screen.getByRole('button', { name: 'Thêm tag' }));
+    await user.click(screen.getByRole('button', { name: 'Sửa và duyệt' }));
+    expect(onAnswer).toHaveBeenCalledWith({ decision: 'approved', editedPayload: { tags: ['a', 'b'] } });
+  });
+
+  it('information_request: nút gửi vô hiệu kèm lý do tới khi nhập; gửi text', async () => {
+    const user = userEvent.setup();
+    const onAnswer = vi.fn();
+    render(<PromptCard prompt={prompt({ type: 'information_request', choices: [], question: 'Khóa API của nguồn dữ liệu nội bộ là gì?' })} onAnswer={onAnswer} />);
+    expect((screen.getByRole('button', { name: 'Gửi câu trả lời — nhập câu trả lời' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.type(screen.getByLabelText('Câu trả lời'), '  Dùng bộ dữ liệu công khai  ');
+    await user.click(screen.getByRole('button', { name: 'Gửi câu trả lời' }));
+    expect(onAnswer).toHaveBeenCalledWith({ text: 'Dùng bộ dữ liệu công khai' });
+  });
+
+  it('Answered theo loại: quyết định, nội dung đã sửa, câu trả lời', () => {
+    const by = { type: 'researcher' as const, accountId: 'a' };
+    const { rerender } = render(
+      <PromptCard prompt={prompt({ type: 'approval', choices: [], status: 'Answered', response: { decision: 'rejected', text: 'Thiếu DOI', respondedBy: by, respondedAt: '2026-11-27T02:44:00Z' } })} />,
+    );
+    expect(screen.getByText('Đã từ chối')).toBeTruthy();
+    expect(screen.getByText(/Thiếu DOI/)).toBeTruthy();
+    rerender(
+      <PromptCard
+        prompt={prompt({ type: 'edit_and_approve', choices: [], status: 'Answered', response: { decision: 'approved', editedPayload: { title: 'x' }, respondedBy: by, respondedAt: '2026-11-27T02:44:00Z' } })}
+      />,
+    );
+    expect(screen.getByText('Đã sửa và duyệt')).toBeTruthy();
+    rerender(
+      <PromptCard prompt={prompt({ type: 'information_request', choices: [], status: 'Answered', response: { text: 'Bộ công khai', respondedBy: by, respondedAt: '2026-11-27T02:44:00Z' } })} />,
+    );
+    expect(screen.getByText('Bộ công khai').tagName).toBe('STRONG');
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
   it('đang gửi: nút xác nhận vô hiệu, không gọi lại callback', async () => {

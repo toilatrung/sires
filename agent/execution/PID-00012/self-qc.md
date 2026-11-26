@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 27/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 2)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -126,6 +126,28 @@ Chạy ở chế độ Dev tự QC, chỉ đọc, bởi một agent không mang 
 | G11 | partial (đã ghi) | LOW | Dòng Plan của rail bỏ “Phase 2/3” của màn tham chiếu | `rail/ProjectRail.tsx` | Giữ, PO xem report.md C1 |
 
 Sau khi sửa: `vitest run` 107/107 (ba lượt song song), typecheck, lint sạch, `check-ui.mjs` 0 lỗi. Không còn CRITICAL, HIGH.
+
+
+## Lần 2 — 27/11/2026
+
+Sau khi merge #120 (nguồn S11, S12, S14) và sửa theo report.md Lần 2 (L2-1 – L2-5).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00012` | ĐỦ để thực thi (cổng sẵn sàng hết LỖI sau khi có nguồn của #120) |
+| `pnpm --filter @sires/web exec vitest run` | 16 file, 112 test đạt; hai lượt chạy song song cùng lúc đều đạt |
+| `tsc --noEmit`, `eslint .`, `vite build` (apps/web) | Đạt, 0 lỗi |
+| `check-ui.mjs apps/web/src` | 0 lỗi, 9 cảnh báo (như Lần 1: bóng của lớp nổi, bo tròn của huy hiệu số và avatar) |
+| `add-license.mjs --check` | 0 file thiếu |
+
+AC, EC thay đổi:
+
+| Mục | Trạng thái | Test |
+| --- | --- | --- |
+| UX-A11Y-002-AC01 | Đạt | `prompt-card.spec.tsx › bàn phím` (callback `onAnswer` nhận `{ choiceIds: ['c2'] }`) |
+| S10 mọi `PromptType` | Đạt | `prompt-card.spec.tsx › mọi loại PromptType…`, `› approval…`, `› edit_and_approve…`, `› information_request…`, `› Answered theo loại` |
+| PID-00012-AC06 (phiên đã hết) | Đạt | `logout.spec.tsx › phiên đã hết khi đăng xuất (GET /auth/session 401): vẫn gửi form…` |
+| Mới M7 | đã giải quyết (thay cách của Lần 1) | thẻ tự có điều khiển cho cả bốn loại, không còn dựa vào `children` |
 
 ---
 

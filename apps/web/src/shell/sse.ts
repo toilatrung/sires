@@ -12,50 +12,9 @@
 import type { PublicApi } from '@sires/contracts';
 import { API_BASE, type FetchLike } from './api/client';
 
-/**
- * orchestration.yaml#/Event, written out because openapi.yaml references it only through `x-event-schema` of
- * /events, so PublicApi has no `Event` yet (report.md, Đề xuất cho PO). Once the contract lists Event under
- * components.schemas, `ContractEvent` below switches to the generated type by itself.
- */
-interface EventFromSpec {
-  id: string;
-  type:
-    | 'account.deletion_requested'
-    | 'provider_connection.changed'
-    | 'provider_connection.issue_reported'
-    | 'project.lifecycle_changed'
-    | 'message.posted'
-    | 'pending_action.changed'
-    | 'notification.created'
-    | 'plan_version.status_changed'
-    | 'task.status_changed'
-    | 'workflow.status_changed'
-    | 'agent_run.status_changed'
-    | 'prompt.status_changed'
-    | 'deliberation.started'
-    | 'deliberation.round_closed'
-    | 'deliberation.entry_retracted'
-    | 'deliberation.status_changed'
-    | 'context_snapshot.outdated'
-    | 'reference.status_changed'
-    | 'reference.indexing_status_changed'
-    | 'project_reference.changed'
-    | 'research.object_status_changed'
-    | 'manuscript.object_status_changed'
-    | 'chat.delta';
-  projectId?: string;
-  objectType?: string;
-  objectId?: string;
-  fromState?: string;
-  toState?: string;
-  at: string;
-}
-type Schemas = PublicApi.components['schemas'];
-type ContractEvent = Schemas extends { Event: infer E extends { type: string } } ? E : EventFromSpec;
-
-/** Event type of the stream. `replay.unavailable` is the server's “cannot replay” signal (PC-05 P2). */
-export type StreamEventType = ContractEvent['type'] | typeof REPLAY_UNAVAILABLE;
-export type StreamEvent = Omit<ContractEvent, 'type'> & { type: StreamEventType };
+/** orchestration.yaml#/Event, generated (components.schemas.Event); its type includes `replay.unavailable` (PC-05 P2). */
+export type StreamEvent = PublicApi.components['schemas']['Event'];
+export type StreamEventType = StreamEvent['type'];
 
 export const REPLAY_UNAVAILABLE = 'replay.unavailable' as const;
 export const CHAT_DELTA = 'chat.delta' as const;
@@ -280,7 +239,8 @@ export class EventStream {
     if (!event.type) event = { ...event, type };
 
     if (type === REPLAY_UNAVAILABLE) {
-      // The stream restarts from “now”: take the id the server gives, or forget the stale one (PC-05 P2).
+      // The stream restarts from “now”: the record carries the latest log position ("0" when empty) as its id,
+      // which becomes the next Last-Event-ID (PC-05 P2). Without one, forget the stale id rather than loop.
       this.lastId = record.id || event.id || undefined;
       this.signal('reload');
       return;

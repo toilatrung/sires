@@ -115,14 +115,18 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
     expect(within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Profile', 'Sign out']);
   });
 
-  it('phiên đã hết khi đăng xuất (GET /auth/session 401): về /sign-in, không gửi form', async () => {
+  it('phiên đã hết khi đăng xuất (GET /auth/session 401): vẫn gửi form để gateway chuyển tới post_logout_redirect_uri (S14)', async () => {
     const stub = shellStub();
-    const { services, router, browser } = renderShell({ path: '/dashboard', stub });
+    const { services, browser } = renderShell({ path: '/dashboard', stub });
     await waitForFrame();
-    services.session.markSignedOut();
+    await waitFor(() => expect(services.events.status).toBe('open'));
+    const key = DraftStore.key(fx.ACCOUNT_ID, '/projects/p1/chat', 'chat.composer');
+    localStorage.setItem(key, JSON.stringify({ value: 'x' }));
     stub.on('GET', '/api/v1/auth/session', () => problem(401, 'unauthenticated'));
     await services.signOut();
-    expect(browser.forms).toHaveLength(0);
-    await waitFor(() => expect(router.state.location.pathname).toBe('/sign-in'));
+    expect(browser.forms).toEqual([{ action: '/api/v1/auth/logout', fields: { csrfToken: '' } }]);
+    expect(localStorage.getItem(key)).toBeNull();
+    expect(services.events.status).toBe('closed');
+    expect(services.session.current.status).toBe('signed-out');
   });
 });

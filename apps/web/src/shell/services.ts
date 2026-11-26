@@ -14,7 +14,7 @@ import { DraftStore, type DraftStorage } from './drafts/store';
 import { changeLanguage, isLocale } from './locale';
 import { NavigationStore } from './navigation/navigation';
 import { LanguagePreference } from './preferences';
-import { SessionController, signInPath } from './session/session';
+import { SessionController } from './session/session';
 import { EventStream } from './sse';
 import { trackUserNavigation } from './activity';
 
@@ -148,9 +148,10 @@ export function createShellServices(options: ShellServicesOptions = {}): ShellSe
         ({ csrfToken: token } = (await api.get('/auth/session', { skipUnauthenticatedHandler: true })).data);
       } catch (error) {
         if (isApiError(error) && error.unauthenticated) {
-          // No session any more: nothing to end at the gateway; still forget this account's drafts here.
+          // No session any more (S14, logout contract): still send the form; without a session the gateway does not
+          // check the token and answers 303 to post_logout_redirect_uri (clearing a stale cookie), never calling the IdP.
           leave();
-          navigate(signInPath());
+          browser.submitForm(api.url('/auth/logout'), { [LOGOUT_CSRF_FIELD]: '' });
           return;
         }
         // Still signed in (network or server error): keep the session, drafts and SSE; the menu reports the error.
