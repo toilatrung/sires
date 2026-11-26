@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00058](../../../docs/tickets/issues/PID-00058/index.html) · **Luồng:** `web/project` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/project-pid-00058` (tạo từ `preview/ui-ph02` 3c05b2d, xếp chồng trên #120, #138, #131; đã merge head mới của #138; đã commit) · **PR:** chưa mở
+- **Nhánh:** `web/project-pid-00058` (tạo từ `preview/ui-ph02` 3c05b2d, xếp chồng trên #120, #138, #131; đã merge head mới của #138; đã commit) · **PR:** [#151](https://github.com/toilatrung/sires/pull/151) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** đọc từ nhánh `docs/pid-00058-00059-clarify` (PR #127, chưa vào `main`); nhánh sửa nguồn `docs/pid-00058-00059-sources` sẽ merge vào khi PR mở (theo phiên điều phối)
