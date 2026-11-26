@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00013](../../../docs/tickets/issues/PID-00013/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
-- **Nhánh:** `web/mock-pid-00013` (tạo từ `origin/main` `c9e745b`; đã commit) · **PR:** xem mô tả nhánh trên GitHub (`toilatrung/sires`, base `main`)
+- **Nhánh:** `web/mock-pid-00013-v2` (tạo từ `origin/main` `c9e745b`, lịch sử dựng lại từ `web/mock-pid-00013`; đã commit) · **PR:** [#129](https://github.com/toilatrung/sires/pull/129) (thay [#128](https://github.com/toilatrung/sires/pull/128)), base `main`, xếp chồng trên #120
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -65,7 +65,7 @@ Người làm: phiên do PO `toilatrung` giao (assignee `toilatrung`). `check-pi
 
 Phiên điều phối trả lời phiếu I1 (nguyên văn): “Trả lời phiếu I1 (PID-00013): chốt theo đề xuất của bạn. docs-sources sẽ sửa trong PR A cùng lượt P2 …” và “Phiếu I1 đã được sửa ở PR #120 … Merge `origin/docs/pc05-p1-p6-shell-sources` vào nhánh của bạn (merge, không rebase). Sinh lại type, bỏ đường dự phòng `x-event-schema` nếu không còn cần. Ghi trong mô tả PR: ‘xếp chồng trên #120 …; PO merge #120 trước’.”
 
-- Đã merge `origin/docs/pc05-p1-p6-shell-sources` (head `702d051`) vào `web/mock-pid-00013` (merge commit, có chữ ký). PR #128 xếp chồng trên #120: PO merge #120 trước.
+- Đã merge `origin/docs/pc05-p1-p6-shell-sources` (head `702d051`) vào nhánh của PID này (merge commit, có chữ ký). PR xếp chồng trên #120: PO merge #120 trước.
 - Sinh lại `@sires/contracts` và mock: `PublicApi.components['schemas']['Event']` có `replay.unavailable`; module mock dùng type này. Bỏ đường suy type từ `x-event-schema` (`eventTypes` dùng `openapi-typescript`, file `generated/event-schema.ts`) và nhánh đọc ref tương đối trong `generator/openapi.mjs`; bộ sinh dừng với lỗi rõ nếu bundle thiếu `Event`, và xóa file sinh cũ trong `generated/` trước khi ghi.
 - `/events` theo mô tả mới của hợp đồng: `Last-Event-ID` không còn phát lại được (cũ hơn log còn giữ, lạ, sai định dạng) → bản ghi `replay.unavailable` đầu luồng có `id` = vị trí mới nhất của log (log trống: `0`), `data` chỉ `id`, `type`, `at`; nối lại trong khoảng giữ (kể cả `0`) không có tín hiệu. YC3 xong theo hợp đồng.
 - `/auth/logout` đổi sang `303` (PC-05 P3, cùng PR #120): mock trả `303` về `/` trong ứng dụng, không tới eTroy; test 204 chuyển sang `deleteProviderConnection`.
@@ -76,3 +76,10 @@ Phiên điều phối trả lời phiếu I1 (nguyên văn): “Trả lời phi�
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
+## Lần 3 — 27/11/2026
+
+Check `secrets` của PR #128 (gitleaks `generic-api-key`) báo dương tính giả ở commit đầu: khóa BibTeX `key: 'rossi2023hallucination'`, `key: 'vo2025salinity'` trong `apps/web/src/shell/mock/fixtures/library.ts`. Gitleaks quét mọi commit của PR nên commit sửa sau không xóa được. Phiên điều phối chọn (nguyên văn): “Chọn A, chốt theo đề xuất của bạn. Đẩy lịch sử sạch sang `web/mock-pid-00013-v2` và mở PR mới vào `main` … Không force-push, không sửa `infra/ci/gitleaks.toml`.”
+
+- Lịch sử dựng lại trên `web/mock-pid-00013-v2`: cùng các commit, mọi commit ký SSH; nội dung cuối khác `web/mock-pid-00013` đúng một chỗ: trường `key` của kiểu cục bộ `Paper` (chỉ dùng trong file fixture) đổi thành `cite`. Trường của hợp đồng là `Reference.bibtexKey` (`components/schemas/library.yaml`), vẫn giữ nguyên; `mock.spec.ts` › dữ liệu demo hợp lệ theo schema đạt.
+- PR mới [#129](https://github.com/toilatrung/sires/pull/129) thay #128; #128 đóng sau khi check `secrets` của #129 xanh.
+
