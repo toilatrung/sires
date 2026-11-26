@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Spec kỹ thuật PID-00161: Gateway: Job dọn phiên hết hạn trong app.session.">
+<title>PID-00161 — Spec kỹ thuật | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00161</span></header>
+<main id="main-content">
+<p class="eyebrow">Spec kỹ thuật · PID-00161</p><h1>PID-00161 — Gateway: Job dọn phiên hết hạn trong app.session</h1>
+<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00161</a> · Luồng: <code>gateway</code> · Giai đoạn: PH-02 · Soạn 27/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
+<li><a href="#s-2">2. Input</a></li>
+<li><a href="#s-3">3. Output</a></li>
+<li><a href="#s-4">4. Thiết kế kỹ thuật</a></li>
+<li><a href="#s-5">5. Các bước thực hiện</a></li>
+<li><a href="#s-6">6. Kiểm tra hoàn thành</a></li>
+<li><a href="#s-7">7. Giới hạn và điểm dừng</a></li></ul></details>
+
+<h2 id="s-1">1. Phạm vi và căn cứ</h2>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Mục đích</th><td>Dọn dòng <code>app.session</code> đã hết hạn hoặc thu hồi quá thời gian giữ, để bảng không lớn dần và refresh token đã mã hóa của phiên kết thúc không bị giữ lâu.</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>gateway</code> · PH-02</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · phiên đăng nhập (INT-OIDC-003)</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00161-AC01, PID-00161-AC02, PID-00161-AC03</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Phiếu chốt PC-05 P43; N5 của PID-00014; database <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-2">12.2</a> (dòng <code>gateway.session</code>, Job chạy bằng <code>_purge</code>, xóa theo lô), <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a> (vai trò <code>_purge</code>)</td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Dọn <code>sse_event_log</code>, <code>idempotency_key</code>, <code>outbox</code>, <code>inbox</code> của gateway; thu hồi token ở IdP; đổi hạn phiên</td></tr>
+</tbody></table></div>
+
+<h2 id="s-2">2. Input</h2>
+<h3 id="s-2-1">2.1. Tài liệu</h3>
+<ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-3">Kế hoạch luồng gateway</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-02">Giai đoạn PH-02, cổng ra</a></li>
+<li>Database <a href="../../../../database/sections/12-operations-retention-and-capacity.html#s-12-2">12.2</a>, <a href="../../../../database/sections/03-topology-and-ownership.html#s-3-2">3.2</a>, <a href="../../../../database/sections/04-identity-gateway-workspace.html#s-4-2">4.2</a></li>
+<li>Requirement: <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-003">INT-OIDC-003</a></li></ul>
+<h3 id="s-2-2">2.2. Mã nguồn</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
+<tr><td><code>apps/gateway/README.md</code></td><td>Phạm vi sở hữu, cổng, hợp đồng</td></tr>
+<tr><td><code>apps/gateway/migrations/</code></td><td>Schema <code>app.session</code> đã merge ở PID-00014</td></tr>
+<tr><td><code>apps/gateway/deploy/values.yaml</code></td><td>Giá trị deploy staging</td></tr>
+</tbody></table></div>
+<h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
+<p>Không có endpoint, sự kiện. Bảng <code>app.session</code> ở <a href="../../../../database/ddl/gateway.sql"><code>docs/database/ddl/gateway.sql</code></a>: <code>idle_expires_at</code>, <code>absolute_expires_at</code>, <code>revoked_at</code>, chỉ mục <code>session_expiry_idx</code>.</p>
+<h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
+<tr><td><a href="../../PID-00014/index.html">PID-00014</a> Gateway: migration, phiên server-side, CSRF</td><td>PR #63 chờ PO chốt PC-05 P32</td><td>Có</td></tr>
+<tr><td>Thời gian giữ (database 12.2, Đề xuất 30 ngày)</td><td>Chưa chốt</td><td>Có, tới khi làm rõ</td></tr>
+<tr><td>Cách chạy Job (CronJob của Kubernetes hay lịch trong tiến trình gateway)</td><td>Chưa chốt</td><td>Có, tới khi làm rõ</td></tr>
+</tbody></table></div>
+<h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
+<pre>pnpm install
+pnpm local:up
+pnpm nx run @sires/gateway:test</pre>
+
+<h2 id="s-3">3. Output</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
+<tr><td id="o1">O1</td><td>Module</td><td><code>apps/gateway/src/session/</code> (có sẵn sau PID-00014; file Job tạo mới, tên chốt khi làm rõ)</td><td>Job dọn phiên</td><td>Test ở dòng dưới</td></tr>
+<tr><td id="o2">O2</td><td>Test</td><td>Test tích hợp cạnh O1 (tạo mới)</td><td>Testcontainers, vai trò thật</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o3">O3</td><td>Triển khai</td><td><code>apps/gateway/deploy/values.yaml</code> (có sẵn)</td><td>Lịch Job ở staging</td><td><code>helm template</code>, chạy thử trên staging</td></tr>
+</tbody></table></div>
+
+<h2 id="s-4">4. Thiết kế kỹ thuật</h2>
+<h3 id="s-4-1">4.1. Dữ liệu</h3>
+<p>Không có bảng hay migration mới. Điều kiện xóa: (<code>revoked_at</code> có giá trị và <code>revoked_at</code> &lt; now() − thời gian giữ) hoặc (<code>LEAST(idle_expires_at, absolute_expires_at)</code> &lt; now() − thời gian giữ).</p>
+<h3 id="s-4-2">4.2. API</h3>
+<p>Không có API mới.</p>
+<h3 id="s-4-3">4.3. Sự kiện</h3>
+<p>Không có sự kiện.</p>
+<h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
+<ul><li>Chạy bằng <code>sires_gateway_purge</code> (BYPASSRLS, database 3.2); không dùng <code>_app</code> hay owner.</li>
+<li>Xóa theo lô (database 12.2 nêu ví dụ 5.000 dòng mỗi giao dịch); chạy lại không đổi.</li>
+<li>Lịch hằng ngày (database 12.2).</li></ul>
+<h3 id="s-4-5">4.5. Giao diện</h3>
+<p>Không có giao diện.</p>
+<h3 id="s-4-6">4.6. Agent và model</h3>
+<p>Không gọi model.</p>
+<h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
+<tr><td>Job chạy chồng (lần trước chưa xong)</td><td>Chốt khi làm rõ</td></tr>
+<tr><td>Database không khả dụng</td><td>Lần chạy lỗi, ghi log; lần sau chạy lại</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Các bước thực hiện</h2>
+<ol>
+<li id="b1"><strong>B1</strong> Câu xóa theo lô và test với dữ liệu ba loại phiên — Kết quả: AC01, AC02 — Kiểm tra: pnpm nx run @sires/gateway:test</li>
+<li id="b2"><strong>B2</strong> Kết nối bằng <code>sires_gateway_purge</code>, test RLS — Kết quả: AC03 — Kiểm tra: pnpm nx run @sires/gateway:test</li>
+<li id="b3"><strong>B3</strong> Lịch chạy và giá trị deploy staging — Kết quả: Job chạy trên staging — Kiểm tra: helm template, log trên staging</li>
+</ol>
+
+<h2 id="s-6">6. Kiểm tra hoàn thành</h2>
+<pre>pnpm nx run @sires/gateway:test
+pnpm nx affected -t lint typecheck test build
+node scripts/development/check-tracks.mjs
+node scripts/docs/add-license.mjs --check</pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
+<tr><td>PID-00161-AC01</td><td>Test tích hợp của O2</td><td>Chỉ dòng quá thời gian giữ bị xóa</td></tr>
+<tr><td>PID-00161-AC02</td><td>Test tích hợp của O2</td><td>Xóa theo lô, chạy lại không đổi</td></tr>
+<tr><td>PID-00161-AC03</td><td>Test tích hợp của O2</td><td><code>_purge</code> xóa được dưới FORCE RLS; <code>_app</code> không xóa được dòng của tài khoản khác</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Giới hạn và điểm dừng</h2>
+<ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>gateway</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<li><strong>Dừng và hỏi khi:</strong> DDL thiếu quyền <code>DELETE</code> cho <code>_purge</code> trên <code>app.session</code>; gặp hành vi spec không nói tới; cần sửa luồng khác.</li>
+<li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> thời gian giữ có giữ 30 ngày của database 12.2 không; Job chạy bằng CronJob của Kubernetes (chart chung ở <code>infra/helm</code>) hay lịch trong tiến trình gateway.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00161</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
+</main>
+<footer>SIRes · Spec kỹ thuật PID-00161 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
