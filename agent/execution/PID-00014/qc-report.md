@@ -1,6 +1,6 @@
 # PID-00014 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Mã đạt; merge được sau khi PO chốt G8. Còn 0 CRITICAL, 1 HIGH, 0 MEDIUM, 1 LOW. HIGH là G8: PR sửa `infra/ci/check-helm-images.sh` của luồng infra; việc này chờ PO chốt ở phiếu chốt cuối PH-01 và không tính là lỗi mã. Về nội dung, bản sửa cần và đúng. LOW là G11: fixture HTTP không tự kiểm rằng nó chạy bằng vai trò thật; không chặn merge. G2 (DBQ-10, theo DBD-14), G4, G9, G10 đã xử lý. Với vai trò thật theo database 3.2, migration khớp DDL trên `main` cả owner, quyền và policy `owner_lookup`. `app.find_session` tra được phiên trước tenant context. Thử đột biến cho thấy test bắt được khi bỏ policy, đổi `TO PUBLIC` hoặc migrate bằng superuser. AC01, AC02, NFR-AUTH-001-AC01 và EC01–EC17 đạt ở mức Xây (Lần 3, 25/11/2026)
+**Kết luận mới nhất:** Merge được — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 1 LOW (Lần 4, 27/11/2026). G8 đóng theo PC-05 P32, chốt theo đề xuất (PO ủy quyền 26/11/2026): giữ bản sửa `infra/ci/check-helm-images.sh` trong PR #63, PR chạm hai luồng có chủ đích; nguyên văn ủy quyền ở `report.md` mục 5 (YC4). Còn G11 LOW (fixture HTTP không tự kiểm vai trò thật), làm sau merge theo PC-05 P44. Mã gateway không đổi so với Lần 3; CI đạt trên đầu nhánh `d43618d` đã cập nhật với `main`, test gateway chạy mới 35/35, smoke Helm gateway đạt.
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -313,6 +313,72 @@ Máy PO, Windows 11, Node 24, pnpm 10. Docker Engine 29.8.2 trong WSL Ubuntu-24.
 - **DBD-14, câu “không cấp owner cho vai trò khác”.** Theo 3.2, `sires_<svc>_migrator` là thành viên owner, nên đọc được mọi dòng `app.session` qua `owner_lookup`; QC đã thử (ghi nhận 2). Điều này hợp với thiết kế vì DSN migrator chỉ cấp cho Job migration. Nên ghi rõ ngoại lệ “trừ migrator” trong DBD-14, để Terraform và PID-00159 không hiểu sai.
 - **DDL.** PUBLIC vẫn có EXECUTE trên `app.find_session`; thực tế chỉ bị giới hạn nhờ quyền `USAGE` trên schema `app`. Đề xuất ở Lần 2 vẫn còn: thêm `REVOKE ALL ON FUNCTION app.find_session(bytea) FROM PUBLIC` vào `gateway.sql` (tương tự `find_account_by_identity` ở `identity.sql`), rồi đưa vào migration mới của mỗi service.
 - **Ghi chú:** job dọn `app.session` hết hạn (N5) vẫn chưa có PID nhận.
+
+## Lần 4 — 27/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC do PO `toilatrung` giao, không mang kết luận của Dev. Mã nguồn: PR #63, nhánh `gateway/pid-00014-session`, đầu nhánh `d43618d` (`d43618d574142b1d2f12c53eea6f79555ec27af0`), kiểm trong worktree tách riêng. Gốc: `origin/main` = `c9e745b`, cũng là merge-base. Trước lần này, đầu nhánh là `f3319e5` (qc-report Lần 3), chưa cập nhật với `main` (thiếu #109, #110, #111).
+
+Theo chỉ đạo của phiên điều phối, phiên QC thêm hai commit vào nhánh (không ai đẩy lên nhánh này từ 25/11/2026; không force-push):
+
+| Commit | Nội dung |
+| --- | --- |
+| `7b29d7c` | Merge `origin/main` `c9e745b` (#109–#111, chỉ `docs/`), không xung đột |
+| `d43618d` | `report.md`: dòng trạng thái thành `Xong — chờ QC`; mục 1, 4, 6; YC4 ở mục 5 ghi nguyên văn ủy quyền của PO và quyết định PC-05 P32; thêm Lần 11. `self-qc.md`: dòng Kết luận thành `Đạt` (để `check-pid` không báo lỗi “report.md báo Xong nhưng self-qc.md kết luận Chưa đạt”), thêm Lần 11 theo PC-05 P37. Không đổi mã |
+
+Hai commit này do phía PO làm, không phải Dev; phần QC dưới đây vẫn đánh giá trạng thái mã như mọi lần.
+
+Đã đối chiếu: PC-05 P32, P44 (`docs/overview/phieu-chot-cuoi-ph01.html`); việc còn lại của Lần 3; `report.md`, `self-qc.md` Lần 11; diff của PR so với `origin/main` (30 file: `apps/gateway/` 24, `agent/execution/PID-00014/` 4, `pnpm-lock.yaml`, `infra/ci/check-helm-images.sh`, như Lần 3).
+
+### Kiểm lại việc còn lại của Lần 3
+
+| G Lần 3 | Kết quả Lần 4 | Bằng chứng |
+| --- | --- | --- |
+| G8 HIGH: sửa `infra/ci/check-helm-images.sh` chờ PO | Đã xử lý | PC-05 P32 chốt theo đề xuất (PO ủy quyền 26/11/2026), phương án 1: giữ trong PR #63. `report.md` mục 5 YC4 ghi nguyên văn ủy quyền; YC2 nay có lời đồng ý. Nội dung bản sửa không đổi so với Lần 3 (`git diff 316fd63 d43618d -- infra/` trống), đánh giá “cần và đúng” của Lần 3 giữ nguyên. CI run 45868301935 trên `d43618d`: job `helm` in `OK gateway: /health 200, PID 1 non-root`, `OK Helm gateway` |
+| G11 LOW: fixture HTTP không tự kiểm vai trò thật | Còn mở, không chặn | PC-05 P44: PR nhỏ sau khi #63 merge. `report.md` mục 4, 6 ghi đúng |
+| Merge: code owner `/apps/gateway/` (`@T1xNTH`), `/infra/` (`@congminh1705`) | Việc của người merge | PO bypass hoặc code owner duyệt |
+
+### Khoảng trống
+
+| Mã | Nguồn (AC, O, B, nguyên tắc) | Loại | Mức | Bằng chứng (file:dòng) | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G11 | H7, DBD-14 (“test chạy bằng vai trò thật”) | partial | LOW | Như Lần 3: `apps/gateway/src/db/database.testkit.ts:142` | PR sau merge theo PC-05 P44 (luồng gateway): kiểm owner của `app.find_session` và vai trò service không SUPERUSER/BYPASSRLS trong fixture HTTP |
+
+Không có CRITICAL, HIGH, MEDIUM. Không có G mới.
+
+### AC
+
+Mã gateway không đổi so với Lần 3 (`git diff --stat 316fd63 d43618d -- . ':!docs' ':!agent/execution/PID-00014'` chỉ có `agent/execution/taskboard.html`, đến từ `main`). Kết luận AC của Lần 3 giữ nguyên: PID-00014-AC01, AC02, NFR-AUTH-001-AC01 (phần gateway) và EC01–EC17 đạt ở mức Xây với quyền database thật; chưa có staging. CI trên đầu nhánh mới chạy lại test gateway, không lấy cache: 35/35.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git merge origin/main` (từ `f3319e5`) | Không xung đột; 15 file `docs/` |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00014 --result` | Trước khi sửa `self-qc.md`: 1 lỗi (“report.md báo Xong nhưng self-qc.md kết luận Chưa đạt …”); sau: KẾT QUẢ ĐỦ (0 cảnh báo) |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu |
+| `node scripts/docs/update-index.mjs --check` | Khớp: 159 PID, taskboard, `docs/index.html` |
+| `git diff --check` | Đạt |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: gateway, infra, repo`, cảnh báo 2 luồng: đúng như P32 chấp nhận |
+| Thử gộp cả 7 nhánh đang mở (#113–#118, #63) lên `main` | Không xung đột |
+| `pnpm nx run-many -t lint typecheck -p @sires/gateway …` trên cây gộp | Đạt |
+| `gh api repos/toilatrung/sires/pulls/63/commits` | 27/27 `verified: true`; không có dòng ghi công AI trong commit hay mô tả PR |
+| Quét key, host của cổng trung gian (giá trị lấy từ file key của máy, chỉ đếm) trong `git log -p` của nhánh, mô tả và comment PR | 0 |
+| `gh pr checks 63` (run 45868301935 trên `d43618d`) | 25/25 đạt, gồm `typescript` (gateway test chạy mới, 35/35), `helm`, `python`, `contracts`, `secrets`, `tracks`, `build` bắt buộc |
+
+### Lệch với Self-QC
+
+Không có. `self-qc.md` Lần 11 do phiên QC viết theo chỉ đạo của điều phối, chỉ ghi quyết định G8 và lệnh hồ sơ; không có kết luận mã mới.
+
+### Việc còn lại, theo thứ tự phụ thuộc
+
+1. Phiên điều phối merge (PO bypass, hoặc `@T1xNTH` duyệt `/apps/gateway/`, `@congminh1705` duyệt `/infra/`). Nếu `main` đổi trước khi merge: gộp `main` lại, chờ CI.
+2. Sau merge: chép mục Lần 4 này vào `qc-report.md` (PR sau, hoặc cùng PR G11); PR G11 theo P44 (luồng gateway).
+3. PO cập nhật hồ sơ `docs/` như Lần 3 đã đề xuất: trang ticket PID-00014 mục 3, mục 5 “Còn mở” (DBQ-10, G4), database 13.3 dòng DBQ-10; đóng issue #83 khi #63 merge.
+
+### Đề xuất cho PO
+
+- Các đề xuất của Lần 3 còn nguyên: ngoại lệ migrator trong DBD-14 (PC-05 P42), `REVOKE ALL ON FUNCTION app.find_session(bytea) FROM PUBLIC`, PID cho job dọn `app.session` (PC-05 P43).
+- Nhánh `gateway/pid-00014-session` cục bộ ở checkout chính còn trỏ `316fd63` (cũ, không worktree nào dùng). Không ảnh hưởng; ai làm tiếp trên máy này nên tạo lại từ `origin`.
 
 ---
 
