@@ -209,7 +209,23 @@ KEY_PATTERNS = {
 }
 
 
+# Identifiers a gateway puts in its error messages (QC G8): the operator could match them to the PO's account.
+ID_PATTERNS = (
+    (re.compile(r"(request[ _-]?id[\s:=\"']{0,4})[A-Za-z0-9._\-]{8,}", re.IGNORECASE), r"\1[REDACTED:request-id]"),
+    (
+        re.compile(r"(under group\s+)(?!\[REDACTED)[^\s()\"“”]+(?:\s*\([^)\"“”]*\))?", re.IGNORECASE),
+        r"\1[REDACTED:group]",
+    ),
+)
+
+
 _HOSTS: set[str] = set()
+
+
+def redact_ids(text: str) -> str:
+    for pattern, replacement in ID_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def redact(text: str) -> str:
@@ -220,7 +236,7 @@ def redact(text: str) -> str:
         text = re.sub(re.escape(host), "[gateway-host]", text, flags=re.IGNORECASE)
     for name, pattern in KEY_PATTERNS.items():
         text = pattern.sub(f"[REDACTED:{name}]", text)
-    return text
+    return redact_ids(text)
 
 
 def redact_obj(value: Any) -> Any:
