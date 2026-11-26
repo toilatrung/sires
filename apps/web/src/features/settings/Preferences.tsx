@@ -10,8 +10,8 @@
 import type { PublicApi } from '@sires/contracts';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ErrorState, LoadingState, changeLanguage, formatDate, formatNumber, isApiError, useApi, type ApiError } from '../../shell';
-import { Dialog, NS, SettingsLayout, Switch, fieldErrors, mergePatch, parseDecimal, useResource } from './shared';
+import { ConfirmDialog, ErrorState, LoadingState, changeLanguage, formatDate, formatNumber, isApiError, useApi, type ApiError } from '../../shell';
+import { NS, SettingsLayout, Switch, fieldErrors, mergePatch, parseDecimal, useResource } from './shared';
 
 type Schemas = PublicApi.components['schemas'];
 type Account = Schemas['Account'];
@@ -291,22 +291,16 @@ export function PreferencesScreen() {
         </button>
       </div>
       {resetting && (
-        <Dialog
+        <ConfirmDialog
           title={t('preferences.thresholds.dialog.title')}
-          onClose={() => setResetting(false)}
-          footer={
-            <>
-              <button type="button" className="sires-button" onClick={() => setResetting(false)}>
-                {t('preferences.thresholds.dialog.keep')}
-              </button>
-              <button type="button" className="sires-button" data-variant="primary" disabled={busy} onClick={() => void reset()}>
-                {t('preferences.thresholds.reset')}
-              </button>
-            </>
-          }
+          confirmLabel={t('preferences.thresholds.reset')}
+          cancelLabel={t('preferences.thresholds.dialog.keep')}
+          busy={busy}
+          onConfirm={() => void reset()}
+          onCancel={() => setResetting(false)}
         >
           <p>{t('preferences.thresholds.dialog.body')}</p>
-        </Dialog>
+        </ConfirmDialog>
       )}
     </SettingsLayout>
   );

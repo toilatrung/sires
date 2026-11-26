@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00036](../../../docs/tickets/issues/PID-00036/index.html) · **Luồng:** `web/settings` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/settings-pid-00036` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131, #122, #126; đã merge head mới của #138 `3b63522`; đã commit) · **PR:** [#143](https://github.com/toilatrung/sires/pull/143) vào `develop`
+- **Nhánh:** `web/settings-pid-00036` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131, #122, #126; lịch sử dựng lại sạch cho gitleaks ở `web/settings-pid-00036-v2`; đã merge head mới của #138 `b157d02`; đã commit) · **PR:** [#143](https://github.com/toilatrung/sires/pull/143) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** #122 (`docs/pid-00036-clarify`) và #126 (`docs/pid-00036-sources`, sửa nguồn) đã merge vào nhánh theo yêu cầu của phiên điều phối; dựng theo type sinh và thiết kế Settings của #126
@@ -63,6 +63,12 @@ Mọi đường dẫn trên dưới `apps/web/src/features/settings/`.
 - **Còn mở:** điểm bố cục LOW của Agent Models (self-qc.md mục 5): QC độc lập hoặc PO quyết.
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00036`; merge sau #120, #138, #131, #122, #126.
 - **Tài liệu đi kèm:** không có trong repo (ảnh chụp trên mock ở thư mục ghi chú của phiên điều phối).
+
+## Lần 2 — 27/11/2026
+
+- QC chéo của phiên web-shell ở `6a346dc`: ĐẠT, 0 CRITICAL, 0 HIGH, 4 MEDIUM, 7 LOW ([qc-report.md](qc-report.md)). Đã sửa 3 MEDIUM của khu vực (G2 test ô key, G3 SignIn, G4 panel sửa Agent Models) và phần lớn LOW; G1 thuộc mock dùng chung. Chi tiết ở self-qc.md “Lần 2”.
+- Check `secrets` của CI đỏ ở `6a346dc`: gitleaks bắt key giả dạng `key: 'sk-test-…'` trong `providers.spec.tsx` ở hai commit cũ. Test giờ dựng key lúc chạy; lịch sử dựng lại sạch ở nhánh `web/settings-pid-00036-v2` (cùng cây). Lệnh đẩy đè nhánh của #143 bị chế độ quyền chặn: PO chọn mở PR mới từ nhánh v2 hoặc cho phép đẩy đè.
+- Còn chờ PO: khối Mặc định của Agent Models dựng bằng select như màn tham chiếu, hay chấp nhận lệch (qc-report G4); logo SignIn lấy từ `shell/assets` vì shell chưa xuất logo ở index.
 
 ---
 

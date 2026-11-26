@@ -46,6 +46,10 @@ describe('Provider Connections (S03)', () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Sửa kết nối Gemini cá nhân' }));
     await user.type(field(/^API key/), testKey('WRONG-0001'));
+    // The key box is a password field without autocomplete, and nothing shows the key again (H7).
+    expect(field(/^API key/).type).toBe('password');
+    expect(field(/^API key/).getAttribute('autocomplete')).toBe('off');
+    expect(screen.queryByRole('button', { name: /hiện key|show key/i })).toBeNull();
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const result = await screen.findByRole('alert');
     expect(within(result).getByText('Invalid')).toBeTruthy();

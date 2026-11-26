@@ -7,11 +7,11 @@
 // and the account's embedding model with the confirmation before re-indexing (UX-SETTINGS-003).
 
 import type { PublicApi } from '@sires/contracts';
-import { useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ErrorState, LoadingState, StatusChip, formatTime, isApiError, useApi, type ApiError } from '../../shell';
-import { Dialog, NS, SettingsLayout, useResource } from './shared';
+import { ConfirmDialog, EmptyState, ErrorState, LoadingState, StatusChip, formatTime, isApiError, useApi, type ApiError } from '../../shell';
+import { NS, SettingsLayout, useResource } from './shared';
 
 type Schemas = PublicApi.components['schemas'];
 type Connection = Schemas['ProviderConnection'];
@@ -111,13 +111,15 @@ export function AgentsScreen() {
         </Link>
       </p>
       {!valid.length && (
-        <div className="sires-settings__empty">
-          <p className="sires-settings__empty-title">{t('agents.noValid.title')}</p>
-          <p className="sires-settings__empty-reason">{t('agents.noValid.reason')}</p>
-          <Link to="/settings/providers" className="sires-button" data-variant="outline">
-            {t('agents.manageConnections')}
-          </Link>
-        </div>
+        <EmptyState
+          title={t('agents.noValid.title')}
+          reason={t('agents.noValid.reason')}
+          action={
+            <Link to="/settings/providers" className="sires-button" data-variant="outline">
+              {t('agents.manageConnections')}
+            </Link>
+          }
+        />
       )}
       <section className="sires-settings__panel" aria-labelledby="sires-agents-default">
         <h3 id="sires-agents-default" className="sires-settings__panel-title">
@@ -161,8 +163,10 @@ export function AgentsScreen() {
                 ...(mine?.capabilityWarnings ?? []).map((w) => t('agents.capabilityMissing', { capability: w.capability })),
               ];
               const key = `${row.agent}-${row.instance ?? ''}`;
+              const open = editing !== null && editing.agent === row.agent && editing.instance === row.instance;
               return (
-                <tr key={key}>
+                <Fragment key={key}>
+                <tr>
                   <td>
                     <span className="sires-settings__strong">{row.label}</span>
                     {row.role && <span className="sires-settings__note">{row.role}</span>}
@@ -184,7 +188,7 @@ export function AgentsScreen() {
                         </span>
                       ))
                     ) : (
-                      <span className="sires-muted">—</span>
+                      <span className="sires-muted">{t('agents.ready')}</span>
                     )}
                   </td>
                   <td>
@@ -193,22 +197,28 @@ export function AgentsScreen() {
                     </button>
                   </td>
                 </tr>
+                {/* The editor opens right under its row, as on SettingsAgents. */}
+                {open && editing && (
+                  <tr>
+                    <td colSpan={5} className="sires-settings__editor-cell">
+                      <AssignmentEditor
+                        row={editing}
+                        connections={connections}
+                        current={own(assignments, editing)}
+                        onClose={() => setEditing(null)}
+                        onSaved={(a) => replace(a, editing)}
+                        onRefreshed={(c) => resource.setData((d) => ({ ...d, connections: d.connections.map((x) => (x.id === c.id ? c : x)) }))}
+                        reload={() => void resource.reload()}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
-      {editing && editing.agent !== 'default' && (
-        <AssignmentEditor
-          row={editing}
-          connections={connections}
-          current={own(assignments, editing)}
-          onClose={() => setEditing(null)}
-          onSaved={(a) => replace(a, editing)}
-          onRefreshed={(c) => resource.setData((d) => ({ ...d, connections: d.connections.map((x) => (x.id === c.id ? c : x)) }))}
-          reload={() => void resource.reload()}
-        />
-      )}
       {sameModel && analysisA && (
         <div role="note" className="sires-settings__banner" data-tone="warning">
           <strong>{t('agents.sameModel', { model: analysisA.model, name: byId(analysisA.providerConnectionId)?.name ?? '—' })}</strong> {t('agents.sameModelWhy')}
@@ -231,6 +241,11 @@ interface EditorProps {
 
 /** Edit panel: 1. a Valid connection, 2. a model of that connection; manual entry when it lists none (EC38–EC40). */
 function AssignmentEditor({ row, connections, current, onClose, onSaved, onRefreshed, reload }: EditorProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    titleRef.current?.scrollIntoView?.({ block: 'nearest' });
+    titleRef.current?.focus();
+  }, []);
   const { t } = useTranslation(NS);
   const api = useApi();
   const firstValid = connections.find((c) => c.testStatus === 'Valid');
@@ -300,7 +315,7 @@ function AssignmentEditor({ row, connections, current, onClose, onSaved, onRefre
 
   return (
     <section className="sires-settings__panel sires-settings__editor" aria-labelledby="sires-assignment-title">
-      <h3 id="sires-assignment-title" className="sires-settings__panel-title">
+      <h3 id="sires-assignment-title" ref={titleRef} tabIndex={-1} className="sires-settings__panel-title">
         {row.label} · {t('agents.editing')}
       </h3>
       <fieldset className="sires-settings__radios">
@@ -468,19 +483,13 @@ function EmbeddingRow({ connections, embedding, onSaved }: { connections: Connec
         </button>
       </div>
       {confirming && embedding && (
-        <Dialog
+        <ConfirmDialog
           title={t('agents.embedding.dialog.title')}
-          onClose={() => setConfirming(false)}
-          footer={
-            <>
-              <button type="button" className="sires-button" onClick={() => setConfirming(false)}>
-                {t('agents.embedding.dialog.keep')}
-              </button>
-              <button type="button" className="sires-button" data-variant="primary" disabled={busy} onClick={() => void save()}>
-                {t('agents.embedding.dialog.confirm')}
-              </button>
-            </>
-          }
+          confirmLabel={t('agents.embedding.dialog.confirm')}
+          cancelLabel={t('agents.embedding.dialog.keep')}
+          busy={busy}
+          onConfirm={() => void save()}
+          onCancel={() => setConfirming(false)}
         >
           <p>{t('agents.embedding.dialog.from', { from: embedding.model, to: model })}</p>
           <p className="sires-settings__strong">
@@ -489,7 +498,7 @@ function EmbeddingRow({ connections, embedding, onSaved }: { connections: Connec
           <p>{t('agents.embedding.dialog.usage', { name: choice?.connection.name ?? '—' })}</p>
           <p>{t('agents.embedding.dialog.unavailable')}</p>
           {error && <ErrorState error={error} ns={NS} notSaved={t('common.notSaved')} />}
-        </Dialog>
+        </ConfirmDialog>
       )}
     </section>
   );

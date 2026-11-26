@@ -1,6 +1,6 @@
 # PID-00036 — Self-QC của Dev
 
-**Kết luận:** Đạt. Mọi AC có test đạt; G1–G12 đã xử lý; toàn `@sires/web` 220/220 sau khi merge head mới của #138 (`3b63522`), không còn test đỏ.
+**Kết luận:** Đạt (Lần 2) — QC chéo của phiên web-shell ĐẠT; 3 MEDIUM của khu vực đã sửa, G1 thuộc mock dùng chung; toàn `@sires/web` 231/231
 
 - **Ticket:** [PID-00036](../../../docs/tickets/issues/PID-00036/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 27/11/2026
@@ -133,6 +133,29 @@ Lượt đọc độc lập: một agent đọc hồ sơ ở `docs/pid-00036-cla
 | G12 | partial | LOW | Mock trả 400 không thân cho tên trùng khi sửa; Analysis hiện hai lần | `__mocks__/index.ts`, `Providers.tsx` | Sửa: 409 `duplicate_name` bằng `Response`; mỗi agent một lần |
 | UI | partial | LOW | Núm công tắc; nút trong bảng 32 px; dialog không giữ focus; lỗi không nối `aria-describedby`; mono sai chỗ; ô ngôn ngữ; câu 412 lặp | `settings.css`, `shared.tsx`, các view | Sửa: núm tròn 9 px, nút cỡ mặc định 40 px, bẫy focus và trả focus, `aria-describedby`, câu ghép đúng khung “Đã lưu:”, “Chưa lưu:”, “Làm gì tiếp:” |
 | UI | partial | LOW | Khối Mặc định của Agent Models là chữ + “Sửa” thay cho select ngay trong khối; panel sửa nằm dưới bảng, không dưới dòng | `Agents.tsx` | Để lại, chờ QC độc lập/PO: hành vi đủ theo H13, chỉ khác bố cục |
+
+## Lần 2 — 27/11/2026
+
+Sau QC chéo của phiên web-shell ở `6a346dc` (ĐẠT, 0 CRITICAL, 0 HIGH, 4 MEDIUM, 7 LOW; [qc-report.md](qc-report.md)). Lịch sử nhánh dựng lại sạch cho gitleaks (`web/settings-pid-00036-v2`, cùng cây với bản trước), rồi merge head mới của #138 (`b157d02`).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/web` | Đạt — 27 file, 231 test; Settings 6 file, 82 test |
+| `check-ui.mjs apps/web/src/features/settings` | 0 lỗi, 1 cảnh báo (bo 32 px của avatar, đúng design.md) |
+| gitleaks (cùng lệnh CI) trên dải commit của nhánh | Sạch |
+| Preview `dev:mock` 1440×900 | SignIn có logo, nút có mũi tên, chân trang ở đáy; panel sửa Agent Models mở ngay dưới dòng và nhận focus |
+
+| G (qc-report) | Mức | Đã xử lý |
+| --- | --- | --- |
+| G1 (MSW in key ra console) | MEDIUM | Thuộc mock dùng chung, phiên điều phối đã giao phiên web-mocks |
+| G2 (thiếu test `type="password"`, `autocomplete="off"`) | MEDIUM | Thêm vào `providers.spec.tsx › key sai Invalid kèm hành động` |
+| G3 (SignIn thiếu logo, banner sai kiểu) | MEDIUM | Logo của shell, mũi tên trên nút, banner phiên hết hạn kiểu trung tính, chân trang ở đáy; `signin.spec.tsx › chỉ một hành động` kiểm logo |
+| G4 (panel sửa Agent Models lệch, không nhận focus) | MEDIUM | Panel mở ngay dưới dòng đang sửa, cuộn tới và focus vào tiêu đề; cột Trạng thái ghi “Sẵn sàng”. Khối Mặc định dựng bằng select như màn tham chiếu: chờ PO chọn (qc-report G4) |
+| G5 (check-ui báo nhầm “#126”) | LOW | Đổi tên `describe` |
+| G7 (kiểu nút, khối trống) | LOW | “Thêm kết nối” là nút chính, “Kiểm tra kết nối” nút viền, “Lưu” nút chính; thao tác trong bảng là liên kết chữ; khối trống dùng `EmptyState` của shell |
+| G8, G10 (Dialog tự dựng, focus ban đầu) | LOW | Dùng `Dialog` (focus vào “Giữ kết nối”) và `ConfirmDialog` của shell; bỏ Dialog tự dựng và CSS của nó |
+| G9 (câu chữ ngưỡng, số nhiều) | LOW | Bỏ đường dẫn trường khỏi mô tả ngưỡng; `countN_one`, `countN_other` |
+| G6, G11 | LOW | Để lại: G6 là assertion phụ của test đã có; G11 là hệ quả của merge theo yêu cầu (YC2) |
 
 ---
 
