@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00084](../../../docs/tickets/issues/PID-00084/index.html) · **Luồng:** `web/project` · **Giai đoạn:** PH-02 (Xây với mock)
-- **Nhánh:** `web/project-pid-00084` (tạo từ `origin/preview/ui-ph02` `3c05b2d`, đã có #120, #138, #131; đã commit có chữ ký và push) · **PR:** vào `develop` (liên kết ở mô tả PR)
+- **Nhánh:** `web/project-pid-00084` (tạo từ `origin/preview/ui-ph02` `3c05b2d`, đã có #120, #138, #131; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#146](https://github.com/toilatrung/sires/pull/146) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
