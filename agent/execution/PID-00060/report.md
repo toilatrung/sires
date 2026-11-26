@@ -71,6 +71,14 @@ Không có.
   - `assistant-1440.jpg`: khung Trợ lý (S04).
   - `mobile-pending-390.jpg`, `mobile-prompt-390.jpg`: điện thoại (S05).
 
+
+## Lần 2 — 27/11/2026
+
+- Gộp head mới của #141 (PID-00037 Lần 2, `7a5e66b`). Ở #141, khối chưa có dòng hiện câu giải thích và nút tới màn đầy đủ. Trên nhánh này các khối đã có dòng của S06, nên phần giải thích không hiện. Giữ câu “Khi agent cần bạn duyệt hoặc trả lời…” khi không có việc chờ.
+- `dashboard.spec.tsx › thứ tự khối` ở nhánh này kiểm dòng việc chờ thay cho phần giải thích.
+- Kiểm: `npx vitest run src/features/global/ src/shell/i18n.spec.ts` 82 test đạt; lint, typecheck đạt.
+- Trạng thái: không đổi, vẫn chờ G1 (test của shell, phiên web-shell sửa trên #138).
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
