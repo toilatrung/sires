@@ -3,24 +3,23 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 // Mock of GET /events (PID-00013 S03): `text/event-stream` records with `id`, `event` = Event.type and `data` =
-// the Event as JSON (paths/14…#/events). Durable events are kept and replayed after `Last-Event-ID` on reconnect
-// (EC11); `chat.delta` has no `id` line and is never replayed. The stream holds no data of its own: tests and the
-// dev demo push events with `emit`.
+// the Event as JSON (paths/14…#/events). Durable events get increasing ids, are kept (`retain`) and replayed after
+// `Last-Event-ID` on reconnect (EC11); `chat.delta` has no `id` line and is never replayed. A `Last-Event-ID` that
+// can no longer be replayed gets `replay.unavailable` first (PC-05 P2). The stream holds no data of its own: tests
+// and the dev demo push events with `emit`.
 
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { eventTypes as contractEventTypes, type Event } from './generated';
 import { basePath, MOCK_HEADER } from './runtime';
 
-/** Signal of PC-05 P2 (“không còn phát lại được”); sent only when the contract's Event.type lists it. */
-export const REPLAY_UNAVAILABLE = 'replay.unavailable';
+/** Signal “không còn phát lại được” (PC-05 P2): sent by the stream itself, never through `emit`. */
+export const REPLAY_UNAVAILABLE = 'replay.unavailable' satisfies Event['type'];
 
-export type EventInput = Omit<Event, 'id' | 'at'> & Partial<Pick<Event, 'id' | 'at'>>;
+export type EventInput = Omit<Event, 'id' | 'at'> & Partial<Pick<Event, 'at'>>;
 
 export interface EventStreamOptions {
-  /** Durable events kept for replay; an older `Last-Event-ID` is “too far” (default 1000). */
+  /** Durable events kept for replay; an older `Last-Event-ID` can no longer be replayed (default 1000). */
   retain?: number;
-  /** Event types the contract defines (default: Event.type of the bundle). */
-  eventTypes?: readonly string[];
   /** Clock for `at` (tests pass a fixed one). */
   now?: () => Date;
 }
@@ -52,7 +51,6 @@ export function formatRecord(event: Event, durable: boolean): string {
 
 export function createEventStream(options: EventStreamOptions = {}): EventStreamMock {
   const retain = options.retain ?? 1000;
-  const types: readonly string[] = options.eventTypes ?? contractEventTypes;
   const now = options.now ?? (() => new Date());
   const open = new Set<Connection>();
   let log: Event[] = [];
@@ -75,16 +73,15 @@ export function createEventStream(options: EventStreamOptions = {}): EventStream
         connection = { controller, projectId };
         open.add(connection);
         if (lastEventId === null) return;
-        const index = log.findIndex((event) => event.id === lastEventId);
-        if (index === -1) {
-          // Too far back (or unknown): nothing to replay. The contract signal is sent only once it exists.
-          if (types.includes(REPLAY_UNAVAILABLE)) {
-            const signal = { id: `signal-${++deltas}`, type: REPLAY_UNAVAILABLE, at: now().toISOString() } as unknown as Event;
-            send(connection, signal, false);
-          }
+        // Replayable: a position between the oldest kept event and the latest one (`0` before any event).
+        const position = /^\d+$/.test(lastEventId) ? Number(lastEventId) : Number.NaN;
+        const oldest = log.length ? Number(log[0]!.id) - 1 : sequence;
+        if (position >= oldest && position <= sequence) {
+          for (const event of log) if (Number(event.id) > position) send(connection, event, true);
           return;
         }
-        for (const event of log.slice(index + 1)) send(connection, event, true);
+        // Too old, unknown or malformed: the signal comes first, with the latest position as id, then only new events.
+        send(connection, { id: String(sequence), type: REPLAY_UNAVAILABLE, at: now().toISOString() }, true);
       },
       cancel() {
         if (connection) open.delete(connection);
@@ -110,13 +107,10 @@ export function createEventStream(options: EventStreamOptions = {}): EventStream
   return {
     handler,
     emit(input) {
-      if (!types.includes(input.type)) throw new Error(`Unknown event type ${input.type}`);
+      if (!(contractEventTypes as readonly string[]).includes(input.type)) throw new Error(`Unknown event type ${input.type}`);
+      if (input.type === REPLAY_UNAVAILABLE) throw new Error('replay.unavailable is sent by the stream on reconnect, not emitted');
       const durable = input.type !== 'chat.delta';
-      const event = {
-        ...input,
-        id: input.id ?? (durable ? String(++sequence) : `delta-${++deltas}`),
-        at: input.at ?? now().toISOString(),
-      } as Event;
+      const event: Event = { ...input, id: durable ? String(++sequence) : `delta-${++deltas}`, at: input.at ?? now().toISOString() };
       if (durable) {
         log = [...log, event].slice(-retain);
       }

@@ -181,9 +181,10 @@ describe('bộ sinh mock (S01, S04)', () => {
   }, 120_000);
 
   it('phản hồi không phải JSON', () => {
-    // EC04: 302, 204 and text/event-stream carry no JSON body in the generated module.
+    // EC04: 302, 303, 204 and text/event-stream carry no JSON body in the generated module.
     expect(operations.startLogin.responses[302]).toEqual({ contentType: null, headers: ['Location'] });
-    expect(operations.logout.responses[204]).toEqual({ contentType: null });
+    expect(operations.logout.responses[303]).toEqual({ contentType: null, headers: ['Location', 'Set-Cookie'] });
+    expect(operations.deleteProviderConnection.responses[204]).toEqual({ contentType: null });
     expect(operations.streamEvents.responses[200]).toEqual({ contentType: 'text/event-stream' });
     expect(operations.getReferenceDocument.responses[200]).toEqual({ contentType: 'application/pdf' });
   });
@@ -213,13 +214,16 @@ describe('mock khi chạy test (S02)', () => {
   });
 
   it('phản hồi không phải JSON qua mock', async () => {
-    // EC04 at runtime: the login redirect stays in the app (never eTroy), 204 has no body, binaries are not JSON.
+    // EC04 at runtime: login and logout redirects stay in the app (never eTroy), 204 has no body, binaries are not JSON.
     const login = await api('/auth/login?returnTo=/dashboard', { redirect: 'manual' });
     expect(login.status).toBe(302);
     expect(login.headers.get('Location')).toBe('/dashboard');
-    const logout = await api('/auth/logout', { method: 'POST' });
-    expect(logout.status).toBe(204);
-    expect(await logout.text()).toBe('');
+    const logout = await api('/auth/logout', { method: 'POST', redirect: 'manual' });
+    expect(logout.status).toBe(303);
+    expect(logout.headers.get('Location')).toBe('/');
+    const removed = await api(`/provider-connections/${id('connection', 3)}`, { method: 'DELETE' });
+    expect(removed.status).toBe(204);
+    expect(await removed.text()).toBe('');
     const pdf = await api(`/references/${id('reference', 1)}/document`);
     expect(pdf.headers.get('Content-Type')).toBe('application/pdf');
     expect((await pdf.text()).startsWith('%PDF')).toBe(true);
