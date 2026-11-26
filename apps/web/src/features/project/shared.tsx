@@ -7,9 +7,19 @@
 
 import type { PublicApi } from '@sires/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ApiError } from '../../shell';
+import { isApiError, type ApiError } from '../../shell';
 
 export const NS = 'project';
+
+/** Plan of a project, or null when it has none yet (getPlan 404 → no Plan baseline, EC01, EC29). */
+export async function planOrNull(api: { get: (path: '/projects/{projectId}/plan', options: { path: { projectId: string } }) => Promise<{ data: Schemas['ResearchPlan'] }> }, projectId: string): Promise<Schemas['ResearchPlan'] | null> {
+  try {
+    return (await api.get('/projects/{projectId}/plan', { path: { projectId } })).data;
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) return null;
+    throw error;
+  }
+}
 
 export type Schemas = PublicApi.components['schemas'];
 export type ActorRef = Schemas['ActorRef'];

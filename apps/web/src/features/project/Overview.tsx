@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { ErrorState, LoadingState, StatusChip, formatDate, formatTime, isApiError, useApi, useShell, type ApiError } from '../../shell';
-import { NS, useResource, workflowHref, type Schemas } from './shared';
+import { NS, planOrNull, useResource, workflowHref, type Schemas } from './shared';
 
 type Project = Schemas['ResearchProject'];
 type SharedContext = Schemas['SharedContextView'];
@@ -36,12 +36,12 @@ async function loadOverview(api: ReturnType<typeof useApi>, projectId: string): 
   const [project, context, plan, tasks, pending, workflows] = await Promise.all([
     api.get('/projects/{projectId}', { path }),
     api.get('/projects/{projectId}/shared-context', { path }),
-    api.get('/projects/{projectId}/plan', { path }),
+    planOrNull(api, projectId),
     api.get('/projects/{projectId}/tasks', { path }),
     api.get('/pending-actions', { query: { projectId, status: 'Open', limit: 200 } }),
     api.get('/workflows', { query: { projectId, status: ['Interrupted'] } }),
   ]);
-  const baselineId = plan.data.baselineVersionId;
+  const baselineId = plan?.baselineVersionId;
   const baseline = baselineId ? (await api.get('/projects/{projectId}/plan/versions/{planVersionId}', { path: { projectId, planVersionId: baselineId } })).data : null;
   // Manuscript block: 404 = not initialised; any other failure shows “—” and does not block Overview (EC05).
   let build: Data['build'];

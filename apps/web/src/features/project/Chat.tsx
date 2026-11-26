@@ -24,7 +24,7 @@ import {
   type StreamEvent,
 } from '../../shell';
 import { PromptInline } from './PromptInline';
-import { NS, agentKey, agentRunHref, objectHref, shortId, useResource, workflowHref, type Schemas } from './shared';
+import { NS, agentKey, agentRunHref, objectHref, planOrNull, shortId, useResource, workflowHref, type Schemas } from './shared';
 
 type Message = Schemas['Message'];
 type Task = Schemas['Task'];
@@ -423,11 +423,11 @@ function ContextPanel({ projectId, project, tasks }: { projectId: string; projec
   const resource = useResource(async () => {
     const [context, plan, references] = await Promise.all([
       api.get('/projects/{projectId}/shared-context', { path: { projectId } }),
-      api.get('/projects/{projectId}/plan', { path: { projectId } }),
+      planOrNull(api, projectId),
       api.get('/projects/{projectId}/references', { path: { projectId } }),
     ]);
     const me = session.status === 'signed-in' && session.account ? session.account : (await api.get('/me')).data;
-    return { context: context.data, plan: plan.data, references: references.data.items ?? [], includeField: me.preferences.includeResearchFieldInContext ?? false };
+    return { context: context.data, plan, references: references.data.items ?? [], includeField: me.preferences.includeResearchFieldInContext ?? false };
   }, [projectId]);
   const task = useMemo(() => (project.activeTaskId ? tasks.find((x) => x.id === project.activeTaskId) : undefined), [project.activeTaskId, tasks]);
 
@@ -441,7 +441,7 @@ function ContextPanel({ projectId, project, tasks }: { projectId: string; projec
   const { context, plan, references, includeField } = resource.value.data;
   const rc = context.researchContext;
   const assumptions = (context.activeContextItems ?? []).filter((item) => item.kind === 'assumption' && item.status === 'Active').length;
-  const baseline = plan.baselineVersionId ? plan.versions?.find((v) => v.id === plan.baselineVersionId) : undefined;
+  const baseline = plan?.baselineVersionId ? plan.versions?.find((v) => v.id === plan.baselineVersionId) : undefined;
   const selected = context.selectedReferenceIds ?? [];
   const indexed = references.filter((r) => selected.includes(r.referenceId ?? r.id) && (r as { indexingStatus?: string }).indexingStatus === 'Indexed').length;
   const running = context.activeWorkflowIds?.[0];
