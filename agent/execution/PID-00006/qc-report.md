@@ -1,6 +1,6 @@
 # PID-00006 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được PR #108 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 4 LOW (Lần 3, 25/11/2026). G2 đóng theo PC-04 A4: service mẫu dùng loại sự kiện riêng `sample_record.activated`, không dùng `task.activated` hay hợp đồng thật; điều kiện dừng của A4 không xảy ra (không job CI nào kiểm sự kiện của mẫu với hợp đồng), hợp đồng không bị sửa. PC-04 A6 đạt: `TESTCONTAINERS_TIMEOUTS` (60 s / 180 s) khai một lần ở `@sires/testing`, dùng trong `vitest.config.ts` của testing, platform, sample-service (probe hook 11 s, test 6 s và đột biến đều cho kết quả đúng). G3, G7 đã đóng. Còn G5, G6 (như trước), G9 (timeout khai tại chỗ thấp hơn hằng chung vẫn đè), G10 (chưa có self-QC cho lượt này), đều LOW
+**Kết luận mới nhất:** Merge được PR #116 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 4 LOW (Lần 4, 27/11/2026). G9 đóng theo PC-05 P38: bỏ 14 timeout tại chỗ thấp hơn và 3 timeout bằng `TESTCONTAINERS_TIMEOUTS` ở `@sires/platform`, `@sires/sample-service`; thêm test chặn tái phát (đọc AST), đột biến thêm lại `{ timeout: 30_000 }` thì đỏ. Còn G5, G6, G10 (như trước) và G12 mới (test chặn chép nguyên ở hai project), đều LOW.
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -188,6 +188,59 @@ Không còn việc chặn merge PR #108.
 - PR #106 và PR #108 độc lập, merge theo thứ tự nào cũng được (`git merge-tree` sạch cả hai chiều với `main` và với nhau).
 - Ghi PC-04 A4 vào mục 5 hồ sơ PID-00006 (PC-04 ghi “chưa làm”); A6 là quy ước chung, PO quyết ghi ở đâu (ví dụ `docs/tickets` quy tắc chung hoặc README của `@sires/testing`).
 - `check-tracks.mjs` chưa map `libs/ts/sample-service` vào luồng nào (ra `repo`): việc của luồng infra nếu PO muốn PR của mẫu tính vào luồng platform.
+
+## Lần 4 — 27/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC do PO `toilatrung` giao, không mang kết luận của Dev. Mã nguồn: PR #116, nhánh `platform/drop-local-timeouts`, đầu nhánh `b65d5ae` (`b65d5ae304ff0a8065c4cf646638dfa3475e8f80`), 2 commit, gốc `origin/main` `c9e745b` (nhánh đã cập nhật với `main`).
+
+Đã đối chiếu: G9 của Lần 3; PC-05 P38 (phương án 1 “Có, PR nhỏ của luồng platform”; điều phối 25/11/2026 chốt bỏ cả timeout bằng hằng chung), PC-04 A6; `self-qc.md` Lần 4; toàn bộ diff (13 file).
+
+### Kiểm lại việc còn lại của Lần 3
+
+| G Lần 3 | Kết quả Lần 4 | Bằng chứng |
+| --- | --- | --- |
+| G9 LOW: timeout khai tại chỗ thấp hơn hằng chung vẫn đè config | Đã xử lý | Bỏ `describe { timeout: 30_000 }` ở `audit.spec.ts`, `idempotency.spec.ts`, `inbox.spec.ts`, `outbox.spec.ts`; `afterAll(…, 60_000)` ở 8 file platform; `beforeAll(…, 120_000)` ở `sample-service/src/migration.spec.ts`, `sample.spec.ts`; ba chỗ bằng hằng chung (`jobs.spec.ts` describe 60 s, `inbox.spec.ts` hai `it` 60 s). Giữ chỗ lớn hơn: `beforeAll(…, 300_000)`, `it` 120 s, 180 s. Mọi chỗ bỏ đều là nâng trần (30→60 s, 60/120→180 s), không làm test chặt hơn. Test chặn `libs/ts/platform/src/local-timeouts.spec.ts`, `libs/ts/sample-service/src/local-timeouts.spec.ts` |
+| G5, G6 LOW | Còn mở, không đổi | Như Lần 1 |
+| G10 LOW: PR #108 chưa có self-QC | Còn mở | `self-qc.md` Lần 4 chỉ phủ G9 của PR này, chưa phủ lượt G2/A6 của #108 |
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G5, G6 | Như Lần 1 | partial | LOW | Như Lần 1 | Như Lần 1 |
+| G10 | DEC-58 | partial | LOW | Như Lần 3 | Như Lần 3; hoặc PO nhận mô tả PR #108 làm bản tự QC |
+| G12 | Tính dễ bảo trì (không có AC) | unrequested | LOW | `libs/ts/platform/src/local-timeouts.spec.ts` và `libs/ts/sample-service/src/local-timeouts.spec.ts` giống nhau 71 dòng, chỉ khác tên describe. Test chỉ xét số viết trực tiếp (hằng hay biến thì bỏ qua), như chú thích đầu file đã nêu | Không chặn. Khi project thứ ba cần (planning, workspace, identity có `beforeAll(…, 60_000)` hay `180_000` tại chỗ, xem ghi nhận 2), đưa hàm `localTimeoutsNotAboveShared` vào `@sires/testing/vitest` và gọi từ mỗi project |
+
+Không có CRITICAL, HIGH, MEDIUM.
+
+Ghi nhận, không tính G:
+
+1. Commit 2 (`b65d5ae`) đổi import của hai test chặn từ `@sires/testing/vitest` sang gốc `@sires/testing`, vì `nx run @sires/contracts:check-drift` chỉ trỏ gốc `@sires/<tên>` vào `src/index.ts`. `vitest.config.ts` vẫn import đường dẫn con (không thuộc phạm vi check-drift), như #108.
+2. Ngoài phạm vi P38 (chỉ platform, sample-service): `apps/workspace/src/auth/service-auth.spec.ts:47` còn `beforeAll(…, 60_000)`, thấp hơn `hookTimeout` 180 s mà #115 vừa áp cho workspace. Có từ trước; đề xuất mở rộng test chặn sang workspace, planning, identity ở PR sau của các luồng đó.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` (cây gộp 7 nhánh đang mở lên `main`) | Đạt (1 phút 16 giây) |
+| `pnpm exec vitest run src/local-timeouts.spec.ts` ở platform và sample-service, trên cây gộp (có cả #117) | Đạt 1/1 mỗi project: test mới của #117 không khai timeout tại chỗ |
+| Đột biến: thêm lại `{ timeout: 30_000 }` cho describe `audit.spec.ts:39` | Đỏ: `audit\audit.spec.ts:39 describe 30000 ≤ 60000`; đã trả lại |
+| `pnpm nx run-many -t lint typecheck -p @sires/platform @sires/sample-service …` trên cây gộp | Đạt |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00006 --result` | KẾT QUẢ ĐỦ (0 cảnh báo) |
+| `node scripts/docs/add-license.mjs --check` | 0 thiếu |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: platform, repo` |
+| `gh api repos/toilatrung/sires/pulls/116/commits` | 2/2 `verified: true`; không có dòng ghi công AI |
+| `gh pr checks 116` (run 45656365271 trên `b65d5ae`) | 25/25 đạt. Log job `typescript`: platform chạy mới 175/175, sample-service 15/15, `contracts` (check-drift) đạt |
+| Test Testcontainers đầy đủ của platform | Không chạy lại cục bộ (máy dùng chung); dựa vào CI chạy mới ở trên |
+
+### Lệch với Self-QC
+
+Không có. Số liệu `self-qc.md` Lần 4 (175/175, 15/15, test chặn đỏ trước khi sửa) khớp CI và đột biến của QC.
+
+### Việc còn lại
+
+1. Phiên điều phối merge #116. #116 và #117 cùng sửa `libs/ts/platform/src/inbox/inbox.spec.ts` ở chỗ khác nhau; QC đã thử gộp, không xung đột. Merge một PR thì PR kia phải cập nhật với `main` và chờ CI.
+2. G12, ghi nhận 2: PR sau, không chặn.
 
 ---
 
