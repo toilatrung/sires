@@ -31,6 +31,10 @@ describe('Dashboard — khung (S05)', () => {
     }
     expect(pending.textContent).toMatch(/^[0-9]+ việc chờ bạn$/);
     expect(main().getByRole('link', { name: 'Tất cả Pending Actions' }).getAttribute('href')).toBe('/pending-actions');
+    // Blocks whose rows come with PID-00060 explain where to look and offer the next action (design.md §4 Trống).
+    expect(main().getByRole('link', { name: 'Mở Pending Actions' }).getAttribute('href')).toBe('/pending-actions');
+    expect(main().getByRole('link', { name: 'Mở Agent Activity' }).getAttribute('href')).toBe('/activity');
+    expect(main().getByRole('link', { name: 'Mở Notifications' }).getAttribute('href')).toBe('/notifications');
   });
 
   it('bỏ project Archived (WS-DASHBOARD-001-AC04, EC05)', async () => {
