@@ -1,30 +1,42 @@
 # PID-00025 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm — SerpApi đạt thử kỹ thuật ASM-01/ASM-14; còn mẫu Semantic Scholar và quyết định PO cho ASM-01
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00025](../../../docs/tickets/issues/PID-00025/index.html) · **Luồng:** `library` · **Giai đoạn:** PH-01
-- **Nhánh:** `library/pid-00025-sources-parsers` · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — nháp, đã thử SerpApi 7/7; ASM-14 kỹ thuật có bằng chứng, còn S2/ASM-01 tổng thể
-- **Cập nhật:** 21/11/2026
+- **Nhánh:** `library/pid-00025-sources-parsers` (Lần 7 chưa commit; đã gộp `origin/main` ở `657a363`) · **PR:** [#38](https://github.com/toilatrung/sires/pull/38) — mở, không còn nháp; CI xanh ở đầu nhánh đã push `84e1032`; chưa có QC độc lập
+- **Cập nhật:** 27/11/2026
+- **Người làm (Lần 7):** phiên do PO `toilatrung` giao, làm thay assignee `Vietanhhhhhh2003`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
 
-- Slice: 3/3 xong ở mức spike Lần 1. Lần 5 chạy lại: OpenAlex vẫn đủ 9/9 query,
-  34/45 paper đủ trường; S2 không có mẫu mới vì cả hai lượt dừng ở request đầu.
-  Mẫu S2 trước đó vẫn giữ nguyên 3/9 query, còn 6 query chưa có mẫu thành công.
-- AC: bằng chứng khảo sát cho 4/4 AC theo phạm vi spike ban đầu. Lần 6 bổ sung
-  thử SerpApi thật theo chỉ định người dùng: 7/7 search thành công, hồ sơ mẫu
-  đọc được 40 công bố/2 trang. ASM-14 khả năng tích hợp đã kiểm chứng trên mẫu;
-  ASM-01 đạt sample kỹ thuật nhưng chưa chốt điều khoản/ổn định dài hạn.
-- Yêu cầu thêm: 2, xem Lần 2 và Lần 6; không còn thiếu key/quota SerpApi.
+Trạng thái hiện hành theo Lần 7 (27/11/2026); mục 3, 4 và Lần 1–6 bên dưới là lịch sử.
+
+- Slice: 3/3 xong. AC: 4/4 đạt, bằng bằng chứng đo hoặc quyết định PO đã ghi
+  (DEC-60, H3 của hồ sơ); bảng đối chiếu từng AC, EC ở Lần 7.
+- OpenAlex, nguồn mặc định theo DEC-60: hai lượt ẩn danh ngày 27/11 đều 9/9 truy
+  vấn, 12/12 HTTP 200, 34/45 paper đủ dữ liệu tối thiểu INT-SCHOLAR-003 (11 paper
+  thiếu mô tả vì nguồn trả `abstract_inverted_index: null`); không gặp 429. Giới
+  hạn đo từ header `x-ratelimit-*`: ẩn danh 1000 credit/ngày dùng chung theo IP
+  (0,10 USD), mỗi search 10 credit, mỗi request lọc 1 credit, một lượt 93 credit.
+  Lượt có key ngày 21/11: cùng 9/9 và 34/45, ngân sách 10000 credit (1 USD).
+- Semantic Scholar: bỏ khỏi phạm vi theo DEC-60 (H3); mẫu 19–21/11 giữ làm lịch
+  sử, mã đo đã gỡ nguồn này ở Lần 7.
+- Google Scholar: bảng so SerpApi, SearchApi qua tài liệu (AC02); SerpApi thử thật
+  21/11 (YC2, gói miễn phí) 7/7 search; PO chọn SerpApi (DEC-60). Máy hiện tại
+  không có key SerpApi; AC không cần thêm dữ liệu SerpApi.
+- Parser: giữ đề xuất Citation.js 0.9.0 (MIT), khớp PC-04 A10 và adapter PID-00024
+  đã merge; spike đọc BibTeX bằng mapping biblatex như adapter.
+- ASM-01, ASM-14: báo cáo Dev không kết luận; theo H3, PO ghi kết luận ở PRD 20.2.
+- Yêu cầu thêm: YC1 (Lần 2), YC2 (Lần 6). Lần 7 không có yêu cầu ngoài hồ sơ.
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Đo nguồn miễn phí | Xong; thiếu mẫu khi nguồn giới hạn, dừng theo EC01/02 | `free-sources.mjs`, `free_sources.spec.ts`, evidence HTTP |
-| S02 | So dịch vụ trung gian | Xong ở mức tài liệu | Báo cáo mục 3.3 |
-| S03 | Parser và báo cáo | Xong | `fetch-fixtures.mjs`, `parsers.mjs`, `parsers.spec.ts`, fixtures, README; `apps/library/package.json`, pnpm lockfile sinh theo 1.4.7; implement.md, self-qc.md |
+| S01 | Đo nguồn miễn phí | Xong — OpenAlex 9/9 (Lần 5 có key, Lần 7 ẩn danh); Semantic Scholar bỏ theo H3 (DEC-60) | `free-sources.mjs`, `remeasure.mjs`, `free_sources.spec.ts`, evidence HTTP |
+| S02 | So dịch vụ trung gian | Xong ở mức tài liệu (19/11), đối chiếu lại 27/11; SerpApi thử thật ở Lần 6 (YC2) | Báo cáo mục 3.3, Lần 6, Lần 7; `serpapi.mjs`, `serpapi.spec.ts` |
+| S03 | Parser và báo cáo | Xong — đối chiếu PID-00024 và PC-04 A10 ở Lần 7 | `fetch-fixtures.mjs`, `parsers.mjs`, `parsers.spec.ts`, fixtures, `fixtures/.gitattributes`, README; `apps/library/package.json`, pnpm lockfile sinh theo 1.4.7; implement.md, self-qc.md |
 
 ## 3. Kết quả
 
@@ -186,19 +198,59 @@ Không có.
 
 ## 6. Cần PO và tài liệu đi kèm
 
-- **Đề xuất cho PO:** dùng Citation.js cho PID-00024; xem shortlist SerpApi/SearchApi
-  mục 3.3 trước khi chọn vendor. Đề nghị cấp key miễn phí của nguồn dự phòng để
-  đo đủ mẫu; không cung cấp key trong mã hoặc báo cáo. PO cập nhật SPK-03 trong
-  kiến trúc nếu nhận báo cáo; ASM-01/ASM-14 vẫn mở.
+Cập nhật theo Lần 7 (27/11/2026). Nội dung mục này của Lần 1 thay bằng trạng thái
+hiện hành; các đề xuất cũ (key nguồn dự phòng, shortlist vendor) đã được PO xử lý
+bằng DEC-60 và PC-04 A10.
+
+- **Đề xuất cho PO:**
+  1. Luồng platform bỏ `semantic_scholar` khỏi `SourceAdapterKey` và bảng ánh xạ
+     trong `libs/ts/testing/src/fakes/source-adapter.fake.ts` (dòng 18, 70) theo
+     DEC-60 (cũng ghi ở `docs/docs_context.md`, Bước tiếp theo 9). Hồ sơ PID-00025
+     không có file này ở Phạm vi hay Đầu ra nên Lần 7 không sửa (quy tắc 1.4).
+  2. Kiến trúc 2.3 (`docs/architecture/sections/02-technology-stack.html`, dòng
+     “Thư viện học thuật”) ghi parser BibTeX `@retorquere/bibtex-parser`. SPK-03 chưa
+     thử thư viện này; đề xuất của SPK-03 là Citation.js 0.9.0, đã dùng ở PID-00024
+     theo PC-04 A10. Đề nghị PO sửa kiến trúc 2.3 theo Citation.js, hoặc giao thử
+     thêm `@retorquere/bibtex-parser` ở lần sau (cần thêm devDependency). Kiến trúc
+     12.2 ghi SPK-03 “Đã chạy một phần”: cập nhật khi PO nghiệm thu.
+  3. AC04 (`specs/acceptance.html`, ticket mục 2) còn ghi lý do “vì chưa gọi thử dịch
+     vụ trung gian”, trong khi Lần 6 đã thử SerpApi gói miễn phí (YC2) và H3 giao kết
+     luận ASM-01, ASM-14 cho PO ở PRD 20.2. Đề nghị sửa câu chữ AC04 theo H3.
+  4. Cho PID-00050 khi hiện thực GS-A4 (PC-05): “tài liệu theo DOI không có trên
+     OpenAlex” nên so cả DOI của `locations`, vì một work có thể mang DOI bí danh
+     (bài JEP 2007 của bộ truy vấn: DOI chính `10.1257/089533007780095556`, DOI tham
+     chiếu `10.1257/jep.21.1.141` nằm ở `locations`). Chỉ so DOI chính sẽ gọi Google
+     Scholar dù OpenAlex có bài. Đây là số đo, không phải quyết định.
+  5. Cho GS-A2, RISK-12: trang pricing SerpApi (đọc 27/11/2026) ghi gói Free 250
+     search/tháng, throughput “50” mỗi giờ (định nghĩa là số search thành công được
+     bảo đảm mỗi giờ); Account API ngày 21/11 trả `account_rate_limit_per_hour` 250.
+     Hai số khác nhau, tài liệu không giải thích; PO xác nhận khi chọn gói.
+  6. Cho PID-00050: OpenAlex ẩn danh dùng ngân sách chung theo IP (0,10 USD/ngày,
+     1000 credit; một search 10 credit). Môi trường dùng chung IP sẽ hết ngân sách
+     nhanh; adapter sản phẩm cần key của hệ thống. Dev không tự tạo key.
 - **Yêu cầu hợp đồng:** không có.
-- **Còn mở:** chất lượng Semantic Scholar và hai lĩnh vực chưa lấy được mẫu
-  OpenAlex; phải đo lại khi nguồn khả dụng/key miễn phí trước khi chốt adapter.
-  ASM-01/ASM-14 chưa kết luận theo H2, không có thay đổi hành vi sản phẩm.
-- **Bước tiếp theo (ghi nhận Lần 1):** QC độc lập bằng `spec-converge-skill PID-00025`;
-  mã và các attachment chưa commit, chưa mở PR, chờ yêu cầu của PO.
-- **Tài liệu đi kèm:** `evidence/free-sources.json` (raw response và query),
-  `free-sources-summary.json`, `parsers.json`, `parsers-0.0.24.json`, `parser-audit-summary.json`;
-  fixture và manifest ở `apps/library/spikes/spk-03/fixtures/`.
+- **Còn mở:** không có điều chặn ticket. Không cần thêm key hay quota SerpApi cho AC
+  của hồ sơ; rà hợp đồng, quyền lưu và phân phối metadata của SerpApi trước khi dùng
+  gói trả phí là việc của PO (ASM-01, RISK-12; ký hợp đồng là N2).
+- **Bước tiếp theo:** PO (hoặc phiên PO giao) review thay đổi Lần 7, commit và push
+  lên nhánh của PR #38; QC độc lập bằng `spec-converge-skill PID-00025` (ghi
+  `qc-report.md`); merge theo PC-05 P31 điều kiện 5. Lần 7 không commit, không push
+  theo yêu cầu của phiên giao việc, kể cả `report.md` khi đổi trạng thái.
+- **Tài liệu đi kèm** (mọi file ở `evidence/`):
+  - Lần 1, 19/11: `evidence/free-sources.json` (raw response và query, hai nguồn),
+    `evidence/free-sources-summary.json`, `evidence/parsers.json`,
+    `evidence/parsers-0.0.24.json`, `evidence/parser-audit-summary.json`; fixture và
+    manifest ở `apps/library/spikes/spk-03/fixtures/` — S01, S03.
+  - Lần 2, 4, 5 (19–21/11): các file `evidence/free-sources-followup-…` liệt kê ở
+    từng lần, `evidence/coverage-2026-11-21.json`, `evidence/four-checks-2026-11-21T13-22-41Z.json`
+    — S01 (gồm mẫu Semantic Scholar, nay là lịch sử theo H3).
+  - Lần 6, 21/11: `evidence/serpapi-account-2026-11-21T13-41-24-267Z.json`,
+    `evidence/serpapi-trial-2026-11-21T13-46-24-058Z-b071a8ef.json` — S02 (YC2).
+  - Lần 7, 27/11: `evidence/free-sources-followup-2026-11-26T20-56-26-290Z-72282d6f-openalex.json`,
+    `evidence/free-sources-followup-2026-11-26T20-56-26-290Z-72282d6f-summary.json`,
+    `evidence/free-sources-followup-2026-11-26T21-01-55-265Z-9661b138-openalex.json`,
+    `evidence/free-sources-followup-2026-11-26T21-01-55-265Z-9661b138-summary.json`
+    (hai lượt OpenAlex ẩn danh) — S01; `evidence/parsers-2026-11-26T20-56-33-143Z.json` — S03.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 ## Lần 2 — 19/11/2026 · Đo tiếp và kiểm chứng giả định
@@ -466,6 +518,157 @@ cáo không tự kết luận tính hợp pháp ở mọi bối cảnh hoặc th
 Kiểm tra mã Lần 6: **15/15 test**, lint, typecheck, build đều đạt; license/index
 checks đạt và hồ sơ PID đủ với 0 cảnh báo. Đã quét 8 file đổi không chứa giá trị
 ba key; evidence không lưu email/account ID của tài khoản SerpApi.
+
+## Lần 7 — 27/11/2026 · Áp dụng quyết định PO, đo lại OpenAlex, đóng ticket
+
+- **Người làm (Lần 7):** phiên do PO `toilatrung` giao, làm thay assignee `Vietanhhhhhh2003`.
+- **Môi trường:** Windows 11, Git Bash, Node 24.21.0, pnpm 10.34.9; Docker Engine
+  29.8.2 trong WSL `Ubuntu-24.04` (`localhost:2375`) cho test Testcontainers của
+  library. Nhánh đã gộp `origin/main` ở `657a363` trước lần này.
+- **Yêu cầu:** hoàn tất PID-00025 theo hồ sơ và các quyết định PO dưới đây. Mọi việc
+  nằm trong Phạm vi P1–P5; không có yêu cầu ngoài hồ sơ. Theo lời giao việc: không
+  commit, không push, không sửa PR (kể cả `report.md` khi đổi trạng thái); không tạo
+  tài khoản hay key; không gửi `mailto` hay dữ liệu cá nhân trong request.
+
+### Quyết định PO đã áp dụng
+
+| Quyết định | Nguồn | Áp dụng ở Lần 7 |
+| --- | --- | --- |
+| DEC-60 (22/11/2026, sửa DEC-19): OpenAlex là nguồn mặc định; Google Scholar qua SerpApi sau connector; bỏ hẳn Semantic Scholar | PRD 20.1 (`docs/overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60`); [báo cáo khảo sát](../../../docs/overview/bao-cao-khao-sat-nguon-hoc-thuat.html) | Chốt theo quyết định DEC-60 (H3): đóng việc còn mở “thiếu mẫu Semantic Scholar” (G3) mà không đo thêm; gỡ Semantic Scholar khỏi mã đo; EC02 bỏ. Bằng chứng Semantic Scholar 19–21/11 giữ nguyên làm lịch sử |
+| H3 của hồ sơ (22/11/2026) | `docs/tickets/issues/PID-00025/index.html` mục 5 | AC01, P1, S01, B2 chỉ còn OpenAlex (“Xong khi: Có số đo cho OpenAlex”); “Dev không đo thêm mẫu Semantic Scholar”; kết luận ASM-01, ASM-14 do PO ghi ở PRD 20.2, không do báo cáo của Dev (mục AC04 dưới) |
+| DEC-61 (22/11/2026, trả lời OQ-114, OQ-115) | PRD 20.1 `#dec-61` | Không đổi phạm vi spike. Ghi số đo liên quan cho PID-00050: tài liệu cụ thể có trên OpenAlex hay không (known-item), chi phí SerpApi theo trang |
+| PC-05 nhóm II, GS-A1 … GS-C1 | `docs/overview/phieu-chot-cuoi-ph01.html` trên `main` (bản đề nghị); đánh dấu “chốt theo đề xuất” ngày 27/11/2026 theo ủy quyền PO 26/11/2026 ở PR #124 (mở, chưa merge); PRD áp dụng ở PR #132 (mở, chưa merge: PRD 2, 10, 15, 17, 18, 20, 21, backlog) | Không mục nào đổi Phạm vi, AC hay Đầu ra của PID-00025: các mục thuộc PRD, hợp đồng library, PID-00050 và PID connector. Số đo liên quan: GS-A4 (“OpenAlex không có” theo truy vấn 0 kết quả hoặc theo DOI, tiêu đề) — known-item dưới; GS-A2, GS-B3 (mỗi trang SerpApi là một lượt) — Lần 6 có usage tăng đúng 7 cho 7 request, gồm 2 trang hồ sơ; GS-B2 (20 bài mỗi trang) — khớp Lần 6. P31 điều kiện 5: SPK-03 hoàn tất theo nhóm II, merge, có QC độc lập |
+| PC-04 A10 (25/11/2026): PID-00024 dùng Citation.js 0.9.0 tạm thời sau adapter, đổi được khi SPK-03 kết luận khác | `docs/overview/phieu-chot-ph01.html` | SPK-03 giữ kết luận Citation.js 0.9.0, không có lý do đổi. Spike đọc BibTeX bằng mapping biblatex như adapter PID-00024 |
+| PC-04 B9 (25/11/2026): PO chọn “Chờ PO chốt PC-03; PR #38 giữ mở” | `docs/overview/phieu-chot-ph01.html` | PC-03 ([phiếu Google Scholar](../../../docs/overview/phieu-chot-google-scholar.html)) “Đã gộp 25/11/2026” vào PC-05 nhóm II; nhóm II đã chốt theo đề xuất (PR #124) nên điều kiện chờ của B9 được đáp ứng khi #124 vào `main` |
+
+### Đối chiếu AC, EC
+
+| Mã | Bằng chứng có trước Lần 7 | Còn thiếu | Lần 7 đã làm |
+| --- | --- | --- | --- |
+| PID-00025-AC01 | Lần 1 (ẩn danh): OpenAlex 3/9 rồi 429; Lần 4, 5 (có key): 9/9, 34/45 đủ trường, khoảng cách nhỏ nhất 20004 ms; mục 3.2, Lần 4 trộn số đo Semantic Scholar | (1) Bảng chỉ OpenAlex theo H3; (2) “giới hạn tốc độ đo được” mới dựa vào 429 và số tài liệu: header `x-ratelimit-*` đã thu nhưng chưa phân tích; (3) chưa có lượt sau DEC-60 không cần key của người dùng; (4) mã đo còn nhánh Semantic Scholar | Hai lượt ẩn danh 27/11, mỗi lượt 9/9; summary thêm `rateLimit` (ngân sách, credit mỗi request) và `knownItems`; gỡ Semantic Scholar khỏi mã; bảng số đo hiện hành dưới |
+| PID-00025-AC02 | Mục 3.3 (19/11): bảng SerpApi, SearchApi gồm năng lực, hồ sơ qua URL, giá, quota, điều khoản, nguồn, phần chưa rõ; Lần 6 đọc lại điều khoản SerpApi | Ghi nhận PO đã chọn SerpApi; lệch hạn giờ giữa trang pricing và Account API chưa ghi | Đọc lại [pricing SerpApi](https://serpapi.com/pricing) 27/11: Free 250 search/tháng, throughput 50/giờ (định nghĩa: số search thành công được bảo đảm mỗi giờ), Starter 25 USD/tháng, 1000 search, 200/giờ; mỗi response tính 1 search, kể cả rỗng; trang không nói riêng về phân trang. Account API 21/11 trả `account_rate_limit_per_hour` 250: ghi là phần chưa rõ (đề xuất 5 ở mục 6) |
+| PID-00025-AC03 | Mục 3.4: Citation.js 0.9.0 MIT, 4/4 export thật, lỗi gặp phải; đối chứng `bibtex-parse-js` | (1) Chưa đối chiếu với adapter PID-00024 đã merge và PC-04 A10; (2) spike đọc BibTeX bằng `@bibtex/text`, mapping này bỏ `abstract`; (3) test fixture đỏ trên Windows: `core.autocrlf=true` đổi LF thành CRLF, SHA-256 lệch manifest (`expected '5098e54d…' to be '3f5e37ca…'`) | Mục parser dưới; `parseCitation` dùng `@biblatex/text`; test mới; `fixtures/.gitattributes` (`*.bib`, `*.ris` `-text`); đo lại parser |
+| PID-00025-AC04 | Mục 3.5 (Lần 1): ASM-01, ASM-14 chưa kết luận; Lần 6 ghi “Kết luận ASM-14 … đã kiểm chứng”, “ASM-01 đạt sample kỹ thuật” trước khi có H3 | Theo H3 báo cáo của Dev không kết luận hai giả định | Mục AC04 dưới |
+| EC01 | Lần 1, 2: 429 dừng nguồn, giữ Retry-After; test | Không thiếu | Test giữ (đổi sang OpenAlex); hai lượt 27/11 không gặp 429 |
+| EC02 | — | Bỏ theo H3 (DEC-60) | Đóng theo quyết định; mã và test không còn nhánh Semantic Scholar |
+| EC03 | SearchApi không công khai số request/giờ theo gói: ghi “chưa rõ”, không đặt số | Không thiếu | Giữ nguyên |
+| EC04 | Hai ứng viên MIT, không ứng viên nào bị loại vì giấy phép | Kiểm lại với bản đang cài | `parsers-2026-11-26T20-56-33-143Z.json`: `@citation-js/core`, `plugin-bibtex`, `plugin-ris` 0.9.0 MIT, `bibtex-parse-js` 0.0.23 MIT; phụ thuộc chạy của Citation.js có trong `apps/library/THIRD_PARTY_NOTICES.md` (PID-00024) |
+
+### Số đo OpenAlex hiện hành — PID-00025-AC01
+
+Lệnh `node apps/library/spikes/spk-03/remeasure.mjs`, không key, không `mailto`,
+khoảng cách bắt đầu 20 s, 9 truy vấn cố định, top-5. Thời điểm là UTC (27/11 giờ
+Việt Nam). Cột 21/11 lấy từ evidence Lần 5 để so; Lần 7 không gọi lại bằng key đó.
+
+| Chỉ số | Lượt A 26/11 20:56:26 UTC, ẩn danh | Lượt B 26/11 21:01:55 UTC, ẩn danh | Lần 5, 21/11 13:22:41 UTC, có key |
+| --- | --- | --- | --- |
+| Truy vấn có kết quả / lên lịch | 9/9 | 9/9 | 9/9 |
+| HTTP | 200 × 12 | 200 × 12 | 200 × 12 |
+| Paper top-5 (theo lần xuất hiện) | 45 | 45 | 45 |
+| Đủ dữ liệu tối thiểu INT-SCHOLAR-003 | 34/45 (75,56%) | 34/45 (75,56%) | 34/45 (75,56%) |
+| Title, author, year, liên kết nguồn | mỗi trường 45/45 | mỗi trường 45/45 | mỗi trường 45/45 |
+| Mô tả (abstract) | 34/45 | 34/45 | 34/45 |
+| Venue / số trích dẫn (tùy chọn) | 44/45 / 45/45 | 44/45 / 45/45 | 43/45 / 45/45 |
+| Known-item: DOI tham chiếu của 3 truy vấn tiêu đề trong top-5 | 3/3 hạng 1 (tính lại offline, xem dưới) | 3/3 hạng 1: 2 theo DOI chính, 1 theo DOI location | 3/3 hạng 1 (tính lại offline) |
+| Khoảng cách bắt đầu nhỏ nhất | 20000 ms | 20000 ms | 20004 ms |
+| Thời gian phản hồi min / trung vị / max | 577 / 1086 / 1658 ms | 384 / 1002 / 1646 ms | 918 / 1886 / 3437 ms |
+| Ngân sách theo header (`x-ratelimit-limit`) | 1000 credit, 0,10 USD | 1000 credit, 0,10 USD | 10000 credit, 1 USD |
+| Còn lại sau request đầu → sau request cuối | 990 → 907 | 897 → 814 | 9897 → 9814 |
+| Credit mỗi request (`x-ratelimit-credits-used`) | search 10, lọc theo author ID 1 | search 10, lọc 1 | search 10, lọc 1 |
+| Credit cả lượt | 93 | 93 | 93 |
+| `x-ratelimit-reset` ở request đầu | 11016 s | 10687 s | 38236 s |
+| 429 / `Retry-After` | không | không | không |
+
+- **Giới hạn tốc độ đo được:** server báo ngân sách theo ngày bằng credit, không phải
+  số request mỗi giây. Ẩn danh: 1000 credit (0,10 USD) mỗi ngày, body ghi ngân sách
+  này dùng chung cho mọi máy cùng địa chỉ IP; có key (21/11): 10000 credit (1 USD).
+  Một search tốn 10 credit, một request lọc 1 credit, một lượt đủ 9 truy vấn tốn 93
+  credit, nên ngân sách ẩn danh đủ khoảng 10 lượt mỗi ngày nếu không ai khác cùng IP
+  dùng. Đầu lượt A còn 990, nghĩa là chưa có request khác từ IP này trong ngày.
+  `x-ratelimit-reset` khớp thời điểm 00:00 UTC (20:56:26 + 11016 s). Ngoài ngân sách,
+  ngày 19/11 OpenAlex trả 429 cho search ẩn danh khi cụm tìm kiếm quá tải
+  (Retry-After 32, 36 s). Lần 7 không dò ngưỡng, không burst.
+- **Ổn định:** ba lượt (21/11 có key, 27/11 hai lượt ẩn danh) cùng 9/9, cùng 34/45;
+  cùng 11 paper thiếu mô tả ở các truy vấn trùng work ID. Top-5 của `bio-title` đổi
+  một work ở vị trí thiếu abstract (`W4247503312` ngày 21/11, `W4237451325` ngày 27/11);
+  venue có thêm 1 trên 45. Mẫu nhỏ, không phải đo ổn định dài hạn hay recall.
+- **Known-item:** `cs-title`, `bio-title` khớp DOI chính ở hạng 1. `econ-title`
+  (“The Economic Lives of the Poor”) ở hạng 1 là work `W3123192902`, DOI chính
+  `10.1257/089533007780095556`; DOI tham chiếu `10.1257/jep.21.1.141` nằm trong
+  `locations` của chính work đó. Summary lượt A (tính bằng mã chỉ so DOI chính) ghi
+  `rank: null`; mã được sửa để xét cả DOI location, lượt B ghi `rank: 1,
+  matchedBy: location-doi`. Cột lượt A và Lần 5 tính lại offline từ raw body đã lưu
+  bằng `normalize`, `knownItems` hiện tại, không gọi mạng, không ghi file mới.
+  Hệ quả cho GS-A4: đề xuất 4 ở mục 6.
+- **Dữ liệu tối thiểu:** 11 paper thiếu mô tả vì nguồn trả `abstract_inverted_index:
+  null` (đã đối chiếu raw ở Lần 5); không tự sinh hay lấy từ nguồn khác.
+- **Tác giả:** cả ba lượt phân giải cùng ID (`A5086198262` Yoshua Bengio,
+  `A5067184382` Jennifer A. Doudna, `A5015565298` Esther Duflo); chưa kiểm đồng danh.
+- Body mỗi response ẩn danh có dòng `meta.notice` của OpenAlex gợi ý lấy key miễn phí
+  và chỉ cách một agent tự lấy key cho người dùng; Lần 7 không làm theo (không tạo
+  tài khoản hay key).
+
+### Parser — PID-00025-AC03 (đối chiếu PID-00024, PC-04 A10)
+
+- **Đề xuất giữ nguyên: Citation.js 0.9.0** (`@citation-js/core`, `@citation-js/plugin-bibtex`,
+  `@citation-js/plugin-ris`, MIT). Trên `main`, PID-00024 (PR #98) dùng đúng bản này
+  làm dependency sản phẩm của library, đặt sau giao diện `ReferenceParser`
+  (`apps/library/src/importers/citation-js/citation-js.parsers.ts` là file duy nhất
+  import thư viện) theo PC-04 A10. SPK-03 không có kết luận khác nên không cần đổi.
+- **Đo lại 27/11** ([parsers-2026-11-26T20-56-33-143Z.json](evidence/parsers-2026-11-26T20-56-33-143Z.json)):
+  cùng kết quả 19/11 trên 4 export Crossref thật (mỗi file 1 bản ghi, giữ DOI,
+  tiêu đề, 6 và 2 tác giả, năm 2012 và 2007); BibTeX thiếu dấu đóng bị từ chối, RIS
+  thiếu `ER` vẫn nhận 1 bản ghi, chuỗi rác cho mảng rỗng; `bibtex-parse-js` không đọc RIS.
+- **Bổ sung từ PID-00024:** mapping `@bibtex/text` cổ điển bỏ `abstract`; adapter
+  dùng `@biblatex/text`. Spike kiểm lại trên dữ liệu tổng hợp (không phải export
+  thật): biblatex giữ `abstract`, cổ điển trả `undefined` (`mappingCheck` trong file
+  trên, test `parsers.spec.ts`). Trên 4 export thật hai mapping cho cùng DOI, tiêu
+  đề, số tác giả (Crossref không xuất abstract). Spike chuyển sang biblatex.
+- **Lỗi thư viện PID-00024 đã xử lý ở adapter** (theo `agent/execution/PID-00024/implement.md`
+  trên `main`, chưa đo lại ở spike): công thức toán bị đổi, lệnh định dạng thành thẻ
+  HTML, tiểu từ viết hoa, tên tập thể, RIS bỏ `Y1`/`A1` khi đoán kiểu bản ghi, log
+  nội bộ không được xóa. Ba lỗi spike ghi ở Lần 1 đã có kiểm tra ở adapter:
+  khối BibTeX thiếu ngoặc → `unterminated_entry`, RIS thiếu `ER` → `missing_end`,
+  thiếu `TY` → `missing_type`.
+- **Chưa thử:** `@retorquere/bibtex-parser` mà kiến trúc 2.3 nêu (PC-04 A10 cũng ghi
+  điểm này). Không thêm dependency ở Lần 7; đề xuất 2 ở mục 6.
+
+### Kết luận giả định — PID-00025-AC04
+
+Theo H3, báo cáo của Dev **không kết luận ASM-01 và ASM-14**; PO ghi kết luận ở
+PRD 20.2. Các câu “Kết luận ASM-14 … đã kiểm chứng”, “ASM-01 đạt sample kỹ thuật” ở
+Lần 6 là quan sát kỹ thuật trước H3, giữ làm lịch sử, không phải kết luận của báo cáo.
+Hiện PRD 20.2 ghi: ASM-01 “Kiểm chứng một phần 21/11/2026 … chưa đo ổn định dài hạn,
+chưa rà hợp đồng và quyền lưu, phân phối metadata”; ASM-14 “Kiểm chứng kỹ thuật
+21/11/2026 … 40 công bố trong 2 trang”. Lý do “vì chưa gọi thử dịch vụ trung gian”
+trong câu chữ AC04 không còn đúng sau Lần 6 (YC2, gói miễn phí): đề xuất 3 ở mục 6.
+
+### Mã đã sửa
+
+| File | Thay đổi |
+| --- | --- |
+| `apps/library/spikes/spk-03/free-sources.mjs` | `sources = ['openalex']`, `assertSource`; bỏ nhánh Semantic Scholar ở `normalize`, `runSource`; `normalize` giữ `locationDois`; thêm `bareDoi`, `knownItems`, `rateLimitSignals`, `summarize` trả thêm hai trường; chạy trực tiếp dừng trước khi gọi mạng nếu evidence Lần 1 đã có |
+| `apps/library/spikes/spk-03/remeasure.mjs` | Chỉ OpenAlex; bỏ key Semantic Scholar; thông báo lỗi `SPK03_SOURCES` lấy từ danh sách nguồn |
+| `apps/library/spikes/spk-03/free_sources.spec.ts` | 8 test: thêm DEC-60 (từ chối nguồn khác trước khi gọi mạng), known-item và header giới hạn; ba test cũ dùng Semantic Scholar đổi sang OpenAlex; EC01/EC02 thành EC01 |
+| `apps/library/spikes/spk-03/parsers.mjs`, `parsers.spec.ts` | Mapping biblatex mặc định, tùy chọn `classic`; ghi `evidence/parsers-<UTC>.json` mới mỗi lần (`wx`); 4 test, thêm test mapping |
+| `apps/library/spikes/spk-03/fixtures/.gitattributes` (mới) | `*.bib`, `*.ris` `-text diff`: checkout trên Windows giữ LF, khớp SHA-256 manifest |
+| `apps/library/spikes/spk-03/README.md` | Viết lại theo mã hiện tại (phạm vi DEC-60, cách đo, evidence, parser, SerpApi) |
+
+Không sửa `apps/library/src/`, `package.json`, lockfile, `docs/`, file luồng khác.
+`libs/ts/testing/src/fakes/source-adapter.fake.ts` còn `semantic_scholar` nhưng
+không thuộc hồ sơ: đề xuất 1 ở mục 6.
+
+### SerpApi
+
+Máy không có key SerpApi; Lần 7 không gọi SerpApi, không tạo tài khoản. Hồ sơ không
+cần thêm dữ liệu SerpApi: AC02 là so sánh qua tài liệu (đã có), P3 là đọc tài liệu về
+hồ sơ qua URL (đã có), thử thật 7/7 ở Lần 6 là YC2. Không dùng mẫu response trong
+tài liệu SerpApi làm fixture vì không có test hay AC nào cần.
+
+### Kiểm tra
+
+Kết quả lệnh ghi ở [self-qc.md](self-qc.md) Lần 7. Không còn điều chặn; trạng thái
+`Xong — chờ QC`.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
