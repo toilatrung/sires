@@ -38,3 +38,4 @@ export { statusTone, type StatusEntity, type StatusTone, type ExecutionLabelKind
 export { EmptyState, ErrorState, LoadingState, LongOperation, useErrorDescription } from './states/States';
 export { PromptCard, type InteractiveAgentPrompt, type PromptCardProps } from './prompt-card/PromptCard';
 export { NotFound } from './NotFound';
+export { ConfirmDialog, Dialog, type ConfirmDialogProps, type DialogProps } from './dialog/Dialog';

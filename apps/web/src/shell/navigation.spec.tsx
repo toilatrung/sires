@@ -148,3 +148,17 @@ describe('dữ liệu điều hướng (H1)', () => {
     expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1);
   });
 });
+
+describe('làm mới số sau một lệnh', () => {
+  it('refreshCounts đọc lại số Pending Actions và số chưa đọc', async () => {
+    const stub = shellStub();
+    const { services } = renderShellFrame({ path: '/dashboard', stub });
+    await waitForFrame();
+    await waitFor(() => expect(banner().getByRole('link', { name: 'Notifications, 3 chưa đọc' })).toBeTruthy());
+    stub.on('GET', '/api/v1/notifications', () => json({ items: [], nextCursor: null, unreadCount: 5 }));
+    stub.on('GET', '/api/v1/pending-actions', () => json({ items: [], nextCursor: null, openCount: 2 }));
+    await services.navigation.refreshCounts();
+    await waitFor(() => expect(banner().getByRole('link', { name: 'Notifications, 5 chưa đọc' })).toBeTruthy());
+    expect(banner().getByRole('link', { name: 'Pending Actions 2' })).toBeTruthy();
+  });
+});

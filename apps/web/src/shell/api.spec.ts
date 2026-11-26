@@ -144,3 +144,37 @@ describe('client API', () => {
     expect(typeof checks).toBe('function');
   });
 });
+
+describe('client API: phản hồi không phải JSON', () => {
+  const PREVIEW = '/api/v1/projects/p1/artifacts/a1/versions/v1/preview';
+
+  it('getBlob, getText đọc SVG, ảnh với Accept */*; lỗi problem+json thành ApiError; 401 vào luồng phiên hết hạn', async () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4"/></svg>';
+    let mode: 'ok' | 'gone' | 'expired' = 'ok';
+    const stub = new FetchStub().on('GET', PREVIEW, () =>
+      mode === 'ok' ? new Response(svg, { status: 200, headers: { 'content-type': 'image/svg+xml', etag: '"3"' } }) : mode === 'gone' ? problem(404, 'not_found') : problem(401, 'unauthenticated'),
+    );
+    const onUnauthenticated = vi.fn();
+    const api = new ApiClient({ fetch: stub.fetch, onUnauthenticated });
+    const path = { projectId: 'p1', artifactId: 'a1', versionId: 'v1' };
+
+    const blob = await api.getBlob('/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview', { path });
+    expect(blob.data).toBeInstanceOf(Blob);
+    expect(blob.data.type).toBe('image/svg+xml');
+    expect(await blob.data.text()).toBe(svg);
+    expect(blob.etag).toBe('"3"');
+    const text = await api.getText('/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview', { path });
+    expect(text.data).toBe(svg);
+    expect(stub.calls(PREVIEW).every((r) => r.headers.Accept === '*/*')).toBe(true);
+
+    mode = 'gone';
+    const error = await api.getBlob('/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview', { path }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('not_found');
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+
+    mode = 'expired';
+    await expect(api.getText('/projects/{projectId}/artifacts/{artifactId}/versions/{versionId}/preview', { path })).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthenticated).toHaveBeenCalledTimes(1);
+  });
+});
