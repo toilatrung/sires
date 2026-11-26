@@ -61,6 +61,13 @@ Không có.
 - **Kết quả:** 33/33 test; container build lại, luồng thật đạt với callback mới (`self-qc.md` Lần 2).
 - **Cho PID-00038:** `OIDC_REDIRECT_URI` cục bộ là `http://localhost:5173/api/v1/auth/callback` hoặc `http://localhost:3000/api/v1/auth/callback`.
 
+## Lần 3 — 27/11/2026
+
+- **Lý do:** QC hồ sơ #121 F1 (bổ sung sau QC #120): hợp đồng `POST /auth/logout` của #120 (PC-05 P3) gửi `post_logout_redirect_uri` = trang `/sign-in` của SIRes, chỉ kèm `client_id`.
+- **Đã làm:** `post_logout_redirect_uris` cục bộ thêm `http://localhost:5173/sign-in`, `http://localhost:3000/sign-in` (giữ trang gốc); mẫu staging `https://staging.example.invalid/sign-in`; test AC05 theo `/sign-in`; README.
+- **Kết quả:** 33/33 test (`self-qc.md` Lần 3).
+- **Cho PID-00038:** `OIDC_POST_LOGOUT_REDIRECT_URI` cục bộ là `http://localhost:5173/sign-in`.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

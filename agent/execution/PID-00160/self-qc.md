@@ -117,6 +117,22 @@ Sửa theo QC độc lập hồ sơ (PR #121, F1 MEDIUM, phiên điều phối c
 | `redirect_uris` mẫu staging | `https://staging.example.invalid/api/v1/auth/callback` (`config/clients.staging.example.json`) |
 | `post_logout_redirect_uris` | Đã kiểm, giữ `http://localhost:5173/`, `http://localhost:3000/`: sau đăng xuất trình duyệt về trang gốc của web, không phải route API; hợp đồng `/auth/logout` (POST, 204) không quy định URI này. README ghi căn cứ |
 
+## Lần 3 — 27/11/2026
+
+Sửa theo bổ sung của QC hồ sơ #121 (F1, sau QC #120): hợp đồng `POST /auth/logout` (PR #120, PC-05 P3) đặt `post_logout_redirect_uri` là trang `/sign-in` của SIRes và gateway chỉ gửi `client_id`. Lần 2 ghi “hợp đồng không quy định URI này” là theo `develop` lúc đó; nay sửa theo #120 (PC-05 P37).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm exec tsc -p tsconfig.json`, `pnpm exec eslint .` | Đạt |
+| `pnpm exec vitest run` | 2 file, 33/33; AC05 dùng `http://localhost:5173/sign-in`; ca `client_id` (EC10) kiểm thêm trang gốc `http://localhost:5173/` vẫn đăng ký |
+| Image | Không build lại (chỉ đổi file config, test đọc cùng file); `pnpm local:up --build` để container nhận file mới |
+
+| Mục | Đã xử lý |
+| --- | --- |
+| `post_logout_redirect_uris` cục bộ | Thêm `http://localhost:5173/sign-in`, `http://localhost:3000/sign-in`; giữ `http://localhost:5173/`, `http://localhost:3000/` |
+| Mẫu staging | `https://staging.example.invalid/sign-in` |
+| README | Bảng client, `OIDC_POST_LOGOUT_REDIRECT_URI` = `http://localhost:5173/sign-in`; căn cứ hợp đồng #120 |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

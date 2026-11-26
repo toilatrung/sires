@@ -17,7 +17,8 @@ import { Browser, freePort, parseForm, remember, secretsSeen, type Visit } from 
 const CLIENT_ID = 'sires-gateway-local';
 const CLIENT_SECRET = 'sires-local-gateway-secret';
 const CALLBACK = 'http://localhost:5173/api/v1/auth/callback';
-const POST_LOGOUT = 'http://localhost:5173/';
+// Gateway gửi post_logout_redirect_uri là trang /sign-in của SIRes (POST /auth/logout, PC-05 P3).
+const POST_LOGOUT = 'http://localhost:5173/sign-in';
 const SCOPE = 'openid profile email';
 const A = { sub: 'sires-mock-a', email: 'researcher-a@sires.test', name: 'Nguyễn Thị An', password: 'sires-local' };
 const B = { sub: 'sires-mock-b', email: 'researcher-b@sires.test', name: 'Trần Văn Bình', password: 'sires-local' };
@@ -315,7 +316,10 @@ describe('đăng xuất RP-initiated', () => {
     expect(form.kind === 'page' && form.body).toContain('name="password"');
   });
 
-  it('chỉ có client_id; POST cho kết quả như GET (EC10)', async () => {
+  it('chỉ có client_id như gateway gửi; POST cho kết quả như GET; trang gốc của web vẫn đăng ký (EC10)', async () => {
+    const root = await login(B);
+    const viaRoot = await endSession(root.browser, { client_id: CLIENT_ID, post_logout_redirect_uri: 'http://localhost:5173/', state: 's0' });
+    expect(viaRoot.kind === 'redirect' && viaRoot.url.href).toBe('http://localhost:5173/?state=s0');
     const first = await login(A);
     const viaClientId = await endSession(first.browser, { client_id: CLIENT_ID, post_logout_redirect_uri: POST_LOGOUT, state: 's2' });
     expect(viaClientId.kind === 'redirect' && viaClientId.url.href).toBe(`${POST_LOGOUT}?state=s2`);
