@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00036.">
+<title>S06 — Agent Models và Embedding model | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00036</p><h1>S06 — Agent Models và Embedding model</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H13, H14 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-SETTINGS-003-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (SettingsAgents), O7</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B6, B7, B8; H13, H14</td></tr>
+<tr><th scope="row">Edge case</th><td>EC24, EC37, EC38, EC39, EC40, EC41, EC42, EC43, EC44, EC45, EC46, EC47 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; S03 (fixture và chip kết nối)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>View <code>/settings/agents</code> theo <code>SettingsAgents</code>: câu dẫn kèm liên kết “Quản lý Provider Connections”; khối Mặc định (kết nối, model, câu “Agent chọn ‘Dùng mặc định’ sẽ theo cấu hình này”); bảng Agent, Connection, Model, Trạng thái, “Sửa” cho Orchestrator và tám Specialist Agent, Analysis Agent hai dòng A, B; dòng Embedding model. Dữ liệu từ <code>listAgents</code>, <code>listAgentModelAssignments</code>, <code>listProviderConnections</code>, <code>getEmbeddingSettings</code>.</li>
+<li>Chưa có kết nối Valid → hướng dẫn kèm liên kết tới Provider Connections, không mở panel sửa (EC37). Chưa có Mặc định và agent không gán riêng → “Chưa cấu hình” kiểu cảnh báo (EC44).</li>
+<li>Panel sửa (“Đang sửa”): bước 1 chọn kết nối, chỉ kết nối <code>Valid</code> chọn được, kết nối khác hiện kèm chip và vô hiệu (EC38), liên kết “Thêm connection mới”; bước 2 chọn model từ <code>availableModels</code>, bỏ model chỉ có năng lực <code>embedding</code> (EC39); không có danh sách → ô nhập tay ghi “chưa xác minh” (EC24, EC40); dòng “Danh sách lấy từ connection lúc” <code>HH:mm</code> theo <code>lastTestedAt</code>, “Làm mới” gọi <code>testProviderConnection</code> (Invalid → lỗi theo H6, EC47). “Lưu cho agent này” → <code>setAgentModelAssignment</code> (Analysis kèm <code>instance</code>); “Dùng mặc định” → <code>clearAgentModelAssignment</code> (EC43); <code>422 model_not_available</code> → lỗi ở ô model (EC40).</li>
+<li><code>capabilityWarnings</code> hiện ở cột Trạng thái kiểu cảnh báo (EC41); <code>sameModelWarning</code> trên dòng Analysis → banner của thiết kế (EC42); cả hai không chặn lưu.</li>
+<li>Dòng Embedding: chỉ kết nối Valid <code>openai</code>, <code>google</code> và model có năng lực <code>embedding</code> (UX-SETTINGS-003-AC01, EC39); <code>404</code> → “Chưa chọn”, chọn lần đầu gọi <code>setEmbeddingSettings</code> ngay (EC45). Đổi model đang có → dialog <code>SettingsAgents--state-confirm-embedding</code>: model cũ → mới; số Reference phải index lại lấy từ trường của hợp đồng (Phải sửa ở nguồn mục 3), tới khi có thì câu “Mọi Reference đã index phải index lại toàn bộ”; usage trên kết nối; truy xuất evidence tạm không khả dụng; “Giữ model hiện tại” đóng, “Đổi và index lại” gọi <code>setEmbeddingSettings</code> (EC46).</li>
+<li>Không có tham số nâng cao của model (N9).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/settings/agents.spec.tsx › đổi embedding xác nhận</code> (UX-SETTINGS-003-AC01, EC46); <code>› chưa có kết nối Valid</code> (EC37); <code>› chỉ kết nối Valid</code> (EC38); <code>› lọc model</code> (EC39); <code>› nhập tay</code> (EC24, EC40); <code>› cảnh báo năng lực</code> (EC41); <code>› cùng model A B</code> (EC42); <code>› dùng mặc định</code> (EC43); <code>› chưa cấu hình</code> (EC44); <code>› embedding lần đầu</code> (EC45); <code>› làm mới</code> (EC47)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/settings/</code></li>
+<li>Thao tác tay trên mock: sửa Evidence Retrieval Agent, gán Analysis A, B cùng model, đổi embedding và hủy, đổi rồi xác nhận</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-SETTINGS-003-AC01 đạt; mỗi agent và instance Analysis gán được kết nối Valid và model; dialog đổi embedding hiện trước khi lưu</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00036</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00036 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

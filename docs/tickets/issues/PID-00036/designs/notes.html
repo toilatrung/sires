@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00036</p><h1>PID-00036 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ ghi ở mục “Chốt khi làm rõ 27/11/2026” (H1–H20 ở <a href="../index.html#s-5">trang ticket</a>, chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
 <h2 id="giao-dien">Giao diện</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
 <tr><td><a href="../../../../ui-design/pages/SignIn--state-oidc-error.html">SignIn--state-oidc-error</a></td><td>state-oidc-error</td></tr>
@@ -35,11 +35,20 @@
 </tbody></table></div>
 <ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
 <li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<li>Kiểm trên preview <code>web</code> ở 1440×900 và 1024×768; SignIn kiểm thêm 390×844 (H17). Settings không có bố cục điện thoại riêng: dưới 768 px menu xếp lên trên, không cuộn ngang.</li></ul>
+<h3 id="chot-27-11">Chốt khi làm rõ 27/11/2026</h3>
+<p>Trạng thái chưa vẽ trong <code>docs/ui-design</code> có khung dây ở <a href="Settings-states.html">Settings-states.html</a>. Dựng theo token, component và mẫu của design.md §2–§4; đây là sketch để thống nhất, không phải thiết kế chốt (Phải sửa ở nguồn mục 5–7 ở trang ticket).</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn</th><th scope="col">Điều đã chốt</th><th scope="col">Nguồn</th></tr></thead><tbody>
+<tr><td>SignIn</td><td>Khung lỗi của <code>SignIn--state-oidc-error</code> dùng cho cả ba mã <code>oidc_unavailable</code>, <code>login_cancelled</code>, <code>login_failed</code>, mỗi mã một tiêu đề và câu; dòng “Mã lỗi:” ghi mã đã nhận. Có lỗi thì không hiện banner phiên hết hạn. Nút sau khi bấm vô hiệu, ghi đang chuyển. 390 px: một cột, nút chính 44–48 px.</td><td>H2, H3, H4, H17</td></tr>
+<tr><td>SettingsProviders</td><td>Bảng thêm cột hành động cuối (Sửa, Kiểm tra lại, Xóa). Form: khối thông báo NFR-PRIV-001 kèm ô “Tôi đã đọc” khi tài khoản chưa có kết nối; dòng kết quả kiểm tra trong form (Valid kèm số model; Invalid kèm mã, câu, một nút hành động); “Lưu” bật khi Valid, câu dưới nút đổi thành “Lưu được sau khi kiểm tra thành công; kết nối đã được lưu từ lần kiểm tra đầu.” Trống: “Thêm API key của bạn để agent hoạt động”. Dialog xóa 480 px có nhóm chọn kết nối thay thế.</td><td>H5–H9; UX-SETTINGS-002; design.md §4</td></tr>
+<tr><td>SettingsProfile</td><td>Không có nút “Đổi ảnh đại diện”; ảnh chỉ hiển thị, không có ảnh thì chữ viết tắt. Một nút “Lưu thay đổi” cho cả hồ sơ và công tắc context.</td><td>H11</td></tr>
+<tr><td>SettingsAgents</td><td>Kết nối Untested, Invalid trong panel sửa hiện kèm chip, vô hiệu. Model nhập tay ghi “chưa xác minh”. Dialog đổi embedding: câu số Reference dùng số từ hợp đồng khi có, tới lúc đó “Mọi Reference đã index phải index lại toàn bộ”. Chưa có kết nối Valid: hướng dẫn kèm liên kết Provider Connections.</td><td>H13, H14</td></tr>
+<tr><td>SettingsPreferences</td><td>Ba ngưỡng theo hợp đồng (không có Conflicting). Cột “Mặc định” và nhãn “đã chỉnh” từng dòng khi hợp đồng có giá trị mặc định; tới lúc đó một nhãn “đã chỉnh” cho cả nhóm. “Khôi phục mặc định” mở dialog xác nhận, nút hủy “Giữ ngưỡng hiện tại”. Debug bật: “Bật · lưu tới” hôm nay cộng 30 ngày.</td><td>H15, H16</td></tr>
+</tbody></table></div>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Fixture mock lấy dữ liệu mẫu của màn tham chiếu; kết nối proxy mẫu dùng tên miền ví dụ, không dùng key hay host thật (D-KEY, H5).</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 16 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<p>Gọi 19 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>; mock của khu vực khai 16 operation (H10).</p>
 <h2 id="agent-va-model">Agent và model</h2>
 <p>Không có.</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00036</a><a href="../../index.html">Danh sách ticket</a></nav>
