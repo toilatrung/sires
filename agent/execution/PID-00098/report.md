@@ -116,6 +116,18 @@ QC độc lập Lần 1 (phiên web-shell, head `dc4e48b`, [qc-report.md](qc-rep
 
 Self-QC: [self-qc.md](self-qc.md) mục “Lần 3”.
 
+
+## Lần 4 — 27/11/2026
+
+Phiên điều phối báo lỗi khi ghép mọi khu vực ở `preview/ui-ph02` (`0418d5a`): “Mock operation listProjectReferences is claimed by two areas: library and research”. Lỗi này làm đỏ `research/evidence.spec.tsx` (EC10 của PID-00013) và `manuscript/__mocks__/manuscript-mock.spec.ts` (EC56), và làm `dev:mock` ném lỗi khi khởi động.
+
+Theo H31 (PR #156) và PID-00114 H12, `listProjectReferences` và `removeReferenceFromProject` có mock chủ ở research. Đã làm:
+- Bỏ hai operation khỏi `__mocks__/mocks.config.json` (còn 21 operation) và khỏi override của khu vực. Library giữ `selectReferencesForProject` (“Thêm vào project”).
+- Test của library trả lời hai operation đó bằng override cục bộ trong `test-utils.tsx`, đọc các lựa chọn mà mock library ghi lại; không đăng ký vào `Feature.mocks`.
+- Màn của library không gọi hai operation này; trên `dev:mock`, mock của research trả lời chúng.
+
+Kiểm trên cây gộp `origin/preview/ui-ph02` với nhánh này: xem self-qc.md Lần 4.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

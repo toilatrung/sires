@@ -67,6 +67,10 @@ const otherAreas: Overrides = {
     libraryStore.resumeAuthorSearch(workflowId, emit);
     return { status: 200, body: { ...prompt, status: 'Answered' } as Prompt };
   },
+  // Project references: the research mock owns them in dev (H31, PID-00114 H12); library tests read the selections the
+  // library mock records for “Thêm vào project”.
+  listProjectReferences: ({ params }) => ({ status: 200, body: { items: structuredClone(libraryStore.selections(params.projectId)), nextCursor: null } }),
+  removeReferenceFromProject: ({ params }) => (libraryStore.removeSelection(params.projectId, params.referenceId) ? { status: 204 } : { status: 409 }),
 };
 
 const workflowsAsked = new Set<string>();
