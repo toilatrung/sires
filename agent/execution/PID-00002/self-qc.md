@@ -3,7 +3,7 @@
 **Kết luận:** Đạt (Lần 5, 25/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G8, QC-G9 sửa theo PC-05 P25, P36 ở nhánh `platform/consumer-stop-start`
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 25/11/2026 (Lần 5: `stop(; bổ sung test sau QC sires-w3)` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36)
+- **Cập nhật:** 25/11/2026 (Lần 5: `stop()` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36; bổ sung test sau QC sires-w3)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
