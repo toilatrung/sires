@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — G1: 11 test của shell coi `/dashboard` và khung Trợ lý là màn rỗng (file của luồng web/shell); mã của khu vực xong
 
 - **Ticket:** [PID-00060](../../../docs/tickets/issues/PID-00060/index.html) · **Luồng:** `web/global` · **Giai đoạn:** PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-03
-- **Nhánh:** `web/global-pid-00060` (xếp chồng trên `web/global-pid-00037`, PR #141; đã commit) · **PR:** chưa mở
+- **Nhánh:** `web/global-pid-00060` (xếp chồng trên `web/global-pid-00037`, PR #141; đã commit) · **PR:** [#142](https://github.com/toilatrung/sires/pull/142)
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
