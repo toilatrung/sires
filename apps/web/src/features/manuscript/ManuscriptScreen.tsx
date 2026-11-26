@@ -13,6 +13,7 @@ import { Workspace } from './layout/Workspace';
 import { MobileProposals } from './mobile/MobileProposals';
 import { ManuscriptProvider, useManuscript } from './state';
 import { useLayout } from './ui';
+import './manuscript.css';
 
 export function ManuscriptScreen() {
   const params = useParams();

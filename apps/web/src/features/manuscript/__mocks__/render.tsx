@@ -15,6 +15,8 @@ import type { Overrides } from '../../../shell/mock/types';
 import { viewOf } from '../editor/Editor';
 import { demoProjectReferences, RAG, WRITING_TASK } from './fixtures';
 import { finishBuilds, setManuscriptEventSink, testStore } from './store';
+// The route loads the screen lazily (own chunk); tests load it up front so the first render does not wait on it.
+import '../ManuscriptScreen';
 
 // jsdom has no layout: CodeMirror measures ranges when it scrolls to a line (go to line, outline, banners).
 if (typeof Range !== 'undefined') {

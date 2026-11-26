@@ -5,6 +5,8 @@
 // Manuscript area (tickets 1.5, PID-00115): LaTeX editor, Change Proposal diff, revision history, build log, PDF
 // preview and export, on the mock of PID-00013 in PH-02 (D-UI). Each slice keeps its strings in its own file.
 
+import { lazy, Suspense } from 'react';
+import { LoadingState } from '../../shell';
 import type { Feature } from '../../shell/feature';
 import buildEn from './i18n/build.en.json';
 import buildVi from './i18n/build.vi.json';
@@ -18,12 +20,22 @@ import mobileVi from './i18n/mobile.vi.json';
 import proposalsEn from './i18n/proposals.en.json';
 import proposalsVi from './i18n/proposals.vi.json';
 import vi from './i18n/vi.json';
-import { ManuscriptScreen } from './ManuscriptScreen';
-import './manuscript.css';
+
+// The screen and CodeMirror load only when Manuscript opens (own chunk, not in the app's first bundle).
+const ManuscriptScreen = lazy(() => import('./ManuscriptScreen').then((module) => ({ default: module.ManuscriptScreen })));
 
 export const feature: Feature = {
   id: 'manuscript',
-  routes: [{ path: 'projects/:projectId/manuscript/*', element: <ManuscriptScreen /> }],
+  routes: [
+    {
+      path: 'projects/:projectId/manuscript/*',
+      element: (
+        <Suspense fallback={<LoadingState rows={0} />}>
+          <ManuscriptScreen />
+        </Suspense>
+      ),
+    },
+  ],
   messages: {
     vi: { ...vi, ...filesVi, ...proposalsVi, ...historyVi, ...buildVi, ...mobileVi },
     en: { ...en, ...filesEn, ...proposalsEn, ...historyEn, ...buildEn, ...mobileEn },
