@@ -2,14 +2,14 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
-// Mocks the global area owns (PID-00037 H9): Research Project lifecycle and the dashboard, with state, 409 and 412
-// as the contract describes them. Other areas' operations (listProviderConnections, listWorkflows) are not
+// Mocks the global area owns (PID-00037 H9, PID-00060 H8): Research Project lifecycle, the dashboard, pending
+// actions, notifications and prompts, with state, 409 and 412 as the contract describes them. Other areas' operations (listProviderConnections, listWorkflows) are not
 // claimed here; tests override them locally.
 
 import { defineMocks } from '../../../shell/mock';
 import type { Schemas } from '../../../shell/mock/types';
 import { operations } from './generated';
-import { activeWorkflows, dashboard, expirePendingActions, globalStore, isDeleted, purgeAfter } from './store';
+import { activeWorkflows, dashboard, emitEvent, expirePendingActions, globalStore, isDeleted, purgeAfter, resolvePendingFor } from './store';
 
 type Problem = Schemas['Problem'];
 type Project = Schemas['ResearchProject'];
@@ -162,5 +162,81 @@ export default defineMocks({
     },
 
     getDashboard: ({ fixtures }) => ({ status: 200, body: dashboard(globalStore(fixtures)) }),
+
+    // ---- PID-00060: Pending Actions, Notifications, prompts ----
+    listPendingActions: ({ query, fixtures }) => {
+      const store = globalStore(fixtures);
+      const status = query.status ?? 'Open';
+      const inProject = store.pendingActions.filter((row) => !query.projectId || row.projectId === query.projectId);
+      const rows = inProject
+        .filter((row) => row.status === status && (!query.kind || row.kind === query.kind))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      return { status: 200, body: { ...page(rows, query.cursor, query.limit), openCount: inProject.filter((row) => row.status === 'Open').length } };
+    },
+
+    acknowledgePendingAction: ({ params, fixtures }) => {
+      const store = globalStore(fixtures);
+      const row = store.pendingActions.find((action) => action.id === params.pendingActionId);
+      if (!row || row.status !== 'Expired') return { status: 409, body: problem(409, 'invalid_transition', undefined, row ? { currentState: row.status } : {}) };
+      row.status = 'Resolved';
+      row.resolvedAt = new Date().toISOString();
+      row.resolvedBy = { type: 'researcher', accountId: row.accountId };
+      emitEvent({ type: 'pending_action.changed', objectType: 'pending_action', objectId: row.id, fromState: 'Expired', toState: 'Resolved', ...(row.projectId ? { projectId: row.projectId } : {}) });
+      return { status: 200, body: row };
+    },
+
+    listNotifications: ({ query, fixtures }) => {
+      const store = globalStore(fixtures);
+      const inProject = store.notifications.filter((row) => !query.projectId || row.projectId === query.projectId);
+      const rows = inProject.filter((row) => !query.status || row.status === query.status).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return { status: 200, body: { ...page(rows, query.cursor, query.limit), unreadCount: inProject.filter((row) => row.status === 'Unread').length } };
+    },
+
+    markNotificationsRead: ({ body, fixtures }) => {
+      const store = globalStore(fixtures);
+      const ids = new Set(body?.ids ?? []);
+      for (const row of store.notifications) {
+        const inScope = !body?.projectId || row.projectId === body.projectId;
+        if (row.status === 'Unread' && inScope && (body?.all || ids.has(row.id))) row.status = 'Read';
+      }
+      return { status: 204 };
+    },
+
+    listPrompts: ({ query, fixtures }) => {
+      const store = globalStore(fixtures);
+      const rows = store.prompts
+        .filter((row) => (!query.projectId || row.projectId === query.projectId) && (!query.status || row.status === query.status) && (!query.workflowId || row.workflowId === query.workflowId))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      return { status: 200, body: page(rows, query.cursor, query.limit) };
+    },
+
+    getPrompt: ({ params, fixtures }) => {
+      const row = globalStore(fixtures).prompts.find((prompt) => prompt.id === params.promptId);
+      return row ? { status: 200, body: row } : { status: 404, body: problem(404, 'not_found') };
+    },
+
+    answerPrompt: ({ params, body, request, fixtures }) => {
+      const store = globalStore(fixtures);
+      const prompt = store.prompts.find((row) => row.id === params.promptId);
+      if (!prompt) return { status: 404, body: problem(404, 'not_found') };
+      const key = request.headers.get('Idempotency-Key') ?? '';
+      if (prompt.status === 'Answered' && key && store.changed.get(key) === prompt.id) return { status: 200, body: prompt };
+      if (prompt.status !== 'Open') return { status: 409, body: problem(409, 'invalid_transition', undefined, { currentState: prompt.status }) };
+      const missing =
+        prompt.type === 'choice' ? !(body?.choiceIds?.length && body.choiceIds.every((choice) => prompt.choices?.some((c) => c.id === choice)))
+        : prompt.type === 'information_request' ? !body?.text?.trim()
+        : !body?.decision;
+      if (missing) return { status: 400, body: problem(400, 'validation_failed') };
+      const by = { type: 'researcher' as const, accountId: prompt.accountId };
+      prompt.status = 'Answered';
+      prompt.response = { ...body, respondedBy: by, respondedAt: new Date().toISOString() };
+      prompt.rowVersion += 1;
+      if (key) store.changed.set(key, prompt.id);
+      emitEvent({ type: 'prompt.status_changed', objectType: 'interactive_agent_prompt', objectId: prompt.id, fromState: 'Open', toState: 'Answered', ...(prompt.projectId ? { projectId: prompt.projectId } : {}) });
+      for (const action of resolvePendingFor(store, prompt.id, by)) {
+        emitEvent({ type: 'pending_action.changed', objectType: 'pending_action', objectId: action.id, fromState: 'Open', toState: 'Resolved', ...(action.projectId ? { projectId: action.projectId } : {}) });
+      }
+      return { status: 200, body: prompt };
+    },
   },
 });
