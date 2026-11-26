@@ -1,6 +1,6 @@
 # PID-00021 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được theo quyết định PO với kết luận một phần — 0 CRITICAL; G1, G2 (HIGH, EC01: chưa có key chính thức) còn mở, PO chấp nhận merge trong khi EC01 còn áp dụng (“Sửa G3 rồi merge”, 21/11/2026). G3 đã sửa ở `e326279`. Còn G4 (MEDIUM, PO quyết mã lỗi cho HTTP 400) và 6 LOW (G5–G10), không chặn merge. Ticket giữ “Bị chặn — EC01” tới Lần 3 khi có key (Lần 2, 21/11/2026).
+**Kết luận mới nhất:** Merge được PR #118 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW mới (Lần 3, 27/11/2026). G9 đóng theo D-KEY (PO 26/11/2026: key cổng trung gian PO tự cấp được dùng để test, phát triển): key của một kết nối chỉ gửi tới base URL của chính nó, endpoint chính thức chỉ nhận key chính thức riêng. Lệnh `set-provider-keys.ps1` ghi file key ngoài Git; SPK-01 đọc file. QC sửa một lỗi nhỏ (chạy lại script làm mất dòng `SPK01_MODEL_*`) ở `4e334f2`. Không lộ key hay host trong lịch sử nhánh, mô tả, comment. G1, G2 (HIGH, EC01), G4 (MEDIUM) của Lần 1 vẫn như quyết định PO 21/11/2026.
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` và `evidence/` trong thư mục này
@@ -143,6 +143,63 @@ Quyết định PO áp dụng: trả lời câu hỏi “PR #55 (PID-00021) xử
 | G5–G10 | Còn mở (LOW) | Không xử lý ở lần này |
 
 Lệnh đã chạy: `git diff --check` sạch. Lần chạy lại khi có key đổi tên thành Lần 3 trong `report.md`; mục “Đề xuất cho PO” của Lần 1 nhắc “Lần 2 làm trên nhánh mới khi có key” nay hiểu là Lần 3.
+
+## Lần 3 — 27/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC do PO `toilatrung` giao, không mang kết luận của phiên làm PR. Mã nguồn: PR #118, nhánh `dev-tools/provider-keys`. QC đánh giá `29e9402` (`29e94029e814e2c5df365bb26a4312eb1d320660`, 2 commit, gốc `origin/main` `c9e745b`), rồi thêm `4e334f2` (`4e334f245317d584ef0b1739297f009fe081d7b2`). Đầu nhánh đã QC: `4e334f2`.
+
+Quyết định áp dụng: D-KEY (PO, 26/11/2026, nguyên văn ở `side-session-notes/…/provider-keys-handover.md`): “vấn đề API Key của provider điều chỉnh cho phép test và sử dụng key proxy vì đây là key mà của chúng tôi tự cung cấp”; “tôi chỉ đưa proxy key thôi … cứ dùng như bình thường đi, đừng phân biệt”. G9 Lần 1: SCOPE-13, kiến trúc 8.2 (key chỉ dùng cho kết nối của nó).
+
+Đã đối chiếu: G9 Lần 1; toàn bộ diff (10 file: `scripts/development/set-provider-keys.ps1` mới, `README.md` của scripts/development, `apps/agent-core/spikes/spk-01/` `common.py`, `base_url.py`, `errors.py`, `scan_secrets.py`, `README.md`, `.gitignore`, `scripts/docs/add-license.mjs`, `AGENT.md`); `git log -p` của mọi commit trên nhánh.
+
+### Kiểm lại việc còn lại
+
+| G | Kết quả Lần 3 | Bằng chứng |
+| --- | --- | --- |
+| G9 LOW: `base_url.py` gửi key của cổng tới endpoint chính thức | Đã xử lý | `common.py` `connection()`: key và base URL lấy từ cùng một nguồn (biến môi trường, không có thì file), base URL trùng endpoint chính thức coi là chính thức. `official_key()`: chỉ trả key kết nối khi kết nối là endpoint chính thức, còn không thì chỉ `*_API_KEY_OFFICIAL`. `base_url.py compare`: có base URL riêng thì probe chính thức chỉ chạy với key chính thức, thiếu thì ghi “bỏ qua”. `errors.py`: `timeout_client` gửi tới endpoint của kết nối, `network_refused`, `network_dns` dùng key giả. QC chạy 12 ca với file key giả (bảng Lệnh): đạt |
+| G8 LOW: request id, tên nhóm trong evidence | Không đổi | PR không sinh lại evidence; `scan_secrets.py` thêm quét host của cổng và key chính thức |
+| G1, G2, G4–G7, G10 | Không đổi | Ngoài phạm vi PR |
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G11 | `README.md` của spike (“`SPK01_MODEL_*` … biến môi trường hoặc một dòng trong file key”); handover (“thêm `SPK01_MODEL_OPENAI` vào file”) | partial | LOW | `set-provider-keys.ps1:237-241` (ở `29e9402`) ghi lại file chỉ với tên key, base URL, key chính thức: chạy lại script làm mất mọi dòng khác, kể cả `SPK01_MODEL_*`. QC tái hiện bằng `Read-Host` giả trên file thử: dòng mất | **Đã sửa ở `4e334f2`** (QC): giữ dòng khác ở mục “Dòng khác”, bỏ tên cũ `SPK01_BASE_URL_*`, `GOOGLE_API_KEY` (để key không đi tới base URL cũ còn sót); `-Check` liệt kê tên dòng khác, không in giá trị; README ghi điều này, sửa “script rồi ghi file”. Chạy lại: dòng còn |
+| G12 | Quy tắc 1.4.1 (một PR một luồng); CODEOWNERS | quy trình | LOW | `check-tracks.mjs --base origin/main`: `PR touches 2 tracks (agent-core, infra)` — `scripts/development/` (luồng infra, `@congminh1705`) và `apps/agent-core/spikes/` | Không chặn: PR của PO, theo D-KEY; handover đã nêu. Khi merge: PO bypass hoặc `@congminh1705` duyệt `scripts/development/` |
+| G13 | PC-05 P37 (PR sửa theo QC thêm “Lần N” vào `self-qc.md` của PID liên quan) | partial | LOW | PR sửa G9 của PID-00021 nhưng không chạm `agent/execution/PID-00021/` (`report.md`, `self-qc.md`); kết quả thử ở handover, không ở hồ sơ PID | Không chặn. Phiên làm PR (hoặc PO) thêm mục Lần 3 vào `self-qc.md`, `report.md` của PID-00021, hoặc PO nhận handover và qc-report này làm bản ghi |
+
+Không có CRITICAL, HIGH, MEDIUM.
+
+Ghi nhận, không tính G:
+
+1. **Nguồn của key và base URL.** Nếu biến môi trường có key mà không có base URL (ví dụ sau này xóa `SPK01_BASE_URL_*` cấp User nhưng giữ `*_API_KEY`), `connection()` coi là endpoint chính thức và gửi key đó tới endpoint chính thức, dù file có base URL cổng. Đây là đúng thiết kế “một nguồn” và lựa chọn `[y]`, `[x]` của script giữ hai biến đi cùng nhau. Hiện máy PO có đủ key và `SPK01_BASE_URL_*` cấp User (script `-Check` báo), nên không xảy ra.
+2. **File key.** `.sires/` có `.gitignore` riêng (`*`), `.gitignore` gốc thêm `.sires/`, `provider-keys.env`; `add-license` bỏ qua `.sires`. Giá trị ghi trong nháy đơn, key và URL bị từ chối nếu có khoảng trắng, nháy, `\`, `$`, nên `set -a; . file` an toàn. ACL: `icacls /inheritance:r /grant:r <SID>:F`.
+3. Mọi câu trả lời gõ ẩn (`Read-Host -AsSecureString`); script chỉ in độ dài, loại tiền tố và URL đã che host. QC chạy script thật với `Read-Host` giả: đầu ra không có giá trị key nào.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| Quét `git log -p origin/main..origin/dev-tools/provider-keys`, toàn bộ lịch sử nhánh, thông điệp commit, mô tả, comment PR, tìm key và host của cổng (giá trị đọc từ `.sires/provider-keys.env` của máy, chỉ in số lần khớp; bộ quét tự kiểm trên chính file key: khớp 3/3) | 0 key, 0 host, ở cả `29e9402` và `4e334f2` |
+| Chạy `set-provider-keys.ps1 -Path <thư mục tạm>` với `Read-Host` giả, file thử có `SPK01_MODEL_OPENAI`, `SPK01_BASE_URL_GOOGLE`, `GOOGLE_API_KEY` (key giả `sk-test-…`), trả lời Enter ở câu biến cấp User | Ở `29e9402`: `SPK01_MODEL_OPENAI` mất. Ở `4e334f2`: còn; hai tên cũ bị bỏ; biến cấp User không đổi; đầu ra không chứa key |
+| `set-provider-keys.ps1 -Check -Path <file thử>` | Liệt kê “Dòng khác: SPK01_MODEL_OPENAI”, không in giá trị |
+| `[Parser]::ParseFile` của PowerShell | 0 lỗi; file giữ BOM UTF-8 (cần cho PowerShell 5.1) |
+| 12 ca kiểm `common.py` trong container `ghcr.io/astral-sh/uv:0.13.7-python3.12-trixie-slim` (`python -I`, file key giả qua `SIRES_PROVIDER_KEYS_FILE`) | 12/12 đạt: key và base URL cùng từ file; key cổng không thành `official_key`; không base URL thì key là key chính thức; `model_for` đọc file; `redact` che host (không phân biệt hoa thường) và key; `*_OFFICIAL` từ file; tên cũ `SPK01_BASE_URL_*` vẫn đọc; base URL bằng endpoint chính thức → chính thức; key ở môi trường không ghép base URL của file; host trong file vẫn được che; thiếu file → không key |
+| `node scripts/docs/add-license.mjs --check` | 0 thiếu |
+| `node scripts/development/check-tracks.mjs --base origin/main` | Cảnh báo 2 luồng (G12) |
+| `gh api repos/toilatrung/sires/pulls/118/commits` | 3/3 `verified: true`; không có dòng ghi công AI trong commit, mô tả |
+| `gh pr checks 118` (run 45868638387 trên `4e334f2`) | 25/25 đạt, gồm `python` (ruff chạy mới trên `apps/agent-core`, gồm `spikes/`), `secrets`, `tracks`, `build` |
+| Gọi thật qua cổng | Không chạy (không cần cho phần đổi mã; handover 27/11/2026 đã ghi kết quả gọi qua cổng) |
+
+### Lệch với lời khai
+
+Handover nói `-Check` “báo dạng key … không in giá trị” và mọi câu trả lời gõ ẩn: QC xác nhận. Handover không nêu việc ghi lại file làm mất dòng khác (G11, đã sửa).
+
+### Việc còn lại
+
+1. Phiên điều phối merge #118 (PO bypass, hoặc `@congminh1705` duyệt `scripts/development/`).
+2. Ghi D-KEY và cách xử lý G9 vào PC-05 hoặc `docs/docs_context.md` (PO, `docs/`), như handover đã nêu.
+3. G13: tùy PO.
 
 ---
 
