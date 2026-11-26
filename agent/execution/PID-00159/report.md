@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00159](../../../docs/tickets/issues/PID-00159/index.html) · **Luồng:** `infra` · **Giai đoạn:** PH-01
 - **Người làm:** phiên do PO `toilatrung` giao (assignee `toilatrung`)
-- **Nhánh:** `infra/pid-00159-local-roles` (từ `origin/main` `c9e745b`) · **PR:** mở vào `main` (số PR ở phần mô tả nhánh trên GitHub)
+- **Nhánh:** `infra/pid-00159-local-roles` (từ `origin/main` `c9e745b`) · **PR:** [#125](https://github.com/toilatrung/sires/pull/125) vào `main`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
