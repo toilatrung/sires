@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00059](../../../docs/tickets/issues/PID-00059/index.html) · **Luồng:** `web/monitoring` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/monitoring-pid-00059` (tạo từ `preview/ui-ph02` 1df54a9; xếp chồng trên #138, #131, #148 qua `preview/ui-ph02`; đã merge `web/monitoring-pid-00083` 5c1a766) · **PR:** mở vào `develop`
+- **Nhánh:** `web/monitoring-pid-00059` (tạo từ `preview/ui-ph02` 1df54a9; xếp chồng trên #138, #131, #148 qua `preview/ui-ph02`; đã merge `web/monitoring-pid-00083` 5c1a766) · **PR:** #155 vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** đọc từ nhánh `docs/pid-00058-00059-clarify` (PR #127); nhánh sửa nguồn `docs/pid-00058-00059-sources` sẽ merge vào khi PR mở (theo phiên điều phối)
