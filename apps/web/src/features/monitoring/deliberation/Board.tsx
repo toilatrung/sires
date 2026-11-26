@@ -11,7 +11,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatTime } from '../../../shell';
-import { partyKey, partyName, type Detail, type Entry, type Party, type Schemas } from './model';
+import { hrefs, partyKey, partyName, type Detail, type Entry, type Party, type Schemas } from './model';
 
 type Position = Schemas['PositionContent'];
 type Critique = Schemas['CritiqueContent'];
@@ -34,7 +34,10 @@ const initial = (party: Party) => (party.agent === 'orchestrator' ? 'O' : (party
 export function Board({ projectId, detail }: { projectId: string; detail: Detail }) {
   const { t } = useTranslation('monitoring');
   const rounds = detail.rounds.filter((r) => r.kind === 'independent' || r.kind === 'cross_critique' || r.kind === 'narrow');
-  const visible = detail.entries.filter((e) => e.type !== 'problem_brief' && e.type !== 'synthesis');
+  // Only entries of closed rounds count, also for back links, replacements and retractions: an entry of an open round
+  // in the data (the contract leaves them in pendingEntries) never shows, not even as a count (DEC-47, OQ-101).
+  const closedRounds = new Set(detail.rounds.filter((r) => r.closed).map((r) => r.round));
+  const visible = detail.entries.filter((e) => e.type !== 'problem_brief' && e.type !== 'synthesis' && e.round != null && closedRounds.has(e.round));
   const byId = new Map(detail.entries.map((e) => [e.id, e]));
   const supersededBy = new Map(visible.filter((e) => e.supersedesEntryId).map((e) => [e.supersedesEntryId!, e]));
   const retractions = new Map(visible.filter((e) => e.type === 'retraction').map((e) => [(e.content as Retraction).targetEntryId, e]));
@@ -52,18 +55,28 @@ export function Board({ projectId, detail }: { projectId: string; detail: Detail
     const key = partyKey(participant);
     if (!round.closed) {
       const pending = (detail.pendingEntries ?? []).some((p) => p.round === round.round && partyKey(p.author) === key);
-      return pending ? <p className="dl-pending">{t('deliberation.pending')}</p> : null;
+      return pending ? (
+        <p className="dl-pending">
+          <span data-running="">{t('deliberation.pending')}</span>
+        </p>
+      ) : null;
     }
     const own = visible.filter((e) => e.round === round.round && partyKey(e.author) === key && e.type !== 'retraction');
     if (own.length === 0) {
+      // The party's Agent Run failed: the error style of the reference screen, with the run (EC13).
+      if (participant.status === 'error') {
+        const runId = participant.currentAgentRunId ?? undefined;
+        return (
+          <div className="dl-none" data-failed="" role="note">
+            <strong>{t('deliberation.noPosition')}</strong>
+            {runId && <span>{t('deliberation.runFailed', { id: runId.slice(0, 8) })}</span>}
+            {runId && <Link to={hrefs.agentRun(projectId, runId)}>{t('deliberation.viewRun', { id: runId.slice(0, 8) })}</Link>}
+          </div>
+        );
+      }
       return (
         <div className="dl-none">
           <p>{t('deliberation.noPosition')}</p>
-          {participant.status === 'error' && participant.currentAgentRunId && (
-            <Link to={`/projects/${encodeURIComponent(projectId)}/activity/runs/${encodeURIComponent(participant.currentAgentRunId)}`}>
-              {t('deliberation.viewRun', { id: participant.currentAgentRunId.slice(0, 8) })}
-            </Link>
-          )}
         </div>
       );
     }
@@ -84,7 +97,12 @@ export function Board({ projectId, detail }: { projectId: string; detail: Detail
               <span className="dl-party__model">
                 {p.providerConnectionName ?? p.provider} · <span className="sires-id">{p.model}</span>
               </span>
-              <span className="dl-party__status" data-status={p.status}>
+              <span
+                className="sires-chip dl-party__status"
+                data-tone={p.status === 'running' ? 'running' : p.status === 'error' ? 'error' : 'neutral'}
+                data-running={p.status === 'running' ? '' : undefined}
+                data-status={p.status}
+              >
                 {t(`deliberation.party.${p.status}`)}
               </span>
             </div>
@@ -106,7 +124,7 @@ export function Board({ projectId, detail }: { projectId: string; detail: Detail
           </h3>
           <div className="dl-round__cells">
             {detail.participants.map((p) => (
-              <div key={partyKey(p)} className="dl-cell" aria-label={partyName(p)}>
+              <div key={partyKey(p)} className="dl-cell" role="group" aria-label={partyName(p)}>
                 <span className="dl-cell__party">{partyName(p)}</span>
                 {cell(round, p)}
               </div>
@@ -121,14 +139,13 @@ export function Board({ projectId, detail }: { projectId: string; detail: Detail
 function Sources({ refs, projectId }: { refs?: Schemas['TypedRef'][]; projectId: string }) {
   const { t } = useTranslation('monitoring');
   if (!refs?.length) return null;
-  const p = encodeURIComponent(projectId);
   const href = (ref: Schemas['TypedRef']) =>
     ref.type === 'reference'
-      ? `/projects/${p}/references?reference=${encodeURIComponent(ref.id)}`
+      ? hrefs.reference(ref.id)
       : ref.type === 'evidence'
-        ? `/projects/${p}/references?evidence=${encodeURIComponent(ref.id)}`
+        ? hrefs.evidence(projectId, ref.id)
         : ref.type.startsWith('artifact')
-          ? `/projects/${p}/artifacts?version=${encodeURIComponent(ref.id)}`
+          ? hrefs.artifactVersion(projectId, ref.id)
           : undefined;
   return (
     <span className="dl-sources">

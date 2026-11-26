@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 // Test harness of the Deliberation tab: the real shell frame on a memory router, a stand-in workflow page that shows
-// the tab the way PID-00059 will (useDeliberationTab + DeliberationTab), and the mock server of PID-00013 with this
-// PID's deliberation mocks. Operations of PID-00059, PID-00058 (getPrompt, answerPrompt) are overridden per test.
+// the tab and the step notes the way PID-00059 will (useDeliberationTab + DeliberationTab + DeliberationStepNote),
+// the mock server of PID-00013 with this PID's deliberation mocks, and this PID's strings added to the namespace
+// `monitoring` as the PR merged last will. Operations of PID-00059, PID-00060 (getPrompt, answerPrompt) are
+// overridden per test.
 
 import { render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18next from 'i18next';
-import { beforeEach, afterEach, expect } from 'vitest';
+import { afterEach, beforeAll, beforeEach, expect } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import type { Feature } from '../../../shell/feature';
 import { ShellProvider } from '../../../shell/hooks';
@@ -21,6 +23,8 @@ import { testBrowser } from '../../../shell/test/render';
 import { neutralFeatures } from '../../../shell/test/features';
 import { deliberationMocks, PROJECT_ID, resetDeliberationMock, setDeliberationEmitter, STEP_ID, WORKFLOW_ID } from '../__mocks__/deliberation';
 import { DeliberationTab, useDeliberationTab } from './DeliberationTab';
+import { deliberationMessages } from './messages';
+import { DeliberationStepNote } from './StepNotes';
 
 const fetchInJsdom = (input: string, init?: RequestInit) => {
   const rest: RequestInit = { ...init };
@@ -28,14 +32,20 @@ const fetchInJsdom = (input: string, init?: RequestInit) => {
   return mockFetch(input, rest);
 };
 
+/** This PID's strings in the namespace `monitoring`, as monitoring/index.tsx will merge them. */
+export function addDeliberationMessages(): void {
+  for (const locale of ['vi', 'en'] as const) i18next.addResourceBundle(locale, 'monitoring', deliberationMessages[locale], false, true);
+}
+
 export function useDeliberationMock(): MockServer {
+  beforeAll(addDeliberationMessages);
   const mock = useMockServer({ sources: [{ name: 'monitoring-deliberation', mocks: deliberationMocks }] });
   beforeEach(() => setDeliberationEmitter((event) => mock.events.emit(event)));
   afterEach(() => setDeliberationEmitter(undefined));
   return mock;
 }
 
-export function workflow(openPromptId?: string): Schemas['Workflow'] {
+export function workflow(openPromptId?: string, deliberationId?: string): Schemas['Workflow'] {
   return {
     id: WORKFLOW_ID,
     accountId: ACCOUNT_ID,
@@ -55,11 +65,12 @@ export function workflow(openPromptId?: string): Schemas['Workflow'] {
       status: n < 4 ? ('Succeeded' as const) : n === 4 ? ('Running' as const) : ('Pending' as const),
       attemptCount: 1,
       ...(n === 4 && openPromptId ? { openPromptId } : {}),
+      ...(n === 4 && deliberationId ? { deliberationId } : {}),
     })),
   };
 }
 
-/** Stand-in of PID-00059's workflow page: the tab is listed only when useDeliberationTab says so. */
+/** Stand-in of PID-00059's workflow page: the tab is listed only when useDeliberationTab says so; steps carry the note. */
 function WorkflowPage({ wf }: { wf: Schemas['Workflow'] }) {
   const tab = useDeliberationTab(PROJECT_ID, wf);
   return (
@@ -76,7 +87,14 @@ function WorkflowPage({ wf }: { wf: Schemas['Workflow'] }) {
         )}
       </div>
       {!tab.loading && <p data-testid="tab-state">{tab.visible ? 'visible' : 'hidden'}</p>}
-      {tab.visible && <DeliberationTab projectId={PROJECT_ID} workflow={wf} />}
+      <ol aria-label="Các bước">
+        {(wf.steps ?? []).map((step) => (
+          <li key={step.id}>
+            {step.description} <DeliberationStepNote projectId={PROJECT_ID} workflowId={wf.id} step={step} tab={tab} />
+          </li>
+        ))}
+      </ol>
+      {tab.visible && <DeliberationTab projectId={PROJECT_ID} workflow={wf} tab={tab} />}
     </section>
   );
 }

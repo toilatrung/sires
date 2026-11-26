@@ -275,6 +275,13 @@ export const scenarios = {
       usageByParticipant: [usage(ORCH, 1, 6100, 1300, 0.04), usage(A, 1, 7400, 1450, 0.03), { ...usage(B, 1, 0, 0, 0), noDataAgentRunCount: 1, costAgentRunCount: 0 }] as Schemas['ParticipantUsage'][],
       usageTotal: { ...usage(undefined, 3, 13500, 2750, 0.07), noDataAgentRunCount: 1 },
     }),
+  /** Completed, its Context Snapshot outdated after a Reference changed (EC12). */
+  outdated: (): Detail => {
+    const detail = scenarios.completed();
+    detail.snapshotOutdated = true;
+    detail.contextSnapshot = { ...detail.contextSnapshot, outdated: true, changedEntities: [{ type: 'reference', id: id('reference', 15), newVersion: 2 }] };
+    return detail;
+  },
   /** Cancelled in round 2: entries kept (EC14). */
   cancelled: (): Detail =>
     session({
@@ -298,7 +305,8 @@ const summary = (detail: Detail): Schemas['Deliberation'] => {
 
 /* ---------- Store ---------- */
 
-let store: Detail[] = [scenarios.round1()];
+/** dev:mock starts with two sessions of the workflow (the picker, EC20); tests reset to the scenario they need. */
+let store: Detail[] = [{ ...scenarios.completed(), id: OLDER_DELIBERATION_ID, startedAt: minutes(-60 * 24), problemType: 'plan_structure' }, scenarios.round1()];
 type Emit = (event: EventInput) => void;
 let emitter: Emit | undefined;
 
@@ -332,6 +340,49 @@ export function closeRound(deliberationId: string, revealed: Entry[]): void {
   emit({ type: 'deliberation.round_closed', projectId: detail.projectId, objectType: 'deliberation', objectId: detail.id });
 }
 
+const find = (deliberationId: string) => {
+  const detail = store.find((d) => d.id === deliberationId);
+  if (!detail) throw new Error(`no session ${deliberationId} in the deliberation mock`);
+  return detail;
+};
+
+/** Retract an entry of a session (EC08), then deliberation.entry_retracted. */
+export function retractEntry(deliberationId: string, targetEntryId: string, reason: string): void {
+  const detail = find(deliberationId);
+  const target = detail.entries.find((e) => e.id === targetEntryId);
+  if (!target) throw new Error(`no entry ${targetEntryId}`);
+  target.status = 'retracted';
+  detail.entries = [...detail.entries, { ...target, id: entryId(90 + ++sequence), type: 'retraction', status: 'final', supersedesEntryId: undefined, content: { targetEntryId, reason } }];
+  detail.rowVersion += 1;
+  emit({ type: 'deliberation.entry_retracted', projectId: detail.projectId, objectType: 'deliberation', objectId: detail.id });
+}
+
+/** Change the status of a session (Completed, Failed, Cancelled), then deliberation.status_changed. */
+export function setDeliberationStatus(deliberationId: string, status: Detail['status']): void {
+  const detail = find(deliberationId);
+  const fromState = detail.status;
+  detail.status = status;
+  if (status !== 'Running') detail.endedAt = minutes(30 + ++sequence);
+  detail.rowVersion += 1;
+  emit({ type: 'deliberation.status_changed', projectId: detail.projectId, objectType: 'deliberation', objectId: detail.id, fromState, toState: status });
+}
+
+/** A Reference of the snapshot changed (EC12), then context_snapshot.outdated. */
+export function markSnapshotOutdated(deliberationId: string, changed: NonNullable<Detail['contextSnapshot']['changedEntities']>): void {
+  const detail = find(deliberationId);
+  detail.snapshotOutdated = true;
+  detail.contextSnapshot = { ...detail.contextSnapshot, outdated: true, changedEntities: changed };
+  detail.rowVersion += 1;
+  emit({ type: 'context_snapshot.outdated', projectId: detail.projectId, objectType: 'context_snapshot', objectId: detail.contextSnapshotId });
+}
+
+/** Problem of a session that is not there, as the mock runtime answers 404 (shell/mock/runtime.ts). */
+const notFound = () =>
+  new Response(JSON.stringify({ type: 'https://sires.etroy.local/problems/not_found', title: 'Không tìm thấy', status: 404, code: 'not_found' }), {
+    status: 404,
+    headers: { 'content-type': 'application/problem+json' },
+  });
+
 export const deliberationMocks: FeatureMocks = {
   overrides: {
     listDeliberations: ({ params, query }) => {
@@ -345,9 +396,7 @@ export const deliberationMocks: FeatureMocks = {
     },
     getDeliberation: ({ params }) => {
       const detail = store.find((d) => d.id === params.deliberationId && d.projectId === params.projectId);
-      return detail
-        ? { status: 200, body: structuredClone(detail) }
-        : new Response(JSON.stringify({ type: 'x', title: 'not_found', status: 404, code: 'not_found' }), { status: 404, headers: { 'content-type': 'application/problem+json' } });
+      return detail ? { status: 200, body: structuredClone(detail) } : notFound();
     },
   },
 };

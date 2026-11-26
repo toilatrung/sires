@@ -38,16 +38,22 @@
 .dl-party { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-surface); font-size: 13px; }
 .dl-party__name { font-weight: 600; font-size: 14px; }
 .dl-party__perspective, .dl-party__model { color: var(--sires-muted); }
-.dl-party__status { align-self: flex-start; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--sires-muted); }
-.dl-party__status[data-status="running"] { color: var(--sires-brand-ink); }
-.dl-party__status[data-status="error"] { color: var(--sires-danger-ink); }
+/* Status of a party: the shell's chip (running has the dot of motion.css, error the danger tone). */
+.dl-party__status { align-self: flex-start; margin-top: 4px; }
 .dl-round { display: flex; flex-direction: column; gap: 8px; }
 .dl-round__title { margin: 0; font-size: 14px; font-weight: 600; }
 .dl-round__note { font-weight: 400; color: var(--sires-muted); font-size: 13px; }
 .dl-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .dl-cell__party { display: none; font-size: 12px; font-weight: 600; color: var(--sires-muted); }
 .dl-pending, .dl-none { margin: 0; padding: 12px; border: 1px dashed var(--sires-muted); border-radius: var(--sires-radius-control); font-size: 13px; color: var(--sires-muted); display: flex; flex-direction: column; gap: 4px; }
+.dl-pending > [data-running] { display: inline-flex; align-items: center; }
+.dl-none { background: var(--sires-ground); }
 .dl-none p { margin: 0; }
+/* A party whose Agent Run failed (Workflow--view-deliberation-failed): danger tint, solid danger border. */
+.dl-none[data-failed] { gap: 6px; border: 1.5px solid var(--sires-danger); background: var(--sires-danger-tint); color: var(--sires-ink); line-height: 1.5; }
+.dl-none[data-failed] strong { font-weight: 600; color: var(--sires-danger-ink); }
+.dl-none[data-failed] a { font-size: 12px; }
+.dl-step { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
 .dl-entry { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-surface); font-size: 13px; line-height: 1.45; }
 .dl-entry[data-state="retracted"] { border-style: dashed; color: var(--sires-muted); }
 .dl-entry[data-state="review"] { border-color: var(--sires-warn); }
@@ -82,9 +88,10 @@
 .dl-chosen { padding: 12px 14px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); }
 .dl-chosen p { margin: 0; }
 
-/* Under 768 px: the three columns stack, each round shows the parties one after another (EC22). */
+/* Under 768 px: the three columns stack, each round shows the parties one after another (EC22); the parties'
+   cards stack too, so perspective, model, connection and status stay on screen. */
 @media (max-width: 767px) {
-  .dl-board__head { display: none; }
+  .dl-board__head { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .dl-round__cells { grid-template-columns: minmax(0, 1fr); }
   .dl-cell__party { display: block; }
   .dl-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }

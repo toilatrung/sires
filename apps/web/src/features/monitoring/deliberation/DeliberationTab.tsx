@@ -6,9 +6,10 @@
 // first, `?deliberation=`), session header and warnings, Problem Brief, Deliberation Board, synthesis, decision prompt,
 // usage; “Chưa mở phiên” while a proposal waits without a session (EC17); deliberated / not deliberated labels.
 //
-// PID-00059's workflow page shows it with one import:
+// PID-00059's workflow page shows it with one import (the page reads the state once and hands it to the tab):
 //   const tab = useDeliberationTab(projectId, workflow);
-//   {tab.visible && <Tab …>Thảo luận</Tab>}  …  {view === 'deliberation' && <DeliberationTab projectId={projectId} workflow={workflow} />}
+//   {tab.visible && <Tab …>Thảo luận</Tab>}  …  {view === 'deliberation' && <DeliberationTab projectId={projectId} workflow={workflow} tab={tab} />}
+// The tab is also visible when the sessions cannot be read, so its error (with “Thử lại”) shows instead of nothing.
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +18,7 @@ import {
   ApiError,
   EmptyState,
   ErrorState,
+  formatDateTime,
   formatNumber,
   formatTime,
   isApiError,
@@ -31,7 +33,8 @@ import {
   type PromptCardProps,
 } from '../../../shell';
 import { Board, focusAnchor, pointAnchor } from './Board';
-import { partyName, shortCode, stepPosition, type Deliberation, type Detail, type Schemas } from './model';
+import { hrefs, partyName, shortCode, stepPosition, type Deliberation, type Detail, type Schemas } from './model';
+import { isSkipped } from './StepNotes';
 import './deliberation.css';
 
 type Workflow = Schemas['Workflow'];
@@ -64,7 +67,7 @@ function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[]) {
 export interface DeliberationTabState {
   loading: boolean;
   error?: ApiError;
-  /** The tab is shown: the workflow has a session, or a step waits on a deliberation proposal (EC01). */
+  /** The tab is shown: the workflow has a session, a step waits on a deliberation proposal (EC01), or the read failed. */
   visible: boolean;
   sessions: Deliberation[];
   /** The deliberation_proposal prompt of a step of the workflow, if any. */
@@ -78,30 +81,41 @@ export function useDeliberationTab(projectId: string, workflow: Workflow): Delib
   const promptIds = (workflow.steps ?? []).map((s) => s.openPromptId).filter(Boolean) as string[];
   const key = promptIds.join(',');
   const data = useLoad(async () => {
-    const [{ data: page }, prompts] = await Promise.all([
-      api.get('/projects/{projectId}/deliberations', { path: { projectId }, query: { workflowId: workflow.id } }),
+    // Every page of the workflow's sessions (nextCursor), not only the first.
+    const listAll = async () => {
+      const items: Deliberation[] = [];
+      let cursor: string | undefined;
+      do {
+        const { data: page } = await api.get('/projects/{projectId}/deliberations', { path: { projectId }, query: { workflowId: workflow.id, ...(cursor ? { cursor } : {}) } });
+        items.push(...((page.items ?? []) as Deliberation[]));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return items;
+    };
+    const [listed, prompts] = await Promise.all([
+      listAll(),
       Promise.all(promptIds.map((promptId) => api.get('/prompts/{promptId}', { path: { promptId } }).then((r) => r.data, () => undefined))),
     ]);
-    const sessions = ((page.items ?? []) as Deliberation[]).slice().sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    const sessions = listed.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
     const proposal = prompts.find((p) => p?.purpose === 'deliberation_proposal');
     return { sessions, proposal };
   }, [api, projectId, workflow.id, key]);
   useEvents({ types: [...DELIBERATION_EVENTS, 'prompt.status_changed'], projectId }, () => void data.reload());
   const sessions = data.data?.sessions ?? [];
   const proposal = data.data?.proposal;
+  const error = data.status === 'error' ? data.error : undefined;
   return {
     loading: data.status === 'loading' && !data.data,
-    error: data.status === 'error' ? data.error : undefined,
-    visible: sessions.length > 0 || proposal?.status === 'Open',
+    error,
+    visible: sessions.length > 0 || proposal?.status === 'Open' || Boolean(error),
     sessions,
     proposal,
     reload: data.reload,
   };
 }
 
-export function DeliberationTab({ projectId, workflow }: { projectId: string; workflow: Workflow }) {
+export function DeliberationTab({ projectId, workflow, tab }: { projectId: string; workflow: Workflow; tab: DeliberationTabState }) {
   const { t } = useTranslation('monitoring');
-  const tab = useDeliberationTab(projectId, workflow);
   const [search, setSearch] = useSearchParams();
 
   if (tab.loading) return <LoadingState what={t('deliberation.loading')} />;
@@ -111,7 +125,7 @@ export function DeliberationTab({ projectId, workflow }: { projectId: string; wo
   const selectedId = search.get('deliberation') && tab.sessions.some((s) => s.id === search.get('deliberation')) ? search.get('deliberation')! : tab.sessions[0]!.id;
   return (
     <div className="dl-tab">
-      {tab.proposal?.status === 'Answered' && tab.proposal.response?.choiceIds?.includes('skip') && <span className="dl-label">{t('deliberation.skipped')}</span>}
+      {isSkipped(tab.proposal) && <span className="dl-label">{t('deliberation.skipped')}</span>}
       {tab.sessions.length > 1 && (
         <label className="sires-field dl-picker">
           <span className="sires-field__label">{t('deliberation.pickSession')}</span>
@@ -126,7 +140,7 @@ export function DeliberationTab({ projectId, workflow }: { projectId: string; wo
           >
             {tab.sessions.map((s) => (
               <option key={s.id} value={s.id}>
-                {`${shortCode('dl', s.id)} · ${s.problemType} · ${s.status} · ${formatTime(s.startedAt)}`}
+                {`${shortCode('dl', s.id)} · ${s.problemType} · ${s.status} · ${formatDateTime(s.startedAt)}`}
               </option>
             ))}
           </select>
@@ -141,7 +155,7 @@ export function DeliberationTab({ projectId, workflow }: { projectId: string; wo
 function NotOpened({ projectId, workflow, proposal, onChanged }: { projectId: string; workflow: Workflow; proposal?: InteractiveAgentPrompt; onChanged: () => void }) {
   const { t } = useTranslation('monitoring');
   if (!proposal) return <EmptyState title={t('deliberation.none')} reason={t('deliberation.noneReason')} />;
-  const skipped = proposal.status === 'Answered' && proposal.response?.choiceIds?.includes('skip');
+  const skipped = isSkipped(proposal);
   return (
     <div className="dl-tab">
       {skipped && <span className="dl-label">{t('deliberation.skipped')}</span>}
@@ -167,9 +181,11 @@ function Session({ projectId, workflow, deliberationId }: { projectId: string; w
   const decision = useLoad(async () => (decisionId ? (await api.get('/prompts/{promptId}', { path: { promptId: decisionId } })).data : undefined), [api, decisionId]);
 
   // Round closed, entry retracted, status changed, snapshot outdated: read the session again (EC19); a repeated event
-  // reads the same data, so nothing changes twice.
+  // reads the same data, so nothing changes twice. Event.objectId is not defined per type yet (H12): the session, its
+  // snapshot or one of its entries (entry_retracted may name the entry) all count.
   useEvents({ types: DELIBERATION_EVENTS, projectId }, (event) => {
-    if (event.objectId === deliberationId || event.objectId === detail.data?.contextSnapshotId) void detail.reload();
+    const d = detail.data;
+    if (event.objectId === deliberationId || event.objectId === d?.contextSnapshotId || d?.entries.some((e) => e.id === event.objectId)) void detail.reload();
   });
   useEvents({ types: ['prompt.status_changed'], projectId }, (event) => {
     if (decisionId && event.objectId === decisionId) void decision.reload();
@@ -211,7 +227,7 @@ function Session({ projectId, workflow, deliberationId }: { projectId: string; w
             {d.recordArtifactVersionId && (
               <>
                 {' · '}
-                <Link to={`/projects/${encodeURIComponent(projectId)}/artifacts?version=${encodeURIComponent(d.recordArtifactVersionId)}`}>{t('deliberation.record')}</Link>
+                <Link to={hrefs.artifactVersion(projectId, d.recordArtifactVersionId)}>{t('deliberation.record')}</Link>
               </>
             )}
           </span>
@@ -276,8 +292,11 @@ function Session({ projectId, workflow, deliberationId }: { projectId: string; w
         <section className="dl-decision" aria-label={t('deliberation.decision')}>
           {decision.data.status === 'Open' ? (
             <DecisionCard projectId={projectId} prompt={decision.data} step={step} onAnswered={() => void Promise.all([decision.reload(), detail.reload()])} />
-          ) : (
+          ) : decision.data.status === 'Answered' ? (
             <Chosen prompt={decision.data} detail={d} synthesis={synthesisEntry?.content as Synthesis | undefined} />
+          ) : (
+            // Expired, Cancelled: nobody chose; the shell's card says so and that it is not consent (design.md §3).
+            <PromptCard prompt={decision.data} agentLabel="Orchestrator" />
           )}
         </section>
       )}
@@ -324,6 +343,7 @@ function DecisionCard({ prompt, step, onAnswered }: { projectId: string; prompt:
   );
 }
 
+/** The decision prompt as answered (Answered only). */
 function Chosen({ prompt, detail, synthesis }: { prompt: InteractiveAgentPrompt; detail: Detail; synthesis?: Synthesis }) {
   const { t } = useTranslation('monitoring');
   const ids = detail.chosenOptionIds?.length ? detail.chosenOptionIds : (prompt.response?.choiceIds ?? []);
@@ -338,10 +358,9 @@ function Chosen({ prompt, detail, synthesis }: { prompt: InteractiveAgentPrompt;
         {prompt.response?.respondedAt && (
           <>
             {' · '}
-            <span className="sires-num">{formatTime(prompt.response.respondedAt)}</span>
+            <span className="sires-num">{formatDateTime(prompt.response.respondedAt)}</span>
           </>
         )}
-        {prompt.status !== 'Answered' && <> · <StatusChip status={prompt.status} entity="prompt" /></>}
       </p>
     </div>
   );
@@ -357,7 +376,7 @@ function SynthesisView({ detail, synthesis, projectId }: { detail: Detail; synth
       </h3>
       {detail.recordArtifactVersionId && (
         <p className="dl-muted">
-          <Link to={`/projects/${encodeURIComponent(projectId)}/artifacts?version=${encodeURIComponent(detail.recordArtifactVersionId)}`}>{t('deliberation.record')}</Link>
+          <Link to={hrefs.artifactVersion(projectId, detail.recordArtifactVersionId)}>{t('deliberation.record')}</Link>
         </p>
       )}
       <h4 className="dl-subtitle">{t('deliberation.synthesis.consensus')}</h4>

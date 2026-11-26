@@ -5,7 +5,7 @@
 // PID-00083: Deliberation tab (S01 tab and sessions, S02 rounds and entries, S03 synthesis and states, S04 labels,
 // missing configuration and the Agent List helper), on this PID's deliberation mock and the mock of PID-00013.
 
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import i18next from 'i18next';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ACCOUNT_ID, id, type Schemas } from '../../../shell/mock';
@@ -15,15 +15,21 @@ import {
   DELIBERATION_ID,
   deliberationState,
   entries,
+  markSnapshotOutdated,
   OLDER_DELIBERATION_ID,
   PROJECT_ID,
   RECORD_VERSION_ID,
+  retractEntry,
   scenarios,
   STEP_ID,
   WORKFLOW_ID,
 } from '../__mocks__/deliberation';
 import { deliberationAgentStates } from './model';
 import { pointAnchor } from './Board';
+import { deliberationMessages } from './messages';
+import { DeliberationAgentNote } from './StepNotes';
+import viArea from '../i18n/vi.json';
+import enArea from '../i18n/en.json';
 import { renderWorkflow, resetDeliberationMock, textOf, useDeliberationMock, waitForStream, workflow } from './testing';
 
 type Detail = Schemas['DeliberationDetail'];
@@ -115,7 +121,7 @@ describe('Tab Thảo luận (PID-00083 S01)', () => {
       if (i18next.language !== 'en') await act(() => i18next.changeLanguage('en'));
       expect(screen.getByRole('heading', { level: 2, name: /^Deliberation session dl-/ })).toBeTruthy();
     });
-    expect(screen.getByText('Running', { selector: '.sires-chip' })).toBeTruthy();
+    expect(screen.getByText('Running', { selector: '.dl-title .sires-chip' })).toBeTruthy();
     first.unmountAll();
     await act(() => i18next.changeLanguage('vi'));
 
@@ -209,7 +215,7 @@ describe('Vòng và entry (PID-00083 S02)', () => {
     const o1 = document.getElementById(pointAnchor(entries.posO().id, 'O1'))!;
     const sources = o1.querySelector('.dl-sources')!;
     expect(textOf(sources)).toMatch(/^Nguồn: Evidence …0009, Evidence …0012$/);
-    expect(within(sources as HTMLElement).getAllByRole('link')[0]!.getAttribute('href')).toBe(`/projects/${PROJECT_ID}/references?evidence=${id('evidence', 9)}`);
+    expect(within(sources as HTMLElement).getAllByRole('link')[0]!.getAttribute('href')).toBe(`/projects/${PROJECT_ID}/evidence?evidence=${id('evidence', 9)}`);
     unmountAll();
   });
 
@@ -244,7 +250,39 @@ describe('Vòng và entry (PID-00083 S02)', () => {
     const { unmountAll } = await openTab();
     const cell = cellOf(round(1), 'Analysis Agent B');
     expect(within(cell).getByText('Không có lập trường')).toBeTruthy();
-    expect(within(cell).getByRole('link', { name: /^Xem Agent Run / }).getAttribute('href')).toContain(`/runs/${id('agentRun', 812)}`);
+    // The party's Agent Run failed: error style, a note, the Agent Run route of the monitoring area (EC13).
+    const failed = within(cell).getByRole('note');
+    expect(failed.hasAttribute('data-failed')).toBe(true);
+    expect(textOf(failed)).toContain('của bên này lỗi');
+    expect(within(failed).getByRole('link', { name: /^Xem Agent Run / }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity/agent-runs/${id('agentRun', 812)}`);
+    unmountAll();
+  });
+
+  it('ô đang viết có chấm chạy; trạng thái bên là chip; ô theo nhóm của bên (EC02, EC13)', async () => {
+    resetDeliberationMock(scenarios.round2());
+    const { unmountAll } = await openTab();
+    const pending = within(round(2)).getAllByText('Đang viết, mở khi vòng đóng');
+    expect(pending.every((el) => el.hasAttribute('data-running'))).toBe(true);
+    const chips = [...document.querySelectorAll('.dl-board__head .dl-party__status')];
+    expect(chips.map((c) => [c.className, c.getAttribute('data-tone'), c.hasAttribute('data-running'), textOf(c)])).toEqual([
+      ['sires-chip dl-party__status', 'running', true, 'Đang chạy'],
+      ['sires-chip dl-party__status', 'running', true, 'Đang chạy'],
+      ['sires-chip dl-party__status', 'running', true, 'Đang chạy'],
+    ]);
+    expect(within(round(1)).getAllByRole('group').map((g) => g.getAttribute('aria-label'))).toEqual(['Orchestrator', 'Analysis Agent A', 'Analysis Agent B']);
+    unmountAll();
+  });
+
+  it('entry của vòng đang mở trong dữ liệu không hiện, không được đếm (DEC-47)', async () => {
+    const detail = scenarios.round2();
+    // Round 2 is open; a critique of it in the data must not show, nor count on its target.
+    detail.entries = [...detail.entries, entries.critO()];
+    resetDeliberationMock(detail);
+    const { unmountAll } = await openTab();
+    expect(within(round(2)).getAllByText('Đang viết, mở khi vòng đóng')).toHaveLength(3);
+    expect(typesIn(round(2))).toEqual([]);
+    const target = document.getElementById(pointAnchor(entries.posA().id, 'A2'))!;
+    expect(textOf(target)).not.toContain('phản biện');
     unmountAll();
   });
 
@@ -357,7 +395,7 @@ describe('Tổng hợp và trạng thái (PID-00083 S03)', () => {
     const lines = [...chosen.querySelectorAll('p')].map((p) => textOf(p));
     expect(lines[0]).toBe('Bạn đã chọn');
     expect(lines[1]).toBe('A — benchmark kèm cơ chế đo');
-    expect(lines[2]).toMatch(/^Bạn · \d{2}:\d{2}$/);
+    expect(lines[2]).toMatch(/^Bạn · \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
     unmountAll();
 
     // Answered elsewhere (Chat): prompt.status_changed updates the tab at once.
@@ -372,6 +410,42 @@ describe('Tổng hợp và trạng thái (PID-00083 S03)', () => {
     expect(await screen.findByText('Orchestrator — ba trục', { selector: '.dl-chosen p' })).toBeTruthy();
     again.unmountAll();
     void services;
+  });
+
+  it('prompt quyết định Expired, Cancelled: không ai chọn, không tính là đồng ý (EC15)', async () => {
+    for (const status of ['Expired', 'Cancelled'] as const) {
+      resetDeliberationMock(scenarios.completed());
+      mock.use({ overrides: { getPrompt: () => ({ status: 200, body: prompt(DECISION_PROMPT_ID, { status, statusReason: 'Workflow đã dừng.' }) }) } });
+      const view = await openTab();
+      const decision = await screen.findByRole('region', { name: 'Quyết định sau thảo luận' });
+      await waitFor(() => expect(textOf(decision)).toContain('Không được tính là đồng ý'));
+      expect(textOf(decision)).toContain('Workflow đã dừng.');
+      expect(within(decision).queryByText('Bạn đã chọn')).toBeNull();
+      expect(decision.querySelector('.dl-chosen')).toBeNull();
+      expect(within(decision).queryAllByRole('button')).toEqual([]);
+      view.unmountAll();
+      mock.server.resetHandlers();
+    }
+  });
+
+  it('rút lại, snapshot lỗi thời qua SSE; objectId là mã entry (EC08, EC12)', async () => {
+    resetDeliberationMock(scenarios.completed());
+    const { services, unmountAll } = await openTab();
+    await waitForStream(services, mock);
+    act(() => retractEntry(DELIBERATION_ID, entries.posB().id, 'E-14 chỉ nói về một benchmark.'));
+    const posB = () => within(cellOf(round(1), 'Analysis Agent B')).getByText(/Phân loại theo cơ chế đo/).closest('.dl-entry')!;
+    await waitFor(() => expect(within(posB() as HTMLElement).getByText('Đã rút lại')).toBeTruthy());
+    act(() => markSnapshotOutdated(DELIBERATION_ID, [{ type: 'reference', id: id('reference', 15), newVersion: 2 }]));
+    expect((await screen.findByText('Context Snapshot lỗi thời.')).closest('[role="note"]')!.textContent).toContain('reference lên v2');
+    // An event naming one of the session's entries also reads the session again.
+    let reads = 0;
+    mock.server.events.on('request:start', ({ request }) => {
+      if (request.url.endsWith(`/deliberations/${DELIBERATION_ID}`)) reads += 1;
+    });
+    act(() => mock.events.emit({ type: 'deliberation.entry_retracted', projectId: PROJECT_ID, objectType: 'deliberation_entry', objectId: entries.critA().id }));
+    await waitFor(() => expect(reads).toBe(1));
+    mock.server.events.removeAllListeners();
+    unmountAll();
   });
 
   it('usage của phiên (EC16)', async () => {
@@ -448,8 +522,77 @@ describe('Nhãn, thiếu cấu hình, Agent List (PID-00083 S04)', () => {
       },
     });
     const second = await openTab('', workflow(proposalId));
-    expect(screen.getByText('Không qua thảo luận')).toBeTruthy();
+    expect(within(document.querySelector('.dl-tab') as HTMLElement).getByText('Không qua thảo luận')).toBeTruthy();
     second.unmountAll();
+  });
+
+  it('cạnh bước: Xem thảo luận và nhãn (S01, EC18)', async () => {
+    resetDeliberationMock(scenarios.completed());
+    mock.use({ overrides: { getPrompt: () => ({ status: 200, body: prompt(DECISION_PROMPT_ID, { status: 'Answered', response: { choiceIds: ['opt-a'] } }) }) } });
+    const first = await openTab('', workflow(undefined, DELIBERATION_ID));
+    const steps = screen.getByRole('list', { name: 'Các bước' });
+    const step4 = within(steps).getAllByRole('listitem')[3]!;
+    expect(within(step4).getByRole('link', { name: 'Xem thảo luận' }).getAttribute('href')).toBe(
+      `/projects/${PROJECT_ID}/activity/workflows/${WORKFLOW_ID}?view=deliberation&deliberation=${DELIBERATION_ID}`,
+    );
+    expect(within(step4).getByText('Qua thảo luận')).toBeTruthy();
+    expect(within(steps).getAllByRole('link')).toHaveLength(1);
+    first.unmountAll();
+
+    // Skipped: the step of the proposal answered “skip” carries “Không qua thảo luận”.
+    const proposalId = id('prompt', 45);
+    resetDeliberationMock({ ...scenarios.cancelled(), id: OLDER_DELIBERATION_ID });
+    mock.use({
+      overrides: {
+        getPrompt: ({ params }) => ({
+          status: 200,
+          body: prompt(params.promptId, { purpose: 'deliberation_proposal', status: 'Answered', response: { choiceIds: ['skip'] }, choices: [{ id: 'deliberate', label: 'Thảo luận' }, { id: 'skip', label: 'Bỏ qua' }] }),
+        }),
+      },
+    });
+    const second = await openTab('', workflow(proposalId));
+    const skippedStep = within(screen.getByRole('list', { name: 'Các bước' })).getAllByRole('listitem')[3]!;
+    expect(within(skippedStep).getByText('Không qua thảo luận')).toBeTruthy();
+    second.unmountAll();
+  });
+
+  it('danh sách phiên lỗi: tab hiện lỗi và Thử lại; đọc hết các trang (EC23)', async () => {
+    resetDeliberationMock(scenarios.round2());
+    mock.use({ overrides: { listDeliberations: () => new Response(JSON.stringify({ type: 'x', title: 'x', status: 500, code: 'internal_error' }), { status: 500, headers: { 'content-type': 'application/problem+json' } }) } });
+    const first = renderWorkflow(workflow());
+    expect(await screen.findByText('Chưa tải được phiên thảo luận')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Thảo luận' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Thử lại/ })).toBeTruthy();
+    first.unmountAll();
+
+    // Two pages: both sessions are in the picker; the page and the tab share one read.
+    mock.server.resetHandlers();
+    const older = { ...scenarios.completed(), id: OLDER_DELIBERATION_ID, startedAt: '2026-11-26T08:00:00Z' };
+    resetDeliberationMock(older, scenarios.round2());
+    const pages: string[] = [];
+    mock.use({
+      overrides: {
+        listDeliberations: ({ query }) => {
+          pages.push(String(query.cursor ?? 'first'));
+          const [newest, oldest] = [scenarios.round2(), older];
+          return query.cursor
+            ? { status: 200, body: { items: [oldest], nextCursor: null } }
+            : { status: 200, body: { items: [newest], nextCursor: 'page-2' } };
+        },
+      },
+    });
+    const second = await openTab();
+    const picker = screen.getByRole('combobox', { name: 'Phiên' }) as HTMLSelectElement;
+    expect(within(picker).getAllByRole('option')).toHaveLength(2);
+    expect(pages).toEqual(['first', 'page-2']);
+    second.unmountAll();
+  });
+
+  it('chuỗi của PID ở file riêng; file i18n của khu vực không đổi (S01)', () => {
+    expect(Object.keys(deliberationMessages.vi).sort()).toEqual(Object.keys(deliberationMessages.en).sort());
+    expect(Object.keys(deliberationMessages.vi).every((key) => key.startsWith('deliberation.'))).toBe(true);
+    expect(viArea).toEqual({ title: 'Hoạt động' });
+    expect(enArea).toEqual({ title: 'Activity' });
   });
 
   it('agent list trong phiên (EC21)', () => {
@@ -470,5 +613,16 @@ describe('Nhãn, thiếu cấu hình, Agent List (PID-00083 S04)', () => {
     expect(failed.orchestrator?.state).toBe('waiting');
     expect(failed['analysis:A']).toBeUndefined();
     expect(i18next.t('deliberation.agentNote', { ns: 'monitoring', current: 4, total: 5, round: 2 })).toBe('thảo luận bước 4/5 · Vòng 2');
+    // The note of each state, as the Agent List shows it (AgentList.dc.html).
+    const note = (state: Parameters<typeof DeliberationAgentNote>[0]['state']) => {
+      const view = render(<DeliberationAgentNote state={state} />);
+      const text = textOf(view.container);
+      view.unmount();
+      return text;
+    };
+    expect(note(running.orchestrator!)).toBe('thảo luận bước 4/5 · Vòng 2');
+    expect(note(failed.orchestrator!)).toBe('bước 4/5 · chờ bạn chọn chạy lại phiên hoặc tiếp tục');
+    expect(note(failed['analysis:B']!)).toBe('Vòng 1 · lỗi');
+    expect(note({ ...running.orchestrator!, step: undefined })).toBe('thảo luận · Vòng 2');
   });
 });

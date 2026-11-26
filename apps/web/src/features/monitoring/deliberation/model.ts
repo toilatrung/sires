@@ -19,6 +19,20 @@ export const partyName = (party: Party) => (party.agent === 'orchestrator' ? 'Or
 /** Short code of a session or snapshot id, as the reference screens write it (dl-3c1, cs-2a). */
 export const shortCode = (prefix: 'dl' | 'cs', id: string) => `${prefix}-${id.replace(/-/g, '').slice(-3)}`;
 
+const seg = encodeURIComponent;
+
+/** The Deliberation tab of a workflow, a session of it when given (`?view=deliberation&deliberation=`). */
+export const deliberationHref = (projectId: string, workflowId: string, deliberationId?: string) =>
+  `/projects/${seg(projectId)}/activity/workflows/${seg(workflowId)}?view=deliberation${deliberationId ? `&deliberation=${seg(deliberationId)}` : ''}`;
+
+/** Routes of other screens the tab links to (apps/web/README.md, route table and the monitoring Agent Run route). */
+export const hrefs = {
+  agentRun: (projectId: string, agentRunId: string) => `/projects/${seg(projectId)}/activity/agent-runs/${seg(agentRunId)}`,
+  reference: (referenceId: string) => `/library/${seg(referenceId)}`,
+  evidence: (projectId: string, evidenceId: string) => `/projects/${seg(projectId)}/evidence?evidence=${seg(evidenceId)}`,
+  artifactVersion: (projectId: string, versionId: string) => `/projects/${seg(projectId)}/artifacts?version=${seg(versionId)}`,
+};
+
 export interface StepPosition {
   current: number;
   total: number;
