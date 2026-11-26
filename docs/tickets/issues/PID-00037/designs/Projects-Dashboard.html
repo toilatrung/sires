@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00037 — Sketch: Research Projects và khung Dashboard</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header small { color:var(--mute); }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:24px; padding:24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; }
+  .state h2 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:12px; color:var(--mute); }
+  .ph + .ph { margin-top:8px; }
+  .ph b { color:var(--ink); }
+  .row { display:flex; gap:8px; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:6px 0; }
+  .row:last-child { border-bottom:0; }
+  .chip { border:1px solid var(--line); border-radius:4px; padding:0 6px; font-size:12px; }
+  .dash { border-style:dashed; }
+  .btn { border:1px solid var(--ink); border-radius:6px; padding:2px 8px; font-size:13px; white-space:nowrap; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+  .tabs { display:flex; justify-content:space-around; border-top:1px solid var(--line); margin-top:12px; padding-top:8px; font-size:12px; color:var(--mute); }
+</style>
+</head>
+<body>
+<header>
+  <strong>PID-00037 — Research Projects và khung Dashboard</strong> · sketch bố cục và trạng thái<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/Projects.html, Dashboard.html, Dashboard--state-first-run.html, Dashboard--state-recovery.html · route /projects, /dashboard · tác nhân Researcher · nguồn: H2–H8</small>
+</header>
+<main>
+  <section class="state"><h2>1 · Projects — có dữ liệu</h2><p class="why">H6; P1, P2</p><div class="ph"><b>Research Projects</b> <span class="btn primary">Tạo project</span></div><div class="ph">Active · 3 | Archived · 1 | Đã xóa (30 ngày) · 0 &nbsp; [Lọc project]</div><div class="ph"><div class="row"><span>RAG trong tổng quan tài liệu</span><span><span class="chip">Approved</span> 4/15 · 6 việc · 09:42 hôm nay ⋯</span></div><div class="row"><span>Độ tin cậy của LLM…</span><span><span class="chip dash">Chưa có baseline</span> — · 1 việc · 29/10/2026 ⋯</span></div></div><div class="ph">Tải thêm (khi còn trang)</div></section>
+  <section class="state"><h2>2 · Projects — trống, lọc rỗng, đang tải, lỗi</h2><p class="why">EC15, EC21, EC03</p><div class="ph">Trống: “Chưa có project Archived” + liên kết tab Active</div><div class="ph">Lọc rỗng: “Không có project khớp” + Xóa lọc</div><div class="ph">Đang tải: 3 dòng skeleton + “Đang tải danh sách project”</div><div class="ph">Lỗi: chuyện gì xảy ra · mã lỗi · Thử lại</div></section>
+  <section class="state"><h2>3 · Form Tạo project</h2><p class="why">H5; EC06–EC08</p><div class="ph">Tên project *<br>[ ] <small>cảnh báo nếu trùng project Active</small></div><div class="ph">Câu hỏi nghiên cứu *<br>[ ] <small>lỗi dưới ô nếu thiếu</small></div><div class="ph">Mô tả ngắn<br>[ ]</div><div class="ph">Không có lựa chọn bản thảo LaTeX · <span class="btn primary">Tạo và mở chat</span> <span class="btn">Hủy</span></div></section>
+  <section class="state"><h2>4 · Dialog Xóa (APR-08)</h2><p class="why">H7; EC10</p><div class="ph"><b>Xóa “RAG trong tổng quan tài liệu”?</b><br>Sẽ xóa Plan, Task, evidence, artifact, bản thảo, lịch sử chat. Khôi phục được trong 30 ngày, xóa vĩnh viễn dự kiến 27/12/2026.</div><div class="ph"><span class="btn">Giữ project</span> <span class="btn">Xóa project</span></div></section>
+  <section class="state"><h2>5 · Bị chặn: còn workflow (409)</h2><p class="why">H7; EC09</p><div class="ph">Không lưu trữ được: project còn workflow đang hoạt động (active_workflow_exists)</div><div class="ph"><div class="row"><span>task_execution · T-2.2</span><span><span class="chip">Running</span> Mở workflow</span></div><div class="row"><span>indexing · —</span><span><span class="chip">Waiting for User</span> Mở workflow</span></div></div></section>
+  <section class="state"><h2>6 · Tab Đã xóa</h2><p class="why">H7; EC11</p><div class="ph"><div class="row"><span>Học máy trong chẩn đoán ảnh</span><span>Xóa vĩnh viễn dự kiến 20/12/2026 · <span class="btn">Khôi phục</span></span></div></div><div class="ph">Quá hạn: “Không còn khôi phục được” → tải lại tab</div></section>
+  <section class="state"><h2>7 · Dashboard — khung</h2><p class="why">H2; UX-LAYOUT-004; P7–P9</p><div class="ph">1 Pending actions — “8 việc chờ bạn” · Tất cả Pending Actions <small>(dòng: PID-00060)</small></div><div class="ph">2 Workflow đang chạy <small>(PID-00060)</small></div><div class="ph">3 Project gần đây — tên · tiến độ Task · cột Bản thảo <small>(cột: PID-00060)</small></div><div class="ph">5 Lỗi gần đây <small>(PID-00060)</small></div></section>
+  <section class="state"><h2>8 · Dashboard — first-run</h2><p class="why">AC01; H3; EC01, EC02</p><div class="ph dash">Thêm API key của bạn để agent hoạt động · Mở Provider Connections</div><div class="ph">Project gần đây: “Chưa có project đang hoạt động” <span class="btn primary">Tạo project</span> · Research Projects</div></section>
+  <section class="state"><h2>9 · Dashboard — khôi phục</h2><p class="why">UX-STATE-005; H4; EC04</p><div class="ph">Một workflow bị gián đoạn khi bạn rời phiên — task_execution · T-2.3 · dừng ở bước 3/5. <span class="btn">Mở Recovery decision</span></div></section>
+  <section class="state"><h2>10 · Dashboard — lỗi tại khối</h2><p class="why">EC03</p><div class="ph">Pending actions: không tải được · mã lỗi · Thử lại</div><div class="ph">Banner API key vẫn theo kết quả riêng</div></section>
+  <section class="state"><h2>11 · Điện thoại 390 px</h2><p class="why">EC17; design.md §5</p><div class="phone"><div class="ph">Dashboard: khối xếp dọc, không cuộn ngang</div><div class="ph">Projects: bảng cuộn trong thẻ</div><div class="tabs"><span>Dashboard</span><span>Pending · 8</span><span>Agent</span><span>Projects</span></div></div></section>
+</main>
+</body>
+</html>

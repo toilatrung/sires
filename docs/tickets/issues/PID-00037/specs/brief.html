@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00037.">
+<title>PID-00037 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00037</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00037</p><h1>PID-00037 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill (<code>references/brief-template.md</code>), <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc <code>H1</code>…</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Researcher (đã đăng nhập qua eTroy OIDC; cục bộ và staging PH-02 dùng OIDC mock của PID-00160) quản lý danh sách Research Project ở Global Workspace: tạo, sửa thông tin, lưu trữ, mở lại, xóa mềm và khôi phục trong 30 ngày. Dashboard là điểm vào sau đăng nhập: khung năm khối theo thứ tự ưu tiên, khối project gần đây, trạng thái lần đầu (chưa có project, chưa có API key) và banner khôi phục khi có workflow bị gián đoạn. Lần này dựng giao diện chạy trên mock (D-UI), hội tụ với backend ở cổng PH-02.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Global Workspace không có “project đang hoạt động”; dữ liệu project chỉ ở dạng tóm tắt, thao tác chi tiết ở Project Workspace — <a href="../../../../overview/sections/04-information-architecture-and-navigation.html">PRD 4.1</a></li>
+<li>Dashboard tải khối theo thứ tự: Pending actions, Workflow đang chạy hoặc Interrupted, Project gần đây, tiến độ Task, trạng thái bản thảo, lỗi gần đây; khối lỗi không làm hỏng khối khác; chỉ project Active ở khối project; Dashboard chỉ đọc — WS-DASHBOARD-001; UX-LAYOUT-004; H2</li>
+<li>Phân chia: PID này làm khung, khối Project gần đây, first-run, banner khôi phục; PID-00060 lấp các khối còn lại — H2</li>
+<li>First-run: (a) không có project Active → trống có nút “Tạo project”; (b) chưa có Provider Connection → banner “Thêm API key của bạn để agent hoạt động” — WS-DASHBOARD-001-AC03; UX-SETTINGS-002-AC02; H3</li>
+<li>Banner khôi phục khi có workflow Interrupted, mở Recovery decision trong đúng ngữ cảnh — UX-STATE-005; H4</li>
+<li>Tạo project: tên và câu hỏi nghiên cứu bắt buộc; không tạo Manuscript ở bước này; thao tác nguyên tử; lỗi lưu giữ dữ liệu form; cảnh báo tên trùng không chặn; xong mở Project AI Chat — PROJ-CRUD-001; H5</li>
+<li>Sửa: tên, mô tả ngắn, ngôn ngữ phản hồi của agent; Archived chỉ đọc; xung đột phiên bản 412 — PROJ-CRUD-002; DATA-CONC-001; H8</li>
+<li>Lưu trữ, xóa là APR-08: Researcher xác nhận, hệ quả nêu trước; bị chặn khi còn workflow Running, Waiting for User, Paused, Interrupted; xóa là xóa mềm 30 ngày; khôi phục về trạng thái trước khi xóa; agent không xóa project — PROJ-CRUD-003; PRD 3.4; H7</li>
+<li>Số trên TopBar, rail do shell làm — PID-00012 H1; H1</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; mọi thay đổi trạng thái project chỉ do Researcher xác nhận; cách ly theo tài khoản (mở project khác tài khoản → “không tìm thấy”, PRD 4.3).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Hợp đồng: <code>listProjects</code>, <code>createProject</code>, <code>updateProject</code>, <code>deleteProject</code>, <code>archiveProject</code>, <code>unarchiveProject</code>, <code>restoreProject</code>, <code>getDashboard</code> ở <code>docs/api-design/paths/07-workspace-and-project.yaml</code> — có; schema <code>ResearchProject</code>, <code>ProjectCreate</code>, <code>ProjectUpdate</code>, <code>Dashboard</code> ở <code>components/schemas/project.yaml</code> — có; <code>listProviderConnections</code> (path 08), <code>listWorkflows</code> (path 14) — có</li>
+<li>Mã lỗi: <code>active_workflow_exists</code>, <code>restore_window_expired</code>, <code>precondition_failed</code>, <code>validation_failed</code> trong <code>ErrorCode</code> — có</li>
+<li>Hợp đồng thiếu: tổng số trang, tìm kiếm trong danh sách, phiên bản Plan và Phase hiện tại của project — đã chốt cách hiện (H6), đề xuất sửa nguồn không chặn</li>
+<li>Mã nguồn: <code>apps/web/src/features/global/index.tsx</code> (Placeholder, i18n rỗng), <code>apps/web/src/main.tsx</code> — có; shell và mock (PID-00012, PID-00013) — đang làm</li>
+<li>Màn tham chiếu: <code>docs/ui-design/pages/Projects.html</code>, <code>Dashboard.html</code>, <code>Dashboard--state-first-run.html</code>, <code>Dashboard--state-recovery.html</code> — có</li>
+<li>DDL: không dùng (khu vực web)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Màn Projects, Dashboard (khung) trong <code>apps/web/src/features/global/</code> → S02–S06</li>
+<li>O2 Override mock trong <code>apps/web/src/features/global/__mocks__/</code> → S01</li>
+<li>O3 <code>apps/web/src/features/global/projects.spec.tsx</code> → S02–S04</li>
+<li>O4 <code>apps/web/src/features/global/dashboard.spec.tsx</code> → S05, S06</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>project = Research Project (PRD 1.5); trạng thái Active, Archived giữ tiếng Anh; “đã xóa” = xóa mềm (deletedAt, purgeAfter)</li>
+<li>pending action = Pending Action (PRD 4.4); Recovery decision = loại pending action của WF-06</li>
+<li>first-run = trạng thái lần đầu của Dashboard theo H3</li>
+<li>Xây với mock / Hội tụ = hai ô của FIG-301 (D-UI)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00037</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00037 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
