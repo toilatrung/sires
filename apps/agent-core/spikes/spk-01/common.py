@@ -68,7 +68,9 @@ def provider_of(variant: str) -> str:
 
 
 def model_for(provider: str) -> str:
-    return os.environ.get(f"SPK01_MODEL_{provider.upper()}", "").strip() or DEFAULT_MODEL[provider]
+    """SPK01_MODEL_<PROVIDER> from the environment, else from the keys file, else the default low-cost model."""
+    name = f"SPK01_MODEL_{provider.upper()}"
+    return os.environ.get(name, "").strip() or _file_values().get(name, "") or DEFAULT_MODEL[provider]
 
 
 def _registry_user_env(name: str) -> str:

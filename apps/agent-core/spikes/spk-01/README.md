@@ -30,7 +30,7 @@ một provider lấy từ cùng một nguồn; key chỉ gửi tới base URL c�
 chính thức: key của kết nối khi không đặt base URL, còn không thì `ANTHROPIC_API_KEY_OFFICIAL`,
 `OPENAI_API_KEY_OFFICIAL`, `GEMINI_API_KEY_OFFICIAL`; thiếu thì `base_url.py compare` bỏ qua cột endpoint chính thức.
 Không in, không ghi key; host của cổng thành `[gateway-host]`. Model mặc định giá thấp, đổi bằng
-`SPK01_MODEL_ANTHROPIC`, `SPK01_MODEL_OPENAI`, `SPK01_MODEL_GOOGLE`.
+`SPK01_MODEL_ANTHROPIC`, `SPK01_MODEL_OPENAI`, `SPK01_MODEL_GOOGLE` (biến môi trường hoặc một dòng trong file key).
 
 Cài một lần bằng script môi trường (quy tắc ở [scripts/development/README.md](../../../../scripts/development/README.md)),
 gói vào `%LOCALAPPDATA%\sires\spikes\spk-01`:

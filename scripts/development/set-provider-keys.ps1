@@ -5,7 +5,8 @@
 <#
 Nhập key và base URL của provider (Anthropic, OpenAI, Google Gemini) vào một file trên máy Dev, ngoài Git, để mọi
 worktree và phiên làm việc nạp lại khi cần. Key của cổng trung gian (proxy) do PO tự cấp được dùng để test và phát
-triển (PO, 26/11/2026). Key gõ ẩn (Read-Host -AsSecureString), không hiện trên màn hình, không vào history.
+triển (PO, 26/11/2026). Mọi câu trả lời, kể cả base URL và y/N, gõ ẩn (Read-Host -AsSecureString): lỡ dán key vào
+câu hỏi khác thì key cũng không hiện trên màn hình; không câu trả lời nào vào history.
 
 Dùng (PowerShell, từ gốc repo hoặc một worktree):
   powershell -ExecutionPolicy Bypass -File scripts\development\set-provider-keys.ps1 [-Check] [-Path <file>]
@@ -105,29 +106,43 @@ function Test-UrlValue($url, $p) {
 function Read-Secret($prompt, $hasValue) {
   $suffix = if ($hasValue) { ' (Enter = giữ key đang có)' } else { ' (Enter = bỏ trống)' }
   while ($true) {
-    $plain = ConvertFrom-Secure (Read-Host -AsSecureString "  $prompt$suffix")
-    $plain = $plain.Trim()
+    $plain = Read-Hidden "$prompt$suffix"
     if (-not $plain) { return $null }
     $problem = Test-KeyValue $plain
-    if (-not $problem) { return $plain }
+    if (-not $problem) { Write-Host "    -> $(Get-Shape $plain)"; return $plain }
     Warn "Key $problem; nhập lại."
+  }
+}
+
+# Every answer is read hidden: a key pasted at the wrong prompt never shows on screen.
+function Read-Hidden($prompt) {
+  return (ConvertFrom-Secure (Read-Host -AsSecureString "  $prompt")).Trim()
+}
+
+function Read-Choice($prompt, $allowed) {
+  while ($true) {
+    $a = (Read-Hidden $prompt).ToLower()
+    if (-not $a) { return '' }
+    if ($allowed -contains $a) { Write-Host "    -> $a"; return $a }
+    Warn "Gõ một trong: $($allowed -join ', ') (Enter = mặc định). Câu trả lời vừa rồi không hiện ra và không được lưu."
   }
 }
 
 function Read-BaseUrl($p, $current) {
   $state = if ($current) { "đang có $(Get-UrlShape $current)" } else { 'đang là endpoint chính thức' }
   while ($true) {
-    $raw = Read-Host "  Base URL $($p.Label) ($($p.Hint); $state; Enter = giữ, - = endpoint chính thức)"
-    $raw = $raw.Trim()
+    $raw = Read-Hidden "Base URL $($p.Label) ($($p.Hint); $state; Enter = giữ, - = endpoint chính thức)"
     if (-not $raw) { return $current }
     if ($raw -eq '-') { return '' }
+    if ($raw -notmatch '://') { Warn 'Đây không phải URL (có thể là key): không lưu, nhập lại base URL.'; continue }
     $url = $raw.TrimEnd('/')
     $problem = Test-UrlValue $url $p
     if ($problem) { Warn "Base URL $problem; nhập lại."; continue }
     if ($p.Id -eq 'openai' -and -not $url.EndsWith('/v1')) {
-      $a = Read-Host '  Base URL OpenAI thường kết thúc bằng /v1 (SDK nối /chat/completions vào sau). Vẫn dùng? [y/N]'
-      if ($a -ne 'y' -and $a -ne 'Y') { continue }
+      $a = Read-Choice 'Base URL OpenAI thường kết thúc bằng /v1 (SDK nối /chat/completions vào sau). Vẫn dùng? [y/N]' @('y', 'n')
+      if ($a -ne 'y') { continue }
     }
+    Write-Host "    -> $(Get-UrlShape $url)"
     return $url
   }
 }
@@ -175,14 +190,21 @@ if ($Check) { Show-State $Path $values; exit 0 }
 
 Step 'Nhập key và base URL'
 Write-Host "  File: $Path"
-Write-Host '  Key gõ ẩn (dán bằng chuột phải hoặc Ctrl+V). Base URL trống = endpoint chính thức của provider.'
+Write-Host '  Mọi câu trả lời đều gõ ẩn, kể cả base URL và y/N (dán bằng chuột phải hoặc Ctrl+V); script in lại dạng đã'
+Write-Host '  nhận (độ dài key, URL đã che host). Base URL trống = endpoint chính thức của provider.'
 $shared = $null
-$a = Read-Host '  Dùng cùng một key cho cả ba provider (ví dụ key của cổng trung gian)? [y/N]'
-if ($a -eq 'y' -or $a -eq 'Y') {
-  $current = @($Providers | ForEach-Object { $values[$_.Key] } | Where-Object { $_ } | Select-Object -Unique)
-  $shared = Read-Secret 'Key dùng chung' ($current.Count -eq 1)
-  if (-not $shared -and $current.Count -eq 1) { $shared = $current[0] }
+$set = @($Providers | ForEach-Object { $values[$_.Key] } | Where-Object { $_ })
+$haveShared = ($set.Count -eq $Providers.Count) -and (@($set | Select-Object -Unique).Count -eq 1)
+$hint = if ($haveShared) { 'Enter = giữ key dùng chung đang có, - = nhập riêng từng provider' } else { 'Enter = nhập riêng từng provider' }
+while ($true) {
+  $k = Read-Hidden "Key dùng chung cho cả ba provider, ví dụ key của cổng trung gian ($hint)"
+  if (-not $k) { if ($haveShared) { $shared = $set[0] }; break }
+  if ($k -eq '-') { break }
+  $problem = Test-KeyValue $k
+  if (-not $problem) { $shared = $k; break }
+  Warn "Key $problem; nhập lại."
 }
+if ($shared) { Write-Host "    -> key dùng chung: $(Get-Shape $shared)" }
 foreach ($p in $Providers) {
   Write-Host ''
   Write-Host "  -- $($p.Label)" -ForegroundColor Cyan
@@ -195,8 +217,8 @@ foreach ($p in $Providers) {
 }
 
 Write-Host ''
-$a = Read-Host '  Có key chính thức riêng (gửi thẳng tới endpoint chính thức, không qua cổng) để so sánh không? [y/N]'
-if ($a -eq 'y' -or $a -eq 'Y') {
+$a = Read-Choice 'Có key chính thức riêng (gửi thẳng tới endpoint chính thức, không qua cổng) để so sánh không? [y/N]' @('y', 'n')
+if ($a -eq 'y') {
   foreach ($p in $Providers) {
     $k = Read-Secret "Key chính thức $($p.Label) ($($p.Official))" ([bool]$values[$p.Official])
     if ($k) { $values[$p.Official] = $k }
@@ -229,8 +251,8 @@ Write-Host ''
 if ($user.Count) { Warn "Biến cấp User đang có: $($user -join ', '). Biến môi trường được ưu tiên hơn file." }
 Write-Host '  Biến môi trường cấp User (mọi chương trình của bạn đều thấy, kể cả công cụ đọc ANTHROPIC_API_KEY):'
 Write-Host '    [N] không đổi (mặc định)   [y] ghi theo file   [x] xóa các biến cấp User ở trên'
-$a = Read-Host '  Chọn'
-if ($a -eq 'y' -or $a -eq 'Y') {
+$a = Read-Choice 'Chọn [N/y/x]' @('n', 'y', 'x')
+if ($a -eq 'y') {
   foreach ($p in $Providers) {
     foreach ($n in @($p.Key, $p.Url, $p.Official)) {
       $v = if ($values[$n]) { $values[$n] } else { $null }
@@ -240,7 +262,7 @@ if ($a -eq 'y' -or $a -eq 'Y') {
   }
   [Environment]::SetEnvironmentVariable('GOOGLE_API_KEY', $null, 'User')
   Ok 'Đã ghi biến cấp User theo file, xóa tên cũ SPK01_BASE_URL_* và GOOGLE_API_KEY; mở terminal mới để thấy.'
-} elseif ($a -eq 'x' -or $a -eq 'X') {
+} elseif ($a -eq 'x') {
   foreach ($n in $user) { [Environment]::SetEnvironmentVariable($n, $null, 'User') }
   Ok "Đã xóa $($user.Count) biến cấp User; từ nay script đọc key từ file."
 }
