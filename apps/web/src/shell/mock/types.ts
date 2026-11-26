@@ -15,11 +15,12 @@ export type Schemas = PublicApi.components['schemas'];
 type Parameters<K extends OperationId> = Operations[K] extends { parameters: infer P } ? P : never;
 type Responses<K extends OperationId> = Operations[K] extends { responses: infer R } ? R : never;
 type Content<R> = R extends { content: infer C } ? C[keyof C] : undefined;
-type Strings<T> = [T] extends [never] ? Record<string, never> : T extends object ? { [P in keyof T]?: string } : Record<string, never>;
+type QueryValue<V> = NonNullable<V> extends readonly unknown[] ? string[] : string;
+type Strings<T> = [T] extends [never] ? Record<string, never> : T extends object ? { [P in keyof T]?: QueryValue<T[P]> } : Record<string, never>;
 
 /** Path parameters of an operation, as the router matched them. */
 export type PathParams<K extends OperationId> = Parameters<K> extends { path: infer P } ? { [X in keyof P]: string } : Record<string, never>;
-/** Query parameters as sent (strings; parse numbers yourself). */
+/** Query parameters as sent (strings; parse numbers yourself); array parameters as string[], whatever their serialization. */
 export type QueryParams<K extends OperationId> = Parameters<K> extends { query?: infer Q } ? Strings<Q> : Record<string, never>;
 /** JSON request body as the client sent it, typed by the contract (not validated). */
 export type RequestBody<K extends OperationId> = Operations[K] extends { requestBody?: { content: infer C } } ? C[keyof C] | undefined : undefined;
@@ -68,6 +69,8 @@ export interface OperationDescriptor {
     readonly idParam?: string;
     readonly scope: readonly string[];
   };
+  /** Array query parameters and how they are serialized (OpenAPI `style`, `explode`). */
+  readonly query?: readonly { readonly name: string; readonly style: string; readonly explode: boolean }[];
   readonly responses: { readonly [status: number]: { readonly contentType: string | null; readonly headers?: readonly string[]; readonly body?: () => unknown } };
 }
 export type GeneratedOperations = { readonly [operationId: string]: OperationDescriptor };

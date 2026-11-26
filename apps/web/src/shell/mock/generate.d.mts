@@ -22,8 +22,18 @@ export interface OperationModel {
   path: string;
   success: number | null;
   resource?: { schema: string; kind: 'item' | 'page' | 'list'; idParam?: string; scope: string[] };
+  query?: QueryParameterModel[];
   responses: Record<string, ResponseModel>;
 }
+
+/** An array query parameter and its OpenAPI serialization. */
+export interface QueryParameterModel {
+  name: string;
+  style: string;
+  explode: boolean;
+}
+
+export function arrayQueryParameters(doc: Record<string, unknown>, parameters: Record<string, unknown>[]): QueryParameterModel[];
 
 export function buildModel(options?: SelectOptions & { spec?: string }): {
   doc: Record<string, unknown> & { components: { schemas: Record<string, unknown> } };
