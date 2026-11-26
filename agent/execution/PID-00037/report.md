@@ -3,7 +3,7 @@
 **Trạng thái:** Bị chặn — G1: 6 test của shell cần `shellStub` trả `GET /dashboard`, `GET /provider-connections` (file của luồng web/shell); mã của khu vực xong
 
 - **Ticket:** [PID-00037](../../../docs/tickets/issues/PID-00037/index.html) · **Luồng:** `web/global` · **Giai đoạn:** PH-02
-- **Nhánh:** `web/global-pid-00037` (từ `origin/preview/ui-ph02` a9bcc0e, gộp hồ sơ PR #123; đã commit) · **PR:** chưa mở
+- **Nhánh:** `web/global-pid-00037` (từ `origin/preview/ui-ph02` a9bcc0e, gộp hồ sơ PR #123; đã commit) · **PR:** [#141](https://github.com/toilatrung/sires/pull/141)
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
