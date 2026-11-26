@@ -217,6 +217,7 @@ describe('client API: tải tệp (multipart/form-data)', () => {
       // @ts-expect-error an upload takes a FormData, not the JSON-like body of the schema
       void api.post('/references/pdf-imports', { body: { file: 'x' }, idempotencyKey: 'k' });
       void api.post('/references/pdf-imports', { body: new FormData(), idempotencyKey: 'k' });
+      void api.post('/references/pdf-imports', { body: new FormData(), contentType: 'multipart/form-data', idempotencyKey: 'k' });
     };
     expect(typeof typed).toBe('function');
   });

@@ -59,7 +59,8 @@ type BodyPart<Op> =
       ? { body: BodyContent<Op>[keyof BodyContent<Op>]; contentType?: keyof BodyContent<Op> & string }
       : HasKey<BodyContent<Op>, 'multipart/form-data'> extends true
         ? // Uploads (importReferenceFromPdf, uploadReferenceDocument, uploadFile): a FormData, sent as is.
-          { body: FormData; contentType?: never }
+          // contentType is accepted for clarity and ignored: the browser sets it with the boundary.
+          { body: FormData; contentType?: 'multipart/form-data' }
         : { body: BodyContent<Op>[keyof BodyContent<Op>]; contentType: keyof BodyContent<Op> & string };
 type IdempotencyPart<Op> = HasKey<HeaderParams<Op>, 'Idempotency-Key'> extends true ? { idempotencyKey: string } : { idempotencyKey?: string };
 type IfMatchPart<Op> = HasKey<HeaderParams<Op>, 'If-Match'> extends true ? { ifMatch: string } : { ifMatch?: string };
