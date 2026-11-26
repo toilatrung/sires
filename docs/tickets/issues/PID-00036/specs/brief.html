@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00036.">
+<title>PID-00036 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00036</p><h1>PID-00036 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H20, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Trước khi dùng agent, Researcher đăng nhập qua eTroy (SignIn) rồi cấu hình ở Settings: Profile, Provider Connections (key của chính mình, kiểm tra kết nối), Agent Models (kết nối và model cho từng agent, Embedding model) và Preferences (ngôn ngữ, Chế độ debug, Ngưỡng kiểm chứng). Lượt này dựng đủ năm màn trong <code>apps/web/src/features/settings/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-02 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Đăng nhập chỉ qua eTroy: một nút điều hướng tới <code>startLogin</code> của gateway; gateway chuyển tới IdP đang cấu hình (OIDC mock ở cục bộ, staging PH-02); không có phương thức khác — UX-AUTH-001; D-OIDC; H2</li>
+<li>Lỗi đăng nhập về <code>/sign-in?error=</code> với <code>oidc_unavailable</code>, <code>login_cancelled</code>, <code>login_failed</code>; mã lạ như <code>login_failed</code>; thông báo nêu nguyên nhân, ảnh hưởng, bước tiếp, mã lỗi — UX-AUTH-002; design.md §6; H3</li>
+<li>Phiên hết hạn: banner theo tham số của shell, nội dung do kho nháp của shell giữ; đã có phiên thì chuyển tới đường dẫn quay lại hợp lệ — UX-AUTH-002; PID-00012 H7, EC08; H4</li>
+<li>Provider chỉ ba lựa chọn; base URL điền sẵn endpoint chính thức, sửa được; key người dùng tự nhập; kết nối chỉ Valid sau khi kiểm tra thành công — UX-SETTINGS-002; AGENT-PROVIDER-002</li>
+<li>“Kiểm tra kết nối” tạo (lần đầu) hoặc sửa rồi kiểm; “Lưu” khi Valid; kết nối chưa Valid vẫn ở bảng — H5</li>
+<li>Key proxy do PO cấp là key provider; base URL khác endpoint chính thức không bị cảnh báo hay chặn; không ghi key hay host proxy vào repo — D-KEY; PC-06 D2; H5</li>
+<li>Invalid luôn kèm mã, câu giải thích của SIRes và một hành động; không hiện nguyên văn lỗi của provider — ticket AC01; H6</li>
+<li>Key chỉ ở dạng che sau khi lưu (<code>••••••••</code> + <code>keyHint</code>); không vào URL, log, bộ nhớ trình duyệt, kho nháp, request khác — AGENT-PROVIDER-002-AC01, AC04; NFR-SECRETS-001; H7</li>
+<li>Kết nối đầu tiên: thông báo nội dung gửi tới provider, xác nhận đã đọc trước khi kiểm tra — NFR-PRIV-001; H8</li>
+<li>Xóa kết nối đang gán phải chọn kết nối Valid thay thế — AGENT-PROVIDER-002-AC03; H9</li>
+<li>Profile: email chỉ đọc; ảnh chỉ hiển thị; URL Scholar phải <code>https://</code>; công tắc context mặc định tắt, lưu ở <code>Preferences</code>; chỉ lĩnh vực nghiên cứu được gửi cho agent khi bật — UX-SETTINGS-001; NFR-PRIV-001; H11</li>
+<li>Mỗi view một nút lưu; cập nhật dùng <code>If-Match</code>; <code>412</code> đọc lại, giữ giá trị đang nhập, không tự gửi lại — design.md §5; H12</li>
+<li>Agent Models: Mặc định và ghi đè theo agent; Analysis Agent hai dòng A, B; chỉ kết nối Valid; model từ kết nối, nhập tay thì “chưa xác minh”; cảnh báo năng lực, cảnh báo cùng model không chặn lưu; không có tham số nâng cao — UX-SETTINGS-003; ORCH-DELIB-005; OQ-102; H13</li>
+<li>Embedding model: một cho cả tài khoản, chỉ kết nối OpenAI, Gemini; đổi model phải xác nhận, nêu số Reference phải index lại và việc tiêu thụ usage — UX-SETTINGS-003; OQ-051; EVID-INDEX-003; H14</li>
+<li>Preferences: ngôn ngữ giao diện áp dụng sau khi lưu; Chế độ debug mặc định tắt, bật lưu toàn văn 30 ngày — UX-SETTINGS-004; H15</li>
+<li>Ngưỡng kiểm chứng: ba ngưỡng 0–1 theo hợp đồng; giá trị mặc định không ghi cứng ở web; khôi phục mặc định có xác nhận; thay đổi áp dụng từ lần kiểm chứng sau — UX-SETTINGS-005; ASM-15; H15, H16</li>
+<li>Khu vực không sửa file chung của shell; cần gì thêm ở shell thì báo phiên điều phối — quy tắc 1.4.9</li>
+<li>Bất biến: Researcher là người duy nhất đổi cấu hình của tài khoản mình (APR-09); không agent nào đọc được Provider Connection (AGENT-SCOPE-001-AC03) — giao diện không đưa cấu hình kết nối vào bất kỳ nội dung nào gửi cho agent.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/SignIn.dc.html</code>, <code>SettingsProfile.dc.html</code>, <code>SettingsProviders.dc.html</code>, <code>SettingsAgents.dc.html</code>, <code>SettingsPreferences.dc.html</code> và các trang trạng thái trong <code>pages/</code> — có; lệch hợp đồng ở ảnh đại diện, ngưỡng Conflicting (Phải sửa ở nguồn mục 5, 6)</li>
+<li><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code>, <code>08-ai-assistant-and-multi-agent-orchestration.yaml</code> (Provider Connections, Agent Models), <code>11-evidence-rag-and-research-synthesis.yaml#/me/embedding-settings</code>, <code>components/schemas/account.yaml</code> — có; thiếu tên tham số mã lỗi đăng nhập, giá trị mặc định của ngưỡng, số Reference phải index lại (Phải sửa ở nguồn mục 1–3)</li>
+<li><code>apps/web/src/features/settings/index.tsx</code> (placeholder năm route), <code>i18n/vi.json</code>, <code>i18n/en.json</code> — có</li>
+<li><code>apps/web/src/shell/</code>: client API, trạng thái dùng chung, kho nháp, hợp đồng <code>Feature</code> có trường mock — chưa có trên <code>main</code> ngày 27/11/2026; làm ở PID-00012 (nhánh <code>web/shell-pid-00012</code>)</li>
+<li><code>apps/web/src/shell/mock/</code> và README hướng dẫn khu vực — chưa có; làm ở PID-00013 (S02, S04)</li>
+<li><code>nx.json</code>: chỉ loại <code>*.spec.ts(x)</code> khỏi input production — có (H18)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 năm màn trong <code>apps/web/src/features/settings/</code>, i18n vi/en, đang tải, trống, lỗi → S01–S07</li>
+<li>O2 mock 16 operation và fixture trong <code>apps/web/src/features/settings/__mocks__/</code> → S01 (kịch bản thêm ở S02–S07)</li>
+<li>O3 <code>providers.spec.tsx</code> → S03, S04; O4 <code>signin.spec.tsx</code> → S02</li>
+<li>O5 <code>settings-nav.spec.tsx</code> → S01; O6 <code>profile.spec.tsx</code> → S05; O7 <code>agents.spec.tsx</code> → S06; O8 <code>preferences.spec.tsx</code> → S07 (thêm khi làm rõ, H18)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>ProviderConnection</code> = Provider Connection; <code>testStatus</code> = trạng thái kiểm tra (Untested, Valid, Invalid); <code>keyHint</code> = phần cuối của key dùng cho dạng che</li>
+<li><code>AgentModelAssignment</code> với <code>agent = default</code> = cấu hình Mặc định; <code>effective</code> = cấu hình đang áp dụng</li>
+<li><code>EmbeddingSettings</code> = Embedding model của tài khoản</li>
+<li><code>VerificationThresholds</code> = Ngưỡng kiểm chứng; <code>isDefault</code> = đang dùng bộ mặc định</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00036</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00036 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
