@@ -49,7 +49,7 @@ await api.patch('/me/profile', { body, contentType: 'application/merge-patch+jso
 
 - Path, tham số, body và kiểu trả về lấy từ `PublicApi` của `@sires/contracts`. `Idempotency-Key` và `If-Match` bắt buộc ở mức type khi hợp đồng bắt buộc.
 - Shell tự gửi `X-CSRF-Token` cho mọi lệnh ghi (lấy từ `GET /auth/session` khi chưa có) và cookie phiên.
-- Lệnh có tác động: `const { idempotency } = useShell(); await idempotency.run('answerPrompt:' + id, (key) => api.post(..., { idempotencyKey: key }))` — gửi lại sau lỗi dùng lại khóa cũ.
+- Lệnh có tác động: `const { idempotency } = useShell(); await idempotency.run('answerPrompt:' + id, (key) => api.post(..., { idempotencyKey: key }))` — gửi lại sau lỗi mạng hoặc 5xx dùng lại khóa cũ; bị từ chối rõ (4xx) thì lần gửi sau có khóa mới.
 - Lỗi là `ApiError`: `code` (= `Problem.code`, hoặc `network_error`, `http_error`), `status`, `correlationId`. Không bao giờ giữ body thô.
 - `401` khi đang dùng: shell tự lưu nháp, đóng SSE và chuyển `/sign-in?reason=session-expired&returnTo=<đường dẫn>`. Chưa đăng nhập khi mở ứng dụng: `/sign-in?returnTo=<đường dẫn>`. Tên tham số xuất ở `SIGN_IN_PATH`, `RETURN_TO_PARAM`, `REASON_PARAM`, `REASON_SESSION_EXPIRED`; `safeReturnTo()` chỉ nhận đường dẫn tương đối bắt đầu bằng `/` (PID-00036 dùng khi gọi `startLogin`).
 - **Hoạt động của người dùng (H11):** router của shell gọi `GET /auth/session` một lần cho mỗi lần điều hướng (không tính chuyển hướng `replace`), không bao giờ theo hẹn giờ; không có header đánh dấu. Thao tác không đổi route mà mở một màn (ví dụ panel) chỉ được tính khi màn gọi `useMarkScreenOpened()()` hoặc gửi lệnh ghi. Không gọi hàm này từ hẹn giờ hay sau sự kiện SSE.
@@ -91,7 +91,7 @@ Nháp lưu trong `localStorage` của trình duyệt theo tài khoản và route
 | `LongOperation title actor startedAt step latest onCancel` | Thao tác dài của agent hoặc System: bước hoặc thanh chạy lặp, thời gian đã chạy, hoạt động gần nhất, “rời trang được”. Không spinner. |
 | `EmptyState title reason action` | Trống: lý do và một hành động |
 | `ErrorState error saved notSaved next onRetry ns` | Lỗi: chuyện gì, đã lưu gì, làm gì tiếp, mã và `req <correlationId>`. Mã nghiệp vụ dịch ở namespace của khu vực, khóa `error.<code>`, truyền `ns`. |
-| `PromptCard prompt onConfirm submitting agentLabel` | Thẻ Interactive Agent Prompt bốn trạng thái; không chọn sẵn; bàn phím. Khu vực gọi `answerPrompt` trong `onConfirm`. |
+| `PromptCard prompt onConfirm submitting agentLabel` | Thẻ Interactive Agent Prompt bốn trạng thái; không chọn sẵn; bàn phím. Prompt có `choices`: radio kèm hệ quả, khu vực gọi `answerPrompt` trong `onConfirm(choiceIds)`. Prompt không có `choices` (`approval`, `edit_and_approve`, `information_request`): thẻ giữ khung và trạng thái, khu vực truyền điều khiển của mình làm `children` (ô sửa, “Sửa và duyệt”, “Từ chối”, ô trả lời như màn `Chat`) và tự gửi `decision`, `text`. Idempotency: `useShell().idempotency.run('answerPrompt:' + id, …)`. |
 | `NotFound project` | “Không tìm thấy” trong khung |
 
 Lớp CSS dùng chung ở [`styles/shell.css`](styles/shell.css) (`sires-button` với `data-variant="primary|secondary|danger"`, `sires-chip`, `sires-num`, `sires-id`). Token ở [`styles/tokens.css`](styles/tokens.css), chuyển động ở [`styles/motion.css`](styles/motion.css) (chép nguyên văn từ `docs/ui-design/assets/motion.css`; sửa nguồn rồi chép lại, không sửa bản này).

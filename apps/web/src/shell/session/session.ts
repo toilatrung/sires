@@ -141,7 +141,7 @@ export class SessionController {
   }
 
   /** GET /me: account, Preferences and the ETag the next PATCH /me/preferences sends as If-Match (H2). */
-  async loadAccount(): Promise<Account | undefined> {
+  async loadAccount(options: { throwOnError?: boolean } = {}): Promise<Account | undefined> {
     if (this.state.status !== 'signed-in') return undefined;
     try {
       const { data: account, etag } = await this.options.api.get('/me');
@@ -149,8 +149,10 @@ export class SessionController {
       this.set({ ...this.state, account, accountEtag: etag });
       for (const hook of [...this.accountHooks]) hook(account);
       return account;
-    } catch {
-      // 401 already went to the session-expired flow; other errors leave the frame without account data.
+    } catch (error) {
+      // 401 already went to the session-expired flow; other errors leave the frame without account data,
+      // unless the caller (saving Preferences) needs the real error.
+      if (options.throwOnError) throw error;
       return undefined;
     }
   }

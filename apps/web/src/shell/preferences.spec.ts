@@ -93,6 +93,20 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('GET /me lỗi lúc mở: khi lưu thì đọc lại và báo đúng lỗi thật', async () => {
+    const stub = shellStub();
+    stub.on('GET', '/api/v1/me', () => problem(500, 'internal_error', { correlationId: 'req-me' }));
+    const { user } = renderShell({ path: '/dashboard', stub });
+    await waitForFrame();
+    await waitFor(() => expect(stub.calls('/api/v1/me')).toHaveLength(1));
+    await user.click(banner().getByRole('button', { name: 'EN' }));
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('internal_error · req req-me')).toBeTruthy();
+    expect(stub.calls('/api/v1/me')).toHaveLength(2);
+    expect(stub.calls('/api/v1/me/preferences', 'PATCH')).toHaveLength(0);
+    expect(i18next.language).toBe('en');
+  });
+
   it('chưa đăng nhập không lưu: ở /sign-in chỉ đổi trong phiên, không gửi PATCH (EC28)', async () => {
     const stub = shellStub({ signedIn: false });
     const { user } = renderShell({ path: '/sign-in', stub });

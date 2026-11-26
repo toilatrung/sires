@@ -29,7 +29,7 @@ export type { StreamEvent, StreamEventType, StreamSignal, EventFilter } from './
 export { REASON_PARAM, REASON_SESSION_EXPIRED, RETURN_TO_PARAM, SIGN_IN_PATH, safeReturnTo, signInPath, type SessionState } from './session/session';
 
 // i18n and formatting
-export { changeLanguage, currentLanguage } from './i18n';
+export { changeLanguage, currentLanguage } from './locale';
 export { formatDate, formatDateTime, formatElapsed, formatNumber, formatShortDate, formatTime } from './format';
 
 // Shared states and components
@@ -37,4 +37,4 @@ export { StatusChip, ExecutionLabel, type StatusChipProps } from './states/Statu
 export { statusTone, type StatusEntity, type StatusTone, type ExecutionLabelKind } from './states/statuses';
 export { EmptyState, ErrorState, LoadingState, LongOperation, useErrorDescription } from './states/States';
 export { PromptCard, type InteractiveAgentPrompt, type PromptCardProps } from './prompt-card/PromptCard';
-export { NotFound } from './App';
+export { NotFound } from './NotFound';

@@ -9,6 +9,9 @@
 // - Answered: normal border, read-only, who and when.
 // - Expired, Cancelled: dashed muted border on ground, read-only, always “Không được tính là đồng ý”.
 // Keyboard (UX-A11Y-002): Tab into the group, arrow keys choose, Tab to Confirm, Enter or Space confirms.
+// Prompts without choices (approval, edit_and_approve, information_request: Chat.html shows the edit fields and
+// “Sửa và duyệt” / “Từ chối”) keep the card frame and states; the area passes its own controls as children and
+// sends decision or text itself. The card never shows a Confirm button that can never be enabled.
 
 import type { PublicApi } from '@sires/contracts';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
@@ -29,7 +32,10 @@ export interface PromptCardProps {
   answeredByLabel?: string;
   /** Time shown in the header; defaults to createdAt, or the answer time once answered. */
   at?: DateInput;
-  /** Extra content under the question (e.g. the object and its consequence, owned by the feature). */
+  /**
+   * Extra content under the question, owned by the feature: the object and its consequence for a choice prompt;
+   * the whole answer controls for a prompt without choices (approval, edit_and_approve, information_request).
+   */
   children?: ReactNode;
 }
 
@@ -66,6 +72,17 @@ export function PromptCard({ prompt, onConfirm, submitting = false, agentLabel, 
       {time && <span className="sires-num sires-prompt__time">{time}</span>}
     </div>
   );
+
+  if (status === 'Open' && choices.length === 0) {
+    return (
+      <article className="sires-prompt" data-status="Open">
+        {header}
+        <p className="sires-prompt__question">{prompt.question}</p>
+        {children}
+        {agentLabel && <span className="sires-prompt__agent">{agentLabel}</span>}
+      </article>
+    );
+  }
 
   if (status === 'Open') {
     const canConfirm = selected.length > 0 && !submitting;

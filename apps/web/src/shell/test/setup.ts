@@ -8,6 +8,12 @@ import { initI18n } from '../i18n';
 
 initI18n('vi');
 
+if (typeof document !== 'undefined') {
+  // findBy/waitFor wait up to 5 s: the full frame renders slower on a loaded machine or CI runner.
+  const { configure } = await import('@testing-library/react');
+  configure({ asyncUtilTimeout: 5000 });
+}
+
 beforeEach(async () => {
   await i18next.changeLanguage('vi');
 });

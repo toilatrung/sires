@@ -112,6 +112,19 @@ describe('thẻ Interactive Agent Prompt', () => {
     }
   });
 
+  it('prompt không có phương án (edit_and_approve): khung và trạng thái của shell, điều khiển do khu vực truyền', () => {
+    render(
+      <PromptCard prompt={prompt({ type: 'edit_and_approve', choices: [] })}>
+        <button type="button">Sửa và duyệt</button>
+        <button type="button">Từ chối</button>
+      </PromptCard>,
+    );
+    expect(screen.getByText('edit_and_approve · Open')).toBeTruthy();
+    expect(screen.getByText('Giới hạn năm xuất bản cho Task T-2.3?')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Xác nhận/ })).toBeNull();
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Sửa và duyệt', 'Từ chối']);
+  });
+
   it('đang gửi: nút xác nhận vô hiệu, không gọi lại callback', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();

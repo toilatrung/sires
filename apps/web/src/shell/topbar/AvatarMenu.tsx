@@ -9,8 +9,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { ApiError, isApiError } from '../api/errors';
 import { useSession, useShell } from '../hooks';
 import { PersonIcon, SignOutIcon } from '../icons';
+import { ErrorState } from '../states/States';
 
 export function initials(displayName: string | undefined): string | undefined {
   const words = displayName?.trim().split(/\s+/).filter(Boolean) ?? [];
@@ -27,6 +29,7 @@ export function AvatarMenu() {
   const menuId = useId();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<ApiError>();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
@@ -100,8 +103,12 @@ export function AvatarMenu() {
   const signOut = async () => {
     setSigningOut(true);
     setOpen(false);
+    setSignOutError(undefined);
     try {
       await services.signOut();
+    } catch (error) {
+      // Still signed in (UX-STATE-003): say so, keep everything, offer a retry.
+      setSignOutError(isApiError(error) ? error : new ApiError('network'));
     } finally {
       setSigningOut(false);
     }
@@ -160,6 +167,21 @@ export function AvatarMenu() {
             </button>
           </li>
         </ul>
+      )}
+      {signOutError && (
+        <div className="sires-avatar__error" data-popover="" data-side="bottom">
+          <ErrorState
+            error={signOutError}
+            title={t('account.signOutFailed')}
+            next={t('account.signOutNext')}
+            onRetry={() => void signOut()}
+            actions={
+              <button type="button" className="sires-button" data-variant="secondary" data-size="sm" onClick={() => setSignOutError(undefined)}>
+                {t('state.dismiss')}
+              </button>
+            }
+          />
+        </div>
       )}
       {signingOut && (
         <span role="status" className="sires-visually-hidden">

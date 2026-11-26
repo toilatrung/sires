@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import { redirect, type RouteObject } from 'react-router';
-import { App, Frameless, NotFound } from './App';
+import { App, Frameless } from './App';
+import { NotFound } from './NotFound';
 import type { Feature } from './feature';
 import { features as allFeatures } from './features';
 

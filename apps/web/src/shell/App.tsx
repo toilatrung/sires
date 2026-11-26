@@ -8,7 +8,7 @@
 
 import { useEffect, useId, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import { routeContext } from './context';
 import { features } from './features';
 import { useMediaQuery, useNavigationData, useSession, useShell } from './hooks';
@@ -18,7 +18,8 @@ import { ProjectRail } from './rail/ProjectRail';
 import { ErrorState } from './states/States';
 import { LanguageSwitch } from './topbar/LanguageSwitch';
 import { TopBar } from './topbar/TopBar';
-import { currentLanguage } from './i18n';
+import { currentLanguage } from './locale';
+import { NotFound } from './NotFound';
 
 const PHONE = '(max-width: 767px)';
 
@@ -35,24 +36,6 @@ function AssistantPanel({ id, onClose }: { id: string; onClose: () => void }) {
       </div>
       <div className="sires-assistant__body">{Content ? <Content /> : <p className="sires-muted">{t('assistant.placeholder')}</p>}</div>
     </aside>
-  );
-}
-
-/** “Không tìm thấy” in the frame (EC06, EC23); never a blank screen. */
-export function NotFound({ project = false }: { project?: boolean }) {
-  const { t } = useTranslation('shell');
-  const location = useLocation();
-  return (
-    <section className="sires-page">
-      <div role="alert" className="sires-error">
-        <strong className="sires-error__title">{project ? t('notFound.projectTitle') : t('notFound.title')}</strong>
-        <span>{project ? t('notFound.projectDetail') : t('notFound.detail', { path: location.pathname })}</span>
-        <span className="sires-error__footer">
-          <Link to="/dashboard">{t('notFound.action')}</Link>
-          <span className="sires-error__code">not_found</span>
-        </span>
-      </div>
-    </section>
   );
 }
 

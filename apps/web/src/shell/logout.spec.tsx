@@ -44,6 +44,37 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
     expect(services.session.current.status).toBe('signed-out');
   });
 
+  it('đăng xuất: lỗi mạng khi lấy CSRF — báo lỗi, vẫn đăng nhập, giữ nháp và SSE, thử lại được (UX-STATE-003)', async () => {
+    const stub = shellStub();
+    const { user, services, browser } = renderShell({ path: '/dashboard', stub });
+    await waitForFrame();
+    await waitFor(() => expect(avatar().textContent).toBe('NT'));
+    await waitFor(() => expect(services.events.status).toBe('open'));
+    const key = DraftStore.key(fx.ACCOUNT_ID, '/projects/p1/chat', 'chat.composer');
+    localStorage.setItem(key, JSON.stringify({ value: 'x' }));
+    stub.on('GET', '/api/v1/auth/session', () => {
+      throw new TypeError('offline');
+    });
+
+    await user.click(avatar());
+    await user.click(screen.getByRole('menuitem', { name: 'Đăng xuất' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText('Chưa đăng xuất được')).toBeTruthy();
+    expect(within(alert).getByText('network_error')).toBeTruthy();
+    expect(browser.forms).toHaveLength(0);
+    expect(services.session.current.status).toBe('signed-in');
+    expect(services.events.status).toBe('open');
+    expect(localStorage.getItem(key)).not.toBeNull();
+    // The frame still works: no endless “checking session”.
+    expect(screen.queryByText('Đang kiểm phiên đăng nhập…')).toBeNull();
+
+    stub.on('GET', '/api/v1/auth/session', () => json(fx.session));
+    await user.click(within(alert).getByRole('button', { name: 'Thử lại' }));
+    await waitFor(() => expect(browser.forms).toHaveLength(1));
+    expect(localStorage.getItem(key)).toBeNull();
+  });
+
   it('menu bằng bàn phím: mở, di chuyển, chọn, Escape đóng và trả focus', async () => {
     const { user, browser } = renderShell({ path: '/projects/p1/overview' });
     await waitForFrame();

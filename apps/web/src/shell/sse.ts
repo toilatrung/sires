@@ -281,7 +281,7 @@ export class EventStream {
 
     if (type === REPLAY_UNAVAILABLE) {
       // The stream restarts from “now”: take the id the server gives, or forget the stale one (PC-05 P2).
-      this.lastId = record.id || undefined;
+      this.lastId = record.id || event.id || undefined;
       this.signal('reload');
       return;
     }

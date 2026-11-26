@@ -29,12 +29,20 @@ export class IdempotencyKeys {
   }
 
   /**
-   * Run a command with the operation's key. Success forgets the key; failure keeps it, so a retry of the
-   * same operation sends the same key and the server returns the first result instead of acting twice.
+   * Run a command with the operation's key. Success forgets the key. When the outcome is unknown (no answer, or a
+   * 5xx) the key is kept, so a retry of the same operation sends the same key and the server returns the first
+   * result instead of acting twice (EC10). A definite refusal (4xx) also forgets it: the user corrects the input and
+   * sends a new request, which must not hit 422 idempotency_key_reused.
    */
   async run<T>(operation: string, send: (key: string) => Promise<T>): Promise<T> {
-    const result = await send(this.keyFor(operation));
-    this.done(operation);
-    return result;
+    try {
+      const result = await send(this.keyFor(operation));
+      this.done(operation);
+      return result;
+    } catch (error) {
+      const status = (error as { status?: unknown } | null)?.status;
+      if (typeof status === 'number' && status < 500) this.done(operation);
+      throw error;
+    }
   }
 }

@@ -95,6 +95,15 @@ describe('dữ liệu điều hướng (H1)', () => {
     expect(within(screen.getByRole('listbox')).queryByText('Project đã lưu trữ')).toBeNull();
   });
 
+  it('project Archived mở bằng URL: không đánh dấu nhầm Global là ngữ cảnh đang chọn', async () => {
+    const { user } = renderShell({ path: '/projects/p9/overview' });
+    await waitForFrame();
+    await waitFor(() => expect(banner().getByRole('button', { name: 'Chuyển ngữ cảnh: Project đã lưu trữ' })).toBeTruthy());
+    await user.click(banner().getByRole('button', { name: /Chuyển ngữ cảnh/ }));
+    const options = within(screen.getByRole('listbox')).getAllByRole('option');
+    expect(options.filter((o) => o.getAttribute('aria-selected') === 'true')).toHaveLength(0);
+  });
+
   it('project 404: “không tìm thấy”, không tiết lộ project có tồn tại hay không (EC23)', async () => {
     renderShell({ path: '/projects/khong-co/overview' });
     await waitForFrame();

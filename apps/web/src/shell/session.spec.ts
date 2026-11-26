@@ -17,8 +17,8 @@ describe('phiên', () => {
     const { router, stub } = renderShell({ path: '/dashboard', stub: shellStub({ signedIn: false }) });
     await waitFor(() => expect(where(router)).toBe('/sign-in?returnTo=%2Fdashboard'));
     // /sign-in renders without TopBar; only VI/EN.
-    expect(await screen.findByRole('group', { name: 'Ngôn ngữ giao diện' })).toBeTruthy();
-    expect(screen.queryByRole('navigation', { name: 'Khu vực Global' })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Khu vực Global' })).toBeNull());
+    expect(screen.getByRole('group', { name: 'Ngôn ngữ giao diện' }).closest('.sires-frameless')).not.toBeNull();
     // No account data requested without a session.
     expect(stub.calls('/api/v1/me')).toHaveLength(0);
   });

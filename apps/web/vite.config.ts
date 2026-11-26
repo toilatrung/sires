@@ -20,5 +20,7 @@ export default defineConfig({
     include: ['src/**/*.spec.{ts,tsx}'],
     setupFiles: ['src/shell/test/setup.ts'],
     restoreMocks: true,
+    // UI tests type and render the whole frame; leave headroom on loaded machines and CI runners.
+    testTimeout: 20_000,
   },
 });

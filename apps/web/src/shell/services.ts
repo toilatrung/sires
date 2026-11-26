@@ -11,7 +11,7 @@ import { ApiClient, type FetchLike } from './api/client';
 import { IdempotencyKeys } from './api/idempotency';
 import { isApiError } from './api/errors';
 import { DraftStore, type DraftStorage } from './drafts/store';
-import { changeLanguage, isLocale } from './i18n';
+import { changeLanguage, isLocale } from './locale';
 import { NavigationStore } from './navigation/navigation';
 import { LanguagePreference } from './preferences';
 import { SessionController, signInPath } from './session/session';
@@ -135,23 +135,28 @@ export function createShellServices(options: ShellServicesOptions = {}): ShellSe
     },
     async signOut() {
       const accountId = session.accountId;
-      drafts.clearAccount(accountId);
-      events.close();
-      navigation.stop();
-      started = false;
+      const leave = () => {
+        drafts.clearAccount(accountId);
+        events.close();
+        navigation.stop();
+        started = false;
+        session.markSignedOut();
+      };
       let token: string;
       try {
         // A fresh token right before the form is sent (logout contract: “lấy từ GET /auth/session ngay trước khi gửi”).
         ({ csrfToken: token } = (await api.get('/auth/session', { skipUnauthenticatedHandler: true })).data);
       } catch (error) {
-        session.markSignedOut();
         if (isApiError(error) && error.unauthenticated) {
+          // No session any more: nothing to end at the gateway; still forget this account's drafts here.
+          leave();
           navigate(signInPath());
           return;
         }
+        // Still signed in (network or server error): keep the session, drafts and SSE; the menu reports the error.
         throw error;
       }
-      session.markSignedOut();
+      leave();
       browser.submitForm(api.url('/auth/logout'), { [LOGOUT_CSRF_FIELD]: token });
     },
   };

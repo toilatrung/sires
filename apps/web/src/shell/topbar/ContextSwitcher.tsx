@@ -33,7 +33,8 @@ export function ContextSwitcher() {
   const [active, setActive] = useState(0);
 
   const options: Option[] = [{ id: 'global', name: t('context.global'), global: true }, ...(data.projects ?? [])];
-  const currentIndex = ctx.kind === 'global' ? 0 : Math.max(0, options.findIndex((o) => o.id === ctx.projectId));
+  // A project missing from the Active list (archived, or list not loaded) leaves no option selected.
+  const currentIndex = ctx.kind === 'global' ? 0 : options.findIndex((o) => o.id === ctx.projectId);
   const currentName =
     ctx.kind === 'global' ? t('context.global') : (data.project?.name ?? data.projects?.find((p) => p.id === ctx.projectId)?.name ?? '');
 
@@ -51,7 +52,7 @@ export function ContextSwitcher() {
   }, [open]);
 
   const openList = () => {
-    setActive(currentIndex);
+    setActive(Math.max(0, currentIndex));
     setOpen(true);
   };
 

@@ -55,7 +55,7 @@ export interface LongOperationProps {
   title: ReactNode;
   /** Who works on it: an agent name or “System”. */
   actor: ReactNode;
-  /** Start time; the elapsed time ticks every second. */
+  /** Start time; the elapsed time ticks every second (hidden from the live region so it is not read every second). */
   startedAt: DateInput;
   /** Known number of steps → progress bar with “Bước n/m”; omitted → indeterminate bar. */
   step?: { current: number; total: number };
@@ -92,11 +92,11 @@ export function LongOperation({ title, actor, startedAt, step, latest, onCancel,
         <span className="sires-longop__meta sires-num">
           {step ? (
             <>
-              {t('longOp.step', step)} · {actor} · {elapsed}
+              {t('longOp.step', step)} · {actor} · <span aria-hidden="true">{elapsed}</span>
             </>
           ) : (
             <>
-              {actor} · {t('longOp.elapsed', { time: elapsed })}
+              {actor} · <span aria-hidden="true">{t('longOp.elapsed', { time: elapsed })}</span>
             </>
           )}
         </span>

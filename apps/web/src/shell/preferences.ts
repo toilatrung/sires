@@ -11,7 +11,7 @@ import type { i18n } from 'i18next';
 import type { ApiClient } from './api/client';
 import { ApiError, isApiError } from './api/errors';
 import type { Locale } from './feature';
-import { changeLanguage } from './i18n';
+import { changeLanguage } from './locale';
 import type { SessionController } from './session/session';
 
 export type LanguageSaveResult = 'saved' | 'session-only' | 'failed';
@@ -22,6 +22,9 @@ export class LanguagePreference {
   private errorValue?: ApiError;
   private readonly listeners = new Set<Listener>();
   private chosen = false;
+  /** Saves run one after another, so the last click is also the last value written to Preferences. */
+  private queue: Promise<unknown> = Promise.resolve();
+  private latest = 0;
 
   constructor(
     private readonly api: ApiClient,
@@ -58,11 +61,15 @@ export class LanguagePreference {
     this.setError(undefined);
     await changeLanguage(language, this.i18nInstance);
     if (!this.session.signedIn) return 'session-only';
+    const ticket = ++this.latest;
+    const run = this.queue.then(() => this.save(language, false));
+    this.queue = run.catch(() => undefined);
     try {
-      await this.save(language, false);
+      await run;
       return 'saved';
     } catch (error) {
-      this.setError(isApiError(error) ? error : new ApiError('network'));
+      // A newer choice is already on its way: its own result is what the user needs to see.
+      if (ticket === this.latest) this.setError(isApiError(error) ? error : new ApiError('network'));
       return 'failed';
     }
   }
@@ -70,10 +77,11 @@ export class LanguagePreference {
   private async save(language: Locale, retried: boolean): Promise<void> {
     let state = this.session.current;
     if (state.status === 'signed-in' && !state.accountEtag) {
-      await this.session.loadAccount();
+      // No ETag yet (GET /me failed at start-up): read it now; its real error is the one to report.
+      await this.session.loadAccount({ throwOnError: true });
       state = this.session.current;
     }
-    if (state.status !== 'signed-in' || !state.accountEtag) throw new ApiError('network'); // GET /me failed: no ETag to send as If-Match
+    if (state.status !== 'signed-in' || !state.accountEtag) throw new ApiError('http', { status: 428 });
     try {
       const { data, etag } = await this.api.patch('/me/preferences', {
         // merge-patch (RFC 7396): only the changed field; the generated type marks defaulted fields as required.
@@ -84,7 +92,7 @@ export class LanguagePreference {
       this.session.setAccount(data, etag);
     } catch (error) {
       if (!retried && isApiError(error) && error.status === 412) {
-        await this.session.loadAccount();
+        await this.session.loadAccount({ throwOnError: true });
         return this.save(language, true);
       }
       throw error;

@@ -121,6 +121,23 @@ describe('client SSE', () => {
     stream.close();
   });
 
+  it('tín hiệu chỉ có id trong data: dùng id đó làm Last-Event-ID tiếp theo', async () => {
+    const { stub, channels, stream, signals } = setup();
+    stream.connect();
+    await vi.waitFor(() => expect(channels).toHaveLength(1));
+    channels[0].send({ id: 'e-1', event: 'task.status_changed', data: event('e-1', 'task.status_changed') });
+    await vi.waitFor(() => expect(stream.lastEventId).toBe('e-1'));
+    channels[0].end();
+    await vi.waitFor(() => expect(channels).toHaveLength(2));
+    channels[1].send({ event: REPLAY_UNAVAILABLE, data: event('0', REPLAY_UNAVAILABLE) });
+    await vi.waitFor(() => expect(signals).toContain('reload'));
+    expect(stream.lastEventId).toBe('0');
+    channels[1].end();
+    await vi.waitFor(() => expect(connections(stub)).toHaveLength(3));
+    expect(connections(stub)[2].headers['Last-Event-ID']).toBe('0');
+    stream.close();
+  });
+
   it('401: không thử lại, chuyển luồng phiên hết hạn (EC15)', async () => {
     const { stub, channels, stream, onUnauthenticated, failNextWith } = setup();
     stream.connect();

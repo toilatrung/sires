@@ -62,6 +62,24 @@ describe('client API', () => {
     expect(posts.map((p) => p.headers['Idempotency-Key'])).toEqual(['key-1', 'key-1', 'key-2']);
   });
 
+  it('idempotency: bị từ chối rõ ràng (4xx) thì bỏ khóa; 5xx chưa rõ kết quả thì giữ khóa', async () => {
+    const answers = [problem(422, 'validation_failed'), problem(503, 'service_unavailable'), json({ id: 'pr-2' })];
+    const stub = new FetchStub()
+      .on('GET', '/api/v1/auth/session', () => json(fx.session))
+      .on('POST', '/api/v1/prompts/pr-2/response', () => answers.shift() ?? json({}));
+    const { api } = setup(stub);
+    let n = 0;
+    const keys = new IdempotencyKeys(() => `key-${++n}`);
+    const send = () =>
+      keys.run('answerPrompt:pr-2', (idempotencyKey) =>
+        api.post('/prompts/{promptId}/response', { path: { promptId: 'pr-2' }, body: { choiceIds: ['a'] }, idempotencyKey }),
+      );
+    await expect(send()).rejects.toMatchObject({ status: 422 });
+    await expect(send()).rejects.toMatchObject({ status: 503 });
+    await send();
+    expect(stub.calls('/api/v1/prompts/pr-2/response', 'POST').map((p) => p.headers['Idempotency-Key'])).toEqual(['key-1', 'key-2', 'key-2']);
+  });
+
   it('lỗi không phải problem: lỗi mạng hoặc mã HTTP, không giữ body thô (EC11)', async () => {
     const stub = new FetchStub()
       .on('GET', '/api/v1/dashboard', () => new Response('<html>Bad gateway: stack at proxy.js:12</html>', { status: 502, headers: { 'content-type': 'text/html' } }))

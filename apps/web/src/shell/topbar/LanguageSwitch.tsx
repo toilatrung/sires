@@ -8,7 +8,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Locale } from '../feature';
 import { useShell } from '../hooks';
-import { currentLanguage, LOCALES } from '../i18n';
+import { currentLanguage, LOCALES } from '../locale';
 
 export function LanguageSwitch() {
   const { t, i18n } = useTranslation('shell');
