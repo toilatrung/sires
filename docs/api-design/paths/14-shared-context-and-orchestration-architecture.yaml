@@ -676,8 +676,15 @@
     summary: Luồng sự kiện realtime (Server-Sent Events)
     description: |
       Phát sau khi giao dịch commit (outbox, DATA-PERSIST-001) để giao diện cập nhật Agent Activity, prompt, Task,
-      build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; nếu quá xa, client tải lại trạng thái bằng
-      các endpoint GET. Sự kiện chỉ thuộc tài khoản của phiên.
+      build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; gateway giữ log phát lại 24 giờ (ADR-07).
+      Sự kiện chỉ thuộc tài khoản của phiên.
+
+      Khi `Last-Event-ID` không còn phát lại được (cũ hơn thời gian giữ log, không có trong log của tài khoản, hoặc
+      không đúng định dạng), gateway vẫn trả `200` và gửi đầu luồng, trước mọi sự kiện khác, một bản ghi
+      `event: replay.unavailable` (Event có `type = replay.unavailable`); sau đó chỉ phát sự kiện mới, không phát lại.
+      Client nhận tín hiệu này thì tải lại trạng thái bằng các endpoint GET. Kết nối lần đầu (không có `Last-Event-ID`)
+      và nối lại còn trong thời gian giữ log không có tín hiệu này. Dùng loại sự kiện thay vì mã phản hồi vì
+      `EventSource` của trình duyệt không đọc được status khi tự nối lại (PID-00012 H5, PC-05 P2).
     x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001]
     x-priority: P0
     parameters:

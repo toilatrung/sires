@@ -85,7 +85,7 @@
 <ol>
 <li>web mở <code>GET /api/v1/events</code> (một kết nối mỗi tab).</li>
 <li>gateway có một consumer trên <code>sires.events</code> (binding theo các loại sự kiện hiển thị được); mỗi sự kiện được ghi vào log sự kiện của gateway (giữ 24 giờ, khóa theo tài khoản và thứ tự nhận) rồi đẩy tới kết nối SSE của đúng tài khoản trên mọi pod gateway (mỗi pod có queue riêng, tự xóa khi pod dừng).</li>
-<li>Nối lại với <code>Last-Event-ID</code>: gateway phát lại từ log sự kiện; quá 24 giờ → sự kiện <code>resync</code>, web tải lại dữ liệu.</li>
+<li>Nối lại với <code>Last-Event-ID</code>: gateway phát lại từ log sự kiện; <code>Last-Event-ID</code> không còn phát lại được (quá 24 giờ, không có trong log của tài khoản) → bản ghi đầu luồng <code>replay.unavailable</code>, web tải lại dữ liệu bằng GET (hợp đồng <code>streamEvents</code>, PC-05 P2).</li>
 <li>Chat stream dùng exchange <code>sires.stream</code> (không bền, không ghi log): agent-core phát delta, gateway chuyển thành SSE <code>chat.delta</code>.</li>
 <li>Heartbeat SSE mỗi 15 giây.</li>
 </ol>

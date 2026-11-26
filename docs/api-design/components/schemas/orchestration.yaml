@@ -475,8 +475,13 @@ Event:
   description: |
     Sự kiện phát qua SSE sau khi giao dịch commit (outbox — DATA-PERSIST-001). `id` dùng cho `Last-Event-ID` khi kết nối lại.
     `type` là đúng tên message trong `events/asyncapi.yaml` mà gateway nghe ở `gatewayConsumesForSse`, cộng `chat.delta`
-    từ stream `sires.stream` (không có `id` bền, không phát lại). Prompt mới là `prompt.status_changed` với
-    `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed` (phân biệt bằng `objectType`).
+    từ stream `sires.stream` (không có `id` bền, không phát lại), cộng `replay.unavailable`. Prompt mới là
+    `prompt.status_changed` với `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed`
+    (phân biệt bằng `objectType`).
+
+    `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
+    `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
+    `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
   required: [id, type, at]
   properties:
     id: { type: string }
@@ -488,7 +493,7 @@ Event:
         prompt.status_changed, deliberation.started, deliberation.round_closed, deliberation.entry_retracted,
         deliberation.status_changed, context_snapshot.outdated, reference.status_changed,
         reference.indexing_status_changed, project_reference.changed, research.object_status_changed,
-        manuscript.object_status_changed, chat.delta]
+        manuscript.object_status_changed, chat.delta, replay.unavailable]
     projectId: { $ref: common.yaml#/Id }
     objectType: { type: string }
     objectId: { $ref: common.yaml#/Id }
