@@ -389,6 +389,11 @@ paths:
     $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1events
 
 components:
+  schemas:
+    # Event chỉ dùng trong luồng SSE của GET /events (x-event-schema); khai ở đây để bundle và type sinh có
+    # components.schemas.Event (PublicApi của @sires/contracts; PID-00012 S05, PID-00013 S03; PC-05 P2).
+    Event:
+      $ref: components/schemas/orchestration.yaml#/Event
   securitySchemes:
     sessionCookie:
       type: apiKey
