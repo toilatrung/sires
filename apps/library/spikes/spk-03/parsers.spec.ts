@@ -35,6 +35,17 @@ describe('PID-00025-AC03 — parser trên export Crossref thật', () => {
     }
   });
 
+  it('BibTeX đọc bằng mapping biblatex như adapter PID-00024; mapping @bibtex cổ điển bỏ abstract (dữ liệu tổng hợp)', async () => {
+    const synthetic = '@article{k1, title={Synthetic title}, author={Doe, Jane}, year={2020}, abstract={Synthetic abstract.}}';
+    expect(parseCitation(synthetic, 'bib')[0].abstract).toBe('Synthetic abstract.');
+    expect(parseCitation(synthetic, 'bib', { bibtexMapping: 'classic' })[0].abstract).toBeUndefined();
+    for (const fixture of (await fixtures()).filter(row => row.file.endsWith('.bib'))) {
+      const [biblatex] = parseCitation(fixture.input, 'bib');
+      const [classic] = parseCitation(fixture.input, 'bib', { bibtexMapping: 'classic' });
+      expect([biblatex.DOI, biblatex.title, biblatex.author.length]).toEqual([classic.DOI, classic.title, classic.author.length]);
+    }
+  });
+
   it('ghi nhận thư viện có thể dung thứ RIS thiếu ER; PID-00024 cần validation riêng', () => {
     expect(parseCitation('TY  - JOUR\nTI  - Incomplete\n', 'ris')).toHaveLength(1);
     expect(() => parseCitation('@article{broken, title={unterminated', 'bib')).toThrow();

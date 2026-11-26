@@ -12,9 +12,12 @@ require('@citation-js/plugin-bibtex');
 require('@citation-js/plugin-ris');
 const bibtex = require('bibtex-parse-js');
 
-export function parseCitation(input, format) {
-  // Explicit format prevents arbitrary URL/DOI resolution and auto-fetch plugins.
-  return new Cite(input, { forceType: format === 'bib' ? '@bibtex/text' : '@ris/file' }).data;
+// Explicit format prevents arbitrary URL/DOI resolution and auto-fetch plugins.
+// BibTeX uses the biblatex mapping (@biblatex/text), as the library adapter of
+// PID-00024 does: the classic @bibtex/text mapping drops `abstract` (Lần 7).
+export const BIBTEX_TYPES = { biblatex: '@biblatex/text', classic: '@bibtex/text' };
+export function parseCitation(input, format, { bibtexMapping = 'biblatex' } = {}) {
+  return new Cite(input, { forceType: format === 'bib' ? BIBTEX_TYPES[bibtexMapping] : '@ris/file' }).data;
 }
 export function parseBibtex(input) { return bibtex.toJSON(input); }
 export async function fixtures() {
@@ -63,7 +66,14 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const pkg = require(`${name}/package.json`);
     return [name, { version: pkg.version, license: pkg.license }];
   }));
+  // Synthetic entry (not a real export): does each BibTeX mapping keep `abstract`?
+  const synthetic = '@article{k1, title={Synthetic title}, author={Doe, Jane}, year={2020}, abstract={Synthetic abstract.}}';
+  const mappingCheck = Object.fromEntries(Object.keys(BIBTEX_TYPES).map(mapping => [mapping, { abstractKept: parseCitation(synthetic, 'bib', { bibtexMapping: mapping })[0].abstract !== undefined }]));
   await mkdir(evidenceDir, { recursive: true });
-  await writeFile(resolve(evidenceDir, 'parsers.json'), JSON.stringify({ capturedAt: new Date().toISOString(), node: process.version, packages, rows }, null, 2) + '\n');
+  // New timestamped file each run ('wx'); parsers.json and parsers-0.0.24.json stay as history.
+  const capturedAt = new Date().toISOString();
+  const filename = `parsers-${capturedAt.replace(/[:.]/g, '-')}.json`;
+  await writeFile(resolve(evidenceDir, filename), JSON.stringify({ capturedAt, node: process.version, packages, bibtexMapping: 'biblatex', mappingCheck, rows }, null, 2) + '\n', { flag: 'wx' });
+  process.stdout.write(`${filename}\n`);
   process.stdout.write(JSON.stringify(rows.map(({ data, ...row }) => ({ ...row, records: data?.length })), null, 2) + '\n');
 }

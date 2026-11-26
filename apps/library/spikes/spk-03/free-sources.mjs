@@ -1,6 +1,7 @@
 // SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -9,6 +10,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 // Nine fixed queries, three disciplines. Coverage is nonempty top-5 / planned
 // queries, NOT recall against all publications. Author search resolves an author
 // ID first and counts publications only, never author records as papers.
+// Title queries carry a reference DOI: the summary reports whether that DOI is in
+// the top-5 (known-item check); it is not ground truth for the other query kinds.
 export const queries = [
   { id: 'cs-keyword', kind: 'keyword', text: 'graph neural networks' },
   { id: 'cs-title', kind: 'title', text: 'Attention Is All You Need', doi: '10.48550/arXiv.1706.03762' },
@@ -20,7 +23,13 @@ export const queries = [
   { id: 'econ-title', kind: 'title', text: 'The Economic Lives of the Poor', doi: '10.1257/jep.21.1.141' },
   { id: 'econ-author', kind: 'author', text: 'Esther Duflo' },
 ];
-export const sources = ['openalex', 'semantic-scholar'];
+// DEC-60 (H3 of PID-00025, 22/11/2026): OpenAlex is the default discovery source and
+// Semantic Scholar is out of scope. Its 19-21/11 evidence stays in agent/execution as
+// history; the code that produced it is in Git history (commit f493221).
+export const sources = ['openalex'];
+export function assertSource(source) {
+  if (!sources.includes(source)) throw new Error(`Unsupported source "${source}": only openalex is measured (DEC-60)`);
+}
 const root = fileURLToPath(new URL('.', import.meta.url));
 export const evidenceDir = resolve(root, '../../../..', 'agent/execution/PID-00025/evidence');
 
@@ -34,7 +43,8 @@ export function abstractFromIndex(index) {
 }
 
 export function normalize(source, paper) {
-  if (source === 'openalex') return {
+  assertSource(source);
+  return {
     id: paper.id, title: paper.title,
     authors: (paper.authorships ?? []).map(a => a.author?.display_name).filter(Boolean),
     year: paper.publication_year,
@@ -42,14 +52,18 @@ export function normalize(source, paper) {
     url: paper.primary_location?.landing_page_url || paper.doi || paper.id,
     description: abstractFromIndex(paper.abstract_inverted_index),
     citations: paper.cited_by_count ?? null, doi: paper.doi ?? null,
+    // A work can carry more than one DOI (e.g. a publisher alias): the primary `doi`
+    // plus DOIs of its other locations. Kept for the known-item check only.
+    locationDois: [...new Set((paper.locations ?? []).map(l => doiFromUrl(l?.landing_page_url)).filter(Boolean))],
   };
-  return {
-    id: paper.paperId, title: paper.title,
-    authors: (paper.authors ?? []).map(a => a.name).filter(Boolean),
-    year: paper.year, venue: paper.venue || null, url: paper.url,
-    description: paper.abstract || null, citations: paper.citationCount ?? null,
-    doi: paper.externalIds?.DOI ?? null,
-  };
+}
+
+export function bareDoi(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  return value.trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '').replace(/^doi:/, '');
+}
+function doiFromUrl(value) {
+  return typeof value === 'string' && /^https?:\/\/(dx\.)?doi\.org\//i.test(value) ? bareDoi(value) : null;
 }
 
 export function completeness(papers) {
@@ -122,9 +136,8 @@ function endpoint(base, params) {
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   return url;
 }
-const fields = 'title,authors,year,venue,url,abstract,citationCount,externalIds';
-
 export async function runSource(source, client, querySet = queries) {
+  assertSource(source);
   const results = [];
   for (const query of querySet) {
     if (client.stopped) {
@@ -132,34 +145,62 @@ export async function runSource(source, client, querySet = queries) {
       continue;
     }
     try {
-      let body;
       let author = null;
-      if (source === 'openalex') {
-        let params = { search: query.text, per_page: '5' };
-        if (query.kind === 'author') {
-          const found = await client.get(endpoint('https://api.openalex.org/authors', { search: query.text, per_page: '5' }));
-          author = found.results?.[0] ?? null;
-          if (!author) { results.push({ query, outcome: 'empty-author', papers: [] }); continue; }
-          params = { filter: `author.id:${author.id}`, per_page: '5' };
-        }
-        body = await client.get(endpoint('https://api.openalex.org/works', params));
-      } else {
-        let url = endpoint('https://api.semanticscholar.org/graph/v1/paper/search', { query: query.text, limit: '5', fields });
-        if (query.kind === 'author') {
-          const found = await client.get(endpoint('https://api.semanticscholar.org/graph/v1/author/search', { query: query.text, limit: '5', fields: 'name,paperCount' }));
-          author = found.data?.[0] ?? null;
-          if (!author) { results.push({ query, outcome: 'empty-author', papers: [] }); continue; }
-          url = endpoint(`https://api.semanticscholar.org/graph/v1/author/${author.authorId}/papers`, { limit: '5', fields });
-        }
-        body = await client.get(url);
+      let params = { search: query.text, per_page: '5' };
+      if (query.kind === 'author') {
+        const found = await client.get(endpoint('https://api.openalex.org/authors', { search: query.text, per_page: '5' }));
+        author = found.results?.[0] ?? null;
+        if (!author) { results.push({ query, outcome: 'empty-author', papers: [] }); continue; }
+        params = { filter: `author.id:${author.id}`, per_page: '5' };
       }
-      const papers = (body.results ?? body.data ?? []).map(p => normalize(source, p));
+      const body = await client.get(endpoint('https://api.openalex.org/works', params));
+      const papers = (body.results ?? []).map(p => normalize(source, p));
       results.push({ query, outcome: 'ok', author, papers, completeness: completeness(papers) });
     } catch (error) {
       results.push({ query, outcome: 'error', error: error.message, papers: [] });
     }
   }
   return { source, intervalMs: client.intervalMs, results, requests: client.requests };
+}
+
+// Known-item check for queries that carry a reference DOI: rank of that DOI in the
+// returned top-5 (1-based), null when absent, 'not-measured' when the query failed.
+// `matchedBy` says whether it matched the work's primary DOI or a location DOI.
+export function knownItems(run) {
+  return run.results.filter(row => row.query.doi).map(row => {
+    const base = { id: row.query.id, doi: row.query.doi };
+    if (row.outcome !== 'ok') return { ...base, rank: 'not-measured', matchedBy: null };
+    const target = bareDoi(row.query.doi);
+    const primary = row.papers.findIndex(paper => bareDoi(paper.doi) === target);
+    if (primary !== -1) return { ...base, rank: primary + 1, matchedBy: 'primary-doi' };
+    const location = row.papers.findIndex(paper => (paper.locationDois ?? []).includes(target));
+    return location === -1 ? { ...base, rank: null, matchedBy: null } : { ...base, rank: location + 1, matchedBy: 'location-doi' };
+  });
+}
+
+// Observed limit signals from OpenAlex x-ratelimit-* response headers: the server's
+// own budget and per-request cost, not a threshold probed by bursting.
+export function rateLimitSignals(run) {
+  const withHeaders = run.requests.filter(r => r.headers?.['x-ratelimit-limit'] !== undefined);
+  const number = value => (value === undefined ? null : Number(value));
+  const pick = r => (r ? {
+    limit: number(r.headers['x-ratelimit-limit']), remaining: number(r.headers['x-ratelimit-remaining']),
+    limitUsd: number(r.headers['x-ratelimit-limit-usd']), remainingUsd: number(r.headers['x-ratelimit-remaining-usd']),
+    resetSeconds: number(r.headers['x-ratelimit-reset']),
+  } : null);
+  const costs = {};
+  for (const r of withHeaders) {
+    const kind = new URL(r.url).searchParams.has('search') ? 'search' : 'filter';
+    (costs[kind] ??= new Set()).add(number(r.headers['x-ratelimit-credits-used']));
+  }
+  return {
+    requestsWithHeaders: withHeaders.length,
+    first: pick(withHeaders[0]),
+    last: pick(withHeaders.at(-1)),
+    creditsUsedTotal: withHeaders.reduce((sum, r) => sum + (number(r.headers['x-ratelimit-credits-used']) ?? 0), 0),
+    creditsPerRequest: Object.fromEntries(Object.entries(costs).map(([kind, set]) => [kind, [...set]])),
+    retryAfter: run.requests.filter(r => r.headers?.['retry-after'] !== undefined).map(r => Number(r.headers['retry-after'])),
+  };
 }
 
 export function summarize(run) {
@@ -174,16 +215,22 @@ export function summarize(run) {
     completeness: completeness(papers),
     minStartGapMs: starts.length > 1 ? Math.min(...starts.slice(1).map((start, i) => start - starts[i])) : null,
     statuses: run.requests.map(r => r.status ?? 'network-error'),
+    knownItems: knownItems(run),
+    rateLimit: rateLimitSignals(run),
   };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await mkdir(evidenceDir, { recursive: true });
+  // Never overwrite the first-run evidence (Lần 1): stop before any network call.
+  if (existsSync(resolve(evidenceDir, 'free-sources.json'))) {
+    throw new Error('evidence/free-sources.json already exists (Lần 1); re-measure with remeasure.mjs');
+  }
   const runs = [];
   for (const source of sources) runs.push(await runSource(source, new PacedClient(source)));
   const evidence = { capturedAt: new Date().toISOString(), node: process.version, platform: process.platform, authentication: 'none', runs };
-  await writeFile(resolve(evidenceDir, 'free-sources.json'), JSON.stringify(evidence, null, 2) + '\n');
+  await writeFile(resolve(evidenceDir, 'free-sources.json'), JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx' });
   const summary = runs.map(summarize);
-  await writeFile(resolve(evidenceDir, 'free-sources-summary.json'), JSON.stringify(summary, null, 2) + '\n');
+  await writeFile(resolve(evidenceDir, 'free-sources-summary.json'), JSON.stringify(summary, null, 2) + '\n', { flag: 'wx' });
   process.stdout.write(JSON.stringify(summary, null, 2) + '\n');
 }
