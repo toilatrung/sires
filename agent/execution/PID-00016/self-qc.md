@@ -127,6 +127,29 @@ EC01–EC10 như Lần 1, đạt lại trong lần chạy này. Thay đổi:
 | G5 | unrequested | LOW | Test UTF-8 và dump qua base64 (YC-03), `vitest.config.ts` (YC-02) ngoài hồ sơ ticket | report.md mục 5 | Đã ghi YC, theo #100 và PC-04 A6 |
 | G6 | partial | LOW | `gateway.sql` đã có `owner_lookup` trên `app.session` nhưng migration gateway chưa có | `docs/database/ddl/gateway.sql:58`; `apps/gateway/migrations/` rỗng trên `main` | Việc của PID-00014 (PR #63) sau khi PR này vào `main` (PC-04 B3) |
 
+## Lần 3 — 25/11/2026
+
+Sửa theo QC độc lập Lần 1 (qc-report.md, G3 LOW), theo PC-05 P37 (đề xuất: PR sửa theo QC thêm mục “Lần N”). Chỉ sửa `report.md` và file này; không sửa mã, `qc-report.md`, `docs/`.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00016 --result` | “PID-00016: KẾT QUẢ ĐỦ (0 cảnh báo)”, trạng thái `Xong — chờ QC (Lần 3, …)` |
+| `node scripts/docs/add-license.mjs --check` | 0 file chưa có thông báo giấy phép |
+| `node scripts/docs/update-index.mjs --check` | Khớp (159 PID; taskboard khớp; `docs/index.html` khớp) |
+| `pnpm nx show projects --affected --base=origin/main` | Không project nào (`agent/execution/` không thuộc project Nx), nên không có target lint, typecheck, build, test để chạy |
+| `node scripts/development/check-tracks.mjs --base origin/main` (sau commit) | `tracks touched: repo` (chỉ `agent/execution/PID-00016/`) |
+
+### 2. Đối chiếu với QC Lần 1
+
+| G của QC | Mức | Xử lý |
+| --- | --- | --- |
+| G1 | LOW | Chưa làm: chờ PO chốt PC-05 P40 (đề xuất cùng PID-00159) |
+| G2 | LOW | Chưa làm: chờ PC-05 P40 (trùng self-qc G4 Lần 2) |
+| G3 | LOW | Đã sửa: `report.md` dòng Trạng thái, Nhánh/PR (#107 merge 25/11/2026, `a53e3c9`), Cập nhật, Bước tiếp theo; mục Lần 3 |
+| Đề xuất PO 3 (`provider_secret`) | — | Ghi trong Bước tiếp theo: chờ PC-05 P22 |
+
 ## Lần 4 — 27/11/2026
 
 QC độc lập G1, G2 (LOW), PC-05 P40; làm cùng PID-00159. G3 thuộc PR #113 (mục Lần 3).
