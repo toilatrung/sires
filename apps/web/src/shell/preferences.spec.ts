@@ -6,7 +6,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import i18next from 'i18next';
 import { describe, expect, it } from 'vitest';
 import * as fx from './test/fixtures';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { json, problem, shellStub } from './test/stub';
 
 const banner = () => within(screen.getByRole('banner'));
@@ -16,7 +16,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
     const stub = shellStub();
     let release: (r: Response) => void = () => undefined;
     stub.on('PATCH', '/api/v1/me/preferences', () => new Promise<Response>((resolve) => (release = resolve)));
-    const { user, services } = renderShell({ path: '/dashboard', stub });
+    const { user, services } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.calls('/api/v1/me')).toHaveLength(1));
 
@@ -45,7 +45,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
       patches += 1;
       return patches === 1 ? problem(412, 'precondition_failed') : json(fx.account('en'), { headers: { etag: '"v9"' } });
     });
-    const { user, services } = renderShell({ path: '/dashboard', stub });
+    const { user, services } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.calls('/api/v1/me')).toHaveLength(1));
     stub.on('GET', '/api/v1/me', () => json(fx.account('vi'), { headers: { etag: '"v8"' } }));
@@ -66,7 +66,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
   it('lần gửi lại vẫn 412: xử lý như lỗi khác (EC26 → EC27)', async () => {
     const stub = shellStub();
     stub.on('PATCH', '/api/v1/me/preferences', () => problem(412, 'precondition_failed'));
-    const { user } = renderShell({ path: '/dashboard', stub });
+    const { user } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await user.click(banner().getByRole('button', { name: 'EN' }));
     const alert = await screen.findByRole('alert');
@@ -77,7 +77,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
   it('lỗi giữ ngôn ngữ trong phiên: English vẫn dùng, báo chưa lưu, mã lỗi (EC27)', async () => {
     const stub = shellStub();
     stub.on('PATCH', '/api/v1/me/preferences', () => problem(500, 'internal_error', { correlationId: 'req-77' }));
-    const { user } = renderShell({ path: '/dashboard', stub });
+    const { user } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await user.click(banner().getByRole('button', { name: 'EN' }));
 
@@ -96,7 +96,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
   it('GET /me lỗi lúc mở: khi lưu thì đọc lại và báo đúng lỗi thật', async () => {
     const stub = shellStub();
     stub.on('GET', '/api/v1/me', () => problem(500, 'internal_error', { correlationId: 'req-me' }));
-    const { user } = renderShell({ path: '/dashboard', stub });
+    const { user } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.calls('/api/v1/me')).toHaveLength(1));
     await user.click(banner().getByRole('button', { name: 'EN' }));
@@ -109,7 +109,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
 
   it('chưa đăng nhập không lưu: ở /sign-in chỉ đổi trong phiên, không gửi PATCH (EC28)', async () => {
     const stub = shellStub({ signedIn: false });
-    const { user } = renderShell({ path: '/sign-in', stub });
+    const { user } = renderShellFrame({ path: '/sign-in', stub });
     await user.click(await screen.findByRole('button', { name: 'EN' }));
     expect(i18next.language).toBe('en');
     expect(screen.getByRole('group', { name: 'Interface language' })).toBeTruthy();
