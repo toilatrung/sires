@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00083](../../../docs/tickets/issues/PID-00083/index.html) · **Luồng:** `web/monitoring` · **Giai đoạn:** PH-02 (Xây với mock)
-- **Nhánh:** `web/monitoring-pid-00083` (tạo từ `origin/preview/ui-ph02` `3c05b2d`; đã commit có chữ ký và push) · **PR:** vào `develop` (liên kết ở mô tả PR)
+- **Nhánh:** `web/monitoring-pid-00083` (tạo từ `origin/preview/ui-ph02` `3c05b2d`; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#148](https://github.com/toilatrung/sires/pull/148) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
