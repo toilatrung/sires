@@ -181,6 +181,22 @@ Sau QC độc lập Lần 1 (`dc4e48b`, CHƯA ĐẠT). Revert `78baa91`, merge #
 
 Tự kiểm mục 4: dòng “Không sửa file trong điểm dừng” nay đúng (YC1 đóng). Không còn CRITICAL, HIGH.
 
+
+## Lần 4 — 27/11/2026
+
+Bỏ mock `listProjectReferences` và `removeReferenceFromProject` khỏi library: hai operation này có mock chủ ở research (H31; report.md Lần 4). Commit `4d3d960`.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `vitest run src/features/library` (nhánh này) | 4 file, 94/94 đạt |
+| `tsc --noEmit`, `eslint src/features/library` (nhánh này) | 0 lỗi |
+| Cây gộp `origin/preview/ui-ph02` (`0418d5a`) với `4d3d960`, worktree tạm: `NX_CACHE_DIRECTORY=<worktree>/.nx/cache-preview98 pnpm nx run-many -t test -p @sires/web --skip-nx-cache` | 68 file, **721/721** đạt, gồm `research/evidence.spec.tsx` (EC10) và `manuscript/__mocks__/manuscript-mock.spec.ts` (EC56) |
+| Cây gộp: `tsc -p apps/web/tsconfig.json --noEmit`, `eslint src/features/library` | 0 lỗi |
+| Cây gộp: `dev:mock` (cổng tạm 5184) | Khởi động không lỗi, `[SIRes mock] 167 handlers`, console không có lỗi. `/library` hiện panel 5 mục chờ duyệt và 6 dòng Trusted. `GET /projects/{rag}/references` trả 200 với 14 mục từ mock của research |
+| Commit `d0c8586` của nhánh docs cũ (#156, thay bằng #159) | Không có trong nhánh này; không cần dựng nhánh v2 |
+
+Worktree tạm và cấu hình preview tạm đã gỡ. Không có khoảng trống mới.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
