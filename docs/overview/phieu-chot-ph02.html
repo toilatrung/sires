@@ -110,7 +110,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <li>Gỡ URL hồ sơ Google Scholar.</li>
 <li>Vị trí màn kế hoạch công bố; đối chiếu có là APR không.</li>
 <li>Chưa đồng bộ các mục 3.5, 4.1, 5, 14, 16.8, 19 của PRD.</li></ol></li>
-<li><strong>Merge các pull request</strong> đã qua QC độc lập: lệnh merge bypass của phiên điều phối bị chặn, nên PO merge. Thứ tự cho phiếu này: #121 → #136 → #112. #125 (PID-00159) đã gồm thay đổi của #113 (PID-00016): squash #125 rồi đóng #113 (QC PID-00159 G8, chốt theo đề xuất).</li>
+<li><strong>Merge các pull request</strong> đã qua QC độc lập: lệnh merge bypass của phiên điều phối bị chặn, nên PO merge. Thứ tự cho phiếu này: #121 → #136 → #112; cho PID-00115: #112 → #135 → #154 (QC #154 G4). #125 (PID-00159) đã gồm thay đổi của #113 (PID-00016): squash #125 rồi đóng #113 (QC PID-00159 G8, chốt theo đề xuất).</li>
 <li><strong>PO xem lại</strong> 19 mục chốt theo đề xuất, 11 mục ghi nhận ở nhóm H và hồ sơ PID-00160 (Sẵn sàng theo ủy quyền).</li>
 </ol>
 <h3 id="con-cho-po-phat-sinh">Phát sinh từ PR sửa nguồn và QC (27/11/2026)</h3>
@@ -126,7 +126,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px soli
 <tr><td>Ba ghi nhận cho PID-00061, có từ trước #153: (1) payload <code>chatDelta</code> không có <code>projectId</code>, nên <code>GET /events?projectId=…</code> không lọc được <code>chat.delta</code>; (2) <code>Event.id</code> bắt buộc, nhưng <code>chat.delta</code> không có id bền, nên nối lại bằng <code>Last-Event-ID</code> sẽ nhận <code>replay.unavailable</code>; (3) <code>WorkflowType</code> không có loại chat-turn mà F-04 nhắc.</td><td>#153</td><td>Stream chat và nối lại SSE của <a href="../tickets/issues/PID-00061/index.html">PID-00061</a>; loại workflow của PID-00068.</td><td>Làm rõ PID-00061 (PH-03).</td></tr>
 <tr><td>Ánh xạ citation → claim tại vị trí, và vị trí citation trong PDF (PID-00115 mục 2). DDL không có thực thể citation, build không lưu vị trí. Cần DBQ và luồng tạo dữ liệu (Verification Agent, SyncTeX ở sandbox-runner).</td><td>#154 (PID-00115)</td><td>Chưa thêm được vào hợp đồng; PID-00115 giữ phần này ở Ngoài phạm vi (N7).</td><td>Làm rõ <a href="../tickets/issues/PID-00094/index.html">PID-00094</a>, <a href="../tickets/issues/PID-00095/index.html">PID-00095</a> (PH-04); trước <a href="../tickets/issues/PID-00108/index.html">PID-00108</a> (PH-05) và PID-00122.</td></tr>
 <tr><td>Nguồn revision <code>manual_submission</code>: MS-REVISION-001 có liệt kê, nhưng PRD 18.1 và DDL chỉ có ba nguồn và chưa có luồng tạo revision. PO sửa câu ở PRD 12.10 hoặc chốt luồng.</td><td>#154 (PID-00115)</td><td>PRD mâu thuẫn với chính nó; không tạo được revision từ bản nộp tay.</td><td>Làm rõ <a href="../tickets/issues/PID-00053/index.html">PID-00053</a> (revision, PH-02).</td></tr>
-<tr><td>“Hoạt động gần nhất” của build: thiết kế Manuscript đã bỏ theo đề xuất, nhưng UX-STATE-001 và design.md 2.4.1 vẫn yêu cầu cho mọi thao tác dài. Giữ thì thêm trường vào <code>Build</code> và báo tiến độ từ sandbox-runner; bỏ thì ghi ngoại lệ ở UX-STATE-001, design.md.</td><td>#154 (PID-00115)</td><td>Thẻ build của PID-00115 lệch quy tắc chung của thao tác dài.</td><td>Làm rõ PID-00108 (Build, PH-05).</td></tr>
+<tr><td>“Hoạt động gần nhất” của build: thiết kế Manuscript đã bỏ theo đề xuất, nhưng UX-STATE-001 và design.md 2.4.1 vẫn yêu cầu cho mọi thao tác dài (trang States còn lấy build làm ví dụ). PO chọn một trong hai: thêm trường hoạt động cho <code>Build</code> và cho sandbox-runner báo tiến độ (PID-00108); hoặc sửa UX-STATE-001 (cùng design.md 2.4.1) cho build.</td><td>#154 (PID-00115; QC #154 G2)</td><td>Thẻ build của PID-00115 lệch quy tắc chung của thao tác dài.</td><td>Làm rõ PID-00108 (Build, PH-05).</td></tr>
 <tr><td>Hợp đồng nội bộ cho hạn mức Google Scholar: library (source adapter) nhận hạn mức hiệu lực của lần chạy thế nào, ghi số lượt đã dùng vào <code>Workflow.scholarSearch</code> (orchestration) ra sao, và đếm hạn mức tháng ở đâu. Cần quyết định kiến trúc (kiến trúc 3).</td><td>#156 (PID-00098)</td><td><code>internal/*.yaml</code> chưa sửa; <a href="../tickets/issues/PID-00050/index.html">PID-00050</a> chưa biết nhận và trả hạn mức qua đâu.</td><td>Làm rõ PID-00050, PID-00046 (PH-02).</td></tr>
 <tr><td>DBQ cho các cột mới: Preferences Google Scholar (identity), <code>orchestration.workflow.scholar_search</code>, <code>library.discovered_result.import_state</code> (cùng <code>search_workflow_id</code> vốn đã thiếu), <code>library.reference.deleted_at</code>. Mở sau DBQ-12, DBQ-13 (#124).</td><td>#156 (PID-00098)</td><td>Lưu các trường mới của hợp đồng: <a href="../tickets/issues/PID-00041/index.html">PID-00041</a>, PID-00046, PID-00050, <a href="../tickets/issues/PID-00076/index.html">PID-00076</a>.</td><td>Làm rõ PID-00041, PID-00046, PID-00050 (PH-02); PID-00076 (PH-03).</td></tr>
 <tr><td>Bảy ticket cập nhật mục 2.3 theo hợp đồng mới khi làm rõ: <a href="../tickets/issues/PID-00036/index.html">PID-00036</a>, PID-00041, <a href="../tickets/issues/PID-00045/index.html">PID-00045</a>, PID-00050 (PH-02); <a href="../tickets/issues/PID-00059/index.html">PID-00059</a>, PID-00076 (PH-03); <a href="../tickets/issues/PID-00101/index.html">PID-00101</a> (PH-05).</td><td>#156 (PID-00098)</td><td>Mục 2.3 của các ticket thiếu operation và trường mới (<code>googleScholar</code>, <code>Preferences.googleScholarDiscovery</code>, <code>getDiscoveredResult</code>, <code>restoreReference</code>, lọc Audit Event). PID đã làm rõ thì chạy lại spec-clarify-skill.</td><td>Khi làm rõ từng PID; bốn PID PH-02 trước.</td></tr>
@@ -193,6 +193,8 @@ const R = {
  pr135: ['PR #135', 'https://github.com/toilatrung/sires/pull/135'],
  pr136: ['PR #136', 'https://github.com/toilatrung/sires/pull/136'],
  pr137: ['PR #137', 'https://github.com/toilatrung/sires/pull/137'],
+ pr150: ['PR #150', 'https://github.com/toilatrung/sires/pull/150'],
+ pr154: ['PR #154', 'https://github.com/toilatrung/sires/pull/154'],
  pr118: ['PR #118 (key proxy)', 'https://github.com/toilatrung/sires/pull/118'],
  p23: pid('00023'), p35: pid('00035'), p36: pid('00036'), p37: pid('00037'), p38: pid('00038'), p41: pid('00041'),
  p42: pid('00042'), p48: pid('00048'), p49: pid('00049'), p50: pid('00050'), p55: pid('00055'), p58: pid('00058'),
@@ -488,7 +490,7 @@ const GROUPS = [
     'H12: chủ mock 24 operation.'
    ],
    q:'Giữ các câu đã chốt của PID-00114?', opts:HOPTS, rec:0, chosen:0},
-  {id:'H11', title:'PID-00115 (PR #135)', kind:'Ghi nhận', basis:BASIS_H, refs:['p115','pr135'], impact:'Hồ sơ PID-00115; 24 câu H đã chốt; phiếu I còn mở: không',
+  {id:'H11', title:'PID-00115 (PR #135, #154)', kind:'Ghi nhận', basis:BASIS_H, refs:['p115','pr135','pr154','pr150'], impact:'Hồ sơ PID-00115; 24 câu H đã chốt; quyết định sửa nguồn ở #154; phiếu I còn mở: không',
    ctx:'Khu vực manuscript: LaTeX Manuscript Workspace. Sẵn sàng; 13 mục sửa nguồn.',
    ctxList:[
     'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-06.',
@@ -497,7 +499,11 @@ const GROUPS = [
     'H12: chấp nhận proposal chỉ khi Proposed và citationCheck.passed đúng bằng true; không sửa diff.',
     'H21: điện thoại chỉ xem và quyết định proposal.',
     'H22: gói editor, PDF khai trong apps/web/package.json; chấp nhận cảnh báo web/shell của check-tracks.',
-    'Sửa nguồn mục 5: PRD 12.5 MS-DIFF-001 bỏ câu edit-and-approve (xem “Còn chờ PO”).'
+    'Sửa nguồn mục 5: PRD 12.5 MS-DIFF-001 bỏ câu edit-and-approve (xem “Còn chờ PO”).',
+    'Sửa nguồn ở #154, chốt theo đề xuất: BuildIssue.params có limit (số giây với timeout, số MB với memory_limit) và reason (chỉ với memory_limit: tex_capacity khi TeX hết dung lượng trong, memory khi chạm giới hạn bộ nhớ của môi trường build). QC #154 G5: bằng chứng SPK-06 ghi cgroup_oom, nên đổi memory thành cgroup_oom hoặc ghi cách ánh xạ.',
+    'Sửa nguồn ở #154, chốt theo đề xuất: FileChange.restoreFromRevisionId (tùy chọn, writeOnly) lấy nội dung văn bản hoặc nhị phân của file cùng path ở một revision cũ; revision không thuộc Manuscript hoặc không có file đó trả 400 validation_failed; không dùng cho bibliography/references.bib (System sinh lại, MS-BIB-001); revision khôi phục ghi source = direct_edit, actor Researcher.',
+    'Sửa nguồn ở #154, chốt theo đề xuất: không thêm giá trị enum cho ManuscriptRevision.source; chèn sơ đồ là change_proposal có artifactVersionIds, khôi phục là direct_edit. manual_submission chờ PO (xem “Còn chờ PO”).',
+    'Nghiệm thu (QC #154 G1, chốt theo đề xuất): #150 nghiệm thu theo AC ở c8cf274 (hồ sơ của #135); phần AC mới của #154 là Lần 2 của PID-00115.'
    ],
    q:'Giữ các câu đã chốt của PID-00115?', opts:HOPTS, rec:0, chosen:0},
  ]},
