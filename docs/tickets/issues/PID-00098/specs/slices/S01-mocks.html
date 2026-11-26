@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00098.">
+<title>PID-00098 — S01 Mock của khu vực library | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S01 — Mock của khu vực library</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (nền cho test của S02–S09)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08 (dữ liệu khôi phục khi chạy dev)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00013 S01–S03 đã merge vào <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc README của <code>apps/web/src/shell/mock/</code> (PID-00013): khai operation của khu vực, override, fixture, helper test, phát sự kiện qua mock <code>/events</code>, cờ bật mock khi dev.</li>
+<li>Khai 23 operation của <code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code> cho khu vực trong <code>apps/web/src/features/library/__mocks__/</code> (tạo mới): <code>listDiscoverySources</code>, <code>startDiscoverySearch</code>, <code>startAuthorSearch</code>, <code>listDiscoveredResults</code>, <code>setDiscoveredResultStatus</code>, <code>importDiscoveredResults</code>, <code>listReferences</code>, <code>createReferenceManually</code>, <code>importReferenceFromPdf</code>, <code>decideReferences</code>, <code>getReference</code>, <code>updateReferenceMetadata</code>, <code>deleteReference</code>, <code>revokeReference</code>, <code>reinstateReference</code>, <code>mergeReference</code>, <code>getReferenceUsage</code>, <code>getReferenceDocument</code>, <code>uploadReferenceDocument</code>, <code>retryReferenceIndexing</code>, <code>listProjectReferences</code>, <code>selectReferencesForProject</code>, <code>removeReferenceFromProject</code>. Không khai <code>getWorkflow</code>, <code>cancelWorkflow</code>, <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code>, <code>listProjects</code>, <code>getMe</code> (H4).</li>
+<li>Kho dữ liệu chung của khu vực (module trong <code>__mocks__/</code>): reference, kết quả discovery, selection, usage, workflow discovery và reference_processing; dữ liệu mẫu theo <code>designs/notes.html</code>; kiểu lấy từ <code>PublicApi</code> của <code>@sires/contracts</code>, không viết tay.</li>
+<li>Override có trạng thái: lọc và phân trang theo <code>cursor</code>, <code>limit</code>; <code>Idempotency-Key</code> lặp lại trả kết quả cũ; <code>updateReferenceMetadata</code> kiểm <code>If-Match</code> (412), tăng <code>metadataVersion</code>, giữ <code>bibtexKey</code>; <code>decideReferences</code> trả <code>skipped</code> cho mục có <code>duplicateWarnings</code> khi gửi cùng lô khác; <code>revokeReference</code> trả <code>impact</code>; <code>deleteReference</code> trả <code>409</code> khi đang dùng; <code>importReferenceFromPdf</code>, <code>uploadReferenceDocument</code> trả <code>413</code>, <code>422 pdf_without_text_layer</code> theo tên tệp mẫu; <code>selectReferencesForProject</code> trả <code>422 reference_not_trusted</code> khi chưa Trusted; số <code>usedInProjectCount</code>, <code>getReferenceUsage</code> tính từ selection.</li>
+<li>Vòng đời workflow giả lập: <code>startDiscoverySearch</code>, <code>startAuthorSearch</code>, <code>importDiscoveredResults</code>, <code>importReferenceFromPdf</code> tạo workflow Running trong kho, trả trong 202, sau một khoảng ngắn chuyển Succeeded (tạo Discovered Result hoặc Reference) và phát <code>workflow.status_changed</code>; reference đổi trạng thái phát <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code>, <code>pending_action.changed</code> qua mock <code>/events</code>.</li>
+<li>Kịch bản cho test (hàm tạo kho, không biến toàn cục): thư viện trống; nguồn giới hạn truy cập (Failed, <code>rate_limited</code>); 0 kết quả OpenAlex và Google Scholar available; hai hồ sơ tác giả cùng tên; lô có mục lỗi và mục trùng; reference Failed, Unavailable, Revoked, Rejected, đã gộp; mục nghi trùng; 20 mục chờ duyệt.</li>
+<li>Đăng ký mock qua trường của Feature trong <code>apps/web/src/features/library/index.tsx</code> theo README của PID-00013.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:typecheck</code> → đạt (override có type)</li>
+<li><code>pnpm nx run @sires/web:test</code> → không có lỗi trùng operation (EC10 của PID-00013)</li>
+<li>Thao tác tay: bật mock khi dev, mở <code>/discover</code>, <code>/library</code>, <code>/library/</code> mã reference mẫu không cần gateway</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>23 operation có override có trạng thái, dùng chung một kho; test của S02–S09 chạy trên kho này; bảy operation của khu vực khác không bị khai lại</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
