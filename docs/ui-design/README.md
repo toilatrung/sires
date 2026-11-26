@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 80 trang HTML tĩnh (35 nguồn + 45 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 81 trang HTML tĩnh (35 nguồn + 46 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -49,7 +49,7 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | S4 | SettingsPreferences | Preferences; biến thể debug | 15.12 |
 | P1 | Overview | Overview, 6 việc chờ của project; biến thể no-plan, archived, recovery | 15.2 |
 | P2 | Chat | Project AI Chat + Interactive Agent Prompt + thẻ đề xuất thảo luận; biến thể bỏ qua thảo luận | 15.3, UX-MONITOR-007 |
-| P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5 | UX-TASK-001–005 |
+| P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5; biến thể task manual-submit: Task Manual editor requirement In Progress, khối “Bạn cần thực hiện” và form gửi kết quả (WF-03) | UX-TASK-001–005, UX-LABEL-002, WF-03 |
 | P4 | PlanCompare | So sánh và duyệt Plan Version | UX-PLAN-001/002 |
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
 | P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
