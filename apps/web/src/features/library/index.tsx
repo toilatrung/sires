@@ -5,6 +5,7 @@
 // Library area (PID-00098): Discover, Trusted Library, Reference.
 
 import type { Feature } from '../../shell/feature';
+import { mockEnabled } from '../../shell/mock-enabled';
 import { DiscoverScreen } from './Discover';
 import { LibraryScreen } from './Library';
 import { ReferenceScreen } from './Reference';
@@ -21,5 +22,5 @@ export const feature: Feature = {
   ],
   messages: { vi, en },
   // Loaded only by the dev mock and tests; production builds drop it (PID-00013).
-  mocks: import.meta.env.DEV && import.meta.env.MODE !== 'production' ? () => import('./__mocks__') : undefined,
+  mocks: mockEnabled ? () => import('./__mocks__') : undefined,
 };

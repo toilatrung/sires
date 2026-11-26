@@ -143,6 +143,19 @@ Nguồn ý định: `docs/tickets/issues/PID-00098/` trên nhánh `docs/pid-0009
 | G5 | partial | LOW | `dev:mock`: dialog “Thêm vào project” hiện cả project Archived vì fixture không lọc `status=Active` | `Reference.tsx:393` gọi `listProjects` với `status: 'Active'` | Không phải mã của khu vực; ghi mục 6.2 |
 | G6 | unrequested | LOW | Thêm `testFetch` (test) và `readUpload` (mock) để vượt giới hạn `FormData` của Vitest/jsdom | `test-utils.tsx`, `__mocks__/index.ts:34` | Nằm trong khu vực; ghi mục 6.3 |
 
+
+## Lần 2 — 27/11/2026
+
+Sau khi merge #131 Lần 5 (`fbb0ac0`).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `eslint .`, `tsc -p tsconfig.json --noEmit` (`apps/web`) | 0 lỗi |
+| `vitest run` (`@sires/web`) | 24 file, 231/231 đạt (library 86, shell mock 33) |
+| `build.spec.ts` › khu vực khai mock | Đạt: dòng `mocks:` của library đứng sau `mockEnabled`; bản build không có mock của khu vực |
+
+G1 (YC1) thu hẹp: điều kiện mock đã vào #131. Còn `MockRequest.emit`, `ApiClient` gửi `FormData` và `topbar.spec`, chờ phiên điều phối quyết. Không có khoảng trống mới.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

@@ -145,9 +145,10 @@ export default defineMocks({
       return { status: 202, body: workflow };
     },
 
-    listReferences: ({ request }) => {
+    listReferences: ({ request, query }) => {
       const url = new URL(request.url);
-      const approval = url.searchParams.getAll('approvalStatus');
+      // approvalStatus=A,B (contract: form, explode false) or repeated keys: the shared mock reads both (PID-00013).
+      const approval = query.approvalStatus ?? [];
       const indexing = url.searchParams.get('indexingStatus');
       const q = url.searchParams.get('q')?.toLowerCase().trim();
       const year = url.searchParams.get('year');

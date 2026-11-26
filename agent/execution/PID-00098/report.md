@@ -62,6 +62,16 @@ Mọi đường dẫn trên nằm dưới `apps/web/src/features/library/`; thê
 - **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00098`; PO merge sau #120, #138, #131.
 - **Tài liệu đi kèm:** không có.
 
+
+## Lần 2 — 27/11/2026
+
+Phiên điều phối giao cho #131 (PID-00013, Lần 5) hai việc: sửa mẫu điều kiện mock, và cho mock dùng chung đọc tham số query dạng mảng. Đã merge `web/mock-pid-00013-v3` (head `612c94b`) vào nhánh này bằng merge commit `fbb0ac0`, không rebase. Hai file xung đột (`shell/feature.ts`, `shell/mock/README.md`) lấy bản của #131.
+
+- Khu vực khai mock theo mẫu mới: `mocks: mockEnabled ? () => import('./__mocks__') : undefined` (`index.tsx`).
+- Mock `listReferences` đọc `query.approvalStatus` (`string[]`), nên nhận cả dạng `Trusted,Revoked` của hợp đồng lẫn khóa lặp mà client của shell đang gửi. Test: `library.spec.tsx › mock đọc approvalStatus theo hợp đồng`.
+- YC1 thu hẹp lại. Phần mẫu điều kiện mock trong commit `78baa91` nay do #131 làm (cùng nội dung, thêm `mockEnabled` và test chặn). Còn chờ phiên điều phối quyết ba việc: `MockRequest.emit`, `ApiClient` gửi `FormData`, sửa `topbar.spec`.
+- Kiểm: `@sires/web` 24 file, 231/231 test đạt; lint và typecheck sạch.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

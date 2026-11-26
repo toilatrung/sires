@@ -7,6 +7,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { Schemas } from '../../shell/mock';
+import { mockFetch } from '../../shell/mock/node';
 import { demoReferences, papers, referenceId } from './__mocks__/data';
 import { callsOf, problemResponse, useLibraryMock } from './test-utils';
 
@@ -63,6 +64,18 @@ describe('Trusted Library (S06)', () => {
     const lewis = await rowOf('lewis2020rag');
     expect(within(lewis).getByText('2 project')).toBeTruthy();
     expect(screen.queryByText('doe2023hd')).toBeNull(); // Revoked is not in the default filter
+  });
+
+  it('mock đọc approvalStatus theo hợp đồng', async () => {
+    // S01: approvalStatus is form, explode false (`Trusted,Revoked`); repeated keys (what the shell client sends) too.
+    const keys = async (query: string) => {
+      const response = await mockFetch(`/api/v1/references?${query}`);
+      return ((await response.json()) as { items: { bibtexKey: string }[] }).items.map((ref) => ref.bibtexKey).sort();
+    };
+    const expected = demoReferences().filter((ref) => ref.approvalStatus === 'Trusted' || ref.approvalStatus === 'Revoked').map((ref) => ref.bibtexKey).sort();
+    expect(expected).toContain('doe2023hd');
+    expect(await keys('approvalStatus=Trusted,Revoked')).toEqual(expected);
+    expect(await keys('approvalStatus=Trusted&approvalStatus=Revoked')).toEqual(expected);
   });
 
   it('lọc theo trạng thái duyệt', async () => {
