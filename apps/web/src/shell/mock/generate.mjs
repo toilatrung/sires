@@ -240,6 +240,14 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
     const args = process.argv.slice(2);
+    // `--postinstall` (apps/web postinstall): a checkout without the public bundle skips instead of failing install.
+    if (args[0] === '--postinstall') {
+      args.shift();
+      if (!fs.existsSync(defaultSpec)) {
+        console.log(`mocks: ${rel(defaultSpec)} not found, skipped`);
+        process.exit(0);
+      }
+    }
     const results = args.length ? [await generateMocks(parseArgs(args))] : await generateAll();
     for (const result of results) {
       console.log(`mocks: ${result.operations.length} operations → ${rel(path.dirname(result.files.at(-1)))}`);
