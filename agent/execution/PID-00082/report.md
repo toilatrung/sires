@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00082](../../../docs/tickets/issues/PID-00082/index.html) · **Luồng:** `web/planning` · **Giai đoạn:** PH-02 (Xây với mock)
-- **Nhánh:** `web/planning-pid-00082` (tạo từ `origin/preview/ui-ph02` `a9bcc0e`, nhánh tích hợp đã có #120, #138, #131; đã commit có chữ ký và push) · **PR:** vào `develop` (liên kết ở mô tả PR)
+- **Nhánh:** `web/planning-pid-00082` (tạo từ `origin/preview/ui-ph02` `a9bcc0e`, nhánh tích hợp đã có #120, #138, #131; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#145](https://github.com/toilatrung/sires/pull/145) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
