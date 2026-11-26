@@ -63,9 +63,9 @@
 <ol>
 <li>Một service mẫu dùng thư viện platform: ghi trạng thái + Audit Event + outbox trong một giao dịch; consumer xử lý sự kiện đến trùng đúng một lần; RLS chặn đọc chéo tài khoản. Có test cho cả ba.</li>
 <li>Pull request chạm một service NestJS chạy CI dưới 10 phút (SPK-10, kiến trúc 11.3).</li>
-<li>Hợp đồng baseline: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; PO duyệt baseline.</li>
+<li>Hợp đồng baseline: DBQ-03, DBQ-04 đã sửa vào <code>docs/api-design</code>; type sinh không lỗi; PO duyệt baseline. <strong>PO duyệt baseline 25/11/2026</strong> (phiếu chốt PC-04 B6).</li>
 <li>Báo cáo SPK-01–SPK-08, SPK-10. Giả định nào bị bác bỏ thì ADR, OQ hoặc AQ tương ứng được cập nhật trước khi vào PH-02.</li>
-<li>Máy Home Lab sẵn sàng để dựng staging ở PH-02 (<a href="04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>). Nếu chưa, PH-02 không có staging và cổng PH-02 không kiểm được.</li>
+<li>Máy Home Lab sẵn sàng để dựng staging ở PH-02 (<a href="04-dependencies-risks-and-questions.html#oq-108">OQ-108</a>). Nếu chưa, PH-02 không có staging và cổng PH-02 không kiểm được. <strong>PO 25/11/2026:</strong> Home Lab chưa sẵn sàng; staging tạm chạy cục bộ trên máy PO (Docker Engine trong WSL) tới khi Home Lab sẵn sàng, PID dựng staging ở PH-02 điều chỉnh theo khi làm rõ (PC-04 B7).</li>
 </ol>
 <p><strong>Khi PO xác nhận cổng ra PH-01 đạt</strong> (<a href="../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-59">DEC-59</a>, sửa <a href="04-dependencies-risks-and-questions.html#oq-111">OQ-111</a>): logic nghiệp vụ từ PH-02 trở đi bắt buộc làm trên <code>develop</code>. Mọi pull request, kể cả tài liệu, vào <code>develop</code>; nhánh tạo từ <code>develop</code> mới nhất; <code>develop</code> thành nhánh mặc định; <code>main</code> chỉ nhận <code>develop</code> khi phát hành. Trước mốc này mọi pull request vẫn vào <code>main</code>; ticket PH-02 trở đi xong sớm thì chờ mốc. Tại mốc: PO đồng bộ <code>develop</code> theo <code>main</code>, đổi nhánh mặc định, sửa <code>AGENT.md</code>, <code>README.md</code> và skill; congminh1705 sửa <code>ci.yml</code> (<code>push</code>, <code>nx-set-shas</code>) và base mặc định của <code>check-tracks.mjs</code>, <code>nx.json</code> (<code>defaultBase</code>).</p>
 

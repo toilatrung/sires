@@ -2,6 +2,8 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { ConsumeMessage } from 'amqplib';
@@ -14,7 +16,7 @@ import {
 import { FakeBroker } from '@sires/testing';
 import { ACCOUNT_A, ACCOUNT_B, RECORD_ID, startSampleDatabase } from './database.testkit';
 import { SampleController, SampleModule } from './sample.module';
-import { createSampleConsumer, SAMPLE_CONSUMER, SampleService } from './sample.service';
+import { createSampleConsumer, SAMPLE_CONSUMER, SAMPLE_EVENT_TYPE, SampleService } from './sample.service';
 import { sampleRecord } from './schema';
 
 let database: Awaited<ReturnType<typeof startSampleDatabase>>;
@@ -56,9 +58,19 @@ it('trạng thái, Audit Event và outbox cùng một giao dịch (PID-00006-AC0
   expect(rows).toHaveLength(2);
   expect(rows.map((row) => row.xmin)).toEqual([record.xmin, record.xmin]);
   expect(rows[0]).toMatchObject({ kind: 'audit', routing_key: 'audit.recorded',
-    payload: { accountId: ACCOUNT_A, data: { objectId: RECORD_ID, objectVersion: 2, fromState: 'Created', toState: 'Active' } } });
-  expect(rows[1]).toMatchObject({ kind: 'event', routing_key: 'task.activated',
-    payload: { aggregate: { type: 'sample_record', id: RECORD_ID, version: 2 }, accountId: ACCOUNT_A } });
+    payload: { accountId: ACCOUNT_A, data: { action: 'sample_record.activated', objectId: RECORD_ID, objectVersion: 2,
+      fromState: 'Created', toState: 'Active' } } });
+  expect(rows[1]).toMatchObject({ kind: 'event', routing_key: 'sample_record.activated',
+    payload: { type: 'sample_record.activated', aggregate: { type: 'sample_record', id: RECORD_ID, version: 2 },
+      accountId: ACCOUNT_A, data: { sampleRecordId: RECORD_ID } } });
+});
+
+it('loại sự kiện riêng của mẫu, không có trong hợp đồng thật (spec 2.3; QC G2)', () => {
+  expect(SAMPLE_EVENT_TYPE).toBe('sample_record.activated');
+  const asyncapi = readFileSync(join(__dirname, '../../../../docs/api-design/events/asyncapi.yaml'), 'utf8');
+  // Mọi `type` của hợp đồng nằm trong const của payload; loại của mẫu không được trùng loại nào.
+  expect(asyncapi).toContain("const: task.activated");
+  expect(asyncapi).not.toContain(SAMPLE_EVENT_TYPE);
 });
 
 it('lỗi giữa giao dịch không để lại dòng nào (EC01)', async () => {
@@ -78,8 +90,8 @@ it('lỗi giữa giao dịch không để lại dòng nào (EC01)', async () => 
 });
 
 function envelope(): EventEnvelope {
-  return buildEnvelope({ producer: 'planning', type: 'task.activated', accountId: ACCOUNT_A,
-    aggregate: { type: 'sample_record', id: RECORD_ID, version: 1 }, data: { taskId: RECORD_ID } });
+  return buildEnvelope({ producer: 'planning', type: SAMPLE_EVENT_TYPE, accountId: ACCOUNT_A,
+    aggregate: { type: 'sample_record', id: RECORD_ID, version: 1 }, data: { sampleRecordId: RECORD_ID } });
 }
 
 /** Boundary adapter for FakeBroker: all inbox behaviour stays in the real public EventConsumer. */
@@ -103,7 +115,7 @@ describe('inbox', () => {
     const consumer = createSampleConsumer(database.systemDb, 'amqp://unused');
     const outcomes: string[] = [];
     const broker = new FakeBroker<EventEnvelope>({ duplicateIds: [event.id] });
-    broker.subscribe(SAMPLE_CONSUMER, 'task.activated', async (item, meta) => {
+    broker.subscribe(SAMPLE_CONSUMER, SAMPLE_EVENT_TYPE, async (item, meta) => {
       outcomes.push(await consumer.handle(message(item, meta.redelivered)));
     });
     broker.publish(event);
