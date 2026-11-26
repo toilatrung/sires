@@ -14,6 +14,8 @@ export interface RecordedRequest {
   query: URLSearchParams;
   headers: Record<string, string>;
   body?: string;
+  /** The FormData of an upload, as sent. */
+  formData?: FormData;
 }
 
 type Handler = (request: RecordedRequest) => Response | Promise<Response>;
@@ -101,6 +103,7 @@ export class FetchStub {
       query: url.searchParams,
       headers,
       body: typeof init.body === 'string' ? init.body : undefined,
+      formData: init.body instanceof FormData ? init.body : undefined,
     };
     this.requests.push(request);
     const match = this.handlers.find((h) => h.method === request.method && (typeof h.path === 'string' ? h.path === request.path : h.path.test(request.path)));
