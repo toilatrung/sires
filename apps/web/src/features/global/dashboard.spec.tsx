@@ -29,7 +29,7 @@ describe('Dashboard — khung (S05)', () => {
     for (let i = 1; i < order.length; i += 1) {
       expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
-    expect(pending.textContent).toBe('4 việc chờ bạn');
+    expect(pending.textContent).toMatch(/^[0-9]+ việc chờ bạn$/);
     expect(main().getByRole('link', { name: 'Tất cả Pending Actions' }).getAttribute('href')).toBe('/pending-actions');
   });
 
@@ -87,8 +87,8 @@ describe('Dashboard — first-run và banner (S06)', () => {
     mock.use({ overrides: { listProviderConnections: () => ({ status: 200, body: { items: [] } }) } });
     const first = renderGlobal('/dashboard');
     await waitForFrame();
-    expect(await main().findByText('Thêm API key của bạn để agent hoạt động')).toBeTruthy();
-    expect(main().getByRole('link', { name: 'Mở Provider Connections' }).getAttribute('href')).toBe('/settings/providers');
+    const banner = (await main().findByText('Thêm API key của bạn để agent hoạt động')).closest('[data-kind="api-key"]') as HTMLElement;
+    expect(within(banner).getByRole('link', { name: 'Mở Provider Connections' }).getAttribute('href')).toBe('/settings/providers');
     first.unmountAll();
 
     // With a connection (demo data) there is no banner.

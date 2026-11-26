@@ -174,7 +174,7 @@ export function LifecycleDialog({ kind, project, onClose, onDone }: { kind: Life
       setError(failure);
       if (failure.code === 'active_workflow_exists') {
         try {
-          const rows = await api.get('/workflows', { query: { projectId: project.id, status: ACTIVE_STATES, limit: 50 } });
+          const rows = await api.get('/workflows', { query: { projectId: project.id, limit: 50 } }); // filtered below: array status filters are not understood everywhere
           setBlocking((rows.data.items as Workflow[]).filter((row) => ACTIVE_STATES.includes(row.status)));
         } catch {
           setBlocking([]);
