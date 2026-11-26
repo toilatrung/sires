@@ -7,14 +7,14 @@ import { describe, expect, it } from 'vitest';
 import { DraftStore } from './drafts/store';
 import * as fx from './test/fixtures';
 import { composerFeature } from './test/features';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { json, problem, shellStub } from './test/stub';
 
 const field = () => screen.getByLabelText('Câu hỏi') as HTMLTextAreaElement;
 const draftKey = (accountId = fx.ACCOUNT_ID) => DraftStore.key(accountId, '/projects/p1/chat', 'chat.composer');
 
 async function openChat(stub = shellStub()) {
-  const view = renderShell({ path: '/projects/p1/chat', stub, features: [composerFeature] });
+  const view = renderShellFrame({ path: '/projects/p1/chat', stub, features: [composerFeature] });
   await waitForFrame();
   await screen.findByLabelText('Câu hỏi');
   return view;

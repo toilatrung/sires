@@ -6,14 +6,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DraftStore } from './drafts/store';
 import * as fx from './test/fixtures';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { json, problem, shellStub } from './test/stub';
 
 const avatar = () => within(screen.getByRole('banner')).getByRole('button', { name: 'Tài khoản: Nguyễn Thanh' });
 
 describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
   it('đăng xuất từ menu avatar: xóa nháp, đóng SSE, form POST /auth/logout kèm CSRF để tới trang kết thúc phiên (PID-00012-AC06)', async () => {
-    const { user, services, browser, stub } = renderShell({ path: '/dashboard' });
+    const { user, services, browser, stub } = renderShellFrame({ path: '/dashboard' });
     await waitForFrame();
     await waitFor(() => expect(avatar().textContent).toBe('NT'));
     await waitFor(() => expect(stub.sse).toHaveLength(1));
@@ -46,7 +46,7 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
 
   it('đăng xuất: lỗi mạng khi lấy CSRF — báo lỗi, vẫn đăng nhập, giữ nháp và SSE, thử lại được (UX-STATE-003)', async () => {
     const stub = shellStub();
-    const { user, services, browser } = renderShell({ path: '/dashboard', stub });
+    const { user, services, browser } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(avatar().textContent).toBe('NT'));
     await waitFor(() => expect(services.events.status).toBe('open'));
@@ -76,7 +76,7 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
   });
 
   it('menu bằng bàn phím: mở, di chuyển, chọn, Escape đóng và trả focus', async () => {
-    const { user, browser } = renderShell({ path: '/projects/p1/overview' });
+    const { user, browser } = renderShellFrame({ path: '/projects/p1/overview' });
     await waitForFrame();
     await waitFor(() => expect(avatar().textContent).toBe('NT'));
     avatar().focus();
@@ -99,7 +99,7 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
   });
 
   it('hồ sơ mở /settings/profile', async () => {
-    const { user, router } = renderShell({ path: '/dashboard' });
+    const { user, router } = renderShellFrame({ path: '/dashboard' });
     await waitForFrame();
     await user.click(avatar());
     await user.click(screen.getByRole('menuitem', { name: 'Hồ sơ' }));
@@ -108,7 +108,7 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
   });
 
   it('nhãn menu theo ngôn ngữ giao diện', async () => {
-    const { user } = renderShell({ path: '/dashboard' });
+    const { user } = renderShellFrame({ path: '/dashboard' });
     await waitForFrame();
     await user.click(within(screen.getByRole('banner')).getByRole('button', { name: 'EN' }));
     await user.click(within(screen.getByRole('banner')).getByRole('button', { name: 'Account: Nguyễn Thanh' }));
@@ -117,7 +117,7 @@ describe('menu avatar và đăng xuất (H9, PC-05 P3)', () => {
 
   it('phiên đã hết khi đăng xuất (GET /auth/session 401): vẫn gửi form để gateway chuyển tới post_logout_redirect_uri (S14)', async () => {
     const stub = shellStub();
-    const { services, browser } = renderShell({ path: '/dashboard', stub });
+    const { services, browser } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(services.events.status).toBe('open'));
     const key = DraftStore.key(fx.ACCOUNT_ID, '/projects/p1/chat', 'chat.composer');

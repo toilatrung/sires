@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
 - **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#138](https://github.com/toilatrung/sires/pull/138) vào `main`
-- **Cập nhật:** 27/11/2026 (Lần 2: xếp chồng trên #120, thẻ prompt đủ bốn loại, đăng xuất khi phiên đã hết)
+- **Cập nhật:** 27/11/2026 (Lần 5: client gửi FormData, chuyển từ #144 sang luồng web/shell)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -101,6 +101,52 @@ Việc sửa theo phiên điều phối và phiên docs-sources (không có `qc-
 Phiên docs-sources ghi `replay.unavailable` luôn có `id` (“0” khi log trống); nhánh xử lý không có `id` giữ lại làm phòng thủ, không đổi hành vi theo hợp đồng.
 
 Kết quả: 112 test đạt (hai lượt song song), typecheck, lint, build đạt, `check-ui.mjs` 0 lỗi, `add-license.mjs --check` sạch (self-qc.md Lần 2). Trạng thái giữ “Xong — chờ QC”.
+
+
+## Lần 3 — 27/11/2026
+
+Việc sửa theo phiên điều phối (PC-05 P37, chốt theo đề xuất của phiên web-global; không có `qc-report.md`). Nguyên nhân: khi các khu vực dựng màn thật, `renderShell` mở `/dashboard` thật (PID-00037, PID-00060) và Trợ lý thật của global; `/sign-in` là SignIn thật (PID-00036). Test của shell vì thế gọi thêm API của khu vực và thấy thêm `alert`, `status`: 11 test đỏ với #142, 2 với #143.
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L3-1 | Phiên điều phối: “renderShell mặc định dùng bộ feature test của shell … không nạp feature thật của khu vực” | Làm theo cách bền hơn: `renderShell` **giữ** khu vực thật (test của global, settings mở màn thật qua chính hàm này, đổi mặc định sẽ làm đỏ #141–#143); thêm `renderShellFrame` gắn `neutralFeatures` (đủ route và i18n của mọi khu vực, mỗi route là `Placeholder`, không Trợ lý, không mock); mọi test của shell dùng `renderShellFrame` | 10 file spec của shell; `test/render.tsx`, `test/features.tsx` |
+| L3-2 | Như trên: Trợ lý thật render trong test của shell | `App` nhận nội dung Trợ lý qua `createRoutes` (prop `assistant`), không tự import `features`; bộ trung tính không có Trợ lý | `App.tsx`, `routes.tsx`; `topbar.spec.tsx › trợ lý` |
+| L3-3 | Phiên điều phối: `navigation.spec` lọc `calls` theo query | `FetchStub.calls(path, method, query)`; đếm `notifications?status=Unread&limit=1`, `projects?status=Active`, `pending-actions?limit=1` | `navigation.spec.tsx`, `topbar.spec.tsx` |
+| L3-4 | Phiên điều phối: `shellStub` trả 200 rỗng cho GET của khu vực | `/dashboard`, `/provider-connections`, `/workflows`, `/conversations` | `test/stub.ts` |
+| L3-5 | Phiên điều phối: hai test `/sign-in` (#143) | Không cần sửa test: `renderShellFrame` đặt Placeholder ở `/sign-in`, không gọi `GET /auth/session`. Commit `eb8ca71` của #143 (sửa hai test này) thành thừa, gộp vẫn sạch | `routes.spec.ts › sign-in không khung (EC17)`, `preferences.spec.ts › chưa đăng nhập không lưu (EC28)` |
+
+Kết quả: trên nhánh này 16 file, 112 test đạt; trên cây gộp thêm `origin/web/global-pid-00060` (`77a9971`, đã gồm #141) và `origin/web/settings-pid-00036` (`eb8ca71`): 33 file, 273 test đạt, typecheck, lint sạch (self-qc.md Lần 3). Trạng thái giữ “Xong — chờ QC”.
+
+
+## Lần 4 — 27/11/2026
+
+Việc từ `qc-report.md` Lần 2 (G4–G6, LOW) và từ phiên điều phối, rút ra khi dựng PID-00114 (#147), chốt theo đề xuất:
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L4-1 | QC G4 (đột biến M8 lọt) | Test điều hướng `replace` giữa phiên không gọi `GET /auth/session`; điều hướng của người dùng sau đó vẫn tính | `activity.spec.ts › điều hướng replace (chuyển hướng) không gọi GET /auth/session`; M8 nay đỏ |
+| L4-2 | QC G5 (M6 lọt; L3-2 ghi quá lời) | Test nội dung Trợ lý đi qua `createRoutes` từ khu vực khai `Feature.assistant` | `topbar.spec.tsx › nội dung Trợ lý lấy từ khu vực…`; M6 nay đỏ |
+| L4-3 | QC G6 (M11, M3b lọt) | Test rail không hiện số 0 cạnh số dương; test `refreshCounts` đọc lại số chưa đọc và Pending Actions | `rail.spec.tsx › không hiện số 0…`, `navigation.spec.tsx › refreshCounts…`; M11, M3b nay đỏ |
+| L4-4 | Phiên điều phối (PID-00114): “`context.ts` thiếu ánh xạ `claims: 'evidence'`” | `/projects/:id/claims/…` đánh dấu References and Evidence trên rail | `context.ts`; `rail.spec.tsx › route claims thuộc References and Evidence` |
+| L4-5 | Phiên điều phối: “Client API chỉ đọc JSON … thêm cách đọc phản hồi không phải JSON (blob hoặc text) mà vẫn giữ CSRF, xử lý lỗi và kiểm phiên” | `api.getBlob`, `api.getText` dùng chung đường gửi với mọi lời gọi (`Accept: */*`, problem+json → `ApiError`, 401 → luồng phiên hết hạn); README ghi cách dùng | `api/client.ts`; `api.spec.ts › getBlob, getText…` |
+| L4-6 | Phiên điều phối: “Shell chưa có dialog dùng chung … focus trap, Esc và aria” | `Dialog`, `ConfirmDialog` trong `dialog/Dialog.tsx`, xuất ở `index.ts`, CSS ở `styles/shell.css`, README bảng component | `dialog.spec.tsx` (aria, focus phương án an toàn, Tab và Shift+Tab giữ trong dialog, gõ không mất focus, Esc, trả focus, nút xác nhận vô hiệu khi `busy`, dạng form Enter gửi) |
+
+QC G1 (“Phase 2/3” trên rail) chờ PO xem C1; G2 hết khi #120 vào `main`; G3 do PID-00036 thay màn giữ chỗ `/sign-in`. Các khu vực đang tự làm dialog (planning ở #145) chuyển sang `ConfirmDialog` của shell khi #138 vào `develop`.
+
+Kết quả: 17 file, 121 test đạt; typecheck, lint đạt (self-qc.md Lần 4). Trạng thái giữ “Xong — chờ QC”.
+
+
+## Lần 5 — 27/11/2026
+
+Phiên điều phối chốt theo QC chéo #144 (G1 HIGH, PID-00098 sửa shell trong `78baa91`): phần client API của commit đó chuyển sang luồng web/shell, làm lại trên #138; phần `shell/mock/**` (gồm `MockRequest.emit`, chú thích `Feature.mocks`, `quiet: true` ở `browser.ts`) do phiên web-mocks làm trên #131.
+
+| # | Nguồn | Việc | Đã làm, kiểm bằng |
+| --- | --- | --- | --- |
+| L5-1 | Phiên điều phối: “đưa vào các thay đổi `client.ts` (gửi FormData) … thêm test cho FormData (CSRF, idempotency, không đặt Content-Type tay)” | `ApiClient` gửi `FormData` nguyên, không đặt `Content-Type` (trình duyệt đặt kèm boundary), vẫn gửi `X-CSRF-Token`, `Idempotency-Key`. Ở mức type, thao tác `multipart/form-data` (`importReferenceFromPdf`, `uploadReferenceDocument`, `uploadFile`) nhận `body: FormData` thay cho object của schema. README ghi cách dùng | `api/client.ts`; `api.spec.ts › FormData gửi nguyên…` (gửi lại sau lỗi mạng dùng lại khóa), `› ở mức type: thao tác multipart nhận FormData…`; đột biến bỏ nhánh FormData làm đỏ test |
+| L5-2 | Như trên: `feature.ts` | Không làm ở đây: trên nhánh này `Feature` chưa có trường `mocks` (do #131 thêm), nên chú thích thuộc #131 | — |
+| L5-3 | Như trên: `topbar.spec` “nếu cần” | Không cần: test của shell dùng `renderShellFrame` (Lần 3), `/discover` luôn là `Placeholder` | `topbar.spec.tsx` đạt |
+
+Kết quả: 17 file, 123 test đạt; typecheck, lint đạt (self-qc.md Lần 5). Trạng thái giữ “Xong — chờ QC”.
 
 ---
 
