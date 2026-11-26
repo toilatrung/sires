@@ -176,7 +176,7 @@ interface Popup {
 }
 
 export function Editor(props: EditorProps) {
-  const { fileId, text, readOnly, label, cursor, blocks, citations } = props;
+  const { fileId, text, readOnly, cursor, blocks, citations } = props;
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const states = useRef(new Map<string, EditorState>());

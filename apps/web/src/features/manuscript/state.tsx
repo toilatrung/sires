@@ -8,7 +8,7 @@
 // store (H8); events and stream signals reload with GET, never from the payload (H19).
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { isApiError, useApi, useEvents, useNavigationData, useShell, useStreamSignal, type ApiError } from '../../shell';
 import {
   asApiError, dataOf, failed, fileContent, isImage, isText, loading, manuscriptPath, ready,
@@ -137,6 +137,10 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
   const api = useApi();
   const shell = useShell();
   const navigate = useNavigate();
+  const location = useLocation();
+  const where = useRef(location);
+  where.current = location;
+  const autoOpened = useRef(false);
   const navigation = useNavigationData();
   const archived = navigation.project?.id === projectId && navigation.project.status === 'Archived';
   const ref = useRef<State>({
@@ -194,7 +198,10 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
   /** Loads the content of an open document (text, image or other binary) and offers its draft (H8). */
   const loadDoc = useCallback(async (file: ManuscriptFile) => {
     const kind: Doc['kind'] = isText(file) ? 'text' : isImage(file) ? 'image' : 'binary';
-    set((state) => ({ docs: { ...state.docs, [file.id]: { file, kind, status: 'loading', server: '', text: '', ...(state.docs[file.id]?.draft ? { draft: state.docs[file.id]!.draft } : {}) } } }));
+    const known = ref.current.docs[file.id];
+    if (!known || known.status !== 'ready') {
+      set((state) => ({ docs: { ...state.docs, [file.id]: { file, kind, status: 'loading', server: '', text: '' } } }));
+    }
     if (kind === 'binary') {
       setDoc(file.id, { status: 'ready', baseHash: file.contentHash });
       return;
@@ -212,9 +219,15 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
         handle = shell.drafts.register(draftRoute(projectId), draftField(file.id));
         drafts.current.set(file.id, handle);
       }
-      const saved = parseDraft(handle.initial ?? shell.drafts.get(draftRoute(projectId), draftField(file.id)));
+      const latest = ref.current.docs[file.id];
+      if (latest?.status === 'ready' && dirty(latest)) {
+        // Typed while the new version loaded: keep the text, move the base (a later save meets H7).
+        setDoc(file.id, { server: content.text, baseHash, file });
+        return;
+      }
+      const saved = parseDraft(shell.drafts.get(draftRoute(projectId), draftField(file.id)) ?? handle.initial);
       const draft = saved && saved.text !== content.text ? { text: saved.text, stale: Boolean(saved.baseHash && saved.baseHash !== baseHash), baseHash: saved.baseHash } : undefined;
-      setDoc(file.id, { status: 'ready', server: content.text, text: content.text, baseHash, ...(draft ? { draft } : { draft: undefined }) });
+      setDoc(file.id, { status: 'ready', file, server: content.text, text: content.text, baseHash, ...(draft ? { draft } : { draft: undefined }) });
     } catch (error) {
       setDoc(file.id, { status: 'error', error: asApiError(error) });
     }
@@ -228,7 +241,8 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
       const now = files.find((file) => file.id === doc.file.id);
       if (!now) {
         if (!dirty(doc)) set((state) => {
-          const { [doc.file.id]: _gone, ...docs } = state.docs;
+          const docs = { ...state.docs };
+          delete docs[doc.file.id];
           const tabs = state.tabs.filter((id) => id !== doc.file.id);
           return { docs, tabs, active: state.active === doc.file.id ? tabs[0] : state.active };
         });
@@ -271,8 +285,9 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
       wanted: undefined,
       ...(options.line ? { cursor: { fileId: file.id, line: options.line, seq: seq.current } } : {}),
     }));
-    const target = `${manuscriptPath(projectId)}/${file.path.split('/').map(encodeURIComponent).join('/')}${window.location.search}`;
-    if (`${window.location.pathname}${window.location.search}` !== target) navigate(target, { replace: true });
+    const { pathname, search } = where.current;
+    const target = `${manuscriptPath(projectId)}/${file.path.split('/').map(encodeURIComponent).join('/')}`;
+    if (pathname !== target) navigate(`${target}${search}`, { replace: true });
   }, [loadDoc, navigate, projectId, set]);
 
   // Open the deep-linked file, or the main file, once the list is there (H11).
@@ -280,9 +295,12 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
     const state = ref.current;
     const files = dataOf(state.files);
     const manuscript = dataOf(state.manuscript);
-    if (!files || !manuscript || state.tabs.length) return;
+    if (!files || !manuscript || state.tabs.length || autoOpened.current) return;
     const wanted = state.wanted && files.find((file) => file.path === state.wanted) ? state.wanted : manuscript.mainFile;
-    if (files.some((file) => file.path === wanted)) openFile(wanted);
+    if (files.some((file) => file.path === wanted)) {
+      autoOpened.current = true;
+      openFile(wanted);
+    }
   }, [version, openFile]);
 
   const closeTab = useCallback((fileId: string) => {
@@ -482,6 +500,7 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
       if (!(isApiError(error) && error.status === 409 && error.code !== 'project_archived')) throw error;
     }
     set({ tabs: [], active: undefined, docs: {} });
+    autoOpened.current = false;
     await reload();
   }, [api, path, projectId, reload, set, shell.idempotency]);
 
