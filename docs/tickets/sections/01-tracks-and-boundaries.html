@@ -38,7 +38,7 @@
 <tr><td id="entry-structure">Cấu trúc thư mục</td><td><code>apps/</code> đủ 13 service (3.2), <code>libs/ts/{platform,contracts,testing}</code>, <code>libs/py/sires_common</code>, <code>eval/</code>, <code>e2e/</code>, <code>infra/{local,docker,helm,terraform}</code>.</td></tr>
 <tr><td id="entry-tooling">Công cụ</td><td>pnpm workspace + Nx cho TypeScript, uv workspace cho Python (ADR-21); mỗi project có target <code>build</code>, <code>lint</code>, <code>typecheck</code>, <code>test</code> chạy được dù chưa có logic.</td></tr>
 <tr><td id="entry-services">Service khung</td><td>Mỗi service khởi động được, trả <code>GET /health</code>, có cổng cố định khi chạy cục bộ, README ghi phạm vi sở hữu.</td></tr>
-<tr><td id="entry-local">Môi trường local</td><td>Docker compose: PostgreSQL 16 + pgvector (11 database <code>sires_&lt;service&gt;</code>), RabbitMQ, MinIO (kiến trúc 11.1).</td></tr>
+<tr><td id="entry-local">Môi trường local</td><td>Docker compose: PostgreSQL 16 + pgvector (11 database <code>sires_&lt;service&gt;</code> và vai trò theo database 3.2, PID-00159), RabbitMQ, MinIO (kiến trúc 11.1).</td></tr>
 <tr><td id="entry-ci">CI</td><td>Pull request chạy lint, typecheck, test, build cho phần bị ảnh hưởng (<code>nx affected</code>), ruff và pytest cho Python, kiểm tra PR chạm nhiều luồng (1.4.1). Từ <code>PID-00009</code> (PO 12/11/2026): kiểm thay đổi trước, pull request vào <code>develop</code> bỏ qua job không liên quan, pull request vào <code>main</code> và push vào <code>main</code> chạy toàn bộ.</td></tr>
 <tr><td id="entry-contracts">Sinh type</td><td><code>libs/ts/contracts</code> sinh được type từ <code>docs/api-design</code> (OpenAPI công khai, nội bộ).</td></tr>
 </tbody></table></div>
@@ -101,7 +101,7 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Khu vực</th><th>Thư mục</th><th>Màn (mã ui-design)</th><th>Path API chính</th></tr></thead>
 <tbody>
-<tr><td id="web-shell"><code>shell</code></td><td><code>apps/web/src/shell</code></td><td>TopBar, ProjectRail, Components, States (X1); routing theo IA PRD 4; token Cream; i18n chung; client API; client SSE</td><td><code>/auth/*</code>, <code>/events</code></td></tr>
+<tr><td id="web-shell"><code>shell</code></td><td><code>apps/web/src/shell</code></td><td>TopBar (cả menu tài khoản của avatar), ProjectRail, Components, States (X1); routing theo IA PRD 4; token Cream; i18n chung; client API; client SSE; thẻ Interactive Agent Prompt (component trình bày); kho nháp dùng chung (PID-00012 H1, H2, H7, H8, H9)</td><td><code>/auth/*</code>, <code>/events</code>, <code>GET /me</code>, <code>PATCH /me/preferences</code>, <code>GET /pending-actions</code>, <code>GET /notifications</code>, <code>GET /projects</code>, <code>GET /projects/{projectId}</code>, <code>PUT /projects/{projectId}/active-task</code></td></tr>
 <tr><td id="web-settings"><code>settings</code></td><td><code>apps/web/src/features/settings</code></td><td>S0 SignIn, S1–S4 Settings</td><td>15, 08 (Provider Connections, Agent Models)</td></tr>
 <tr><td id="web-global"><code>global</code></td><td><code>apps/web/src/features/global</code></td><td>G1 Dashboard, G2 Projects, G6 Assistant, G9 PendingActions, G10 Notifications, M1–M2 mobile</td><td>07, 08 (Prompts)</td></tr>
 <tr><td id="web-library"><code>library</code></td><td><code>apps/web/src/features/library</code></td><td>G3 Discover, G4 Library, G5 Reference</td><td>10</td></tr>

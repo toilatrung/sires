@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 80 trang HTML tĩnh (35 nguồn + 45 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 83 trang HTML tĩnh (35 nguồn + 48 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -28,8 +28,8 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | Mã | File | Màn hình | Cơ sở PRD |
 | --- | --- | --- | --- |
 | — | Main | Style guide (Cream) | DEC-18 |
-| — | Components | Nhãn trạng thái, execution label, prompt 4 trạng thái | 15.5, 5 |
-| — | TopBar, ProjectRail | Điều hướng dùng chung; số Pending Actions (8) và chuông Notifications (3 chưa đọc) | UX-LAYOUT-001/003, 4.4 |
+| — | Components | Nhãn trạng thái (gồm bảng bổ sung PID-00012 H4: Provider Connection, Project, Evidence, kết quả discovery, Change Proposal, prompt), execution label, prompt 4 trạng thái | 15.5, 5 |
+| — | TopBar, ProjectRail | Điều hướng dùng chung; số Pending Actions (8) và chuông Notifications (3 chưa đọc). TopBar có biến thể `menu: vi`, `menu: en` (menu tài khoản của avatar: Hồ sơ, Đăng xuất; PID-00012 H9) và `mode: project` | UX-LAYOUT-001/003, 4.4 |
 | — | AgentList | Danh sách 10 agent của project (Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, Analysis Agent A, B), nhãn Đang chạy, Chờ bạn, Gián đoạn, Lỗi, Đang rảnh. Biến thể `wfState`: running (mặc định), waiting, interrupted, deliberation, synthesis, deliberation-failed, cancelled; `theme`: dark | SCOPE-12, UX-MONITOR-001, AGENT-ANALYSIS-001 |
 | — | AgentListPreview | Agent List light và dark cạnh nhau, cùng bảy biến thể `wfState` như AgentList | design.md 2.1 (dark) |
 | G1 | Dashboard | Dashboard, 8 việc chờ (cũ nhất trên); biến thể recovery, first-run | 15.1, UX-PENDING-001, UX-STATE-005, UX-SETTINGS-002 |

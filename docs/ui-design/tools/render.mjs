@@ -15,8 +15,9 @@ const SRC = path.join(ROOT, 'source');
 const OUT = path.join(ROOT, 'pages');
 const LOGO_BLOB = '/_blob/4be6b6592c8839a5dc8538b3772a6df0';
 const LOGO_LOCAL = '../assets/sires-logo.svg';
-// Shared shells and the token sheet: rendered once, no variants.
-const NO_VARIANTS = new Set(['TopBar', 'ProjectRail', 'Main', 'Components', 'States']);
+// Shared shells and the token sheet: rendered once, no variants. TopBar has variants for its
+// account menu (menu: vi, menu: en; PID-00012 H9), which also renders mode: project.
+const NO_VARIANTS = new Set(['ProjectRail', 'Main', 'Components', 'States']);
 
 // Motion (design.md 2.4, DEC-51/52). assets/motion.css is the single source of truth. The canvas cannot
 // load ../assets, so every source carries a verbatim copy in <style data-sires-motion> inside its helmet.

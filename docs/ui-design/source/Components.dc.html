@@ -191,7 +191,7 @@ body{margin:0}
 a{color:#025FAC}a:hover{color:#1C1B18}
 </style>
 </helmet>
-<div style="width: 1440px; min-height: 1300px; box-sizing: border-box; padding: 48px 56px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div style="width: 1440px; min-height: 1620px; box-sizing: border-box; padding: 48px 56px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
   <header style="display: flex; flex-direction: column; gap: 8px">
     <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 38px">Thành phần và trạng thái</h1>
     <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #4D4A44; max-width: 820px">Một nhãn cho mỗi trạng thái chuẩn (mục 5, UX-STATUS-001). Nét đứt = đề xuất / chưa chốt. Nét liền = đã chốt. Nền xanh nhạt kèm biểu tượng = cần bạn xử lý. Mọi nhãn đều có chữ, đọc được ở thang xám.</p>
@@ -268,6 +268,19 @@ a{color:#025FAC}a:hover{color:#1C1B18}
       </div>
       <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Nút vô hiệu luôn có lý do hiển thị cạnh nút. Focus: vòng 3px #80B9EE. Vùng bấm ≥ 40px. Nút dạng viên thuốc.</p>
     </section>
+
+    <section style="grid-column: 1 / -1; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 21px">Provider Connection · Project · Evidence · Discovery · Change Proposal · Prompt</h2>
+      <sc-for list="{{more}}" as="g" hint-placeholder-count="6">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <span style="width: 170px; font-size: 12px; font-weight: 600; color: #4D4A44">{{g.name}}</span>
+          <sc-for list="{{g.items}}" as="c" hint-placeholder-count="4">
+            <span data-running="{{c.run}}" style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600; white-space: nowrap"><sc-if value="{{c.need}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>{{c.label}}</span>
+          </sc-for>
+        </div>
+      </sc-for>
+      <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Bảng bổ sung ở design.md mục 3 (PID-00012 H4). Proposed chọn kiểu theo loại entity: Plan Version và Change Proposal là “cần bạn xử lý”, entity khác là “đề xuất”. Expired dùng kiểu trung tính viền đứt, như thẻ prompt Expired.</p>
+    </section>
   </div>
 
   <section style="display: flex; flex-direction: column; gap: 12px">
@@ -301,22 +314,30 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </section>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1620}}'>
 class Component extends DCLogic {
   renderVals() {
-    const ST = { draft: ['dashed #4D4A44', '#4D4A44', '#FFFFFF'], proposed: ['dashed #0277DD', '#025FAC', '#FFFFFF'], ok: ['solid #0277DD', '#025FAC', '#FFFFFF'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], warn: ['solid #9A3412', '#9A3412', '#FFFFFF'], warnd: ['dashed #9A3412', '#9A3412', '#FFFFFF'], fail: ['solid #BE123C', '#BE123C', '#FFF1F2'], muted: ['solid #DBD3C7', '#4D4A44', '#F6F2EE'] };
+    const ST = { draft: ['dashed #4D4A44', '#4D4A44', '#FFFFFF'], proposed: ['dashed #0277DD', '#025FAC', '#FFFFFF'], ok: ['solid #0277DD', '#025FAC', '#FFFFFF'], done: ['solid #1C1B18', '#1C1B18', '#FFFFFF'], run: ['solid #0277DD', '#1C1B18', '#EAF4FE'], need: ['solid #80B9EE', '#025FAC', '#EAF4FE'], warn: ['solid #9A3412', '#9A3412', '#FFFFFF'], warnd: ['dashed #9A3412', '#9A3412', '#FFFFFF'], fail: ['solid #BE123C', '#BE123C', '#FFF1F2'], muted: ['solid #DBD3C7', '#4D4A44', '#F6F2EE'], expired: ['dashed #4D4A44', '#4D4A44', '#F6F2EE'] };
     const chip = (label, k) => ({ label, b: ST[k][0], fg: ST[k][1], bg: ST[k][2], need: k === 'need', run: k === 'run' });
     const tag = (label, k) => ({ label, b: k === 'bad' ? 'solid #BE123C' : k === 'ok' ? 'solid #1C1B18' : k === 'mid' ? 'solid #0277DD' : 'dashed #4D4A44', fg: k === 'bad' ? '#BE123C' : k === 'mid' ? '#025FAC' : '#1C1B18', bg: '#FFFFFF', run: k === 'mid' });
     return {
       task: [chip('Draft', 'draft'), chip('Blocked', 'warn'), chip('Ready', 'ok'), chip('Queued', 'muted'), chip('In Progress', 'run'), chip('Waiting for User', 'need'), chip('In Review', 'need'), chip('Completed', 'done'), chip('Failed', 'fail'), chip('Cancelled', 'muted')],
       refApproval: [chip('Discovered — Chưa duyệt', 'draft'), chip('Pending Approval', 'need'), chip('Trusted', 'done'), chip('Rejected', 'muted'), chip('Revoked', 'warn')],
-      refIndex: [tag('Not Indexed', 'none'), tag('Queued', 'none'), tag('Indexing', 'mid'), tag('Indexed', 'ok'), tag('Failed', 'bad'), tag('Unavailable', 'none')],
+      refIndex: [tag('Not Indexed', 'none'), tag('Queued', 'none'), tag('Indexing', 'mid'), tag('Indexed', 'ok'), tag('Failed', 'bad'), tag('Unavailable', 'bad')],
       claim: [chip('Supported', 'ok'), chip('Partially Supported', 'proposed'), chip('Unsupported', 'warnd'), chip('Conflicting', 'warn'), chip('Not Assessed', 'muted')],
       groups: [
-        { name: 'Workflow', items: [chip('Running', 'run'), chip('Waiting for User', 'need'), chip('Paused', 'muted'), chip('Interrupted', 'warn'), chip('Succeeded', 'done'), chip('Failed', 'fail')] },
+        { name: 'Workflow', items: [chip('Created', 'muted'), chip('Running', 'run'), chip('Waiting for User', 'need'), chip('Paused', 'muted'), chip('Interrupted', 'warn'), chip('Succeeded', 'done'), chip('Failed', 'fail')] },
         { name: 'Agent Run', items: [chip('Pending', 'muted'), chip('Running', 'run'), chip('Succeeded', 'done'), chip('Failed', 'fail'), chip('Cancelled', 'muted')] },
         { name: 'Plan Version', items: [chip('Draft', 'draft'), chip('Proposed', 'need'), chip('Approved', 'ok'), chip('Superseded', 'muted'), chip('Rejected', 'muted')] },
         { name: 'Artifact', items: [chip('Draft', 'draft'), chip('Accepted', 'ok'), chip('Rejected', 'muted'), chip('Superseded', 'muted')] }
+      ],
+      more: [
+        { name: 'Provider Connection', items: [chip('Untested', 'muted'), chip('Valid', 'done'), chip('Invalid', 'fail')] },
+        { name: 'Project', items: [chip('Active', 'done'), chip('Archived', 'muted')] },
+        { name: 'Evidence', items: [chip('Active', 'done'), chip('Excluded', 'muted'), chip('Stale', 'warnd')] },
+        { name: 'Kết quả discovery', items: [chip('New', 'muted'), chip('Selected', 'proposed'), chip('Imported', 'proposed'), chip('Rejected', 'muted')] },
+        { name: 'Change Proposal', items: [chip('Proposed', 'need'), chip('Accepted', 'ok'), chip('Rejected', 'muted'), chip('Outdated', 'warnd')] },
+        { name: 'Interactive Agent Prompt', items: [chip('Answered', 'muted'), chip('Expired', 'expired'), chip('Cancelled', 'muted')] }
       ]
     };
   }
