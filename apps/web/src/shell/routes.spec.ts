@@ -35,8 +35,8 @@ describe('feature routes', () => {
     expect(screen.queryByRole('navigation', { name: 'Khu vực Global' })).toBeNull();
     expect(screen.queryByRole('link', { name: /Pending Actions/ })).toBeNull();
     expect(screen.queryByRole('complementary')).toBeNull();
-    expect(screen.getByText('sign-in')).toBeTruthy();
-    // The sign-in screen does not check the session or open SSE.
-    expect(stub.requests).toHaveLength(0);
+    expect(document.querySelector('.sires-frameless')).toBeTruthy();
+    // The frame does not check the session or open SSE; SignIn (PID-00036 H4) asks getSession itself, nothing else.
+    expect(stub.requests.filter((r) => r.path !== '/api/v1/auth/session')).toHaveLength(0);
   });
 });

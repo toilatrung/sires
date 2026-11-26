@@ -114,6 +114,7 @@ describe('lưu ngôn ngữ vào Preferences (H2)', () => {
     expect(i18next.language).toBe('en');
     expect(screen.getByRole('group', { name: 'Interface language' })).toBeTruthy();
     expect(stub.calls('/api/v1/me/preferences', 'PATCH')).toHaveLength(0);
-    expect(stub.requests).toHaveLength(0);
+    // Only SignIn's own getSession (PID-00036 H4); no /me, no PATCH.
+    expect(stub.requests.filter((r) => r.path !== '/api/v1/auth/session')).toHaveLength(0);
   });
 });
