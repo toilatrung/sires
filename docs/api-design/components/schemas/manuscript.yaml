@@ -268,10 +268,17 @@ Build:
 
 DiagramType:
   type: object
-  description: Loại sơ đồ hỗ trợ (DIAG-TYPES-001). Chỉ Mermaid trong MVP (OQ-059).
+  description: |
+    Loại sơ đồ hỗ trợ (DIAG-TYPES-001): đúng năm loại Sequence, Component, Activity, State, Workflow; cả năm dùng Mermaid
+    trong MVP (OQ-059). Loại ngoài danh sách (ví dụ Gantt) không hỗ trợ (DIAG-TYPES-001-AC02).
   required: [id, label, syntax]
   properties:
-    id: { type: string, examples: [flowchart, sequence, class, state, er, gantt, mindmap] }
+    id:
+      type: string
+      description: |
+        Mã loại. Cú pháp mặc định theo DIAG-TYPES-001: `sequence` → sequenceDiagram; `component` → flowchart có subgraph
+        cho từng thành phần; `activity`, `workflow` → flowchart; `state` → stateDiagram-v2.
+      examples: [sequence, component, activity, state, workflow]
     label: { type: string }
     syntax: { type: string, const: mermaid }
 
@@ -281,7 +288,10 @@ DiagramRequest:
   required: [description]
   properties:
     description: { type: string, minLength: 1 }
-    diagramType: { type: string, examples: [flowchart] }
+    diagramType:
+      type: string
+      description: "`DiagramType.id`. Bỏ trống thì Orchestrator chọn loại (DIAG-TYPES-001); khi sửa sơ đồ thì giữ loại hiện tại."
+      examples: [workflow]
     taskId: { $ref: common.yaml#/Id }
     inputRefs:
       type: array
@@ -311,3 +321,62 @@ DiagramValidationResult:
     previewSvg:
       type: string
       description: SVG render khi hợp lệ (renderer cô lập — INT-DIAGRAM).
+
+DiagramValidationStatus:
+  type: string
+  description: |
+    Trạng thái kiểm tra nguồn sơ đồ (DIAG-VALIDATE-001): `valid` — cú pháp đúng và render được preview; `syntax_error` —
+    trình phân tích Mermaid báo lỗi cú pháp; `render_error` — cú pháp đúng nhưng render lỗi (quá lớn, quá thời gian;
+    WF-07.E2).
+  enum: [valid, syntax_error, render_error]
+
+DiagramValidation:
+  type: object
+  readOnly: true
+  description: |
+    Kết quả kiểm tra nguồn của chính Artifact Version diagram (DIAG-SOURCE-001: mỗi version lưu trạng thái kiểm tra;
+    DIAG-VALIDATE-001). System ghi khi tạo version — Diagram Agent ghi đầu ra hoặc Researcher lưu nguồn
+    (`createArtifactVersion`) — bằng cùng bộ kiểm tất định của `validateDiagramSource`; version bất biến nên kết quả không
+    đổi. Version khác `valid` vẫn được lưu ở Draft kèm lỗi để Researcher sửa tay, nhưng không chấp nhận được
+    (DIAG-REVIEW-001).
+  required: [status]
+  properties:
+    status: { $ref: '#/DiagramValidationStatus' }
+    errors:
+      type: array
+      description: Có khi `status` khác `valid`; cùng dạng `DiagramValidationResult.errors`.
+      items:
+        type: object
+        required: [message]
+        properties:
+          line:
+            type: integer
+            minimum: 1
+            description: Dòng của nguồn, đếm từ 1 (DIAG-VALIDATE-001-AC01); không có với lỗi render.
+          message: { type: string }
+
+ManuscriptUsage:
+  type: object
+  readOnly: true
+  description: |
+    Vị trí một claim, evidence hoặc artifact version được dùng trong bản thảo (SYN-PERSIST-001: khi được dùng trong bản
+    thảo, ghi vị trí sử dụng — file, revision — từ Change Proposal đã chấp nhận; PRD 4.3 điều hướng hai chiều). Có một
+    mục cho mỗi file trong `diff` của Change Proposal đã chấp nhận chứa đối tượng ở `claimIds`, `evidenceIds` hoặc
+    `artifactVersionIds` (Change Proposal không ghi đối tượng nằm ở file nào). Vị trí giữ nguyên khi có revision hay
+    version Accepted mới hơn (SYN-PERSIST-001). Dữ liệu gốc thuộc manuscript; đường dữ liệu sang research (sự kiện hoặc
+    API nội bộ) bổ sung khi làm hợp đồng manuscript (PID-00079), tới khi đó các trường dùng schema này không có.
+  required: [path, revisionId, changeProposalId]
+  properties:
+    path: { type: string, examples: [sections/related-work.tex] }
+    revisionId:
+      $ref: common.yaml#/Id
+      description: Revision tạo ra khi chấp nhận Change Proposal (`resultingRevisionId`).
+    revisionNumber: { type: integer }
+    changeProposalId: { $ref: common.yaml#/Id }
+    citationKeys:
+      type: array
+      description: |
+        Chỉ với evidence — BibTeX key của citation trong file đó trỏ tới reference của evidence (CLAIM-CITATION-001: liên
+        kết từng citation tới evidence).
+      items: { type: string }
+    at: { $ref: common.yaml#/Timestamp }

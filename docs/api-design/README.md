@@ -4,7 +4,19 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — sơ đồ, claim, evidence, artifact, workflow cho PID-00114 (27/11/2026)
+
+Theo “Phải sửa ở nguồn” của PID-00114 (khu vực research; H5–H8, H10, H11, H13), chốt theo đề xuất, PO ủy quyền 26/11/2026. Mọi trường mới là tùy chọn và chỉ đọc (trừ `ArtifactVersionCreate.diagramType`, `createClaimsBatch` `anchor` là trường gửi tùy chọn): tương thích ngược, không đổi operation.
+
+- `components/schemas/manuscript.yaml`: schema mới `DiagramValidationStatus` (`valid`, `syntax_error`, `render_error`), `DiagramValidation` (`status`, `errors[] {line, message}`; DIAG-SOURCE-001, DIAG-VALIDATE-001), `ManuscriptUsage` (`path`, `revisionId`, `revisionNumber`, `changeProposalId`, `citationKeys`, `at`; SYN-PERSIST-001). `DiagramType.id` ví dụ theo năm loại của DIAG-TYPES-001 (`sequence`, `component`, `activity`, `state`, `workflow`), bỏ `class`, `er`, `gantt`, `mindmap`; ví dụ `DiagramRequest.diagramType` đổi `flowchart` thành `workflow`.
+- `components/schemas/artifact.yaml`: `ArtifactVersion.validation`, `diagramType` (diagram), `claimAnchors[]` (synthesis; schema mới `ClaimAnchor {claimId, charStart, charEnd}`; UX-CLAIM-001-AC01), `manuscriptUsages[]`; `ArtifactVersionCreate.diagramType` (bỏ trống thì giữ loại của version gốc), mô tả ghi System kiểm tra nguồn khi lưu.
+- `components/schemas/evidence.yaml`: `EvidenceInContext.linkedArtifactVersions[]` (`TypedRef`), `manuscriptUsages[]`; `Claim.needsReviewReasons[]` (cùng dạng `Task.needsReviewReasons`), `Claim.supportOverride` (schema mới `SupportStatusOverrideRecord {supportStatus, reason, by, at}` hoặc `null`; CLAIM-SUPPORT-001 “đã ghi đè”), `Claim.manuscriptUsages[]`; `VerificationResult.details[]` có `evidenceId`, `citationKey`, `relation`, `score`, `rationale` theo `assessments` của `recordVerificationResults` (vẫn cho trường khác).
+- `components/schemas/common.yaml#/TypedRef`: `artifactId` khi `type = artifact_version` (server điền). `components/schemas/orchestration.yaml#/Workflow`: `subject` (`TypedRef`: claim của `verifyClaim`, artifact của `requestDiagram` có `revisesArtifactId`); chỉ sửa schema `Workflow`.
+- `internal/research.yaml` (`createClaimsBatch`): mỗi claim nhận `anchor {charStart, charEnd}` trong `content` của artifact version ở `artifactOutputIndex`; thêm SYN-REVIEW-001 vào `x-requirements`. `paths/14-…` (`acceptArtifactVersion`): mô tả ghi điều kiện `validation.status = valid`.
+- Phía backend: PID-00106 (Artifact: `validation`, `diagramType`, `claimAnchors`, `manuscriptUsages`), PID-00107 (kiểm nguồn khi lưu), PID-00078 (Claim: `needsReviewReasons`, `supportOverride`, `anchor`), PID-00094 (`details`), PID-00052 (`linkedArtifactVersions`), PID-00046 (`Workflow.subject`), PID-00120 (Synthesis Agent gửi `anchor`). Đường dữ liệu `ManuscriptUsage` từ manuscript sang research chưa có; bổ sung khi làm hợp đồng manuscript (PID-00079). DDL tham chiếu (DEC-57) chưa có cột cho `validation`, `diagramType`, vị trí claim và `Workflow.subject`: luồng backend ghi DBQ khi hiện thực.
+- Ticket cập nhật: PID-00114 (mục 5, S01, S06, S07, EC34, EC38, EC39, acceptance, brief, designs/notes). `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, `internal/*.yaml`, `events/asyncapi.yaml` sạch).
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).
