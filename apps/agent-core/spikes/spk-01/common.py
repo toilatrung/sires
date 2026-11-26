@@ -4,19 +4,22 @@
 
 """Shared pieces of SPK-01 (PID-00021): settings, the common schema and tools, evidence files, key redaction.
 
-Spike code: it is outside ``src/`` and never part of the agent-core package or image. API keys are read only from
+Spike code: it is outside ``src/`` and never part of the agent-core package or image. API keys are read from
 environment variables (on Windows also from the user-level variables in the registry, so a key the PO set after the
-shell started is seen) and never printed or written: every string that leaves this process goes through ``redact``.
+shell started is seen), else from the Dev machine's keys file (``scripts/development/set-provider-keys.ps1``), and
+never printed or written: every string that leaves this process goes through ``redact``.
 """
 
 from __future__ import annotations
 
+import functools
 import json
 import os
 import re
+import subprocess
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -33,6 +36,15 @@ KEY_ENV = {
     "openai": ("OPENAI_API_KEY",),
     "google": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
 }
+# Base URL of the connection whose key is KEY_ENV; SPK01_BASE_URL_* is the name used before 26/11/2026.
+BASE_URL_ENV = {p: (f"SIRES_BASE_URL_{p.upper()}", f"SPK01_BASE_URL_{p.upper()}") for p in PROVIDERS}
+# A separate key for the official endpoint, used only when the connection above points to a gateway (QC G9).
+OFFICIAL_KEY_ENV = {
+    "anthropic": ("ANTHROPIC_API_KEY_OFFICIAL",),
+    "openai": ("OPENAI_API_KEY_OFFICIAL",),
+    "google": ("GEMINI_API_KEY_OFFICIAL",),
+}
+KEYS_FILE_ENV = "SIRES_PROVIDER_KEYS_FILE"
 # Official endpoints, as prefilled in Settings › Provider Connections (PRD AGENT-PROVIDER-002).
 OFFICIAL_BASE_URL = {
     "anthropic": "https://api.anthropic.com",
@@ -71,32 +83,114 @@ def _registry_user_env(name: str) -> str:
         return ""
 
 
+def _env(name: str) -> str:
+    return (os.environ.get(name) or _registry_user_env(name)).strip()
+
+
+@functools.cache
+def _main_checkout() -> Path:
+    """Root of the main checkout, shared by every git worktree; this repo's root when git cannot tell."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=_HERE.parent,
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=True,
+        ).stdout.strip()
+        if out:
+            return Path(out).parent
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return _HERE.parents[4] if len(_HERE.parents) > 4 else _HERE.parent
+
+
+def keys_file() -> Path:
+    """The Dev machine's keys file: SIRES_PROVIDER_KEYS_FILE, else <main checkout>/.sires/provider-keys.env."""
+    custom = _env(KEYS_FILE_ENV)
+    return Path(custom).expanduser() if custom else _main_checkout() / ".sires" / "provider-keys.env"
+
+
+def _file_values() -> dict[str, str]:
+    """NAME=value lines of the keys file (dotenv: comments, optional export, optional quotes); empty when absent."""
+    try:
+        text = keys_file().read_text(encoding="utf-8-sig")
+    except OSError:
+        return {}
+    values: dict[str, str] = {}
+    for line in text.splitlines():
+        match = re.match(r"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$", line)
+        if match:
+            value = match.group(2).strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                value = value[1:-1]
+            values[match.group(1)] = value.strip()
+    return values
+
+
+def _first(get: Callable[[str], str], names: Iterable[str]) -> str:
+    return next((value for name in names if (value := get(name))), "")
+
+
+@dataclass(frozen=True)
+class Connection:
+    """One provider connection: the key is only ever sent to this base URL (SCOPE-13, architecture 8.2; QC G9)."""
+
+    key: str | None
+    base_url: str | None  # None: the official endpoint
+    source: str  # "môi trường", "file" or "" when there is no key
+
+
+def connection(provider: str) -> Connection:
+    """Key and base URL of the provider, both from one source so a key is never paired with another source's base
+    URL: the environment when it has the key, else the keys file. Values are registered for redaction; the base URL's
+    host is redacted from every output (the repo is public; the PO's choice of gateway is not part of the result)."""
+    file = _file_values()
+    sources: list[tuple[str, Callable[[str], str]]] = [("môi trường", _env), ("file", lambda n: file.get(n, ""))]
+    for _, get in sources:
+        for name in BASE_URL_ENV[provider]:
+            host = urlsplit(get(name)).hostname
+            if host:
+                _HOSTS.add(host)
+    for source, get in sources:
+        key = _first(get, KEY_ENV[provider])
+        if key:
+            _SECRETS.add(key)
+            base_url = _first(get, BASE_URL_ENV[provider]).rstrip("/")
+            official = base_url == OFFICIAL_BASE_URL[provider] or not base_url
+            return Connection(key, None if official else base_url, source)
+    return Connection(None, None, "")
+
+
 def read_key(provider: str) -> str | None:
-    """The provider key from the environment, or None. The value is registered for redaction before it is returned."""
-    for name in KEY_ENV[provider]:
-        value = (os.environ.get(name) or _registry_user_env(name)).strip()
-        if value:
-            _SECRETS.add(value)
-            return value
+    """Key of the provider's connection, or None; it goes only to ``base_url_for(provider)``."""
+    return connection(provider).key
+
+
+def base_url_for(provider: str) -> str | None:
+    """Base URL of the provider's connection (a gateway compatible with the official API), or None for the official
+    endpoint."""
+    return connection(provider).base_url
+
+
+def official_key(provider: str) -> str | None:
+    """A key that may be sent to the official endpoint: the connection's key when the connection is the official
+    endpoint, else only a separate <NAME>_OFFICIAL key. A gateway key is never sent to the official endpoint (G9)."""
+    conn = connection(provider)
+    if conn.key and conn.base_url is None:
+        return conn.key
+    file = _file_values()
+    for get in (_env, lambda n: file.get(n, "")):
+        key = _first(get, OFFICIAL_KEY_ENV[provider])
+        if key:
+            _SECRETS.add(key)
+            return key
     return None
 
 
 def key_names(provider: str) -> str:
-    return " hoặc ".join(KEY_ENV[provider])
-
-
-def base_url_for(provider: str) -> str | None:
-    """Custom endpoint for the provider from SPK01_BASE_URL_<PROVIDER> (a gateway compatible with the official API),
-    or None for the official endpoint. Its host is redacted from every output: the repo is public and the PO's choice
-    of gateway is not part of the result."""
-    name = f"SPK01_BASE_URL_{provider.upper()}"
-    value = (os.environ.get(name) or _registry_user_env(name)).strip().rstrip("/")
-    if not value:
-        return None
-    host = urlsplit(value).hostname
-    if host:
-        _HOSTS.add(host)
-    return value
+    return " hoặc ".join(KEY_ENV[provider]) + " (biến môi trường hoặc file key của máy Dev)"
 
 
 def endpoint_label(provider: str) -> str:

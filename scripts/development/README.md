@@ -67,6 +67,34 @@ uv run python -m pytest
 
 Target Nx của dự án Python viết theo cách này. Không tắt Smart App Control để né lỗi: tắt rồi thì không bật lại được nếu không cài lại Windows.
 
+## Key provider
+
+Key và base URL của Anthropic, OpenAI, Google Gemini nằm trong một file của máy Dev, ngoài Git, để mọi worktree và phiên làm việc nạp lại. Key của cổng trung gian (proxy) do PO tự cấp được dùng để test và phát triển (PO, 26/11/2026). Nhập hoặc sửa, từ gốc repo hay một worktree:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\development\set-provider-keys.ps1
+```
+
+Script hỏi key (gõ ẩn, không vào history; một key dùng chung cho cả ba hoặc từng key riêng), base URL từng provider (trống là endpoint chính thức; OpenAI gồm `/v1`), key chính thức riêng nếu có, rồi ghi file `<checkout chính>\.sires\provider-keys.env` (hoặc `-Path`, `SIRES_PROVIDER_KEYS_FILE`). Thư mục `.sires` có `.gitignore` riêng nên Git luôn bỏ qua; quyền của thư mục và file chỉ còn user hiện tại (`icacls`). Cuối cùng hỏi có ghi, xóa biến môi trường cấp User hay không (mặc định không đổi). `-Check` báo dạng key (độ dài, loại tiền tố), base URL đã che host và quyền của file, không in giá trị.
+
+| Biến | Nghĩa |
+| --- | --- |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Key của kết nối, chỉ gửi tới base URL của chính kết nối đó (SCOPE-13, kiến trúc 8.2) |
+| `SIRES_BASE_URL_ANTHROPIC`, `SIRES_BASE_URL_OPENAI`, `SIRES_BASE_URL_GOOGLE` | Base URL của kết nối; trống là endpoint chính thức. Tên cũ `SPK01_BASE_URL_*` vẫn đọc được |
+| `ANTHROPIC_API_KEY_OFFICIAL`, `OPENAI_API_KEY_OFFICIAL`, `GEMINI_API_KEY_OFFICIAL` | Key chính thức riêng, chỉ gửi tới endpoint chính thức, khi kết nối ở trên trỏ cổng |
+
+Nạp vào phiên đang mở (thay `<file>` bằng đường dẫn script in ra):
+
+```powershell
+Get-Content -LiteralPath '<file>' | ForEach-Object { if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') { Set-Item -LiteralPath "env:$($Matches[1])" -Value $Matches[2].Trim().Trim("'").Trim('"') } }
+```
+
+```bash
+set -a; . '<file>'; set +a
+```
+
+Script của SPK-01 tự đọc file khi biến môi trường chưa có key ([README của spike](../../apps/agent-core/spikes/spk-01/README.md)). Không ghi key, host hay URL của cổng vào repo, commit, PR, log hay evidence. Biến cấp User `ANTHROPIC_API_KEY` được mọi chương trình của bạn đọc, kể cả công cụ dòng lệnh khác dùng SDK Anthropic; chỉ ghi biến cấp User khi cần.
+
 ## Script khác
 
 | File | Dùng để |
@@ -75,6 +103,7 @@ Target Nx của dự án Python viết theo cách này. Không tắt Smart App C
 | `local-env.mjs` | `pnpm local:up`, `pnpm local:down`: docker compose cho `infra/local`, qua WSL khi ở Windows |
 | `setup-windows.ps1`, `setup-wsl.sh` | Cài môi trường (trên) |
 | `clean-windows.ps1`, `clean-wsl.sh` | Dọn môi trường thừa (trên) |
+| `set-provider-keys.ps1` | Nhập key provider vào file của máy Dev (trên) |
 
 ---
 

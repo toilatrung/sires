@@ -6,8 +6,9 @@
 
     python errors.py [--out DIR] [--variants ...] [--burst 50] [--no-burst] [--only real|proxy]
 
-Real calls (official endpoints): wrong key, unknown model, client timeout, refused connection, unresolvable host,
-and a burst of tiny concurrent calls to provoke HTTP 429. Canned calls (through base_url.py's proxy, nothing reaches
+Real calls (each provider's configured endpoint, else the official one; the connection key never goes to another
+endpoint): wrong key, unknown model, client timeout, refused connection, unresolvable host, and a burst of tiny
+concurrent calls to provoke HTTP 429. Canned calls (through base_url.py's proxy, nothing reaches
 the provider): the documented error format of each provider for rate limit, billing quota, overload, 5xx, gateway
 timeout, context too long, permission denied, a slow answer, a refusal, a response without usage, an output that
 does not match the schema, and a non-JSON body. Every call uses the official SDK with retries off.
@@ -159,17 +160,20 @@ async def run_real(variant: str, key: str | None, burst_n: int) -> list[dict[str
     and the burst, which need a key that this endpoint accepts."""
     provider = provider_of(variant)
     v1 = "/v1" if provider == "openai" else ""
-    any_key = key or "spk01-placeholder-key-0000000000"
-    rows = [
-        await call_once(variant, "spk01-invalid-key-0000000000", "invalid_key", "real"),
-        await call_once(variant, any_key, "timeout_client", "real", timeout=0.01),
-        await call_once(variant, any_key, "network_refused", "real", base_url=f"http://127.0.0.1:9{v1}", timeout=10),
-        await call_once(
-            variant, any_key, "network_dns", "real", base_url=f"https://spk01-unresolvable.invalid{v1}", timeout=10
-        ),
-    ]
+    # The connection key only goes to the connection's own endpoint (QC G9); elsewhere a placeholder is enough.
+    placeholder = "spk01-placeholder-key-0000000000"
     custom = base_url_for(provider)
     source = "gateway" if custom else "real"
+    rows = [
+        await call_once(variant, "spk01-invalid-key-0000000000", "invalid_key", "real"),
+        await call_once(variant, key or placeholder, "timeout_client", source, base_url=custom, timeout=0.01),
+        await call_once(
+            variant, placeholder, "network_refused", "real", base_url=f"http://127.0.0.1:9{v1}", timeout=10
+        ),
+        await call_once(
+            variant, placeholder, "network_dns", "real", base_url=f"https://spk01-unresolvable.invalid{v1}", timeout=10
+        ),
+    ]
     if custom:
         rows.append(await call_once(variant, "spk01-invalid-key-0000000000", "invalid_key", source, base_url=custom))
     if key is None:
