@@ -40,7 +40,7 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">Điểm</th><th scope="col">OIDC mock</th><th scope="col">eTroy_OIDC (SPK-02, 18/11/2026)</th><th scope="col">Ảnh hưởng tới gateway</th></tr></thead><tbody>
 <tr><td>Discovery</td><td>Có</td><td>Không (K1)</td><td>Gateway phải chạy được cả hai chế độ: discovery và cấu hình tĩnh (PID-00038)</td></tr>
 <tr><td><code>nonce</code> trong ID token</td><td>Có</td><td>Chưa (K3); sửa ở eTroy trước khi nối thật</td><td>Gateway luôn kiểm <code>nonce</code> (INT-OIDC-001)</td></tr>
-<tr><td><code>end_session</code></td><td>Có (RP-Initiated Logout 1.0)</td><td>Chỉ <code>POST /logout</code> cần CSRF của eTroy (K4); bổ sung theo ETR-07</td><td>Gateway chuyển tới <code>end_session_endpoint</code> của IdP đang cấu hình (H1)</td></tr>
+<tr><td><code>end_session</code></td><td>Có (RP-Initiated Logout 1.0)</td><td>Chỉ <code>POST /logout</code> cần CSRF của eTroy (K4); bổ sung theo ETR-07</td><td>Gateway chuyển tới <code>end_session_endpoint</code> của IdP đang cấu hình kèm <code>client_id</code>, <code>post_logout_redirect_uri</code> <code>/sign-in</code> (H1, H9)</td></tr>
 <tr><td>Access token</td><td>Chuỗi mờ</td><td>JWT có <code>scope</code> (K9)</td><td>Gateway không đọc nội dung access token</td></tr>
 <tr><td>Màn đồng ý</td><td>Không</td><td>Chưa rõ</td><td>Không</td></tr>
 <tr><td>Lưu trữ</td><td>Bộ nhớ trong</td><td>Bền vững</td><td>Khởi động lại mock thì phải đăng nhập lại</td></tr>

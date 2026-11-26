@@ -34,10 +34,10 @@
 <h2 id="lam">Làm</h2>
 <ol><li>Trong <code>src/provider.ts</code>: bật <code>features.revocation</code> (route <code>/revoke</code>), bật <code>features.rpInitiatedLogout</code> (route <code>/session/end</code>); kiểm rằng dùng lại refresh token đã tiêu thụ thu hồi grant (refresh token mới nhất cũng hết dùng được) đúng như <a href="../index.html#s-4-3">spec 4.3</a>; nếu phiên bản <code>oidc-provider</code> đã ghim không làm vậy thì dừng theo spec mục 7.</li>
 <li>Trong <code>src/interactions.ts</code>: <code>logoutSource</code> hiện trang “Đăng xuất khỏi OIDC mock” chứa form của <code>oidc-provider</code> (giữ nguyên trường <code>xsrf</code>, thêm <code>logout=yes</code>), một đoạn script gửi form ngay khi tải, và nút “Đăng xuất” cho trình duyệt tắt JS; <code>postLogoutSuccessSource</code> hiện “Đã đăng xuất khỏi OIDC mock”.</li>
-<li>Thêm vào <code>test/flow.spec.ts</code> các test ở mục Kiểm; ca đồng thời gửi hai refresh bằng <code>Promise.all</code>.</li></ol>
+<li>Thêm vào <code>test/flow.spec.ts</code> các test ở mục Kiểm; ca đồng thời gửi hai refresh bằng <code>Promise.all</code>; chạy ca này sớm, <code>oidc-provider</code> không bảo đảm “đúng một lần thành công” thì dừng theo spec mục 7.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li>Test: <code>test/flow.spec.ts › refresh xoay vòng, dùng lại thu hồi family</code> (PID-00160-AC04; EC09)</li>
-<li>Test: <code>test/flow.spec.ts › đăng xuất RP-initiated</code> (PID-00160-AC05; EC10 chỉ có <code>client_id</code>, EC11 gửi form của nút, EC12 không có <code>post_logout_redirect_uri</code>; trang xác nhận có thẻ <code>script</code> tự gửi form)</li>
+<li>Test: <code>test/flow.spec.ts › đăng xuất RP-initiated</code> (PID-00160-AC05: ca chính chỉ có <code>client_id</code> và <code>post_logout_redirect_uri</code> <code>/sign-in</code> như gateway gửi (H9), ca <code>id_token_hint</code> + <code>state</code>; EC10, EC11 gửi form của nút, EC12 không có <code>post_logout_redirect_uri</code>; trang xác nhận có thẻ <code>script</code> tự gửi form)</li>
 <li>Test: <code>test/flow.spec.ts › thu hồi refresh token qua /revoke</code> (PID-00160-AC06)</li>
 <li><code>pnpm nx run @sires/oidc-mock:test</code> đạt</li>
 <li><code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
