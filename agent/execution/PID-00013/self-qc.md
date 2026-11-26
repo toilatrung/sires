@@ -131,6 +131,47 @@ Sau khi sửa check `contracts` của CI và merge `origin/web/shell-pid-00012` 
 
 EC08, EC11 chuyển từ “cần lưu ý” sang “đã giải quyết”. Không còn CRITICAL, HIGH.
 
+
+## Lần 5 — 27/11/2026
+
+Hai việc trên #131 do phiên điều phối giao: `mockEnabled` dùng chung kèm test chặn, và tham số query dạng mảng theo `style`/`explode` (report.md Lần 5).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `node src/shell/mock/generate.mjs` | 165 operation; 4 descriptor có `query` (`search`, `listTasks`, `listReferences`, `listWorkflows`) |
+| `eslint .`, `tsc -p tsconfig.json --noEmit` (`apps/web`) | 0 lỗi |
+| `vitest run` (`@sires/web`) | 20 file, 145/145 đạt |
+| `vitest run src/shell/mock` | 4 file, 33/33 đạt. Mới: `build.spec.ts` › khu vực khai mock (production, development, đối chứng chế độ mock, quét `features/*/index.tsx`); `mock.spec.ts` › tham số query dạng mảng (bộ sinh, đọc query), › tham số mảng lọc theo style, explode |
+| `add-license.mjs --check` | 0 file thiếu |
+| `check-tracks.mjs` | `web/shell` |
+
+| G | Loại | Mức | Mô tả | Đã xử lý |
+| --- | --- | --- | --- | --- |
+| G7 | contradicts | MEDIUM | Mẫu điều kiện ở README và `Feature.mocks` (`import.meta.env.DEV ? …`) để mock của khu vực lọt vào bản build `NODE_ENV=development`. Báo từ PR #143, #144 | Đã xử lý: `mockEnabled`, README, chú thích, test chặn |
+| G8 | partial | MEDIUM | Lọc fixture coi mỗi cặp query là một điều kiện AND, nên `status=A&status=B` không khớp hàng nào; chưa đọc `status=A,B` của hợp đồng | Đã xử lý: `readQuery` theo `style`/`explode`; test |
+| G9 | contradicts | LOW | Client API của shell gửi mảng dạng lặp, trái `explode: false` của hợp đồng | Không sửa ở PID-00013 (mã của PID-00012); ghi report.md Lần 5, báo phiên điều phối |
+
+Không còn CRITICAL, HIGH.
+
+
+## Lần 6 — 27/11/2026
+
+Hai việc: worker `quiet` và `MockRequest.emit` (report.md Lần 6).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `eslint .`, `tsc -p tsconfig.json --noEmit` (`apps/web`) | 0 lỗi |
+| `vitest run` (`@sires/web`) | 21 file, 147/147 đạt |
+| `vitest run src/shell/mock` | 5 file, 35/35 đạt. Mới: `browser.spec.ts` › không log request ra console; `mock.spec.ts` › override phát sự kiện lên /events |
+| `add-license.mjs --check` | 0 file thiếu |
+
+| G | Loại | Mức | Mô tả | Đã xử lý |
+| --- | --- | --- | --- | --- |
+| G10 | contradicts | MEDIUM | `worker.start` để log mặc định của MSW, in thân request (API key của Provider Connections) ra console khi chạy `dev:mock`. Báo từ QC #143 G1 | Đã xử lý: `quiet: true` qua `worker-options.ts`; test chặn |
+| G11 | missing | MEDIUM | Override của khu vực không phát được sự kiện lên mock `/events` (library cần cho `workflow.status_changed`, `reference.*`) | Đã xử lý: `MockRequest.emit`; test |
+
+Không còn CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

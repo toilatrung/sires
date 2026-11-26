@@ -9,7 +9,7 @@ Mock giả lập `gateway` theo OpenAPI công khai (`docs/api-design/dist/openap
 | Dev | `pnpm --filter @sires/web dev:mock` (sinh lại mock rồi chạy Vite ở mode `mock`). Hoặc đặt `VITE_SIRES_MOCK=1` rồi `pnpm --filter @sires/web dev`. Mặc định tắt: `dev` thường gọi gateway qua proxy |
 | Test (Vitest) | `useMockServer()` từ `shell/mock/node` |
 
-Khi bật, mọi request tới `/api/v1/*` có câu trả lời: request nào cũng mang header `x-sires-mock: <operationId>` (xem ở tab Network), console in từng request `[MSW]`. Trong console trình duyệt, `siresMock.events.emit({ type: 'notification.created', … })` đẩy một sự kiện SSE.
+Khi bật, mọi request tới `/api/v1/*` có câu trả lời: request nào cũng mang header `x-sires-mock: <operationId>` (xem ở tab Network). Worker chạy ở chế độ `quiet` (`worker-options.ts`), nên console không in từng request: log mặc định của MSW in cả thân request, gồm API key của Provider Connections. Trong console trình duyệt, `siresMock.events.emit({ type: 'notification.created', … })` đẩy một sự kiện SSE.
 
 ```ts
 // features/global/Dashboard.spec.tsx
@@ -34,6 +34,8 @@ Theo thứ tự ưu tiên:
 1. Override của khu vực (`features/<khu vực>/__mocks__/index.ts`), có type theo `PublicApi`.
 2. Mock của shell: `getSession` (phiên mẫu có `csrfToken`), `getMe` (tài khoản mẫu, `preferences.uiLanguage = vi`), `streamEvents` (`/events`).
 3. Dữ liệu demo dùng chung ở `fixtures/` cho các GET trả một component (`ResearchProject`, `Task`, `Reference`…): danh sách lọc theo `projectId` trên đường dẫn và theo tham số query trùng tên trường, phân trang `limit`/`cursor`; chi tiết tìm theo id, không có thì `404`.
+
+   Tham số mảng đọc theo `style` và `explode` của hợp đồng: SIRes dùng `form` với `explode: false`, tức `status=A,B`. Mock cũng nhận dạng lặp `status=A&status=B`. Hàng khớp khi trường có một trong các giá trị; trường là mảng thì khớp khi chứa giá trị đó. Override nhận tham số mảng ở `query` dưới dạng `string[]` (ví dụ `query.approvalStatus`), có type theo hợp đồng.
 4. Dữ liệu sinh từ OpenAPI cho mọi operation còn lại: ví dụ trong spec nếu có, không có thì theo schema; id trên đường dẫn được gán vào dữ liệu trả về. Lệnh ghi trả mẫu có các trường đơn giản client gửi lên.
 
 Mock dùng chung không giữ trạng thái: tạo xong rồi đọc lại danh sách không thấy bản ghi mới. Luồng có trạng thái, `409`, `412`, phân trang theo kịch bản là việc của override trong khu vực.
@@ -71,6 +73,11 @@ src/features/<khu vực>/__mocks__/
          return row ? { status: 200, body: { ...row, name: row.name.trim() } } : { status: 404 };
        },
        listProjects: () => ({ status: 200, body: { ...operations.listProjects.responses[200].body(), nextCursor: null } }),
+       // emit đưa sự kiện lên mock /events như gateway (workflow xong, trạng thái đổi); test đọc ở mock.events
+       cancelWorkflow: ({ params, emit, generated }) => {
+         emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, toState: 'Cancelled' });
+         return { status: 200, body: generated(200) };
+       },
      },
      fixtures: {
        // thêm hoặc thay hàng demo theo id; mỗi hàng phải đúng component schema
@@ -79,14 +86,20 @@ src/features/<khu vực>/__mocks__/
    });
    ```
 
-4. Khai trong `features/<khu vực>/index.tsx`, giữ đúng dạng điều kiện để bản build bỏ mock:
+4. Khai trong `features/<khu vực>/index.tsx` sau `mockEnabled` của shell (`shell/mock-enabled.ts`), để mọi bản build bỏ mock, kể cả bản build với `NODE_ENV=development`. Lúc đó `import.meta.env.DEV` vẫn là `true` nhưng `MODE` là `production`, nên điều kiện chỉ dùng `DEV` sẽ để lọt mock:
 
    ```ts
+   import { mockEnabled, type Feature } from '../../shell';
+
    export const feature: Feature = {
      id: 'global', routes, messages,
-     mocks: import.meta.env.DEV ? () => import('./__mocks__') : undefined,
+     mocks: mockEnabled ? () => import('./__mocks__') : undefined,
    };
    ```
+
+   `build.spec.ts` chặn việc này theo hai cách:
+   - Build một khu vực mẫu ở `production` và `NODE_ENV=development`, mock không được có trong bundle; ở chế độ `mock`, mock phải còn (đối chứng).
+   - Quét `features/*/index.tsx`: dòng `mocks:` phải đứng sau `mockEnabled`, hoặc sau đúng điều kiện `import.meta.env.DEV && import.meta.env.MODE !== 'production'`.
 
 Quy tắc:
 

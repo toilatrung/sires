@@ -21,6 +21,7 @@ import { DEMO_ACCOUNT_ID } from './generator/sample.mjs';
 import { operations } from './generated';
 import { ACCOUNT_ID, CSRF_TOKEN, createMocks, demoFixtures, defineMocks, id, MOCK_HEADER, projectIds, signedOutMocks } from './index';
 import { useMockServer } from './node';
+import { readQuery } from './runtime';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, '../../..');
@@ -193,6 +194,29 @@ describe('bộ sinh mock (S01, S04)', () => {
   });
 });
 
+describe('tham số query dạng mảng', () => {
+  it('bộ sinh ghi style, explode của tham số mảng', () => {
+    const { models } = buildModel({ operations: ['listTasks', 'listReferences', 'getTask'] });
+    const query = Object.fromEntries(models.map((model) => [model.operationId, model.query]));
+    expect(query).toEqual({
+      listTasks: [{ name: 'status', style: 'form', explode: false }],
+      listReferences: [{ name: 'approvalStatus', style: 'form', explode: false }],
+      getTask: undefined,
+    });
+  });
+
+  it('đọc query theo style, explode', () => {
+    const descriptor = { query: [
+      { name: 'a', style: 'form', explode: false },
+      { name: 'b', style: 'form', explode: true },
+      { name: 'c', style: 'pipeDelimited', explode: false },
+      { name: 'd', style: 'spaceDelimited', explode: false },
+    ] };
+    const url = new URL('http://localhost/x?a=1,2&a=3&b=4,5&b=6&c=7|8&d=9%2010&e=x&e=y&a=');
+    expect(readQuery(descriptor, url)).toEqual({ a: ['1', '2', '3'], b: ['4,5', '6'], c: ['7', '8'], d: ['9', '10'], e: 'y' });
+  });
+});
+
 describe('mock khi chạy test (S02)', () => {
   const mock = useMockServer();
   const api = (route: string, init?: RequestInit) => fetch(`http://localhost/api/v1${route}`, init);
@@ -305,6 +329,63 @@ describe('mock khi chạy test (S02)', () => {
     expect(pending.openCount).toBe((demoFixtures.PendingAction ?? []).filter((row) => row.status === 'Open').length);
     const unread = await (await api('/notifications?status=Unread&limit=1')).json() as { unreadCount: number };
     expect(unread.unreadCount).toBe((demoFixtures.Notification ?? []).filter((row) => row.status === 'Unread').length);
+  });
+
+  it('override phát sự kiện lên /events', async () => {
+    // MockRequest.emit: an override announces what it changed (a workflow finishing, a status change) on the mock
+    // /events stream, as the gateway would; test overrides (mock.use) and area overrides (createMocks) both reach it.
+    const workflowId = id('workflow', 1);
+    mock.use({ overrides: { cancelWorkflow: ({ params, emit, generated }) => {
+      emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, fromState: 'Running', toState: 'Cancelled' });
+      return { status: 200, body: generated(200) };
+    } } });
+    const response = await api(`/workflows/${workflowId}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'k-emit' }, body: '{}' });
+    expect(response.status).toBe(200);
+    expect(mock.events.log).toEqual([expect.objectContaining({ type: 'workflow.status_changed', objectId: workflowId, toState: 'Cancelled' })]);
+
+    const area = defineMocks({ overrides: { cancelWorkflow: ({ params, emit, generated }) => {
+      emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, toState: 'Cancelled' });
+      return { status: 200, body: generated(200) };
+    } } });
+    const { handlers, events } = createMocks([{ name: 'area', mocks: area }]);
+    const cancel = handlers.find((handler) => handler.info.header.includes('/workflows/:workflowId/cancel'));
+    expect(cancel).toBeDefined();
+    const { setupServer } = await import('msw/node');
+    mock.server.close();
+    const own = setupServer(...handlers);
+    own.listen({ onUnhandledFrame: 'error' });
+    try {
+      await api(`/workflows/${workflowId}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'k-emit-2' }, body: '{}' });
+      expect(events.log.map((event) => event.objectId)).toEqual([workflowId]);
+    } finally {
+      own.close();
+      mock.server.listen({ onUnhandledFrame: 'error' });
+    }
+  });
+
+  it('tham số mảng lọc theo style, explode', async () => {
+    // The contract's array parameters are form, explode=false (`status=A,B`); the shell client sends `status=A&status=B`.
+    // Both keep the rows matching any value; one value still filters as before.
+    const rag = (demoFixtures.Task ?? []).filter((task) => task.projectId === projectIds.rag);
+    const statuses = [...new Set(rag.map((task) => task.status))].slice(0, 2);
+    expect(statuses).toHaveLength(2);
+    const idsOf = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
+    const listed = async (query: string) => idsOf((await (await api(`/projects/${projectIds.rag}/tasks?${query}`)).json() as { items: { id: string }[] }).items);
+    const expected = idsOf(rag.filter((task) => statuses.includes(task.status)));
+    expect(expected.length).toBeGreaterThan(1);
+    expect(await listed(`status=${statuses.map(encodeURIComponent).join(',')}`)).toEqual(expected);
+    expect(await listed(statuses.map((status) => `status=${encodeURIComponent(status)}`).join('&'))).toEqual(expected);
+    expect(await listed(`status=${encodeURIComponent(statuses[0]!)}`)).toEqual(idsOf(rag.filter((task) => task.status === statuses[0])));
+    // An override reads an array parameter as string[] whatever the serialization (typed by the contract).
+    const seen: (string[] | undefined)[] = [];
+    mock.use({ overrides: { listReferences: ({ query, generated }) => {
+      seen.push(query.approvalStatus);
+      return { status: 200, body: generated(200) };
+    } } });
+    await api('/references?approvalStatus=Trusted,Revoked&limit=5');
+    await api('/references?approvalStatus=Trusted&approvalStatus=Rejected');
+    await api('/references');
+    expect(seen).toEqual([['Trusted', 'Revoked'], ['Trusted', 'Rejected'], undefined]);
   });
 
   it('mọi operation của OpenAPI công khai có mock', async () => {

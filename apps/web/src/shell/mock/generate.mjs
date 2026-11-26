@@ -111,7 +111,22 @@ export function describeOperation(doc, sampler, operation) {
     model.responses[status] = entry;
   }
   if (!model.resource) delete model.resource;
+  const query = arrayQueryParameters(doc, operation.parameters ?? []);
+  if (query.length) model.query = query;
   return model;
+}
+
+/**
+ * Array query parameters with their serialization (OpenAPI 3: style form by default, explode true for form), so the
+ * runtime reads `status=A,B` (form, explode false — what the SIRes contract uses) as well as `status=A&status=B`.
+ */
+export function arrayQueryParameters(doc, parameters) {
+  return parameters
+    .filter((parameter) => parameter.in === 'query' && deref(doc, parameter.schema ?? {}).schema?.type === 'array')
+    .map((parameter) => {
+      const style = parameter.style ?? 'form';
+      return { name: parameter.name, style, explode: parameter.explode ?? style === 'form' };
+    });
 }
 
 function emitOperation(model) {
@@ -132,6 +147,7 @@ function emitOperation(model) {
     `    path: ${JSON.stringify(model.path)},`,
     `    success: ${model.success},`,
     ...(model.resource ? [`    resource: ${JSON.stringify(model.resource)},`] : []),
+    ...(model.query ? [`    query: ${JSON.stringify(model.query)},`] : []),
     '    responses: {',
     ...lines,
     '    },',

@@ -38,11 +38,17 @@ export interface MockSetup {
 /** Shell mocks, then the areas', then the generated fallback for every other operation of the public OpenAPI. */
 export function createMocks(sources: readonly MockSource[] = [], events: EventStreamOptions = {}): MockSetup {
   const stream = createEventStream(events);
-  const handlers = composeHandlers({ sources: [{ name: 'shell', mocks: shellMocks }, ...sources], fixtures: demoFixtures, before: [stream.handler] });
+  const handlers = composeHandlers({
+    sources: [{ name: 'shell', mocks: shellMocks }, ...sources], fixtures: demoFixtures, before: [stream.handler],
+    emit: (event) => { stream.emit(event); },
+  });
   return { handlers, events: stream };
 }
 
 /** Handlers of overrides only, for `server.use()` in one test; no claim check, no fallback. */
-export function overrideHandlers(mocks: FeatureMocks): HttpHandler[] {
-  return composeHandlers({ sources: [{ name: 'test', mocks }], fixtures: demoFixtures, fallback: false });
+export function overrideHandlers(mocks: FeatureMocks, events?: EventStreamMock): HttpHandler[] {
+  return composeHandlers({
+    sources: [{ name: 'test', mocks }], fixtures: demoFixtures, fallback: false,
+    emit: (event) => { events?.emit(event); },
+  });
 }
