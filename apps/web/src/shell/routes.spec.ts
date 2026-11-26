@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { features } from './features';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 
 describe('feature routes', () => {
   it('no two feature areas claim the same path', () => {
@@ -14,12 +14,12 @@ describe('feature routes', () => {
   });
 
   it('/ → /dashboard (PRD 4.3)', async () => {
-    const { router } = renderShell({ path: '/' });
+    const { router } = renderShellFrame({ path: '/' });
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'));
   });
 
   it('route lạ: trạng thái “không tìm thấy” trong khung, không màn trắng (EC06)', async () => {
-    renderShell({ path: '/khong-co/trang-nay' });
+    renderShellFrame({ path: '/khong-co/trang-nay' });
     await waitForFrame();
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByText('Không tìm thấy trang')).toBeTruthy();
@@ -30,7 +30,7 @@ describe('feature routes', () => {
   });
 
   it('sign-in không khung: không TopBar, không rail, chỉ VI/EN (EC17)', async () => {
-    const { stub } = renderShell({ path: '/sign-in?returnTo=%2Fdashboard' });
+    const { stub } = renderShellFrame({ path: '/sign-in?returnTo=%2Fdashboard' });
     expect(await screen.findByRole('group', { name: 'Ngôn ngữ giao diện' })).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'Khu vực Global' })).toBeNull();
     expect(screen.queryByRole('link', { name: /Pending Actions/ })).toBeNull();

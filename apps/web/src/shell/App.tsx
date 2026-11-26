@@ -6,11 +6,10 @@
 // ProjectRail in Project context except Manuscript, the routed screen, and the Assistant panel on the right.
 // Screens render only once the session is known, so drafts and API calls always have an account.
 
-import { useEffect, useId, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useId, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router';
 import { routeContext } from './context';
-import { features } from './features';
 import { useMediaQuery, useNavigationData, useSession, useShell } from './hooks';
 import { CloseIcon } from './icons';
 import { MobileHeader, MobileTabBar } from './mobile/MobileChrome';
@@ -23,9 +22,8 @@ import { NotFound } from './NotFound';
 
 const PHONE = '(max-width: 767px)';
 
-function AssistantPanel({ id, onClose }: { id: string; onClose: () => void }) {
+function AssistantPanel({ id, onClose, content: Content }: { id: string; onClose: () => void; content?: ComponentType }) {
   const { t } = useTranslation('shell');
-  const Content = features.find((f) => f.assistant)?.assistant;
   return (
     <aside id={id} aria-label={t('assistant.title')} className="sires-assistant">
       <div className="sires-assistant__head">
@@ -86,7 +84,12 @@ function LanguageSaveNotice() {
   );
 }
 
-export function App() {
+export interface AppProps {
+  /** Content of the Assistant panel (Feature.assistant of the global area); createRoutes passes it. */
+  assistant?: ComponentType;
+}
+
+export function App({ assistant }: AppProps = {}) {
   const { t } = useTranslation('shell');
   const services = useShell();
   const session = useSession();
@@ -130,7 +133,7 @@ export function App() {
         <main id="sires-main" className="sires-shell__main" tabIndex={-1}>
           <SessionGate>{notFound ? <NotFound project /> : <Outlet />}</SessionGate>
         </main>
-        {showAssistant && <AssistantPanel id={assistantId} onClose={() => setAssistantOpen(false)} />}
+        {showAssistant && <AssistantPanel id={assistantId} content={assistant} onClose={() => setAssistantOpen(false)} />}
       </div>
       {phone && <MobileTabBar />}
     </div>

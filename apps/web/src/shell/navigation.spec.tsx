@@ -6,7 +6,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { AREA_BY_KIND, groupByArea } from './navigation/navigation';
 import * as fx from './test/fixtures';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { json, shellStub } from './test/stub';
 
 const banner = () => within(screen.getByRole('banner'));
@@ -14,19 +14,19 @@ const rail = () => within(screen.getByRole('complementary', { name: 'Khu vực P
 
 describe('dữ liệu điều hướng (H1)', () => {
   it('số Pending Actions từ API: openCount của GET /pending-actions, chưa đọc từ unreadCount (UX-LAYOUT-001-AC01)', async () => {
-    const { stub } = renderShell({ path: '/dashboard' });
+    const { stub } = renderShellFrame({ path: '/dashboard' });
     await waitForFrame();
     await waitFor(() => expect(banner().getByRole('link', { name: 'Pending Actions 8' })).toBeTruthy());
     expect(banner().getByRole('link', { name: 'Notifications, 3 chưa đọc' })).toBeTruthy();
-    const pending = stub.calls('/api/v1/pending-actions')[0];
+    const pending = stub.calls('/api/v1/pending-actions', 'GET', { limit: '1' })[0];
     expect(pending.query.get('status')).toBe('Open');
     expect(pending.query.get('projectId')).toBeNull();
-    expect(stub.calls('/api/v1/notifications')[0].query.get('status')).toBe('Unread');
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1);
   });
 
   it('cập nhật số qua SSE: pending_action.changed, notification.created (EC24)', async () => {
     const stub = shellStub();
-    const { router } = renderShell({ path: '/projects/p1/overview', stub });
+    const { router } = renderShellFrame({ path: '/projects/p1/overview', stub });
     await waitForFrame();
     await waitFor(() => expect(rail().getByLabelText('2 việc chờ bạn')).toBeTruthy());
     await waitFor(() => expect(stub.sse).toHaveLength(1));
@@ -59,7 +59,7 @@ describe('dữ liệu điều hướng (H1)', () => {
     });
     expect(groupByArea(fx.projectPendingActions)).toEqual({ chat: 2, plan: 3, manuscript: 1, activity: 1 });
 
-    renderShell({ path: '/projects/p1/overview' });
+    renderShellFrame({ path: '/projects/p1/overview' });
     await waitForFrame();
     await waitFor(() => expect(rail().getByLabelText('2 việc chờ bạn')).toBeTruthy());
     const count = (name: string) => rail().getByRole('link', { name: new RegExp(`^${name}`) }).querySelector('.sires-rail__count')?.textContent ?? null;
@@ -76,10 +76,9 @@ describe('dữ liệu điều hướng (H1)', () => {
   });
 
   it('bộ chuyển chỉ có project Active (EC34)', async () => {
-    const { user, stub } = renderShell({ path: '/dashboard' });
+    const { user, stub } = renderShellFrame({ path: '/dashboard' });
     await waitForFrame();
-    await waitFor(() => expect(stub.calls('/api/v1/projects')).toHaveLength(1));
-    expect(stub.calls('/api/v1/projects')[0].query.get('status')).toBe('Active');
+    await waitFor(() => expect(stub.calls('/api/v1/projects', 'GET', { status: 'Active' })).toHaveLength(1));
     await user.click(banner().getByRole('button', { name: /Chuyển ngữ cảnh/ }));
     const options = within(screen.getByRole('listbox')).getAllByRole('option').map((o) => o.textContent);
     expect(options).toEqual(['Global', 'RAG trong tổng quan tài liệu', 'Độ tin cậy của LLM trong giáo dục']);
@@ -88,7 +87,7 @@ describe('dữ liệu điều hướng (H1)', () => {
   it('bộ chuyển bỏ project Archived ngay cả khi API trả về', async () => {
     const stub = shellStub();
     stub.on('GET', '/api/v1/projects', () => json({ items: fx.projects, nextCursor: null }));
-    const { user } = renderShell({ path: '/dashboard', stub });
+    const { user } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await user.click(banner().getByRole('button', { name: /Chuyển ngữ cảnh/ }));
     await waitFor(() => expect(within(screen.getByRole('listbox')).getAllByRole('option')).toHaveLength(3));
@@ -96,7 +95,7 @@ describe('dữ liệu điều hướng (H1)', () => {
   });
 
   it('project Archived mở bằng URL: không đánh dấu nhầm Global là ngữ cảnh đang chọn', async () => {
-    const { user } = renderShell({ path: '/projects/p9/overview' });
+    const { user } = renderShellFrame({ path: '/projects/p9/overview' });
     await waitForFrame();
     await waitFor(() => expect(banner().getByRole('button', { name: 'Chuyển ngữ cảnh: Project đã lưu trữ' })).toBeTruthy());
     await user.click(banner().getByRole('button', { name: /Chuyển ngữ cảnh/ }));
@@ -105,7 +104,7 @@ describe('dữ liệu điều hướng (H1)', () => {
   });
 
   it('project 404: “không tìm thấy”, không tiết lộ project có tồn tại hay không (EC23)', async () => {
-    renderShell({ path: '/projects/khong-co/overview' });
+    renderShellFrame({ path: '/projects/khong-co/overview' });
     await waitForFrame();
     const alert = await screen.findByRole('alert');
     expect(within(alert).getByText('Không tìm thấy project')).toBeTruthy();
@@ -115,13 +114,13 @@ describe('dữ liệu điều hướng (H1)', () => {
 
   it('tải lại khi cần tải lại: server báo không còn phát lại được (PID-00012-AC04, S12)', async () => {
     const stub = shellStub();
-    renderShell({ path: '/projects/p1/overview', stub });
+    renderShellFrame({ path: '/projects/p1/overview', stub });
     await waitForFrame();
     await waitFor(() => expect(rail().getByLabelText('2 việc chờ bạn')).toBeTruthy());
     await waitFor(() => expect(stub.sse).toHaveLength(1));
     const before = {
       pending: stub.calls('/api/v1/pending-actions').length,
-      unread: stub.calls('/api/v1/notifications').length,
+      unread: stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' }).length,
       project: stub.calls('/api/v1/projects/p1').length,
       session: stub.calls('/api/v1/auth/session').length,
     };
@@ -132,20 +131,20 @@ describe('dữ liệu điều hướng (H1)', () => {
 
     await waitFor(() => expect(stub.calls('/api/v1/projects/p1').length).toBe(before.project + 1));
     expect(stub.calls('/api/v1/pending-actions').length).toBeGreaterThan(before.pending);
-    expect(stub.calls('/api/v1/notifications').length).toBe(before.unread + 1);
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' }).length).toBe(before.unread + 1);
     // Background reloads never touch the session (S13).
     expect(stub.calls('/api/v1/auth/session').length).toBe(before.session);
   });
 
   it('nối lại bình thường: không tải lại dữ liệu điều hướng', async () => {
     const stub = shellStub();
-    renderShell({ path: '/dashboard', stub });
+    renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.sse).toHaveLength(1));
-    await waitFor(() => expect(stub.calls('/api/v1/notifications')).toHaveLength(1));
+    await waitFor(() => expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1));
     stub.sse[0].end();
     await waitFor(() => expect(stub.sse).toHaveLength(2));
     await new Promise((r) => setTimeout(r, 30));
-    expect(stub.calls('/api/v1/notifications')).toHaveLength(1);
+    expect(stub.calls('/api/v1/notifications', 'GET', { status: 'Unread', limit: '1' })).toHaveLength(1);
   });
 });
