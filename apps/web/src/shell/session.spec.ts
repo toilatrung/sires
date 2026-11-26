@@ -6,7 +6,7 @@ import { screen, waitFor } from '@testing-library/react';
 import i18next from 'i18next';
 import { describe, expect, it, vi } from 'vitest';
 import { safeReturnTo, signInPath } from './session/session';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { problem, shellStub } from './test/stub';
 
 const where = (router: { state: { location: { pathname: string; search: string } } }) =>
@@ -14,7 +14,7 @@ const where = (router: { state: { location: { pathname: string; search: string }
 
 describe('phiên', () => {
   it('chưa đăng nhập: GET /auth/session 401 → /sign-in kèm đường dẫn quay lại /dashboard (UX-AUTH-001-AC01, EC07)', async () => {
-    const { router, stub } = renderShell({ path: '/dashboard', stub: shellStub({ signedIn: false }) });
+    const { router, stub } = renderShellFrame({ path: '/dashboard', stub: shellStub({ signedIn: false }) });
     await waitFor(() => expect(where(router)).toBe('/sign-in?returnTo=%2Fdashboard'));
     // /sign-in renders without TopBar; only VI/EN.
     await waitFor(() => expect(screen.queryByRole('navigation', { name: 'Khu vực Global' })).toBeNull());
@@ -24,14 +24,14 @@ describe('phiên', () => {
   });
 
   it('ngôn ngữ theo Preferences: có phiên và uiLanguage = en → English khi tải ứng dụng (EC02)', async () => {
-    renderShell({ path: '/dashboard', stub: shellStub({ uiLanguage: 'en' }) });
+    renderShellFrame({ path: '/dashboard', stub: shellStub({ uiLanguage: 'en' }) });
     await waitFor(() => expect(i18next.language).toBe('en'));
     expect(await screen.findByRole('navigation', { name: 'Global areas' })).toBeTruthy();
   });
 
   it('phiên hết hạn: 401 khi đang dùng → SignIn session-expired kèm đường dẫn quay lại, nháp đã lưu, SSE đóng (EC08)', async () => {
     const stub = shellStub();
-    const { router, services } = renderShell({ path: '/projects/p1/chat?tab=1', stub });
+    const { router, services } = renderShellFrame({ path: '/projects/p1/chat?tab=1', stub });
     await waitForFrame();
     const flush = vi.spyOn(services.drafts, 'flushAll');
     const close = vi.spyOn(services.events, 'close');
@@ -50,7 +50,7 @@ describe('phiên', () => {
 
   it('sau khi phiên hết hạn, quay lại màn có khung thì kiểm phiên lại (không treo ở “đang kiểm phiên”)', async () => {
     const stub = shellStub();
-    const { router, services } = renderShell({ path: '/dashboard', stub });
+    const { router, services } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await router.navigate('/discover');
     await waitFor(() => expect(stub.calls('/api/v1/auth/session')).toHaveLength(2));
@@ -67,7 +67,7 @@ describe('phiên', () => {
     stub.on('GET', '/api/v1/auth/session', () => {
       throw new TypeError('offline');
     });
-    const { router } = renderShell({ path: '/dashboard', stub });
+    const { router } = renderShellFrame({ path: '/dashboard', stub });
     expect(await screen.findByText('Không kiểm được phiên đăng nhập')).toBeTruthy();
     expect(screen.getByText('network_error')).toBeTruthy();
     expect(where(router)).toBe('/dashboard');
