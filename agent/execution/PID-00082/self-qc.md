@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00082](../../../docs/tickets/issues/PID-00082/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 27/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 2)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -118,6 +118,20 @@ Chạy bởi một agent độc lập, chỉ đọc mã (commit `eb7867e`) và h
 | G20 | unrequested, LOW | Dự phòng giả định từ `version.assumptions`; If-Match dựng từ `rowVersion` khi thiếu ETag | Giữ, ghi report.md mục 5 YC2 |
 
 Sau khi sửa: 0 CRITICAL, 0 HIGH; còn 2 LOW giữ có lý do (G10, G16 phần fixture) và 1 LOW báo PO (G20).
+
+
+## Lần 2 — 27/11/2026
+
+Sửa theo QC Lần 1 (report.md Lần 2). Đã merge `b157d02` (#138) vào nhánh.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run src/features/planning` (apps/web) | 5 file, 47 test đạt (42 cũ, 5 mới) |
+| `npx vitest run` (toàn bộ apps/web, sau khi merge #138) | 26 file, 196 test đạt |
+| `tsc --noEmit -p tsconfig.json`, `eslint src/features/planning` (apps/web) | Đạt, 0 lỗi |
+| `check-ui.mjs apps/web/src/features/planning` | 0 lỗi, 0 cảnh báo (3 cảnh báo `box-shadow` của dialog riêng hết khi dùng dialog của shell) |
+| Thao tác tay trên `dev:mock` | Nghiệm thu T-2.1 ở 1440×900, 1024×768, 390×844: một nút tô màu (“Nghiệm thu”), tóm tắt Montserrat, không cuộn ngang; Draft v5 kèm panel T-2.5 ở 1024×768: chỉ “Trình duyệt” tô màu; “Hủy Task” mở dialog của shell, Esc đóng. Ảnh `screenshots/06-…`, `10-…`, `11-plan-draft-panel-1024.png`, `12-review-t21-1024.png` |
+| `add-license --check` | 0 file thiếu |
 
 ---
 

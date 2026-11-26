@@ -4,8 +4,8 @@
 
 - **Ticket:** [PID-00082](../../../docs/tickets/issues/PID-00082/index.html) · **Luồng:** `web/planning` · **Giai đoạn:** PH-02 (Xây với mock)
 - **Nhánh:** `web/planning-pid-00082` (tạo từ `origin/preview/ui-ph02` `a9bcc0e`, nhánh tích hợp đã có #120, #138, #131; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#145](https://github.com/toilatrung/sires/pull/145) vào `develop`
-- **Cập nhật:** 27/11/2026
-- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
+- **Cập nhật:** 27/11/2026 (Lần 2: sửa theo QC Lần 1 tại `1039cb6`, PC-05 P37)
+- **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md) · **QC:** [qc-report.md](qc-report.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -79,6 +79,26 @@ Ngoài khu vực: không sửa file nào của shell hay khu vực khác. Kết 
   - `screenshots/08-plan-390.png` — Plan ở 390×844 — S02
   - `screenshots/09-compare-v4-390.png` — so sánh ở 390×844 (EC38) — S05
   - `screenshots/10-review-t21-390.png` — nghiệm thu ở 390×844 (EC38) — S06
+  - `screenshots/11-plan-draft-panel-1024.png` — Draft v5 kèm panel Task ở 1024×768, chỉ “Trình duyệt” tô màu (Lần 2, QC G1, G12) — S03, S04
+  - `screenshots/12-review-t21-1024.png` — nghiệm thu ở 1024×768 (Lần 2, QC G12) — S06
+
+
+## Lần 2 — 27/11/2026
+
+Sửa theo [qc-report.md](qc-report.md) Lần 1 (spec-converge ĐẠT tại `1039cb6`, 5 MEDIUM; sires-ui-review chưa đạt: G1, G2 mức Major), chốt theo đề xuất của QC (phiên điều phối giao). Đã merge đầu mới nhất của #138 (`b157d02`), có `ConfirmDialog` của shell. Mọi đường dẫn mã tương đối `apps/web/src/features/planning/`.
+
+| QC | Mức | Đã làm | Kiểm bằng |
+| --- | --- | --- | --- |
+| G1 | MEDIUM (Major theo sires-ui-review) | “Chấp nhận version này” là nút viền (TaskReview.dc.html:218); màn nghiệm thu chỉ “Nghiệm thu” tô màu. Rà Plan: xem Draft kèm panel Task thì “Thực thi” và các nút chính của Task manual (“Bắt đầu thực hiện”, “Gửi”) dạng viền (prop `quiet` của `TaskPanel`), chỉ “Trình duyệt” tô màu | `review.spec.tsx › một nút chính tô màu; tóm tắt đầu ra dùng chữ giao diện…`, `plan.spec.tsx › Draft kèm panel Task: chỉ Trình duyệt tô màu`; trên `dev:mock` đếm `[data-variant="primary"]`: nghiệm thu `["Nghiệm thu"]`, Draft kèm panel `["Trình duyệt"]`; ảnh 06, 11, 12 |
+| G2 | MEDIUM (Major theo sires-ui-review) | Bỏ `font-family: var(--sires-font-paper)` của `.planning-output__summary`: chữ giao diện (Montserrat) | Test như trên đọc `planning.css`; trên `dev:mock` `getComputedStyle` = `Montserrat, system-ui, sans-serif`; ảnh 06, 10 |
+| G3 | MEDIUM | Sau 202 của `requestPlanProposal`: `LongOperation` của shell (“Orchestrator đang đề xuất Plan…”, Orchestrator, thời gian đã chạy, rời trang được) kèm liên kết “Xem workflow” tới `/projects/:id/activity/workflows/:wid`; mock trả `Workflow` trong 202 | `plan.spec.tsx › đang đề xuất: thẻ thao tác dài theo Workflow của 202 (EC01, …)` |
+| G4 | MEDIUM | `readAll` (`common.tsx`) đọc hết các trang theo `nextCursor`, `limit` 200: `listTasks` của Plan, `listProjects` và `listTasks` từng project của Tasks toàn cục | `plan.spec.tsx › listTasks nhiều trang: đủ thẻ và số mỗi nhóm`, `global-tasks.spec.tsx › listProjects nhiều trang…` |
+| B1 | MEDIUM | Không khai thêm `acceptArtifactVersion`, `rejectArtifactVersion` ở mock của khu vực: hai thao tác này và `listArtifacts` đã thuộc mock của khu vực research (PID-00114, có trên `preview/ui-ph02`); khai cả hai nơi thì mock gộp ném lỗi (EC10). Ghi phụ thuộc ở đầu `__mocks__/index.ts` (theo phương án thứ hai của QC) | — |
+| Dialog | Phiên điều phối | `ConfirmDialog` riêng của khu vực thay bằng `ConfirmDialog` của shell (#138); bỏ CSS `.planning-scrim`, `.planning-dialog` (hết 3 cảnh báo `box-shadow` của check-ui) | Test cũ của dialog (`task.spec.tsx`, `review.spec.tsx`) đạt; trên `dev:mock` “Hủy Task” mở `.sires-dialog`, focus ở “Giữ nguyên”, nút xác nhận khóa tới khi nhập lý do, Esc đóng |
+
+LOW (G5–G11, G13, B3) chưa sửa ở lượt này; G12 (1024×768) đã kiểm bằng ảnh 11, 12. Đề xuất cho PO ở mục 6 giữ nguyên; QC đồng ý ba đề xuất đó.
+
+Kết quả: 26 file, 196 test đạt; planning 47 test; typecheck, lint đạt; check-ui 0 lỗi, 0 cảnh báo (self-qc.md Lần 2). Trạng thái giữ “Xong — chờ QC”.
 
 ---
 
