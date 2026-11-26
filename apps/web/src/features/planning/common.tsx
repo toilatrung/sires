@@ -103,9 +103,15 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-/** Dialog (design.md §4): 480px, scrim, the consequence before the confirm button; Escape cancels. */
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Dialog (design.md §4): 480px, scrim, the consequence before the confirm button. Escape cancels; Tab and Shift+Tab
+ * stay inside the dialog; focus returns to the opener when it closes.
+ */
 export function ConfirmDialog({ title, children, confirmLabel, cancelLabel, busy, onConfirm, onCancel }: ConfirmDialogProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const cancel = useRef(onCancel);
   cancel.current = onCancel;
@@ -114,7 +120,26 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel, busy
     const opener = document.activeElement as HTMLElement | null;
     cancelRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') cancel.current();
+      if (event.key === 'Escape') {
+        cancel.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (!dialogRef.current.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {
@@ -124,7 +149,7 @@ export function ConfirmDialog({ title, children, confirmLabel, cancelLabel, busy
   }, []);
   return (
     <div className="planning-scrim">
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="planning-dialog">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="planning-dialog">
         <h2 id={titleId} className="planning-dialog__title">
           {title}
         </h2>

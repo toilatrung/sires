@@ -49,6 +49,8 @@ export function PlanPage() {
     if (plan.error?.status === 404) return <NoPlan projectId={projectId} onRequested={() => void plan.reload()} />;
     return <ErrorState error={plan.error} title={t('plan.loadFailed')} onRetry={() => void plan.reload()} />;
   }
+  // A Plan without any version yet is the same as no Plan (EC01).
+  if ((plan.data?.versions ?? []).length === 0) return <NoPlan projectId={projectId} onRequested={() => void plan.reload()} />;
   return <PlanView projectId={projectId} plan={plan.data!} reloadPlan={plan.reload} />;
 }
 
@@ -243,9 +245,31 @@ function PlanView({ projectId, plan, reloadPlan }: { projectId: string; plan: Re
             )}
 
             <div className="planning-row planning-toolbar">
-              <div role="tablist" aria-label={t('view.label')} className="planning-tabs">
+              {/* Tabs pattern: one tab in the Tab order, arrow keys move between tabs (WAI-ARIA tabs). */}
+              <div
+                role="tablist"
+                aria-label={t('view.label')}
+                className="planning-tabs"
+                onKeyDown={(event) => {
+                  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                  event.preventDefault();
+                  const next = view === 'board' ? 'graph' : 'board';
+                  setParams({ view: next === 'board' ? null : next });
+                  document.getElementById(`planning-tab-${next}`)?.focus();
+                }}
+              >
                 {(['board', 'graph'] as const).map((v) => (
-                  <button key={v} type="button" role="tab" aria-selected={view === v} className="planning-tab" onClick={() => setParams({ view: v === 'board' ? null : v })}>
+                  <button
+                    key={v}
+                    id={`planning-tab-${v}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={view === v}
+                    aria-controls="planning-view"
+                    tabIndex={view === v ? 0 : -1}
+                    className="planning-tab"
+                    onClick={() => setParams({ view: v === 'board' ? null : v })}
+                  >
                     {t(`view.${v}`)}
                   </button>
                 ))}
@@ -280,7 +304,7 @@ function PlanView({ projectId, plan, reloadPlan }: { projectId: string; plan: Re
               )}
             </div>
 
-            <div role="tabpanel" aria-label={t(`view.${view}`)}>
+            <div role="tabpanel" id="planning-view" aria-labelledby={`planning-tab-${view}`}>
               {tasks.status === 'loading' && !tasks.data && <LoadingState what={t('board.loading')} />}
               {tasks.status === 'error' && !tasks.data && <ErrorState error={tasks.error} title={t('board.loadFailed')} onRetry={() => void tasks.reload()} />}
               {tasks.data &&
@@ -304,6 +328,7 @@ function PlanView({ projectId, plan, reloadPlan }: { projectId: string; plan: Re
           taskName={taskName}
           openTaskHref={hrefOf}
           proposedVersionId={versions.find((v) => v.status === 'Proposed')?.id}
+          taskStatus={(id) => byId.get(id)?.status}
           archived={archived}
           onChanged={() => {
             void tasks.reload();

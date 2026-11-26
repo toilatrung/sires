@@ -21,11 +21,12 @@ import {
   StatusChip,
   useApi,
   useDraft,
+  useRefreshNavigation,
   type DraftField,
   useEvents,
   useShell,
 } from '../../shell';
-import { ConfirmDialog, isManual, itemsOf, keyOf, useResource, type Schemas, type Task, type TaskDefinition } from './common';
+import { ConfirmDialog, isManual, itemsOf, keyOf, useResource, type Resource, type Schemas, type Task, type TaskDefinition, type TaskStatus } from './common';
 
 type Check = Schemas['ReadinessCheck'];
 
@@ -52,6 +53,8 @@ export interface TaskPanelProps {
   openTaskHref: (taskId: string) => string;
   /** Proposed Plan Version to open for RC-01. */
   proposedVersionId?: string | null;
+  /** Status of another Task of the plan, to offer “Mở T-x” only for prerequisites not Completed. */
+  taskStatus?: (taskId: string) => TaskStatus | undefined;
   archived: boolean;
   onChanged: () => void;
   onClose: () => void;
@@ -69,6 +72,20 @@ export function TaskPanel(props: TaskPanelProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ title: string; error: ApiError }>();
   const [reason, setReason] = useState('');
+  // Readiness as the panel decides Execute on it: lastReadiness, else getTaskReadiness; unknown never counts as passed.
+  const loaded = task.status === 'ready' && Boolean(task.data);
+  const lastReadiness = task.data?.lastReadiness;
+  const readiness = useResource<Schemas['ReadinessResult'] | undefined>(
+    () =>
+      !loaded
+        ? Promise.resolve({ data: undefined })
+        : lastReadiness
+          ? Promise.resolve({ data: lastReadiness })
+          : api.get('/projects/{projectId}/tasks/{taskId}/readiness', { path: { projectId, taskId } }),
+    [api, projectId, taskId, loaded, lastReadiness],
+  );
+  // 409 readiness_failed of activateTask carries the readiness the server just computed (EC16).
+  const [returnedReadiness, setReturnedReadiness] = useState<Schemas['ReadinessResult']>();
 
   useEvents({ types: ['task.status_changed'], projectId }, (event) => {
     if (event.objectId === taskId) void task.reload();
@@ -101,7 +118,8 @@ export function TaskPanel(props: TaskPanelProps) {
   const definition = props.definition ?? current.currentDefinition;
   const allowed = new Set(current.allowedActions ?? []);
   const manual = isManual(definition);
-  const readinessPassed = current.lastReadiness ? current.lastReadiness.passed : true;
+  const shownReadiness = returnedReadiness ?? readiness.data;
+  const readinessPassed = shownReadiness?.passed === true;
   const canActivate = !archived && current.status === 'Ready' && readinessPassed && allowed.has('activate');
 
   const run = async (title: string, send: () => Promise<unknown>) => {
@@ -111,10 +129,22 @@ export function TaskPanel(props: TaskPanelProps) {
       await send();
       setPending(undefined);
       setReason('');
+      setReturnedReadiness(undefined);
       await task.reload();
       onChanged();
     } catch (err) {
-      setError({ title, error: isApiError(err) ? err : new ApiError('network') });
+      const apiError = isApiError(err) ? err : new ApiError('network');
+      if (apiError.code === 'readiness_failed') {
+        // The 409 carries the readiness just computed; the shell's ApiError keeps only the standard Problem members,
+        // so read that result again (getTaskReadiness) and show it in place of the old one (EC16).
+        const returned = (apiError.problem as { readiness?: Schemas['ReadinessResult'] } | undefined)?.readiness;
+        try {
+          setReturnedReadiness(returned ?? (await api.get('/projects/{projectId}/tasks/{taskId}/readiness', { path: { projectId, taskId } })).data);
+        } catch {
+          // The error below still says why Execute failed.
+        }
+      }
+      setError({ title, error: apiError });
       setPending(undefined);
       await task.reload();
     } finally {
@@ -144,13 +174,31 @@ export function TaskPanel(props: TaskPanelProps) {
         </span>
       </header>
 
-      {error && <ErrorState error={error.error} title={error.title} />}
+      {error && (
+        <ErrorState
+          error={error.error}
+          title={error.title}
+          actions={
+            error.error.code === 'active_workflow_exists' ? (
+              <Link
+                to={
+                  current.activeWorkflowId
+                    ? `/projects/${encodeURIComponent(projectId)}/activity/workflows/${encodeURIComponent(current.activeWorkflowId)}`
+                    : `/projects/${encodeURIComponent(projectId)}/activity`
+                }
+              >
+                {t('rc.openWorkflow')}
+              </Link>
+            ) : undefined
+          }
+        />
+      )}
       {disabledReason && <p className="planning-note">{disabledReason}</p>}
 
       {current.needsReview && <NeedsReview projectId={projectId} task={current} archived={archived} onDone={() => { void task.reload(); onChanged(); }} />}
 
       {!['Completed', 'Cancelled', 'In Review'].includes(current.status) && (
-        <Readiness {...props} task={current} archived={archived} onRechecked={() => void task.reload()} />
+        <Readiness {...props} task={current} result={readiness} returned={returnedReadiness} />
       )}
 
       {manual ? (
@@ -171,8 +219,16 @@ export function TaskPanel(props: TaskPanelProps) {
             <button type="button" className="sires-button" data-variant="primary" disabled={!canActivate} onClick={() => setPending({ kind: 'activate' })}>
               {t('panel.activate')}
             </button>
-            {(allowed.has('recheck_readiness') || current.status === 'Blocked') && (
-              <RecheckButton projectId={projectId} taskId={taskId} disabled={archived} onDone={() => void task.reload()} />
+            {allowed.has('recheck_readiness') && (
+              <RecheckButton
+                projectId={projectId}
+                taskId={taskId}
+                disabled={archived}
+                onDone={() => {
+                  setReturnedReadiness(undefined);
+                  void task.reload();
+                }}
+              />
             )}
             {!['Completed', 'Cancelled'].includes(current.status) && <ActiveTaskButton projectId={projectId} taskId={taskId} disabled={archived} />}
           </div>
@@ -290,7 +346,8 @@ function checkAction(check: Check, props: TaskPanelProps, task: Task, t: (key: s
     case 'RC-03':
       return [<Link key="rc3" to={task.activeWorkflowId ? `/projects/${p}/activity/workflows/${encodeURIComponent(task.activeWorkflowId)}` : `/projects/${p}/activity`}>{t('rc.openWorkflow')}</Link>];
     case 'RC-04': {
-      const deps = (props.definition ?? task.currentDefinition).dependsOn ?? [];
+      // Only the prerequisites not Completed yet (H11).
+      const deps = ((props.definition ?? task.currentDefinition).dependsOn ?? []).filter((dep) => props.taskStatus?.(dep) !== 'Completed');
       return deps.map((dep) => (
         <Link key={dep} to={props.openTaskHref(dep)} className="sires-button" data-variant="outline" data-size="xs">
           {t('rc.openTask', { key: props.taskName(dep) })}
@@ -311,17 +368,12 @@ function checkAction(check: Check, props: TaskPanelProps, task: Task, t: (key: s
   }
 }
 
-function Readiness(props: TaskPanelProps & { task: Task; archived: boolean; onRechecked: () => void }) {
+function Readiness(props: TaskPanelProps & { task: Task; result: Resource<Schemas['ReadinessResult'] | undefined>; returned?: Schemas['ReadinessResult'] }) {
   const { t } = useTranslation('planning');
-  const api = useApi();
-  const { task } = props;
-  const fetched = useResource(
-    () => (task.lastReadiness ? Promise.resolve({ data: task.lastReadiness }) : api.get('/projects/{projectId}/tasks/{taskId}/readiness', { path: { projectId: props.projectId, taskId: task.id } })),
-    [api, props.projectId, task.id, task.lastReadiness],
-  );
-  if (fetched.status === 'loading') return <LoadingState what={t('panel.readiness')} rows={0} />;
-  if (fetched.status === 'error' || !fetched.data) return <ErrorState error={fetched.error} title={t('panel.readinessFailed')} onRetry={() => void fetched.reload()} />;
-  const result = fetched.data;
+  const { task, result: fetched } = props;
+  const result = props.returned ?? fetched.data;
+  if (!result && fetched.status !== 'error') return <LoadingState what={t('panel.readiness')} rows={0} />;
+  if (!result) return <ErrorState error={fetched.error} title={t('panel.readinessFailed')} onRetry={() => void fetched.reload()} />;
   const failing = result.checks.filter((c) => !c.passed);
   const passing = result.checks.filter((c) => c.passed);
   return (
@@ -383,20 +435,31 @@ function RecheckButton({ projectId, taskId, disabled, onDone }: { projectId: str
 function ActiveTaskButton({ projectId, taskId, disabled }: { projectId: string; taskId: string; disabled: boolean }) {
   const { t } = useTranslation('planning');
   const api = useApi();
+  const refreshNavigation = useRefreshNavigation();
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<ApiError>();
   return (
-    <button
-      type="button"
-      className="sires-button"
-      data-variant="secondary"
-      disabled={disabled || done}
-      onClick={async () => {
-        await api.put('/projects/{projectId}/active-task', { path: { projectId }, body: { taskId } });
-        setDone(true);
-      }}
-    >
-      {done ? t('panel.isActiveTask') : t('panel.setActiveTask')}
-    </button>
+    <>
+      <button
+        type="button"
+        className="sires-button"
+        data-variant="secondary"
+        disabled={disabled || done}
+        onClick={async () => {
+          setError(undefined);
+          try {
+            await api.put('/projects/{projectId}/active-task', { path: { projectId }, body: { taskId } });
+            setDone(true);
+            void refreshNavigation();
+          } catch (err) {
+            setError(isApiError(err) ? err : new ApiError('network'));
+          }
+        }}
+      >
+        {done ? t('panel.isActiveTask') : t('panel.setActiveTask')}
+      </button>
+      {error && <ErrorState error={error} title={t('panel.activeTaskFailed')} />}
+    </>
   );
 }
 
@@ -415,14 +478,14 @@ function ManualWork({ projectId, task, definition, archived, onStart, onSubmitte
           </li>
         ))}
       </ul>
-      {task.status === 'Ready' && (
+      {task.status === 'Ready' && allowed.has('activate') && (
         <div className="planning-row">
-          <button type="button" className="sires-button" data-variant="primary" disabled={archived || !allowed.has('activate')} onClick={onStart}>
+          <button type="button" className="sires-button" data-variant="primary" disabled={archived} onClick={onStart}>
             {t('panel.start')}
           </button>
         </div>
       )}
-      {task.status === 'In Progress' && <ManualForm projectId={projectId} task={task} definition={definition} archived={archived} onSubmitted={onSubmitted} />}
+      {task.status === 'In Progress' && allowed.has('submit_manual') && <ManualForm projectId={projectId} task={task} definition={definition} archived={archived} onSubmitted={onSubmitted} />}
     </section>
   );
 }
@@ -432,22 +495,32 @@ interface OutputDraft {
   content: DraftField;
 }
 
-function OutputField({ taskId, index, label, fields }: { taskId: string; index: number; label: string; fields: Map<number, OutputDraft> }) {
+function OutputField({ taskId, index, label, required, missing, fields }: { taskId: string; index: number; label: string; required: boolean; missing: boolean; fields: Map<number, OutputDraft> }) {
   const { t } = useTranslation('planning');
   const title = useDraft(`manual.${taskId}.${index}.title`);
   const content = useDraft(`manual.${taskId}.${index}.content`);
   fields.set(index, { title, content });
   return (
     <fieldset className="planning-fieldset" data-output={index}>
-      <legend>{label}</legend>
+      <legend>
+        {label} · {required ? t('manual.required') : t('manual.optional')}
+      </legend>
       <label className="sires-field">
         <span className="sires-field__label">{t('manual.title')}</span>
         <input className="sires-input" value={title.value} onChange={(e) => title.setValue(e.currentTarget.value)} />
       </label>
       <label className="sires-field">
         <span className="sires-field__label">{t('manual.content')}</span>
-        <textarea className="sires-input" rows={4} value={content.value} onChange={(e) => content.setValue(e.currentTarget.value)} />
+        <textarea
+          className="sires-input"
+          rows={4}
+          aria-required={required}
+          aria-invalid={missing || undefined}
+          value={content.value}
+          onChange={(e) => content.setValue(e.currentTarget.value)}
+        />
       </label>
+      {missing && <span className="planning-field-error">{t('manual.contentRequired')}</span>}
     </fieldset>
   );
 }
@@ -458,10 +531,16 @@ function ManualForm({ projectId, task, definition, archived, onSubmitted }: { pr
   const { idempotency } = useShell();
   const note = useDraft(`manual.${task.id}.note`);
   const fields = useRef(new Map<number, OutputDraft>()).current;
-  const outputs = definition.expectedOutputs.map((o, i) => ({ ...o, index: i })).filter((o) => o.required);
+  const outputs = definition.expectedOutputs.map((o, i) => ({ ...o, index: i }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError>();
+  const [missing, setMissing] = useState<ReadonlySet<number>>(new Set());
+  const contentOf = (index: number) => fields.get(index)?.content.value.trim() ?? '';
   const submit = async () => {
+    // A required output needs content before anything is sent; an optional one is sent only when filled.
+    const empty = new Set(outputs.filter((o) => o.required && !contentOf(o.index)).map((o) => o.index));
+    setMissing(empty);
+    if (empty.size > 0) return;
     setBusy(true);
     setError(undefined);
     try {
@@ -471,10 +550,12 @@ function ManualForm({ projectId, task, definition, archived, onSubmitted }: { pr
           idempotencyKey: key,
           body: {
             note: note.value.trim() || undefined,
-            outputs: outputs.map((o) => {
-              const field = fields.get(o.index);
-              return { artifactType: o.artifactType, title: field?.title.value.trim() || o.description || o.artifactType, content: field?.content.value ?? '' };
-            }),
+            outputs: outputs
+              .filter((o) => o.required || contentOf(o.index))
+              .map((o) => {
+                const field = fields.get(o.index);
+                return { artifactType: o.artifactType, title: field?.title.value.trim() || o.description || o.artifactType, content: field?.content.value ?? '' };
+              }),
           },
         }),
       );
@@ -499,7 +580,15 @@ function ManualForm({ projectId, task, definition, archived, onSubmitted }: { pr
       }}
     >
       {outputs.map((o) => (
-        <OutputField key={o.index} taskId={task.id} index={o.index} fields={fields} label={`${o.artifactType} — ${o.description ?? ''}`} />
+        <OutputField
+          key={o.index}
+          taskId={task.id}
+          index={o.index}
+          fields={fields}
+          required={o.required}
+          missing={missing.has(o.index)}
+          label={`${o.artifactType} — ${o.description ?? ''}`}
+        />
       ))}
       <label className="sires-field">
         <span className="sires-field__label">{t('manual.note')}</span>

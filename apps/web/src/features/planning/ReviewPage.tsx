@@ -182,7 +182,7 @@ function Review({ projectId, task, onChanged }: { projectId: string; task: Task;
           disabled={busy || !canAccept}
           onClick={() =>
             void act(t('review.acceptFailed'), () =>
-              idempotency.run(`reviewTask:${task.id}`, (key) =>
+              idempotency.run(`reviewTask:${task.id}:accepted`, (key) =>
                 api.post('/projects/{projectId}/tasks/{taskId}/reviews', { path, idempotencyKey: key, body: { outcome: 'accepted', criteriaResults } }),
               ),
             )
@@ -220,7 +220,7 @@ function Review({ projectId, task, onChanged }: { projectId: string; task: Task;
                 void act(
                   t('review.returnFailed'),
                   () =>
-                    idempotency.run(`reviewTask:${task.id}`, (key) =>
+                    idempotency.run(`reviewTask:${task.id}:returned`, (key) =>
                       api.post('/projects/{projectId}/tasks/{taskId}/reviews', {
                         path,
                         idempotencyKey: key,

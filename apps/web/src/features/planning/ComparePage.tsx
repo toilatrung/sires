@@ -42,14 +42,16 @@ export function ComparePage() {
     () => api.get('/projects/{projectId}/plan/versions/{planVersionId}', { path: { projectId, planVersionId: versionId } }),
     [api, projectId, versionId],
   );
-  const against = search.get('against') ?? plan.data?.baselineVersionId ?? version.data?.basedOnVersionId ?? undefined;
+  // ?against= only when the Researcher picks another version; without it the server compares with the baseline.
+  const againstParam = search.get('against') ?? undefined;
+  const against = againstParam ?? plan.data?.baselineVersionId ?? version.data?.basedOnVersionId ?? undefined;
   const from = useResource(
     () => (against ? api.get('/projects/{projectId}/plan/versions/{planVersionId}', { path: { projectId, planVersionId: against } }) : Promise.resolve({ data: undefined })),
     [api, projectId, against],
   );
   const diff = useResource(
-    () => api.get('/projects/{projectId}/plan/versions/{planVersionId}/diff', { path: { projectId, planVersionId: versionId }, query: { against } }),
-    [api, projectId, versionId, against],
+    () => api.get('/projects/{projectId}/plan/versions/{planVersionId}/diff', { path: { projectId, planVersionId: versionId }, query: { against: againstParam } }),
+    [api, projectId, versionId, againstParam],
   );
   const impact = useResource(() => api.get('/projects/{projectId}/plan/versions/{planVersionId}/impact', { path: { projectId, planVersionId: versionId } }), [api, projectId, versionId]);
 
@@ -271,7 +273,7 @@ function ApprovalBar({ projectId, version, from, changes, onChanged }: { project
   const refreshNavigation = useRefreshNavigation();
   const { idempotency } = useShell();
   const archived = useArchived(projectId);
-  const reason = useDraft('compare.rejectReason');
+  const reason = useDraft(`compare.${version.id}.rejectReason`);
   const [seen, setSeen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ title: string; error: ApiError; next?: string }>();

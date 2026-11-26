@@ -116,6 +116,14 @@ describe('Nghiệm thu Task (PID-00082 S06)', () => {
     expect(decisions).toEqual(['accept Định nghĩa hallucination']);
     expect(textOf(required)).toContain('synthesis: v2 Accepted — đã có version Accepted');
     unmountAll();
+
+    // “Từ chối” sends rejectArtifactVersion for that version.
+    const again = outputs(mock, false);
+    const second = await openReview();
+    const draft = (await screen.findByRole('heading', { name: /“Định nghĩa hallucination” v2/ })).closest('article')!;
+    await second.user.click(within(draft as HTMLElement).getByRole('button', { name: 'Từ chối' }));
+    await waitFor(() => expect(again.decisions).toEqual(['reject Định nghĩa hallucination']));
+    second.unmountAll();
   });
 
   it('trả lại và hủy (EC33)', async () => {

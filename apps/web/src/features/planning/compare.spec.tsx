@@ -8,7 +8,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { Schemas } from '../../shell/mock';
-import { PROJECT_ID, planningState, renderPlanning, textOf, usePlanningMock, V3, V4 } from './testing';
+import { PROJECT_ID, planningState, renderPlanning, textOf, usePlanningMock, V2, V3, V4 } from './testing';
 
 const comparePath = (versionId: string) => `/projects/${PROJECT_ID}/plan/versions/${versionId}`;
 
@@ -87,6 +87,37 @@ describe('So sánh và duyệt Plan Version (PID-00082 S05)', () => {
     expect(textOf(goals)).toContain('v4 · Mục tiêu · Sửa');
     expect(textOf(goals)).toContain('Đánh giá mức độ RAG giảm trích dẫn sai trong tổng quan tài liệu y sinh và giáo dục.');
     expect(textOf(goals)).toContain('Thay đổi lớn · MC-01');
+    unmountAll();
+  });
+
+  it('so với version khác (EC25)', async () => {
+    withAssumptions([]);
+    const against: (string | null)[] = [];
+    mock.server.events.on('request:start', ({ request }) => {
+      if (request.url.includes('/diff')) against.push(new URL(request.url).searchParams.get('against'));
+    });
+    const { user, unmountAll } = await openCompare();
+    await screen.findByRole('table');
+    // Default: no ?against, the server compares with the baseline (v3, shown as “so với”).
+    expect(against).toEqual([null]);
+    expect((screen.getByRole('combobox', { name: /^so với/ }) as HTMLSelectElement).value).toBe(V3);
+    await user.selectOptions(screen.getByRole('combobox', { name: /^so với/ }), V2);
+    await waitFor(() => expect(against).toContain(V2));
+    mock.server.events.removeAllListeners();
+    unmountAll();
+  });
+
+  it('project archived không duyệt được (EC40)', async () => {
+    withAssumptions([]);
+    mock.use({
+      overrides: {
+        getProject: ({ generated }) => ({ status: 200, body: { ...(generated(200) as Record<string, unknown>), id: PROJECT_ID, status: 'Archived' } as never }),
+      },
+    });
+    const { unmountAll } = await openCompare();
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Duyệt v4' }) as HTMLButtonElement).disabled).toBe(true));
+    expect((screen.getByRole('button', { name: 'Sửa thành bản Draft mới' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('Project đã Archived: chỉ xem, không thay đổi được.')).toBeTruthy();
     unmountAll();
   });
 

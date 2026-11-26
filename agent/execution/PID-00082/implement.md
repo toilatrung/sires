@@ -21,9 +21,9 @@ Khu vực planning đăng ký bốn route qua hợp đồng `Feature` của shel
 **Panel Task (`?task=`)** — `TaskPanel.tsx`
 
 1. `getTask` (ETag); định nghĩa theo version đang xem, ghi “định nghĩa theo vN” hoặc “không có trong vN”; Task version mới thêm (404) hiện định nghĩa “mới trong vN”.
-2. Readiness: `lastReadiness` hoặc `getTaskReadiness`; mỗi kiểm tra không đạt một dòng kèm hành động theo H11 (`checkAction`); kiểm tra đạt gom “Đạt: …”; “Chạy lại readiness” (`RecheckButton`, ghi “Đang kiểm…”).
-3. Thực thi chỉ khi Ready, readiness đạt và có `activate`; dialog xác nhận (`ConfirmDialog`) nêu hệ quả rồi `activateTask` với Idempotency-Key; 409 hiện lỗi và đọc lại Task.
-4. Task manual: không có Thực thi; khối “Bạn cần thực hiện”; Ready → “Bắt đầu thực hiện” (có xác nhận); In Progress → form mỗi đầu ra bắt buộc (tiêu đề, nội dung) và ghi chú, đều trong kho nháp, `submitManualWork` (`ManualWork`, `ManualForm`).
+2. Readiness do panel tải (`lastReadiness`, không có thì `getTaskReadiness`) và dùng chung cho hiển thị và nút Thực thi; chưa biết thì không tính là đạt. Mỗi kiểm tra không đạt một dòng kèm hành động theo H11 (`checkAction`; RC-04 chỉ cho Task tiên quyết chưa Completed); kiểm tra đạt gom “Đạt: …”; “Chạy lại readiness” chỉ khi có `recheck_readiness` (`RecheckButton`, ghi “Đang kiểm…”).
+3. Thực thi chỉ khi Ready, readiness `passed === true` và có `activate`; dialog xác nhận (`ConfirmDialog`) nêu hệ quả (workflow, API key của bạn) rồi `activateTask` với Idempotency-Key. 409 `readiness_failed`: hiện readiness vừa tính (đọc lại `getTaskReadiness` vì `ApiError` của shell chỉ giữ các trường chuẩn của Problem); 409 `active_workflow_exists`: lỗi kèm liên kết workflow đang chạy.
+4. Task manual: không có Thực thi; khối “Bạn cần thực hiện”; Ready và có `activate` → “Bắt đầu thực hiện” (có xác nhận); In Progress và có `submit_manual` → form mỗi đầu ra (bắt buộc hay không, ghi rõ) với tiêu đề, nội dung và ghi chú, đều trong kho nháp; đầu ra bắt buộc thiếu nội dung thì không gửi; 400 liệt kê trường (`ManualWork`, `ManualForm`).
 5. Checklist `PATCH …/checklist` với If-Match; 412 báo và đọc lại (`Checklist`). Lịch sử: `listWorkflows?taskId` + `listArtifacts?taskId`, artifact gán cho lần chạy theo thời điểm tạo (`History`). Phản hồi review (`Reviews`). Needs review: lý do, “Xác nhận vẫn hợp lệ” (`NeedsReview`). Rút khỏi hàng đợi, Mở lại, Hủy có dialog; Mở lại, Hủy cần lý do.
 
 **So sánh và duyệt (`/projects/:projectId/plan/versions/:versionId`)** — `ComparePage.tsx`
@@ -53,7 +53,7 @@ Khu vực planning đăng ký bốn route qua hợp đồng `Feature` của shel
 | `TaskPanel` + `checkAction` | component, hàm | `TaskPanel.tsx` | Readiness kèm hành động, Thực thi có xác nhận, nút theo `allowedActions` | AC01, UX-TASK-004, UX-TASK-005 | Không gọi `activateTask` khi chưa xác nhận; Archived vô hiệu | `task.spec.tsx` |
 | `ApprovalBar` | component | `ComparePage.tsx` | Giả định trước Duyệt, Duyệt với versionNumber, Từ chối có lý do, rút lại | APR-01 duyệt Plan | Duyệt không bật khi chưa xem giả định | `compare.spec.tsx` |
 | `Review` | component | `ReviewPage.tsx` | Điều kiện Nghiệm thu, Trả lại, Hủy | UX-TASK-006 | Nghiệm thu chỉ khi đủ criterion và đầu ra Accepted | `review.spec.tsx` |
-| `ConfirmDialog` | component | `common.tsx` | Dialog 480 px, hệ quả trước nút, focus nút an toàn một lần, Escape hủy, trả focus | Mọi lệnh cần xác nhận | Gõ trong dialog không mất focus | `task.spec.tsx › nút theo allowedActions` |
+| `ConfirmDialog` | component | `common.tsx` | Dialog 480 px, hệ quả trước nút, focus nút an toàn một lần, Tab/Shift+Tab giữ trong dialog, Escape hủy, trả focus | Mọi lệnh cần xác nhận | Gõ trong dialog không mất focus; nền không nhận Tab | `task.spec.tsx › nút theo allowedActions` |
 | `useResource` | hook | `common.tsx` | Tải, lần tải mới thắng, giữ ETag, `reload` | Mọi màn | Không ghi đè dữ liệu bằng phản hồi cũ | mọi spec |
 | store mock | module | `__mocks__/store.ts` | Chuyển trạng thái Plan Version (5.2), Task (9.8), 409/412/422, phát sự kiện | Dev và test của khu vực | Lệnh sai trạng thái trả 409 | mọi spec |
 
@@ -66,7 +66,9 @@ Khu vực planning đăng ký bốn route qua hợp đồng `Feature` của shel
 
 ## 3. Quyết định kỹ thuật trong phạm vi
 
-- Lựa chọn version, chế độ xem, bộ lọc, Task đang mở nằm trên query (`?version=`, `?view=graph`, `?phase=`, `?label=`, `?agent=`, `?task=`) — liên kết được, sự kiện đọc lại không mất lựa chọn.
+- Lựa chọn version, chế độ xem, bộ lọc, Task đang mở nằm trên query (`?version=`, `?view=graph`, `?phase=`, `?label=`, `?agent=`, `?task=`) — liên kết được, sự kiện đọc lại không mất lựa chọn. Hai chế độ xem theo mẫu tab WAI-ARIA (một tab trong thứ tự Tab, phím mũi tên chuyển).
+- So sánh chỉ gửi `?against=` khi người dùng chọn version khác; mặc định server so với baseline, nên lần tải đầu không gọi diff hai lần.
+- Khóa idempotency của nghiệm thu tách theo kết quả (`reviewTask:<id>:accepted`, `:returned`); nháp lý do từ chối gắn với từng version (`compare.<versionId>.rejectReason`).
 - Không dùng thư viện đồ thị: lưới cố định (nút 196×76, cột cách 50 px như Plan--view-graph), cạnh vẽ trong một SVG.
 - Artifact gán cho lần chạy workflow theo thời điểm tạo nằm trong khoảng `startedAt`–`endedAt`, vì `Artifact` không mang `workflowId`.
 - Điều kiện nạp mock dùng cùng hằng build với `src/mocks/index.ts` (`DEV && MODE !== 'production'`); mẫu `DEV ? … : undefined` ghi trong `shell/feature.ts` vẫn kéo mock vào bản build chạy với `NODE_ENV=development` (`build.spec.ts` bắt được).

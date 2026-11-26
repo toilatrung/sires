@@ -8,6 +8,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { artifact, emptyPage, PROJECT_ID, planningState, renderPlanning, T, textOf, usePlanningMock, V4, workflow } from './testing';
+import * as store from './__mocks__/store';
 
 const open = async (taskId: string, extra = '') => {
   const view = renderPlanning(`/projects/${PROJECT_ID}/plan?task=${taskId}${extra}`);
@@ -39,6 +40,9 @@ describe('Panel Task (PID-00082 S04)', () => {
     const rc7 = within(list).getByText(/Thiếu đầu vào: tiêu chí so sánh chưa được xác nhận/).closest('li')!;
     expect(within(rc7).getByRole('link', { name: 'Trả lời câu hỏi' }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/chat`);
     expect(within(list).getByText('Đạt: agent có kết nối hợp lệ · 12 Trusted Reference Indexed')).toBeTruthy();
+    // Exactly the two reasons, and Execute stays off.
+    expect(list.querySelectorAll('.planning-check[data-passed="false"]')).toHaveLength(2);
+    expect((within(panel).getByRole('button', { name: 'Thực thi' }) as HTMLButtonElement).disabled).toBe(true);
     unmountAll();
 
     const second = await open(T['2.6']);
@@ -76,19 +80,28 @@ describe('Panel Task (PID-00082 S04)', () => {
         listWorkflows: ({ query }) => ({ status: 200, body: { items: query.taskId === T['2.2'] ? [second, first] : [], nextCursor: null } }),
         listArtifacts: () => ({
           status: 200,
-          body: { items: [artifact(1, T['2.2'], 'Danh sách nghiên cứu lần 1', '2026-11-20T08:10:00Z', { versionNumber: 1, status: 'Rejected' })], nextCursor: null },
+          body: {
+            items: [
+              artifact(1, T['2.2'], 'Danh sách nghiên cứu lần 1', '2026-11-20T08:10:00Z', { versionNumber: 1, status: 'Rejected' }),
+              artifact(2, T['2.2'], 'Danh sách nghiên cứu lần 2', '2026-11-21T09:30:00Z', { versionNumber: 2, status: 'Draft' }),
+            ],
+            nextCursor: null,
+          },
         }),
       },
     });
     const { panel, unmountAll } = await open(T['2.2']);
     const history = within(panel).getByRole('heading', { name: 'Lịch sử workflow' }).parentElement!;
     await waitFor(() => expect(history.querySelectorAll('.planning-history__row').length).toBe(2));
-    const rows = history.querySelectorAll('.planning-history__row');
+    const rows = [...history.querySelectorAll<HTMLElement>('.planning-history__row')];
+    // Oldest first; each run lists the artifact it created, and only that one.
     expect(textOf(rows[0])).toContain('Failed');
-    expect(within(rows[0] as HTMLElement).getByRole('link', { name: 'Danh sách nghiên cứu lần 1' })).toBeTruthy();
+    expect(within(rows[0]!).getByRole('link', { name: 'Danh sách nghiên cứu lần 1' })).toBeTruthy();
+    expect(within(rows[0]!).queryByRole('link', { name: 'Danh sách nghiên cứu lần 2' })).toBeNull();
     expect(textOf(rows[1])).toContain('Running');
-    expect(textOf(rows[1])).toContain('Không tạo artifact');
-    expect(within(rows[1] as HTMLElement).getByRole('link', { name: second.id.slice(0, 8) }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity/workflows/${second.id}`);
+    expect(within(rows[1]!).getByRole('link', { name: 'Danh sách nghiên cứu lần 2' })).toBeTruthy();
+    expect(within(rows[1]!).queryByRole('link', { name: 'Danh sách nghiên cứu lần 1' })).toBeNull();
+    expect(within(rows[1]!).getByRole('link', { name: second.id.slice(0, 8) }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity/workflows/${second.id}`);
     unmountAll();
 
     // Never run: the sentence says so.
@@ -150,14 +163,31 @@ describe('Panel Task (PID-00082 S04)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(keys).toEqual([]);
 
-    // 409 (another Task started first): the panel says so and reads the Task again.
-    mock.use({ overrides: { activateTask: () => ({ status: 409, body: { type: 'x', title: 'x', status: 409, code: 'invalid_transition', detail: 'Đang có Task khác chạy.' } }) } });
+    // 409 active_workflow_exists (another Task started first): the panel says so with a link to the workflow.
+    mock.use({ overrides: { activateTask: () => ({ status: 409, body: { type: 'x', title: 'x', status: 409, code: 'active_workflow_exists', detail: 'Đang có Task khác chạy.' } }) } });
     await user.click(within(panel).getByRole('button', { name: 'Thực thi' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Thực thi' }));
-    expect(await within(panel).findByText('Chưa thực thi được Task')).toBeTruthy();
+    const busyAlert = (await within(panel).findByText('Chưa thực thi được Task')).closest('[role="alert"]') as HTMLElement;
+    expect(within(busyAlert).getByRole('link', { name: 'Mở workflow đang chạy' }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity`);
+
+    // 409 readiness_failed: the readiness the server returns replaces the one shown, Execute goes off.
+    const failed = { ...t.lastReadiness!, passed: false, checks: [{ code: 'RC-03' as const, passed: false, detail: 'Workflow khác đang chạy trong project' }] };
+    mock.use({
+      overrides: {
+        activateTask: () => ({ status: 409, body: { type: 'x', title: 'x', status: 409, code: 'readiness_failed', readiness: failed } }),
+        getTaskReadiness: () => ({ status: 200, body: failed }),
+      },
+    });
+    await user.click(within(panel).getByRole('button', { name: 'Thực thi' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Thực thi' }));
+    expect(await within(panel).findByText(/Workflow khác đang chạy trong project/)).toBeTruthy();
+    expect((within(panel).getByRole('button', { name: 'Thực thi' }) as HTMLButtonElement).disabled).toBe(true);
     mock.server.resetHandlers();
     quietOthers();
     keys = [];
+    // Readiness checked again and passed: Execute is back.
+    await user.click(within(panel).getByRole('button', { name: 'Chạy lại readiness' }));
+    await waitFor(() => expect((within(panel).getByRole('button', { name: 'Thực thi' }) as HTMLButtonElement).disabled).toBe(false));
 
     await user.click(within(panel).getByRole('button', { name: 'Thực thi' }));
     dialog = screen.getByRole('dialog');
@@ -175,7 +205,11 @@ describe('Panel Task (PID-00082 S04)', () => {
     const { panel, user, unmountAll } = await open(T['2.5']);
     expect(within(panel).getByText(/Dependency T-2\.3 chưa Completed/)).toBeTruthy();
     task('2.3').status = 'Completed';
+    // While the check runs the button says so and cannot be pressed again.
+    mock.use({ overrides: { recheckTaskReadiness: ({ params }) => ({ status: 200, delayMs: 150, body: store.recheck(store.findTask(params.taskId)!) }) } });
     await user.click(within(panel).getByRole('button', { name: 'Chạy lại readiness' }));
+    const checking = within(panel).getByRole('button', { name: 'Đang kiểm…' }) as HTMLButtonElement;
+    expect(checking.disabled).toBe(true);
     await waitFor(() => expect(within(panel).queryByText(/Dependency T-2\.3 chưa Completed/)).toBeNull());
     expect(within(panel).getByText(/^Đạt: Task tiên quyết đã Completed/)).toBeTruthy();
     // RC-07 still fails, so Execute stays off.
@@ -191,6 +225,14 @@ describe('Panel Task (PID-00082 S04)', () => {
     await first.user.click(within(screen.getByRole('dialog', { name: 'Bắt đầu thực hiện T-2.4?' })).getByRole('button', { name: 'Bắt đầu thực hiện' }));
     await waitFor(() => expect(t.status).toBe('In Progress'));
     const content = await within(first.panel).findByRole('textbox', { name: 'Nội dung' });
+    // A required output without content is not sent.
+    let sent = 0;
+    mock.server.events.on('request:start', ({ request }) => {
+      if (request.url.endsWith('/manual-submissions')) sent += 1;
+    });
+    await first.user.click(within(first.panel).getByRole('button', { name: 'Gửi kết quả' }));
+    expect(within(first.panel).getByText('Đầu ra bắt buộc cần nội dung.')).toBeTruthy();
+    expect(sent).toBe(0);
     await first.user.type(content, 'Năm câu hỏi và trả lời của TS. Bảo.');
     first.unmountAll();
 
@@ -199,9 +241,26 @@ describe('Panel Task (PID-00082 S04)', () => {
     const restored = (await within(second.panel).findByRole('textbox', { name: 'Nội dung' })) as HTMLTextAreaElement;
     expect(restored.value).toBe('Năm câu hỏi và trả lời của TS. Bảo.');
     await second.user.type(within(second.panel).getByRole('textbox', { name: 'Tiêu đề' }), 'Biên bản phỏng vấn TS. Bảo');
+    // 400 from the server names the field; what was typed stays.
+    mock.use({
+      overrides: {
+        submitManualWork: () => ({
+          status: 400,
+          body: { type: 'x', title: 'x', status: 400, code: 'validation_failed', errors: [{ field: 'outputs[0].content', code: 'too_big', message: 'Nội dung quá dài' }] },
+        }),
+      },
+    });
+    await second.user.click(within(second.panel).getByRole('button', { name: 'Gửi kết quả' }));
+    const rejected = (await within(second.panel).findByText('Chưa gửi được kết quả')).closest('[role="alert"]');
+    expect(textOf(rejected)).toContain('outputs[0].content Nội dung quá dài');
+    expect((within(second.panel).getByRole('textbox', { name: 'Nội dung' }) as HTMLTextAreaElement).value).toBe('Năm câu hỏi và trả lời của TS. Bảo.');
+    mock.server.resetHandlers();
+    quietOthers();
     await second.user.click(within(second.panel).getByRole('button', { name: 'Gửi kết quả' }));
     await waitFor(() => expect(t.status).toBe('In Review'));
     expect(await within(second.panel).findByText('In Review')).toBeTruthy();
+    expect(sent).toBe(2);
+    mock.server.events.removeAllListeners();
     second.unmountAll();
   });
 
@@ -252,6 +311,14 @@ describe('Panel Task (PID-00082 S04)', () => {
     await running.user.click(within(running.panel).getByRole('button', { name: 'Hủy Task' }));
     const dialog = screen.getByRole('dialog', { name: 'Hủy T-2.2?' });
     expect((within(dialog).getByRole('button', { name: 'Nhập lý do' }) as HTMLButtonElement).disabled).toBe(true);
+    // Focus starts on the safe option and Tab stays inside the dialog.
+    const keep = within(dialog).getByRole('button', { name: 'Giữ nguyên' });
+    const reasonBox = within(dialog).getByRole('textbox', { name: 'Lý do' });
+    expect(document.activeElement).toBe(keep);
+    await running.user.tab();
+    expect(document.activeElement).toBe(reasonBox);
+    await running.user.tab({ shift: true });
+    expect(document.activeElement).toBe(keep);
     await running.user.type(within(dialog).getByRole('textbox', { name: 'Lý do' }), 'Đổi phạm vi');
     await running.user.click(within(dialog).getByRole('button', { name: 'Hủy Task' }));
     await waitFor(() => expect(task('2.2').status).toBe('Cancelled'));
@@ -261,6 +328,19 @@ describe('Panel Task (PID-00082 S04)', () => {
     expect(within(done.panel).getByRole('button', { name: 'Mở lại Task' })).toBeTruthy();
     expect(within(done.panel).queryByRole('button', { name: 'Hủy Task' })).toBeNull();
     done.unmountAll();
+
+    // Queued: “Rút khỏi hàng đợi” asks first, then the Task is Ready again.
+    const queued = task('3.1');
+    queued.status = 'Queued';
+    (queued as { allowedActions?: string[] }).allowedActions = ['dequeue', 'cancel'];
+    const inQueue = await open(queued.id);
+    expect(within(inQueue.panel).queryByRole('button', { name: 'Chạy lại readiness' })).toBeNull();
+    await inQueue.user.click(within(inQueue.panel).getByRole('button', { name: 'Rút khỏi hàng đợi' }));
+    const ask = screen.getByRole('dialog', { name: 'Rút T-3.1 khỏi hàng đợi?' });
+    expect(textOf(ask)).toContain('Task quay về Ready; không workflow nào bắt đầu.');
+    await inQueue.user.click(within(ask).getByRole('button', { name: 'Rút khỏi hàng đợi' }));
+    await waitFor(() => expect(queued.status).toBe('Ready'));
+    inQueue.unmountAll();
   });
 
   it('project archived (EC40)', async () => {

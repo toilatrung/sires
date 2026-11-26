@@ -33,6 +33,14 @@ describe('Plan (PID-00082 S02)', () => {
     expect(cardKeys()).toContain('T-2.2');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Execution label' }), 'Manual editor requirement');
     await waitFor(() => expect(cardKeys().sort()).toEqual(['T-2.4', 'T-2.7']));
+    // Still grouped by status, with the count of each group.
+    const ready = screen.getByRole('region', { name: /^Ready/ });
+    const review = screen.getByRole('region', { name: /^In Review/ });
+    expect(textOf(ready.querySelector('h2'))).toBe('Ready 1');
+    expect(within(ready).getByRole('link', { name: /^T-2\.4 / })).toBeTruthy();
+    expect(textOf(review.querySelector('h2'))).toBe('In Review 1');
+    expect(within(review).getByRole('link', { name: /^T-2\.7 / })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: /^Blocked/ })).toBeNull();
     // The baseline board asks the server with the filter (listTasks executionLabel).
     await user.selectOptions(screen.getByRole('combobox', { name: 'Execution label' }), 'Available for agent');
     await waitFor(() => expect(cardKeys()).not.toContain('T-2.4'));
@@ -60,6 +68,18 @@ describe('Plan (PID-00082 S02)', () => {
     expect(screen.getByRole('link', { name: 'Deliberation Record' }).getAttribute('href')).toContain('/artifacts?version=');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Plan Version' }), V4);
     expect(await screen.findByText('Không qua thảo luận')).toBeTruthy();
+    // No provenance (a Draft the Researcher made): no label at all.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Plan Version' }), V5);
+    await screen.findByText(/có chu trình phụ thuộc/);
+    expect(document.querySelector('.planning-delib')).toBeNull();
+    unmountAll();
+  });
+
+  it('Plan chưa có version nào (EC01)', async () => {
+    mock.use({ overrides: { getPlan: () => ({ status: 200, body: { id: 'p', projectId: PROJECT_ID, baselineVersionId: null, openVersionId: null, versions: [] } }) } });
+    const { unmountAll } = renderPlanning(planPath());
+    expect(await screen.findByText('Project chưa có Plan')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Yêu cầu Orchestrator đề xuất Plan' })).toBeTruthy();
     unmountAll();
   });
 
@@ -128,13 +148,22 @@ describe('Plan (PID-00082 S02)', () => {
   });
 
   it('các view khớp sau sự kiện (EC36)', async () => {
-    const { user, services, unmountAll } = await openPlan();
+    const { user, services, unmountAll } = await openPlan(`?task=${T['2.4']}`);
+    const panel = await screen.findByRole('complementary', { name: 'Chi tiết Task' });
+    expect(await within(panel).findByText('Ready')).toBeTruthy();
     await waitForStream(services, mock);
     const task = planningState().tasks.find((t) => t.id === T['2.4'])!;
     task.status = 'In Progress';
     mock.events.emit({ type: 'task.status_changed', projectId: PROJECT_ID, objectType: 'task', objectId: task.id, fromState: 'Ready', toState: 'In Progress' });
     await waitFor(() => expect(within(screen.getByRole('region', { name: /^In Progress/ })).getByRole('link', { name: /^T-2\.4 / })).toBeTruthy());
-    await user.click(screen.getByRole('tab', { name: 'Dependency graph' }));
+    // The open panel follows the same event.
+    await waitFor(() => expect(within(panel).getByText('In Progress')).toBeTruthy());
+    // Tabs: arrow keys move to the other view.
+    const boardTab = screen.getByRole('tab', { name: 'Board' });
+    boardTab.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Dependency graph' }).getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Dependency graph' }));
     const node = await screen.findByRole('link', { name: /^T-2\.4 .*, In Progress, Phase 2$/ });
     expect(node).toBeTruthy();
     unmountAll();

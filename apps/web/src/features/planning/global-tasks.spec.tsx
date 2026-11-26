@@ -14,7 +14,9 @@ describe('Tasks của mọi project (PID-00082 S07)', () => {
   const mock = usePlanningMock();
 
   it('chỉ đọc mọi project (EC35)', async () => {
-    const projects = (demoFixtures.ResearchProject ?? []).filter((p) => p.id === projectIds.rag || p.id === projectIds.learning).map((p) => ({ ...p, status: 'Active' as const }));
+    // Three Active projects of the demo data: RAG (planning store), learning (shared demo tasks), a third without tasks.
+    const projects = (demoFixtures.ResearchProject ?? []).filter((p) => p.status === 'Active').slice(0, 3);
+    expect(projects).toHaveLength(3);
     let queried: string | null = null;
     mock.use({
       overrides: {
@@ -41,7 +43,7 @@ describe('Tasks của mọi project (PID-00082 S07)', () => {
     // Both projects are there; a row of the other project opens in its own project.
     const learning = projects.find((p) => p.id === projectIds.learning)!;
     await waitFor(() => expect(screen.getAllByText(learning.name).length).toBeGreaterThan(0));
-    expect((screen.getByRole('combobox', { name: 'Project' }) as HTMLSelectElement).options[0]!.textContent).toBe('Tất cả · 2');
+    expect((screen.getByRole('combobox', { name: 'Project' }) as HTMLSelectElement).options[0]!.textContent).toBe('Tất cả · 3');
     // Filter one project, then a label.
     await user.selectOptions(screen.getByRole('combobox', { name: 'Project' }), learning.id);
     await waitFor(() => expect(screen.queryByRole('link', { name: /^T-2\.5 / })).toBeNull());
@@ -50,6 +52,12 @@ describe('Tasks của mọi project (PID-00082 S07)', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Execution label' }), 'Manual editor requirement');
     await waitFor(() =>
       expect(screen.getAllByRole('link').filter((a) => a.classList.contains('planning-global-row')).map((a) => a.querySelector('.sires-id')?.textContent).sort()).toEqual(['T-2.4', 'T-2.7']),
+    );
+    // Agent filter on what was loaded.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Execution label' }), '');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Agent' }), 'Diagram Agent');
+    await waitFor(() =>
+      expect(screen.getAllByRole('link').filter((a) => a.classList.contains('planning-global-row')).map((a) => a.querySelector('.sires-id')?.textContent)).toEqual(['T-2.6']),
     );
     // Read only: no command on the page, nothing written.
     const main = screen.getByRole('main');
