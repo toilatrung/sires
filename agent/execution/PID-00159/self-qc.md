@@ -95,6 +95,29 @@ Máy: Windows 11, Docker Engine 29.8.2 trong WSL `Ubuntu-24.04`, image `pgvector
 | G4 | unrequested | LOW | `local:roles`, `local:migrate`, `local:services`, `local:reset-db`, biến `.env.example`, README gateway, test identity | `report.md` mục 5 YC1–YC5 | Theo PC-05 P26, P27, P40, P41 (chốt theo đề xuất, PO ủy quyền 26/11/2026) |
 | G5 | contradicts (quy tắc 1.4.1) | LOW | PR chạm ba luồng: infra, gateway (README), identity (test) | `check-tracks.mjs` cảnh báo | PC-05 P40, P41 chọn “cùng PID-00159”; tách commit theo mục để PO tách được khi cần |
 
+## Lần 2 — 27/11/2026
+
+Sửa theo QC độc lập Lần 1 ([qc-report.md](qc-report.md), chép từ ghi chú QC chéo): G1, G2 (MEDIUM), G4, G5, G6 (LOW). Mục này theo PC-05 P37. G3, G7: phần của PO, không sửa mã.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm local:up postgres` trên volume mới, 4 lần liền (`SIRES_LOCAL_PROJECT=sires-pid159q`, `down -v` trước mỗi lần) | Cả 4 lần mã 0 (27 s, 20 s, 18 s, 14 s); 30 s sau vẫn 55 vai trò `sires_*`. Log PostgreSQL: `01-databases.sql`, `02-roles.sql` của entrypoint, server tạm dừng (“shutting down”), “PostgreSQL init process complete”, server thật sẵn sàng; không có `FATAL`, không có cảnh báo “Chưa có database” xen vào init (G1) |
+| `pnpm local:check-db` | Đạt 10/10; `› áp DDL tham chiếu`: migrator đăng nhập qua TCP bằng mật khẩu (G5) |
+| `GRANT CONNECT ON DATABASE sires_workspace TO sires_audit_app` → `pnpm local:roles` → `check-db` | `kết nối › quyền CONNECT` OK: 02-roles.sql thu CONNECT cấp tay cho vai trò của service khác (G6); `chạy lại không đổi` OK |
+| Làm hỏng tạm `SET client_min_messages` → `pnpm local:roles` | Mã 3, in lỗi psql kèm “Xem log: pnpm local:logs postgres. Dựng lại: pnpm local:down rồi pnpm local:up.” (G4); hoàn tác, mã 0 |
+| `git merge-tree --write-tree HEAD origin/identity/pid-00016-report` | Sạch (G2) |
+| `pnpm exec eslint scripts/development/local-{env,lib,services}.mjs` | Đạt |
+
+| G (QC) | Mức | Đã xử lý |
+| --- | --- | --- |
+| G1 | MEDIUM | `compose.yaml`: healthcheck `pg_isready -U sires -h 127.0.0.1` (server tạm của init chỉ nghe socket nên healthy chỉ khi server thật lên); `applyRoles` chờ `pg_isready -h 127.0.0.1` tối đa 90 s trước khi áp (`local-lib.mjs` `waitForPostgres`) |
+| G2 | MEDIUM | Bỏ phần G3 của PID-00016 (dòng Nhánh, PR, Cập nhật, Bước tiếp theo) khỏi #125: hai file trở về bản `main` cộng một mục mới. Hai PR cùng thêm mục vào cuối file nên merge #113 (`identity/pid-00016-report`) vào nhánh này, rồi đặt mục G1, G2 thành “Lần 4” sau “Lần 3” của #113. #125 vì thế xếp chồng trên #113 |
+| G3 | LOW | Không sửa: PO xác nhận cho luồng infra sửa README gateway (P41) |
+| G4 | LOW | Thông báo lỗi áp vai trò có gợi ý `pnpm local:logs postgres`, `pnpm local:down` |
+| G5 | LOW | `checkReferenceDdl` áp DDL bằng migrator qua TCP tới địa chỉ không phải loopback của container, `PGPASSWORD` (`composePsql` nhận `host`, `password`; `postgresAddress`) |
+| G6 | LOW | `02-roles.sql` thu CONNECT của vai trò `sires_*` không thuộc service trên từng database (đọc `aclexplode(datacl)`) |
+| G7 | LOW | Không sửa: thứ tự merge #120, #124 với #125 do PO |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

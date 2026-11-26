@@ -25,8 +25,10 @@ import {
   composePsql,
   composeRun,
   dbName,
+  postgresAddress,
   postgresRunning,
   roleName,
+  waitForPostgres,
 } from './local-lib.mjs';
 import { migrate, services } from './local-services.mjs';
 
@@ -56,11 +58,20 @@ function requirePostgres() {
   }
 }
 
-/** Áp 02-roles.sql bằng superuser sires; lỗi thì in lý do và trả mã khác 0 (EC09). */
+const ROLES_HINT = 'Xem log: pnpm local:logs postgres. Dựng lại: pnpm local:down rồi pnpm local:up.';
+
+/**
+ * Áp 02-roles.sql bằng superuser sires khi PostgreSQL thật đã nhận kết nối TCP (QC #125 G1: trên volume mới, server
+ * tạm của init có thể còn chạy); lỗi thì in lý do kèm gợi ý lệnh và trả mã khác 0 (EC09).
+ */
 function applyRoles({ quiet = false } = {}) {
+  if (!waitForPostgres()) {
+    console.error(`PostgreSQL chưa nhận kết nối TCP sau 90 s, chưa áp vai trò database. ${ROLES_HINT}`);
+    return 1;
+  }
   const r = composeRun(['exec', '-T', 'postgres', 'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-U', 'sires', '-d', 'sires', '-f', ROLES_FILE], { capture: true });
   if (r.status !== 0) {
-    console.error(`Áp vai trò database lỗi (02-roles.sql):\n${(r.stderr || r.stdout).trim()}`);
+    console.error(`Áp vai trò database lỗi (02-roles.sql):\n${(r.stderr || r.stdout).trim()}\n${ROLES_HINT}`);
     return r.status || 1;
   }
   const warnings = r.stderr.trim();
@@ -294,6 +305,8 @@ function ddlFile(svc) {
  */
 function checkReferenceDdl() {
   const common = readFileSync(join(DDL_DIR, '00-common.sql'), 'utf8');
+  // Migrator đăng nhập qua TCP bằng mật khẩu như lệnh migrate thật (S03; QC #125 G5).
+  const host = postgresAddress();
   const problems = [];
   let applied = 0;
   for (const svc of DB_SERVICES) {
@@ -313,7 +326,7 @@ function checkReferenceDdl() {
     }
     try {
       const ddl = `SET client_min_messages = warning;\n${common}\n${readFileSync(join(DDL_DIR, ddlFile(svc)), 'utf8')}`;
-      const run = composePsql(temp, ddl, { user: migrator });
+      const run = composePsql(temp, ddl, { user: migrator, host, password: LOCAL_PASSWORD });
       if (run.status !== 0) {
         problems.push(`${svc}: áp DDL lỗi: ${(run.stderr || run.stdout).trim().split('\n').slice(-3).join(' ')}`);
         continue;
@@ -340,7 +353,7 @@ function checkReferenceDdl() {
   const leftovers = queryJson('sires', `SELECT coalesce(json_agg(datname), '[]') FROM pg_database WHERE datname LIKE 'sires\\_check\\_%'`);
   if (leftovers.length > 0) problems.push(`còn database tạm: ${leftovers.join(', ')}`);
   report(problems.length === 0 && applied === DB_SERVICES.length, 'áp DDL tham chiếu', problems.length === 0
-    ? `${applied} service áp 00-common.sql + <svc>.sql bằng sires_<svc>_migrator; đối tượng trong app, replica, vec thuộc owner; không còn sires_check_*`
+    ? `${applied} service áp 00-common.sql + <svc>.sql bằng sires_<svc>_migrator qua TCP; đối tượng trong app, replica, vec thuộc owner; không còn sires_check_*`
     : problems.join('; '));
 }
 

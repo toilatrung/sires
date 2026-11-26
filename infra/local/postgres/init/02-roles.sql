@@ -36,6 +36,7 @@ DECLARE
   owner_role text;
   migrator_role text;
   db text;
+  grantee text;
 BEGIN
   FOREACH svc IN ARRAY services LOOP
     owner_role := format('sires_%s_owner', svc);
@@ -69,6 +70,16 @@ BEGIN
       EXECUTE format('GRANT CREATE ON DATABASE %I TO %I', db, owner_role);
       EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I, %I, %I, %I', db,
         migrator_role, format('sires_%s_app', svc), format('sires_%s_system', svc), format('sires_%s_purge', svc));
+      -- CONNECT từng cấp tay cho vai trò sires_* của service khác: thu lại (database 3.1; QC #125 G6).
+      FOR grantee IN
+        SELECT DISTINCT a.grantee::regrole::text
+        FROM pg_database d, aclexplode(d.datacl) a
+        WHERE d.datname = db AND a.privilege_type = 'CONNECT' AND a.grantee <> 0
+      LOOP
+        IF grantee LIKE 'sires\_%' AND left(grantee, length(format('sires_%s_', svc))) <> format('sires_%s_', svc) THEN
+          EXECUTE format('REVOKE CONNECT ON DATABASE %I FROM %I', db, grantee);
+        END IF;
+      END LOOP;
     ELSE
       RAISE WARNING 'Chưa có database %: chỉ tạo vai trò, bỏ qua chủ và quyền kết nối', db;
     END IF;

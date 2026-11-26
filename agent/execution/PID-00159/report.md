@@ -61,6 +61,12 @@ Nguồn: phiếu chốt cuối PH-01 PC-05 (`docs/overview/phieu-chot-cuoi-ph01.
 - **Bước tiếp theo:** QC độc lập `spec-converge-skill PID-00159` (và đối chiếu lại G1–G3 của PID-00016); PO review, merge PR vào `main`. Sau khi PR #63 (PID-00014) merge, `pnpm local:migrate` tự chạy migration gateway (script `migrate` của package).
 - **Tài liệu đi kèm:** không có (kết quả lệnh ghi thẳng ở `self-qc.md`).
 
+## Lần 2 — 27/11/2026
+
+- **Lý do:** QC độc lập Lần 1 (QC chéo, chép vào [qc-report.md](qc-report.md)): có thể nghiệm thu, 2 MEDIUM (G1 race khi `up` trên volume mới; G2 xung đột với #113 ở báo cáo PID-00016), 5 LOW.
+- **Đã làm:** G1 healthcheck qua TCP và chờ PostgreSQL thật trước khi áp vai trò; G2 bỏ phần G3 của PID-00016, merge #113 để mục G1, G2 thành “Lần 4” sau “Lần 3” của #113 (PR này xếp chồng trên #113); G4 gợi ý lệnh khi lỗi; G5 áp DDL tham chiếu qua TCP bằng mật khẩu; G6 thu CONNECT cấp tay cho vai trò của service khác. G3, G7 chờ PO.
+- **Kết quả:** 4 lần `local:up` trên volume mới đều sạch; `check-db` 10/10; chi tiết ở [self-qc.md](self-qc.md) Lần 2.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

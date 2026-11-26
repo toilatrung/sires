@@ -58,10 +58,37 @@ export function composeRun(args, { capture = false, input } = {}) {
   return { status: r.status ?? 1, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
 
-/** psql trong container postgres, SQL đưa qua stdin; mặc định superuser sires; kết quả dạng -At. */
-export function composePsql(database, sql, { user = 'sires' } = {}) {
-  return composeRun(['exec', '-T', 'postgres', 'psql', '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1', '-U', user, '-d', database, '-f', '-'],
+/**
+ * psql trong container postgres, SQL đưa qua stdin; mặc định superuser sires qua socket; kết quả dạng -At. Nêu `host`
+ * và `password` thì đăng nhập qua TCP bằng mật khẩu (pg_hba của image tin kết nối socket, loopback).
+ */
+export function composePsql(database, sql, { user = 'sires', host, password } = {}) {
+  const env = password === undefined ? [] : ['-e', `PGPASSWORD=${password}`];
+  const tcp = host === undefined ? [] : ['-h', host];
+  return composeRun(['exec', '-T', ...env, 'postgres', 'psql', '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1', ...tcp, '-U', user, '-d', database, '-f', '-'],
     { capture: true, input: sql });
+}
+
+/** Địa chỉ không phải loopback của container postgres (để kiểm đăng nhập bằng mật khẩu qua TCP). */
+export function postgresAddress() {
+  const r = composeRun(['exec', '-T', 'postgres', 'hostname', '-i'], { capture: true });
+  const address = r.stdout.trim().split(/s+/)[0];
+  if (r.status !== 0 || !address) throw new Error(`không lấy được địa chỉ của container postgres: ${r.stderr.trim()}`);
+  return address;
+}
+
+/**
+ * Chờ PostgreSQL thật nhận kết nối TCP (tối đa `timeoutMs`). Lúc chạy init, entrypoint dùng một server tạm chỉ nghe
+ * socket rồi dừng nó để khởi động server thật; áp vai trò trong khoảng đó sẽ chạy chồng với init (QC #125 G1).
+ */
+export function waitForPostgres(timeoutMs = 90_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const r = composeRun(['exec', '-T', 'postgres', 'pg_isready', '-q', '-h', '127.0.0.1', '-U', 'sires'], { capture: true });
+    if (r.status === 0) return true;
+    if (Date.now() > deadline) return false;
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1_000);
+  }
 }
 
 /** Container postgres của compose đang chạy. */
