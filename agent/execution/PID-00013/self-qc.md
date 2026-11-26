@@ -153,6 +153,25 @@ Hai việc trên #131 do phiên điều phối giao: `mockEnabled` dùng chung k
 
 Không còn CRITICAL, HIGH.
 
+
+## Lần 6 — 27/11/2026
+
+Hai việc: worker `quiet` và `MockRequest.emit` (report.md Lần 6).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `eslint .`, `tsc -p tsconfig.json --noEmit` (`apps/web`) | 0 lỗi |
+| `vitest run` (`@sires/web`) | 21 file, 147/147 đạt |
+| `vitest run src/shell/mock` | 5 file, 35/35 đạt. Mới: `browser.spec.ts` › không log request ra console; `mock.spec.ts` › override phát sự kiện lên /events |
+| `add-license.mjs --check` | 0 file thiếu |
+
+| G | Loại | Mức | Mô tả | Đã xử lý |
+| --- | --- | --- | --- | --- |
+| G10 | contradicts | MEDIUM | `worker.start` để log mặc định của MSW, in thân request (API key của Provider Connections) ra console khi chạy `dev:mock`. Báo từ QC #143 G1 | Đã xử lý: `quiet: true` qua `worker-options.ts`; test chặn |
+| G11 | missing | MEDIUM | Override của khu vực không phát được sự kiện lên mock `/events` (library cần cho `workflow.status_changed`, `reference.*`) | Đã xử lý: `MockRequest.emit`; test |
+
+Không còn CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

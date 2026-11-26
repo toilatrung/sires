@@ -331,6 +331,38 @@ describe('mock khi chạy test (S02)', () => {
     expect(unread.unreadCount).toBe((demoFixtures.Notification ?? []).filter((row) => row.status === 'Unread').length);
   });
 
+  it('override phát sự kiện lên /events', async () => {
+    // MockRequest.emit: an override announces what it changed (a workflow finishing, a status change) on the mock
+    // /events stream, as the gateway would; test overrides (mock.use) and area overrides (createMocks) both reach it.
+    const workflowId = id('workflow', 1);
+    mock.use({ overrides: { cancelWorkflow: ({ params, emit, generated }) => {
+      emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, fromState: 'Running', toState: 'Cancelled' });
+      return { status: 200, body: generated(200) };
+    } } });
+    const response = await api(`/workflows/${workflowId}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'k-emit' }, body: '{}' });
+    expect(response.status).toBe(200);
+    expect(mock.events.log).toEqual([expect.objectContaining({ type: 'workflow.status_changed', objectId: workflowId, toState: 'Cancelled' })]);
+
+    const area = defineMocks({ overrides: { cancelWorkflow: ({ params, emit, generated }) => {
+      emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, toState: 'Cancelled' });
+      return { status: 200, body: generated(200) };
+    } } });
+    const { handlers, events } = createMocks([{ name: 'area', mocks: area }]);
+    const cancel = handlers.find((handler) => handler.info.header.includes('/workflows/:workflowId/cancel'));
+    expect(cancel).toBeDefined();
+    const { setupServer } = await import('msw/node');
+    mock.server.close();
+    const own = setupServer(...handlers);
+    own.listen({ onUnhandledFrame: 'error' });
+    try {
+      await api(`/workflows/${workflowId}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'k-emit-2' }, body: '{}' });
+      expect(events.log.map((event) => event.objectId)).toEqual([workflowId]);
+    } finally {
+      own.close();
+      mock.server.listen({ onUnhandledFrame: 'error' });
+    }
+  });
+
   it('tham số mảng lọc theo style, explode', async () => {
     // The contract's array parameters are form, explode=false (`status=A,B`); the shell client sends `status=A&status=B`.
     // Both keep the rows matching any value; one value still filters as before.
