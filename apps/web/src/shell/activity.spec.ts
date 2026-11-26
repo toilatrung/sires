@@ -4,7 +4,7 @@
 
 import { screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { renderShell, waitForFrame } from './test/render';
+import { renderShellFrame, waitForFrame } from './test/render';
 import { json, shellStub } from './test/stub';
 import * as fx from './test/fixtures';
 
@@ -15,7 +15,7 @@ const sessionCalls = (stub: ReturnType<typeof shellStub>) => stub.calls('/api/v1
 describe('hoạt động của người dùng (H6, H11)', () => {
   it('request chạy nền không tính: SSE, nối lại, gọi lại GET sau sự kiện SSE không gọi GET /auth/session, không header đánh dấu (INT-OIDC-003-AC02, EC32)', async () => {
     const stub = shellStub();
-    renderShell({ path: '/projects/p1/overview', stub });
+    renderShellFrame({ path: '/projects/p1/overview', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.sse).toHaveLength(1));
     await waitFor(() => expect(stub.calls('/api/v1/projects/p1/tasks/' + fx.TASK_ID)).toHaveLength(1));
@@ -41,7 +41,7 @@ describe('hoạt động của người dùng (H6, H11)', () => {
 
   it('điều hướng gọi getSession đúng một lần cho mỗi lần điều hướng; chuyển hướng không tính', async () => {
     const stub = shellStub();
-    const { router, user } = renderShell({ path: '/', stub });
+    const { router, user } = renderShellFrame({ path: '/', stub });
     await waitForFrame();
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'));
     // / → /dashboard is a redirect: still only the opening check.
@@ -63,7 +63,7 @@ describe('hoạt động của người dùng (H6, H11)', () => {
 
   it('không gọi theo chu kỳ: 13 giờ không thao tác thì không có GET /auth/session nào thêm', async () => {
     const stub = shellStub();
-    renderShell({ path: '/dashboard', stub });
+    renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     await waitFor(() => expect(stub.sse).toHaveLength(1));
     vi.useFakeTimers();
@@ -78,7 +78,7 @@ describe('hoạt động của người dùng (H6, H11)', () => {
 
   it('lệnh ghi của người dùng là lệnh ghi bình thường: không kèm GET /auth/session, có X-CSRF-Token', async () => {
     const stub = shellStub();
-    const { user } = renderShell({ path: '/projects/p1/overview', stub });
+    const { user } = renderShellFrame({ path: '/projects/p1/overview', stub });
     await waitForFrame();
     const button = await screen.findByRole('button', { name: 'Bỏ active task' });
     const before = sessionCalls(stub);
@@ -90,7 +90,7 @@ describe('hoạt động của người dùng (H6, H11)', () => {
 
   it('getSession lúc điều hướng cập nhật csrfToken; 401 vào luồng phiên hết hạn', async () => {
     const stub = shellStub();
-    const { router, services } = renderShell({ path: '/dashboard', stub });
+    const { router, services } = renderShellFrame({ path: '/dashboard', stub });
     await waitForFrame();
     stub.on('GET', '/api/v1/auth/session', () => json({ ...fx.session, csrfToken: 'csrf-2' }));
     await router.navigate('/discover');
