@@ -2,6 +2,8 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+// @vitest-environment node
+
 // PID-00013 EC07: a production build contains no mock code and cannot turn the mock on, even with the flag set.
 
 import fs from 'node:fs';

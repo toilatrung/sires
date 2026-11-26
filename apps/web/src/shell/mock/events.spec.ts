@@ -2,6 +2,8 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+// @vitest-environment node
+
 // PID-00013 S03: mock of GET /events (EC04, EC11). The reader below reads the stream the way the contract
 // describes (id, event, data; reconnect with the Last-Event-ID header); the shell's SSE client of PID-00012 S05
 // replaces it once merged.

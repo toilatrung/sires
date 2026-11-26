@@ -2,6 +2,8 @@
 // Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
+// @vitest-environment node
+
 // PID-00013 acceptance: AC01 and edge cases EC01–EC05, EC08–EC10, EC12, EC13 (specs/scope.html).
 
 import fs from 'node:fs';
@@ -71,7 +73,8 @@ describe('bộ sinh mock (S01, S04)', () => {
     // Rename Note.title to heading in a copy of the sample spec, regenerate.
     const after = tempDir();
     const renamed = path.join(after, 'sample-openapi.yaml');
-    const source = fs.readFileSync(sampleSpec, 'utf8');
+    // Git on Windows may check the sample out with CRLF; compare on LF.
+    const source = fs.readFileSync(sampleSpec, 'utf8').replace(/\r\n/g, '\n');
     const changed = source.replace('required: [title, status, body]', 'required: [heading, status, body]')
       .replace(/(\n {12})title:(\n {14}type: string\n {14}minLength: 1)/, '$1heading:$2');
     expect(changed).not.toBe(source);

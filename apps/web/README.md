@@ -16,15 +16,20 @@ Luồng `web` (TypeScript, React 18 + Vite). Kế hoạch: [docs/tickets 3.2](..
 | manuscript | `src/features/manuscript` | `/projects/:projectId/manuscript/*` |
 | monitoring | `src/features/monitoring` | `/activity`, `/projects/:projectId/activity`, `/projects/:projectId/activity/workflows/:workflowId`, `/projects/:projectId/history` |
 
-Mỗi khu vực giữ route và namespace i18n (`i18n/vi.json`, `i18n/en.json`) của mình; shell chỉ ghép qua `src/shell/features.ts` (quy tắc 1.4.9, [docs/tickets 1.5](../../docs/tickets/sections/01-tracks-and-boundaries.html#s-1-5)). Thiết kế theo `docs/ui-design/design.md`; dựng bằng skill `sires-ui-executor`, rà bằng `sires-ui-review`. Màn hiện là placeholder.
+Mỗi khu vực giữ route và namespace i18n (`i18n/vi.json`, `i18n/en.json`) của mình; shell chỉ ghép qua `src/shell/features.ts` (quy tắc 1.4.9, [docs/tickets 1.5](../../docs/tickets/sections/01-tracks-and-boundaries.html#s-1-5)). Thiết kế theo `docs/ui-design/design.md`; dựng bằng skill `sires-ui-executor`, rà bằng `sires-ui-review`. Màn của các khu vực hiện là placeholder trong khung shell.
+
+Khu vực dùng shell (route, i18n, client API, SSE, kho nháp, trạng thái dùng chung, thẻ prompt) theo [src/shell/README.md](src/shell/README.md).
+
+**Thêm route của khu vực:** khai trong `routes` của `src/features/<khu vực>/index.tsx` (đường dẫn tương đối gốc, ví dụ khu vực monitoring thêm `projects/:projectId/activity/agent-runs/:agentRunId` cho chi tiết Agent Run). Shell tự ghép route của mọi khu vực, tự đặt khung (TopBar, ProjectRail theo URL) và báo trùng đường dẫn bằng test `routes.spec.ts`. Khu vực không sửa file của shell; bảng trên chỉ là tóm tắt lúc dựng khung, không phải nơi đăng ký route và không bắt buộc cập nhật. Khu vực mới (chưa có thư mục) thêm đúng một dòng import và một phần tử vào `src/shell/features.ts`.
 
 ## Chạy
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm --filter @sires/web dev
 ```
 
-Mở http://localhost:5173.
+Mở http://localhost:5173 (hoặc preview `web` trong `.claude/launch.json`); `/` chuyển tới `/dashboard`. Vite chuyển `/api` tới gateway ở `SIRES_GATEWAY_URL` (mặc định `http://localhost:3000`); chưa có gateway hay mock (PID-00013) thì khung báo không kiểm được phiên. Test: `pnpm nx run @sires/web:test`.
 
 Chạy không cần gateway, với mock theo OpenAPI công khai và dữ liệu demo (PID-00013; mặc định tắt, bản build không có mock):
 
