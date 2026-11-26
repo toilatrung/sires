@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00114.">
+<title>PID-00114 — S02 Khung References and Evidence | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>S02 — Khung References and Evidence: route, ba tab, danh sách</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00114-AC01 (phần danh sách Claims)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3, O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B5, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC07, EC23, EC43, EC46–EC48</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S01, S02, S04, S05, S06, S07, S11</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Route trong <code>apps/web/src/features/research/index.tsx</code> theo H3: <code>projects/:projectId/evidence</code> (tab qua <code>?tab=references|claims|evidence</code>, mặc định claims), <code>projects/:projectId/claims/:claimId</code>, <code>projects/:projectId/evidence/:evidenceId</code>; bỏ <code>projects/:projectId/evidence/claims/:claimId</code>. Hai route artifact giữ chỗ cho S05.</li>
+<li>Khung theo <code>docs/ui-design/pages/Evidence.html</code> và H4: thanh trên có ba tab kèm số (số đã tải, “+” khi còn trang), ô “Chỉ liên quan T-x” theo Active task của shell (EC05), liên kết “Thêm từ Trusted Library” tới <code>/library</code>; vùng danh sách bên trái, panel Evidence Inspector bên phải (S03, S04 lấp nội dung; ở slice này panel hiện trạng thái “chọn một mục”).</li>
+<li>Tab Claims: <code>listClaims</code>; dòng gồm phát biểu, chip mức hỗ trợ, chip duyệt khi khác Draft, chip needs review (EC23), meta “n hỗ trợ · m phản bác · T-x” (đếm <code>evidenceLinks.relation</code>; mã Task từ <code>getTask</code>, lưu đệm theo <code>taskId</code>); bộ lọc Mức hỗ trợ (Conflicting ghi “Bất đồng giữa nguồn”), Trạng thái duyệt; “Tải thêm” (EC04); chọn dòng → <code>/projects/{projectId}/claims/{claimId}</code>.</li>
+<li>Tab Evidence: <code>listEvidence</code>; dòng gồm reference ngắn (tác giả, năm), vị trí, một dòng trích đoạn, chip trạng thái; lọc Trạng thái, Reference; chọn dòng → <code>/projects/{projectId}/evidence/{evidenceId}</code>.</li>
+<li>Tab References: <code>listProjectReferences</code>; dòng gồm tác giả, năm, tiêu đề, chip duyệt và chip indexing riêng, câu giải thích khi Unavailable (EC02), liên kết <code>/library/{referenceId}</code>, nút “Bỏ khỏi project” mở dialog (đếm evidence bằng <code>listEvidence</code> với <code>referenceId</code>, hệ quả, <code>removeReferenceFromProject</code>; EC03).</li>
+<li>Trống theo từng tab (EC01), đang tải bằng skeleton theo dòng, lỗi tại vùng (EC06), 404 (EC07) bằng component của shell; chip từ shell (H2; thiếu chip → EC48).</li>
+<li>Nghe sự kiện theo H13 và tín hiệu “cần tải lại” của shell (EC43). Chuỗi vi/en (EC46); bố cục flex-wrap (EC47).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/evidence.spec.tsx</code> › ba tab trống (EC01); › hai trạng thái của reference (EC02); › bỏ reference khỏi project (EC03); › lỗi tại vùng (EC06); › không tìm thấy (EC07); › tải lại khi có sự kiện (EC43); › đổi ngôn ngữ (EC46)</li>
+<li><code>apps/web/src/features/research/claim.spec.tsx</code> › Unsupported giữ nhãn ở danh sách, Inspector và sau khi chấp nhận (phần danh sách, PID-00114-AC01); › tải thêm (EC04); › lọc theo Active task (EC05); › needs review (EC23)</li>
+<li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/shell/routes.spec.ts</code> vẫn đạt (không trùng route)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi; thao tác tay 1440×900, 1024×768, 390×844 (EC47)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>References and Evidence chạy trên mock với ba tab, bộ lọc, tải thêm, Bỏ khỏi project; khớp màn tham chiếu và sketch</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00114</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

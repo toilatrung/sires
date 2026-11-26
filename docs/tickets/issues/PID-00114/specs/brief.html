@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00114.">
+<title>PID-00114 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>PID-00114 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill (<code>references/brief-template.md</code>), <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc <code>H1</code>…</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Trong một project, Researcher mở References and Evidence để xem reference của project, claim và mức hỗ trợ, evidence; mở Evidence Inspector để đọc đoạn trích trong văn cảnh nguồn, xem claim nào đang dùng nó, loại evidence không phù hợp; duyệt claim (kiểm chứng, chấp nhận, từ chối, sửa phát biểu, liên kết evidence). Ở Research Artifacts, Researcher xem đầu ra có phiên bản của agent, provenance của từng version, nghiệm thu (chấp nhận hoặc từ chối), so sánh version; với sơ đồ, xem preview cạnh nguồn, sửa nguồn thành version mới hoặc yêu cầu Diagram Agent sửa; với bản tổng hợp, thấy mức hỗ trợ của từng claim ngay tại câu. Lần này dựng giao diện chạy trên mock ở PH-02 (D-UI); hội tụ với backend ở cổng PH-06.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Evidence luôn trỏ tới một Trusted Reference và vị trí cụ thể; ngữ cảnh lấy từ Source Document đã index, không sinh lại bằng model — PRD 5.6; EVID-INSPECTOR-001; H5</li>
+<li>Evidence: Active → Excluded (Researcher loại), Excluded → Active (khôi phục), Active → Stale (System); loại evidence làm claim liên kết cần xem lại — PRD 18.2; mô tả <code>excludeEvidence</code>; H5</li>
+<li>Link claim–evidence chỉ trỏ tới evidence Active cùng project; link tới evidence Stale hoặc Excluded được giữ để truy vết nhưng không tính khi đánh giá — CLAIM-MAPPING-001; H6</li>
+<li>Mức hỗ trợ hiển thị bằng nhãn có chữ ở mọi nơi claim xuất hiện; Conflicting hiện cả evidence hỗ trợ và phản bác; claim Unsupported được chấp nhận vẫn giữ nhãn — UX-CLAIM-001; mô tả <code>acceptClaim</code>; KPI-01; H6, H11</li>
+<li>Không chấp nhận claim Not Assessed; chấp nhận Unsupported hoặc Conflicting cần xác nhận thêm; có chấp nhận hàng loạt claim Supported — SYN-HUMAN-REVIEW-001; H6</li>
+<li>Sửa phát biểu claim Accepted đưa claim về Draft, mức hỗ trợ về Not Assessed — PRD 18.2; mô tả <code>updateClaimStatement</code>; H6</li>
+<li>Artifact Version bất biến; sửa tạo version mới; Draft → Accepted làm version Accepted cũ thành Superseded; chỉ version Accepted là đầu vào chính thức — PRD 5.7, 18.2, 18.3; H8, H9</li>
+<li>Synthesis chỉ Accepted khi mọi claim trong nó đã được quyết định; diagram chỉ Accepted khi qua kiểm tra cú pháp và render — SYN-HUMAN-REVIEW-001; DIAG-REVIEW-001; H9</li>
+<li>Mã nguồn sơ đồ là bản chính; preview render từ nguồn của cùng version; lưu sửa tạo version mới với actor Researcher — DIAG-SOURCE-001; H10</li>
+<li>Mọi dữ liệu do agent tạo có provenance (actor, Agent Run, Task, đầu vào, provider, model); <code>inputs: []</code> hợp lệ — PRD 18.3; DATA-PROV-001; PC-05 P11; H8</li>
+<li>Chỉ Researcher chấp nhận, từ chối (APR-03, APR-06, APR-07); mọi phê duyệt có ngữ cảnh và hệ quả; phương án không chọn sẵn — PRD 3.3; design.md §3, §8; H6, H9</li>
+<li>Chip trạng thái của shell theo design.md §3 (gồm bảng bổ sung PC-05 P1); khu vực không tự đặt kiểu — PID-00012 H4; H2</li>
+<li>Số trên TopBar, ProjectRail do shell làm — PID-00012 H1; H2</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; cách ly theo tài khoản và project; địa chỉ của tài nguyên không thuộc tài khoản trả “không tìm thấy” — PRD 4.3; H3</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Hợp đồng path 11: <code>listEvidence</code>, <code>getEvidence</code>, <code>excludeEvidence</code>, <code>restoreEvidence</code>, <code>listClaims</code> (có lọc <code>artifactVersionId</code>, <code>supportStatus</code>, <code>approvalStatus</code>, <code>taskId</code>, <code>needsReview</code>), <code>getClaim</code> (<code>ETag</code>), <code>updateClaimStatement</code>, <code>linkEvidenceToClaim</code>, <code>unlinkEvidenceFromClaim</code>, <code>acceptClaim</code>, <code>rejectClaim</code>, <code>verifyClaim</code> — có</li>
+<li>Path 14: <code>listArtifacts</code> (lọc <code>type</code>, <code>taskId</code>, <code>hasAccepted</code>), <code>getArtifact</code>, <code>listArtifactVersions</code>, <code>createArtifactVersion</code>, <code>acceptArtifactVersion</code>, <code>rejectArtifactVersion</code>, <code>getWorkflow</code> — có; path 13: <code>listDiagramTypes</code>, <code>requestDiagram</code>, <code>validateDiagramSource</code>, <code>getDiagramPreview</code> — có; path 10: <code>listProjectReferences</code>, <code>removeReferenceFromProject</code>, <code>getReferenceDocument</code> — có; path 09: <code>getTask</code> — có</li>
+<li>Schema: <code>Evidence</code>, <code>EvidenceInContext</code> (<code>reference</code>, <code>before</code>, <code>after</code>, <code>linkedClaimIds</code>), <code>Claim</code>, <code>ClaimEvidenceLink</code>, <code>VerificationResult</code>, <code>Artifact</code>, <code>ArtifactVersion</code>, <code>Provenance</code>, <code>TypedRef</code>, <code>DiagramValidationResult</code>, <code>ProjectReferenceSelection</code>, <code>Event</code> (<code>research.object_status_changed</code>, <code>workflow.status_changed</code>, <code>replay.unavailable</code> theo PC-05 P2) — có</li>
+<li>Hợp đồng thiếu khi làm rõ: trạng thái kiểm tra và loại của version sơ đồ, vị trí claim trong bản tổng hợp, artifact và citation dùng evidence, lý do needs review và dấu “đã ghi đè” của claim, <code>artifactId</code> trong <code>TypedRef</code> artifact version, vị trí dùng trong bản thảo, tham chiếu đối tượng của workflow — đã chốt cách xử lý tạm (H5, H7, H8, H10, H11, H13). Đã sửa ở nguồn 27/11/2026 (<a href="../index.html#sua-o-nguon">mục 5</a>): <code>ArtifactVersion.validation</code>, <code>diagramType</code>, <code>claimAnchors</code>, <code>manuscriptUsages</code>; <code>EvidenceInContext.linkedArtifactVersions</code>, <code>manuscriptUsages</code>; <code>Claim.needsReviewReasons</code>, <code>supportOverride</code>, <code>manuscriptUsages</code>; <code>VerificationResult.details</code> có cấu trúc; <code>TypedRef.artifactId</code>; <code>Workflow.subject</code>. Lượt này dùng <code>validation</code> (H10, S06) và <code>claimAnchors</code> (H11, S07); các trường còn lại chưa dùng tới khi PO làm rõ lại (N4, N10, N13, EC23)</li>
+<li>Mã nguồn: <code>apps/web/src/features/research/index.tsx</code> (bốn route Placeholder, có <code>projects/:projectId/evidence/claims/:claimId</code> đổi theo H3) — có; shell, mock — chưa merge</li>
+<li>Màn tham chiếu: <code>docs/ui-design/pages/Evidence.html</code>, <code>Artifacts.html</code>, <code>States.html</code>, <code>Components.html</code> — có; tab References, Evidence và các trạng thái khác chỉ có ở sketch của PID này</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Màn trong <code>apps/web/src/features/research/</code> → S02–S08</li>
+<li>O2 Override mock trong <code>apps/web/src/features/research/__mocks__/</code> → S01</li>
+<li>O3 <code>apps/web/src/features/research/claim.spec.tsx</code> → S02, S04; O4 <code>apps/web/src/features/research/artifact.spec.tsx</code> → S05, S08; O5 <code>apps/web/src/features/research/evidence.spec.tsx</code> → S02, S03; O6 <code>apps/web/src/features/research/diagram.spec.tsx</code> → S06; O7 <code>apps/web/src/features/research/synthesis.spec.tsx</code> → S07</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>References and Evidence = màn P6 Evidence; Research Artifacts = màn P7 Artifacts (mã ui-design ở tickets 1.5)</li>
+<li>mức hỗ trợ = SupportStatus (Supported, Partially Supported, Unsupported, Conflicting, Not Assessed); trạng thái duyệt = ClaimApprovalStatus (Draft, Accepted, Rejected)</li>
+<li>quan hệ link = supports (Hỗ trợ), contradicts (Phản bác), context (Ngữ cảnh)</li>
+<li>bản tổng hợp = Artifact loại <code>synthesis</code>; sơ đồ = Artifact loại <code>diagram</code> (Mermaid)</li>
+<li>thẻ thao tác dài = component của shell cho thao tác của agent hay System (design.md §2.4.1)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00114</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

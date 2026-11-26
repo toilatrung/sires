@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00114.">
+<title>PID-00114 — S03 Evidence Inspector | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>S03 — Evidence Inspector: evidence trong ngữ cảnh nguồn, loại và khôi phục</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-EVID-001-AC01, EVID-INSPECTOR-001-AC01, EVID-INSPECTOR-001-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B5, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06–EC14, EC43, EC46</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thẻ evidence dùng chung (S04 dùng lại trong Inspector của claim) theo khối Evidence Inspector của <code>docs/ui-design/pages/Evidence.html</code> và H5: chip trạng thái; Reference (tác giả, năm, tiêu đề, venue, DOI hoặc liên kết; liên kết <code>/library/{referenceId}</code>); dòng vị trí “trang · đoạn · chunk” (EC08); trích đoạn chữ có chân: <code>before</code>, <code>quote</code> trong <code>mark</code> nền <code>#CFE6FC</code>, <code>after</code> (EC09); liên kết “Mở PDF tại trang” khi reference có <code>document</code> (EC13).</li>
+<li>Panel của route <code>/projects/{projectId}/evidence/{evidenceId}</code>: <code>getEvidence</code>; thẻ evidence và danh sách “Claim đang dùng” từ <code>linkedClaimIds</code> (<code>getClaim</code> hoặc claim đã tải; phát biểu, chip mức hỗ trợ, liên kết claim; EC14).</li>
+<li>Active: “Loại evidence (Excluded)” mở dialog theo design.md §4: lý do tùy chọn, hệ quả nêu số claim đang dùng sẽ cần xem lại; gửi <code>excludeEvidence</code>; 409 → tải lại, báo (EC12). Excluded: “Khôi phục” gửi <code>restoreEvidence</code> (EC11). Stale: cảnh báo viền đứt kèm <code>statusReason</code>, không có nút Loại (EC10).</li>
+<li>Lỗi, 404 trong panel (EC06, EC07); nghe <code>research.object_status_changed</code> của evidence đang mở (EC43); chuỗi vi/en (EC46).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/evidence.spec.tsx</code> › trang 7 trong văn cảnh (UX-EVID-001-AC01); › metadata và ngữ cảnh (EVID-INSPECTOR-001-AC01); › loại evidence (EVID-INSPECTOR-001-AC02, EC12); › vị trí thiếu đoạn (EC08); › thiếu đoạn liền kề (EC09); › Stale không loại, không liên kết (EC10); › khôi phục evidence (EC11); › liên kết PDF tại trang (EC13); › chưa claim nào dùng (EC14)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Evidence Inspector trên mock hiện đủ metadata, vị trí, văn cảnh, claim đang dùng; loại, khôi phục chạy; khớp màn tham chiếu</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00114</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
