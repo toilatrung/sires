@@ -164,11 +164,33 @@ export class ApiClient {
     return this.request(path, 'delete', options as RequestOptions<P, 'delete'>);
   }
 
-  async request<P extends keyof Paths, M extends HttpMethod>(
+  /**
+   * A GET whose body is not JSON (an SVG or image preview, a PDF, a text file), with the same session, error and
+   * header handling as every other call: 401 starts the session-expired flow, problem+json errors become ApiError.
+   */
+  getBlob<P extends PathsWith<'get'>>(path: P, ...[options]: OptionalArg<P, 'get'>): Promise<ApiResult<Blob>> {
+    return this.send(path, 'get', options as RequestOptions<P, 'get'>, 'blob') as Promise<ApiResult<Blob>>;
+  }
+
+  /** Like getBlob, read as text (an SVG source, a .tex or .bib file). */
+  getText<P extends PathsWith<'get'>>(path: P, ...[options]: OptionalArg<P, 'get'>): Promise<ApiResult<string>> {
+    return this.send(path, 'get', options as RequestOptions<P, 'get'>, 'text') as Promise<ApiResult<string>>;
+  }
+
+  request<P extends keyof Paths, M extends HttpMethod>(
     path: P,
     method: M,
     options?: RequestOptions<P, M>,
   ): Promise<ApiResult<SuccessData<Operation<P, M>>>> {
+    return this.send(path, method, options, 'json') as Promise<ApiResult<SuccessData<Operation<P, M>>>>;
+  }
+
+  private async send<P extends keyof Paths, M extends HttpMethod>(
+    path: P,
+    method: M,
+    options: RequestOptions<P, M> | undefined,
+    responseType: 'json' | 'blob' | 'text',
+  ): Promise<ApiResult<unknown>> {
     const opts = (options ?? {}) as CommonOptions & {
       path?: Record<string, unknown>;
       query?: Record<string, unknown>;
@@ -177,7 +199,7 @@ export class ApiClient {
       idempotencyKey?: string;
       ifMatch?: string;
     };
-    const headers: Record<string, string> = { Accept: 'application/json, application/problem+json' };
+    const headers: Record<string, string> = { Accept: responseType === 'json' ? 'application/json, application/problem+json' : '*/*' };
     const isWrite = method !== 'get';
     if (isWrite) {
       if (!this.csrfProvider) throw new Error('ApiClient: no CSRF provider for a write request');
@@ -213,7 +235,9 @@ export class ApiClient {
 
     const etag = response.headers.get('etag') ?? undefined;
     let data: unknown = undefined;
-    if (response.status !== 204) {
+    if (response.status !== 204 && responseType !== 'json') {
+      data = responseType === 'blob' ? await response.blob() : await response.text();
+    } else if (response.status !== 204) {
       const type = response.headers.get('content-type') ?? '';
       if (type.includes('json')) {
         try {
@@ -223,7 +247,7 @@ export class ApiClient {
         }
       }
     }
-    return { data: data as SuccessData<Operation<P, M>>, status: response.status, etag };
+    return { data, status: response.status, etag };
   }
 }
 
