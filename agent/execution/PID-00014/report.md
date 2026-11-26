@@ -1,10 +1,10 @@
 # PID-00014 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — G8: chờ PO quyết sửa `infra/ci/check-helm-images.sh` trong PR #63 (DBQ-10 đã đóng theo DBD-14)
+**Trạng thái:** Xong — chờ QC (Lần 11, 27/11/2026: G8 đóng theo PC-05 P32, chốt theo đề xuất do PO ủy quyền 26/11/2026)
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Luồng:** `gateway` · **Giai đoạn:** PH-01
 - **Nhánh:** `gateway/pid-00014-session` · **PR:** [#63](https://github.com/toilatrung/sires/pull/63) vào `main`
-- **Cập nhật:** 25/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 11)
 - **Người làm:** phiên do PO `toilatrung` giao (24/11/2026), làm thay assignee cũ `Vietanhhhhhh2003`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
@@ -14,8 +14,9 @@ Lần 10 (25/11/2026) đóng G2: DBQ-10 đã đóng bằng DBD-14 (PO 24/11/2026
 dựng lại từ `00-common.sql` (sau EC09, #94) và `gateway.sql` (có policy `owner_lookup`) hiện tại trên `main`.
 Mọi test, kể cả fixture HTTP, migrate bằng migrator thật và chạy service bằng `_app`; test DBQ-10 đạt với
 assertion không đổi. G1, G3, G5–G7 (QC Lần 1) và G9, G10 (QC Lần 2) đã đóng từ các lần trước; G4 đóng theo
-phân công của PO ngày 24/11/2026. Còn G8 HIGH: sửa `infra/ci/check-helm-images.sh` (luồng infra) chờ PO quyết.
-Các số liệu ở Lần 2–9 là lịch sử; kết quả hiện tại ở Lần 10.
+phân công của PO ngày 24/11/2026. Lần 11 (27/11/2026) đóng G8: PC-05 P32 chốt theo đề xuất (PO ủy quyền
+26/11/2026), giữ sửa `infra/ci/check-helm-images.sh` (luồng infra) trong PR này. Còn G11 LOW, làm sau merge (P44).
+Các số liệu ở Lần 2–9 là lịch sử; kết quả mã hiện tại ở Lần 10 (Lần 11 không đổi mã).
 
 ## 2. Trạng thái công việc
 
@@ -47,9 +48,10 @@ Kết quả mới nhất, với mọi fixture migrate bằng vai trò thật, gh
 
 G2/DBQ-10: đã đóng ở Lần 10 (DBD-14). G4: đã đóng (PO giao PID-00014 cho `toilatrung` ngày 24/11/2026;
 `/apps/gateway/` có code owner `T1xNTH`, PO duyệt hoặc bypass khi merge).
-G8 (còn mở, HIGH): PO quyết giữ sửa Helm smoke trong PR này kèm code owner `/infra/` duyệt hoặc PO bypass,
-hoặc tách PR infra merge trước #63. Job `build` bắt buộc cần job `helm`, nên bỏ sửa này khỏi #63 mà chưa có PR
-infra thì CI đỏ. Chưa có quyết định PO khi kiểm ngày 25/11/2026. Sau đó QC độc lập Lần 3.
+G8: đã đóng ở Lần 11. PC-05 P32 chốt theo đề xuất (PO ủy quyền 26/11/2026, YC4 ở mục 5): giữ bản sửa Helm smoke
+`infra/ci/check-helm-images.sh` trong PR này; PR chạm hai luồng (gateway, infra) có chủ đích. Khi merge, code owner
+`/infra/` (`@congminh1705`) duyệt hoặc PO bypass. G11 LOW (fixture HTTP tự kiểm vai trò thật): PC-05 P44, PR nhỏ của
+luồng gateway sau khi #63 merge; không chặn merge.
 Đoạn sau chỉ là lịch sử lượt trước.
 
 Kết quả lượt đầu (đã được giải quyết ở Lần 2): `nx affected` chọn 19 project do lockfile, dừng ở
@@ -65,6 +67,7 @@ Nhận định ban đầu về diff knowledge đã sai sau YC1; Lần 4 khôi ph
 | YC1 | Người dùng trong phiên                                        | “test nốt đi”, “tìm lỗi và sửa luôn”                                           | Mở rộng ngoài gateway ở Lần 2                    | QC bác căn cứ mở rộng; H9 yêu cầu bỏ khỏi PR             | Đã khôi phục bốn file spike về main ở Lần 4; Lần 2 giữ làm lịch sử                                                                                                                                                                |
 | YC2 | Người dùng trong phiên trước                                  | “Giữ blocker, sửa phần còn lại”                                                | Sửa ngoài gateway ở Lần 7                        | Chờ PO quyết theo G8; chưa phải lời đồng ý của PO        | Commit `2355737` sửa `infra/ci/check-helm-images.sh`: cấp DSN thử và khóa CSRF ngẫu nhiên để gateway khởi động trong Helm smoke; CI Helm đạt. Cần PO quyết giữ kèm code owner `/infra/` duyệt, hoặc tách PR infra merge trước #63 |
 | YC3 | PO Trịnh Quang Trung, 25/11/2026, qua phiên điều phối giao PR | “Còn một số pr chưa xong, hãy qc và hoàn thiện cho tới khi đủ điều kiện merge” | Trong phạm vi: sửa theo QC Lần 1–2, H7 và DBD-14 | Làm trong gateway; không sửa `docs/`, infra; không merge | Lần 10: gộp `main`, dựng lại migration đầu theo DDL hiện tại, fixture vai trò thật, timeout chung PC-04 A6; G8 không tự quyết                                                                                                     |
+| YC4 | PO Trịnh Quang Trung, 26–27/11/2026, qua phiên điều phối | “PH-01 đang trong giai đoạn hoàn thiện, các vấn đề còn chưa đạt thì tự đề xuất và hoàn thiện cho xong giúp tôi … Các vấn đề phát sinh hãy chốt theo đề xuất … Hãy gọi các phiên để thực hiện song song, ngoài ra theo dõi pr để qc cho các phiên qc chéo khi nào đạt thì merge”; “mục tiêu trong phiên này bạn phải qc và đảm bảo chất lượng hoàn thiện tốt với các task đã đủ điều kiện tiến hành và các task bạn có phương án đề xuất” | Ủy quyền chốt các điểm còn mở theo đề xuất; áp vào G8 (sửa ngoài luồng gateway, YC2) | PC-05 P32 chốt theo đề xuất (PO ủy quyền 26/11/2026): phương án 1, giữ bản sửa `infra/ci/check-helm-images.sh` trong PR #63, PR chạm hai luồng có chủ đích; QC độc lập rồi merge. Đây là lời đồng ý cho YC2 | Lần 11: ghi quyết định vào mục 4, 5, 6; trạng thái `Xong — chờ QC`; gộp `main` (#109–#111, chỉ `docs/`). Không sửa mã, `infra/`, `docs/`, `qc-report.md` |
 
 ## Lần 2 — 22/11/2026
 
@@ -110,10 +113,10 @@ GitHub xác nhận `verified: true`. Chưa merge; PO review và QC độc lập 
   Đề xuất của QC Lần 2 `REVOKE ALL ON FUNCTION app.find_session(bytea) FROM PUBLIC` chưa có trong `gateway.sql`
   sau DBD-14; migration chép đúng DDL nên cũng chưa có. PO quyết có thêm vào DDL không.
 - **Yêu cầu hợp đồng:** Không có.
-- **Còn mở:** G8 HIGH — sửa `infra/ci/check-helm-images.sh` ngoài luồng gateway, chờ PO quyết (xem mục 4).
-  G2 (DBQ-10) và G4 đã đóng ở Lần 10.
-- **Bước tiếp theo:** PO quyết G8; nếu giữ trong PR này thì ghi lời đồng ý vào mục 5 và đặt `Xong — chờ QC`;
-  rồi QC độc lập Lần 3 và PO merge.
+- **Còn mở:** G11 LOW (fixture HTTP tự kiểm vai trò thật), làm sau khi #63 merge theo PC-05 P44; không chặn merge.
+  G8 đóng ở Lần 11 (PC-05 P32); G2 (DBQ-10) và G4 đã đóng ở Lần 10.
+- **Bước tiếp theo:** QC độc lập Lần 4 trên đầu nhánh sau Lần 11; đạt thì phiên điều phối của PO merge (PO bypass
+  hoặc code owner `/apps/gateway/`, `/infra/` duyệt).
 - **Tài liệu đi kèm:** Không có.
 
 ## Lần 4 — 22/11/2026 · Sửa PR #63 theo QC độc lập
@@ -275,6 +278,22 @@ Kết quả (chi tiết ở `self-qc.md` Lần 10):
 G1–G7, G9, G10 đã đóng (G2, G4 ở lượt này). **G8 HIGH còn mở**, chờ PO quyết; trạng thái giữ `Bị chặn — G8`.
 Khi PO chọn giữ sửa infra trong PR này, Dev ghi nguyên văn lời đồng ý vào mục 5 và đặt `Xong — chờ QC`.
 Không sửa `docs/`, `qc-report.md`; không merge PR.
+
+## Lần 11 — 27/11/2026 · PC-05 P32, gộp main
+
+Yêu cầu: YC4 (PO, 26–27/11/2026, qua phiên điều phối). Người làm: phiên QC do PO `toilatrung` giao, theo chỉ đạo
+của phiên điều phối (không ai đẩy lên nhánh này từ 25/11/2026). Làm trong worktree riêng, không chuyển nhánh của
+checkout chính.
+
+- G8: PC-05 P32 chốt theo đề xuất (PO ủy quyền 26/11/2026) — giữ bản sửa `infra/ci/check-helm-images.sh` (commit
+  `2355737`) trong PR này. Ghi nguyên văn ủy quyền ở mục 5 (YC4); sửa mục 4, mục 6 và dòng trạng thái thành
+  `Xong — chờ QC`. QC độc lập Lần 3 đã đánh giá bản sửa cần và đúng (chỉ áp cho gateway, DSN giả, khóa ngẫu nhiên).
+- Gộp `origin/main` `c9e745b` (#109, #110, #111) bằng merge, không rebase, không force-push. Ba PR này chỉ sửa
+  `docs/`; không có xung đột.
+- Không sửa mã gateway, `infra/`, `docs/`, `qc-report.md`; không merge PR. G11 LOW để PR sau theo PC-05 P44.
+- `self-qc.md`: dòng Kết luận thành `Đạt` (G8 đóng, G11 LOW để sau) và thêm mục Lần 11 (PC-05 P37).
+- Kiểm: `check-pid.mjs PID-00014 --result` KẾT QUẢ ĐỦ (0 cảnh báo); `add-license --check` 0 thiếu;
+  `update-index --check` khớp; `git diff --check` đạt. CI chạy lại trên đầu nhánh mới; kết quả ở QC độc lập Lần 4.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 

@@ -1,6 +1,6 @@
 # PID-00014 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — chỉ còn G8 HIGH (sửa `infra/ci/check-helm-images.sh` ngoài luồng) chờ PO quyết. Mọi AC, EC01–EC17 đạt với migration bằng vai trò thật; G2 (DBQ-10, theo DBD-14) và G4 đã đóng ở Lần 10. Phần trước Lần 10 là lịch sử.
+**Kết luận:** Đạt — G8 đóng ở Lần 11 theo PC-05 P32 (chốt theo đề xuất, PO ủy quyền 26/11/2026: giữ sửa `infra/ci/check-helm-images.sh` trong PR #63); còn G11 LOW làm sau merge theo PC-05 P44. Mọi AC, EC01–EC17 đạt với migration bằng vai trò thật; G2 (DBQ-10, theo DBD-14) và G4 đã đóng ở Lần 10. Phần trước Lần 10 là lịch sử.
 
 - **Ticket:** [PID-00014](../../../docs/tickets/issues/PID-00014/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 25/11/2026
@@ -304,6 +304,26 @@ Khoảng trống mới phát hiện ở lượt này: không có CRITICAL, HIGH,
 Mã gỡ lỗi: không có `console.log`, `debugger`, `.only`, `.skip`, `.todo` trong `apps/gateway/src`.
 Ranh giới: thay đổi của lượt này chỉ trong `apps/gateway/` và `agent/execution/PID-00014/`; không sửa `docs/`,
 `qc-report.md`, file sinh tự động. Còn G8 HIGH nên chưa đặt `Xong — chờ QC`.
+
+## Lần 11 — 27/11/2026 · PC-05 P32 (report Lần 11)
+
+Người chạy: phiên QC do PO `toilatrung` giao, theo chỉ đạo của phiên điều phối; ghi theo PC-05 P37 (PR sửa theo QC
+thêm mục “Lần N”). Lượt này không đổi mã: gộp `origin/main` `c9e745b` (#109–#111, chỉ `docs/`) và ghi quyết định
+G8 vào `report.md`.
+
+| G | Mức | Kết quả Lần 11 | Bằng chứng |
+| --- | --- | --- | --- |
+| G8 | HIGH | **Đã đóng** | PC-05 P32 chốt theo đề xuất (PO ủy quyền 26/11/2026, nguyên văn ở `report.md` mục 5, YC4): giữ bản sửa `infra/ci/check-helm-images.sh` (`2355737`) trong PR #63, PR chạm hai luồng có chủ đích. QC độc lập Lần 3 đánh giá bản sửa cần và đúng |
+| G11 | LOW | Để sau merge | PC-05 P44: PR nhỏ của luồng gateway thêm chốt vai trò cho fixture HTTP (`database.testkit.ts`) sau khi #63 merge; không chặn merge |
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git merge origin/main` (`c9e745b`) | Không xung đột; chỉ `docs/` đổi |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00014 --result` | KẾT QUẢ ĐỦ (0 cảnh báo); trước khi sửa dòng Kết luận ở đầu file thì báo lỗi “report.md báo Xong nhưng self-qc.md kết luận Chưa đạt” |
+| `node scripts/docs/add-license.mjs --check`, `node scripts/docs/update-index.mjs --check`, `git diff --check` | 0 file thiếu giấy phép; 159 PID, taskboard khớp; không lỗi khoảng trắng |
+| CI trên đầu nhánh mới | Ghi ở QC độc lập Lần 4 |
+
+Không có CRITICAL, HIGH, MEDIUM mới. Đặt `Xong — chờ QC` trong `report.md`.
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 
