@@ -14,7 +14,8 @@ info:
     ## Quy ước chung
     - **Xác thực:** duy nhất qua eTroy OIDC (INT-OIDC-001–004). Backend SIRes là OIDC Relying Party,
       giữ token phía server và cấp cookie phiên `sires_session` (HttpOnly, Secure, SameSite=Lax).
-      Lệnh ghi (POST/PUT/PATCH/DELETE) gửi kèm header `X-CSRF-Token`.
+      Lệnh ghi (POST/PUT/PATCH/DELETE) gửi kèm header `X-CSRF-Token`; riêng `POST /auth/logout` gửi bằng form
+      HTML nên token nằm ở trường `csrfToken` của body (PID-00012 H9).
     - **Ownership:** mọi tài nguyên thuộc tài khoản của phiên; tài nguyên của tài khoản khác trả `404`
       (không tiết lộ sự tồn tại — OWN-03, NFR-ISOL). Tài nguyên cấp project nằm dưới `/projects/{projectId}`.
     - **Idempotency:** lệnh có tác động (kích hoạt Task, duyệt, trả lời prompt, chấp nhận proposal,
@@ -163,18 +164,61 @@ paths:
       tags:
         - Auth
       operationId: logout
-      summary: Đăng xuất
-      description: Kết thúc phiên SIRes và thu hồi token phía server (INT-OIDC-003).
+      summary: Đăng xuất (RP-initiated logout)
+      description: |
+        Kết thúc phiên SIRes, thu hồi token phía server, rồi đưa trình duyệt tới trang kết thúc phiên của IdP để kết
+        thúc cả phiên eTroy (INT-OIDC-003, DEC-55, ADR-27). PID-00012 H9, PC-05 P3.
+
+        Web gửi bằng form HTML điều hướng cả trang, không dùng `fetch`: `<form method="post" action="/api/v1/auth/logout">`
+        với trường ẩn `csrfToken` lấy từ `GET /auth/session` ngay trước khi gửi. Form không gửi được header, nên riêng
+        operation này nhận CSRF token ở trường `csrfToken` của body thay cho header `X-CSRF-Token`. Trước khi gửi, web
+        xóa nháp của tài khoản và đóng kết nối SSE.
+
+        - Phiên hợp lệ, `csrfToken` khớp: gateway hủy phiên server-side, thu hồi token, xóa cookie `sires_session`, trả
+          `303` tới `end_session_endpoint` (lấy từ discovery) của IdP đang cấu hình kèm `client_id` và
+          `post_logout_redirect_uri` (URL `/sign-in` của SIRes đã đăng ký với IdP, ADR-27). IdP là eTroy OIDC; cục bộ và
+          staging PH-02 là OIDC mock (PID-00160). Không gửi `id_token_hint` vì token OIDC không xuống trình duyệt
+          (kiến trúc 10.2). IdP kết thúc phiên rồi đưa trình duyệt về `post_logout_redirect_uri`. IdP không công bố
+          `end_session_endpoint` thì `303` thẳng tới `post_logout_redirect_uri` (kiến trúc 8.8).
+        - Không còn phiên (cookie không có, hoặc phiên đã hết hạn, đã đăng xuất ở tab khác): không kiểm `csrfToken`, xóa
+          cookie nếu request có gửi kèm, `303` tới `post_logout_redirect_uri`, không gọi IdP.
+        - Phiên hợp lệ nhưng thiếu hoặc sai `csrfToken`: `403 forbidden`, phiên giữ nguyên. Web luôn lấy token mới ngay
+          trước khi gửi nên lỗi này chỉ gặp với request không đến từ web; trình duyệt hiện nguyên phản hồi lỗi, web
+          không xử lý.
       x-requirements:
         - INT-OIDC-003
+      x-decisions:
+        - DEC-55
       x-priority: P0
-      parameters:
-        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - csrfToken
+              properties:
+                csrfToken:
+                  type: string
+                  description: CSRF token của phiên, lấy từ `GET /auth/session` (cùng giá trị web gửi ở header `X-CSRF-Token`).
       responses:
-        '204':
-          $ref: '#/components/responses/NoContent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '303':
+          description: |
+            Đã đăng xuất (hoặc không còn phiên). `Location` là `end_session_endpoint` của IdP kèm `client_id`,
+            `post_logout_redirect_uri`; hoặc chính `post_logout_redirect_uri` khi không còn phiên hay IdP không có
+            `end_session_endpoint`.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              description: Xóa cookie `sires_session` (`Max-Age=0`) khi request có gửi kèm cookie.
+              schema:
+                type: string
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /auth/session:
     get:
       tags:
@@ -5306,8 +5350,15 @@ paths:
       summary: Luồng sự kiện realtime (Server-Sent Events)
       description: |
         Phát sau khi giao dịch commit (outbox, DATA-PERSIST-001) để giao diện cập nhật Agent Activity, prompt, Task,
-        build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; nếu quá xa, client tải lại trạng thái bằng
-        các endpoint GET. Sự kiện chỉ thuộc tài khoản của phiên.
+        build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; gateway giữ log phát lại 24 giờ (ADR-07).
+        Sự kiện chỉ thuộc tài khoản của phiên.
+
+        Khi `Last-Event-ID` không còn phát lại được (cũ hơn thời gian giữ log, không có trong log của tài khoản, hoặc
+        không đúng định dạng), gateway vẫn trả `200` và gửi đầu luồng, trước mọi sự kiện khác, một bản ghi
+        `event: replay.unavailable` (Event có `type = replay.unavailable`); sau đó chỉ phát sự kiện mới, không phát lại.
+        Client nhận tín hiệu này thì tải lại trạng thái bằng các endpoint GET. Kết nối lần đầu (không có `Last-Event-ID`)
+        và nối lại còn trong thời gian giữ log không có tín hiệu này. Dùng loại sự kiện thay vì mã phản hồi vì
+        `EventSource` của trình duyệt không đọc được status khi tự nối lại (PID-00012 H5, PC-05 P2).
       x-requirements:
         - UX-MONITOR-001
         - UX-STATE-001
@@ -5332,8 +5383,13 @@ paths:
                 description: |
                   Sự kiện phát qua SSE sau khi giao dịch commit (outbox — DATA-PERSIST-001). `id` dùng cho `Last-Event-ID` khi kết nối lại.
                   `type` là đúng tên message trong `events/asyncapi.yaml` mà gateway nghe ở `gatewayConsumesForSse`, cộng `chat.delta`
-                  từ stream `sires.stream` (không có `id` bền, không phát lại). Prompt mới là `prompt.status_changed` với
-                  `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed` (phân biệt bằng `objectType`).
+                  từ stream `sires.stream` (không có `id` bền, không phát lại), cộng `replay.unavailable`. Prompt mới là
+                  `prompt.status_changed` với `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed`
+                  (phân biệt bằng `objectType`).
+
+                  `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
+                  `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
+                  `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
                 required:
                   - id
                   - type
@@ -5367,6 +5423,7 @@ paths:
                       - research.object_status_changed
                       - manuscript.object_status_changed
                       - chat.delta
+                      - replay.unavailable
                   projectId:
                     $ref: common.yaml#/Id
                   objectType:
@@ -5651,6 +5708,9 @@ components:
           type: string
           examples:
             - Asia/Saigon
+          description: |
+            Giao diện không dùng trường này để hiển thị: ngày giờ luôn theo múi giờ của trình duyệt (UX-I18N-004,
+            PID-00012 EC21, PC-05 P4). Công dụng khác của trường (nếu có) chưa chốt.
         debugMode:
           type: boolean
           default: false
@@ -9867,8 +9927,17 @@ components:
             title: Dịch vụ tạm không khả dụng
             status: 503
             code: service_unavailable
-    NoContent:
-      description: Thành công, không có nội dung.
+    Forbidden:
+      description: '`403 forbidden`: thiếu hoặc sai `X-CSRF-Token` (với `POST /auth/logout`: trường `csrfToken` của form).'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/forbidden
+            title: Không được phép
+            status: 403
+            code: forbidden
     Unauthorized:
       description: |
         `401 unauthenticated`: chưa đăng nhập hoặc phiên eTroy OIDC đã hết hạn (INT-OIDC-003). Client chuyển tới
@@ -9939,6 +10008,8 @@ components:
             title: Không tìm thấy
             status: 404
             code: not_found
+    NoContent:
+      description: Thành công, không có nội dung.
     UnprocessableEntity:
       description: |
         Yêu cầu đúng cú pháp nhưng vi phạm quy tắc nghiệp vụ, ví dụ `idempotency_key_reused`, `dependency_cycle`,
@@ -9978,13 +10049,6 @@ components:
             status: 413
             code: payload_too_large
   parameters:
-    CsrfToken:
-      name: X-CSRF-Token
-      in: header
-      required: true
-      description: Token chống CSRF lấy từ `GET /auth/session`, bắt buộc cho mọi lệnh ghi dùng cookie phiên.
-      schema:
-        type: string
     IfMatch:
       name: If-Match
       in: header
@@ -9994,6 +10058,15 @@ components:
         type: string
         examples:
           - '"7"'
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: |
+        Token chống CSRF lấy từ `GET /auth/session`, bắt buộc cho mọi lệnh ghi dùng cookie phiên. Riêng `POST /auth/logout`
+        gửi bằng form HTML nên token nằm ở trường `csrfToken` của body.
+      schema:
+        type: string
     ProjectIdFilter:
       name: projectId
       in: query

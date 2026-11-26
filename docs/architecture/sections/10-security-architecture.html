@@ -79,7 +79,7 @@ Dùng:  Model Gateway: KMS.Decrypt(wrapped DEK) → giải mã key trong bộ nh
 <h2 id="s-10-5">10.5. Bảo vệ ứng dụng web</h2>
 <ul>
 <li><strong>TLS</strong> 1.2+ ở ingress, HSTS; TLS nội bộ tới database và object storage (NFR-TRANSIT-001).</li>
-<li><strong>CSRF:</strong> token đồng bộ (synchronizer token) trả qua <code>/auth/session</code>, gửi ở header <code>X-CSRF-Token</code> cho mọi lệnh ghi; cookie SameSite=Lax là lớp thứ hai.</li>
+<li><strong>CSRF:</strong> token đồng bộ (synchronizer token) trả qua <code>/auth/session</code>, gửi ở header <code>X-CSRF-Token</code> cho mọi lệnh ghi; riêng <code>POST /auth/logout</code> là form HTML điều hướng cả trang (để chuyển tiếp tới trang kết thúc phiên của IdP) nên token nằm ở trường <code>csrfToken</code> của body (PC-05 P3); cookie SameSite=Lax là lớp thứ hai.</li>
 <li><strong>CSP</strong> chặt: <code>default-src 'self'</code>; không inline script; SVG sơ đồ hiển thị qua <code>&lt;img&gt;</code> (không inline) để script trong SVG không chạy; PDF qua pdf.js.</li>
 <li><strong>SSRF:</strong> base URL tùy chỉnh (agent-core, knowledge) và liên kết nguồn tải PDF (library, knowledge) đi qua HTTP client có danh sách chặn (loopback, link-local, dải private, metadata endpoint), kiểm tra sau phân giải DNS và sau mỗi redirect; chỉ agent-core, knowledge, library, gateway có egress ra Internet, qua NAT có ghi log.</li>
 <li><strong>Tải lên file:</strong> qua presigned URL có giới hạn kích thước và loại; worker kiểm tra lại nội dung; PDF chỉ được xử lý bằng thư viện trích xuất, không render bằng trình duyệt phía server.</li>
