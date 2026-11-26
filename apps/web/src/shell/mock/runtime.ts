@@ -124,6 +124,34 @@ function matches(row: Row, params: Record<string, string>, scope: readonly strin
   return scope.every((name) => !(name in row) || row[name] === params[name]);
 }
 
+const DELIMITERS: Record<string, string> = { form: ',', spaceDelimited: ' ', pipeDelimited: '|' };
+
+/**
+ * Query of a request as the contract declares it: array parameters (descriptor.query) become string[] split by their
+ * style when explode is false (`status=A,B`), repeated keys are collected too (`status=A&status=B`), so either form
+ * filters the same. Other parameters keep their last value.
+ */
+export function readQuery(descriptor: Pick<OperationDescriptor, 'query'>, url: URL): Record<string, string | string[]> {
+  const arrays = new Map((descriptor.query ?? []).map((parameter) => [parameter.name, parameter]));
+  const query: Record<string, string | string[]> = {};
+  for (const name of new Set(url.searchParams.keys())) {
+    const values = url.searchParams.getAll(name);
+    const parameter = arrays.get(name);
+    if (!parameter) {
+      query[name] = values[values.length - 1];
+      continue;
+    }
+    const delimiter = parameter.explode ? undefined : DELIMITERS[parameter.style];
+    query[name] = values.flatMap((value) => (delimiter ? value.split(delimiter) : [value])).filter((value) => value !== '');
+  }
+  return query;
+}
+
+/** A row field equals a query value; array fields (tags, types) match when they contain it. */
+function sameValue(field: unknown, value: string): boolean {
+  return Array.isArray(field) ? field.some((item) => String(item) === value) : String(field) === value;
+}
+
 /** Answers a GET from fixtures when the shared demo data has rows of the returned schema. */
 function fromFixtures(descriptor: OperationDescriptor, fixtures: Fixtures, params: Record<string, string>, url: URL): Response | undefined {
   const resource = descriptor.resource;
@@ -139,11 +167,13 @@ function fromFixtures(descriptor: OperationDescriptor, fixtures: Fixtures, param
     if (descriptor.responses[descriptor.success]?.headers?.includes('ETag')) itemHeaders.ETag = `"${String(row.rowVersion ?? 1)}"`;
     return HttpResponse.json(clone(row), { status: descriptor.success, headers: itemHeaders });
   }
-  const filters = [...url.searchParams].filter(([name]) => !['limit', 'cursor', 'sort', 'order', 'q'].includes(name));
+  // One filter per parameter; an array parameter keeps the rows matching any of its values (status=A,B → A or B).
+  const filters = Object.entries(readQuery(descriptor, url)).filter(([name]) => !['limit', 'cursor', 'sort', 'order', 'q'].includes(name));
   const filtered = scoped.filter((row) => filters.every(([name, value]) => {
     if (!(name in row)) return true;
-    if (value === 'deleted') return Boolean(row.deletedAt);
-    return String(row[name]) === value;
+    const values = Array.isArray(value) ? value : [value];
+    if (!values.length) return true;
+    return values.some((one) => (one === 'deleted' ? Boolean(row.deletedAt) : sameValue(row[name], one)));
   }));
   if (resource.kind === 'list') return HttpResponse.json(clone(filtered), { status: descriptor.success, headers });
   const limit = Math.max(1, Number(url.searchParams.get('limit') ?? 50) || 50);
@@ -220,7 +250,7 @@ function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, o
     const context: MockRequest<OperationId> = {
       operationId: descriptor.operationId as OperationId,
       params: path as never,
-      query: Object.fromEntries(new URL(request.url).searchParams) as never,
+      query: readQuery(descriptor, new URL(request.url)) as never,
       body: (await readBody(request)) as never,
       request,
       generated: ((status: number) => generatedBody(descriptor, status)) as never,

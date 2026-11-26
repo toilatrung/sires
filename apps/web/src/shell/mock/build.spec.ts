@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { build, type Plugin } from 'vite';
+import { build, type Plugin, type Rollup } from 'vite';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -46,6 +46,48 @@ async function buildWeb(nodeEnv: string) {
   }
   return { modules, outDir };
 }
+
+const fixtureArea = path.join(webRoot, 'src/shell/mock/__fixtures__/guarded-area');
+const AREA_MARKER = 'SIRES_GUARDED_AREA_MOCK';
+
+/** Builds the fixture area (mocks behind `mockEnabled`) and returns the code of every chunk. */
+async function buildArea(nodeEnv: string, mode: string) {
+  vi.stubEnv('NODE_ENV', nodeEnv);
+  try {
+    const result = await build({
+      configFile: false, root: fixtureArea, logLevel: 'silent', mode,
+      build: { write: false, minify: false, lib: { entry: path.join(fixtureArea, 'entry.ts'), formats: ['es'], fileName: 'entry' } },
+    }) as Rollup.RollupOutput | Rollup.RollupOutput[];
+    return (Array.isArray(result) ? result : [result]).flatMap((out) => out.output)
+      .map((item) => (item.type === 'chunk' ? item.code : '')).join('\n');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+}
+
+describe('khu vực khai mock (S02)', () => {
+  it.each(['production', 'development'])('mockEnabled bỏ mock của khu vực khỏi bản build (NODE_ENV=%s)', async (nodeEnv) => {
+    expect(await buildArea(nodeEnv, 'production')).not.toContain(AREA_MARKER);
+  }, 60_000);
+
+  it('mockEnabled giữ mock của khu vực ở chế độ mock (đối chứng)', async () => {
+    // Same fixture, mode mock with a non-production NODE_ENV (what the dev server runs): the mock chunk is there,
+    // so the two cases above fail if the guard stops removing it.
+    expect(await buildArea('development', 'mock')).toContain(AREA_MARKER);
+  }, 60_000);
+
+  it('mỗi khu vực khai mocks sau mockEnabled', () => {
+    // `import.meta.env.DEV ? …` alone lets a build with NODE_ENV=development ship the area's mocks.
+    const features = path.join(webRoot, 'src/features');
+    for (const area of fs.readdirSync(features)) {
+      const file = path.join(features, area, 'index.tsx');
+      if (!fs.existsSync(file)) continue;
+      for (const line of fs.readFileSync(file, 'utf8').split('\n').filter((text) => /^\s*mocks\s*:/.test(text))) {
+        expect(line, area).toMatch(/mocks\s*:\s*(mockEnabled|import\.meta\.env\.DEV && import\.meta\.env\.MODE !== 'production')\s*\?/);
+      }
+    }
+  });
+});
 
 describe('bản build (S02)', () => {
   // Vitest runs with NODE_ENV=test; the second case shows a non-production NODE_ENV still cannot bring the mock in.

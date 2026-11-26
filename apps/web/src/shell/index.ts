@@ -6,6 +6,7 @@
 // See README “Dùng shell trong khu vực”.
 
 export type { Feature, Locale, Messages } from './feature';
+export { mockEnabled } from './mock-enabled';
 export { Placeholder } from './Placeholder';
 
 // Data access
