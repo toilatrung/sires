@@ -65,6 +65,18 @@ describe('Discover', () => {
       await waitFor(() => expect(callsOf('startDiscoverySearch')).toHaveLength(2));
     });
 
+    it('nguồn không phản hồi khi tìm', async () => {
+      // H8 (QC G16): a search that failed because the source did not answer reads “Nguồn không phản hồi”, and the box says
+      // the Trusted Library is not affected.
+      setup({ search: { kind: 'failed', code: 'timeout', message: 'Nguồn không trả lời trong 30 giây.' } });
+      const { user } = renderAt('/discover');
+      await startSearch(user, 'rag');
+      await advance();
+      const alert = (await screen.findByText('Nguồn không phản hồi')).closest('[role="alert"]') as HTMLElement;
+      expect(within(alert).getByText('timeout')).toBeTruthy();
+      expect(alert.textContent).toContain('Trusted Library và reference đã có không bị ảnh hưởng.');
+    });
+
     it('nguồn giới hạn truy cập', async () => {
       // INT-SCHOLAR-002-AC01, EC04: lastError.code rate_limited → “Nguồn tạm giới hạn truy cập” with the code, nothing resent.
       setup({ search: { kind: 'failed', code: 'rate_limited', message: 'Quá nhiều yêu cầu tới nguồn.' } });
@@ -382,6 +394,47 @@ describe('Discover', () => {
       expect(screen.getByText('Đã chọn · 0')).toBeTruthy();
     });
 
+    it('cột phải có lựa chọn và nhập thủ công', async () => {
+      // H20 (QC G6): the right column holds “Đã chọn · n”, the send button and manual import.
+      setup({ results: fresh(2) });
+      const { user } = renderAt('/discover');
+      await searchAndShow(user, 'rag');
+      const side = screen.getByRole('complementary', { name: 'Lựa chọn và nhập thủ công' });
+      expect(within(side).getByRole('heading', { name: 'Đã chọn · 0' })).toBeTruthy();
+      expect(within(side).getByRole('button', { name: 'Gửi 0 kết quả vào luồng duyệt' })).toBeTruthy();
+      expect(within(side).getByRole('heading', { name: 'Nhập thủ công' })).toBeTruthy();
+      expect(within(side).queryByText('Kết quả 1')).toBeNull();
+    });
+
+    it('lỗi gửi lô hiện tại vùng lô', async () => {
+      // QC G11, G10: a failed send stays in the batch area (not the search's error box, the results stay); “Gửi lại”
+      // resends the same set with the same Idempotency-Key.
+      setup({ results: fresh(2) });
+      mock.use({ overrides: { importDiscoveredResults: () => problemResponse(503, 'service_unavailable') } });
+      const { user } = renderAt('/discover');
+      await searchAndShow(user, 'rag');
+      await user.click(screen.getByRole('button', { name: 'Chọn tất cả trên trang' }));
+      await screen.findByText('Đã chọn · 2');
+      await user.click(screen.getByRole('button', { name: 'Gửi 2 kết quả vào luồng duyệt' }));
+      const side = screen.getByRole('complementary', { name: 'Lựa chọn và nhập thủ công' });
+      const alert = (await within(side).findByText('Không gửi được lô')).closest('[role="alert"]') as HTMLElement;
+      expect(within(alert).getByText('service_unavailable')).toBeTruthy();
+      expect(screen.queryByText('Nguồn không phản hồi')).toBeNull();
+      expect(screen.getByText('Kết quả 1', { selector: 'strong' })).toBeTruthy();
+      const sent: string[] = [];
+      const listen = ({ request }: { request: Request }) => {
+        if (new URL(request.url).pathname.endsWith('/discovered-results/import')) sent.push(request.headers.get('idempotency-key') ?? '');
+      };
+      mock.server.events.on('request:start', listen);
+      await user.click(within(alert).getByRole('button', { name: 'Gửi lại' }));
+      await waitFor(() => expect(sent).toHaveLength(1));
+      await user.click(await within(side).findByRole('button', { name: 'Gửi lại' }));
+      await waitFor(() => expect(sent).toHaveLength(2));
+      expect(sent[0]).toBeTruthy();
+      expect(sent[1]).toBe(sent[0]);
+      mock.server.events.removeListener('request:start', listen);
+    });
+
     it('tóm tắt lô có mục lỗi', async () => {
       // LIB-IMPORT-001-AC01, EC17: batch of 5, one not created → 4 “Đã tạo reference · Pending Approval”, 1 “Lỗi” with the reason,
       // and “Thử lại các mục lỗi” resending only that one.
@@ -439,6 +492,26 @@ describe('Discover', () => {
   });
 
   describe('Tìm theo tác giả (S04)', () => {
+    it('lọc trên các mục đã tải', async () => {
+      // H11 (QC G8): an author's publications are filtered by year and keyword on the loaded rows, without a new search;
+      // “Chọn tất cả kết quả đủ điều kiện” acts on what is shown.
+      setup();
+      const { user } = renderAt('/discover');
+      await searchAndShow(user, 'Lewis', 'Tác giả');
+      const group = screen.getByRole('group', { name: 'Lọc trên các mục đã tải' });
+      expect(within(group).getByText('Hiện 5/5 mục đã tải')).toBeTruthy();
+      await user.type(within(group).getByRole('textbox', { name: 'Lọc từ năm' }), '2024');
+      expect(within(group).getByText('Hiện 3/5 mục đã tải')).toBeTruthy();
+      expect(screen.queryByText(papers.lewis.title, { selector: 'strong' })).toBeNull();
+      await user.type(within(group).getByRole('searchbox', { name: 'Lọc theo từ khóa' }), 'hallucination');
+      expect(within(group).getByText('Hiện 1/5 mục đã tải')).toBeTruthy();
+      expect(screen.getByText(papers.huang.title, { selector: 'strong' })).toBeTruthy();
+      await user.click(screen.getByRole('button', { name: 'Chọn tất cả kết quả đủ điều kiện' }));
+      await screen.findByText('Đã chọn · 1');
+      expect(callsOf('setDiscoveredResultStatus')).toHaveLength(1);
+      expect(callsOf('startAuthorSearch')).toHaveLength(1);
+    });
+
     it('danh sách có thể không đầy đủ', async () => {
       // INT-SCHOLAR-004-AC01, DISC-AUTHOR-001-AC02: author results carry “Danh sách có thể không đầy đủ”.
       setup();

@@ -5,8 +5,9 @@
 // Pieces shared by Discover, Trusted Library and Reference (PID-00098).
 
 import type { PublicApi } from '@sires/contracts';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Dialog as ShellDialog } from '../../shell';
 
 export type Schemas = PublicApi.components['schemas'];
 export type Reference = Schemas['Reference'];
@@ -50,24 +51,12 @@ export function sourceName(source: string): string {
   return source === 'openalex' ? 'OpenAlex' : source === 'google_scholar' ? 'Google Scholar' : source;
 }
 
-/** The modal dialog of design.md §4: 480px, consequence before the confirm button, Esc cancels. */
+/**
+ * The modal dialog of design.md §4 through the shell's Dialog: 480px, consequence before the confirm button, Escape
+ * cancels, Tab stays inside, focus returns to the opener (QC G5).
+ */
 export function Dialog({ title, children, onClose, actions }: { title: ReactNode; children: ReactNode; onClose: () => void; actions: ReactNode }) {
-  const titleId = useId();
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    box.current?.querySelector<HTMLElement>('textarea, input, select, button')?.focus();
-    return () => previous?.focus?.();
-  }, []);
-  return (
-    <div className="library-scrim" role="presentation" onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }}>
-      <div ref={box} className="library-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <h2 id={titleId} className="library-dialog__title">{title}</h2>
-        <div className="library-dialog__body">{children}</div>
-        <div className="library-dialog__actions">{actions}</div>
-      </div>
-    </div>
-  );
+  return <ShellDialog title={title} onCancel={onClose} actions={actions}>{children}</ShellDialog>;
 }
 
 /** Label of a Discovered Result or of a not-yet-trusted row: always dashed, never a status chip (AC01). */

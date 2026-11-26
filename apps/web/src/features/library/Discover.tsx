@@ -39,6 +39,19 @@ interface Batch {
 }
 type Problem = { code: string; title: string };
 
+/** H11 filter on the loaded publications: year range (4 digits) and keyword in title, authors, venue, snippet. */
+function matchesLoadedFilter(row: DiscoveredResult, filter: { yearFrom: string; yearTo: string; text: string }): boolean {
+  const year = row.metadata.year;
+  if (/^\d{4}$/.test(filter.yearFrom) && (!year || year < Number(filter.yearFrom))) return false;
+  if (/^\d{4}$/.test(filter.yearTo) && (!year || year > Number(filter.yearTo))) return false;
+  const text = filter.text.trim().toLowerCase();
+  if (!text) return true;
+  return [row.metadata.title, row.metadata.venue, row.metadata.abstractOrSnippet, ...row.metadata.authors.map((a) => a.name)]
+    .some((value) => value?.toLowerCase().includes(text));
+}
+
+const NO_RESPONSE = new Set(['provider_unavailable', 'timeout', 'network_error', 'service_unavailable']);
+
 const toStatus = (status: Schemas['WorkflowStatus']): SearchStatus =>
   status === 'Succeeded' ? 'succeeded' : status === 'Failed' ? 'failed' : status === 'Cancelled' ? 'cancelled'
     : status === 'Interrupted' ? 'interrupted' : status === 'Waiting for User' ? 'waiting' : 'running';
@@ -66,7 +79,9 @@ export function DiscoverScreen() {
   const [prompt, setPrompt] = useState<InteractiveAgentPrompt>();
   const [answering, setAnswering] = useState(false);
   const [batch, setBatch] = useState<Batch>();
-  const [batchNo, setBatchNo] = useState(0);
+  const [batchError, setBatchError] = useState<{ code: string; ids: string[] }>();
+  // H11: an author's publications are filtered on the loaded rows (year, keyword), not by a new search (QC G8).
+  const [loadedFilter, setLoadedFilter] = useState({ yearFrom: '', yearTo: '', text: '' });
   const [lastBody, setLastBody] = useState<{ kind: SearchKind; body: Schemas['DiscoverySearchRequest'] | Schemas['AuthorSearchRequest'] }>();
 
   useEffect(() => {
@@ -122,6 +137,8 @@ export function DiscoverScreen() {
   }, [searchId]);
 
   useEvents({ types: ['workflow.status_changed', 'prompt.status_changed'] }, (event) => {
+    // A prompt of this search opened, or was answered elsewhere (Pending Actions): read the open prompt again (QC G9).
+    if (search?.status === 'waiting' && event.type === 'prompt.status_changed') void loadPrompt(search.workflowId);
     if (search && event.objectId === search.workflowId && event.type === 'workflow.status_changed' && event.toState) {
       const status = toStatus(event.toState as Schemas['WorkflowStatus']);
       setSearch({ ...search, status });
@@ -155,8 +172,10 @@ export function DiscoverScreen() {
   const start = async (kind: SearchKind, body: Schemas['DiscoverySearchRequest'] | Schemas['AuthorSearchRequest'], label: string) => {
     setStartError(undefined);
     setResults(undefined);
+    setLoadedFilter({ yearFrom: '', yearTo: '', text: '' });
     setPrompt(undefined);
     setBatch(undefined);
+    setBatchError(undefined);
     setNotFound(false);
     setLastBody({ kind, body });
     // One key per request body: “Tìm lại” after a network error or 5xx resends the same key (EC03); another query gets
@@ -217,17 +236,20 @@ export function DiscoverScreen() {
   };
 
   const selected = (results ?? []).filter((r) => r.status === 'Selected');
-  const eligible = (results ?? []).filter((r) => r.status === 'New' && !r.duplicateOfReferenceId && hasMinimumMetadata(r.metadata));
+  const shown = search?.kind === 'author' ? (results ?? []).filter((row) => matchesLoadedFilter(row, loadedFilter)) : (results ?? []);
+  const eligible = shown.filter((r) => r.status === 'New' && !r.duplicateOfReferenceId && hasMinimumMetadata(r.metadata));
   const sendDisabledReason = selected.length === 0 ? t('discover.batch.none') : selected.length > MAX_BATCH ? t('discover.batch.tooMany', { max: MAX_BATCH }) : undefined;
 
   const sendBatch = async (ids: string[]) => {
-    const attempt = batchNo + 1;
-    setBatchNo(attempt);
+    setBatchError(undefined);
     try {
-      const { data } = await idempotency.run(`importDiscoveredResults:${attempt}`, (key) => api.post('/discovered-results/import', { body: { discoveredResultIds: ids }, idempotencyKey: key }));
+      // One key per set of results: sending the same set again after a 5xx or a network error reuses the key (QC G10);
+      // “Thử lại các mục lỗi” is another set, so another batch and key. The key is dropped once the server accepts it.
+      const operation = `importDiscoveredResults:${[...ids].sort().join(',')}`;
+      const { data } = await idempotency.run(operation, (key) => api.post('/discovered-results/import', { body: { discoveredResultIds: ids }, idempotencyKey: key }));
       setBatch({ workflowId: data.id, ids, status: 'running', startedAt: data.startedAt ?? data.createdAt });
     } catch (e) {
-      setStartError(e as ApiError);
+      setBatchError({ code: (e as ApiError).code, ids });
     }
   };
 
@@ -237,10 +259,13 @@ export function DiscoverScreen() {
 
   const sourceLine = sources === 'error' ? t('discover.sourcesError')
     : primary ? t('discover.sourceLine', { source: sourceName(primary.source) }) : t('discover.sourcesLoading');
+  // H8: a source that did not answer (unavailable, timeout, network) reads “Nguồn không phản hồi” (QC G16).
+  const failedTitle = (code?: string) => (code === 'rate_limited' ? t('discover.error.rateLimited')
+    : code && NO_RESPONSE.has(code) ? t('discover.error.noResponse') : t('discover.error.sourceFailed'));
   const problem: Problem | undefined = startError
     ? { code: startError.code, title: startError.status === 503 || startError.code === 'network_error' || startError.code === 'service_unavailable' ? t('discover.error.noResponse') : t('discover.error.startFailed') }
     : search?.status === 'failed'
-      ? { code: search.lastError?.code ?? 'unknown', title: search.lastError?.code === 'rate_limited' ? t('discover.error.rateLimited') : t('discover.error.sourceFailed') }
+      ? { code: search.lastError?.code ?? 'unknown', title: failedTitle(search.lastError?.code) }
       : undefined;
 
   return (
@@ -253,6 +278,10 @@ export function DiscoverScreen() {
         <a className="sires-button" href="#nhap-thu-cong">{t('discover.manual')}</a>
       </div>
 
+      {/* H20: from 1280px the results are the main column and the right column (340–400px) holds the selection and
+          manual import; narrower, the right column falls below (library.css). */}
+      <div className="library-discover__layout">
+      <div className="library-discover__main">
       <section className="library-card library-search" aria-labelledby="discover-search">
         <h2 id="discover-search" className="sires-visually-hidden">{t('discover.searchTitle')}</h2>
         <div className="library-segments" role="tablist" aria-label={t('discover.kind')}>
@@ -340,22 +369,28 @@ export function DiscoverScreen() {
               {t('discover.results', { count: results.length })}{cursor ? '+' : ''} · Discovery Agent · {sourceName(search.source || results[0]?.source || '')}
             </h2>
             {search.kind === 'author' && <p className="library-muted">{t('discover.incomplete')}</p>}
+            {search.kind === 'author' && (
+              <div className="library-results__filter" role="group" aria-label={t('discover.loadedFilter')}>
+                <input className="sires-input" inputMode="numeric" maxLength={4} aria-label={t('discover.loadedYearFrom')} placeholder={t('discover.yearFrom')} value={loadedFilter.yearFrom}
+                  onChange={(e) => setLoadedFilter({ ...loadedFilter, yearFrom: e.currentTarget.value.replace(/\D/g, '') })} />
+                <span aria-hidden="true">–</span>
+                <input className="sires-input" inputMode="numeric" maxLength={4} aria-label={t('discover.loadedYearTo')} placeholder={t('discover.yearTo')} value={loadedFilter.yearTo}
+                  onChange={(e) => setLoadedFilter({ ...loadedFilter, yearTo: e.currentTarget.value.replace(/\D/g, '') })} />
+                <input className="sires-input" type="search" aria-label={t('discover.loadedText')} placeholder={t('discover.loadedText')} value={loadedFilter.text}
+                  onChange={(e) => setLoadedFilter({ ...loadedFilter, text: e.currentTarget.value })} />
+                <span className="library-muted sires-num" role="status">{t('discover.loadedShown', { shown: shown.length, total: results.length })}</span>
+              </div>
+            )}
             <div className="library-results__tools">
-              <span className="library-count sires-num">{t('discover.selected', { count: selected.length })}</span>
               {search.kind === 'author' ? (
                 <button type="button" className="sires-button" data-size="sm" disabled={eligible.length === 0} onClick={() => void selectAllEligible()}>{t('discover.selectEligible')}</button>
               ) : (
                 <button type="button" className="sires-button" data-size="sm" disabled={eligible.length === 0} onClick={() => void selectAllEligible()}>{t('discover.selectPage')}</button>
               )}
-              <button type="button" className="sires-button" data-variant="primary" disabled={Boolean(sendDisabledReason) || batch?.status === 'running'}
-                aria-describedby={sendDisabledReason ? 'discover-send-reason' : undefined} onClick={() => void sendBatch(selected.map((r) => r.id))}>
-                {t('discover.send', { count: selected.length })}
-              </button>
-              {sendDisabledReason && <span id="discover-send-reason" className="library-muted">{sendDisabledReason}</span>}
             </div>
           </div>
           <ul className="library-results__list">
-            {results.map((row) => <ResultRow key={row.id} result={row} error={rowErrors[row.id]} onStatus={(status) => void setStatus(row, status)} />)}
+            {shown.map((row) => <ResultRow key={row.id} result={row} error={rowErrors[row.id]} onStatus={(status) => void setStatus(row, status)} />)}
           </ul>
           {cursor && <button type="button" className="sires-button" data-size="sm" onClick={() => void loadResults(search.workflowId, cursor)}>{t('common.loadMore')}</button>}
         </section>
@@ -374,8 +409,32 @@ export function DiscoverScreen() {
       {batch?.status === 'done' && results && (
         <BatchSummary batch={batch} results={results} onRetry={(ids) => void sendBatch(ids)} />
       )}
+      </div>
 
-      <ManualImport />
+      <aside className="library-discover__side" aria-label={t('discover.side')}>
+        {search?.status === 'succeeded' && results && results.length > 0 && (
+          <section className="library-card library-selection" aria-labelledby="discover-selection">
+            <h2 id="discover-selection" className="library-card__title sires-num">{t('discover.selected', { count: selected.length })}</h2>
+            <button type="button" className="sires-button" data-variant="primary" disabled={Boolean(sendDisabledReason) || batch?.status === 'running'}
+              aria-describedby={sendDisabledReason ? 'discover-send-reason' : undefined} onClick={() => void sendBatch(selected.map((r) => r.id))}>
+              {t('discover.send', { count: selected.length })}
+            </button>
+            {sendDisabledReason && <span id="discover-send-reason" className="library-muted">{sendDisabledReason}</span>}
+            {batchError && (
+              // A failed send is shown here, not as a search error (QC G11); “Gửi lại” keeps the batch's key (G10).
+              <div className="library-alert" role="alert">
+                <strong>{t('discover.batch.sendFailed')}</strong>
+                <span className="sires-id">{batchError.code}</span>
+                <span className="library-alert__actions">
+                  <button type="button" className="sires-button" data-size="sm" onClick={() => void sendBatch(batchError.ids)}>{t('discover.batch.resend')}</button>
+                </span>
+              </div>
+            )}
+          </section>
+        )}
+        <ManualImport />
+      </aside>
+      </div>
     </div>
   );
 }
@@ -389,7 +448,7 @@ function ResultRow({ result: row, error, onStatus }: { result: DiscoveredResult;
   return (
     <li className="library-result" data-status={row.status}>
       {duplicate || imported ? (
-        <input type="checkbox" disabled aria-label={t('discover.choose', { title: row.metadata.title })} aria-describedby={`dup-${row.id}`} />
+        <input type="checkbox" disabled readOnly checked={imported} aria-label={t('discover.choose', { title: row.metadata.title })} aria-describedby={`dup-${row.id}`} />
       ) : (
         <input type="checkbox" checked={row.status === 'Selected'} disabled={rejected} aria-label={t('discover.choose', { title: row.metadata.title })}
           onChange={(e) => onStatus(e.currentTarget.checked ? 'Selected' : 'New')} />

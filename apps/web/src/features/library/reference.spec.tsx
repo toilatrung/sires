@@ -7,7 +7,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { account } from '../../shell/mock/fixtures/settings';
-import { demoReferences, demoUsage, projects, referenceId } from './__mocks__/data';
+import { demoReferences, demoUsage, papers, projects, referenceId } from './__mocks__/data';
 import { callsOf, useLibraryMock } from './test-utils';
 
 const card = (title: string | RegExp) => screen.getByRole('heading', { name: title }).closest('section')!;
@@ -78,7 +78,7 @@ describe('Trang Reference (S08)', () => {
     const learning = within(usage).getByRole('link', { name: projects.learning.name }).closest('li')!;
     expect(rag.textContent).toContain('6 evidence · 3 citation');
     expect(learning.textContent).toContain('2 evidence · 1 citation');
-    expect(within(rag).getByRole('link').getAttribute('href')).toBe(`/projects/${projects.rag.id}/overview`);
+    expect(within(rag).getByRole('link').getAttribute('href')).toBe(`/projects/${projects.rag.id}/evidence`);
   });
 
   it('Unavailable vẫn có key', async () => {
@@ -100,7 +100,7 @@ describe('Trang Reference (S08)', () => {
     fireEvent.change(screen.getByTestId('reference-pdf-input'), { target: { files: [pdf('liu2024lost.pdf')] } });
     expect(await screen.findByText('index: Queued')).toBeTruthy();
     expect(callsOf('uploadReferenceDocument')).toEqual([expect.objectContaining({ body: { name: 'liu2024lost.pdf' } })]);
-    expect(await screen.findByText('index: Indexed')).toBeTruthy();
+    expect(await screen.findByText(/^index: Indexed/)).toBeTruthy();
     expect(dt(card('Source Document'), 'Số đoạn đã index').textContent).toBe('87');
     expect(screen.getByText('Dùng được cho citation và evidence.')).toBeTruthy();
   });
@@ -129,7 +129,7 @@ describe('Trang Reference (S08)', () => {
     expect(screen.getByText('index: Indexing')).toBeTruthy();
     store.reference(referenceId(5))!.indexingStatus = 'Indexed';
     mock.events.emit({ type: 'reference.indexing_status_changed', objectType: 'reference', objectId: referenceId(5), fromState: 'Indexing', toState: 'Indexed' });
-    expect(await screen.findByText('index: Indexed')).toBeTruthy();
+    expect(await screen.findByText(/^index: Indexed/)).toBeTruthy();
   });
 });
 
@@ -290,9 +290,53 @@ describe('Thao tác trên Reference (S09)', () => {
     expect(screen.getByText('Đã thu hồi — không dùng cho citation hay evidence mới.')).toBeTruthy();
     for (const name of ['Sửa metadata', 'Thêm vào project', 'Thu hồi', 'Xóa', 'Tải PDF lên', 'Thay PDF']) expect(screen.queryByRole('button', { name })).toBeNull();
     expect(dt(card('Provenance'), 'Lý do thu hồi').textContent).toBe('Bài đã bị rút (retracted).');
+    // H17 (QC G3): “Duyệt lại” asks first, with an optional reason.
     await user.click(screen.getByRole('button', { name: 'Duyệt lại' }));
+    const dialog = screen.getByRole('dialog', { name: 'Duyệt lại reference?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Giữ nguyên' }));
+    expect(callsOf('reinstateReference')).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: 'Duyệt lại' }));
+    const again = screen.getByRole('dialog', { name: 'Duyệt lại reference?' });
+    await user.type(within(again).getByRole('textbox', { name: 'Lý do (không bắt buộc)' }), 'Bản đính chính đã ra');
+    await user.click(within(again).getByRole('button', { name: 'Duyệt lại' }));
     expect(await screen.findByText('Duyệt: Trusted')).toBeTruthy();
-    expect(callsOf('reinstateReference')).toHaveLength(1);
+    expect(callsOf('reinstateReference').map((call) => call.body)).toEqual([{ reason: 'Bản đính chính đã ra' }]);
+  });
+
+  it('sửa metadata đủ trường', async () => {
+    // H17 P12 (QC G12): authors as a list (add, reorder, remove), publication type, identifiers, abstract; fields the form
+    // does not show (source, retrievedAt, sourceId) are kept.
+    const { user } = await openRef(2);
+    await user.click(screen.getByRole('button', { name: 'Sửa metadata' }));
+    await user.click(screen.getByRole('button', { name: 'Thêm tác giả' }));
+    await user.type(screen.getByRole('textbox', { name: 'Tác giả 4' }), 'W. Yih');
+    await user.click(screen.getByRole('button', { name: 'Đưa tác giả 4 lên' }));
+    await user.click(screen.getByRole('button', { name: 'Bỏ tác giả 1' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Loại tài liệu' }), 'article');
+    await user.type(screen.getByRole('textbox', { name: 'DOI' }), '10.18653/v1/2020.emnlp-main.550');
+    await user.type(screen.getByRole('textbox', { name: 'Mô tả' }), 'Dense retrieval.');
+    await user.click(screen.getByRole('button', { name: 'Lưu metadata' }));
+    await screen.findByRole('heading', { name: /^Metadata · phiên bản 2/ });
+    const { metadata } = callsOf('updateReferenceMetadata')[0].body as { metadata: Record<string, unknown> & { identifiers: Record<string, string> } };
+    expect(metadata.authors).toEqual([{ name: 'B. Oğuz' }, { name: 'W. Yih' }, { name: 'S. Min' }]);
+    expect(metadata.publicationType).toBe('article');
+    expect(metadata.abstractOrSnippet).toBe('Dense retrieval.');
+    expect(metadata.identifiers).toMatchObject({ doi: '10.18653/v1/2020.emnlp-main.550', arxivId: '2004.04906', sourceId: 'W4390000002' });
+    expect(metadata).toMatchObject({ source: 'openalex', year: 2020, venue: 'EMNLP' });
+  });
+
+  it('thay PDF hỏi trước', async () => {
+    // H16 (QC G3): with a document, “Thay PDF” says the reference is indexed again before the file chooser opens.
+    const { user } = await openRef(2);
+    const chooser = vi.spyOn(screen.getByTestId('reference-pdf-input'), 'click');
+    await user.click(screen.getByRole('button', { name: 'Thay PDF' }));
+    const dialog = screen.getByRole('dialog', { name: 'Thay PDF?' });
+    expect(within(dialog).getByText(/karpukhin2020dpr\.pdf.*index lại/)).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: 'Giữ tệp hiện tại' }));
+    expect(chooser).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Thay PDF' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Thay PDF?' })).getByRole('button', { name: 'Chọn tệp PDF' }));
+    expect(chooser).toHaveBeenCalledTimes(1);
   });
 
   it('xóa bị từ chối khi đang dùng', async () => {
@@ -311,15 +355,31 @@ describe('Thao tác trên Reference (S09)', () => {
   });
 
   it('xóa khi không dùng', async () => {
-    // S09: an unused Trusted reference can be deleted after the confirmation; cancelling sends nothing (EC34).
-    const { user } = await openRef(5);
+    // S09, H17 (QC G4): an unused Trusted reference can be deleted after the confirmation; cancelling sends nothing
+    // (EC34); deleted → back to /library with the notice, not the shell's “Không tìm thấy trang”.
+    const { user, router } = await openRef(5);
     await user.click(screen.getByRole('button', { name: 'Xóa' }));
     await user.click(within(screen.getByRole('dialog', { name: 'Xóa reference?' })).getByRole('button', { name: 'Giữ reference' }));
     expect(callsOf('deleteReference')).toHaveLength(0);
     await user.click(screen.getByRole('button', { name: 'Xóa' }));
     await user.click(within(screen.getByRole('dialog', { name: 'Xóa reference?' })).getByRole('button', { name: 'Xóa' }));
-    await waitFor(() => expect(store.reference(referenceId(5))).toBeUndefined());
+    expect(await screen.findByText('Đã xóa reference.')).toBeTruthy();
+    expect(router.state.location.pathname).toBe('/library');
+    expect(screen.queryByText('Không tìm thấy trang')).toBeNull();
+    expect(store.reference(referenceId(5))).toBeUndefined();
     expect(callsOf('deleteReference')).toHaveLength(1);
+  });
+
+  it('gộp từ trang reference mở reference đích', async () => {
+    // H17 (QC G4): merged → the page of the reference that stays.
+    const { user, router } = await openRef(2);
+    await user.click(screen.getByRole('button', { name: 'Gộp' }));
+    const dialog = screen.getByRole('dialog', { name: 'Gộp vào reference khác' });
+    await user.click(await within(dialog).findByRole('radio', { name: /lewis2020rag/ }));
+    await user.click(within(dialog).getByRole('button', { name: 'Gộp' }));
+    expect(await screen.findByRole('heading', { level: 1, name: papers.lewis.title })).toBeTruthy();
+    expect(router.state.location.pathname).toBe(`/library/${referenceId(1)}`);
+    expect(callsOf('mergeReference')[0].body).toEqual({ intoReferenceId: referenceId(1) });
   });
 
   it('duyệt từ trang Reference', async () => {

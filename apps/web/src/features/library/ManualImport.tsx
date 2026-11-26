@@ -8,7 +8,7 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { createIdempotencyKey, useApi, useDraft, type ApiError } from '../../shell';
+import { useApi, useDraft, useShell, type ApiError } from '../../shell';
 import { MAX_BATCH, MAX_PDF_BYTES, NS, type Reference } from './common';
 
 const DOI = /^10\.\d{4,9}\/\S+$/i;
@@ -21,6 +21,7 @@ export function normalizeDoi(line: string): string {
 export function ManualImport() {
   const { t } = useTranslation(NS);
   const api = useApi();
+  const { idempotency } = useShell();
   const id = useId();
   const doiDraft = useDraft('library.manual.doi');
   const bibDraft = useDraft('library.manual.bibtex');
@@ -46,8 +47,9 @@ export function ManualImport() {
     for (const line of valid) {
       const doi = normalizeDoi(line);
       try {
-        // One request and one Idempotency-Key per DOI (LIB-IMPORT-002-AC01).
-        const { data } = await api.post('/references', { body: { doi }, idempotencyKey: createIdempotencyKey() });
+        // One request and one Idempotency-Key per DOI (LIB-IMPORT-002-AC01); the same DOI sent again after an unknown
+        // outcome (5xx, network) reuses its key, so it cannot create the reference twice (QC G10).
+        const { data } = await idempotency.run(`createReferenceManually:doi:${doi}`, (key) => api.post('/references', { body: { doi }, idempotencyKey: key }));
         out.push(...(data.items ?? []).map(toLine));
       } catch (e) {
         const error = e as ApiError;
@@ -66,7 +68,7 @@ export function ManualImport() {
     if (!bibtex) return;
     setBusy(true);
     try {
-      const { data } = await api.post('/references', { body: { bibtex }, idempotencyKey: createIdempotencyKey() });
+      const { data } = await idempotency.run(`createReferenceManually:bibtex:${bibtex}`, (key) => api.post('/references', { body: { bibtex }, idempotencyKey: key }));
       setLines([
         ...(data.items ?? []).map(toLine),
         ...(data.errors ?? []).map((p) => ({ kind: 'error' as const, label: t('manual.bibtex.entry'), detail: `${p.detail ?? p.title} (${p.code})` })),
@@ -89,7 +91,8 @@ export function ManualImport() {
     try {
       const form = new FormData();
       form.append('file', file);
-      await api.post('/references/pdf-imports', { body: form as never, contentType: 'multipart/form-data', idempotencyKey: createIdempotencyKey() });
+      await idempotency.run(`importReferenceFromPdf:${file.name}:${file.size}:${file.lastModified}`,
+        (key) => api.post('/references/pdf-imports', { body: form, idempotencyKey: key }));
       setPdfMessage({ tone: 'info', text: t('pdf.accepted', { name: file.name }) });
     } catch (e) {
       const error = e as ApiError;

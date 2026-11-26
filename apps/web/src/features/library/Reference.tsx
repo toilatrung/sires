@@ -6,16 +6,16 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
-  ErrorState, formatDateTime, formatNumber, LoadingState, NotFound, StatusChip, useApi, useDraft, useEvents, useSession, useShell,
+  ConfirmDialog, ErrorState, formatDateTime, formatNumber, LoadingState, NotFound, StatusChip, useApi, useDraft, useEvents, useSession, useShell,
   useStreamSignal, type ApiError,
 } from '../../shell';
 import { Dialog, MAX_PDF_BYTES, MetaLine, NS, sourceName, type Reference as ReferenceRow, type ReferenceMetadata } from './common';
-import { MetadataForm, RejectDialog, type MetadataFormValues } from './Library';
+import { MetadataForm, metadataFormValues, RejectDialog } from './Library';
 
 type Usage = { projectId?: string; name?: string; evidenceCount?: number; citationCount?: number }[];
-type DialogKind = 'reject' | 'revoke' | 'delete' | 'project' | 'merge';
+type DialogKind = 'reject' | 'revoke' | 'delete' | 'project' | 'merge' | 'reinstate' | 'replace';
 type Notice = { tone: 'info' | 'error'; text: string };
 
 /** One sentence per (approval, indexing) pair (UX-REF-002). */
@@ -84,14 +84,15 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
   const api = useApi();
   const { idempotency } = useShell();
   const session = useSession();
+  const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogKind>();
   const [editing, setEditing] = useState(false);
   // What the user types in the metadata form lives in the shell's draft store (EC27): it survives a session expiry and
   // a 412 re-read, and the form reopens with it; cleared once saved, approved or cancelled.
   const metaDraft = useDraft('library.reference.metadata');
   const savedForm = useMemo(() => {
-    try { return metaDraft.value ? JSON.parse(metaDraft.value) as MetadataFormValues : undefined; } catch { return undefined; }
-  }, [metaDraft.value]);
+    try { return metaDraft.value ? metadataFormValues(ref.metadata, JSON.parse(metaDraft.value) as Parameters<typeof metadataFormValues>[1]) : undefined; } catch { return undefined; }
+  }, [metaDraft.value, ref.metadata]);
   const editorOpen = editing || Boolean(savedForm);
   const closeEditor = () => { setEditing(false); metaDraft.clear(); };
   const [busy, setBusy] = useState(false);
@@ -124,7 +125,7 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
     if (file.size > MAX_PDF_BYTES) { setNotice({ tone: 'error', text: t('pdf.tooLarge') }); return; }
     const form = new FormData();
     form.append('file', file);
-    void act(() => api.put('/references/{referenceId}/document', { path: { referenceId: ref.id }, body: form as never, contentType: 'multipart/form-data' }));
+    void act(() => api.put('/references/{referenceId}/document', { path: { referenceId: ref.id }, body: form }));
   };
 
   const saveMetadata = async (metadata: ReferenceMetadata) => {
@@ -161,7 +162,11 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
         <MetaLine metadata={ref.metadata} />
         <div className="library-ref__chips">
           <StatusChip status={status} entity="reference">{t('ref.approvalChip', { status })}</StatusChip>
-          <StatusChip status={ref.indexingStatus} entity="reference-index">{t('ref.indexChip', { status: ref.indexingStatus })}</StatusChip>
+          <StatusChip status={ref.indexingStatus} entity="reference-index">
+            {ref.indexingStatus === 'Indexed' && ref.document?.chunkCount !== undefined
+              ? t('ref.indexChipChunks', { status: ref.indexingStatus, count: ref.document.chunkCount })
+              : t('ref.indexChip', { status: ref.indexingStatus })}
+          </StatusChip>
         </div>
         <p className="library-ref__explain">{explanation(ref, t)}</p>
       </header>
@@ -210,7 +215,7 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
           )}
           {(status === 'Revoked' || status === 'Rejected') && (
             <button type="button" className="sires-button" disabled={busy}
-              onClick={() => void act(() => idempotency.run(`reinstate:${ref.id}`, (key) => api.post('/references/{referenceId}/reinstate', { path: { referenceId: ref.id }, body: {}, idempotencyKey: key })), t('ref.reinstated'))}>
+              onClick={() => setDialog('reinstate')}>
               {t('ref.reinstate')}
             </button>
           )}
@@ -270,7 +275,7 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
           <div className="library-card__actions">
             {ref.document && <a className="sires-button" data-size="sm" href={`/api/v1/references/${ref.id}/document`}>{t('ref.doc.download')}</a>}
             {status === 'Trusted' && !merged && (
-              <button type="button" className="sires-button" data-size="sm" disabled={busy} onClick={() => fileInput.current?.click()}>
+              <button type="button" className="sires-button" data-size="sm" disabled={busy} onClick={() => (ref.document ? setDialog('replace') : fileInput.current?.click())}>
                 {ref.document ? t('ref.doc.replace') : t('ref.doc.upload')}
               </button>
             )}
@@ -283,7 +288,8 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
             <ul className="library-usage">
               {usage.map((row) => (
                 <li key={row.projectId}>
-                  <Link to={`/projects/${row.projectId}/overview`}>{row.name}</Link>
+                  {/* H15: the project's References and Evidence. */}
+                  <Link to={`/projects/${row.projectId}/evidence`}>{row.name}</Link>
                   <span className="library-muted sires-num">{t('ref.usage.counts', { evidence: row.evidenceCount ?? 0, citation: row.citationCount ?? 0 })}</span>
                 </li>
               ))}
@@ -334,22 +340,64 @@ function ReferenceView({ reference: ref, etag, usage, notice, onNotice: setNotic
             <button type="button" className="sires-button" data-variant="danger" onClick={() => {
               setDialog(undefined);
               setBusy(true);
+              // H17: deleted → back to the library with the notice; the page itself no longer exists (QC G4).
               api.delete('/references/{referenceId}', { path: { referenceId: ref.id } })
-                .then(() => setNotice({ tone: 'info', text: t('delete.done') }))
-                .catch((e: ApiError) => setNotice({ tone: 'error', text: e.status === 409 ? t('delete.inUse') : `${t('ref.actionFailed')} (${e.code})` }))
-                .finally(() => { setBusy(false); onChanged(); });
+                .then(() => navigate('/library', { state: { libraryNotice: t('delete.done') } }))
+                .catch((e: ApiError) => {
+                  setNotice({ tone: 'error', text: e.status === 409 ? t('delete.inUse') : `${t('ref.actionFailed')} (${e.code})` });
+                  setBusy(false);
+                  onChanged();
+                });
             }}>{t('delete.confirm')}</button>
           </>
         )}>
           <p>{t('delete.consequence')}</p>
         </Dialog>
       )}
+      {dialog === 'reinstate' && (
+        <ReinstateDialog onClose={() => setDialog(undefined)} onConfirm={(reason) => {
+          setDialog(undefined);
+          void act(() => idempotency.run(`reinstate:${ref.id}`, (key) => api.post('/references/{referenceId}/reinstate', { path: { referenceId: ref.id }, body: reason ? { reason } : {}, idempotencyKey: key })), t('ref.reinstated'));
+        }} />
+      )}
+      {dialog === 'replace' && (
+        // H16: replacing the PDF says the reference is indexed again before the file chooser opens.
+        <ConfirmDialog title={t('replace.title')} confirmLabel={t('replace.confirm')} cancelLabel={t('replace.keep')}
+          onCancel={() => setDialog(undefined)} onConfirm={() => { setDialog(undefined); fileInput.current?.click(); }}>
+          <p>{t('replace.consequence', { file: ref.document?.fileName ?? 'PDF' })}</p>
+        </ConfirmDialog>
+      )}
       {dialog === 'project' && <AddToProjectDialog referenceId={ref.id} usage={usage} onClose={() => setDialog(undefined)} onDone={() => { setDialog(undefined); setNotice({ tone: 'info', text: t('project.done') }); onChanged(); }} />}
       {dialog === 'merge' && <MergeDialog reference={ref} onClose={() => setDialog(undefined)} onConfirm={(into) => {
         setDialog(undefined);
-        void act(() => idempotency.run(`merge:${ref.id}`, (key) => api.post('/references/{referenceId}/merge', { path: { referenceId: ref.id }, body: { intoReferenceId: into }, idempotencyKey: key })));
+        // H17: merged → open the reference that stays (QC G4).
+        void act(async () => {
+          await idempotency.run(`merge:${ref.id}`, (key) => api.post('/references/{referenceId}/merge', { path: { referenceId: ref.id }, body: { intoReferenceId: into }, idempotencyKey: key }));
+          navigate(`/library/${into}`);
+        });
       }} />}
     </div>
+  );
+}
+
+/** “Duyệt lại” asks first, with an optional reason (H17, QC G3). */
+function ReinstateDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: (reason: string) => void }) {
+  const { t } = useTranslation(NS);
+  const id = useId();
+  const [reason, setReason] = useState('');
+  return (
+    <Dialog title={t('reinstate.title')} onClose={onClose} actions={(
+      <>
+        <button type="button" className="sires-button" onClick={onClose}>{t('reinstate.keep')}</button>
+        <button type="button" className="sires-button" data-variant="primary" onClick={() => onConfirm(reason.trim())}>{t('ref.reinstate')}</button>
+      </>
+    )}>
+      <p>{t('reinstate.consequence')}</p>
+      <div className="sires-field">
+        <label className="sires-field__label" htmlFor={`${id}-reason`}>{t('reject.reason')}</label>
+        <textarea id={`${id}-reason`} className="sires-input library-textarea" value={reason} onChange={(e) => setReason(e.currentTarget.value)} />
+      </div>
+    </Dialog>
   );
 }
 

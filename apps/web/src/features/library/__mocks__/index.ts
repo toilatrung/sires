@@ -5,7 +5,7 @@
 // Mock of the library area (PID-00098 S01, H4): the 23 operations of path 10 over one store (store.ts). Operations of
 // other areas (getWorkflow, cancelWorkflow, prompts, listProjects, getMe) are not claimed here; tests override them.
 
-import { ACCOUNT_ID, defineMocks, type Schemas } from '../../../shell/mock';
+import { ACCOUNT_ID, defineMocks, type EventInput, type Schemas } from '../../../shell/mock';
 import { operations } from './generated';
 import { libraryStore as store } from './store';
 
@@ -74,6 +74,13 @@ function newReference(metadata: Schemas['ReferenceMetadata'], key: string, origi
   };
 }
 
+/**
+ * The reference_approval Pending Action of a reference (H4, H19): opened when the reference enters Pending Approval,
+ * resolved when it is decided or merged; the Library panel and the shell count reload on it (QC G9).
+ */
+const announcePending = (ref: Reference, emit: (event: EventInput) => void, toState: 'Open' | 'Resolved') =>
+  emit({ type: 'pending_action.changed', objectType: 'pending_action', objectId: `5c${ref.id.slice(2)}`, toState });
+
 const duplicateByDoi = (doi?: string) => doi ? store.references().find((ref) => ref.metadata.identifiers.doi?.toLowerCase() === doi.toLowerCase()) : undefined;
 
 export default defineMocks({
@@ -136,6 +143,7 @@ export default defineMocks({
           const ref = newReference(structuredClone(row.metadata), `${(row.metadata.authors[0]?.name ?? 'ref').split(' ').pop()?.toLowerCase()}${row.metadata.year ?? ''}`, 'discovered');
           ref.discoveredResultId = row.id;
           store.putReference(ref);
+          announcePending(ref, emit, 'Open');
           row.status = 'Imported';
           row.importedReferenceId = ref.id;
         }
@@ -161,7 +169,7 @@ export default defineMocks({
       return { status: 200, body: page(structuredClone(rows), url.searchParams.get('limit') ?? undefined, url.searchParams.get('cursor') ?? undefined) };
     },
 
-    createReferenceManually: ({ body, request }) => {
+    createReferenceManually: ({ body, request, emit }) => {
       record('createReferenceManually', request, body);
       if (body && 'doi' in body) {
         const doi = body.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').replace(/^doi:/i, '');
@@ -169,6 +177,7 @@ export default defineMocks({
         const duplicate = duplicateByDoi(doi);
         const ref = newReference({ title: `Tài liệu DOI ${doi}`, authors: [{ name: 'Tác giả theo DOI' }], identifiers: { doi }, source: 'crossref', retrievedAt: now() }, `doi${doi.replace(/\W/g, '').slice(-8)}`, 'manual', duplicate?.id);
         store.putReference(ref);
+        announcePending(ref, emit, 'Open');
         return { status: 201, body: { items: [structuredClone(ref)] } };
       }
       const entries = bibtexEntries(body && 'bibtex' in body ? body.bibtex : '');
@@ -186,6 +195,7 @@ export default defineMocks({
           identifiers: entry.doi ? { doi: entry.doi } : {}, source: 'bibtex', retrievedAt: now(),
         }, entry.key, 'manual', duplicate?.id);
         store.putReference(ref);
+        announcePending(ref, emit, 'Open');
         items.push(structuredClone(ref));
       }
       if (!items.length && !errors.length) return { status: 400, body: problem(400, 'validation_failed', 'Không có entry BibTeX nào.') };
@@ -200,7 +210,9 @@ export default defineMocks({
       if (/scan/i.test(file.name)) return { status: 422, body: problem(422, 'pdf_without_text_layer', 'PDF chỉ có ảnh quét, không có lớp văn bản.') };
       const workflow = store.startWorkflow('reference_processing', request.headers.get('Idempotency-Key') ?? '');
       store.later(() => {
-        store.putReference(newReference({ title: file.name.replace(/\.pdf$/i, ''), authors: [{ name: 'Tác giả trong PDF' }], identifiers: {}, source: 'pdf', retrievedAt: now() }, file.name.replace(/\W/g, '').slice(0, 20), 'manual'));
+        const ref = newReference({ title: file.name.replace(/\.pdf$/i, ''), authors: [{ name: 'Tác giả trong PDF' }], identifiers: {}, source: 'pdf', retrievedAt: now() }, file.name.replace(/\W/g, '').slice(0, 20), 'manual');
+        store.putReference(ref);
+        announcePending(ref, emit, 'Open');
         store.finishWorkflow(workflow.id, 'Succeeded', emit);
       });
       return { status: 202, body: workflow };
@@ -228,6 +240,7 @@ export default defineMocks({
         ref.rowVersion += 1;
         ref.approval = { approvedBy: researcher, decidedAt: now(), decision: decision.decision === 'approve' ? (decision.editedMetadata ? 'edited_and_approved' : 'approved') : 'rejected', objectType: 'reference', objectId: ref.id, objectVersion: ref.metadataVersion, apr: 'APR-04', ...(decision.reason ? { reason: decision.reason } : {}) };
         emit({ type: 'reference.status_changed', objectType: 'reference', objectId: ref.id, fromState: from, toState: ref.approvalStatus });
+        announcePending(ref, emit, 'Resolved');
         return { referenceId: ref.id, outcome: decision.decision === 'approve' ? 'trusted' as const : 'rejected' as const };
       });
       return { status: 200, body: { results } };
@@ -271,8 +284,8 @@ export default defineMocks({
       return { status: 200, body: { reference: structuredClone(ref) } };
     },
 
-    reinstateReference: ({ params, request, emit }) => {
-      record('reinstateReference', request);
+    reinstateReference: ({ params, body, request, emit }) => {
+      record('reinstateReference', request, body);
       const ref = store.reference(params.referenceId);
       if (!ref || (ref.approvalStatus !== 'Revoked' && ref.approvalStatus !== 'Rejected')) return { status: 409, body: problem(409, 'invalid_transition', undefined, { currentState: ref?.approvalStatus }) };
       const from = ref.approvalStatus;
@@ -283,13 +296,14 @@ export default defineMocks({
       return { status: 200, body: structuredClone(ref) };
     },
 
-    mergeReference: ({ params, body, request }) => {
+    mergeReference: ({ params, body, request, emit }) => {
       record('mergeReference', request, body);
       const ref = store.reference(params.referenceId);
       const into = body?.intoReferenceId ? store.reference(body.intoReferenceId) : undefined;
       if (!ref || !into || ref.id === into.id) return { status: 409, body: problem(409, 'invalid_transition') };
       ref.mergedIntoId = into.id;
       ref.rowVersion += 1;
+      if (ref.approvalStatus === 'Pending Approval') announcePending(ref, emit, 'Resolved');
       return { status: 200, body: structuredClone(ref) };
     },
 

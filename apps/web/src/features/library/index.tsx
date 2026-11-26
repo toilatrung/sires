@@ -4,8 +4,7 @@
 
 // Library area (PID-00098): Discover, Trusted Library, Reference.
 
-import type { Feature } from '../../shell/feature';
-import { mockEnabled } from '../../shell/mock-enabled';
+import { mockEnabled, type Feature } from '../../shell';
 import { DiscoverScreen } from './Discover';
 import { LibraryScreen } from './Library';
 import { ReferenceScreen } from './Reference';

@@ -81,11 +81,16 @@ a.sires-button, label.sires-button { text-decoration: none; display: inline-flex
 .library-pending__item:first-child { border-top: 0; }
 .library-pending__item input[type="checkbox"], .library-result input[type="checkbox"] { width: 18px; height: 18px; }
 .library-pending__nocheck { width: 18px; }
+.library-pending__check { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .library-pending__text { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
 .library-pending__buttons { display: flex; flex-wrap: wrap; gap: 6px; }
 .library-metaform { flex-basis: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-ground); }
 .library-metaform__row { display: flex; flex-wrap: wrap; gap: 10px; }
 .library-metaform__row > * { flex: 1 1 160px; }
+.library-authors { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.library-authors__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.library-authors__row { display: flex; gap: 6px; align-items: center; }
+.library-authors__row .sires-input { flex: 1 1 auto; min-width: 0; }
 .library-metaform__actions { display: flex; gap: 8px; justify-content: flex-end; }
 .library-textarea { min-height: 88px; padding: 8px 12px; resize: vertical; height: auto; }
 
@@ -107,6 +112,17 @@ a.sires-button, label.sires-button { text-decoration: none; display: inline-flex
 .library-results__head { display: flex; flex-direction: column; gap: 6px; }
 .library-results__title { margin: 0; font-size: 14px; font-weight: 600; }
 .library-results__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+/* Discover columns (H20): one column below 1280px, results + right column (340–400px) from 1280px. */
+.library-discover__layout { display: flex; flex-direction: column; gap: 20px; }
+.library-discover__main, .library-discover__side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.library-selection { gap: 10px; }
+@media (min-width: 1280px) {
+  .library-discover__layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(340px, 26vw, 400px); align-items: start; }
+  .library-discover__side { position: sticky; top: 16px; }
+}
+.library-results__filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.library-results__filter input[inputmode="numeric"] { width: 96px; }
+.library-results__filter input[type="search"] { flex: 1 1 200px; min-width: 0; }
 .library-results__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .library-result {
   display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; background: var(--sires-surface);
@@ -144,20 +160,13 @@ a.sires-button, label.sires-button { text-decoration: none; display: inline-flex
 .library-choices { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .library-choice { display: flex; gap: 10px; align-items: center; font-size: 14px; }
 
-/* Dialog (design.md §4): 480px, consequence before confirm. */
-.library-scrim { position: fixed; inset: 0; background: var(--sires-scrim); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 40; }
-.library-dialog {
-  width: min(480px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--sires-surface);
-  border-radius: var(--sires-radius-card); box-shadow: var(--sires-shadow-float); padding: 20px; display: flex; flex-direction: column; gap: 14px;
-}
-.library-dialog__title { margin: 0; font-size: 17px; font-weight: 600; }
-.library-dialog__body { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
-.library-dialog__body p { margin: 0; }
-.library-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-
 @media (max-width: 720px) {
   .library-result { flex-wrap: wrap; }
   .library-result__side { max-width: 100%; align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
   .library-pending__head { padding: 12px; }
   .library-pending__item { padding: 12px; }
+  /* Touch targets of the approval panel at least 44px (H20, EC44; QC G7). */
+  .library-pending .sires-button, .library-pending .sires-button[data-size], .library-pending .library-textbutton { min-height: 44px; height: auto; }
+  .library-pending__check { min-width: 44px; min-height: 44px; }
+  .library-pending__nocheck { width: 44px; }
 }

@@ -85,6 +85,8 @@ describe('Trusted Library (S06)', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Duyệt' }), 'Revoked');
     expect(await screen.findByText('doe2023hd')).toBeTruthy();
     expect(screen.queryByText('lewis2020rag')).toBeNull();
+    // H13 (QC G13): revoked but still used in a project → dashed “needs review” flag.
+    expect(within((await rowOf('doe2023hd'))).getByText('needs review').getAttribute('data-tone')).toBe('warning');
   });
 
   it('nguồn discovery lỗi không ảnh hưởng', async () => {
@@ -146,6 +148,21 @@ describe('Trusted Library (S06)', () => {
     mock.events.emit({ type: 'reference.indexing_status_changed', objectType: 'reference', objectId: referenceId(5), fromState: 'Indexing', toState: 'Indexed' });
     await waitFor(() => expect(within(screen.getByText('asai2024selfrag').closest('tr')!).getByText('Indexed')).toBeTruthy());
   });
+
+  it('cập nhật theo sự kiện chờ duyệt', async () => {
+    // H19 (QC G9): a reference entering Pending Approval elsewhere (pending_action.changed) reloads the panel; the mock
+    // announces it for its own imports.
+    const { user } = renderAt('/library');
+    await screen.findByRole('heading', { name: '5 reference chờ duyệt' });
+    const doi = await mockFetch('/api/v1/references', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'k-pa' }, body: JSON.stringify({ doi: '10.1234/khac' }),
+    });
+    expect(doi.status).toBe(201);
+    expect(mock.events.log).toContainEqual(expect.objectContaining({ type: 'pending_action.changed', toState: 'Open' }));
+    expect(await screen.findByRole('heading', { name: '6 reference chờ duyệt' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Duyệt 5 mục đã chọn' }));
+    await waitFor(() => expect(mock.events.log.filter((event) => event.type === 'pending_action.changed' && event.toState === 'Resolved')).toHaveLength(5));
+  });
 });
 
 describe('Duyệt theo lô (S07)', () => {
@@ -202,10 +219,21 @@ describe('Duyệt theo lô (S07)', () => {
   });
 
   it('gộp mục nghi trùng', async () => {
-    // EC32: “Gộp” merges into the existing reference; the item leaves the panel.
+    // EC32, H14 (QC G2): “Gộp” first asks — the reference that stays and what moves to it — then merges; the item leaves
+    // the panel. Cancelling sends nothing (EC34). The dialog keeps focus inside and starts on the safe option.
     const { user } = renderAt('/library');
     const item = await pendingItem(papers.chen.title);
+    await within(item).findByRole('link', { name: papers.chenPreprint.title });
     await user.click(within(item).getByRole('button', { name: 'Gộp' }));
+    let dialog = screen.getByRole('dialog', { name: 'Gộp vào reference có sẵn?' });
+    expect(within(dialog).getByText(new RegExp(`sẽ gộp vào “${papers.chenPreprint.title.replace(/[()]/g, '\\$&')}”`))).toBeTruthy();
+    expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Không gộp' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Không gộp' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(callsOf('mergeReference')).toHaveLength(0);
+    await user.click(within(item).getByRole('button', { name: 'Gộp' }));
+    dialog = screen.getByRole('dialog', { name: 'Gộp vào reference có sẵn?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Gộp' }));
     await waitFor(() => expect(screen.queryByRole('link', { name: papers.chen.title })).toBeNull());
     expect(callsOf('mergeReference')[0].body).toEqual({ intoReferenceId: referenceId(12) });
   });
