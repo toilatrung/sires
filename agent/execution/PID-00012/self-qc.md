@@ -3,7 +3,7 @@
 **Kết luận:** Đạt
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 27/11/2026 (Lần 4)
+- **Cập nhật:** 27/11/2026 (Lần 5)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -175,6 +175,18 @@ Ba LOW của QC Lần 2 và ba việc shell từ phiên điều phối (report.m
 | Đột biến của QC Lần 2 trên mã mới (sửa tạm, chạy spec liên quan, `git checkout`) | M8 (redirect `REPLACE` tính là hoạt động): đỏ 1; M6 (`App` bỏ nội dung Trợ lý): đỏ 1; M11 (rail hiện số 0): đỏ 1; M3b (`refreshCounts` bỏ `loadUnread`): đỏ 1. `git status` sạch sau mỗi lượt |
 | `add-license --check` | 0 file thiếu |
 | `check-ui.mjs apps/web/src` | 0 lỗi, 12 cảnh báo: 9 như Lần 1, thêm 3 dòng cùng một chỗ là bóng `--sires-shadow-float` của `.sires-dialog` (dialog là lớp nổi, design.md §2.3) |
+
+
+## Lần 5 — 27/11/2026
+
+Client gửi FormData (report.md Lần 5, L5-1).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run src/shell` (apps/web) | 17 file, 123 test đạt (thêm 2 test của `api.spec.ts`) |
+| `tsc --noEmit`, `eslint src/shell` (apps/web) | Đạt, 0 lỗi; `@ts-expect-error` ở test mức type đúng chỗ (object cho thao tác multipart là lỗi type) |
+| Đột biến: bỏ nhánh FormData trong `send()` (FormData bị `JSON.stringify`) | `api.spec.ts` đỏ 1 |
+| `add-license --check` | 0 file thiếu |
 
 ---
 
