@@ -14,6 +14,8 @@ export interface RecordedRequest {
   query: URLSearchParams;
   headers: Record<string, string>;
   body?: string;
+  /** The FormData of an upload, as sent. */
+  formData?: FormData;
 }
 
 type Handler = (request: RecordedRequest) => Response | Promise<Response>;
@@ -101,6 +103,7 @@ export class FetchStub {
       query: url.searchParams,
       headers,
       body: typeof init.body === 'string' ? init.body : undefined,
+      formData: init.body instanceof FormData ? init.body : undefined,
     };
     this.requests.push(request);
     const match = this.handlers.find((h) => h.method === request.method && (typeof h.path === 'string' ? h.path === request.path : h.path.test(request.path)));
@@ -109,8 +112,14 @@ export class FetchStub {
   };
 
   /** Requests to a path (and method). */
-  calls(path: string | RegExp, method = 'GET'): RecordedRequest[] {
-    return this.requests.filter((r) => r.method === method && (typeof path === 'string' ? r.path === path : path.test(r.path)));
+  /** Requests to a path; with `query`, only those whose query has these values (other areas may call the same path). */
+  calls(path: string | RegExp, method = 'GET', query: Record<string, string> = {}): RecordedRequest[] {
+    return this.requests.filter(
+      (r) =>
+        r.method === method &&
+        (typeof path === 'string' ? r.path === path : path.test(r.path)) &&
+        Object.entries(query).every(([name, value]) => r.query.get(name) === value),
+    );
   }
 }
 
@@ -129,6 +138,11 @@ export function shellStub(options: { signedIn?: boolean; uiLanguage?: 'vi' | 'en
       }
       return json({ items: [], nextCursor: null, openCount: fx.OPEN_COUNT });
     })
+    // Lists an area screen or the Assistant may load when a test mounts a real area: empty, never a 404 alert.
+    .on('GET', '/api/v1/dashboard', () => json({ pendingActions: [], interruptedWorkflows: [], recentProjects: [] }))
+    .on('GET', '/api/v1/provider-connections', () => json({ items: [], nextCursor: null }))
+    .on('GET', '/api/v1/workflows', () => json({ items: [], nextCursor: null }))
+    .on('GET', '/api/v1/conversations', () => json({ items: [], nextCursor: null }))
     .on('GET', '/api/v1/notifications', () => json({ items: [], nextCursor: null, unreadCount: fx.UNREAD_COUNT }))
     .on('GET', '/api/v1/projects', (req) => {
       const status = req.query.get('status');

@@ -28,7 +28,8 @@ export const AREA_SEGMENT: Record<RailArea, string> = {
   history: 'history',
 };
 
-const SEGMENT_AREA: Record<string, RailArea> = { ...Object.fromEntries(RAIL_AREAS.map((a) => [AREA_SEGMENT[a], a])), tasks: 'plan' };
+// Other segments of an area: tasks belong to Plan; claims to References and Evidence (research, PID-00114).
+const SEGMENT_AREA: Record<string, RailArea> = { ...Object.fromEntries(RAIL_AREAS.map((a) => [AREA_SEGMENT[a], a])), tasks: 'plan', claims: 'evidence' };
 
 export type RouteContext =
   | { kind: 'global'; tab?: GlobalTab }
