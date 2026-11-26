@@ -4,6 +4,7 @@
 
 import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
+import type { FeatureMocks } from './mock/types';
 
 export type Locale = 'vi' | 'en';
 export type Messages = Record<string, string>;
@@ -23,4 +24,10 @@ export interface Feature {
    * area provides it (PID-00060); without it the shell shows a placeholder.
    */
   assistant?: ComponentType;
+  /**
+   * Mocks of the area (PID-00013), loaded only by the dev mock and tests. Write
+   * `mocks: mockEnabled ? () => import('./__mocks__') : undefined` (`mockEnabled` from the shell, shell/mock-enabled.ts)
+   * so every build drops them, including a build with NODE_ENV=development.
+   */
+  mocks?: () => Promise<{ default: FeatureMocks }>;
 }
