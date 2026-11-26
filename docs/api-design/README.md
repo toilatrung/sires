@@ -4,7 +4,17 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — tín hiệu SSE và đăng xuất RP-initiated, PC-05 P2, P3 (27/11/2026)
+
+Phiếu chốt cuối PH-01 ([PC-05](../overview/phieu-chot-cuoi-ph01.html)) P2, P3, chốt theo đề xuất (PO ủy quyền 26/11/2026); yêu cầu từ PID-00012 H5, H9 (chặn S12, S14).
+
+- `paths/14-shared-context-and-orchestration-architecture.yaml#/events` (`streamEvents`) và `components/schemas/orchestration.yaml#/Event`: `Last-Event-ID` không còn phát lại được (cũ hơn 24 giờ của log, ADR-07; không có trong log của tài khoản; sai định dạng) → gateway vẫn trả `200`, gửi đầu luồng bản ghi `event: replay.unavailable`, rồi chỉ phát sự kiện mới. `Event.type` thêm `replay.unavailable` (không phải message AsyncAPI; chỉ có `id`, `type`, `at`; `id` là vị trí mới nhất của log). Không dùng mã phản hồi vì `EventSource` không đọc được status khi tự nối lại. Tương thích ngược (thêm giá trị enum ở phản hồi). Kiến trúc F-03 đổi `resync` thành `replay.unavailable`. Hiện thực phía gateway: PID-00040. `openapi.yaml` khai thêm `components.schemas.Event` (trỏ `orchestration.yaml#/Event`) để bundle và `PublicApi` của `@sires/contracts` có type `Event` (PID-00012 S05, PID-00013 S03; yêu cầu của phiên PID-00012 và phiếu I1 của PID-00013); cùng lúc sửa ref hỏng `common.yaml#/Id`, `common.yaml#/Timestamp` trong `x-event-schema` của `/events` ở bundle cũ (nay là `#/components/schemas/Id`, `#/components/schemas/Timestamp`; `redocly lint dist/openapi.bundled.yaml` sạch).
+- `paths/15-settings-and-sign-in.yaml#/auth/logout` (`logout`): bỏ `204`, `401` và header `X-CSRF-Token`; web gửi form HTML (`application/x-www-form-urlencoded`, trường bắt buộc `csrfToken`); `303` tới `end_session_endpoint` của IdP đang cấu hình (eTroy OIDC; cục bộ và staging PH-02 là OIDC mock PID-00160) kèm `client_id`, `post_logout_redirect_uri` (ADR-27), không gửi `id_token_hint`; không còn phiên thì `303` tới `post_logout_redirect_uri`; sai token thì `403`. Đổi phá vỡ nhưng chưa có bên gọi hay hiện thực (PID-00012 S14, PID-00038 chưa làm), nên sửa thẳng trong `0.1.0-mvp`. Quy ước CSRF ở `openapi.yaml`, `parameters.yaml#/CsrfToken`, `responses.yaml#/Forbidden`, `index.html` và kiến trúc 10.5 ghi ngoại lệ này. Hiện thực phía gateway: PID-00038 (guard CSRF của PID-00014 nhận trường `csrfToken` cho riêng route này).
+- `components/schemas/account.yaml#/Preferences.timezone`: thêm mô tả — giao diện không dùng để hiển thị, ngày giờ theo múi giờ trình duyệt (UX-I18N-004, PID-00012 EC21, PC-05 P4).
+- `.redocly.lint-ignore.yaml` bỏ qua `operation-2xx-response` cho `logout` như `startLogin`, `completeLogin`. `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint sạch).
+- Ticket cập nhật: PID-00012 (S12, S14, mục 5, đặt Sẵn sàng), PID-00013 (mục “Phải sửa ở nguồn”: mock chưa giả lập `replay.unavailable`).
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).
@@ -134,7 +144,7 @@ Các mục còn lại của PRD không sinh endpoint riêng; ràng buộc của 
 ## Quy ước
 
 - **Base path:** `/api/v1`. Đổi phá vỡ tương thích tăng major (`/api/v2`).
-- **Xác thực:** chỉ eTroy OIDC (authorization code). Backend là Relying Party, cấp cookie `sires_session`; lệnh ghi gửi `X-CSRF-Token`.
+- **Xác thực:** chỉ eTroy OIDC (authorization code). Backend là Relying Party, cấp cookie `sires_session`; lệnh ghi gửi `X-CSRF-Token` (riêng `POST /auth/logout` là form HTML, token ở trường `csrfToken` của body).
 - **Ownership:** tài nguyên cấp project nằm dưới `/projects/{projectId}`; tài nguyên cấp tài khoản ở gốc (`/references`, `/provider-connections`, `/me/...`). Truy cập chéo tài khoản trả `404`.
 - **Chuyển trạng thái:** endpoint hành động `POST …/{verb}` (approve, reject, activate, cancel…), không cho PATCH trường `status`. Mã chuyển Task ghi ở `x-transition` (T-01–T-19, PRD 9.8).
 - **Idempotency:** header `Idempotency-Key` cho mọi lệnh có tác động (DATA-IDEMP-001).
