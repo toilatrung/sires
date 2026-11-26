@@ -15,8 +15,9 @@ type Workflow = Schemas['Workflow'];
 type AgentRun = Schemas['AgentRun'];
 type Step = Schemas['WorkflowStep'];
 
-/** wf-52d of Workflow.dc.html: T-2.3, Discovery → Evidence Retrieval → Synthesis…, running at step 3 of 5. */
-export const WF_52D = '7a000000-0000-4059-8000-0000000052d0';
+/** wf-52d of Workflow.dc.html: T-2.3, Discovery → … → Verification, running at step 3 of 5. Same id as the deliberation
+ * scenario of PID-00083 (`id('workflow', 52)`, step 4 = `id('step', 524)`), so both mocks describe one workflow. */
+export const WF_52D = id('workflow', 52);
 
 const iso = (hoursAgo = 0) => new Date(Date.now() - hoursAgo * 3_600_000).toISOString();
 const ACTOR = { type: 'researcher' as const, accountId: ACCOUNT_ID };
@@ -31,8 +32,8 @@ function wf52d(): { workflow: Workflow; runs: AgentRun[] } {
   ];
   const runs: AgentRun[] = [];
   const steps: Step[] = agents.map(([agent, description, status], i) => {
-    const stepId = `7b000000-0000-4059-8000-0000000052d${i + 1}`;
-    const runId = `7c000000-0000-4059-8000-0000000052d${i + 1}`;
+    const stepId = id('step', 521 + i);
+    const runId = id('agentRun', 521 + i);
     if (status !== 'Pending') {
       runs.push({
         id: runId,
