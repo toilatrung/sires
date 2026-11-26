@@ -160,7 +160,7 @@ Mỗi pull request chỉ chạm một luồng (một service hoặc một khu v�
 ## Đóng góp
 
 - `docs/` chỉ được ghi khi PO yêu cầu hoặc duyệt. Quy tắc R-01–R-07 ở [docs/README.md](docs/README.md).
-- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request tới khi PO xác nhận cổng ra PH-01 đạt; từ đó, khi bắt đầu logic nghiệp vụ (PH-02 trở đi), mọi pull request, kể cả tài liệu, vào `develop` (nhánh chứa code chạy staging, thành nhánh mặc định), `main` chỉ nhận `develop` khi phát hành (DEC-59, sửa mốc của OQ-111). Thay đổi `docs/` cần PO review (CODEOWNERS); commit phải có chữ ký, check CI `tracks`, `build` phải đạt (ruleset `protect-main-develop`).
+- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request tới khi PO xác nhận cổng ra PH-01 đạt; từ đó, khi bắt đầu logic nghiệp vụ (PH-02 trở đi), mọi pull request, kể cả tài liệu, vào `develop` (nhánh chứa code chạy staging, thành nhánh mặc định), `main` chỉ nhận `develop` khi phát hành (DEC-59, sửa mốc của OQ-111). Ngoại lệ (DEC-63): trước mốc, pull request mã của ticket PH-02 trở đi vào `develop` sau QC độc lập; ticket PH-01 và pull request tài liệu vẫn vào `main`. Thay đổi `docs/` cần PO review (CODEOWNERS); commit phải có chữ ký, check CI `tracks`, `build` phải đạt (ruleset `protect-main-develop`).
 - Coding agent đọc [AGENT.md](AGENT.md) trước khi làm việc.
 - File mới phải có ghi chú giấy phép:
 
