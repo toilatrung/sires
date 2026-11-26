@@ -151,7 +151,7 @@ describe('Preferences (S07)', () => {
   });
 });
 
-describe('Preferences sau #126 và tự QC', () => {
+describe('Preferences sau nguồn đã sửa và tự QC', () => {
   it('ngưỡng mặc định từng dòng (H16, EC52)', async () => {
     adjustThresholds();
     await openPreferences();

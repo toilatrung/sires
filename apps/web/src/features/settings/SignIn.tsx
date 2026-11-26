@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import logo from '../../shell/assets/sires-logo.svg';
 import { useNavigate, useSearchParams } from 'react-router';
 import { REASON_PARAM, REASON_SESSION_EXPIRED, RETURN_TO_PARAM, safeReturnTo, useApi, useSession, useShell } from '../../shell';
 import { NS } from './shared';
@@ -70,6 +71,7 @@ export function SignInScreen() {
   return (
     <div className="sires-signin">
       <section className="sires-signin__card" aria-labelledby="sires-signin-title">
+        <img className="sires-signin__logo" src={logo} alt="SIRes" height={48} />
         <h1 id="sires-signin-title" className="sires-signin__title">
           {t('signIn.title')}
         </h1>
@@ -84,12 +86,18 @@ export function SignInScreen() {
           </div>
         )}
         {expired && (
-          <div role="status" className="sires-signin__banner" data-tone="info">
+          <div role="status" className="sires-signin__banner" data-tone="neutral">
             {t('signIn.expired')}
           </div>
         )}
         <button type="button" className="sires-button sires-signin__action" data-variant="primary" disabled={leaving} onClick={signIn}>
-          {leaving ? t('signIn.leaving') : t('signIn.action')}
+          {leaving ? (
+            t('signIn.leaving')
+          ) : (
+            <>
+              {t('signIn.action')} <span aria-hidden="true">→</span>
+            </>
+          )}
         </button>
         <p className="sires-signin__note">{t('signIn.note')}</p>
       </section>

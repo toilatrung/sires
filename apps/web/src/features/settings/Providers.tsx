@@ -10,8 +10,8 @@
 import type { PublicApi } from '@sires/contracts';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ErrorState, LoadingState, StatusChip, formatDateTime, isApiError, useApi, type ApiError } from '../../shell';
-import { Dialog, NS, SettingsLayout, etagOf, fieldErrors, useResource } from './shared';
+import { Dialog, EmptyState, ErrorState, LoadingState, StatusChip, formatDateTime, isApiError, useApi, type ApiError } from '../../shell';
+import { NS, SettingsLayout, etagOf, fieldErrors, useResource } from './shared';
 
 type Schemas = PublicApi.components['schemas'];
 type Connection = Schemas['ProviderConnection'];
@@ -93,7 +93,7 @@ export function ProvidersScreen() {
     <SettingsLayout
       title={t('providers.title')}
       actions={
-        <button type="button" className="sires-button" data-variant="outline" onClick={() => setForm({ mode: 'create', first: connections.length === 0 })}>
+        <button type="button" className="sires-button" data-variant="primary" onClick={() => setForm({ mode: 'create', first: connections.length === 0 })}>
           {t('providers.add')}
         </button>
       }
@@ -102,10 +102,7 @@ export function ProvidersScreen() {
       {resource.value.state === 'loading' && <LoadingState what={t('providers.title')} />}
       {resource.value.state === 'error' && <ErrorState error={resource.value.error as ApiError} ns={NS} onRetry={() => void resource.reload()} />}
       {empty && (
-        <div className="sires-settings__empty">
-          <p className="sires-settings__empty-title">{t('providers.empty.title')}</p>
-          <p className="sires-settings__empty-reason">{t('providers.empty.reason')}</p>
-        </div>
+        <EmptyState title={t('providers.empty.title')} reason={t('providers.empty.reason')} />
       )}
       {rowError && <ErrorState error={rowError} ns={NS} notSaved={t('providers.retestNotSaved')} />}
       {connections.length > 0 && (
@@ -146,13 +143,13 @@ export function ProvidersScreen() {
                   <td className="sires-muted">{agentList(row, t)}</td>
                   <td>
                     <div className="sires-settings__actions">
-                      <button type="button" className="sires-button" aria-label={t('providers.editNamed', { name: row.name })} onClick={() => setForm({ mode: 'edit', id: row.id })}>
+                      <button type="button" className="sires-settings__link-button" aria-label={t('providers.editNamed', { name: row.name })} onClick={() => setForm({ mode: 'edit', id: row.id })}>
                         {t('providers.edit')}
                       </button>
-                      <button type="button" className="sires-button" aria-label={t('providers.retestNamed', { name: row.name })} disabled={testing === row.id} onClick={() => void retest(row)}>
+                      <button type="button" className="sires-settings__link-button" aria-label={t('providers.retestNamed', { name: row.name })} disabled={testing === row.id} onClick={() => void retest(row)}>
                         {t('providers.retest')}
                       </button>
-                      <button type="button" className="sires-button" data-variant="danger" aria-label={t('providers.deleteNamed', { name: row.name })} onClick={() => setDeletingId(row.id)}>
+                      <button type="button" className="sires-settings__link-button" data-tone="danger" aria-label={t('providers.deleteNamed', { name: row.name })} onClick={() => setDeletingId(row.id)}>
                         {t('providers.delete')}
                       </button>
                     </div>
@@ -363,10 +360,10 @@ function ProviderForm({ connection, firstConnection, onChanged, onClose, canClos
       )}
       {error && <ErrorState error={error} ns={NS} notSaved={saved ? undefined : t('providers.form.notCreated')} />}
       <div className="sires-settings__buttons">
-        <button type="button" className="sires-button" data-variant="primary" disabled={busy || ackMissing} onClick={() => void test()}>
+        <button type="button" className="sires-button" data-variant="outline" disabled={busy || ackMissing} onClick={() => void test()}>
           {busy ? t('providers.form.testing') : t('providers.form.test')}
         </button>
-        <button type="button" className="sires-button" data-variant="outline" disabled={!valid || busy} onClick={onClose}>
+        <button type="button" className="sires-button" data-variant="primary" disabled={!valid || busy} onClick={onClose}>
           {t('providers.form.save')}
         </button>
         {canClose && (
@@ -423,6 +420,7 @@ function DeleteDialog({ connection, connections, onClose, onDeleted, onConflict,
   const { t } = useTranslation(NS);
   const api = useApi();
   const [replacement, setReplacement] = useState<string>('');
+  const keepRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const assigned = [...new Set(connection.assignedAgents ?? [])];
@@ -451,10 +449,11 @@ function DeleteDialog({ connection, connections, onClose, onDeleted, onConflict,
   return (
     <Dialog
       title={t('providers.deleteDialog.title', { name: connection.name })}
-      onClose={onClose}
-      footer={
+      onCancel={onClose}
+      initialFocus={() => keepRef.current}
+      actions={
         <>
-          <button type="button" className="sires-button" onClick={onClose}>
+          <button ref={keepRef} type="button" className="sires-button" data-variant="secondary" onClick={onClose}>
             {t('providers.deleteDialog.keep')}
           </button>
           <button type="button" className="sires-button" data-variant="danger" disabled={blocked || busy} onClick={() => void confirm()}>

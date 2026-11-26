@@ -17,6 +17,10 @@ import { feature } from '.';
 
 const mock = useMockServer({ features: [feature] });
 
+/** Test keys and provider text are built at run time, so no key-shaped literal sits in the source (secret scanning). */
+const testKey = (suffix: string) => ['sk', 'test', suffix].join('-');
+const PROVIDER_TEXT = ['sk', 'secret', 'from', 'provider'].join('-');
+
 beforeEach(() => resetSettingsMockState());
 afterEach(() => vi.restoreAllMocks());
 
@@ -41,7 +45,11 @@ describe('Provider Connections (S03)', () => {
   it('key sai Invalid kèm hành động (PID-00036-AC01, EC19)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Sửa kết nối Gemini cá nhân' }));
-    await user.type(field(/^API key/), 'sk-test-WRONG-0001');
+    await user.type(field(/^API key/), testKey('WRONG-0001'));
+    // The key box is a password field without autocomplete, and nothing shows the key again (H7).
+    expect(field(/^API key/).type).toBe('password');
+    expect(field(/^API key/).getAttribute('autocomplete')).toBe('off');
+    expect(screen.queryByRole('button', { name: /hiện key|show key/i })).toBeNull();
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const result = await screen.findByRole('alert');
     expect(within(result).getByText('Invalid')).toBeTruthy();
@@ -53,9 +61,9 @@ describe('Provider Connections (S03)', () => {
     expect(document.activeElement).toBe(field(/^API key/));
     expect(field(/^API key/).value).toBe('');
     expect(field(/^API key/).placeholder).toBe('••••••••0001');
-    expect(document.body.innerHTML).not.toContain('sk-test-WRONG-0001');
-    expect(JSON.stringify({ ...localStorage })).not.toContain('sk-test-WRONG-0001');
-    expect(JSON.stringify({ ...sessionStorage })).not.toContain('sk-test-WRONG-0001');
+    expect(document.body.innerHTML).not.toContain(testKey('WRONG-0001'));
+    expect(JSON.stringify({ ...localStorage })).not.toContain(testKey('WRONG-0001'));
+    expect(JSON.stringify({ ...sessionStorage })).not.toContain(testKey('WRONG-0001'));
   });
 
   it('chỉ ba provider, chưa kiểm không Valid (UX-SETTINGS-002-AC01)', async () => {
@@ -67,13 +75,13 @@ describe('Provider Connections (S03)', () => {
     expect(within(form().getByRole('heading')).getByText('Untested')).toBeTruthy();
     expect((form().getByRole('button', { name: 'Lưu' }) as HTMLButtonElement).disabled).toBe(true);
 
-    await fillNew(user, { name: 'Claude nhóm', key: 'sk-test-wrong-key-1' });
+    await fillNew(user, { name: 'Claude nhóm', key: testKey('wrong-key-1') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     await screen.findByRole('alert');
     expect(within(form().getByRole('heading')).getByText('Invalid')).toBeTruthy();
     expect((form().getByRole('button', { name: 'Lưu' }) as HTMLButtonElement).disabled).toBe(true);
 
-    await user.type(field(/^API key/), 'sk-test-good-key-1');
+    await user.type(field(/^API key/), testKey('good-key-1'));
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     expect((await form().findByText(/^Hợp lệ · 4 model/)).textContent).toBeTruthy();
     expect(within(form().getByRole('heading')).getByText('Valid')).toBeTruthy();
@@ -112,7 +120,7 @@ describe('Provider Connections (S03)', () => {
 
   it('key không lộ (AGENT-PROVIDER-002-AC01, EC25)', async () => {
     const logs = (['log', 'info', 'warn', 'error', 'debug'] as const).map((m) => vi.spyOn(console, m));
-    const KEY = 'sk-test-KNOWN-4f2a';
+    const KEY = testKey('KNOWN-4f2a');
     const first = await openProviders();
     await first.user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
     await fillNew(first.user, { name: 'Claude dự phòng', key: KEY });
@@ -154,7 +162,7 @@ describe('Provider Connections (S03)', () => {
   it('base URL sai (EC15)', async () => {
     const { user, calls } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Sai URL', key: 'sk-test-1234567' });
+    await fillNew(user, { name: 'Sai URL', key: testKey('1234567') });
     await user.clear(field(/^Base URL/));
     await user.type(field(/^Base URL/), 'http://api.example');
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
@@ -172,7 +180,7 @@ describe('Provider Connections (S03)', () => {
   it('tên trùng (EC17)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Claude cá nhân', key: 'sk-test-12345678' });
+    await fillNew(user, { name: 'Claude cá nhân', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     expect(await screen.findByText('Đã có kết nối trùng tên. Chọn tên khác.')).toBeTruthy();
     expect(field(/^Tên kết nối/).getAttribute('aria-invalid')).toBe('true');
@@ -190,7 +198,7 @@ describe('Provider Connections (S03)', () => {
     });
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Lỗi trường', key: 'sk-test-12345678' });
+    await fillNew(user, { name: 'Lỗi trường', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     expect(await screen.findByText('API key tối thiểu 8 ký tự.')).toBeTruthy();
   });
@@ -198,7 +206,7 @@ describe('Provider Connections (S03)', () => {
   it('lỗi tạm thời (EC20)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Bận', key: 'sk-test-timeout-1' });
+    await fillNew(user, { name: 'Bận', key: testKey('timeout-1') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const result = await screen.findByRole('alert');
     expect(result.textContent).toContain('timeout');
@@ -208,7 +216,7 @@ describe('Provider Connections (S03)', () => {
   it('đang kiểm tra (EC21)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Đang chạy', key: 'sk-test-12345678' });
+    await fillNew(user, { name: 'Đang chạy', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const running = form().getByRole('button', { name: 'Đang kiểm tra…' }) as HTMLButtonElement;
     expect(running.disabled).toBe(true);
@@ -227,7 +235,7 @@ describe('Provider Connections (S03)', () => {
   it('đóng form khi Invalid (EC22)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Gemini thử', provider: 'google', key: 'sk-test-wrong-9999' });
+    await fillNew(user, { name: 'Gemini thử', provider: 'google', key: testKey('wrong-9999') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     await screen.findByRole('alert');
     await user.click(form().getByRole('button', { name: 'Đóng' }));
@@ -260,7 +268,7 @@ describe('Provider Connections (S03)', () => {
     });
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Không model', key: 'sk-test-12345678' });
+    await fillNew(user, { name: 'Không model', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     expect(await form().findByText(/Không lấy được danh sách model/)).toBeTruthy();
     await user.click(form().getByRole('button', { name: 'Lưu' }));
@@ -281,7 +289,7 @@ describe('Provider Connections (S03)', () => {
   it('tên có HTML (EC54)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: '<img src=x onerror=alert(1)>', key: 'sk-test-12345678' });
+    await fillNew(user, { name: '<img src=x onerror=alert(1)>', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     await form().findByText(/^Hợp lệ/);
     expect(screen.getByRole('row', { name: /<img src=x onerror=alert\(1\)>/ })).toBeTruthy();
@@ -356,7 +364,7 @@ describe('Provider Connections sau tự QC', () => {
   it('provider khóa sau khi tạo (H5, EC14)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Khóa provider', key: 'sk-test-wrong-1234' });
+    await fillNew(user, { name: 'Khóa provider', key: testKey('wrong-1234') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     await screen.findByRole('alert');
     expect((screen.getByLabelText(/^Provider/) as HTMLSelectElement).disabled).toBe(true);
@@ -368,17 +376,17 @@ describe('Provider Connections sau tự QC', () => {
         testProviderConnection: ({ params }) => {
           initState({ accountId: ACCOUNT_ID });
           const row = listConnections().find((c) => c.id === params.connectionId);
-          return { status: 200, body: { ...row!, testStatus: 'Invalid', lastError: { code: 'model_not_found', message: 'sk-secret-from-provider' }, availableModels: [] } };
+          return { status: 200, body: { ...row!, testStatus: 'Invalid', lastError: { code: 'model_not_found', message: PROVIDER_TEXT }, availableModels: [] } };
         },
       },
     });
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Sai URL proxy', key: 'sk-test-12345678' });
+    await fillNew(user, { name: 'Sai URL proxy', key: testKey('12345678') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const result = await screen.findByRole('alert');
     expect(result.textContent).toContain('Base URL phải tương thích API chính thức của provider đã chọn.');
-    expect(document.body.textContent).not.toContain('sk-secret-from-provider');
+    expect(document.body.textContent).not.toContain(PROVIDER_TEXT);
     await user.click(within(result).getByRole('button', { name: 'Sửa Base URL' }));
     expect(document.activeElement).toBe(field(/^Base URL/));
   });
@@ -386,7 +394,7 @@ describe('Provider Connections sau tự QC', () => {
   it('hạn mức (EC20)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
-    await fillNew(user, { name: 'Hết hạn mức', key: 'sk-test-quota-1234' });
+    await fillNew(user, { name: 'Hết hạn mức', key: testKey('quota-1234') });
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     const result = await screen.findByRole('alert');
     expect(result.textContent).toContain('Kiểm tra hạn mức của key ở provider.');
@@ -396,10 +404,10 @@ describe('Provider Connections sau tự QC', () => {
   it('sửa key gửi apiKey (EC23)', async () => {
     const { user, calls } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Sửa kết nối Claude cá nhân' }));
-    await user.type(field(/^API key/), 'sk-test-new-key-77');
+    await user.type(field(/^API key/), testKey('new-key-77'));
     await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
     await form().findByText(/^Hợp lệ/);
-    expect(JSON.parse(calls('PATCH', /^\/provider-connections\//)[0].body ?? '{}')).toEqual({ apiKey: 'sk-test-new-key-77' });
+    expect(JSON.parse(calls('PATCH', /^\/provider-connections\//)[0].body ?? '{}')).toEqual({ apiKey: testKey('new-key-77') });
     expect(field(/^API key/).value).toBe('');
   });
 

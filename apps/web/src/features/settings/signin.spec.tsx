@@ -25,7 +25,9 @@ describe('SignIn (S02)', () => {
     expect(await screen.findByRole('heading', { name: 'Đăng nhập vào SIRes' })).toBeTruthy();
     expect(screen.getByText(/thuộc nền tảng eTroy\. Tài khoản của bạn do eTroy quản lý\./)).toBeTruthy();
     const buttons = screen.getAllByRole('button').filter((b) => !['VI', 'EN'].includes(b.textContent ?? ''));
-    expect(buttons.map((b) => b.textContent)).toEqual(['Đăng nhập bằng eTroy']);
+    // The arrow is decorative (aria-hidden): one action, named “Đăng nhập bằng eTroy”.
+    expect(buttons.map((b) => b.textContent?.replace('→', '').trim())).toEqual(['Đăng nhập bằng eTroy']);
+    expect(screen.getByRole('img', { name: 'SIRes' })).toBeTruthy();
     expect(container.querySelectorAll('input')).toHaveLength(0);
     expect(screen.queryByText(/quên mật khẩu|đăng ký|Google/i)).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Đăng nhập bằng eTroy' }));

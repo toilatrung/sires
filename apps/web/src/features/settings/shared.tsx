@@ -78,62 +78,6 @@ export function Switch({ checked, onChange, label, description, disabled }: { ch
   );
 }
 
-/**
- * Dialog 480px (design.md §4): states the consequence before the confirm button; the cancel button names the safe
- * option. Focus moves into the dialog and stays there (Tab wraps), Escape closes it, focus returns to the control that
- * opened it, or to the view heading when that control is gone (a deleted row).
- */
-const FOCUSABLE = 'a[href], input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled])';
-export function Dialog({ title, children, onClose, footer }: { title: string; children: ReactNode; onClose: () => void; footer: ReactNode }) {
-  const titleId = useId();
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    const first = ref.current?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? ref.current)?.focus();
-    return () => {
-      if (opener?.isConnected) opener.focus();
-      else document.querySelector<HTMLElement>('.sires-settings__view')?.focus();
-    };
-  }, []);
-  return (
-    <div className="sires-dialog-scrim">
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="sires-dialog"
-        tabIndex={-1}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.stopPropagation();
-            onClose();
-            return;
-          }
-          if (event.key !== 'Tab' || !ref.current) return;
-          const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-          if (!items.length) return;
-          const [head, tail] = [items[0], items[items.length - 1]];
-          if (event.shiftKey && document.activeElement === head) {
-            event.preventDefault();
-            tail.focus();
-          } else if (!event.shiftKey && document.activeElement === tail) {
-            event.preventDefault();
-            head.focus();
-          }
-        }}
-      >
-        <h3 id={titleId} className="sires-dialog__title">
-          {title}
-        </h3>
-        {children}
-        <div className="sires-dialog__footer">{footer}</div>
-      </div>
-    </div>
-  );
-}
-
 export type Loadable<T> = { state: 'loading' } | { state: 'ready'; data: T } | { state: 'error'; error: ApiError | Error };
 
 /** Load data for a view; `reload` reruns the loader, `setData` replaces it after a write. */
