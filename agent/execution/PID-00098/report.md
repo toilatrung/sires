@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00098](../../../docs/tickets/issues/PID-00098/index.html) · **Luồng:** `web/library` · **Giai đoạn:** PH-02 (Xây với mock, D-UI)
-- **Nhánh:** `web/library-pid-00098` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131) · **PR:** vào `develop`
+- **Nhánh:** `web/library-pid-00098` (tạo từ `preview/ui-ph02` a9bcc0e, xếp chồng trên #120, #138, #131) · **PR:** [#144](https://github.com/toilatrung/sires/pull/144) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Assignee:** `congminh1705` · **Người làm:** phiên do PO giao, làm thay assignee `congminh1705`
 - **Hồ sơ:** đọc từ nhánh `docs/pid-00098-clarify` (PR #137, chưa vào `main`); bảng câu chốt H1–H20 của phiên làm rõ
