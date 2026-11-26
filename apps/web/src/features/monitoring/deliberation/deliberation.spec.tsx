@@ -588,11 +588,14 @@ describe('Nhãn, thiếu cấu hình, Agent List (PID-00083 S04)', () => {
     second.unmountAll();
   });
 
-  it('chuỗi của PID ở file riêng; file i18n của khu vực không đổi (S01)', () => {
+  it('chuỗi của PID ở file riêng; file i18n của khu vực không chứa chuỗi của PID (S01)', () => {
     expect(Object.keys(deliberationMessages.vi).sort()).toEqual(Object.keys(deliberationMessages.en).sort());
     expect(Object.keys(deliberationMessages.vi).every((key) => key.startsWith('deliberation.'))).toBe(true);
-    expect(viArea).toEqual({ title: 'Hoạt động' });
-    expect(enArea).toEqual({ title: 'Activity' });
+    // The area's files belong to PID-00059 (merged with this PID): none of this PID's keys there, so no override.
+    expect(Object.keys(viArea).filter((key) => key.startsWith('deliberation.'))).toEqual([]);
+    expect(Object.keys(enArea).filter((key) => key.startsWith('deliberation.'))).toEqual([]);
+    expect(viArea.title).toBe('Hoạt động');
+    expect(enArea.title).toBe('Activity');
   });
 
   it('agent list trong phiên (EC21)', () => {
