@@ -156,6 +156,31 @@ Sau khi merge #131 Lần 5 (`fbb0ac0`).
 
 G1 (YC1) thu hẹp: điều kiện mock đã vào #131. Còn `MockRequest.emit`, `ApiClient` gửi `FormData` và `topbar.spec`, chờ phiên điều phối quyết. Không có khoảng trống mới.
 
+
+## Lần 3 — 27/11/2026
+
+Sau QC độc lập Lần 1 (`dc4e48b`, CHƯA ĐẠT). Revert `78baa91`, merge #131 `f406d47` và #138 `b157d02`, sửa G1–G14, G16, G18–G20 (report.md Lần 3).
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `eslint .`, `tsc -p tsconfig.json --noEmit` (`apps/web`) | 0 lỗi |
+| `vitest run` (`@sires/web`) | 26 file, 252/252 đạt (library 4 file, 94 test) |
+| `check-ui.mjs apps/web/src/features/library` | 0 lỗi, 0 cảnh báo (bỏ dialog riêng nên hết cảnh báo bóng) |
+| `add-license.mjs --check` | 0 file thiếu |
+| So với hợp nhất của #131 và #138 | Chỉ khác ở `apps/web/src/features/library/` và `agent/execution/PID-00098/` |
+| quét kiểu gitleaks `generic-api-key` | 0 dòng khớp |
+| preview `dev:mock` | 1440×900: cột chính 886px, cột phải 374px; dialog Gộp nêu reference đích, focus ở “Không gộp”, Tab ở trong dialog. 390×844: 13/13 vùng bấm của panel chờ duyệt ≥ 44px, không cuộn ngang. Console sau khi tải lại không còn log `[MSW]` (worker `quiet`, #131) |
+
+| G (QC Lần 1) | Mức | Trạng thái |
+| --- | --- | --- |
+| G1, G2 | HIGH | Đã sửa |
+| G3–G12 | MEDIUM | Đã sửa (test ở report.md Lần 3) |
+| G13, G14, G16 | LOW | Sửa một phần |
+| G18, G19, G20 | LOW | Đã sửa; G20 trừ phần tải qua `getBlob` |
+| G15, G17 | LOW | Chưa làm |
+
+Tự kiểm mục 4: dòng “Không sửa file trong điểm dừng” nay đúng (YC1 đóng). Không còn CRITICAL, HIGH.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

@@ -72,6 +72,50 @@ Phiên điều phối giao cho #131 (PID-00013, Lần 5) hai việc: sửa mẫu
 - YC1 thu hẹp lại. Phần mẫu điều kiện mock trong commit `78baa91` nay do #131 làm (cùng nội dung, thêm `mockEnabled` và test chặn). Còn chờ phiên điều phối quyết ba việc: `MockRequest.emit`, `ApiClient` gửi `FormData`, sửa `topbar.spec`.
 - Kiểm: `@sires/web` 24 file, 231/231 test đạt; lint và typecheck sạch.
 
+
+## Lần 3 — 27/11/2026
+
+QC độc lập Lần 1 (phiên web-shell, head `dc4e48b`, [qc-report.md](qc-report.md)): CHƯA ĐẠT, 2 HIGH, 10 MEDIUM, 8 LOW. Phiên điều phối giao, chốt theo đề xuất (nguyên văn, rút gọn):
+- “G1 (HIGH): revert 78baa91 bằng một commit thêm, không force-push. Sau đó merge head mới của #131 và #138 khi có.”
+- “G2 (HIGH): nút ‘Gộp’ ở panel chờ duyệt … phải mở dialog nêu hệ quả theo H14 rồi mới gọi `mergeReference`. Dùng `ConfirmDialog` của shell …”
+- “Sửa các MEDIUM khác: xóa reference xong hiện ‘Không tìm thấy trang’; Discover thiếu cột phải theo H20; nút ở 390 px phải cao ít nhất 44 px; lọc trên các mục đã tải của H11. Sửa luôn các LOW nếu nhanh.”
+
+**Commit:**
+- Revert `78baa91`: commit `9938399`. Phần mock (`MockRequest.emit`, `quiet`) nay nằm ở #131 (PID-00013 Lần 6, `f406d47`). Client gửi `FormData`, `Dialog`/`ConfirmDialog` và `getBlob` ở #138 (`b157d02`).
+- Merge #131: `ccd116a`. Merge #138: commit kế tiếp, không xung đột.
+- So với hợp nhất của #131 và #138, nhánh chỉ còn khác ở `apps/web/src/features/library/` và hồ sơ này: không còn sửa `shell/`. YC1 đóng.
+
+**Đã sửa:**
+
+| G | Mức | Đã làm | Test |
+| --- | --- | --- | --- |
+| G1 | HIGH | Revert và merge như trên | `@sires/web` 252/252 |
+| G2 | HIGH | “Gộp” ở panel mở `ConfirmDialog`: nêu reference đích và hệ quả (rời panel; project, evidence, citation dùng reference đích; BibTeX key cũ vẫn dẫn tới đích). Focus bắt đầu ở nút “Không gộp” | `library.spec.tsx › gộp mục nghi trùng` |
+| G3 | MEDIUM | Câu hệ quả cạnh nút “Duyệt n mục đã chọn”; dialog “Duyệt lại” có lý do tùy chọn (gửi `reason`); dialog “Thay PDF” nêu việc index lại trước khi mở chọn tệp | `reference.spec.tsx › Revoked chỉ đọc`, `› thay PDF hỏi trước` |
+| G4 | MEDIUM | Xóa xong về `/library` kèm “Đã xóa reference.”; gộp từ trang Reference mở trang reference đích | `› xóa khi không dùng`, `› gộp từ trang reference mở reference đích` |
+| G5 | MEDIUM | `Dialog` của khu vực dùng `Dialog` của shell: Tab ở trong dialog, Esc đóng, trả focus khi đóng | trình duyệt: focus đầu vào nút an toàn, Tab ba lần vẫn ở trong dialog |
+| G6 | MEDIUM | Từ 1280px Discover có hai cột: cột phải 340–400px chứa “Đã chọn · n”, nút gửi lô, Nhập thủ công; hẹp hơn thì cột phải xuống dưới | `discover.spec.tsx › cột phải có lựa chọn và nhập thủ công`; trình duyệt 1440: cột chính 886px, cột phải 374px |
+| G7 | MEDIUM | Ở ≤720px, nút và ô chọn của panel chờ duyệt cao từ 44px | trình duyệt 390×844: 13/13 vùng bấm ≥ 44px, không cuộn ngang |
+| G8 | MEDIUM | Lần tìm theo tác giả có bộ lọc năm và từ khóa trên các mục đã tải (không gọi lại nguồn); “Chọn tất cả kết quả đủ điều kiện” chỉ chọn mục đang hiện | `discover.spec.tsx › lọc trên các mục đã tải` |
+| G9 | MEDIUM | Library tải lại khi có `pending_action.changed`; Discover đọc lại prompt khi có `prompt.status_changed`; mock phát `pending_action.changed` (Open khi có reference chờ duyệt mới, Resolved khi đã quyết hoặc gộp) | `library.spec.tsx › cập nhật theo sự kiện chờ duyệt` |
+| G10 | MEDIUM | Khóa idempotency theo nội dung: lô (tập mã), DOI, BibTeX, PDF (tên, cỡ, thời điểm sửa). Gửi lại sau 5xx hay lỗi mạng dùng cùng khóa; “Thử lại các mục lỗi” là lô khác, khóa khác | `discover.spec.tsx › lỗi gửi lô hiện tại vùng lô`, `› tóm tắt lô có mục lỗi` |
+| G11 | MEDIUM | Lỗi gửi lô hiện ở vùng lô (cột phải), kèm mã và “Gửi lại”; không đụng tới lần tìm và kết quả | `› lỗi gửi lô hiện tại vùng lô` |
+| G12 | MEDIUM | Form metadata: tác giả dạng danh sách (thêm, bớt, đổi thứ tự), loại tài liệu, DOI, arXiv, ISBN, URL, mô tả; trường không hiện trên form giữ nguyên; nháp cũ (tác giả dạng chuỗi) vẫn đọc được | `reference.spec.tsx › sửa metadata đủ trường` |
+| G13 | LOW | Reference Revoked còn dùng ở project có cờ viền đứt “needs review”. Phần “xét trống bằng lần đọc không lọc” chưa làm | `library.spec.tsx › lọc theo trạng thái duyệt` |
+| G14 | LOW | Liên kết project là `/projects/{id}/evidence`; chip index ghi số đoạn khi Indexed. Các dòng Provenance bổ sung chưa làm | `reference.spec.tsx › project đang dùng` |
+| G16 | LOW | Workflow lỗi do `provider_unavailable`, `timeout`, `network_error`, `service_unavailable` hiện “Nguồn không phản hồi”; hộp lỗi thêm câu “Trusted Library và reference đã có không bị ảnh hưởng.” Định danh mono trên dòng kết quả, “hoạt động gần nhất” và lần tìm Interrupted chưa làm | `discover.spec.tsx › nguồn không phản hồi khi tìm` |
+| G18 | LOW | Ô chọn bị vô hiệu luôn có `checked` (hết cảnh báo controlled/uncontrolled) | — |
+| G19 | LOW | `index.tsx` import `mockEnabled`, `Feature` từ `../../shell`. `test-utils.tsx` vẫn dùng `shell/hooks`, `shell/routes`, `shell/services` (chỉ trong test) | — |
+| G20 | LOW | Bỏ ép kiểu `FormData as never`. “Tải PDF” qua `getBlob` để báo 404 chưa làm | — |
+
+**Chưa làm (LOW, ghi để QC Lần 2 xét):**
+- G13, G14, G16: các phần nói trên.
+- G15: “Gộp” chỉ hiện khi có `duplicateWarnings`, kèm banner.
+- G17: panel chờ duyệt phân trang 50 mục, và đọc lại mục bị `skipped`.
+- G20: tải PDF qua `getBlob`.
+
+Self-QC: [self-qc.md](self-qc.md) mục “Lần 3”.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
