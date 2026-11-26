@@ -316,10 +316,21 @@ describe('đăng xuất RP-initiated', () => {
     expect(form.kind === 'page' && form.body).toContain('name="password"');
   });
 
-  it('chỉ có client_id như gateway gửi; POST cho kết quả như GET; trang gốc của web vẫn đăng ký (EC10)', async () => {
+  it('như gateway gửi: chỉ client_id và /sign-in, không id_token_hint, không state; đăng nhập lại phải nhập mật khẩu (PID-00160-AC05, H9)', async () => {
+    const { browser } = await login(A);
+    const visit = await endSession(browser, { client_id: CLIENT_ID, post_logout_redirect_uri: POST_LOGOUT });
+    expect(visit.kind).toBe('redirect');
+    expect(visit.kind === 'redirect' && visit.url.href).toBe(POST_LOGOUT);
+    const again = await begin({}, browser);
+    const form = await browser.request(again.url);
+    expect(form.kind === 'page' && form.body).toContain('name="password"');
+  });
+
+  it('chỉ có client_id kèm state; POST cho kết quả như GET; trang gốc của web không còn đăng ký (EC10)', async () => {
     const root = await login(B);
     const viaRoot = await endSession(root.browser, { client_id: CLIENT_ID, post_logout_redirect_uri: 'http://localhost:5173/', state: 's0' });
-    expect(viaRoot.kind === 'redirect' && viaRoot.url.href).toBe('http://localhost:5173/?state=s0');
+    expect(viaRoot.kind).toBe('page');
+    expect(viaRoot.kind === 'page' && viaRoot.status).toBe(400);
     const first = await login(A);
     const viaClientId = await endSession(first.browser, { client_id: CLIENT_ID, post_logout_redirect_uri: POST_LOGOUT, state: 's2' });
     expect(viaClientId.kind === 'redirect' && viaClientId.url.href).toBe(`${POST_LOGOUT}?state=s2`);
@@ -385,7 +396,7 @@ describe('log không chứa token, mật khẩu, secret', () => {
       expect(text.includes(secret), `log chứa ${secret.slice(0, 6)}…`).toBe(false);
     }
     // Không có trường nào mang header, cookie hay mật khẩu.
-    expect(text).not.toMatch(/"(authorization|cookie|set-cookie|password|code|token|client_secret)"s*:/i);
+    expect(text).not.toMatch(/"(authorization|cookie|set-cookie|password|code|token|client_secret)"\s*:/i);
     const events = logs.map((line) => JSON.parse(line) as Record<string, unknown>);
     expect(events).toContainEqual(expect.objectContaining({ event: 'interaction.ended', sub: A.sub, client_id: CLIENT_ID }));
     expect(events).toContainEqual(expect.objectContaining({ event: 'interaction.login_failed', client_id: CLIENT_ID }));

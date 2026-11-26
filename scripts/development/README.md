@@ -35,7 +35,7 @@ Script kiểm từng bước, hỏi trước khi cài, rồi gọi `setup-wsl.sh
 
 `-Spikes` cài thêm gói của spike, chỉ khi làm spike đó: mỗi `apps/*/spikes/*/requirements.txt` (ghim kèm hash) cài bằng Python của uv vào `%LOCALAPPDATA%\sires\spikes\<spike>`, ngoài repo và ngoài venv của workspace; script của spike chạy bằng Python đó với `PYTHONPATH` trỏ thư mục này. Cài lại khi `requirements.txt` đổi.
 
-Môi trường cục bộ (PostgreSQL 16 + pgvector, RabbitMQ, MinIO, OIDC mock ở `http://localhost:9400` thay eTroy OIDC — [infra/local/oidc-mock](../../infra/local/oidc-mock/README.md)), chạy compose trong WSL khi ở Windows:
+Môi trường cục bộ (PostgreSQL 16 + pgvector, RabbitMQ, MinIO, OIDC mock ở `http://localhost:9400` thay eTroy OIDC — [infra/local/oidc-mock](../../infra/local/oidc-mock/README.md); sửa mã hay file cấu hình của mock thì chạy `pnpm local:up --build`), chạy compose trong WSL khi ở Windows:
 
 ```powershell
 pnpm local:up

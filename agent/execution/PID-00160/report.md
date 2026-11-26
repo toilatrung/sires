@@ -41,7 +41,7 @@ Không có trong phạm vi. Ngoài phạm vi theo hồ sơ: gateway đăng nhậ
 
 ## 5. Yêu cầu thêm
 
-Không có.
+Không có yêu cầu ngoài hồ sơ. Chi tiết kỹ thuật trong phạm vi, chặt hơn spec một bước hay thêm cho vận hành (QC Lần 1 G8), ghi ở [implement.md](implement.md) mục 3: `@types/oidc-provider` (dev), khóa cookie staging ≥ 32 ký tự, từ chối `example.invalid`, log thêm `authorization.error`, `userinfo.error`, `server.started`, `server.stopping`.
 
 ## 6. Cần PO và tài liệu đi kèm
 
@@ -67,6 +67,12 @@ Không có.
 - **Đã làm:** `post_logout_redirect_uris` cục bộ thêm `http://localhost:5173/sign-in`, `http://localhost:3000/sign-in` (giữ trang gốc); mẫu staging `https://staging.example.invalid/sign-in`; test AC05 theo `/sign-in`; README.
 - **Kết quả:** 33/33 test (`self-qc.md` Lần 3).
 - **Cho PID-00038:** `OIDC_POST_LOGOUT_REDIRECT_URI` cục bộ là `http://localhost:5173/sign-in`.
+
+## Lần 4 — 27/11/2026
+
+- **Lý do:** QC độc lập Lần 1 ở `0a3877c` (QC chéo, chép vào [qc-report.md](qc-report.md)): CHƯA ĐẠT — G1 HIGH (`post_logout_redirect_uris` phải là `["http://localhost:5173/sign-in"]` theo spec 4.1, H8), G2, G3 MEDIUM, 7 LOW.
+- **Đã làm:** G1 client cục bộ chỉ đăng ký `/sign-in`, dựng lại image; G2 ca chính AC05 theo H9 (chỉ `client_id`, không `state`); G3, G4 README; G5 nhắc `--build` (không sửa dòng `local/` của `infra/README.md` để tránh xung đột với #125); G6 regex; G8 mục 5; G9 `.dockerignore` loại `.claude`.
+- **Kết quả:** 34/34 test; luồng thật vào container đăng xuất về `http://localhost:5173/sign-in` (`self-qc.md` Lần 4).
 
 ---
 

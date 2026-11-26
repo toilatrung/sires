@@ -185,7 +185,7 @@ describe('file cục bộ hợp lệ', () => {
     expect(clients.map((c) => c.client_id)).toEqual(['sires-gateway-local']);
     expect(clients[0]).toMatchObject({
       redirect_uris: ['http://localhost:5173/api/v1/auth/callback', 'http://localhost:3000/api/v1/auth/callback'],
-      post_logout_redirect_uris: ['http://localhost:5173/sign-in', 'http://localhost:3000/sign-in', 'http://localhost:5173/', 'http://localhost:3000/'],
+      post_logout_redirect_uris: ['http://localhost:5173/sign-in'],
       token_endpoint_auth_method: 'client_secret_basic',
     });
   });

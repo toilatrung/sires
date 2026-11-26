@@ -44,7 +44,7 @@ Thời hạn như eTroy (K8): access token và ID token 900 giây, refresh token
 | `client_id` | `sires-gateway-local` |
 | `client_secret` | `sires-local-gateway-secret` (`client_secret_basic`) |
 | `redirect_uris` | `http://localhost:5173/api/v1/auth/callback`, `http://localhost:3000/api/v1/auth/callback` |
-| `post_logout_redirect_uris` | `http://localhost:5173/sign-in`, `http://localhost:3000/sign-in` (gateway dùng), `http://localhost:5173/`, `http://localhost:3000/` |
+| `post_logout_redirect_uris` | `http://localhost:5173/sign-in` |
 
 URI khớp từng ký tự (K13). Callback theo hợp đồng gateway `docs/api-design/paths/15-settings-and-sign-in.yaml`: `/auth/callback` dưới base `/api/v1` của `openapi.yaml` (web chuyển `/api` sang gateway). Đăng xuất: `POST /auth/logout` của gateway (PC-05 P3) chuyển trình duyệt tới `end_session_endpoint` kèm `client_id` và `post_logout_redirect_uri` là trang `/sign-in` của SIRes (route web, không thuộc `/api/v1`), không gửi `id_token_hint`. Gateway hay web đổi route thì sửa file này (luồng infra).
 
@@ -67,9 +67,9 @@ Tên biến đề xuất cho PID-00038 (H7), giá trị cục bộ:
 | `OIDC_CLIENT_ID` | `sires-gateway-local` |
 | `OIDC_CLIENT_SECRET` | `sires-local-gateway-secret` |
 | `OIDC_REDIRECT_URI` | `http://localhost:5173/api/v1/auth/callback` (qua proxy của web) hoặc `http://localhost:3000/api/v1/auth/callback` |
-| `OIDC_POST_LOGOUT_REDIRECT_URI` | `http://localhost:5173/sign-in` (hoặc `http://localhost:3000/sign-in` khi chạy gateway không qua web) |
+| `OIDC_POST_LOGOUT_REDIRECT_URI` | `http://localhost:5173/sign-in` |
 
-Issuer cục bộ là `http`, nên `openid-client` 6 của gateway phải bật `allowInsecureRequests` **chỉ khi** issuer là `http://localhost` (như spike SPK-02); staging dùng `https`. Gateway chạy trên máy (không trong compose) nên gọi mock qua `localhost:9400`, cùng URL với trình duyệt; issuer trong ID token là `http://localhost:9400`. Đăng xuất: gateway chuyển trình duyệt tới `end_session_endpoint` của IdP đang cấu hình (H1); đăng xuất ở mock kết thúc phiên mock nhưng không thu hồi refresh token đã cấp, gateway gọi `/revoke` nếu cần.
+Issuer cục bộ là `http`, nên `openid-client` 6 của gateway phải bật `allowInsecureRequests` **chỉ khi** issuer là `http://localhost` (như spike SPK-02); staging dùng `https`. Gateway chạy trên máy (không trong compose) nên gọi mock qua `localhost:9400`, cùng URL với trình duyệt; issuer trong ID token là `http://localhost:9400`. Endpoint trong discovery dựng theo `Host` (hoặc `X-Forwarded-Host`) của request: gọi qua `127.0.0.1` thì endpoint là `http://127.0.0.1:9400/…`, khác host của issuer. Gateway chạy trong container không gọi được `localhost:9400` của máy: khi đó cần tên riêng chung cho trình duyệt và gateway, hoặc issuer https sau proxy như ở staging. Đăng xuất: gateway chuyển trình duyệt tới `end_session_endpoint` của IdP đang cấu hình (H1); đăng xuất ở mock kết thúc phiên mock nhưng không thu hồi refresh token đã cấp, gateway gọi `/revoke` nếu cần.
 
 ## Chạy ở staging
 

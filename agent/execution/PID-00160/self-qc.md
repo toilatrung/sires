@@ -133,6 +133,30 @@ Sửa theo bổ sung của QC hồ sơ #121 (F1, sau QC #120): hợp đồng `PO
 | Mẫu staging | `https://staging.example.invalid/sign-in` |
 | README | Bảng client, `OIDC_POST_LOGOUT_REDIRECT_URI` = `http://localhost:5173/sign-in`; căn cứ hợp đồng #120 |
 
+## Lần 4 — 27/11/2026
+
+Sửa theo QC độc lập Lần 1 ở `0a3877c` ([qc-report.md](qc-report.md), chép từ ghi chú QC chéo): CHƯA ĐẠT vì G1 (HIGH); G2, G3 (MEDIUM); G4, G5, G6, G9 (LOW) sửa được ngay. Mục này theo PC-05 P37. Lần 3 (`37a3f53`) đã thêm `/sign-in` nhưng vẫn giữ trang gốc, chưa đúng spec 4.1.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm exec tsc -p tsconfig.json`, `pnpm exec eslint .` (trong `infra/local/oidc-mock`) | Đạt |
+| `pnpm exec vitest run` | 2 file, 34/34; thêm `› như gateway gửi: chỉ client_id và /sign-in, không id_token_hint, không state…` (về đúng `http://localhost:5173/sign-in`, authorize lại phải nhập mật khẩu); ca `id_token_hint` + `state=s1` → `…/sign-in?state=s1`; trang gốc không còn đăng ký → 400 |
+| `pnpm local:up --build oidc-mock` | Mã 0, 72 s, Healthy; context 3,17 MB sau khi loại `.claude`; `config/clients.local.json` trong image: `["http://localhost:5173/sign-in"]` |
+| Luồng thật vào container (authorize → đăng nhập B → `/token` → `/userinfo` → `/session/end` chỉ `client_id` và `post_logout_redirect_uri=http://localhost:5173/sign-in`) | Callback `http://localhost:5173/api/v1/auth/callback`, state khớp; ID token, userinfo như trước; đăng xuất về đúng `http://localhost:5173/sign-in` |
+
+| G (QC) | Mức | Đã xử lý |
+| --- | --- | --- |
+| G1 | HIGH | `post_logout_redirect_uris` của client cục bộ là `["http://localhost:5173/sign-in"]` (spec 4.1); mẫu staging `["https://staging.example.invalid/sign-in"]` (đã đúng từ Lần 3); image dựng lại |
+| G2 | MEDIUM | Ca chính AC05 theo H9; ca `id_token_hint` + `state=s1`; `config.spec.ts` theo spec 4.1 |
+| G3 | MEDIUM | README: bảng client, `OIDC_POST_LOGOUT_REDIRECT_URI` = `http://localhost:5173/sign-in`, căn cứ hợp đồng logout của #120 (H8) |
+| G4 | LOW | README: endpoint dựng theo `Host`/`X-Forwarded-Host`; gateway trong container cần tên riêng hay issuer https |
+| G5 | LOW | `scripts/development/README.md`: nhắc `pnpm local:up --build` trong câu môi trường cục bộ. Không sửa dòng `local/` của `infra/README.md`: PR #125 sửa đúng dòng đó, sửa ở đây sẽ xung đột khi merge; thêm OIDC mock vào dòng đó sau khi #125 vào `develop` |
+| G6 | LOW | Regex kiểm log dùng `"\s*:` |
+| G7 | LOW | Giữ hàng đợi `POST /token` như QC đề nghị |
+| G8 | LOW | Ghi ở `report.md` mục 5 (chi tiết kỹ thuật, `implement.md` mục 3) |
+| G9 | LOW | `Dockerfile.dockerignore` thêm `.claude`. Node 22, digest: theo mẫu chung của luồng infra |
+| G10 | LOW | Thứ tự merge #112, #120, #125 trước #130: PO |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
