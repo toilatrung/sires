@@ -105,7 +105,7 @@ describe('TopBar', () => {
     expect(toggle.getAttribute('aria-controls')).toBe(panel.id);
     expect(within(panel).getByText('Global — không có ngữ cảnh project')).toBeTruthy();
     expect(router.state.location.pathname).toBe('/discover');
-    expect(screen.getByRole('main').textContent).toContain('discover');
+    expect(screen.getByRole('main').textContent).toMatch(/discover/i); // the Discover screen (PID-00098) stays in place
     await user.click(within(panel).getByRole('button', { name: 'Đóng Trợ lý' }));
     expect(screen.queryByRole('complementary', { name: 'Trợ lý' })).toBeNull();
   });

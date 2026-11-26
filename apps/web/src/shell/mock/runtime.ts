@@ -212,7 +212,9 @@ async function toResponse(descriptor: OperationDescriptor, reply: AnyReply, requ
   return HttpResponse.json(body as never, { status, headers: { 'Content-Type': entry.contentType, ...headers } });
 }
 
-function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, override?: Overrides[OperationId]): HttpHandler {
+type Emit = MockRequest<OperationId>['emit'];
+
+function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, emit: Emit, override?: Overrides[OperationId]): HttpHandler {
   const method = descriptor.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
   return http[method](toPattern(descriptor.path), async ({ request, params }) => {
     const path = Object.fromEntries(Object.entries(params).map(([name, value]) => [name, String(value)]));
@@ -225,6 +227,7 @@ function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, o
       request,
       generated: ((status: number) => generatedBody(descriptor, status)) as never,
       fixtures: fixtures(),
+      emit,
     };
     const reply = await (override as (request: MockRequest<OperationId>) => AnyReply | Promise<AnyReply>)(context);
     return toResponse(descriptor, reply, request, path);
@@ -239,10 +242,12 @@ export interface ComposeOptions {
   before?: readonly HttpHandler[];
   /** Add the generated fallback for unclaimed operations and a 404 for unknown paths (default true). */
   fallback?: boolean;
+  /** Event sink for overrides (`MockRequest.emit`), usually the /events stream. */
+  emit?: Emit;
 }
 
 /** Every handler, most specific first: claimed operations, then the generated fallback for the rest. */
-export function composeHandlers({ sources, fixtures: base, before = [], fallback = true }: ComposeOptions): HttpHandler[] {
+export function composeHandlers({ sources, fixtures: base, before = [], fallback = true, emit = () => undefined }: ComposeOptions): HttpHandler[] {
   const owner = claims(sources);
   const fixtures = mergeFixtures(base, sources);
   const read = () => fixtures;
@@ -263,5 +268,5 @@ export function composeHandlers({ sources, fixtures: base, before = [], fallback
     { type: 'https://sires.etroy.local/problems/not_found', title: 'Không tìm thấy', status: 404, code: 'not_found' },
     { status: 404, headers: { 'Content-Type': 'application/problem+json', [MOCK_HEADER]: 'not_found' } },
   ));
-  return [...before, ...ordered.map(({ descriptor, override }) => handlerFor(descriptor, read, override)), ...(fallback ? [notFound] : [])];
+  return [...before, ...ordered.map(({ descriptor, override }) => handlerFor(descriptor, read, emit, override)), ...(fallback ? [notFound] : [])];
 }

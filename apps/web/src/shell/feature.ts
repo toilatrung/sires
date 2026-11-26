@@ -26,7 +26,8 @@ export interface Feature {
   assistant?: ComponentType;
   /**
    * Mocks of the area (PID-00013), loaded only by the dev mock and tests. Write
-   * `mocks: import.meta.env.DEV ? () => import('./__mocks__') : undefined` so production builds drop them.
+   * `mocks: import.meta.env.DEV && import.meta.env.MODE !== 'production' ? () => import('./__mocks__') : undefined` so every build drops them
+   * (a build with NODE_ENV=development still has DEV true, but MODE is production).
    */
   mocks?: () => Promise<{ default: FeatureMocks }>;
 }

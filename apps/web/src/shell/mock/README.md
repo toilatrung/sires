@@ -79,12 +79,12 @@ src/features/<khu vực>/__mocks__/
    });
    ```
 
-4. Khai trong `features/<khu vực>/index.tsx`, giữ đúng dạng điều kiện để bản build bỏ mock:
+4. Khai trong `features/<khu vực>/index.tsx`, giữ đúng dạng điều kiện để bản build bỏ mock (cả khi build với `NODE_ENV=development`, lúc đó `DEV` vẫn là `true` nhưng `MODE` là `production`):
 
    ```ts
    export const feature: Feature = {
      id: 'global', routes, messages,
-     mocks: import.meta.env.DEV ? () => import('./__mocks__') : undefined,
+     mocks: import.meta.env.DEV && import.meta.env.MODE !== 'production' ? () => import('./__mocks__') : undefined,
    };
    ```
 
