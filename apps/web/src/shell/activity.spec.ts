@@ -103,3 +103,19 @@ describe('hoạt động của người dùng (H6, H11)', () => {
     expect(new URLSearchParams(router.state.location.search).get('returnTo')).toBe('/library');
   });
 });
+
+describe('chuyển hướng giữa phiên', () => {
+  it('điều hướng replace (chuyển hướng) không gọi GET /auth/session (INT-OIDC-003-AC02)', async () => {
+    const stub = shellStub();
+    const { router } = renderShellFrame({ path: '/dashboard', stub });
+    await waitForFrame();
+    const before = stub.calls('/api/v1/auth/session').length;
+    await router.navigate('/discover', { replace: true });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/discover'));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(stub.calls('/api/v1/auth/session').length).toBe(before);
+    // A user navigation after it still counts.
+    await router.navigate('/library');
+    await waitFor(() => expect(stub.calls('/api/v1/auth/session').length).toBe(before + 1));
+  });
+});
