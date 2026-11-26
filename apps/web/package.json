@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "node src/shell/mock/generate.mjs && vite --mode mock",
+    "generate-mocks": "node src/shell/mock/generate.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -24,15 +26,57 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "msw": "3.0.5",
+    "openapi-typescript": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "yaml": "2.9.0"
   },
   "nx": {
     "tags": [
       "type:app",
       "lang:ts",
       "scope:web"
-    ]
+    ],
+    "targets": {
+      "generate-mocks": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "node apps/web/src/shell/mock/generate.mjs"
+        },
+        "cache": true,
+        "inputs": [
+          "{workspaceRoot}/docs/api-design/dist/openapi.bundled.yaml",
+          "{projectRoot}/src/shell/mock/generate.mjs",
+          "{projectRoot}/src/shell/mock/generator/**/*",
+          "{projectRoot}/src/**/mocks.config.json"
+        ],
+        "outputs": [
+          "{projectRoot}/src/shell/mock/generated",
+          "{projectRoot}/src/features/*/__mocks__/generated"
+        ]
+      },
+      "typecheck": {
+        "dependsOn": [
+          "^build",
+          "generate-mocks"
+        ]
+      },
+      "lint": {
+        "dependsOn": [
+          "^build",
+          "generate-mocks"
+        ]
+      },
+      "test": {
+        "dependsOn": [
+          "^build",
+          "generate-mocks"
+        ]
+      }
+    }
   }
 }

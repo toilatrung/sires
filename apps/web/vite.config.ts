@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import react from '@vitejs/plugin-react';
+import { msw } from 'msw/vite';
 import { defineConfig } from 'vite';
 
 // gateway is the only backend the SPA talks to (architecture 3.2); same origin in every environment.
 const gateway = process.env.SIRES_GATEWAY_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [react()],
+  // msw serves its service worker in dev only, for the opt-in mock (PID-00013); builds emit nothing from it.
+  plugins: [react(), msw()],
   server: {
     port: 5173,
     proxy: { '/api': gateway, '/auth': gateway, '/events': gateway },

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import type { RouteObject } from 'react-router';
+import type { FeatureMocks } from './mock/types';
 
 export type Locale = 'vi' | 'en';
 export type Messages = Record<string, string>;
@@ -13,4 +14,9 @@ export interface Feature {
   id: string;
   routes: RouteObject[];
   messages: Record<Locale, Messages>;
+  /**
+   * Mocks of the area (PID-00013), loaded only by the dev mock and tests. Write
+   * `mocks: import.meta.env.DEV ? () => import('./__mocks__') : undefined` so production builds drop them.
+   */
+  mocks?: () => Promise<{ default: FeatureMocks }>;
 }

@@ -1,0 +1,278 @@
+// SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+// Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+// SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+
+// Mock generator (PID-00013 S01). Reads the public OpenAPI bundle and writes, for a chosen set of operations,
+// one TypeScript module of typed operation descriptors and data factories (`<dir>/generated/index.ts`).
+//
+//   node apps/web/src/shell/mock/generate.mjs                 regenerate every mocks.config.json
+//   node apps/web/src/shell/mock/generate.mjs --out <dir> [--operations a,b] [--tags T] [--spec file] [--types stmt]
+//
+// `pnpm nx run @sires/web:generate-mocks` runs the first form; typecheck, test, lint and build depend on it.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import openapiTS, { astToString } from 'openapi-typescript';
+import { basePath, defaultSpec, deref, listOperations, loadSpec, refName, responsesOf, workspaceRoot } from './generator/openapi.mjs';
+import { createSampler } from './generator/sample.mjs';
+
+const LICENSE = [
+  'SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.',
+  'Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.',
+  'SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md',
+];
+const DEFAULT_TYPES = "import type { PublicApi } from '@sires/contracts';";
+const webRoot = path.join(workspaceRoot, 'apps/web');
+const JSON_TYPES = new Set(['application/json', 'application/problem+json']);
+
+// First ErrorCode the contract lists for each HTTP status (components/schemas/common.yaml#/ErrorCode).
+const STATUS_CODES = {
+  400: 'validation_failed', 401: 'unauthenticated', 403: 'forbidden', 404: 'not_found', 405: 'method_not_allowed',
+  409: 'invalid_transition', 412: 'precondition_failed', 413: 'payload_too_large', 415: 'unsupported_media_type',
+  422: 'idempotency_key_reused', 428: 'precondition_required', 429: 'rate_limited', 500: 'internal_error',
+  503: 'service_unavailable',
+};
+
+const rel = (file) => path.relative(workspaceRoot, file).split(path.sep).join('/');
+const literal = (value, indent) => JSON.stringify(value, null, 2).replace(/\n/g, `\n${' '.repeat(indent)}`);
+
+/** Picks operations by operationId and/or tag; `'*'` or nothing selects every operation. */
+export function selectOperations(doc, { operations, tags } = {}) {
+  const all = listOperations(doc);
+  if (operations === '*' || (!operations?.length && !tags?.length)) return all;
+  const known = new Set(all.map((op) => op.operationId));
+  const unknown = (operations ?? []).filter((id) => !known.has(id));
+  if (unknown.length) throw new Error(`Unknown operationId: ${unknown.join(', ')}`);
+  const knownTags = new Set(all.flatMap((op) => op.tags));
+  const missingTags = (tags ?? []).filter((tag) => !knownTags.has(tag));
+  if (missingTags.length) throw new Error(`Unknown tag: ${missingTags.join(', ')}`);
+  return all.filter((op) => operations?.includes(op.operationId) || op.tags.some((tag) => tags?.includes(tag)));
+}
+
+/** Which component a GET returns, so the runtime can answer it from shared fixtures. */
+function resourceOf(doc, { method, path: route }, schema) {
+  if (method !== 'GET' || !schema) return undefined;
+  const params = [...route.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
+  const last = /\{([^}]+)\}$/.exec(route)?.[1];
+  if (schema.$ref) {
+    const name = refName(schema.$ref);
+    return name && { schema: name, kind: 'item', ...(last ? { idParam: last } : {}), scope: params.filter((p) => p !== last) };
+  }
+  const itemsRef = (candidate) => candidate?.type === 'array' && candidate.items?.$ref ? refName(candidate.items.$ref) : undefined;
+  if (schema.type === 'array') {
+    const name = itemsRef(schema);
+    return name && { schema: name, kind: 'list', scope: params };
+  }
+  if (schema.allOf?.some((member) => member.$ref && refName(member.$ref) === 'Page')) {
+    const name = schema.allOf.map((member) => itemsRef(deref(doc, member).schema.properties?.items)).find(Boolean);
+    return name && { schema: name, kind: 'page', scope: params };
+  }
+  return undefined;
+}
+
+/** A problem+json body for a declared error without example: sampled from that spec's Problem, code by status. */
+function problemFor(doc, sampler, schema, status, operationId) {
+  const body = sampler.sample(schema, `${operationId}:${status}`, {});
+  const { schema: problem } = deref(doc, schema);
+  const properties = problem.properties ?? {};
+  const codes = deref(doc, properties.code ?? {}).schema?.enum ?? [];
+  const code = codes.includes(STATUS_CODES[status]) ? STATUS_CODES[status] : codes.includes('internal_error') ? 'internal_error' : codes[0];
+  if ('code' in properties && code !== undefined) body.code = code;
+  if ('status' in properties) body.status = Number(status);
+  if ('type' in properties && code !== undefined) body.type = `https://sires.etroy.local/problems/${code}`;
+  if ('title' in properties && code !== undefined) body.title = code.replace(/_/g, ' ');
+  for (const key of ['errors', 'currentState', 'instance']) delete body[key];
+  return body;
+}
+
+/** Descriptor and sample bodies of one operation; bodies are plain JSON. */
+export function describeOperation(doc, sampler, operation) {
+  const { operationId } = operation;
+  const responses = responsesOf(doc, operation.op);
+  const statuses = Object.keys(responses).filter((status) => /^\d{3}$/.test(status));
+  const success = statuses.find((status) => /^[23]/.test(status));
+  const model = { operationId, method: operation.method, path: operation.path, success: success ? Number(success) : null, responses: {} };
+  for (const status of statuses) {
+    const response = responses[status];
+    const content = Object.entries(response.content ?? {});
+    const entry = { contentType: null, headers: Object.keys(response.headers ?? {}) };
+    const json = content.find(([type]) => JSON_TYPES.has(type));
+    if (json) {
+      const [type, media] = json;
+      if (status === success) model.resource = resourceOf(doc, operation, media.schema);
+      const example = media.example ?? Object.values(media.examples ?? {})[0]?.value;
+      entry.contentType = type;
+      entry.schema = media.schema;
+      entry.body = example !== undefined ? structuredClone(example)
+        : type === 'application/problem+json' ? problemFor(doc, sampler, media.schema, status, operationId)
+          : sampler.sample(media.schema, `${operationId}:${status}`, {});
+    } else if (content.length) entry.contentType = content[0][0];
+    model.responses[status] = entry;
+  }
+  if (!model.resource) delete model.resource;
+  return model;
+}
+
+function emitOperation(model) {
+  const { operationId } = model;
+  const lines = Object.entries(model.responses).map(([status, entry]) => {
+    const headers = entry.headers.length ? `, headers: ${JSON.stringify(entry.headers)}` : '';
+    if (entry.body === undefined) return `      ${status}: { contentType: ${JSON.stringify(entry.contentType)}${headers} },`;
+    const type = JSON.stringify(entry.contentType);
+    return [`      ${status}: {`,
+      `        contentType: ${type}${headers},`,
+      `        body: (): ResponseBody<${JSON.stringify(operationId)}, ${status}, ${type}> => (${literal(entry.body, 8)}),`,
+      '      },'].join('\n');
+  });
+  return [
+    `  ${operationId}: {`,
+    `    operationId: ${JSON.stringify(operationId)},`,
+    `    method: ${JSON.stringify(model.method)},`,
+    `    path: ${JSON.stringify(model.path)},`,
+    `    success: ${model.success},`,
+    ...(model.resource ? [`    resource: ${JSON.stringify(model.resource)},`] : []),
+    '    responses: {',
+    ...lines,
+    '    },',
+    '  },',
+  ].join('\n');
+}
+
+/** Loads the spec and describes the selected operations (what generateMocks writes, as data). */
+export function buildModel({ spec = defaultSpec, operations, tags } = {}) {
+  const doc = loadSpec(spec);
+  const sampler = createSampler(doc);
+  const selected = selectOperations(doc, { operations, tags });
+  return { doc, selected, models: selected.map((operation) => describeOperation(doc, sampler, operation)) };
+}
+
+/** The SSE `Event` schema: from components when the contract has it, else from `/events` `x-event-schema`. */
+function eventSchema(doc) {
+  if (doc.components?.schemas?.Event) return { fromComponents: true, schema: doc.components.schemas.Event };
+  const stream = listOperations(doc).find((op) => op.operationId === 'streamEvents');
+  const media = stream && responsesOf(doc, stream.op)['200']?.content?.['text/event-stream'];
+  return media?.['x-event-schema'] ? { fromComponents: false, schema: media['x-event-schema'] } : undefined;
+}
+
+async function eventTypes(doc, schema) {
+  // Rewrite references the bundler left relative (common.yaml#/Id) to the component they name, keep only what
+  // Event needs, and let openapi-typescript (the tool behind PublicApi) print it.
+  const schemas = {};
+  const visit = (node) => {
+    if (!node || typeof node !== 'object') return node;
+    if (Array.isArray(node)) return node.map(visit);
+    const copy = {};
+    for (const [key, value] of Object.entries(node)) {
+      if (key === '$ref') {
+        const name = value.split('#')[1]?.split('/').filter(Boolean).at(-1);
+        if (!schemas[name]) { schemas[name] = {}; schemas[name] = visit(doc.components.schemas[name]); }
+        copy.$ref = `#/components/schemas/${name}`;
+      } else copy[key] = visit(value);
+    }
+    return copy;
+  };
+  schemas.Event = visit(schema);
+  const ast = await openapiTS({ openapi: '3.1.0', info: { title: 'Event', version: '0' }, paths: {}, components: { schemas } });
+  return astToString(ast);
+}
+
+/** Generates one mock module. Returns the files written. */
+export async function generateMocks({ spec = defaultSpec, operations, tags, out, types = DEFAULT_TYPES } = {}) {
+  if (!out) throw new Error('generateMocks: out is required');
+  const { doc, selected, models } = buildModel({ spec, operations, tags });
+  const dir = path.resolve(out);
+  fs.mkdirSync(dir, { recursive: true });
+  const written = [];
+  const write = (name, content) => {
+    const file = path.join(dir, name);
+    fs.writeFileSync(file, content);
+    written.push(file);
+  };
+  const banner = `${LICENSE.map((line) => `// ${line}`).join('\n')}\n\n`
+    + `// Generated by apps/web/src/shell/mock/generate.mjs from ${rel(spec)}. Do not edit; regenerate with\n`
+    + '// `pnpm nx run @sires/web:generate-mocks` (PID-00013).\n\n';
+  const event = selected.some((op) => op.operationId === 'streamEvents') ? eventSchema(doc) : undefined;
+  let eventBlock = '';
+  if (event) {
+    const enumValues = deref(doc, event.schema.properties?.type ?? {}).schema?.enum ?? [];
+    if (event.fromComponents) {
+      eventBlock = "export type Event = PublicApi.components['schemas']['Event'];\n";
+    } else {
+      write('event-schema.ts', `${banner}// Event is not under components.schemas yet; typed from /events x-event-schema.\n\n${await eventTypes(doc, event.schema)}`);
+      eventBlock = "import type { components as EventComponents } from './event-schema';\n\nexport type Event = EventComponents['schemas']['Event'];\n";
+    }
+    eventBlock += `export const eventTypes = ${JSON.stringify(enumValues)} as const;\n\n`;
+  }
+  const source = [
+    banner,
+    `${types}\n`,
+    eventBlock,
+    'type Operations = PublicApi.operations;',
+    'type Responses<O extends keyof Operations> = Operations[O] extends { responses: infer R } ? R : never;',
+    '/** Body type of response `S` with media type `C` of operation `O`, from PublicApi. */',
+    'export type ResponseBody<O extends keyof Operations, S extends keyof Responses<O>, C extends string> =',
+    '  Responses<O>[S] extends { content: infer M } ? (C extends keyof M ? M[C] : never) : never;',
+    '',
+    `export const source = ${JSON.stringify({ spec: rel(spec), basePath: basePath(doc) })} as const;`,
+    '',
+    'export const operations = {',
+    ...models.map(emitOperation),
+    '} as const;',
+    '',
+    'export type GeneratedOperationId = keyof typeof operations;',
+    '',
+  ].join('\n');
+  write('index.ts', source);
+  write('.gitignore', `${LICENSE.map((line) => `# ${line}`).join('\n')}\n\n# Generated by apps/web/src/shell/mock/generate.mjs.\n*\n`);
+  return { files: written, operations: selected.map((op) => op.operationId) };
+}
+
+/** Every `mocks.config.json` of the web app: the shell's and one per feature area under `__mocks__/`. */
+export function findConfigs(root = webRoot) {
+  const configs = [path.join(root, 'src/shell/mock/mocks.config.json')];
+  const features = path.join(root, 'src/features');
+  for (const area of fs.existsSync(features) ? fs.readdirSync(features).sort() : []) {
+    const file = path.join(features, area, '__mocks__/mocks.config.json');
+    if (fs.existsSync(file)) configs.push(file);
+  }
+  return configs.filter((file) => fs.existsSync(file));
+}
+
+export async function generateAll({ root = webRoot, spec = defaultSpec } = {}) {
+  const results = [];
+  for (const config of findConfigs(root)) {
+    const { operations, tags } = JSON.parse(fs.readFileSync(config, 'utf8'));
+    const out = path.join(path.dirname(config), 'generated');
+    results.push({ config, ...(await generateMocks({ spec, operations, tags, out })) });
+  }
+  return results;
+}
+
+function parseArgs(argv) {
+  const options = {};
+  for (let i = 0; i < argv.length; i += 2) {
+    const [flag, value] = [argv[i], argv[i + 1]];
+    if (value === undefined) throw new Error(`Missing value for ${flag}`);
+    if (flag === '--out') options.out = value;
+    else if (flag === '--spec') options.spec = path.resolve(value);
+    else if (flag === '--operations') options.operations = value === '*' ? '*' : value.split(',').filter(Boolean);
+    else if (flag === '--tags') options.tags = value.split(',').filter(Boolean);
+    else if (flag === '--types') options.types = value;
+    else throw new Error(`Unknown option ${flag}`);
+  }
+  return options;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  try {
+    const args = process.argv.slice(2);
+    const results = args.length ? [await generateMocks(parseArgs(args))] : await generateAll();
+    for (const result of results) {
+      console.log(`mocks: ${result.operations.length} operations → ${rel(path.dirname(result.files.at(-1)))}`);
+    }
+  } catch (error) {
+    console.error(`mocks: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
