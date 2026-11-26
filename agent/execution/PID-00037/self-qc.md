@@ -1,6 +1,6 @@
 # PID-00037 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — 6 test của shell lỗi vì `shellStub` chưa trả `GET /dashboard`, `GET /provider-connections` (G1, cần phiên điều phối hoặc phiên web-shell sửa `apps/web/src/shell/test/stub.ts`); mã của khu vực đạt mọi kiểm tra
+**Kết luận:** Đạt
 
 - **Ticket:** [PID-00037](../../../docs/tickets/issues/PID-00037/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 27/11/2026
@@ -80,7 +80,7 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 - [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/` (hồ sơ `docs/` có trên nhánh là do gộp PR #123, không sửa thêm).
 - [x] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5 (không có).
 - [x] Không còn mã gỡ lỗi, TODO không có chủ; test mới có tên theo AC, EC.
-- [ ] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH — còn G1 (HIGH, ngoài luồng), chờ phiên điều phối.
+- [x] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH (G1 đã xử lý ở Lần 3).
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
@@ -88,11 +88,22 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
 | --- | --- | --- | --- | --- | --- |
-| G1 | partial | HIGH | CI của `@sires/web` có 6 test của shell lỗi khi `/dashboard` là màn thật: `shellStub` không trả `GET /dashboard`, `GET /provider-connections` | `pnpm nx run-many -t test -p @sires/web`; `apps/web/src/shell/test/stub.ts` | Không sửa được trong luồng `web/global` (quy tắc 1.4.9). Đã báo phiên điều phối kèm bản sửa hai dòng, đã thử cục bộ đạt |
+| G1 | partial | HIGH | CI của `@sires/web` có 6 test của shell lỗi khi `/dashboard` là màn thật: `shellStub` không trả `GET /dashboard`, `GET /provider-connections` | `pnpm nx run-many -t test -p @sires/web`; `apps/web/src/shell/test/stub.ts` | Đã xử lý ở Lần 3: merge #138 (`3b63522`), test của shell không còn phụ thuộc màn của khu vực |
 | G2 | contradicts | LOW | `designs/notes.html` mục Dữ liệu ghi tên project theo màn tham chiếu; mock dùng thế giới demo chung của PID-00013 (tên khác) | `__mocks__/store.ts:49` | Giữ thế giới demo chung để mọi khu vực nhất quán (design.md §6); đề xuất PO sửa câu đó trong hồ sơ |
 | G3 | partial | LOW | Banner khôi phục chỉ nêu loại workflow; H4 nêu thêm Task và bước dừng “theo trường có trong `Workflow`”. `Workflow` có `taskId`, `currentStepId` nhưng không có mã Task hay số bước | `dashboard/DashboardScreen.tsx:65` | Để PID-00060 hoặc Hội tụ, khi có dữ liệu Task và bước |
 | G4 | partial | LOW | Khối Workflow, Lỗi gần đây, cột Bản thảo mới có khung (tiêu đề, liên kết) | `dashboard/DashboardScreen.tsx:101` | Đúng phân chia H2; PID-00060 S06 lấp nội dung |
 | G5 | partial | LOW | EC17 chưa kiểm riêng ở 1024×768 | preview | Kiểm ở PID-00060 khi Dashboard đủ khối |
+
+
+## Lần 3 — 27/11/2026
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/web` (sau khi merge #138 `3b63522`) | Đạt — 22 file test, 162 test (gồm 24 test của PID-00037); build đạt |
+| `node scripts/docs/add-license.mjs --check` | 0 file thiếu ghi chú giấy phép |
+| `check-ui.mjs apps/web/src/features/global` | 0 lỗi (6 cảnh báo shadow của lớp nổi như Lần 1) |
+
+G1 đã xử lý. Không còn khoảng trống CRITICAL, HIGH. Kết luận: Đạt.
 
 ---
 

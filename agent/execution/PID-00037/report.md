@@ -1,6 +1,6 @@
 # PID-00037 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — G1: 6 test của shell cần `shellStub` trả `GET /dashboard`, `GET /provider-connections` (file của luồng web/shell); mã của khu vực xong
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00037](../../../docs/tickets/issues/PID-00037/index.html) · **Luồng:** `web/global` · **Giai đoạn:** PH-02
 - **Nhánh:** `web/global-pid-00037` (từ `origin/preview/ui-ph02` a9bcc0e, gộp hồ sơ PR #123; đã commit) · **PR:** [#141](https://github.com/toilatrung/sires/pull/141)
@@ -12,7 +12,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 ## 1. Tóm tắt
 
-- Slice: 6/6 xong. Bị chặn: không slice nào; CI của `@sires/web` còn 6 test của shell lỗi (G1, ngoài luồng).
+- Slice: 6/6 xong. Bị chặn: không có (G1 đã xử lý ở Lần 3).
 - AC: 13/13 đạt, kiểm trên mock của PID-00013. Edge case: 21/21 đã giải quyết; EC17 kiểm tay ở 1440 và 390, EC19, EC21 phần Dashboard chưa có test riêng.
 - Yêu cầu thêm: 0.
 
@@ -44,7 +44,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 ## 4. Việc còn lại
 
-- G1: sửa `apps/web/src/shell/test/stub.ts` (luồng web/shell), thêm `GET /api/v1/dashboard` và `GET /api/v1/provider-connections` vào `shellStub`. Đã báo phiên điều phối. Có bản sửa thì chạy lại `pnpm nx run-many -t test -p @sires/web`, đổi trạng thái sang “Xong — chờ QC”.
+- G1: đã xử lý ở Lần 3 (merge #138).
 - Nội dung khối Pending actions, Workflow, cột Bản thảo, Lỗi gần đây: PID-00060 S06.
 
 ## 5. Yêu cầu thêm
@@ -58,8 +58,8 @@ Không có.
   - (2) README mock của PID-00013 nên ghi điều kiện `import.meta.env.DEV && import.meta.env.MODE !== 'production'` cho trường `mocks` của khu vực (build.spec, NODE_ENV=development).
   - (3) `GET /me` có `setup.hasValidProviderConnection`. Khi Hội tụ, PO có thể chọn dùng trường này thay `listProviderConnections` cho banner API key (H3 chọn “chưa có kết nối nào” theo UX-SETTINGS-002).
 - **Yêu cầu hợp đồng:** không có (đề xuất sửa nguồn đã ghi ở hồ sơ, không chặn).
-- **Còn mở:** G1 (test của shell).
-- **Bước tiếp theo:** sửa G1 ở luồng web/shell; mở PR vào `develop`, xếp chồng trên #120, #138, #131 và #123 (hồ sơ); QC chạy `spec-converge-skill PID-00037`.
+- **Còn mở:** không có.
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00037` trên PR #141 (vào `develop`, xếp chồng trên #120, #138, #131 và #123).
 - **Tài liệu đi kèm:**
   - `dashboard-mock-1440.jpg`: Dashboard trên mock, 1440×900 (S05, S06).
   - `dashboard-first-run.jpg`: Dashboard first-run (S06).
@@ -80,6 +80,13 @@ Không có.
 - **Sửa thêm** (commit `d6b9c9c`): danh sách workflow chặn lưu trữ, xóa lấy theo project rồi lọc ở client. Mock dùng chung không hiểu `status` dạng mảng.
 - **Kiểm:** `npx vitest run src/features/global/ src/shell/i18n.spec.ts`: 38 test đạt. Ảnh mới: `dashboard-mock-1440.jpg`.
 - **Trạng thái:** không đổi, vẫn chờ G1 (test của shell). Phiên web-shell sửa trên #138; tôi đã ghi bản vá đã đo ở `side-session-notes/…/web-global-shell-tests.md`.
+
+
+## Lần 3 — 27/11/2026
+
+- Merge `origin/web/shell-pid-00012` (#138, head `3b63522`), không rebase. Bản shell đó sửa test của shell để không phụ thuộc màn thật của khu vực (`renderShellFrame`, `neutralFeatures`, `FetchStub.calls(path, method, query)`, `shellStub` trả rỗng các GET của global). G1 đã xử lý.
+- Kiểm: `pnpm nx run-many -t lint typecheck test build -p @sires/web` đạt — 22 file test, 162 test (gồm 24 test của PID-00037).
+- Trạng thái: Xong — chờ QC.
 
 ---
 
