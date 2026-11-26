@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00114](../../../docs/tickets/issues/PID-00114/index.html) · **Luồng:** `web/research` · **Giai đoạn:** PH-02
-- **Nhánh:** `web/pid-00114-research` (tạo từ `origin/preview/ui-ph02` `a9bcc0e`; gộp thêm #140 `8ebd4cf` và shell `8a94aa9`) · **PR:** chưa mở
+- **Nhánh:** `web/pid-00114-research` (tạo từ `origin/preview/ui-ph02` `a9bcc0e`; gộp thêm #140 `8ebd4cf` và shell `8a94aa9`) · **PR:** [#147](https://github.com/toilatrung/sires/pull/147) vào `develop`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
