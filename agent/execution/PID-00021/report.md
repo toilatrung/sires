@@ -1,6 +1,6 @@
 # PID-00021 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — EC01: chưa có key chính thức Anthropic, Google, OpenAI; key cổng trung gian không có kênh Claude, cổng không giữ structured output của Gemini. PO cho merge kết luận một phần (21/11/2026, Lần 2)
+**Trạng thái:** Đang làm — Lần 3 (27/11/2026): chạy lại qua proxy theo D-KEY (PC-05 S-K1, S-K2, S-DK); sửa G5, G6, G8
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
 - **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main`
