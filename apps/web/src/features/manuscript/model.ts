@@ -193,7 +193,8 @@ export function lineDiff(before: string, after: string): DiffLine[] {
       out.push({ kind: 'same', text: a[i]!, oldLine: i + 1, newLine: j + 1 });
       i += 1;
       j += 1;
-    } else if (j < m && (i >= n || lcs[i]![j + 1]! >= lcs[i + 1]![j]!)) {
+    } else if (j < m && (i >= n || lcs[i]![j + 1]! > lcs[i + 1]![j]!)) {
+      // On a tie the removed line comes first, as in a unified diff.
       out.push({ kind: 'add', text: b[j]!, newLine: j + 1 });
       j += 1;
     } else {

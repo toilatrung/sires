@@ -227,7 +227,8 @@ function Box({
               entry={entry}
               bad={bad}
               open={open}
-              current={entry.path === path}
+              // The phone has no editor (H21): no “Mở file” there.
+              current={variant === 'mobile' || entry.path === path}
               onToggle={variant === 'editor' && entry.path !== path ? () => setOpenFiles((now) => {
                 const next = new Set(now);
                 if (next.has(key)) next.delete(key);
