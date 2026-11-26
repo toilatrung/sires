@@ -3,7 +3,7 @@
 **Kết luận:** Đạt (phần nhãn tin kết quả của AC01 chờ Chat của PID-00058)
 
 - **Ticket:** [PID-00084](../../../docs/tickets/issues/PID-00084/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 27/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 2)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -61,6 +61,24 @@ Dev tự chạy trên mã và hồ sơ của #134.
 | G2 | partial, LOW | Trên `dev:mock`, tên kết nối và số bước chưa hiện: `listProviderConnections` và `getWorkflow` là mock sinh tự động | Giữ: các operation này thuộc khu vực khác; test override cục bộ |
 
 Kết quả: 0 CRITICAL, 0 HIGH; 1 MEDIUM chờ PID-00058, 1 LOW.
+
+
+## Lần 2 — 27/11/2026
+
+Sửa theo QC Lần 1 (report.md Lần 2). Đã merge `b157d02` (#138) vào nhánh.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run src/features/project` (apps/web) | 1 file, 17 test đạt (13 cũ, 4 mới; `› bỏ qua`, `› thiếu lựa chọn…` mở rộng) |
+| `npx vitest run` (toàn bộ apps/web, sau khi merge #138) | 22 file, 166 test đạt |
+| `tsc --noEmit -p tsconfig.json`, `eslint src/features/project` (apps/web) | Đạt, 0 lỗi |
+| `check-ui.mjs apps/web/src/features/project` | 0 lỗi, 0 cảnh báo |
+| Đột biến G1: trả điều kiện sự kiện cũ (chỉ bỏ qua khi đang gửi) | `› bỏ qua (PID-00084-AC01, …)` đỏ |
+| Đột biến G4: bỏ điều kiện “mới hơn” khi nhận prop | `› Chat render lại với bản cũ…` đỏ |
+| Thao tác tay trên `dev:mock`, gắn tạm vào route chat (không commit) | 1440×900, 1024×768, 390×844: không cuộn ngang; thẻ thiếu cấu hình có “Mở Agent Models”; meta có “bước 4/5 của wf-052” là liên kết. Bấm “Bỏ qua” ở thẻ đầu: chỉ `POST …/response`, focus về thẻ; phát `prompt.status_changed` của chính câu trả lời trong console: không đọc lại, không có dòng “nơi khác”; phát cho thẻ còn Open: thẻ đọc lại `GET /prompts/{id}`. Ảnh `screenshots/01-…`, `02-…`, `03-the-de-xuat-1024.png` |
+| `add-license --check` | 0 file thiếu |
+
+Edge case đổi so với Lần 1: EC07 thêm trường hợp sự kiện của chính câu trả lời (G1); EC09 thêm ba nhánh nhận biết (G2) và liên kết sau khi chọn (G12); EC10 thêm lỗi gửi ở thẻ chuẩn và bản đọc lại không đủ đề xuất (G8).
 
 ---
 
