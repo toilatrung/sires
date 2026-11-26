@@ -16,8 +16,8 @@ export type Party = Schemas['DeliberationPartyRef'];
 export const partyKey = (party: Party) => (party.agent === 'orchestrator' ? 'orchestrator' : `analysis:${party.instance ?? 'A'}`);
 export const partyName = (party: Party) => (party.agent === 'orchestrator' ? 'Orchestrator' : `Analysis Agent${party.instance ? ` ${party.instance}` : ''}`);
 
-/** Short code of a session or snapshot id, as the reference screens write it (dl-3c1, cs-2a). */
-export const shortCode = (prefix: 'dl' | 'cs', id: string) => `${prefix}-${id.replace(/-/g, '').slice(-3)}`;
+/** Short code of a session, snapshot or Agent Run id, as the reference screens write it (dl-3c1, cs-2a, ar-81b). */
+export const shortCode = (prefix: 'dl' | 'cs' | 'ar', id: string) => `${prefix}-${id.replace(/-/g, '').slice(-3)}`;
 
 const seg = encodeURIComponent;
 

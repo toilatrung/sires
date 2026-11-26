@@ -11,7 +11,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { formatTime } from '../../../shell';
-import { hrefs, partyKey, partyName, type Detail, type Entry, type Party, type Schemas } from './model';
+import { hrefs, partyKey, partyName, shortCode, type Detail, type Entry, type Party, type Schemas } from './model';
 
 type Position = Schemas['PositionContent'];
 type Critique = Schemas['CritiqueContent'];
@@ -69,8 +69,8 @@ export function Board({ projectId, detail }: { projectId: string; detail: Detail
         return (
           <div className="dl-none" data-failed="" role="note">
             <strong>{t('deliberation.noPosition')}</strong>
-            {runId && <span>{t('deliberation.runFailed', { id: runId.slice(0, 8) })}</span>}
-            {runId && <Link to={hrefs.agentRun(projectId, runId)}>{t('deliberation.viewRun', { id: runId.slice(0, 8) })}</Link>}
+            {runId && <span>{t('deliberation.runFailed', { id: shortCode('ar', runId) })}</span>}
+            {runId && <Link to={hrefs.agentRun(projectId, runId)}>{t('deliberation.viewRun', { id: shortCode('ar', runId) })}</Link>}
           </div>
         );
       }
