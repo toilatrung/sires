@@ -4,7 +4,19 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — lỗi build, khôi phục, diff, nguồn revision cho PID-00115 (27/11/2026)
+
+Theo “Phải sửa ở nguồn” của PID-00115 (mục 1, 3, 6, 7, 9; H11, H14, H16), chốt theo đề xuất, PO ủy quyền 26/11/2026.
+
+- `components/schemas/manuscript.yaml#/BuildIssue`: danh mục `code` cho lỗi phổ biến (`unbalanced_braces`, `undefined_control_sequence`, `missing_file`, `missing_package`, `undefined_citation`, `shell_escape_disabled`, `path_outside_manuscript`, `timeout`, `memory_limit`, `infrastructure_unavailable`; MS-BUILD-001, MS-BUILDENV-001), mã ngoài danh mục hiện tiêu đề chung; thêm `params` (đối tượng chuỗi: `package`, `path`, `key`, `command`, `limit`, `reason`) để giao diện dựng câu theo ngôn ngữ giao diện (UX-MS-004, UX-I18N-002); `message` là thông báo gốc của compiler; `friendlyMessage` là gợi ý, có thể do agent, viết theo `Preferences.uiLanguage` lúc build. `code` vẫn là chuỗi. Dùng chung với `SandboxResult.issues` (`internal/schemas.yaml`). Phía backend: PID-00108 (sandbox-runner, manuscript).
+- `FileChange.restoreFromRevisionId` (chỉ ghi): khôi phục file văn bản hoặc nhị phân về nội dung của revision cũ; `RevisionCreate` và `commitManuscriptChanges` mô tả khôi phục một file hoặc toàn bộ bản thảo bằng một revision mới (MS-REVISION-001). Phía backend: PID-00053.
+- `DiffHunk`: mô tả quy ước unified diff cho `lines` và bốn số của dòng `@@`.
+- `ManuscriptRevision.source`: giữ ba giá trị như PRD 18.1 và DDL `manuscript.sql` (CHECK của `source`); mô tả ghi chèn sơ đồ là `change_proposal` có `artifactVersionIds`, khôi phục là `direct_edit`. `manual_submission` của MS-REVISION-001 không thêm (là loại Artifact của research, chưa có luồng tạo revision; chờ PO).
+- `components/schemas/project.yaml#/PendingAction.deepLink`: mô tả đường dẫn của `manuscript_change_proposal` là `/projects/{projectId}/manuscript?proposal={proposalId}` (PID-00115 mục 9, H11).
+- Chưa sửa: ánh xạ citation tới claim tại vị trí và vị trí citation trong PDF (mục 2) vì cần mô hình dữ liệu mới (DBQ), chờ PO.
+- Tương thích ngược: chỉ thêm trường tùy chọn và mô tả. Lint `openapi.yaml`, `internal/manuscript.yaml`, `events/asyncapi.yaml` sạch; `dist/openapi.bundled.yaml` dựng lại.
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).
