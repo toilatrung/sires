@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00016](../../../docs/tickets/issues/PID-00016/index.html) · **Luồng:** `identity` · **Giai đoạn:** PH-01
-- **Nhánh:** `identity/pid-00016-migration-kms-dbd14` (từ `origin/main` `a367f0b`; đã commit, chưa push) · **PR:** chưa mở. Nhánh cũ `identity/pid-00016-migration-kms` không dùng nữa
-- **Cập nhật:** 25/11/2026 (Lần 2)
+- **Nhánh:** `identity/pid-00016-migration-kms-dbd14` (từ `origin/main` `a367f0b`) · **PR:** [#107](https://github.com/toilatrung/sires/pull/107), đã merge vào `main` (`a53e3c9`, 25/11/2026). Nhánh cũ `identity/pid-00016-migration-kms` không dùng nữa. Lần 3 (QC G1–G3) đi cùng PR của PID-00159, nhánh `infra/pid-00159-local-roles`
+- **Cập nhật:** 27/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -52,7 +52,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
   3. `pnpm-lock.yaml` (`check-tracks` tính là `repo`) đổi vì thêm drizzle-orm, pg, drizzle-kit, @types/pg bằng `catalog:` — quy tắc 1.4.7.
 - **Yêu cầu hợp đồng:** không có.
 - **Còn mở:** không có. PID-00014 (gateway, PR #63) cập nhật migration gateway theo `gateway.sql` mới sau khi PR này vào `main` (PC-04 B3).
-- **Bước tiếp theo:** Dev mở PR khi được yêu cầu (vào `main`, cổng PH-01 chưa đạt); QC độc lập `spec-converge-skill PID-00016`. PID chờ PID này: PID-00041, PID-00042, PID-00043.
+- **Bước tiếp theo:** PR #107 đã merge; QC độc lập đã ghi `qc-report.md` (không còn CRITICAL, HIGH). Ba khoảng trống LOW G1–G3 làm ở Lần 3 cùng PID-00159 (PC-05 P40); QC độc lập đối chiếu lại khi review PR đó. PID chờ PID này: PID-00041, PID-00042, PID-00043.
 - **Tài liệu đi kèm:** không có.
 
 ## Lần 2 — 25/11/2026
@@ -62,6 +62,14 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 - **Đã làm:** đổi tên policy `definer_lookup` → `owner_lookup` đúng DBD-14; sửa `identity.sql`, `gateway.sql` (YC-01); gộp policy vào `0000_init.sql` và chép lại `00-common.sql` sau EC09 (#94), bỏ migration `0002_dbq10_definer_lookup` (PID-00016 chưa merge nên chưa database nào áp, như các service khác chép `00-common.sql` mới vào migration đầu); bỏ `PENDING_REFERENCE_PATCHES`, phép so `pg_dump` khớp hoàn toàn với DDL tham chiếu; `enableMigratorLogin` thay `enableOwnerLogin` (vai trò `sires_identity_migrator` đúng database 3.2); `vitest.config.ts` (YC-02); dump qua base64 (YC-03); README.
 - **Kết quả:** 3 file, 20/20 test của `@sires/identity`; `nx affected` 20 project đạt. Đột biến bỏ policy khỏi `0000_init.sql`: 2 test đỏ (so schema, tra cứu bằng vai trò thật).
 - **Ảnh hưởng ngoài luồng:** `gateway.sql` đổi; trên `main` `apps/gateway` chưa có migration hay test so schema nên không có test nào lệch; `sample-service` (`ddl-pg16.spec.ts` chạy mọi file DDL) đạt.
+
+## Lần 3 — 27/11/2026
+
+- **Lý do:** PC-05 P40 (chốt theo đề xuất, PO ủy quyền 26/11/2026): làm G1–G3 (LOW) của QC độc lập cùng PID-00159, khi compose cục bộ đã tạo vai trò theo database 3.2. Người làm: phiên do PO `toilatrung` giao.
+- **G1:** `src/migration.spec.ts › thiếu vai trò thì migration lỗi (EC07)` tách hai ca: thiếu mọi vai trò (lỗi nêu `sires_identity_owner`, câu `CREATE POLICY owner_lookup`) và ca EC07 của scope — có owner, thiếu `_app`, `_system`, `_purge` (lỗi nêu `sires_identity_app`, SQLSTATE 42704, mã 1, rollback, migration không tạo vai trò). Chú thích đầu `migrations/0000_init.sql` không sửa: migration đã merge, đã áp trên database cục bộ, file ghi “không sửa file này sau khi merge”; danh sách vai trò phải có (cả owner) đã ở README mục “Database và migration”.
+- **G2:** describe AC02 chạy lệnh migrate và DDL tham chiếu bằng `sires_identity_migrator` (`enableMigratorLogin`; `applyReferenceDdl(database, connectionString)` ở `src/db/database.testkit.ts`), kiểm `app.account` thuộc owner, chạy lại bằng migrator không áp thêm. Không còn test nào migrate bằng superuser trừ ca EC07.
+- **G3:** dòng Nhánh, PR, Bước tiếp theo ở đầu file này.
+- **Kết quả:** `pnpm nx run @sires/identity:test`: 3 file, 21/21 test đạt (thêm một ca EC07). Trên compose của PID-00159 (`pnpm local:migrate`, volume mới): `identity migrate: áp 2 migration mới, đã ghi sổ 2`, 25 đối tượng trong `app` thuộc `sires_identity_owner` (`agent/execution/PID-00159/self-qc.md`).
 
 ---
 

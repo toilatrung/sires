@@ -127,6 +127,21 @@ EC01–EC10 như Lần 1, đạt lại trong lần chạy này. Thay đổi:
 | G5 | unrequested | LOW | Test UTF-8 và dump qua base64 (YC-03), `vitest.config.ts` (YC-02) ngoài hồ sơ ticket | report.md mục 5 | Đã ghi YC, theo #100 và PC-04 A6 |
 | G6 | partial | LOW | `gateway.sql` đã có `owner_lookup` trên `app.session` nhưng migration gateway chưa có | `docs/database/ddl/gateway.sql:58`; `apps/gateway/migrations/` rỗng trên `main` | Việc của PID-00014 (PR #63) sau khi PR này vào `main` (PC-04 B3) |
 
+## Lần 3 — 27/11/2026
+
+QC độc lập G1–G3 (LOW), PC-05 P40; làm cùng PID-00159.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run @sires/identity:test --skip-nx-cache` | 3 file, 21/21 test đạt (Testcontainers, Docker trong WSL) |
+| `pnpm local:migrate` trên compose PID-00159, volume mới | identity: áp 2 migration, chạy lại áp 0; mọi đối tượng trong `app` thuộc `sires_identity_owner` |
+
+| G (QC) | Đã xử lý |
+| --- | --- |
+| G1 | `migration.spec.ts › có owner, thiếu _app, _system, _purge thì migration lỗi (QC G1)` đạt; ca thiếu mọi vai trò giữ riêng. Chú thích `0000_init.sql` không sửa (migration đã merge) |
+| G2 | Describe AC02 migrate và áp DDL tham chiếu bằng migrator; phép so `pg_dump` vẫn khớp hoàn toàn |
+| G3 | `report.md` dòng Nhánh, PR #107, Bước tiếp theo |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
