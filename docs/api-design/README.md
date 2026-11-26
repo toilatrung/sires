@@ -4,7 +4,15 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — mã lỗi provider `invalid_request`, DEC-62 (27/11/2026)
+
+Phiếu chốt cuối PH-01 ([PC-05](../overview/phieu-chot-cuoi-ph01.html)) S-OQ-113, S-M1, chốt theo đề xuất (PO ủy quyền 26/11/2026); trả lời OQ-113 (DEC-62).
+
+- `components/schemas/common.yaml#/ProviderErrorCode`: thêm `invalid_request` — provider từ chối yêu cầu bằng HTTP 400 không thuộc mã khác (tham số không hợp lệ; schema hay khai báo công cụ bị từ chối); cố định, không thử lại. Mô tả theo kiến trúc 8.4 (đã thêm dòng ánh xạ và bảy bổ sung của SPK-01).
+- Tương thích ngược với bên đọc theo hợp đồng (thêm giá trị enum ở dữ liệu trả về: `ProviderConnection` kiểm tra, `AgentRun.error`, `AgentRunResult` nội bộ). Danh mục đóng trong mã phải thêm cùng giá trị: `sires_common.model_gateway.ProviderErrorCode` (luồng platform); adapter thật ở PID-00070.
+- `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, `internal/agent-core.yaml` sạch).
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).

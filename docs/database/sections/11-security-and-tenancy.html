@@ -59,6 +59,8 @@ CREATE POLICY tenant_isolation ON app.&lt;t&gt;
 <tr><td><code>audit.audit_event</code></td><td>SELECT (truy vấn, export)</td><td>SELECT, INSERT (consumer)</td><td>SELECT, DELETE (purge)</td></tr>
 </tbody></table></div>
 <p>Không vai trò nào có TRUNCATE, quyền DDL hay <code>UPDATE</code> trên bảng chỉ ghi thêm. Vai trò owner chỉ dùng cho migration; ứng dụng không bao giờ kết nối bằng owner.</p>
+<p>Hàm <code>SECURITY DEFINER</code> tra cứu trước khi có tenant context (<code>app.find_session</code>, <code>app.find_account_by_identity</code>) đọc bảng qua policy <code>owner_lookup</code> chỉ cho đọc của owner, giữ <code>FORCE ROW LEVEL SECURITY</code>: xem <a href="13-decisions-risks-and-open-issues.html#dbd-14">DBD-14</a>, kể cả ngoại lệ vai trò migrator (thành viên của owner) kế thừa quyền đọc này (<a href="../../overview/phieu-chot-cuoi-ph01.html">PC-05</a> P23, P42).</p>
+<p><strong>Migration dữ liệu theo tenant</strong> (<a href="../../overview/phieu-chot-cuoi-ph01.html">PC-05</a> P13, 27/11/2026, chốt theo đề xuất, PO ủy quyền 26/11/2026): <code>FORCE ROW LEVEL SECURITY</code> áp cả owner, nên migration dữ liệu chạy bằng migrator (thành viên owner) không thấy dòng của tenant khi chưa đặt tenant context. Migration dữ liệu (sửa, chuyển dữ liệu của các tài khoản) chạy bằng vai trò <code>_system</code> và đặt <code>app.account_id</code> theo từng tài khoản (<code>SET LOCAL</code> trong giao dịch của tài khoản đó); migration cấu trúc vẫn chạy bằng migrator.</p>
 
 <h2 id="s-11-3">11.3. Dữ liệu nhạy cảm</h2>
 <div class="table-wrap"><table>

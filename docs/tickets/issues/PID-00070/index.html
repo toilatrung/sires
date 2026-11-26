@@ -82,6 +82,15 @@
 
 <h2 id="s-5">5. Làm rõ</h2>
 <p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00070</code> khi chuẩn bị giao Dev.</p>
+<h3 id="ghi-chu-pc05">Ghi chú cho lần làm rõ (<a href="../../../overview/phieu-chot-cuoi-ph01.html">PC-05</a> S-P70, 27/11/2026)</h3>
+<p>chốt theo đề xuất (PO ủy quyền 26/11/2026), riêng key theo lựa chọn của PO ngày 26/11/2026 (S-K1, S-K2). Lần làm rõ ghi các điểm dưới vào hồ sơ:</p>
+<ul><li>PID-00021 (SPK-01) đủ cho phụ thuộc của PID này ở mức Xây (Model Gateway giả lập); PID này được làm rõ và bắt đầu trên kết luận một phần của SPK-01.</li>
+<li>API và đường dự phòng theo SPK-01: API chốt cho từng adapter, output tool làm đường dự phòng cho mọi adapter, đề xuất framework Pydantic AI (<code>agent/execution/PID-00021/report.md</code>).</li>
+<li>Ánh xạ lỗi theo kiến trúc <a href="../../../architecture/sections/08-model-gateway-and-integrations.html#s-8-4">8.4</a> (bảy bổ sung của S-M1) và mã <code>invalid_request</code> (DEC-62, trả lời OQ-113): HTTP 400 không thuộc mã khác, cố định, không thử lại. <code>sires_common.model_gateway.ProviderErrorCode</code> phải có mã này (luồng platform).</li>
+<li>Quy tắc key (S-G9): key của một Provider Connection chỉ gửi tới base URL của chính kết nối đó, không gửi tới endpoint khác.</li>
+<li>Key để test và phát triển (D-KEY): key proxy (cổng trung gian PO tự cấp, ở <code>.sires/provider-keys.env</code> của máy Dev, ngoài Git) được tính là key provider; không cần key chính thức. Không ghi key hay host proxy vào repo.</li>
+<li>PID-00070-AC03 (cùng schema, ba provider đều qua kiểm schema) chỉ nghiệm thu ở ô Hội tụ. Vì SPK-01 Lần 3 chạy qua proxy và không đo được Claude (proxy không có kênh Claude), Gemini (hết thời gian chờ), PID này tự đo năng lực Claude, Gemini ở ô Hội tụ khi có key có kênh tương ứng.</li>
+<li>429 thật (S-G10): kiểm ở ô Hội tụ bằng key bậc thấp riêng, không dùng key dùng chung.</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
 <ul><li>Không có.</li></ul>
 <h3 id="con-mo">Còn mở</h3>

@@ -105,6 +105,7 @@
 <li>RabbitMQ gián đoạn: lệnh ghi vẫn thành công (outbox giữ sự kiện), realtime và việc bất đồng bộ trễ lại cho tới khi broker trở lại.</li>
 <li>Provider lỗi kéo dài không làm hệ thống lỗi: chỉ workflow liên quan dừng theo chính sách (INT-PROVIDER-004).</li>
 <li>eTroy OIDC lỗi: chỉ ảnh hưởng đăng nhập mới (INT-OIDC-004).</li>
+<li>Kiểm tra sống và sẵn sàng (<a href="../../overview/phieu-chot-cuoi-ph01.html">PC-05</a> P29, 27/11/2026, chốt theo đề xuất, PO ủy quyền 26/11/2026): <code>GET /health</code> trả 200 khi tiến trình chạy (liveness), không kiểm phụ thuộc; mỗi service thêm <code>GET /ready</code> kiểm kết nối database và RabbitMQ (readiness). Staging và probe readiness của Helm dùng <code>/ready</code>; probe liveness dùng <code>/health</code>. Thư viện nền (luồng platform) cung cấp <code>/ready</code> chung cho mọi service; hiện mọi service mới có <code>/health</code> trả 200 cố định.</li>
 <li>Runbook: khôi phục từ PITR (theo từng database), xoay KEK, sự cố lộ key, sandbox bị lạm dụng, queue tắc hoặc dead-letter tăng, phát lại sự kiện từ outbox.</li>
 </ul>
 
