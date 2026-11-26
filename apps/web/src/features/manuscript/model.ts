@@ -264,8 +264,13 @@ export async function download(response: Response, fallback: string): Promise<vo
   const disposition = response.headers.get('content-disposition') ?? '';
   const name = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallback;
   const blob = await response.blob();
-  if (typeof URL.createObjectURL !== 'function') return;
-  const url = URL.createObjectURL(blob);
+  let url: string;
+  try {
+    url = URL.createObjectURL(blob);
+  } catch {
+    // No object URL (tests, very old browsers): nothing to save.
+    return;
+  }
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
