@@ -14,6 +14,8 @@ import { operations } from './generated';
 import {
   AGENTS,
   DEFAULT_THRESHOLDS,
+  INDEXED_REFERENCES,
+  defaultThresholds,
   addConnection,
   clearAssignment,
   current,
@@ -66,7 +68,7 @@ export default defineMocks({
     updateVerificationThresholds: ({ body }) => {
       seed();
       const s = current();
-      const next = { ...s.thresholds, ...(body ?? {}), updatedAt: new Date().toISOString() };
+      const next = { ...s.thresholds, ...(body ?? {}), defaults: s.thresholds.defaults, updatedAt: new Date().toISOString() };
       next.isDefault = JSON.stringify({ claimSupport: next.claimSupport, citationMismatch: next.citationMismatch }) === JSON.stringify(DEFAULT_THRESHOLDS);
       s.thresholds = next;
       return { status: 200, body: structuredClone(next) };
@@ -74,7 +76,7 @@ export default defineMocks({
     resetVerificationThresholds: () => {
       seed();
       const s = current();
-      s.thresholds = { ...structuredClone(DEFAULT_THRESHOLDS), isDefault: true, updatedAt: new Date().toISOString() };
+      s.thresholds = defaultThresholds();
       return { status: 200, body: structuredClone(s.thresholds) };
     },
     listProviderConnections: () => {
@@ -93,7 +95,8 @@ export default defineMocks({
     updateProviderConnection: ({ params, body }) => {
       seed();
       if (body?.name && current().connections.some((c) => c.id !== params.connectionId && c.name.trim().toLowerCase() === body.name?.trim().toLowerCase())) {
-        return { status: 400 };
+        // 409 is not declared for updateProviderConnection; a Response keeps the Problem body (report.md mục 6).
+        return new Response(JSON.stringify(problem(409, 'duplicate_name', 'Tên kết nối đã có')), { status: 409, headers: { 'Content-Type': 'application/problem+json' } });
       }
       const updated = updateConnection(params.connectionId, body ?? {});
       return updated ? { status: 200, body: updated } : { status: 404, body: problem(404, 'not_found', 'Không có kết nối') };
@@ -139,7 +142,8 @@ export default defineMocks({
       if (!body || !connection || connection.testStatus !== 'Valid' || connection.provider === 'anthropic') {
         return { status: 422, body: problem(422, 'model_not_available', 'Embedding model không có ở kết nối này') };
       }
-      s.embedding = { providerConnectionId: body.providerConnectionId, model: body.model, reindex: { total: 38, queued: 38, indexed: 0, failed: 0 } };
+      const total = s.embedding ? INDEXED_REFERENCES : 0;
+      s.embedding = { providerConnectionId: body.providerConnectionId, model: body.model, indexedReferenceCount: total, reindex: { total, queued: total, indexed: 0, failed: 0 } };
       return { status: 200, body: structuredClone(s.embedding) };
     },
   },

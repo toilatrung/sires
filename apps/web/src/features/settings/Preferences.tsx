@@ -11,7 +11,7 @@ import type { PublicApi } from '@sires/contracts';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ErrorState, LoadingState, changeLanguage, formatDate, formatNumber, isApiError, useApi, type ApiError } from '../../shell';
-import { Dialog, NS, SettingsLayout, Switch, mergePatch, parseDecimal, useResource } from './shared';
+import { Dialog, NS, SettingsLayout, Switch, fieldErrors, mergePatch, parseDecimal, useResource } from './shared';
 
 type Schemas = PublicApi.components['schemas'];
 type Account = Schemas['Account'];
@@ -23,8 +23,15 @@ const DEBUG_RETENTION_DAYS = 30;
 type ThresholdKey = 'supported' | 'partiallySupported' | 'mismatch';
 const THRESHOLDS: ThresholdKey[] = ['supported', 'partiallySupported', 'mismatch'];
 
-function thresholdValue(t: Thresholds, key: ThresholdKey): number | undefined {
-  return key === 'mismatch' ? t.citationMismatch?.mismatch : t.claimSupport?.[key];
+type ThresholdShape = { claimSupport?: { supported?: number; partiallySupported?: number }; citationMismatch?: { mismatch?: number } };
+
+function thresholdValue(t: ThresholdShape | undefined, key: ThresholdKey): number | undefined {
+  return key === 'mismatch' ? t?.citationMismatch?.mismatch : t?.claimSupport?.[key];
+}
+
+/** Field of a 400 validation_failed (`claimSupport.supported`, …) → threshold key (EC50). */
+function thresholdKeyOf(field: string): ThresholdKey | undefined {
+  return THRESHOLDS.find((k) => field === k || field.endsWith(`.${k}`));
 }
 
 interface Form {
@@ -59,6 +66,8 @@ export function PreferencesScreen() {
   const { t, i18n } = useTranslation(NS);
   const api = useApi();
   const format = (n: number) => formatNumber(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const thresholdsEtag = async (etag: string | undefined, saved: Thresholds) =>
+    etag ?? (await api.get('/me/verification-thresholds').then((r) => r.etag, () => undefined)) ?? `"${saved.updatedAt ?? ''}"`;
   const resource = useResource(async () => {
     const [me, thresholds] = await Promise.all([api.get('/me'), api.get('/me/verification-thresholds')]);
     return {
@@ -124,12 +133,16 @@ export function PreferencesScreen() {
           isDefault: data.thresholds.isDefault,
         };
         const res = await api.put('/me/verification-thresholds', { body, ifMatch: data.thresholdsEtag });
-        resource.setData((d) => ({ ...d, thresholds: res.data }));
+        const etag = await thresholdsEtag(res.etag, res.data);
+        resource.setData((d) => ({ ...d, thresholds: res.data, thresholdsEtag: etag }));
       }
       setForm(null);
       setResult({ kind: 'saved' });
     } catch (caught) {
       const error = caught as ApiError;
+      // 400 on the thresholds: mark the fields the server named (EC50).
+      const fields = Object.keys(fieldErrors(error)).map(thresholdKeyOf).filter((k): k is ThresholdKey => !!k);
+      if (fields.length) setInvalid(fields);
       if (isApiError(error) && error.status === 412) {
         // Conflict: read again, keep what the user typed, do not resend (H12, EC34).
         try {
@@ -154,7 +167,8 @@ export function PreferencesScreen() {
     setBusy(true);
     try {
       const res = await api.post('/me/verification-thresholds/reset');
-      resource.setData((d) => ({ ...d, thresholds: res.data }));
+      const etag = await thresholdsEtag(res.etag, res.data);
+      resource.setData((d) => ({ ...d, thresholds: res.data, thresholdsEtag: etag }));
       setForm({ ...form, thresholds: formOf(data.account, res.data, format).thresholds });
       setResetting(false);
       setResult({ kind: 'reset' });
@@ -166,6 +180,8 @@ export function PreferencesScreen() {
     }
   };
 
+  // Defaults from the contract (H16): one “đã chỉnh” per row; without them, one for the group (EC52).
+  const hasDefaults = THRESHOLDS.some((k) => thresholdValue(data.thresholds.defaults, k) !== undefined);
   const debugLabel = form.debugMode ? t('preferences.debug.on', { date: formatDate(debugUntil().toISOString()) }) : t('common.off');
 
   return (
@@ -199,34 +215,54 @@ export function PreferencesScreen() {
         <div className="sires-settings__panel-head">
           <h3 id="sires-thresholds-title" className="sires-settings__panel-title">
             {t('preferences.thresholds.title')}
-            {!data.thresholds.isDefault && (
+            {!hasDefaults && !data.thresholds.isDefault && (
               <span className="sires-chip" data-tone="warning-flag">
                 {t('preferences.thresholds.adjusted')}
               </span>
             )}
           </h3>
-          <button type="button" className="sires-button" data-size="sm" disabled={busy} onClick={() => setResetting(true)}>
+          <button type="button" className="sires-button" disabled={busy} onClick={() => setResetting(true)}>
             {t('preferences.thresholds.reset')}
           </button>
         </div>
         <p className="sires-settings__hint">{t('preferences.thresholds.lead')}</p>
         <div className="sires-settings__thresholds">
-          {THRESHOLDS.map((key) => (
-            <label key={key} className="sires-settings__threshold">
-              <span className="sires-settings__threshold-name">
-                <span className="sires-settings__strong">{t(`preferences.thresholds.${key}.name`)}</span>
-                <span className="sires-settings__note">{t(`preferences.thresholds.${key}.desc`)}</span>
-              </span>
-              <input
-                className="sires-input sires-id sires-settings__threshold-input"
-                inputMode="decimal"
-                value={form.thresholds[key]}
-                aria-invalid={invalid.includes(key)}
-                onChange={(e) => update({ thresholds: { ...form.thresholds, [key]: e.currentTarget.value } })}
-              />
-              {invalid.includes(key) && <span className="sires-settings__field-error">{t('preferences.thresholds.invalid')}</span>}
-            </label>
-          ))}
+          {THRESHOLDS.map((key) => {
+            const fallback = thresholdValue(data.thresholds.defaults, key);
+            const adjusted = fallback !== undefined && thresholdValue(data.thresholds, key) !== fallback;
+            return (
+              <label key={key} className="sires-settings__threshold">
+                <span className="sires-settings__threshold-name">
+                  <span className="sires-settings__strong">
+                    {t(`preferences.thresholds.${key}.name`)}
+                    {adjusted && (
+                      <>
+                        {' '}
+                        <span className="sires-chip" data-tone="warning-flag">
+                          {t('preferences.thresholds.adjusted')}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span className="sires-settings__note">{t(`preferences.thresholds.${key}.desc`)}</span>
+                </span>
+                {fallback !== undefined && <span className="sires-settings__default-value">{t('preferences.thresholds.defaultValue', { value: format(fallback) })}</span>}
+                <input
+                  className="sires-input sires-id sires-settings__threshold-input"
+                  inputMode="decimal"
+                  value={form.thresholds[key]}
+                  aria-invalid={invalid.includes(key)}
+                  aria-describedby={invalid.includes(key) ? `sires-threshold-${key}-error` : undefined}
+                  onChange={(e) => update({ thresholds: { ...form.thresholds, [key]: e.currentTarget.value } })}
+                />
+                {invalid.includes(key) && (
+                  <span id={`sires-threshold-${key}-error`} className="sires-settings__field-error">
+                    {t('preferences.thresholds.invalid')}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <p className="sires-settings__hint">{t('preferences.thresholds.applies')}</p>
       </section>

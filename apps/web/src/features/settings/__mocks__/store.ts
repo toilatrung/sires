@@ -98,6 +98,14 @@ export const AGENTS: AgentDefinition[] = [
 ];
 
 /** Default thresholds of the mock: the proposal of PC-06 D1 (0.80 / 0.50 / 0.60); the web never hard-codes them (H16). */
+/** Thresholds at the defaults, with the read-only `defaults` of the contract (H16, #126). */
+export function defaultThresholds(): Thresholds {
+  return { ...structuredClone(DEFAULT_THRESHOLDS), isDefault: true, updatedAt: new Date().toISOString(), defaults: structuredClone(DEFAULT_THRESHOLDS) };
+}
+
+/** References indexed with the current embedding model in the demo account (SettingsAgents--state-confirm-embedding). */
+export const INDEXED_REFERENCES = 38;
+
 export const DEFAULT_THRESHOLDS = { claimSupport: { supported: 0.8, partiallySupported: 0.5 }, citationMismatch: { mismatch: 0.6 } };
 
 interface State {
@@ -165,8 +173,8 @@ export function initState(seed: { accountId: string }): State {
     connections,
     scenarios: new Map(connections.map((c) => [c.id, c.testStatus === 'Invalid' ? (c.lastError?.code ?? 'auth_failed') : 'valid'])),
     assignments,
-    embedding: { providerConnectionId: OPENAI_CONNECTION_ID, model: 'text-embedding-3-small' },
-    thresholds: { ...structuredClone(DEFAULT_THRESHOLDS), isDefault: true, updatedAt: now() },
+    embedding: { providerConnectionId: OPENAI_CONNECTION_ID, model: 'text-embedding-3-small', indexedReferenceCount: INDEXED_REFERENCES },
+    thresholds: defaultThresholds(),
   };
   return state;
 }

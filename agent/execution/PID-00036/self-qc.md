@@ -1,6 +1,6 @@
 # PID-00036 — Self-QC của Dev
 
-**Kết luận:** Đạt — mọi AC có test đạt; còn hai việc cần phiên điều phối (hai test của shell, các mục sửa ở nguồn), ghi ở report.md mục 6
+**Kết luận:** Đạt phần của khu vực. Mọi AC có test đạt, G1–G12 đã xử lý. Còn hai test của shell đỏ, chờ phiên web-shell sửa vì khu vực không sửa file của shell; đã báo phiên điều phối.
 
 - **Ticket:** [PID-00036](../../../docs/tickets/issues/PID-00036/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 27/11/2026
@@ -11,11 +11,11 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | Lệnh | Kết quả |
 | --- | --- |
-| `pnpm nx affected -t lint typecheck test build` | Chạy theo project: `pnpm nx run-many -t lint typecheck -p @sires/web` đạt (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`); `pnpm nx run-many -t test build -p @sires/web` đạt: 26 file, 205 test, build `vite` đạt. `affected` không dùng vì nhánh xếp chồng trên `preview/ui-ph02` |
-| `pnpm nx run @sires/web:test` | 205 đạt, 0 lỗi; riêng `src/features/settings`: 6 file, 67 test đạt |
-| `node scripts/docs/add-license.mjs --check` | Đạt cho mọi file của ticket (`add-license.mjs` không phải thêm file nào) |
-| `scripts/development/check-tracks.mjs` trên file đã đổi | `web/settings`, `web/shell` — cảnh báo hai luồng: `shell/routes.spec.ts`, `shell/preferences.spec.ts` (report.md mục 5, YC1) |
-| `check-ui.mjs`, preview (khi có màn hình) | `check-ui.mjs apps/web/src/features/settings`: 0 lỗi, 4 cảnh báo (bo 32 px của avatar; bóng `--sires-shadow-float` của dialog — cả hai đúng design.md §2.3, §4). Preview `dev:mock` ở 1440×900, 1024×768, 390×844: không cuộn ngang trang, bảng cuộn trong thẻ, nút SignIn 48 px, console không lỗi. Ảnh: `pid-00036-mock-providers-invalid.jpg`, `pid-00036-mock-providers-table.jpg` (thư mục ghi chú của phiên điều phối) |
+| `pnpm nx affected -t lint typecheck test build` | Chạy theo project, vì nhánh xếp chồng trên `preview/ui-ph02`: `pnpm nx run-many -t lint typecheck test build -p @sires/web` (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`). Lint, typecheck, build đạt. Test: 26 file, 220 test — 218 đạt, **2 lỗi**: `shell/routes.spec.ts › sign-in không khung… (EC17)` và `shell/preferences.spec.ts › chưa đăng nhập không lưu… (EC28)`. Cả hai bám placeholder `sign-in` hoặc đòi `/sign-in` không gửi request nào; SignIn thật gọi `getSession` (H4). Đã báo phiên điều phối; phiên web-shell sửa |
+| `pnpm nx run @sires/web:test` | Như trên. Riêng `src/features/settings`: 6 file, 82 test đạt |
+| `node scripts/docs/add-license.mjs --check` | Đạt (0 file thiếu) |
+| `scripts/development/check-tracks.mjs` trên file đã đổi | Mã: chỉ `web/settings`. Nhánh còn có `docs/` của #122, #126 do merge theo yêu cầu của phiên điều phối; không phải file Dev sửa |
+| `check-ui.mjs`, preview (khi có màn hình) | `check-ui.mjs apps/web/src/features/settings`: 0 lỗi, 4 cảnh báo (bo 32 px của avatar, bóng `--sires-shadow-float` của dialog — đúng design.md §2.3, §4). Preview `dev:mock` ở 1440×900, 1024×768, 390×844: không cuộn ngang trang, bảng cuộn trong thẻ, nút SignIn 48 px, console không lỗi. Ảnh trong thư mục ghi chú của phiên điều phối: `pid-00036-mock-providers-invalid.jpg`, `pid-00036-mock-providers-table.jpg`, `pid-00036-mock-providers-delete.jpg`, `pid-00036-mock-preferences-defaults.jpg` |
 
 ## 2. AC → test
 
@@ -29,7 +29,7 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 | UX-SETTINGS-001-AC02 | `profile.spec.tsx › URL Scholar sai (UX-SETTINGS-001-AC02, EC30)` | Đạt |
 | UX-SETTINGS-002-AC01 | `providers.spec.tsx › chỉ ba provider, chưa kiểm không Valid (UX-SETTINGS-002-AC01)` | Đạt |
 | UX-SETTINGS-002-AC02 | `providers.spec.tsx › trống hướng dẫn (UX-SETTINGS-002-AC02, EC13)` | Đạt |
-| UX-SETTINGS-003-AC01 | `agents.spec.tsx › đổi embedding xác nhận (UX-SETTINGS-003-AC01, EC46)` | Đạt (câu số Reference không có số tới khi #126 vào) |
+| UX-SETTINGS-003-AC01 | `agents.spec.tsx › đổi embedding xác nhận (UX-SETTINGS-003-AC01, EC46)` | Đạt (câu “38 Reference phải index lại toàn bộ.” theo `indexedReferenceCount` của #126) |
 | UX-SETTINGS-004-AC01 | `preferences.spec.tsx › debug (UX-SETTINGS-004-AC01, EC49)` | Đạt |
 | UX-SETTINGS-005-AC01 | `preferences.spec.tsx › khôi phục mặc định (UX-SETTINGS-005-AC01, EC51)` | Đạt |
 | NFR-PRIV-001-AC01 | `providers.spec.tsx › thông báo kết nối đầu tiên (NFR-PRIV-001-AC01, EC13)` | Đạt |
@@ -40,45 +40,60 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | # | Trạng thái | Cách giải quyết (test) hoặc lưu ý (vì sao, ai xử lý) |
 | --- | --- | --- |
-| EC01 | đã giải quyết | `settings-nav.spec.tsx › /settings chuyển profile`, `› route lạ` |
-| EC02 | đã giải quyết | `settings-nav.spec.tsx › đang tải`, `› lỗi tải` |
-| EC03 | đã giải quyết | `settings-nav.spec.tsx › đổi ngôn ngữ giữ form` |
-| EC04 | đã giải quyết (thao tác tay) | preview 1440×900, 1024×768, 390×844: không cuộn ngang trang, menu lên trên dưới 768 px, nút SignIn 48 px |
+| EC01–EC03 | đã giải quyết | `settings-nav.spec.tsx` (tên test theo EC) |
+| EC04 | đã giải quyết (thao tác tay) | preview 1440×900, 1024×768, 390×844 |
 | EC05–EC11 | đã giải quyết | `signin.spec.tsx` (tên test theo EC) |
-| EC12 | đã giải quyết (thao tác tay) | `dev:mock`: `/sign-in?returnTo=/settings/agents` chuyển thẳng tới `/settings/agents`; nút ở chế độ mock gọi `navigate(returnTo)`. Vitest chạy ở mode `test` nên không có test tự động |
-| EC13–EC25 | đã giải quyết | `providers.spec.tsx` (tên test theo EC; EC18 có hai test: máy khách, 400 của máy chủ) |
-| EC26–EC28 | đã giải quyết | `providers.spec.tsx › xóa`, `› xóa cần thay thế`, `› 409 connection_in_use` |
-| EC29–EC36 | đã giải quyết | `profile.spec.tsx` (tên test theo EC) |
-| EC34 | đã giải quyết | `profile.spec.tsx › 412`, `preferences.spec.tsx › 412`; ngưỡng dùng cùng nhánh xử lý 412 |
-| EC37–EC47 | đã giải quyết | `agents.spec.tsx` (tên test theo EC; 422 ở `› model không còn trong danh sách`) |
-| EC48–EC53 | đã giải quyết | `preferences.spec.tsx` (tên test theo EC); EC52 theo cách tạm của slice tới khi #126 vào |
+| EC12 | đã giải quyết | `signin.spec.tsx › chế độ mock (EC12)` (`VITE_SIRES_MOCK=1`), thêm thao tác tay trên `dev:mock` |
+| EC13–EC19, EC21–EC22, EC24–EC25 | đã giải quyết | `providers.spec.tsx` (tên test theo EC) |
+| EC14 | đã giải quyết | `› base URL theo provider`, `› provider khóa sau khi tạo (H5, EC14)` |
+| EC20 | đã giải quyết | `› lỗi tạm thời`, `› hạn mức`, `› sửa base URL` (kể cả không hiện `lastError.message`) |
+| EC23 | đã giải quyết | `› sửa về Untested` (chỉ tên), `› sửa key gửi apiKey` |
+| EC26–EC28 | đã giải quyết | `› xóa`, `› xóa cần thay thế`, `› không có kết nối Valid khác`, `› 409 connection_in_use`, `› 409 mở lại với agent mới`, `› dialog bàn phím (S04)` |
+| EC29–EC35 | đã giải quyết | `profile.spec.tsx` (tên test theo EC) |
+| EC34 | đã giải quyết | `profile.spec.tsx › 412`, `preferences.spec.tsx › 412`, `› 412 khi lưu ngưỡng` |
+| EC36 | cần lưu ý | `profile.spec.tsx › nháp` dựng lại view, không giả lập phiên hết hạn; việc khôi phục sau đăng nhập là của kho nháp shell (PID-00012 S09), shell đã có test |
+| EC37–EC47 | đã giải quyết | `agents.spec.tsx` (tên test theo EC; 422 ở `› model không còn trong danh sách`; EC47 Invalid ở `› làm mới trả Invalid`) |
+| EC48–EC53 | đã giải quyết | `preferences.spec.tsx` (tên test theo EC; EC48 lỗi ở `› lưu lỗi giữ ngôn ngữ`; EC50 máy chủ ở `› lỗi trường ngưỡng từ máy chủ`; EC52 ở `› ngưỡng mặc định từng dòng`) |
 | EC54 | đã giải quyết | `providers.spec.tsx › tên có HTML`, `profile.spec.tsx › tên có HTML` |
-| Mới | cần lưu ý | Mẫu `mocks: import.meta.env.DEV ? …` của README mock (PID-00013) đưa mock của khu vực vào bản build `NODE_ENV=development` (`shell/mock/build.spec.ts` bắt được); khu vực dùng điều kiện của `src/mocks/index.ts`. Báo sửa README ở report.md mục 6 |
-| Mới | cần lưu ý | Override trả status mà operation không khai (ví dụ 503) mất thân Problem ở runtime của PID-00013; test dùng `Response`. Báo ở report.md mục 6 |
+| Mới | cần lưu ý | Mẫu `mocks: import.meta.env.DEV ? …` trong README mock (PID-00013) đưa mock của khu vực vào bản build khi `NODE_ENV=development`. Khu vực dùng điều kiện của `src/mocks/index.ts`; phiên điều phối đã báo phiên web-mocks |
+| Mới | cần lưu ý | Override trả status mà operation không khai (503, hoặc 409 của `updateProviderConnection`) mất thân Problem ở runtime của PID-00013; test và mock dùng `Response` (report.md mục 6) |
 
 ## 4. Tự kiểm
 
 - [x] Mọi slice đã chạy lệnh ở mục “Kiểm”, kết quả ở trên.
-- [x] Agent đề xuất, System kiểm soát, Researcher quyết định; thao tác APR chỉ Researcher thực hiện. (Không có APR trong khu vực; mọi thay đổi cấu hình do Researcher bấm.)
-- [x] Chuyển trạng thái khớp PRD 18.2 — không áp dụng (khu vực không chuyển trạng thái đối tượng nghiệp vụ; `testStatus` do backend đặt).
-- [x] Context cách ly theo project và task; dữ liệu trong phạm vi tài khoản và project. (Mọi lệnh theo `/me`, `/provider-connections` của tài khoản.)
-- [x] Gọi model qua Model Gateway; API key không xuất hiện trong log, trace hay thông báo lỗi. (Web không gọi model; key không lọt DOM, URL, storage, kho nháp, console — `› key không lộ`.)
-- [x] Không import mã, không đọc database của service khác; dùng đúng hợp đồng trong `docs/api-design`. (Chỉ client có type `PublicApi` của shell.)
+- [x] Agent đề xuất, System kiểm soát, Researcher quyết định; thao tác APR chỉ Researcher thực hiện. (Không có APR trong khu vực.)
+- [x] Chuyển trạng thái khớp PRD 18.2 — không áp dụng (web không chuyển trạng thái nghiệp vụ; `testStatus` do backend đặt).
+- [x] Context cách ly theo project và task; dữ liệu trong phạm vi tài khoản và project.
+- [x] Gọi model qua Model Gateway; API key không xuất hiện trong log, trace hay thông báo lỗi. (Web không gọi model; `› key không lộ`, `› sửa base URL` kiểm không hiện `lastError.message`.)
+- [x] Không import mã, không đọc database của service khác; dùng đúng hợp đồng trong `docs/api-design`.
 - [x] Sự kiện ghi qua outbox — không áp dụng (web).
 - [x] Migration — không áp dụng (web).
-- [x] Giao diện theo `docs/ui-design/design.md`; có trạng thái trống, đang tải, lỗi, chạy lâu. (“Đang kiểm tra…” kèm dòng `role="status"` cho thao tác dài.)
-- [ ] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`. — Sửa hai test của shell (`shell/routes.spec.ts`, `shell/preferences.spec.ts`), commit riêng, chờ phiên điều phối quyết (report.md YC1). Không ghi `docs/`, không sửa file sinh.
+- [x] Giao diện theo `docs/ui-design/design.md`; có trạng thái trống, đang tải, lỗi, chạy lâu.
+- [x] Không sửa file trong điểm dừng, file sinh tự động, thư mục luồng khác; không ghi `docs/`. Đã revert phần sửa test của shell (89f112b). `docs/` trên nhánh chỉ đến từ merge #122, #126 theo yêu cầu của phiên điều phối (xung đột giải theo quy tắc, file sinh chạy lại công cụ).
 - [x] Không làm việc ngoài phạm vi; thay đổi ngoài hồ sơ đều có ở `report.md` mục 5.
 - [x] Không còn mã gỡ lỗi (`console.log`, `print`), TODO không có chủ; test mới có tên theo AC, EC.
 - [x] Đã tự chạy `spec-converge-skill` trên ticket này (mục 5); không còn khoảng trống CRITICAL, HIGH.
 
 ## 5. Tự đối chiếu (spec-converge-skill, DEC-58)
 
-Chạy bằng một lượt đọc độc lập (agent đọc hồ sơ ở nhánh `docs/pid-00036-clarify` và mã, không dựa vào báo cáo này), rồi Dev kiểm lại từng khoảng trống trong mã.
+Lượt đọc độc lập: một agent đọc hồ sơ ở `docs/pid-00036-clarify` và mã, không dựa vào báo cáo này. Kết luận lúc đó là “chưa sẵn sàng”: 1 HIGH, 5 MEDIUM, 6 LOW. Dev kiểm lại từng mục trong mã, sửa, rồi chạy lại test.
 
 | G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Đã xử lý |
 | --- | --- | --- | --- | --- | --- |
-| G0 | — | — | (điền sau lượt đối chiếu) | — | — |
+| G1 | contradicts | HIGH | Sửa hai test của shell, trái điểm dừng | commit eb8ca71 | Revert ở 89f112b; báo phiên điều phối kèm cách sửa |
+| G2 | partial | MEDIUM | ETag của ngưỡng không làm mới sau PUT, reset → lần lưu sau gửi `If-Match` cũ | `Preferences.tsx` (`thresholdsEtag`) | Sửa: header, không có thì đọc lại `GET`; `› ETag mới sau khi lưu ngưỡng` |
+| G3 | partial | MEDIUM | Đã tạo kết nối mà ô Provider vẫn đổi được | `Providers.tsx` (`disabled={!!saved}`) | Sửa; `› provider khóa sau khi tạo` |
+| G4 | partial | MEDIUM | Model nhập tay không ghi “chưa xác minh” | `Agents.tsx` (nhãn ô nhập tay) | Sửa; `agents.spec.tsx › nhập tay` |
+| G5 | partial | MEDIUM | 400 khi lưu ngưỡng không chỉ ra ô lỗi | `Preferences.tsx` (`thresholdKeyOf`) | Sửa; `› lỗi trường ngưỡng từ máy chủ` |
+| G6 | partial | MEDIUM | Ô lỗi thiếu viền danger 1,5 px | `settings.css` (`[aria-invalid="true"]`) | Sửa |
+| G7 | partial | LOW | Chọn embedding liệt kê kết nối không có model embedding | `Agents.tsx` (`embeddingChoices`) | Sửa; `› embedding chỉ kết nối có model embedding` |
+| G8 | partial | LOW | Câu Invalid thiếu ảnh hưởng, lời nhắc H6, nhãn “Mã lỗi:” | `Providers.tsx` (`TestResult`), i18n | Sửa; `› hạn mức`, `› sửa base URL`, `› key sai…` |
+| G9 | partial | LOW | “Làm mới” trả Invalid không có hành động | `Agents.tsx` (`ProviderProblem`) | Sửa: liên kết “Sửa ở Provider Connections”; `› làm mới trả Invalid` |
+| G10 | partial | LOW | Banner cùng model thiếu model, kết nối, câu của thiết kế | `Agents.tsx`, i18n | Sửa; `› cùng model A B` |
+| G11 | missing | LOW | Thiếu test chế độ mock (EC12) và bàn phím của dialog (S04) | `signin.spec.tsx`, `providers.spec.tsx` | Thêm `› chế độ mock (EC12)`, `› dialog bàn phím (S04)` |
+| G12 | partial | LOW | Mock trả 400 không thân cho tên trùng khi sửa; Analysis hiện hai lần | `__mocks__/index.ts`, `Providers.tsx` | Sửa: 409 `duplicate_name` bằng `Response`; mỗi agent một lần |
+| UI | partial | LOW | Núm công tắc; nút trong bảng 32 px; dialog không giữ focus; lỗi không nối `aria-describedby`; mono sai chỗ; ô ngôn ngữ; câu 412 lặp | `settings.css`, `shared.tsx`, các view | Sửa: núm tròn 9 px, nút cỡ mặc định 40 px, bẫy focus và trả focus, `aria-describedby`, câu ghép đúng khung “Đã lưu:”, “Chưa lưu:”, “Làm gì tiếp:” |
+| UI | partial | LOW | Khối Mặc định của Agent Models là chữ + “Sửa” thay cho select ngay trong khối; panel sửa nằm dưới bảng, không dưới dòng | `Agents.tsx` | Để lại, chờ QC độc lập/PO: hành vi đủ theo H13, chỉ khác bố cục |
 
 ---
 

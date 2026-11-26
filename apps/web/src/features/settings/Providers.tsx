@@ -135,7 +135,7 @@ export function ProvidersScreen() {
                       {testing === row.id
                         ? t('providers.testing')
                         : row.testStatus === 'Invalid' && row.lastError?.code
-                          ? row.lastError.code
+                          ? <code className="sires-id">{row.lastError.code}</code>
                           : row.testStatus === 'Valid' && !row.availableModels?.length
                             ? t('providers.noModelList')
                             : row.lastTestedAt
@@ -146,13 +146,13 @@ export function ProvidersScreen() {
                   <td className="sires-muted">{agentList(row, t)}</td>
                   <td>
                     <div className="sires-settings__actions">
-                      <button type="button" className="sires-button" data-size="xs" aria-label={t('providers.editNamed', { name: row.name })} onClick={() => setForm({ mode: 'edit', id: row.id })}>
+                      <button type="button" className="sires-button" aria-label={t('providers.editNamed', { name: row.name })} onClick={() => setForm({ mode: 'edit', id: row.id })}>
                         {t('providers.edit')}
                       </button>
-                      <button type="button" className="sires-button" data-size="xs" aria-label={t('providers.retestNamed', { name: row.name })} disabled={testing === row.id} onClick={() => void retest(row)}>
+                      <button type="button" className="sires-button" aria-label={t('providers.retestNamed', { name: row.name })} disabled={testing === row.id} onClick={() => void retest(row)}>
                         {t('providers.retest')}
                       </button>
-                      <button type="button" className="sires-button" data-size="xs" data-variant="danger" aria-label={t('providers.deleteNamed', { name: row.name })} onClick={() => setDeletingId(row.id)}>
+                      <button type="button" className="sires-button" data-variant="danger" aria-label={t('providers.deleteNamed', { name: row.name })} onClick={() => setDeletingId(row.id)}>
                         {t('providers.delete')}
                       </button>
                     </div>
@@ -196,7 +196,7 @@ export function ProvidersScreen() {
 function agentList(row: Connection, t: (key: string) => string): string {
   const agents = row.assignedAgents ?? [];
   if (!agents.length) return '—';
-  return agents.map((a) => t(`agent.${a}`)).join(', ');
+  return [...new Set(agents)].map((a) => t(`agent.${a}`)).join(', ');
 }
 
 interface FormProps {
@@ -309,12 +309,12 @@ function ProviderForm({ connection, firstConnection, onChanged, onClose, canClos
       <div className="sires-settings__grid">
         <label className="sires-field">
           <span className="sires-field__label">{t('providers.form.name')}</span>
-          <input ref={nameRef} className="sires-input" value={name} maxLength={MAX_NAME + 1} aria-invalid={!!fields.name} onChange={(e) => setName(e.currentTarget.value)} />
-          {fields.name && <span className="sires-settings__field-error">{t(`providers.form.nameError.${fields.name}`, { defaultValue: t('field.invalid') })}</span>}
+          <input ref={nameRef} className="sires-input" value={name} maxLength={MAX_NAME + 1} aria-invalid={!!fields.name} aria-describedby={fields.name ? 'sires-provider-name-error' : undefined} onChange={(e) => setName(e.currentTarget.value)} />
+          {fields.name && <span id="sires-provider-name-error" className="sires-settings__field-error">{t(`providers.form.nameError.${fields.name}`, { defaultValue: t('field.invalid') })}</span>}
         </label>
         <label className="sires-field">
           <span className="sires-field__label">{t('providers.form.provider')}</span>
-          <select className="sires-input" value={provider} disabled={editing} onChange={(e) => changeProvider(e.currentTarget.value as ProviderName)}>
+          <select className="sires-input" value={provider} disabled={!!saved} onChange={(e) => changeProvider(e.currentTarget.value as ProviderName)}>
             {PROVIDERS.map((p) => (
               <option key={p} value={p}>
                 {t(`provider.${p}`)}
@@ -325,8 +325,8 @@ function ProviderForm({ connection, firstConnection, onChanged, onClose, canClos
       </div>
       <label className="sires-field">
         <span className="sires-field__label">{t('providers.form.baseUrl')}</span>
-        <input ref={urlRef} className="sires-input sires-id" value={baseUrl} inputMode="url" aria-invalid={!!fields.baseUrl} onChange={(e) => setBaseUrl(e.currentTarget.value)} />
-        {fields.baseUrl && <span className="sires-settings__field-error">{t('providers.form.baseUrlError')}</span>}
+        <input ref={urlRef} className="sires-input sires-id" value={baseUrl} inputMode="url" aria-invalid={!!fields.baseUrl} aria-describedby={fields.baseUrl ? 'sires-provider-url-error' : undefined} onChange={(e) => setBaseUrl(e.currentTarget.value)} />
+        {fields.baseUrl && <span id="sires-provider-url-error" className="sires-settings__field-error">{t('providers.form.baseUrlError')}</span>}
         <span className="sires-settings__hint">{t('providers.form.baseUrlHint')}</span>
       </label>
       <label className="sires-field">
@@ -339,10 +339,11 @@ function ProviderForm({ connection, firstConnection, onChanged, onClose, canClos
           spellCheck={false}
           value={apiKey}
           aria-invalid={!!fields.apiKey}
+          aria-describedby={fields.apiKey ? 'sires-provider-key-error' : undefined}
           placeholder={saved ? maskedKey(saved.keyHint) : undefined}
           onChange={(e) => setApiKey(e.currentTarget.value)}
         />
-        {fields.apiKey && <span className="sires-settings__field-error">{t(`providers.form.keyError.${fields.apiKey}`, { defaultValue: t('field.invalid') })}</span>}
+        {fields.apiKey && <span id="sires-provider-key-error" className="sires-settings__field-error">{t(`providers.form.keyError.${fields.apiKey}`, { defaultValue: t('field.invalid') })}</span>}
         <span className="sires-settings__hint">{saved ? t('providers.form.keyKeep') : t('providers.form.keyHint')}</span>
       </label>
       {firstConnection && !editing && (
@@ -391,15 +392,17 @@ function TestResult({ connection, onFix }: { connection: Connection; onFix: (act
   }
   const code = connection.lastError?.code;
   const action = fixActionFor(code);
+  const reminder = code === 'rate_limited' || code === 'quota_exceeded' ? 'quota' : action === 'fixUrl' ? 'compatible' : undefined;
   return (
     <div role="alert" className="sires-settings__result" data-tone="error">
       <span>
-        <StatusChip status="Invalid" /> {t(`providerError.${code ?? 'unknown'}`, { defaultValue: t('providerError.unknown') })}
+        <StatusChip status="Invalid" /> {t(`providerError.${code ?? 'unknown'}`, { defaultValue: t('providerError.unknown') })} {t('providers.result.impact')}
+        {reminder && <> {t(`providers.result.${reminder}`)}</>}
       </span>
       <span className="sires-settings__note">
         {t('providers.result.code')} <code className="sires-id">{code ?? '—'}</code>
       </span>
-      <button type="button" className="sires-button" data-size="sm" data-variant="outline" onClick={() => onFix(action)}>
+      <button type="button" className="sires-button" data-variant="outline" onClick={() => onFix(action)}>
         {t(`providers.fix.${action}`)}
       </button>
     </div>
@@ -422,7 +425,7 @@ function DeleteDialog({ connection, connections, onClose, onDeleted, onConflict,
   const [replacement, setReplacement] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
-  const assigned = connection.assignedAgents ?? [];
+  const assigned = [...new Set(connection.assignedAgents ?? [])];
   const others = connections.filter((c) => c.id !== connection.id);
   const validOthers = others.filter((c) => c.testStatus === 'Valid');
   const needsReplacement = assigned.length > 0;
@@ -455,7 +458,7 @@ function DeleteDialog({ connection, connections, onClose, onDeleted, onConflict,
             {t('providers.deleteDialog.keep')}
           </button>
           <button type="button" className="sires-button" data-variant="danger" disabled={blocked || busy} onClick={() => void confirm()}>
-            {t('providers.deleteDialog.confirm')}
+            {blocked ? t('providers.deleteDialog.confirmChoose') : t('providers.deleteDialog.confirm')}
           </button>
         </>
       }

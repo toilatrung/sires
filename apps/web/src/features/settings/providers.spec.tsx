@@ -46,7 +46,8 @@ describe('Provider Connections (S03)', () => {
     const result = await screen.findByRole('alert');
     expect(within(result).getByText('Invalid')).toBeTruthy();
     expect(result.textContent).toContain('auth_failed');
-    expect(result.textContent).toContain('API key bị từ chối.');
+    expect(result.textContent).toContain('API key bị provider từ chối. Kết nối chưa dùng được cho agent nào.');
+    expect(result.textContent).toContain('Mã lỗi: auth_failed');
     expect((form().getByRole('button', { name: 'Lưu' }) as HTMLButtonElement).disabled).toBe(true);
     await user.click(within(result).getByRole('button', { name: 'Sửa API key' }));
     expect(document.activeElement).toBe(field(/^API key/));
@@ -93,7 +94,7 @@ describe('Provider Connections (S03)', () => {
     const { user, unmountAll } = renderSettings('/settings/providers');
     await waitForFrame();
     const note = await screen.findByRole('note');
-    expect(note.textContent).toContain('Nội dung gửi cho agent sẽ được gửi tới provider');
+    expect(note.textContent).toContain('Nội dung bạn gửi cho agent sẽ được gửi tới provider');
     expect(note.textContent).toContain('Orchestrator');
     expect(note.textContent).toContain('Lĩnh vực nghiên cứu');
     const test = form().getByRole('button', { name: 'Kiểm tra kết nối' }) as HTMLButtonElement;
@@ -220,7 +221,7 @@ describe('Provider Connections (S03)', () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Kiểm tra lại kết nối Claude cá nhân' }));
     expect(await screen.findByText('SIRes tạm thời không phục vụ được.')).toBeTruthy();
-    expect(screen.getByText('Kết quả kiểm tra cũ được giữ nguyên.')).toBeTruthy();
+    expect(screen.getByText('kết quả kiểm tra mới; kết quả cũ vẫn giữ.')).toBeTruthy();
   });
 
   it('đóng form khi Invalid (EC22)', async () => {
@@ -292,7 +293,7 @@ describe('xóa Provider Connection (S04)', () => {
   it('xóa (EC26)', async () => {
     const { user } = await openProviders();
     await user.click(screen.getByRole('button', { name: 'Xóa kết nối Proxy OpenAI tương thích' }));
-    const dialog = screen.getByRole('dialog', { name: 'Xóa kết nối Proxy OpenAI tương thích?' });
+    const dialog = screen.getByRole('dialog', { name: 'Xóa “Proxy OpenAI tương thích”?' });
     expect(dialog.textContent).toContain('Không agent nào dùng kết nối này');
     await user.click(within(dialog).getByRole('button', { name: 'Giữ kết nối' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -320,11 +321,12 @@ describe('xóa Provider Connection (S04)', () => {
     await user.click(screen.getByRole('button', { name: 'Xóa kết nối Claude cá nhân' }));
     const dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText(/Writing Agent/)).toBeTruthy();
-    const confirm = dialog.getByRole('button', { name: 'Xóa kết nối' }) as HTMLButtonElement;
+    const confirm = dialog.getByRole('button', { name: 'Xóa kết nối — chọn kết nối thay thế' }) as HTMLButtonElement;
     expect(confirm.disabled).toBe(true);
     expect((dialog.getByRole('radio', { name: /^Gemini cá nhân/ }) as HTMLInputElement).disabled).toBe(true);
     await user.click(dialog.getByRole('radio', { name: /^OpenAI cá nhân/ }));
     expect(confirm.disabled).toBe(false);
+    expect(confirm.textContent).toBe('Xóa kết nối');
     await user.click(confirm);
     await waitFor(() => expect(query?.get('replacementConnectionId')).toBe(OPENAI_CONNECTION_ID));
   });
@@ -345,7 +347,115 @@ describe('xóa Provider Connection (S04)', () => {
     await user.click(screen.getByRole('button', { name: 'Xóa kết nối Proxy OpenAI tương thích' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Xóa kết nối' }));
     expect(await within(screen.getByRole('dialog')).findByText(/Kết nối vừa được agent dùng/)).toBeTruthy();
-    expect(within(screen.getByRole('dialog')).getByText('Kết nối chưa bị xóa.')).toBeTruthy();
+    expect(within(screen.getByRole('dialog')).getByText('kết nối chưa bị xóa.')).toBeTruthy();
     await waitFor(() => expect(lists).toBe(2));
+  });
+});
+
+describe('Provider Connections sau tự QC', () => {
+  it('provider khóa sau khi tạo (H5, EC14)', async () => {
+    const { user } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
+    await fillNew(user, { name: 'Khóa provider', key: 'sk-test-wrong-1234' });
+    await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
+    await screen.findByRole('alert');
+    expect((screen.getByLabelText(/^Provider/) as HTMLSelectElement).disabled).toBe(true);
+  });
+
+  it('sửa base URL (EC20)', async () => {
+    mock.use({
+      overrides: {
+        testProviderConnection: ({ params }) => {
+          initState({ accountId: ACCOUNT_ID });
+          const row = listConnections().find((c) => c.id === params.connectionId);
+          return { status: 200, body: { ...row!, testStatus: 'Invalid', lastError: { code: 'model_not_found', message: 'sk-secret-from-provider' }, availableModels: [] } };
+        },
+      },
+    });
+    const { user } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
+    await fillNew(user, { name: 'Sai URL proxy', key: 'sk-test-12345678' });
+    await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
+    const result = await screen.findByRole('alert');
+    expect(result.textContent).toContain('Base URL phải tương thích API chính thức của provider đã chọn.');
+    expect(document.body.textContent).not.toContain('sk-secret-from-provider');
+    await user.click(within(result).getByRole('button', { name: 'Sửa Base URL' }));
+    expect(document.activeElement).toBe(field(/^Base URL/));
+  });
+
+  it('hạn mức (EC20)', async () => {
+    const { user } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Thêm kết nối' }));
+    await fillNew(user, { name: 'Hết hạn mức', key: 'sk-test-quota-1234' });
+    await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
+    const result = await screen.findByRole('alert');
+    expect(result.textContent).toContain('Kiểm tra hạn mức của key ở provider.');
+    expect(within(result).getByRole('button', { name: 'Kiểm tra lại' })).toBeTruthy();
+  });
+
+  it('sửa key gửi apiKey (EC23)', async () => {
+    const { user, calls } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Sửa kết nối Claude cá nhân' }));
+    await user.type(field(/^API key/), 'sk-test-new-key-77');
+    await user.click(form().getByRole('button', { name: 'Kiểm tra kết nối' }));
+    await form().findByText(/^Hợp lệ/);
+    expect(JSON.parse(calls('PATCH', /^\/provider-connections\//)[0].body ?? '{}')).toEqual({ apiKey: 'sk-test-new-key-77' });
+    expect(field(/^API key/).value).toBe('');
+  });
+
+  it('không có kết nối Valid khác (EC27)', async () => {
+    mock.use({
+      overrides: {
+        listProviderConnections: () => {
+          initState({ accountId: ACCOUNT_ID });
+          const items = listConnections().filter((c) => c.name === 'Claude cá nhân' || c.name === 'Gemini cá nhân');
+          return { status: 200, body: { items, nextCursor: null } };
+        },
+      },
+    });
+    const { user } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Xóa kết nối Claude cá nhân' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText(/Không có kết nối hợp lệ khác để thay/)).toBeTruthy();
+    expect((dialog.getByRole('button', { name: 'Xóa kết nối — chọn kết nối thay thế' }) as HTMLButtonElement).disabled).toBe(true);
+    await user.click(dialog.getByRole('button', { name: 'Thêm kết nối' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('region', { name: /Kết nối mới/ })).toBeTruthy();
+  });
+
+  it('409 mở lại với agent mới (EC28)', async () => {
+    let lists = 0;
+    mock.use({
+      overrides: {
+        listProviderConnections: () => {
+          lists += 1;
+          initState({ accountId: ACCOUNT_ID });
+          const items = listConnections().map((c) => (lists > 1 && c.name === 'Proxy OpenAI tương thích' ? { ...c, assignedAgents: ['writing' as const] } : c));
+          return { status: 200, body: { items, nextCursor: null } };
+        },
+        deleteProviderConnection: () => problem(409, 'connection_in_use'),
+      },
+    });
+    const { user } = await openProviders();
+    await user.click(screen.getByRole('button', { name: 'Xóa kết nối Proxy OpenAI tương thích' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Xóa kết nối' }));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(await dialog.findByText(/Writing Agent/)).toBeTruthy();
+    expect(dialog.getByRole('group', { name: 'Kết nối thay thế' })).toBeTruthy();
+  });
+
+  it('dialog bàn phím (S04)', async () => {
+    const { user } = await openProviders();
+    const opener = screen.getByRole('button', { name: 'Xóa kết nối Proxy OpenAI tương thích' });
+    await user.click(opener);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    for (let i = 0; i < 4; i += 1) {
+      await user.tab();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    }
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.activeElement).toBe(opener);
   });
 });

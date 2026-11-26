@@ -116,8 +116,9 @@ describe('Profile (S05)', () => {
     await user.type(input(/^Họ tên hiển thị/), 'Minh Anh');
     await user.click(screen.getByRole('switch'));
     await user.click(save());
-    expect(await screen.findByText(/Đã lưu thông tin hồ sơ\./)).toBeTruthy();
-    expect(screen.getByText(/Chưa lưu thiết lập ngữ cảnh cho agent\./)).toBeTruthy();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Đã lưu: thông tin hồ sơ.');
+    expect(alert.textContent).toContain('Chưa lưu: công tắc context cho agent.');
   });
 
   it('412 (EC34)', async () => {
@@ -127,7 +128,8 @@ describe('Profile (S05)', () => {
     await user.clear(input(/^Họ tên hiển thị/));
     await user.type(input(/^Họ tên hiển thị/), 'Tên mới');
     await user.click(save());
-    expect(await screen.findByText(/Dữ liệu đã thay đổi ở nơi khác/)).toBeTruthy();
+    expect(await screen.findByText(/Dữ liệu đã đổi ở nơi khác/)).toBeTruthy();
+    expect(screen.getByText(/xem lại dữ liệu vừa tải/)).toBeTruthy();
     expect(screen.getByText(/precondition_failed/)).toBeTruthy();
     await waitFor(() => expect(calls('GET', '/me').length).toBe(before + 1));
     expect(input(/^Họ tên hiển thị/).value).toBe('Tên mới');

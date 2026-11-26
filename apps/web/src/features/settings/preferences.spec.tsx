@@ -122,8 +122,9 @@ describe('Preferences (S07)', () => {
     await user.clear(threshold(/^Supported/));
     await user.type(threshold(/^Supported/), '0,85');
     await user.click(save());
-    expect(await screen.findByText(/Đã lưu ngôn ngữ và chế độ debug\./)).toBeTruthy();
-    expect(screen.getByText(/Chưa lưu ngưỡng kiểm chứng\./)).toBeTruthy();
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Đã lưu: ngôn ngữ và chế độ debug.');
+    expect(alert.textContent).toContain('Chưa lưu: ngưỡng kiểm chứng.');
   });
 
   it('412 (EC34)', async () => {
@@ -132,9 +133,76 @@ describe('Preferences (S07)', () => {
     const before = calls('GET', '/me').length;
     await user.click(screen.getByRole('switch'));
     await user.click(save());
-    expect(await screen.findByText(/Dữ liệu đã thay đổi ở nơi khác/)).toBeTruthy();
+    expect(await screen.findByText(/Dữ liệu đã đổi ở nơi khác/)).toBeTruthy();
     await waitFor(() => expect(calls('GET', '/me').length).toBe(before + 1));
     expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
     expect(calls('PATCH', '/me/preferences')).toHaveLength(1);
+  });
+});
+
+describe('Preferences sau #126 và tự QC', () => {
+  it('ngưỡng mặc định từng dòng (H16, EC52)', async () => {
+    adjustThresholds();
+    await openPreferences();
+    const group = within(screen.getByRole('region', { name: /Ngưỡng kiểm chứng/ }));
+    expect(group.getByText('Mặc định 0,80')).toBeTruthy();
+    expect(group.getByText('Mặc định 0,50')).toBeTruthy();
+    expect(group.getByText('Mặc định 0,60')).toBeTruthy();
+    // Only the adjusted row carries “đã chỉnh”.
+    expect(group.getAllByText('đã chỉnh')).toHaveLength(1);
+    expect(threshold(/^Partially Supported đã chỉnh/).value).toBe('0,55');
+  });
+
+  it('ETag mới sau khi lưu ngưỡng (H12)', async () => {
+    const { user, calls } = await openPreferences();
+    await user.clear(threshold(/^Supported/));
+    await user.type(threshold(/^Supported/), '0,85');
+    await user.click(save());
+    await screen.findByText('Đã lưu.');
+    await user.clear(threshold(/^Supported/));
+    await user.type(threshold(/^Supported/), '0,9');
+    await user.click(save());
+    await waitFor(() => expect(calls('PUT', '/me/verification-thresholds')).toHaveLength(2));
+    const [first, second] = calls('PUT', '/me/verification-thresholds');
+    expect(second.headers['If-Match']).toBeTruthy();
+    expect(second.headers['If-Match']).not.toBe(first.headers['If-Match']);
+  });
+
+  it('lỗi trường ngưỡng từ máy chủ (EC50)', async () => {
+    mock.use({
+      overrides: {
+        updateVerificationThresholds: () =>
+          new Response(JSON.stringify({ type: 'x', title: 'x', status: 400, code: 'validation_failed', errors: [{ field: 'claimSupport.partiallySupported', code: 'too_big' }] }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/problem+json' },
+          }),
+      },
+    });
+    const { user } = await openPreferences();
+    await user.clear(threshold(/^Partially Supported/));
+    await user.type(threshold(/^Partially Supported/), '0,7');
+    await user.click(save());
+    await waitFor(() => expect(threshold(/^Partially Supported/).getAttribute('aria-invalid')).toBe('true'));
+    expect(threshold(/^Partially Supported/).getAttribute('aria-describedby')).toBe('sires-threshold-partiallySupported-error');
+  });
+
+  it('412 khi lưu ngưỡng (EC34)', async () => {
+    mock.use({ overrides: { updateVerificationThresholds: () => problem(412, 'precondition_failed') } });
+    const { user, calls } = await openPreferences();
+    await user.clear(threshold(/^Supported/));
+    await user.type(threshold(/^Supported/), '0,85');
+    await user.click(save());
+    expect(await screen.findByText(/Dữ liệu đã đổi ở nơi khác/)).toBeTruthy();
+    await waitFor(() => expect(calls('GET', '/me/verification-thresholds').length).toBeGreaterThan(1));
+    expect(threshold(/^Supported/).value).toBe('0,85');
+  });
+
+  it('lưu lỗi giữ ngôn ngữ (EC48)', async () => {
+    mock.use({ overrides: { updatePreferences: () => problem(503, 'service_unavailable') } });
+    const { user } = await openPreferences();
+    await user.click(screen.getByRole('radio', { name: 'English' }));
+    await user.click(save());
+    await screen.findByRole('alert');
+    expect(i18next.language).toBe('vi');
   });
 });

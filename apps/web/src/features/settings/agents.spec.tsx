@@ -49,7 +49,7 @@ describe('Agent Models (S06)', () => {
     await user.click(row.getByRole('button', { name: 'Đổi embedding model' }));
     const dialog = within(screen.getByRole('dialog', { name: 'Đổi embedding model?' }));
     expect(dialog.getByText('Chuyển từ text-embedding-3-small sang text-embedding-3-large.')).toBeTruthy();
-    expect(dialog.getByText('Mọi Reference đã index phải index lại toàn bộ.')).toBeTruthy();
+    expect(dialog.getByText('38 Reference phải index lại toàn bộ.')).toBeTruthy();
     expect(dialog.getByText('Việc index tiêu thụ usage trên kết nối “OpenAI cá nhân”.')).toBeTruthy();
     await user.click(dialog.getByRole('button', { name: 'Giữ model hiện tại' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -100,7 +100,7 @@ describe('Agent Models (S06)', () => {
     const { user, calls } = await openAgents();
     await user.click(screen.getByRole('button', { name: 'Sửa model của Writing Agent' }));
     await user.click(editor().getByRole('radio', { name: /^Proxy OpenAI tương thích/ }));
-    const manual = editor().getByLabelText(/^Tên model/) as HTMLInputElement;
+    const manual = editor().getByLabelText(/^Tên model · chưa xác minh/) as HTMLInputElement;
     expect(editor().getByText('Provider không trả về danh sách; nhập đúng tên model.')).toBeTruthy();
     await user.type(manual, 'gpt-5-proxy');
     await user.click(editor().getByRole('button', { name: 'Lưu cho agent này' }));
@@ -125,7 +125,10 @@ describe('Agent Models (S06)', () => {
 
   it('cùng model A B (EC42)', async () => {
     await openAgents();
-    expect(screen.getByRole('note').textContent).toContain('Hai instance Analysis Agent A và B đang dùng cùng một model');
+    const note = screen.getByRole('note').textContent ?? '';
+    expect(note).toContain('Analysis Agent A và B cùng dùng gpt-5 trên “OpenAI cá nhân”.');
+    expect(note).toContain('không bắt buộc khác provider');
+    expect(screen.getByRole('row', { name: /Analysis Agent · A/ }).textContent).toContain('Cùng model với Analysis Agent B');
   });
 
   it('dùng mặc định (EC43)', async () => {
@@ -182,5 +185,34 @@ describe('Agent Models (S06)', () => {
     initState({ accountId: ACCOUNT_ID });
     const names = listConnections().map((c) => c.name);
     for (const name of names) expect(editor().getByRole('radio', { name: new RegExp(`^${name}`) })).toBeTruthy();
+  });
+});
+
+describe('Agent Models sau tự QC', () => {
+  it('làm mới trả Invalid (EC47)', async () => {
+    mock.use({
+      overrides: {
+        testProviderConnection: ({ params }) => {
+          initState({ accountId: ACCOUNT_ID });
+          const row = listConnections().find((c) => c.id === params.connectionId);
+          return { status: 200, body: { ...row!, testStatus: 'Invalid', lastError: { code: 'auth_failed', message: 'x' }, availableModels: [] } };
+        },
+      },
+    });
+    const { user } = await openAgents();
+    await user.click(screen.getByRole('button', { name: 'Sửa model của Writing Agent' }));
+    await user.click(editor().getByRole('radio', { name: /^Claude cá nhân/ }));
+    await user.click(editor().getByRole('button', { name: 'Làm mới' }));
+    const alert = await editor().findByRole('alert');
+    expect(alert.textContent).toContain('auth_failed');
+    expect(within(alert).getByRole('link', { name: 'Sửa ở Provider Connections' }).getAttribute('href')).toBe('/settings/providers');
+  });
+
+  it('embedding chỉ kết nối có model embedding (H14)', async () => {
+    seedWith((cs) => cs.map((c) => (c.id === PROXY_CONNECTION_ID ? { ...c, availableModels: (c.availableModels ?? []).filter((m) => !m.capabilities?.includes('embedding')) } : c)));
+    await openAgents();
+    const row = within(screen.getByRole('region', { name: /Embedding model/ }));
+    const [connection] = row.getAllByRole('combobox') as HTMLSelectElement[];
+    expect([...connection.options].map((o) => o.textContent)).toEqual(['OpenAI cá nhân']);
   });
 });

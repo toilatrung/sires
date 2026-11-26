@@ -61,17 +61,17 @@ export function validateProfile(v: Values): Errors {
 }
 
 /**
- * merge-patch body with only the changed fields (H11). A cleared Scholar URL is `null` (merge-patch removes it);
- * the contract on this branch types the field as string only (PR #126 adds null), hence the single cast here.
+ * merge-patch body with only the changed fields (H11). A cleared Scholar URL is `null` (merge-patch removes it,
+ * contract after #126); a cleared affiliation or research field is an empty string (EC32).
  */
-export function profilePatch(base: Values, next: Values): Profile {
-  const patch: Record<string, string | null> = {};
+export function profilePatch(base: Values, next: Values): Partial<Profile> {
+  const patch: Partial<Profile> = {};
   if (next.displayName.trim() !== base.displayName) patch.displayName = next.displayName.trim();
   if (next.affiliation.trim() !== base.affiliation) patch.affiliation = next.affiliation.trim();
   if (next.researchField.trim() !== base.researchField) patch.researchField = next.researchField.trim();
   const url = next.scholarUrl.trim();
   if (url !== base.scholarUrl) patch.googleScholarProfileUrl = url ? url : null;
-  return patch as Profile;
+  return patch;
 }
 
 export function ProfileScreen() {
@@ -129,7 +129,7 @@ export function ProfileScreen() {
     let profileSaved = false;
     try {
       if (Object.keys(patch).length) {
-        const res = await api.patch('/me/profile', { body: patch, contentType: 'application/merge-patch+json', ifMatch: etag });
+        const res = await api.patch('/me/profile', { body: mergePatch<Profile>(patch), contentType: 'application/merge-patch+json', ifMatch: etag });
         account = res.data;
         etag = res.etag ?? `"${res.data.rowVersion}"`;
         profileSaved = true;
@@ -189,7 +189,13 @@ export function ProfileScreen() {
   }
 
   const account = resource.value.data.account;
-  const errorText = (field: keyof Errors) => errors[field] && <span className="sires-settings__field-error">{t(`profile.error.${field}.${errors[field]}`)}</span>;
+  const errorText = (field: keyof Errors) =>
+    errors[field] && (
+      <span id={`sires-profile-${field}-error`} className="sires-settings__field-error">
+        {t(`profile.error.${field}.${errors[field]}`)}
+      </span>
+    );
+  const describedBy = (field: keyof Errors) => (errors[field] ? `sires-profile-${field}-error` : undefined);
 
   return (
     <SettingsLayout title={t('profile.title')}>
@@ -206,7 +212,7 @@ export function ProfileScreen() {
         <div className="sires-settings__grid">
           <label className="sires-field">
             <span className="sires-field__label">{t('profile.displayName')}</span>
-            <input className="sires-input" value={values.displayName} aria-invalid={!!errors.displayName} onChange={(e) => set('displayName', e.currentTarget.value)} />
+            <input className="sires-input" value={values.displayName} aria-invalid={!!errors.displayName} aria-describedby={describedBy('displayName')} onChange={(e) => set('displayName', e.currentTarget.value)} />
             {errorText('displayName')}
             <span className="sires-settings__hint">{t('profile.displayNameHint')}</span>
           </label>
@@ -217,12 +223,12 @@ export function ProfileScreen() {
           </label>
           <label className="sires-field">
             <span className="sires-field__label">{t('profile.affiliation')}</span>
-            <input className="sires-input" value={values.affiliation} aria-invalid={!!errors.affiliation} onChange={(e) => set('affiliation', e.currentTarget.value)} />
+            <input className="sires-input" value={values.affiliation} aria-invalid={!!errors.affiliation} aria-describedby={describedBy('affiliation')} onChange={(e) => set('affiliation', e.currentTarget.value)} />
             {errorText('affiliation')}
           </label>
           <label className="sires-field">
             <span className="sires-field__label">{t('profile.researchField')}</span>
-            <input className="sires-input" value={values.researchField} aria-invalid={!!errors.researchField} onChange={(e) => set('researchField', e.currentTarget.value)} />
+            <input className="sires-input" value={values.researchField} aria-invalid={!!errors.researchField} aria-describedby={describedBy('researchField')} onChange={(e) => set('researchField', e.currentTarget.value)} />
             {errorText('researchField')}
           </label>
         </div>

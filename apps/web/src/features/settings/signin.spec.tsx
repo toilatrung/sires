@@ -6,7 +6,7 @@
 // through the shell's BrowserNavigator, so the test reads `browser.assigned` instead of a real window.location.
 
 import { screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMockServer } from '../../shell/mock/node';
 import { resetSettingsMockState } from './__mocks__';
 import { problem, renderSettings } from './test-helpers';
@@ -100,5 +100,24 @@ describe('SignIn (S02)', () => {
     await user.click(screen.getByRole('button', { name: 'EN' }));
     expect((await screen.findByRole('alert')).textContent).toContain('eTroy is temporarily not responding');
     expect(screen.getByRole('button', { name: 'Sign in with eTroy' })).toBeTruthy();
+  });
+});
+
+describe('SignIn chế độ mock', () => {
+  it('chế độ mock (EC12)', async () => {
+    vi.stubEnv('VITE_SIRES_MOCK', '1');
+    try {
+      signedOut();
+      const { user, browser, router } = renderSettings('/sign-in?returnTo=/settings/agents');
+      // In this test the mock session is signed out, so the frame sends the user back to /sign-in afterwards;
+      // what matters is that the button went straight to returnTo without leaving for eTroy.
+      const visited: string[] = [];
+      router.subscribe((state) => visited.push(state.location.pathname));
+      await user.click(await screen.findByRole('button', { name: 'Đăng nhập bằng eTroy' }));
+      await waitFor(() => expect(visited).toContain('/settings/agents'));
+      expect(browser.assigned).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

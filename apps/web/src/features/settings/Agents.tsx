@@ -41,7 +41,8 @@ export function agentModels(connection: Connection | undefined): ModelInfo[] {
 export function embeddingChoices(connections: Connection[]): Array<{ connection: Connection; models: ModelInfo[] }> {
   return connections
     .filter((c) => c.testStatus === 'Valid' && (c.provider === 'openai' || c.provider === 'google'))
-    .map((connection) => ({ connection, models: (connection.availableModels ?? []).filter(hasEmbedding) }));
+    .map((connection) => ({ connection, models: (connection.availableModels ?? []).filter(hasEmbedding) }))
+    .filter((choice) => choice.models.length > 0);
 }
 
 function own(assignments: Assignment[], row: Row): Assignment | undefined {
@@ -92,6 +93,7 @@ export function AgentsScreen() {
       : [{ agent: d.agent, label: d.displayName, role: d.role }],
   );
   const sameModel = assignments.some((a) => a.agent === 'analysis' && a.sameModelWarning);
+  const analysisA = assignments.find((a) => a.agent === 'analysis' && a.instance === 'A') ?? fallback;
   const replace = (row: Assignment | null, target: Row) =>
     resource.setData((data) => ({
       ...data,
@@ -124,8 +126,8 @@ export function AgentsScreen() {
         <p className="sires-settings__hint">{t('agents.default.hint')}</p>
         <div className="sires-settings__default">
           <span>{fallback ? `${configText(fallback)} · ` : ''}</span>
-          <span className="sires-id">{fallback?.model ?? t('agents.notConfigured')}</span>
-          <button type="button" className="sires-button" data-size="sm" disabled={!valid.length} onClick={() => setEditing({ agent: 'default', label: t('agents.default.title') })}>
+          {fallback ? <span className="sires-id">{fallback.model}</span> : <span>{t('agents.notConfigured')}</span>}
+          <button type="button" className="sires-button" disabled={!valid.length} onClick={() => setEditing({ agent: 'default', label: t('agents.default.title') })}>
             {t('agents.edit')}
           </button>
         </div>
@@ -186,7 +188,7 @@ export function AgentsScreen() {
                     )}
                   </td>
                   <td>
-                    <button type="button" className="sires-button" data-size="xs" disabled={!valid.length} aria-label={t('agents.editNamed', { name: row.label })} onClick={() => setEditing(row)}>
+                    <button type="button" className="sires-button" disabled={!valid.length} aria-label={t('agents.editNamed', { name: row.label })} onClick={() => setEditing(row)}>
                       {t('agents.edit')}
                     </button>
                   </td>
@@ -207,9 +209,9 @@ export function AgentsScreen() {
           reload={() => void resource.reload()}
         />
       )}
-      {sameModel && (
+      {sameModel && analysisA && (
         <div role="note" className="sires-settings__banner" data-tone="warning">
-          {t('agents.sameModel')}
+          <strong>{t('agents.sameModel', { model: analysisA.model, name: byId(analysisA.providerConnectionId)?.name ?? '—' })}</strong> {t('agents.sameModelWhy')}
         </div>
       )}
       <EmbeddingRow connections={connections} embedding={embedding} onSaved={(e) => resource.setData((d) => ({ ...d, embedding: e }))} />
@@ -338,12 +340,18 @@ function AssignmentEditor({ row, connections, current, onClose, onSaved, onRefre
           ))}
           {manualEntry && (
             <label className="sires-field">
-              <span className="sires-field__label">{t('agents.manualModel')}</span>
-              <input className="sires-input sires-id" value={manual} aria-invalid={modelError} onChange={(e) => setManual(e.currentTarget.value)} />
+              <span className="sires-field__label">
+                {t('agents.manualModel')} <span className="sires-muted">· {t('agents.unverified')}</span>
+              </span>
+              <input className="sires-input sires-id" value={manual} aria-invalid={modelError} aria-describedby={modelError ? 'sires-model-error' : undefined} onChange={(e) => setManual(e.currentTarget.value)} />
               <span className="sires-settings__hint">{t('agents.manualHint')}</span>
             </label>
           )}
-          {modelError && <span className="sires-settings__field-error">{t('agents.modelNotAvailable')}</span>}
+          {modelError && (
+            <span id="sires-model-error" className="sires-settings__field-error">
+              {t('agents.modelNotAvailable')}
+            </span>
+          )}
           <p className="sires-settings__hint">
             {connection.lastTestedAt ? t('agents.listedAt', { time: formatTime(connection.lastTestedAt) }) : t('agents.notListed')}{' '}
             <button type="button" className="sires-settings__link-button" disabled={busy !== null} onClick={() => void refresh()}>
@@ -375,7 +383,10 @@ function ProviderProblem({ connection }: { connection: Connection }) {
   const code = connection.lastError?.code;
   return (
     <p role="alert" className="sires-settings__field-error">
-      {t(`providerError.${code ?? 'unknown'}`, { defaultValue: t('providerError.unknown') })} <code className="sires-id">{code ?? '—'}</code>
+      {t(`providerError.${code ?? 'unknown'}`, { defaultValue: t('providerError.unknown') })} <code className="sires-id">{code ?? '—'}</code>{' '}
+      <Link to="/settings/providers" className="sires-settings__inline-link">
+        {t('agents.fixConnection')}
+      </Link>
     </p>
   );
 }
@@ -472,7 +483,9 @@ function EmbeddingRow({ connections, embedding, onSaved }: { connections: Connec
           }
         >
           <p>{t('agents.embedding.dialog.from', { from: embedding.model, to: model })}</p>
-          <p className="sires-settings__strong">{t('agents.embedding.dialog.count')}</p>
+          <p className="sires-settings__strong">
+            {embedding.indexedReferenceCount !== undefined ? t('agents.embedding.dialog.countN', { count: embedding.indexedReferenceCount }) : t('agents.embedding.dialog.count')}
+          </p>
           <p>{t('agents.embedding.dialog.usage', { name: choice?.connection.name ?? '—' })}</p>
           <p>{t('agents.embedding.dialog.unavailable')}</p>
           {error && <ErrorState error={error} ns={NS} notSaved={t('common.notSaved')} />}
