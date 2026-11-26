@@ -1,0 +1,104 @@
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+/* Global area screens (PID-00037, PID-00060). Values are the shell's tokens (design.md §2); layout follows the
+   reference screens Dashboard, Projects, PendingActions, Notifications, MobilePending, MobilePrompt. */
+
+/* ---------- Page ---------- */
+.g-page { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; padding-bottom: 40px; }
+.g-page--tight { gap: 20px; }
+.g-row { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+.g-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.g-head--baseline { align-items: baseline; }
+.g-title { margin: 0; font-size: var(--sires-fs-title); font-weight: 600; line-height: 1.25; }
+.g-section-title { margin: 0; font-size: 22px; font-weight: 600; line-height: 1.3; }
+.g-panel-title { margin: 0; font-size: 22px; font-weight: 600; }
+.g-section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.g-link { font-size: 14px; color: var(--sires-brand-ink); }
+.g-link:hover { color: var(--sires-ink); }
+.g-meta { font-size: 13px; color: var(--sires-muted); line-height: 1.45; }
+.g-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--sires-muted); }
+a.sires-button { text-decoration: none; }
+
+/* ---------- Card and table (design.md §4 Bảng) ---------- */
+.g-card { position: relative; background: var(--sires-surface); border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); }
+.g-card--scroll { overflow-x: auto; }
+.g-table { width: 100%; min-width: 820px; border-collapse: collapse; font-size: 14px; }
+.g-table--compact { min-width: 560px; }
+.g-table th { padding: 10px 16px; border-bottom: 1px solid var(--sires-line); font-size: 12px; font-weight: 600; color: var(--sires-muted); text-align: left; }
+.g-table td { padding: 14px 16px; border-bottom: 1px solid var(--sires-line); vertical-align: top; }
+.g-table tr:last-child td { border-bottom: 0; }
+.g-table td.g-cell--action { text-align: right; white-space: nowrap; }
+.g-project-name { display: block; font-weight: 600; color: var(--sires-ink); text-decoration: none; overflow-wrap: anywhere; }
+.g-project-name:hover { text-decoration: underline; }
+.g-project-desc { display: block; margin-top: 3px; font-size: 13px; color: var(--sires-muted); line-height: 1.45; overflow-wrap: anywhere; }
+.g-muted { color: var(--sires-muted); }
+.g-progress { display: flex; align-items: center; gap: 10px; }
+.g-progress__track { flex: 1; max-width: 110px; height: 4px; background: var(--sires-line); border-radius: var(--sires-radius-progress); overflow: hidden; }
+.g-progress__fill { display: block; height: 4px; background: var(--sires-brand); border-radius: var(--sires-radius-progress); }
+
+/* ---------- Tabs (role=tab, design.md §4: ink underline, never brand) ---------- */
+.g-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.g-tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--sires-line); }
+.g-tab { height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px var(--sires-font); color: var(--sires-muted); cursor: pointer; }
+.g-tab:hover { color: var(--sires-ink); }
+.g-tab[aria-selected="true"] { font-weight: 600; color: var(--sires-ink); border-bottom-color: var(--sires-ink); }
+
+/* ---------- Form (design.md §4 Ô nhập) ---------- */
+.g-form { display: flex; flex-direction: column; gap: 16px; }
+.g-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.g-field--search { flex: 1 1 260px; gap: 4px; font-size: 12px; color: var(--sires-muted); }
+.g-input, .g-textarea, .g-select {
+  box-sizing: border-box; width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--sires-line-control);
+  border-radius: var(--sires-radius-control); background: var(--sires-control); color: var(--sires-ink); font: 400 14px var(--sires-font);
+}
+.g-textarea { padding: 10px 12px; line-height: 1.5; resize: vertical; }
+.g-input[aria-invalid="true"], .g-textarea[aria-invalid="true"] { border: 1.5px solid var(--sires-danger); }
+.g-input:read-only, .g-textarea:read-only { background: var(--sires-ground); color: var(--sires-muted); }
+.g-field__error { font-size: 13px; font-weight: 500; color: var(--sires-danger-ink); }
+.g-field__hint { font-size: 13px; font-weight: 400; color: var(--sires-muted); }
+.g-field__warn { font-size: 13px; font-weight: 500; color: var(--sires-warn); }
+.g-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.g-actions .sires-button { min-height: 44px; }
+
+/* ---------- Side panel (Projects: create form) ---------- */
+.g-split { display: flex; flex-wrap: wrap; gap: 0; align-items: stretch; margin: -24px calc(-1 * var(--sires-gutter)); min-height: calc(100% + 48px); }
+.g-split__main { flex: 999 1 560px; min-width: 0; padding: 24px var(--sires-gutter) 40px; }
+.g-split__panel { flex: 1 1 380px; max-width: 440px; box-sizing: border-box; padding: 24px; background: var(--sires-surface); border-left: 1px solid var(--sires-line); display: flex; flex-direction: column; gap: 16px; }
+@media (max-width: 939px) {
+  .g-split__panel { max-width: none; border-left: 0; border-top: 1px solid var(--sires-line); }
+}
+
+/* ---------- Row action menu ---------- */
+.g-menu-anchor { position: relative; display: inline-block; }
+.g-icon-button { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-surface); color: var(--sires-ink); cursor: pointer; }
+.g-menu { position: absolute; z-index: 40; right: 0; top: calc(100% + 4px); min-width: 200px; padding: 6px; display: flex; flex-direction: column; gap: 2px; background: var(--sires-surface); border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); box-shadow: var(--sires-shadow-float); text-align: left; }
+.g-menu__item { display: flex; align-items: center; min-height: 40px; padding: 0 10px; border: 0; border-radius: var(--sires-radius-control); background: transparent; color: var(--sires-ink); font: 500 14px var(--sires-font); text-align: left; cursor: pointer; text-decoration: none; }
+.g-menu__item:hover, .g-menu__item:focus-visible { background: var(--sires-control); }
+.g-menu__item[data-variant="danger"] { color: var(--sires-danger); }
+
+/* ---------- Dialog (design.md §4 Dialog: 480px, scrim, shadow-float) ---------- */
+.g-scrim { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--sires-scrim); }
+.g-dialog { box-sizing: border-box; width: 480px; max-width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; background: var(--sires-surface); border-radius: var(--sires-radius-card); box-shadow: var(--sires-shadow-float); }
+.g-dialog:focus { outline: none; }
+.g-dialog__title { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; }
+.g-dialog__body { margin: 0; font-size: 14px; line-height: 1.5; }
+.g-dialog__list { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+
+/* ---------- Banners (design.md §4 Banner) ---------- */
+.g-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 16px 20px; background: var(--sires-surface); border-radius: var(--sires-radius-card); }
+.g-banner[data-kind="api-key"] { padding: 20px; border: 1.5px dashed var(--sires-brand); }
+.g-banner[data-kind="recovery"] { border: 1.5px solid var(--sires-warn); }
+.g-banner__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.g-banner__title { font-size: 16px; font-weight: 600; }
+.g-banner[data-kind="recovery"] .g-banner__title { font-size: 15px; color: var(--sires-warn); }
+.g-banner__detail { font-size: 14px; color: var(--sires-muted); }
+.g-banner .sires-button { min-height: 44px; }
+
+/* ---------- Block on the dashboard ---------- */
+.g-block { flex: 3 1 520px; }
+.g-block--side { flex: 2 1 320px; }
+.g-list { margin: 0; padding: 0; list-style: none; }
+.g-notice { padding: 12px 16px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); background: var(--sires-surface); font-size: 14px; }
