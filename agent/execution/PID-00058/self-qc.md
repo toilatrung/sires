@@ -112,6 +112,17 @@ Lượt đọc độc lập: một agent đọc hồ sơ ở `docs/pid-00058-000
 | G15 | partial | LOW | `refresh` lỗi không được bắt | `Chat.tsx` | Sửa |
 | UI | partial | LOW | Tin của Researcher, bán kính banner, chip giả định, `aria-live`, nhãn ô nhập | `project.css`, `Chat.tsx`, `Overview.tsx` | Sửa theo màn tham chiếu: bong bóng brand-tint bên phải, banner bo 8px, tiêu đề khôi phục màu warn, chip `proposed-brand`, `aria-live="polite"` cho luồng, nhãn ẩn và placeholder “Nhắn Orchestrator…”, lý do vô hiệu nối `aria-describedby` |
 
+## Lần 2 — 27/11/2026
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run-many -t lint typecheck test build -p @sires/web` | Đạt; `npx vitest run`: 25 file, 206 test (project 4 file, 57 test gồm `deliberation-card/card.spec.tsx` của PID-00084) |
+| `check-ui.mjs apps/web/src/features/project` | 0 lỗi, 0 cảnh báo |
+| gitleaks trên dải commit của nhánh | Sạch |
+
+- Thay đổi: `PromptInline.tsx` dùng `DeliberationCard` khi `isDeliberationProposal(prompt)`, còn lại `PromptCard`; `__mocks__/index.ts` ghép fixture `openProposal`, `proposalMessage`, `skippedResultMessage`. Test prompt giới hạn override `getPrompt` vào prompt đang test (luồng nay có thêm đề xuất thảo luận).
+- Test mới: `chat.spec.tsx › bỏ qua thảo luận ra nhãn Không qua thảo luận (PID-00084-AC01)` — bấm “Bỏ qua” trên thẻ trong Chat gửi `{ choiceIds: ['skip'] }`, tin kết quả của Orchestrator mang nhãn “Không qua thảo luận”.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
