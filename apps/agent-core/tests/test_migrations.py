@@ -85,7 +85,7 @@ async def test_schema_matches_ddl(sires_postgres: PostgresServer, revision_db: S
     assert _diff(from_revision, from_ddl) == {}
 
     # EC04: alembic_version lives in public, outside app and replica, and is not granted to the service roles.
-    assert await _version(revision_db.owner_dsn) == "0001"
+    assert await _version(revision_db.owner_dsn) == "0002"
     assert await fetchval(revision_db.owner_dsn, "SELECT to_regclass('app.alembic_version')") is None
     assert await fetchval(revision_db.owner_dsn, "SELECT to_regclass('replica.alembic_version')") is None
     granted = await fetchval(
@@ -102,7 +102,7 @@ async def test_upgrade_twice(revision_db: ServiceDatabase) -> None:
     await upgrade(revision_db.owner_dsn)
     after = await schema_snapshot(revision_db.owner_dsn)
     assert _diff(after, before) == {}
-    assert await _version(revision_db.owner_dsn) == "0001"
+    assert await _version(revision_db.owner_dsn) == "0002"
 
 
 async def test_missing_roles_rolls_back(sires_postgres: PostgresServer, empty_db: ServiceDatabase) -> None:
@@ -137,7 +137,7 @@ async def test_downgrade_refused(revision_db: ServiceDatabase) -> None:
         await downgrade(revision_db.owner_dsn, "base")
     snapshot = await schema_snapshot(revision_db.owner_dsn)
     assert OWN_TABLES <= _tables(snapshot)
-    assert await _version(revision_db.owner_dsn) == "0001"
+    assert await _version(revision_db.owner_dsn) == "0002"
 
 
 def _migration_command() -> list[str]:
@@ -162,4 +162,4 @@ async def test_migrate_command(empty_db: ServiceDatabase) -> None:
         snapshots.append(await schema_snapshot(empty_db.owner_dsn))
     assert OWN_TABLES <= _tables(snapshots[0])
     assert _diff(snapshots[1], snapshots[0]) == {}
-    assert await _version(empty_db.owner_dsn) == "0001"
+    assert await _version(empty_db.owner_dsn) == "0002"

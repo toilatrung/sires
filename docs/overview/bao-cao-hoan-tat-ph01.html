@@ -1,0 +1,108 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Báo cáo hoàn tất PH-01 (24–25/11/2026): PR đã merge, trạng thái 36 PID, cổng ra, chạy thử cục bộ và việc còn lại dồn vào phiếu chốt cuối PH-01.">
+<title>Báo cáo hoàn tất PH-01 | SIRes</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="phieu-chot-cuoi-ph01.html">Phiếu chốt cuối PH-01</a> · Báo cáo hoàn tất PH-01</span></header>
+<main id="main-content">
+<p class="eyebrow">Kế hoạch triển khai · Báo cáo</p>
+<h1>Báo cáo hoàn tất PH-01 (24–25/11/2026)</h1>
+<p class="meta">Lập 25/11/2026, cập nhật tối 25/11/2026 theo yêu cầu PO · Nguồn: GitHub (PR, CI), <a href="../../agent/execution/taskboard.html">taskboard</a>, <a href="../docs_context.md">docs_context.md</a>, chạy thử cục bộ · Quyết định: <a href="phieu-chot-ph01.html">PC-04</a> (đã chốt) · Việc còn lại: <a href="phieu-chot-cuoi-ph01.html">phiếu chốt cuối PH-01</a> (đề nghị PC-05, 75 mục, phiếu duy nhất còn mở của PH-01)</p>
+
+<h2 id="ket-luan">1. Kết luận</h2>
+<div class="note"><p><strong>30/36 PID PH-01 xong</strong> (đã merge vào <code>main</code>, có QC độc lập kết luận nghiệm thu được). PID-00014 (PR #63) đã xanh CI và chờ PO chốt một điểm (P32). <strong>Cổng ra PH-01 chưa đạt.</strong> Mọi việc còn lại đã dồn vào <a href="phieu-chot-cuoi-ph01.html">phiếu chốt cuối PH-01</a>: PO chốt một lần, sau đó phiên được giao hoàn tất. Riêng SPK-01 còn cần key chính thức. Chưa tới mốc DEC-59: PR vẫn vào <code>main</code>.</p></div>
+
+<h2 id="cong-ra">2. Cổng ra PH-01</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Điều kiện (tickets 2, PH-01)</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead>
+<tbody>
+<tr><td>Service mẫu: trạng thái + Audit Event + outbox trong một giao dịch; inbox đúng một lần; RLS chặn đọc chéo; có test</td><td>Đạt</td><td>PID-00006; G2 (loại sự kiện riêng) sửa ở #108</td></tr>
+<tr><td>PR chạm một service NestJS chạy CI dưới 10 phút (SPK-10)</td><td>Đạt</td><td>PID-00009 (#91): T3 182 s; 20 lần push <code>main</code>, p95 8,45 phút</td></tr>
+<tr><td>Hợp đồng baseline; PO duyệt baseline</td><td>Đạt</td><td>PO duyệt 25/11/2026 (PC-04 B6)</td></tr>
+<tr><td>Báo cáo SPK-01–SPK-08, SPK-10</td><td>Chưa đủ</td><td>SPK-01 chờ key chính thức, chạy Lần 3 (B8); SPK-03 chờ PO chốt nhóm II của phiếu chốt cuối (B9)</td></tr>
+<tr><td>Nơi dựng staging ở PH-02 (OQ-108)</td><td>Đạt theo quyết định mới</td><td>Home Lab chưa sẵn sàng; PO chọn staging cục bộ trên máy PO (B7). Chạy thử cục bộ đạt (mục 6)</td></tr>
+</tbody></table></div>
+
+<h2 id="pr">3. PR đã merge</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Ngày</th><th>PR</th><th>Nội dung</th></tr></thead>
+<tbody>
+<tr><td>24–25/11 (đêm)</td><td>#86–#104</td><td>EC09 (#94), DBD-14 và DBQ-11 (#93, #102), <code>pg_dump</code> qua base64 (#100), platform (#86, #87), PID-00018 (#66), PID-00019 (#90), PID-00024 (#98), PID-00026 (#99), PID-00029 (#82), PID-00030 (#97), PID-00009 (#91), QC PID-00004 (#101), phiếu chốt PC-04 và báo cáo (#95, #103), đồng bộ <code>develop</code> (#92, #104)</td></tr>
+<tr><td>25/11</td><td>#105</td><td>Kết quả tự rà của 7 PID luồng platform vào <code>self-qc.md</code> (PC-04 A7, thay #85)</td></tr>
+<tr><td>25/11</td><td>#106</td><td>Consumer không chặn khởi động (PID-00002 G5, A2); 403 không có <code>detail</code> (PID-00003 G8, A3)</td></tr>
+<tr><td>25/11</td><td>#107</td><td>PID-00016 identity: migration, KMS cục bộ, envelope encryption; DDL <code>gateway.sql</code>, <code>identity.sql</code> theo DBD-14</td></tr>
+<tr><td>25/11</td><td>#108</td><td>Hằng timeout chung cho test Testcontainers (A6); service mẫu dùng loại sự kiện riêng (PID-00006 G2, A4)</td></tr>
+</tbody></table></div>
+
+<h2 id="pid">4. Trạng thái 36 PID PH-01</h2>
+<p><strong>Xong (30):</strong> PID-00001 đến 00011, 00015 đến 00020, 00022 đến 00024, 00026 đến 00034, 00158 — đã merge, QC độc lập kết luận nghiệm thu được (LOW/MEDIUM còn lại ghi ở <code>qc-report.md</code> từng PID).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>PID chưa xong</th><th>Đang chờ</th><th>Phiếu chốt cuối</th></tr></thead>
+<tbody>
+<tr><td>PID-00014 Gateway (PR #63)</td><td>CI xanh, gateway 35/35 với vai trò thật; QC độc lập Lần 3 đạt (không còn lỗi mã chặn merge); chờ PO chốt bản sửa infra trong PR</td><td>P32</td></tr>
+<tr><td>PID-00012 Shell</td><td>PO duyệt sửa nguồn (design.md §3, tín hiệu SSE, TopBar và <code>/auth/logout</code>)</td><td>P1–P5</td></tr>
+<tr><td>PID-00013 Mock theo OpenAPI</td><td>Client API, client SSE của PID-00012</td><td>P5</td></tr>
+<tr><td>PID-00159 Môi trường cục bộ</td><td>PO xác nhận hồ sơ; phạm vi theo bản vai trò đã thử</td><td>P6, P26, P27</td></tr>
+<tr><td>PID-00021 SPK-01</td><td>Key chính thức Anthropic, Google; chạy Lần 3</td><td>Nhóm I (S-…)</td></tr>
+<tr><td>PID-00025 SPK-03 (PR #38)</td><td>PO chốt phần Google Scholar</td><td>Nhóm II (GS-…)</td></tr>
+</tbody></table></div>
+
+<h2 id="viec-po">5. Việc PO cần làm</h2>
+<ol>
+<li>Chốt <a href="phieu-chot-cuoi-ph01.html">phiếu chốt cuối PH-01</a> trong một lần (75 mục; nút “Điền đề xuất cho mục còn trống” điền sẵn đề xuất), xuất Markdown hoặc JSON gửi lại. Nhóm I và II gộp nguyên phiếu SPK-01 (PC-02) và phiếu Google Scholar (PC-03); nhóm III–V là mọi điểm PH-01 còn lại (gồm cả các gap LOW của QC, issue #83); P31 là danh sách điều kiện đóng PH-01.</li>
+<li>Cấp key chính thức Anthropic, Google cho SPK-01 Lần 3 (PC-04 B8).</li>
+<li>Báo T1xNTH, Vietanhhhhhh2003, congminh1705 về phân công PH-01 mới và các PR đã được hoàn tất thay.</li>
+</ol>
+<p>Sau khi PO chốt, phiên được giao áp dụng phiếu vào tài liệu và mã, làm PID-00012, PID-00013, PID-00159, hoàn tất #63 và #38, chạy lại thử cục bộ, rồi trình PO xác nhận cổng ra PH-01 và làm các việc tại mốc DEC-59 (P31).</p>
+
+<h2 id="local">6. Chạy thử cục bộ (25/11/2026, <code>main</code> 8c5581d)</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Thành phần</th><th>Kết quả</th></tr></thead>
+<tbody>
+<tr><td>Hạ tầng <code>pnpm local:up</code> (PostgreSQL 16 + pgvector, RabbitMQ, MinIO trong WSL)</td><td>Healthy</td></tr>
+<tr><td>Migration 10 service có database (identity, workspace, planning, orchestration, library, research, manuscript, audit, agent-core, knowledge) bằng vai trò <code>sires_&lt;svc&gt;_migrator</code>, không superuser</td><td>Đạt; chạy lại không áp thêm; bảng thuộc owner; <code>_app</code>, <code>_system</code> đúng quyền</td></tr>
+<tr><td>12 service khởi động từ bản build (gateway 3000; identity…sandbox-runner 3101–3109; agent-core 8101, knowledge 8102)</td><td><code>/health</code> 200 cả 12</td></tr>
+<tr><td>Web <code>localhost:5173</code></td><td><code>/</code>, <code>/sign-in</code>, <code>/dashboard</code> 200 (khung tạm, shell thật là PID-00012)</td></tr>
+<tr><td>e2e Playwright (PID-00034)</td><td>14/14 khi trỏ <code>E2E_CHROMIUM_EXECUTABLE</code> sang Chromium có trên máy (P30)</td></tr>
+<tr><td>Luồng liên service</td><td>Chưa có trong PH-01 (chưa có route nghiệp vụ); hạ tầng AMQP, MinIO hoạt động</td></tr>
+</tbody></table></div>
+<p>Bước tay thay cho PID-00159: với mỗi service có database, tạo vai trò theo database 3.2 rồi cấp quyền, và tạo extension <code>vector</code> cho knowledge bằng superuser:</p>
+<pre>CREATE ROLE sires_&lt;svc&gt;_owner NOLOGIN NOBYPASSRLS;
+CREATE ROLE sires_&lt;svc&gt;_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD '&lt;mật khẩu local&gt;';
+CREATE ROLE sires_&lt;svc&gt;_app LOGIN NOBYPASSRLS PASSWORD '&lt;mật khẩu local&gt;';
+CREATE ROLE sires_&lt;svc&gt;_system LOGIN BYPASSRLS PASSWORD '&lt;mật khẩu local&gt;';
+CREATE ROLE sires_&lt;svc&gt;_purge LOGIN BYPASSRLS PASSWORD '&lt;mật khẩu local&gt;';
+GRANT sires_&lt;svc&gt;_owner TO sires_&lt;svc&gt;_migrator;
+ALTER ROLE sires_&lt;svc&gt;_migrator SET role = 'sires_&lt;svc&gt;_owner';
+GRANT CREATE ON DATABASE sires_&lt;svc&gt; TO sires_&lt;svc&gt;_owner;
+\c sires_&lt;svc&gt;
+GRANT CREATE ON SCHEMA public TO sires_&lt;svc&gt;_owner;
+-- knowledge: CREATE EXTENSION vector; (superuser)</pre>
+<p>Hạn chế: <code>/health</code> trả 200 cố định, không kiểm DB, broker (P29); <code>alembic.exe</code> bị Smart App Control chặn, chạy bằng <code>python -m alembic</code> (P28); thiếu lệnh chạy cả hệ thống và biến trong <code>.env.example</code> (P27). Volume <code>sires-local_postgres-data</code> được giữ sau <code>pnpm local:down</code>.</p>
+
+<h2 id="ghi-chu">7. Ghi chú vận hành</h2>
+<ul>
+<li>Test chạm Testcontainers có lúc hết thời gian hoặc <code>ECONNRESET</code> khi máy tải cao; hằng timeout chung (A6) đã có ở <code>@sires/testing</code>, project khác áp khi chạm tới.</li>
+<li>Lỗi chập chờn của phép so schema do <code>pg_dump</code> vỡ UTF-8 đã sửa ở #100.</li>
+<li>Checkout Windows (<code>core.autocrlf=true</code>) đổi xuống dòng của SQL và fixture; đề xuất <code>*.sql text eol=lf</code> (P20).</li>
+<li>Worktree tạm của phiên điều phối được gỡ sau mỗi đợt; worktree của các phiên PID do app quản lý.</li>
+</ul>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="phieu-chot-cuoi-ph01.html">← Phiếu chốt cuối PH-01</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Báo cáo hoàn tất PH-01. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

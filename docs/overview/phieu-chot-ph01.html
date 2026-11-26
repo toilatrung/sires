@@ -1,0 +1,351 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu chốt PC-04: các quyết định ngày 24/11/2026 để hoàn tất PH-01 (DBD-14, EC09, điểm QC luồng platform, PR #85, thứ tự merge, H10 của PID-00019), đã chốt theo ủy quyền của PO và chờ PO xem lại.">
+<title>Phiếu chốt PH-01 | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .ctx{font-size:.88rem;margin:.3rem 0 .5rem}
+.item .ctx ol{margin:.3rem 0;padding-left:1.4rem}
+.item .q{margin:.3rem 0 .6rem;font-weight:600}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.chip.decided{background:var(--accent);color:#fff}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="back-log.html">Backlog</a> · Phiếu chốt PH-01</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
+<h1>Phiếu chốt hoàn tất PH-01 (24/11/2026)</h1>
+<p class="meta">Số phiếu: PC-04 · Lập 24/11/2026 theo yêu cầu PO · Trạng thái: đã chốt, chờ PO xem lại · Nguồn: <a href="../docs_context.md">docs_context.md</a> (nhật ký 24/11/2026), <a href="../database/sections/13-decisions-risks-and-open-issues.html">database 13</a>, <a href="../tickets/issues/PID-00019/index.html">PID-00019</a> mục 5 · 21 mục: 12 chốt theo đề xuất (A10–A12 thêm 25/11/2026), 9 PO chọn trực tiếp (B6–B9 thêm 25/11/2026)</p>
+<div class="note"><p><strong>Bối cảnh.</strong> Ngày 24/11/2026 PO chuyển các PID PH-01 chưa xong sang <code>toilatrung</code> và giao hoàn tất các PR còn dở để xong PH-01. Trong phiên, PO chọn trực tiếp một số điểm (nhóm B). Với các điểm còn lại, PO ủy quyền: “Hãy cứ chốt theo đề xuất của bạn, rồi xuất ra phiếu chốt (PC) để tôi theo dõi sau khi còn việc hoàn tất” (nhóm A). Mọi mục đã được áp dụng hoặc đang được áp dụng theo phương án đang chọn trên phiếu. PO xem lại; muốn đổi mục nào thì chọn phương án khác hoặc ghi ở ghi chú rồi xuất phiếu gửi lại, và việc đã làm theo mục đó sẽ được sửa theo.</p></div>
+<div class="note no-print"><p>Mỗi mục đã được chọn sẵn phương án đã áp dụng (nhãn <strong>Đã chốt</strong>). Nhãn <strong>Đề xuất</strong> đánh dấu đề xuất của người lập phiếu; ở nhóm B có mục PO chọn khác đề xuất. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="PC-04"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Về phương án đã chốt</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+
+<h2>C. Còn chờ PO, ngoài phiếu này</h2>
+<p class="status">Ngày 25/11/2026 mọi mục còn chờ PO của PH-01, kể cả phiếu chốt SPK-01 (PC-02) và phiếu chốt Google Scholar (PC-03), đã chuyển vào <a href="phieu-chot-cuoi-ph01.html">phiếu chốt cuối PH-01</a> (đề nghị PC-05). PO chốt ở phiếu đó; phiếu này chỉ còn là biên bản các quyết định đã áp dụng.</p>
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="back-log.html">← Backlog</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt PH-01. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a> · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+const GH = 'https://github.com/toilatrung/sires/pull/';
+const R = {
+  ctx: ['docs_context 24/11/2026', '../docs_context.md'],
+  dbd14: ['DBD-14', '../database/sections/13-decisions-risks-and-open-issues.html#dbd-14'],
+  dbq10: ['DBQ-10', '../database/sections/13-decisions-risks-and-open-issues.html#dbq-10'],
+  ddl: ['00-common.sql', '../database/ddl/00-common.sql'],
+  ph01: ['Tickets 2, PH-01', '../tickets/sections/02-phases-and-gates.html#ph-01'],
+  tb: ['Taskboard', '../../agent/execution/taskboard.html'],
+  p02: ['PID-00002', '../tickets/issues/PID-00002/index.html'],
+  p03: ['PID-00003', '../tickets/issues/PID-00003/index.html'],
+  p06: ['PID-00006', '../tickets/issues/PID-00006/index.html'],
+  p14: ['PID-00014', '../tickets/issues/PID-00014/index.html'],
+  p16: ['PID-00016', '../tickets/issues/PID-00016/index.html'],
+  p19: ['PID-00019', '../tickets/issues/PID-00019/index.html'],
+  p25: ['PID-00025', '../tickets/issues/PID-00025/index.html'],
+  p24: ['PID-00024', '../tickets/issues/PID-00024/index.html'],
+  p26: ['PID-00026', '../tickets/issues/PID-00026/index.html'],
+  p30: ['PID-00030', '../tickets/issues/PID-00030/index.html'],
+  pr38: ['PR #38', GH + '38'], pr63: ['PR #63', GH + '63'], pr66: ['PR #66', GH + '66'], pr82: ['PR #82', GH + '82'],
+  pr85: ['PR #85', GH + '85'], pr86: ['PR #86', GH + '86'], pr87: ['PR #87', GH + '87'], pr90: ['PR #90', GH + '90'],
+  pr92: ['PR #92', GH + '92'], pr94: ['PR #94', GH + '94'],
+  pr91: ['PR #91', GH + '91'], pr97: ['PR #97', GH + '97'], pr98: ['PR #98', GH + '98'],
+  p09: ['PID-00009', '../tickets/issues/PID-00009/index.html'],
+  p21: ['PID-00021', '../tickets/issues/PID-00021/index.html'],
+  p08: ['PID-00008', '../tickets/issues/PID-00008/index.html'],
+  dbq11: ['DBQ-11', '../database/sections/13-decisions-risks-and-open-issues.html#dbq-11'],
+};
+const BASIS_A = 'Chốt theo đề xuất (PO ủy quyền 24/11/2026)';
+const BASIS_B = 'PO chọn trong phiên 24/11/2026';
+// rec: chỉ số phương án đề xuất; chosen: chỉ số phương án đã chốt và áp dụng
+const GROUPS = [
+ {title:'A. Chốt theo đề xuất', note:'PO ủy quyền: “Chốt theo đề xuất” (các điểm T1xNTH chờ) và “Hãy cứ chốt theo đề xuất của bạn, rồi xuất ra phiếu chốt (PC)”. Phương án đã chốt trùng đề xuất.', items:[
+  {id:'A1', kind:'Quyết định', basis:BASIS_A, refs:['dbq10','dbd14','p14','p16'], impact:'gateway.sql, identity.sql, migration gateway (PR #63) và identity (PID-00016)',
+   ctx:'app.find_session (gateway) và app.find_account_by_identity (identity) là hàm SECURITY DEFINER chạy bằng vai trò owner, tra cứu trước khi có tenant context. Owner không có BYPASSRLS và bảng bị FORCE RLS, nên hàm trả 0 dòng: mọi phiên bị 401, đăng nhập không tìm được tài khoản. Cả hai hàm là SQL STABLE chỉ đọc.',
+   q:'DBQ-10 sửa bằng cách nào?',
+   opts:['(a) Policy riêng cho owner, chỉ đọc: CREATE POLICY owner_lookup ON <bảng> FOR SELECT TO sires_<svc>_owner USING (true) trên app.session, app.account, đặt sau app.enable_tenant_rls(); giữ FORCE RLS; test hai hàm bằng vai trò thật (DBD-14).',
+     '(a) dạng USING (current_user = \'sires_<svc>_owner\') áp cho mọi vai trò.',
+     '(b) Owner của riêng các hàm tra cứu là vai trò có BYPASSRLS.',
+     '(c) Bỏ FORCE RLS trên bảng được tra cứu.'], rec:0, chosen:0},
+  {id:'A2', kind:'Quyết định', basis:BASIS_A, refs:['p02'], impact:'libs/ts/platform inbox/consumer.ts (luồng platform, T1xNTH)',
+   ctx:'G5 của QC PID-00002: EventConsumer.start() lần đầu ném lỗi khi RabbitMQ chưa tới được và không tự thử lại; pod mới khởi động lúc RabbitMQ gián đoạn không lên được, kéo theo phần HTTP, lệch kiến trúc 11.6. stop() khi đang có lần thử chờ hết CONNECT_TIMEOUT_MS 10 s.',
+   q:'Xử lý G5 thế nào?',
+   opts:['start() không chặn khởi động service; lần kết nối đầu lỗi thì vào vòng thử lại có backoff như khi mất kết nối; stop() hủy lần thử đang chờ.',
+     'Chấp nhận: để Kubernetes khởi động lại pod tới khi RabbitMQ lên.'], rec:0, chosen:0},
+  {id:'A3', kind:'Quyết định', basis:BASIS_A, refs:['p03'], impact:'libs/ts/platform service-auth/guard.ts',
+   ctx:'G8 của QC PID-00003: body 403 caller_not_allowed của bản TS có detail nêu lý do; bản Python và ví dụ hợp đồng không có. Với 401, PO đã chốt body không nêu lý do (G2).',
+   q:'Body 403 có giữ detail không?',
+   opts:['Bỏ detail khỏi body 403 của bản TS, giữ log warn (khớp bản Python và hợp đồng).',
+     'Giữ detail, thêm vào bản Python và ví dụ hợp đồng.'], rec:0, chosen:0},
+  {id:'A4', kind:'Quyết định', basis:BASIS_A, refs:['p06'], impact:'libs/ts/sample-service (cổng ra PH-01: service mẫu)',
+   ctx:'G2 (MEDIUM) của QC PID-00006: service mẫu phát sự kiện task.activated thật với data thiếu trường, trái hợp đồng AsyncAPI và spec 2.3 (“không dùng hợp đồng hay bảng của service thật”). Trước đó PO để “việc sau”.',
+   q:'Xử lý G2 khi nào?',
+   opts:['Sửa trong PH-01: service mẫu dùng loại sự kiện riêng, không dùng task.activated hay hợp đồng thật; nếu CI kiểm hợp đồng không nhận sự kiện ngoài hợp đồng thì dừng và báo PO, không sửa hợp đồng.',
+     'Chấp nhận trong PH-01, sửa sau.'], rec:0, chosen:0},
+  {id:'A5', kind:'Quyết định', basis:BASIS_A, refs:['p03','pr86','pr87'], impact:'Thông báo lỗi cấu hình khóa (TS, Python); bổ sung quyết định G4 của PID-00003',
+   ctx:'PO từng chốt “lỗi chỉ nêu tên biến” (G4). PR #86, #87 đưa kid vào thông báo lỗi, ví dụ kid “gateway” is a private JWK. kid là tên service, công khai.',
+   q:'Thông báo lỗi có được nêu kid không?',
+   opts:['Được nêu kid; vẫn không nêu giá trị khóa, token hay nội dung JWK.', 'Chỉ nêu tên biến, bỏ kid.'], rec:0, chosen:0},
+  {id:'A6', kind:'Quy ước', basis:BASIS_A, refs:['ctx'], impact:'Mọi project có test dùng Testcontainers; @sires/testing (luồng platform)',
+   ctx:'Test chạm PostgreSQL thật qua Testcontainers dùng timeout mặc định của vitest (test 5 s, hook 10 s) và đỏ khi runner bận (planning #86, #87; telemetry của platform khi chạy song song). PR #88, #89 đặt 60 s / 180 s riêng cho planning, workspace.',
+   q:'Quy ước timeout cho test dùng Testcontainers?',
+   opts:['testTimeout 60 s, hookTimeout 180 s; khai một lần ở @sires/testing, mỗi project dùng trong vitest.config.ts của mình; luồng platform áp cho project của luồng mình, luồng khác áp khi chạm tới.',
+     'Mỗi project tự đặt giá trị trong vitest.config.ts, không có hằng chung.',
+     'Giữ mặc định của vitest.'], rec:0, chosen:0},
+  {id:'A7', kind:'Quyết định', basis:BASIS_A, refs:['pr85','p02','p03','p06'], impact:'agent/execution/PID-00002, 00003, 00006, 00015, 00017, 00023, 00158 (qc-report.md); DEC-58',
+   ctx:'PR #85 do T1xNTH mở ghi “QC độc lập 24/11” vào qc-report.md của 7 PID chính T1xNTH làm. AGENT.md và DEC-58 quy định qc-report.md do QC độc lập của PO ghi; merge vào thì taskboard coi các PID này đã nghiệm thu dựa trên tự QC.',
+   q:'Xử lý PR #85 thế nào?',
+   opts:['Không merge #85 dưới dạng QC độc lập. T1xNTH chuyển kết quả sang self-qc.md của từng PID (mục tự rà sau merge); QC độc lập của 7 PID do PO chạy riêng.',
+     'Merge #85, coi là QC độc lập.',
+     'Đóng #85, bỏ kết quả.'], rec:0, chosen:0},
+  {id:'A8', kind:'Quyết định', basis:BASIS_A, refs:['pr86','pr92','pr94','pr66','pr82','pr90','pr87','pr63'], impact:'Thứ tự merge, đánh số migration orchestration',
+   ctx:'PR #94 (EC09) và PR #90 (PID-00019) cùng thêm migration 0001 cho orchestration. #66, #82 gộp nhánh của #94. #92 đồng bộ develop theo main, head là main. #87 xung đột với #86 ở keys.ts, token.spec.ts.',
+   q:'Merge theo thứ tự nào?',
+   opts:['#86 → #92 → #94 → #66, #82 → #90 (sinh lại migration state_transition của orchestration thành 0002 bằng drizzle-kit generate --custom, để when lớn hơn 0001_ec09; chỉ đổi tên file thì database đã áp 0001_ec09 sẽ bỏ qua migration này mà không báo lỗi). #87 sau khi T1xNTH gộp main có #86. #63 sau PR DDL của T1xNTH (gateway.sql, identity.sql). Mọi PR của PID qua QC độc lập trước khi merge.',
+     '#90 trước #94 (#94 đánh số lại migration orchestration), phần còn lại như trên.'], rec:0, chosen:0},
+  {id:'A9', kind:'Quyết định', basis:BASIS_A, refs:['p24','p26','p30','pr94','ph01'], impact:'Ba PID PH-01 Sẵn sàng chưa ai làm (library, knowledge, manuscript), toilatrung',
+   ctx:'Ba PID migration này chép 00-common.sql vào migration đầu. Nếu làm trước khi #94 vào main, chúng chép bản còn lỗi EC09 và phải sửa lại.',
+   q:'Khi nào bắt đầu PID-00024, PID-00026, PID-00030?',
+   opts:['Ngay sau khi #94 vào main, chép bản 00-common.sql đã sửa.', 'Bắt đầu ngay, gộp nhánh của #94.', 'Để sau, không tính vào lô hoàn tất PH-01 hôm nay.'], rec:0, chosen:0},
+ {id:'A10', kind:'Quyết định', basis:BASIS_A, refs:['p24','p25','pr98','pr38'], impact:'apps/library (parser BibTeX, RIS); kiến trúc 2.3',
+   ctx:'PID-00024 S04–S07 cần thư viện parser. Báo cáo nháp SPK-03 (PID-00025, PR #38) đề xuất Citation.js 0.9.0 (@citation-js/core, plugin-bibtex, plugin-ris, MIT) cho cả hai định dạng. Kiến trúc 2.3 nêu @retorquere/bibtex-parser nhưng SPK-03 chưa thử thư viện này; PC-03 chưa chốt.',
+   q:'PID-00024 dùng parser nào?',
+   opts:['Citation.js 0.9.0, tạm thời: đặt sau adapter trong apps/library (mã nghiệp vụ không import thẳng thư viện), chỉ nạp hai plugin định dạng, validation riêng; đổi được khi SPK-03 chính thức kết luận khác.',
+     '@retorquere/bibtex-parser cho BibTeX, tự viết parser RIS.',
+     'Chặn S04–S07 tới khi PR #38 merge.'], rec:0, chosen:0},
+  {id:'A11', kind:'Quyết định', basis:BASIS_A, refs:['dbq11','p30','pr97'], impact:'manuscript.sql và migration đầu của manuscript (PR #97); DBQ-11',
+   ctx:'change_proposal_accept_ck ra NULL khi citation_check_passed là NULL, CHECK coi là đạt nên Change Proposal lên Accepted khi chưa chạy citation check (EC10 của PID-00030 đỏ); cùng loại EC09.',
+   q:'Sửa CHECK thế nào?',
+   opts:['citation_check_passed IS TRUE AND approval IS NOT NULL; sửa ngay trong PR #97 vì manuscript.sql chưa có bản sao ở migration đã merge; ghi DBQ-11 mở và đóng 25/11/2026.',
+     'Giữ test đỏ, PID-00030 Bị chặn tới khi PO sửa DDL ở PR riêng.'], rec:0, chosen:0},
+  {id:'A12', kind:'Quyết định', basis:BASIS_A, refs:['p09','pr91'], impact:'nx.json (luồng infra); cache CI',
+   ctx:'G19 (HIGH) của PID-00009: mã hợp đồng sinh từ docs/api-design không nằm trong hash Nx của các task dùng nó, nên PR làm hỏng consumer qua hợp đồng có thể xanh nhờ cache.',
+   q:'Đưa mã sinh ra vào hash Nx bằng cách nào?',
+   opts:['(b) Luồng infra: namedInputs.default của nx.json gồm đầu ra của mọi task phụ thuộc (kể cả gián tiếp), làm trong PR #91; kiểm hash đổi khi đổi schema và cache vẫn trúng khi không đổi.',
+     '(a) Luồng contracts khai docs/api-design/**/*.yaml vào namedInputs.default của libs/ts/contracts; luồng platform thêm vào inputs của sires-common:test.'], rec:0, chosen:0},
+ ]},
+ {title:'B. PO chọn trực tiếp trong phiên', note:'Ghi lại để theo dõi cùng phiếu. Phương án đã chốt là lựa chọn của PO; nhãn Đề xuất là đề xuất lúc hỏi.', items:[
+  {id:'B1', kind:'Phân công', basis:BASIS_B, refs:['tb','ph01'], impact:'Sổ task-registry; DEC-58 cho PH-02 trở đi giữ nguyên',
+   ctx:'PO: “Chuyển hết toàn bộ công việc còn lại sang PO toilatrung để hoàn thiện PH-01 trong hôm nay”, sau đó “để Hùng làm nốt job” cho PID-00016.',
+   q:'Phân công PID PH-01 chưa xong?',
+   opts:['10 PID sang toilatrung (PID-00009, 00012, 00013, 00014, 00018, 00024, 00025, 00029, 00030, 00159); PID-00016 vẫn của T1xNTH; 22 PID “Xong — chờ QC” giữ người làm cũ.',
+     'Trả về phân công theo luồng (DEC-58).'], rec:0, chosen:0},
+  {id:'B2', kind:'Quyết định', basis:BASIS_B, refs:['ddl','pr94','pr66','pr82'], impact:'00-common.sql; migration workspace, planning, orchestration, agent-core, sample-service (PR #94); audit (#66), research (#82)',
+   ctx:'EC09: ba hàm app.is_actor_ref, app.is_approval_record, app.is_provenance trả NULL khi JSON thiếu trường, CHECK coi NULL là đạt. Khi làm PR #94 phát hiện chỉ bọc ngoài thì ActorRef hợp lệ của 8 agent không phải analysis (không có instance) bị từ chối. PO chọn “COALESCE cả 3 hàm”, sau đó “Duyệt” chỗ thêm bên trong.',
+   q:'Sửa EC09 thế nào?',
+   opts:['Bọc COALESCE((…), false) cả ba hàm, và COALESCE(a->>\'instance\' IN (\'A\',\'B\'), false) bên trong is_actor_ref; migration mới cho mọi project đã merge trong cùng PR #94.',
+     'Chỉ bọc ngoài ba hàm (agent khác analysis không ghi được).',
+     'Chưa sửa, giữ chặn #66, #82.'], rec:0, chosen:0},
+  {id:'B3', kind:'Quyết định', basis:BASIS_B, refs:['dbd14','pr63','p16'], impact:'gateway.sql; PR #63 (PID-00014)',
+   ctx:'DBD-14 cần policy owner_lookup ở gateway.sql. Câu trả lời gửi T1xNTH giao sửa DDL nguồn cả gateway.sql lẫn identity.sql.',
+   q:'Phần gateway.sql của DBD-14 đưa vào đâu?',
+   opts:['Sửa trong PR #63 cùng migration gateway; T1xNTH chỉ sửa identity.sql.',
+     'Chờ PR của T1xNTH (gateway.sql, identity.sql); #63 cập nhật migration gateway sau khi PR đó vào main.'], rec:0, chosen:1},
+  {id:'B4', kind:'Quyết định', basis:BASIS_B, refs:['pr38','p25'], impact:'PR #38 (PID-00025, SPK-03)',
+   ctx:'#38 đỏ chỉ vì timeout planning đã sửa ở #88; nội dung chờ phiếu chốt Google Scholar (đề nghị PC-03) và việc bỏ Semantic Scholar theo DEC-60.',
+   q:'Làm gì với PR #38?',
+   opts:['Chỉ gộp main cho CI xanh, giữ nháp tới khi PO chốt PC-03.', 'Hoàn tất theo DEC-60 rồi QC khi chưa có PC-03.'], rec:0, chosen:0},
+  {id:'B5', kind:'Quyết định', basis:BASIS_B, refs:['p19','pr90'], impact:'Acceptance PID-00019-AC03 (1); H10',
+   ctx:'Ca 1 của PID-00019-AC03 với machine prompt (và 12 cặp agent_run từ trạng thái kết thúc) bị từ chối bằng 23000 vì trigger bất biến chạy trước trigger kiểm trạng thái; acceptance ghi check_violation (23514).',
+   q:'Sửa câu chữ acceptance hay mở DBQ?',
+   opts:['Sửa câu chữ acceptance: ngoài bảng → 23514; cặp xuất phát từ trạng thái đã bị trigger bất biến khóa → 23000. Không sửa DDL.', 'Mở DBQ để trigger kiểm trạng thái là lớp chặn đầu tiên.'], rec:0, chosen:0},
+  {id:'B6', kind:'Duyệt', basis:'PO chọn trong phiên 25/11/2026', refs:['ph01','p08'], impact:'Cổng ra PH-01: hợp đồng baseline',
+   ctx:'Cổng ra PH-01 cần PO duyệt baseline hợp đồng: DBQ-03, DBQ-04 đã sửa vào docs/api-design; type sinh không lỗi; kiểm lệch spec của PID-00008 chạy trong CI.',
+   q:'PO duyệt baseline hợp đồng hiện tại trên main?',
+   opts:['Duyệt baseline (25/11/2026).', 'Chưa duyệt.'], rec:0, chosen:0},
+  {id:'B7', kind:'Quyết định', basis:'PO chọn trong phiên 25/11/2026', refs:['ph01'], impact:'Cổng ra PH-01 (OQ-108); staging ở PH-02',
+   ctx:'Cổng ra PH-01 cần máy Home Lab sẵn sàng để dựng staging ở PH-02 (OQ-108). Máy Home Lab chưa sẵn sàng.',
+   q:'Staging ở PH-02 chạy ở đâu?',
+   opts:['Home Lab sẵn sàng, dựng staging trên Home Lab.', 'Tạm chạy cục bộ trên máy PO (Docker Engine trong WSL) tới khi Home Lab sẵn sàng; PID dựng staging ở PH-02 điều chỉnh khi làm rõ.'], rec:0, chosen:1},
+  {id:'B8', kind:'Quyết định', basis:'PO chọn trong phiên 25/11/2026', refs:['p21'], impact:'Cổng ra PH-01: báo cáo SPK-01',
+   ctx:'SPK-01 (PID-00021) chưa đo được Claude, Gemini trên API chính thức vì chưa có key chính thức (EC01). Đề xuất lúc hỏi: nhận kết luận một phần, chuyển phần đo sang ô Hội tụ của PID-00070.',
+   q:'Cổng ra PH-01 tính SPK-01 thế nào?',
+   opts:['Nhận kết luận một phần; đo Claude, Gemini chính thức ở ô Hội tụ của PID-00070.', 'Chờ key chính thức, chạy SPK-01 Lần 3 trước khi đóng PH-01.'], rec:0, chosen:1},
+  {id:'B9', kind:'Quyết định', basis:'PO chọn trong phiên 25/11/2026', refs:['p25','pr38'], impact:'Cổng ra PH-01: báo cáo SPK-03; PR #38',
+   ctx:'SPK-03 (PID-00025, PR #38) có số đo nguồn và đề xuất parser; phần sản phẩm Google Scholar chờ phiếu chốt PC-03. Đề xuất lúc hỏi: đóng với kết luận một phần theo DEC-60.',
+   q:'Xử lý SPK-03 thế nào?',
+   opts:['Đóng với kết luận một phần theo DEC-60, PC-03 chốt sau.', 'Chờ PO chốt PC-03; PR #38 giữ mở.'], rec:0, chosen:1},
+ ]},
+];
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-ph01-v1';
+const initial = () => ({head:{}, items:Object.fromEntries(ALL.map(it => [it.id, {choice:String(it.chosen), other:'', note:''}]))});
+let state = initial();
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const refLinks = it => it.refs.map(k => `<a href="${R[k][1]}">${esc(R[k][0])}</a>`).join(' · ');
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.chosen ? '<span class="chip decided">Đã chốt</span>' : ''}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ctx = (it.ctx ? `<p>${esc(it.ctx)}</p>` : '') + (it.ctxList ? `<ol>${it.ctxList.map(c => `<li>${esc(c)}</li>`).join('')}</ol>` : '');
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${esc(it.id)}</h3><p class="ref">${esc(it.kind)} · ${esc(it.basis)} · ${refLinks(it)} · Ảnh hưởng: ${esc(it.impact)}</p>
+<div class="ctx">${ctx}</div><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${esc(it.id)}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${esc(it.id)}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  const changed = ALL.filter(it => isChanged(it)).length;
+  document.getElementById('progress').textContent = `${ALL.length} mục · PO đổi ${changed}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+function isChanged(it) { const s = state.items[it.id]; return !!(s && s.choice != null && s.choice !== String(it.chosen)); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status: isChanged(it) ? 'PO đổi' : 'Giữ như đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = '2026-11-24';
+  if (!state.head.no) state.head.no = 'PC-04';
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-ph01-${state.head.date || '2026-11-24'}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, changed = ALL.filter(it => isChanged(it)).length;
+  const L = ['# Phiếu chốt hoàn tất PH-01 (24/11/2026) — SIRes', '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    '- Nguồn: docs_context.md (nhật ký 24/11/2026), database 13, PID-00019 mục 5', `- Số mục: ${ALL.length}; PO đổi: ${changed}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id} — ${a.status}`, '', `- Loại: ${it.kind}`, `- Cơ sở: ${it.basis}`, `- Ảnh hưởng: ${it.impact}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (isChanged(it)) L.push(`- Đã chốt trước đó: ${it.opts[it.chosen]}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-ph01', source:'docs/docs_context.md@2026-11-24', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, type:it.kind, basis:it.basis, impact:it.impact, question:it.q,
+        status:a.status, decision:a.text || null, decidedBefore:it.opts[it.chosen], changedByPO:isChanged(it),
+        followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+document.getElementById('b-md').onclick = () => download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8');
+document.getElementById('b-json').onclick = () => download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8');
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  if (!confirm('Đưa mọi mục về phương án đã chốt và xóa ghi chú?')) return;
+  state = {...initial(), head: state.head}; save(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>

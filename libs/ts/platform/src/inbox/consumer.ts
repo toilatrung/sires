@@ -26,9 +26,9 @@ import type { TenantDatabase, TenantTransaction } from '../tenancy/transaction';
 // EventEnvelope is nacked without requeue, to the dead-letter of the queue (EC08). The inbox does not compare versions:
 // replica tables do, through applyReplica (H1).
 //
-// Recovery (architecture 11.6: work waits in the queue until the broker is back): once started, losing the
-// connection, the channel or the consumer (broker restart, failover, network, queue deleted) is logged and followed by
-// reconnect attempts with exponential backoff until one succeeds or stop() is called; each attempt declares the
+// Recovery (architecture 11.6: work waits in the queue until the broker is back): once started, failing the first
+// connection or losing the connection, the channel or the consumer (broker restart, failover, network, queue deleted)
+// is logged and followed by reconnect attempts with exponential backoff until one succeeds or stop() is called; each attempt declares the
 // exchange, queue, bindings and prefetch again. Messages unacked on the lost channel come back from the broker and
 // the inbox drops the ones already applied.
 //
@@ -67,7 +67,11 @@ export interface EventConsumerOptions {
   /** Longest wait between two reconnect attempts; default 30 s. */
   reconnectMaxDelayMs?: number;
   logger?: Pick<Logger, 'info' | 'warn' | 'error'>;
-  /** Called after each message is acked or nacked, e.g. for metrics. */
+  /**
+   * Called after each message is acked or nacked, e.g. for metrics. May be async (a `void` return type still accepts it):
+   * the consumer does not wait for it, and an error it throws or a promise it rejects is logged as `warn`, never an
+   * unhandled rejection.
+   */
   onOutcome?: (outcome: ConsumeOutcome, messageId: string | undefined) => void;
 }
 
@@ -128,12 +132,14 @@ export class EventConsumer {
   }
 
   /**
-   * Declares the exchange, the queue and its bindings, then consumes with manual ack. Rejects when this first
-   * connection fails (the consumer stays stopped); after it, a lost connection is reconnected until {@link stop}.
+   * Declares the exchange, the queue and its bindings, then consumes with manual ack. Never blocks the start of the
+   * service on the broker (PO, QC PID-00002 G5): when this first attempt fails, it is logged and retried with the same
+   * backoff as a lost connection, and `start()` resolves with {@link isConsuming} false; {@link stop} cancels the
+   * pending attempt.
    */
   async start(): Promise<void> {
     if (this.running) {
-      await this.opening;
+      await this.opening?.catch(() => undefined);
       return;
     }
     this.running = true;
@@ -141,8 +147,9 @@ export class EventConsumer {
     try {
       await this.open();
     } catch (error) {
-      this.running = false;
-      throw error;
+      if (!this.running) return;
+      this.logger.warn({ queue: this.queue, err: error }, 'consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại');
+      this.scheduleReconnect();
     }
   }
 
@@ -260,11 +267,15 @@ export class EventConsumer {
       // Channel closed meanwhile: the broker gives the message again and the inbox drops it if it was applied.
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: không ack được message');
     }
-    try {
-      this.options.onOutcome?.(outcome, messageId(message));
-    } catch (error) {
-      // A failing callback (metrics) must not become an unhandled rejection that stops the process (QC Lần 2 G4).
+    const onOutcomeFailed = (error: unknown) =>
       this.logger.warn({ message_id: messageId(message), err: error }, 'consumer: onOutcome lỗi');
+    try {
+      const result: unknown = this.options.onOutcome?.(outcome, messageId(message));
+      // A failing callback (metrics) must not become an unhandled rejection that stops the process: a sync throw
+      // (QC Lần 2 G4) and a rejected promise (QC Lần 3 G6) are both logged. The consumer does not await it.
+      if (isPromiseLike(result)) Promise.resolve(result).catch(onOutcomeFailed);
+    } catch (error) {
+      onOutcomeFailed(error);
     }
     return outcome;
   }
@@ -343,4 +354,8 @@ function parseEnvelope(content: Buffer): EventEnvelope | undefined {
   }
   const parsed = eventEnvelopeSchema.safeParse(value);
   return parsed.success ? (parsed.data as EventEnvelope) : undefined;
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return typeof value === 'object' && value !== null && typeof (value as PromiseLike<unknown>).then === 'function';
 }

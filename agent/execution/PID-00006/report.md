@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/pid-00006-sample-service` · **PR:** [#62](https://github.com/toilatrung/sires/pull/62)
-- **Cập nhật:** 22/11/2026 (Lần 2)
+- **Nhánh:** `platform/pid-00006-sample-service` · **PR:** [#62](https://github.com/toilatrung/sires/pull/62) · đã merge; sửa sau rà 24/11: [#86](https://github.com/toilatrung/sires/pull/86)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 3, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 ## 1. Tóm tắt
@@ -16,7 +16,7 @@ EC11 đã ghi và báo trước kết luận: PR thực tế chọn **20 project
 phép đo chỉ một affected project. PO quyết định cổng PH-01; kết luận Dev là đạt ngưỡng thời gian
 trên chính PR của ticket. Chi tiết và lịch sử trước sửa ở Lần 2 cuối file.
 
-Worktree `.nx/pid00006` giữ nguyên workspace PID-00034. Baseline ban đầu ae1ac60, baseline
+Số đo S07 làm trong worktree riêng khi PR #62 còn mở (nay đã merge). Baseline ban đầu ae1ac60, baseline
 bộ đo chính 281a022; chỉ đồng bộ thay đổi đã merge từ main, không tự sửa luồng khác.
 
 ## 2. Trạng thái công việc

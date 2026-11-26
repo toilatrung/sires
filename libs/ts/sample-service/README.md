@@ -24,10 +24,12 @@ transaction. Trigger database tăng `row_version`; cả hai envelope mang phiên
 `createSampleConsumer(systemDb, amqpUrl)` nhận kết nối `sires_sample_system`; inbox khử trùng
 theo tên consumer cố định `sample-service` và event id, cùng transaction với tăng bộ đếm.
 
-Đây là mẫu cho các luồng chép theo: dùng identity có sẵn `planning` và envelope `task.activated`
-để minh họa, không tạo ServiceName hay hợp đồng mới. `app.sample_record` và route
-`GET /internal/sample/ready` chỉ thuộc mẫu. Khi chép vào service thật, dùng đúng identity,
-schema và payload từ hợp đồng của service đó.
+Đây là mẫu cho các luồng chép theo. Sự kiện có loại riêng của mẫu `sample_record.activated`
+(`SAMPLE_EVENT_TYPE`, data `{ sampleRecordId }`), không nằm trong `docs/api-design`: theo spec 2.3, mẫu
+không dùng hợp đồng hay bảng của service thật (QC PID-00006 G2, PO chốt 24/11/2026). Danh tính `planning`
+chỉ mượn vì `producer` và service-auth chỉ nhận `ServiceName`; mẫu không deploy và không tạo ServiceName
+mới. `app.sample_record`, route `GET /internal/sample/ready` và loại sự kiện chỉ thuộc mẫu. Khi chép vào
+service thật, dùng đúng identity, loại sự kiện, schema và payload từ hợp đồng của service đó.
 
 Route gắn `@UseGuards(ServiceAuthGuard)` và `@InternalCallers('workspace')`; module nhập
 `ServiceAuthModule.forRoot(auth)`. `ServiceTokenClient.authorization('planning', { component })`
@@ -37,7 +39,8 @@ Token thiếu, hết hạn hoặc sai chữ ký trả `401 application/problem+j
 Migration đầu là custom SQL của drizzle-kit, gồm bản chép `00-common.sql` và bảng mẫu, rồi
 `enable_tenant_rls` và `grant_standard('sample')`. Bốn vai trò `sires_sample_owner`, `_app`, `_system`,
 `_purge` do hạ tầng tạo trước; `_app` NOBYPASSRLS, `_system` và `_purge` BYPASSRLS.
-Test tự tạo vai trò; migration không tạo vai trò. Thêm migration mới từ thư mục project:
+Test tự tạo vai trò; migration không tạo vai trò. Migration `0001_ec09_jsonb_helpers.sql` sửa ba hàm kiểm JSON của `00-common.sql` (`is_actor_ref`, `is_approval_record`, `is_provenance`) trả false thay vì NULL (EC09, PO 24/11/2026).
+Thêm migration mới từ thư mục project:
 
 ```sh
 pnpm exec drizzle-kit generate --custom --name=ten_thay_doi

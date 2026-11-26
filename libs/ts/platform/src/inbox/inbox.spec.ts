@@ -5,6 +5,7 @@
 import { SpanKind, trace } from '@opentelemetry/api';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { connect, type Channel, type ChannelModel } from 'amqplib';
+import { createServer, connect as connectTcp, type Server, type Socket } from 'node:net';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { emitAudit, type AuditEvent } from '../audit/audit';
@@ -295,6 +296,37 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
+  it('onOutcome async bị từ chối không gây unhandled rejection (QC PID-00002 Lần 3 G6)', async () => {
+    reset();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    const warnings: string[] = [];
+    const seen: ConsumeOutcome[] = [];
+    try {
+      const consumer = await startConsumer('outcome-rejects', {
+        // One callback is an async function that throws, the other returns a rejected promise.
+        onOutcome: (outcome: ConsumeOutcome) => {
+          seen.push(outcome);
+          if (seen.length === 1) return (async () => Promise.reject(new Error('metric async lỗi')))();
+          return Promise.reject(new Error('metric bị từ chối'));
+        },
+        logger: { info: () => undefined, warn: (_fields: unknown, msg?: string) => warnings.push(String(msg)), error: () => undefined },
+      } as unknown as Partial<ConstructorParameters<typeof EventConsumer>[0]>);
+      publishEvent(taskEvent(uuidv7(), 1, 'Ready'));
+      publishEvent(taskEvent(uuidv7(), 1, 'Ready'));
+      const deadline = Date.now() + 10_000;
+      while (seen.length < 2 && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(seen).toEqual(['applied', 'applied']);
+      expect(warnings.filter((msg) => msg === 'consumer: onOutcome lỗi')).toHaveLength(2);
+      expect(unhandled).toEqual([]);
+      expect(consumer.isConsuming).toBe(true);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
   it('handler giữ trace của message (G2, NFR-OBS-004, CTX-AUDIT-001)', async () => {
     const exporter = new InMemorySpanExporter();
     const telemetry = startTelemetry({ serviceName: 'orchestration', spanProcessor: new SimpleSpanProcessor({ exporter }) });
@@ -371,6 +403,71 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
       // The relay of a G1 test below publishes every unpublished row: leave none behind.
       const ids = [seen.event?.id, seen.audit?.id].filter((id): id is string => id !== undefined);
       await stack.database.admin('DELETE FROM app.outbox WHERE id = ANY($1::uuid[])', [ids]);
+    }
+  });
+
+  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', { timeout: 60_000 }, async () => {
+    // A TCP proxy to the broker that is not listening yet: the first attempt is refused, as when the broker is down.
+    const broker = new URL(stack.rabbit.amqpUrl);
+    const sockets = new Set<Socket>();
+    const proxy: Server = createServer((client) => {
+      const upstream = connectTcp(Number(broker.port), broker.hostname);
+      for (const socket of [client, upstream]) {
+        sockets.add(socket);
+        socket.on('error', () => undefined);
+        socket.on('close', () => sockets.delete(socket));
+      }
+      client.pipe(upstream).pipe(client);
+    });
+    const port = await new Promise<number>((resolve) => {
+      const probe = createServer().listen(0, '127.0.0.1', () => {
+        const { port: free } = probe.address() as { port: number };
+        probe.close(() => resolve(free));
+      });
+    });
+    const amqpUrl = `amqp://${broker.username}:${broker.password}@127.0.0.1:${port}${broker.pathname}`;
+    const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'late-broker',
+      db: stack.systemDb,
+      amqpUrl,
+      handlers: [
+        {
+          routingKeys: ['project.lifecycle_changed.*'],
+          handle: async (event, tx) => {
+            await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${uuidv7()}, ${event.accountId}, ${event.id})`);
+          },
+        },
+      ],
+      reconnectDelayMs: 100,
+      reconnectMaxDelayMs: 300,
+      onOutcome: (outcome, id) => results.push({ outcome, id }),
+      logger: recordingLogger(logs),
+    });
+    consumers.push(consumer);
+    try {
+      await expect(consumer.start()).resolves.toBeUndefined();
+      expect(consumer.isConsuming).toBe(false);
+      const first = logs.filter((entry) => entry.msg === 'consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại');
+      expect(first.map((entry) => entry.level)).toEqual(['warn']);
+      expect(first[0]?.fields).toMatchObject({ queue: 'late-broker.events' });
+      // Still refused for a while: the loop keeps trying.
+      await waitUntil(() => logs.some((entry) => entry.msg === 'consumer: kết nối lại AMQP chưa được, thử lại'), 'a failed retry');
+
+      await new Promise<void>((resolve) => proxy.listen(port, '127.0.0.1', resolve));
+      await waitUntil(() => consumer.isConsuming, 'consumer up once the broker is reachable');
+      expect(logs.filter((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp')).toHaveLength(1);
+
+      const event = projectEvent();
+      publishEvent(event);
+      await waitUntil(() => results.some((entry) => entry.id === event.id), 'event after the late connection');
+      expect(results.filter((entry) => entry.id === event.id).map((entry) => entry.outcome)).toEqual(['applied']);
+      expect(await notesFor(event.id)).toBe(1);
+    } finally {
+      await consumer.stop();
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => proxy.close(resolve));
     }
   });
 
@@ -500,5 +597,39 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     } finally {
       await relay.stop();
     }
+  });
+});
+
+describe('start() khi broker không tới được (QC PID-00002 G5)', () => {
+  it('stop() trong lúc chờ backoff: dừng sạch, không còn timer, không kết nối lại', async () => {
+    // Nothing listens on this port: each attempt is refused at once.
+    const port = await new Promise<number>((resolve) => {
+      const probe = createServer().listen(0, '127.0.0.1', () => {
+        const { port: free } = probe.address() as { port: number };
+        probe.close(() => resolve(free));
+      });
+    });
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'no-broker',
+      db: {} as never,
+      amqpUrl: `amqp://guest:guest@127.0.0.1:${port}`,
+      handlers: [{ routingKeys: ['project.lifecycle_changed.*'], handle: async () => undefined }],
+      reconnectDelayMs: 200,
+      reconnectMaxDelayMs: 200,
+      logger: recordingLogger(logs),
+    });
+    await expect(consumer.start()).resolves.toBeUndefined();
+    expect(consumer.isConsuming).toBe(false);
+    expect(logs.map((entry) => entry.msg)).toEqual(['consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại']);
+    // The retry is waiting on its timer.
+    expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeDefined();
+
+    await consumer.stop();
+    expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeUndefined();
+    // Longer than a few backoff periods: no attempt was made after stop().
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(logs).toHaveLength(1);
+    expect(consumer.isConsuming).toBe(false);
   });
 });

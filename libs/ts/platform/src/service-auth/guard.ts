@@ -79,11 +79,10 @@ export class ServiceAuthGuard implements CanActivate {
 
     const callers = this.reflector.getAllAndOverride<ServiceName[] | undefined>(CALLERS_KEY, targets);
     if (!callers?.includes(verified.claims.sub)) {
+      // Who called and why in the log only; the body is the same for every refusal, as the Python guard and the
+      // contract (PO, QC PID-00003 G8; same rule as the 401 of G2).
       this.logger.warn({ caller: verified.claims.sub, declared: callers !== undefined }, 'service không có trong x-callers');
-      throw new ProblemException('caller_not_allowed', {
-        title: CALLER_NOT_ALLOWED_TITLE,
-        detail: callers === undefined ? 'Endpoint chưa khai x-callers' : `${verified.claims.sub} không có trong x-callers`,
-      });
+      throw new ProblemException('caller_not_allowed', { title: CALLER_NOT_ALLOWED_TITLE });
     }
 
     const auth = serviceAuthContext(verified);

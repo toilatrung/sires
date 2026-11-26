@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00017](../../../docs/tickets/issues/PID-00017/index.html) · **Luồng:** `workspace` · **Giai đoạn:** PH-01
-- **Nhánh:** `workspace/pid-00017-migration-skeleton` (đã commit, đã push) · **PR:** [#72](https://github.com/toilatrung/sires/pull/72)
-- **Cập nhật:** 22/11/2026
+- **Nhánh:** `workspace/pid-00017-migration-skeleton` (đã commit, đã push) · **PR:** [#72](https://github.com/toilatrung/sires/pull/72) · đã merge; sửa sau rà 24/11: [#89](https://github.com/toilatrung/sires/pull/89)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 2, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.

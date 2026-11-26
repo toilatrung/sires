@@ -3,32 +3,41 @@
   "version": "0.0.0",
   "private": true,
   "description": "SIRes library service (NestJS)",
+  "files": [
+    "dist",
+    "migrations"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
+    "migrate": "node dist/migrate.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run"
   },
   "dependencies": {
+    "@citation-js/core": "0.9.0",
+    "@citation-js/plugin-bibtex": "0.9.0",
+    "@citation-js/plugin-ris": "0.9.0",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@sires/contracts": "workspace:*",
     "@sires/platform": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:"
   },
   "devDependencies": {
-    "@citation-js/core": "0.9.0",
-    "@citation-js/plugin-bibtex": "0.9.0",
-    "@citation-js/plugin-ris": "0.9.0",
     "@nestjs/cli": "catalog:",
     "@nestjs/testing": "catalog:",
     "@sires/testing": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "bibtex-parse-js": "0.0.23",
+    "drizzle-kit": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -37,6 +46,16 @@
       "type:app",
       "lang:ts",
       "scope:library"
-    ]
+    ],
+    "targets": {
+      "test": {
+        "inputs": [
+          "default",
+          "^production",
+          "{workspaceRoot}/docs/database/ddl/00-common.sql",
+          "{workspaceRoot}/docs/database/ddl/library.sql"
+        ]
+      }
+    }
   }
 }
