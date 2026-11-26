@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00059.">
+<title>S04 — Chi tiết Agent Run, debug và usage | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>S04 — Chi tiết Agent Run, debug và usage</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H12, H13, H14 (chốt theo đề xuất, PO ủy quyền 26/11/2026). Tổng hợp usage theo project, Task, agent, kết nối, thời gian ngoài phạm vi tới khi PO trả lời I1.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-MONITOR-003-AC01, UX-MONITOR-003-AC02, NFR-USAGE-002-AC01 (phần workflow), NFR-USAGE-003-AC01, NFR-USAGE-004-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Workflow, khung Agent Run), O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4, B6, B8; H12, H13, H14</td></tr>
+<tr><th scope="row">Edge case</th><td>EC21, EC22, EC23, EC24, EC25, EC26, EC27, EC28, EC29 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S03; <code>listProviderConnections</code> của PID-00036 (tên kết nối) khi chạy dev</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khung Agent Run (mở từ bước hoặc <code>?agentRun=</code> trên URL trang workflow): <code>getAgentRun</code>; agent (Analysis A, B theo <code>instance</code>), Provider Connection (tên từ <code>listProviderConnections</code>) và <code>model</code> thực tế, context đầu vào (<code>inputSummary</code>, <code>contextManifest</code>: entity theo version, phần bị cắt), công cụ (<code>toolCalls</code>), đầu ra (<code>outputRefs</code> liên kết, <code>structuredOutput</code> dạng khóa–giá trị rút gọn), usage, thời gian (<code>startedAt</code>–<code>endedAt</code>), <code>attempts</code>, lỗi (mã 8.6, không hiện nguyên văn của provider), nhãn discarded (EC22, EC24). Không có trường hay giá trị API key; câu “Không hiển thị suy luận nội bộ của model và không hiển thị API key”.</li>
+<li>Debug (EC23): <code>hasDebugTranscript</code> sai → “Không lưu toàn văn (chế độ debug tắt)”; đúng → phần “Toàn văn prompt/phản hồi (debug)” thu gọn kèm ngày tự xóa, mở thì gọi <code>getAgentRunDebugTranscript</code>; <code>404</code> → “Toàn văn đã hết hạn hoặc không còn”. Nội dung hiện dạng chữ trong khối cuộn.</li>
+<li>Usage (H14): token in, token out, số lời gọi; <code>noData</code> → “không có dữ liệu”, <code>null</code> → “—” (EC25); tổng của workflow ở đầu trang workflow = tổng chính xác qua <code>listAgentRuns</code> (EC26); chi phí chỉ khi có <code>usage.extra.cost</code>, kèm đơn vị và nhãn “ước tính” (EC27); không có cảnh báo, giới hạn ngân sách (EC28).</li>
+<li>Route <code>/projects/:projectId/activity/agent-runs/:agentRunId</code>: <code>getAgentRun</code> → chuyển tới <code>/projects/:projectId/activity/workflows/:workflowId?agentRun=</code> mã; <code>404</code> → “không tìm thấy” (EC29). Là đích liên kết Agent Run của Chat (PID-00058 H8).</li>
+<li>Không có Agent Run: trạng thái trống có lý do (EC21).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/agent-run.spec.tsx › provider và model, không có key</code> (UX-MONITOR-003-AC01, EC22); <code>› debug</code> (UX-MONITOR-003-AC02, EC23); <code>› tổng usage khớp</code> (NFR-USAGE-002-AC01, EC26); <code>› chi phí ước tính</code> (NFR-USAGE-003-AC01, EC27); <code>› không cảnh báo ngân sách</code> (NFR-USAGE-004-AC01, EC28); <code>› không có Agent Run</code> (EC21); <code>› đang chạy, discarded</code> (EC24); <code>› usage không có dữ liệu</code> (EC25); <code>› route Agent Run</code> (EC29)</li>
+<li>Thao tác tay trên mock: <code>Workflow--debug</code> ở 1440×900</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-MONITOR-003-AC01, AC02 và các AC usage đạt; không có API key trên màn</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00059</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

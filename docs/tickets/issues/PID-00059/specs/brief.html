@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00059.">
+<title>PID-00059 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>PID-00059 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H20, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Agent Activity cấp Global (<code>/activity</code>) và cấp project (<code>/projects/:projectId/activity</code>) liệt kê workflow, tự cập nhật theo sự kiện, có nút Tạm dừng, Tiếp tục, Hủy hợp lệ theo trạng thái. Chi tiết workflow có hai chế độ xem (dòng thời gian, danh sách bước), Recovery decision cho workflow Interrupted, chi tiết Agent Run (provider, model, context, usage, debug). Agent List tóm tắt việc từng agent đang làm trong project. Activity and History (<code>/projects/:projectId/history</code>) là audit trail chỉ đọc. Đây là giao diện của WF-06. Lượt này dựng các màn trong <code>apps/web/src/features/monitoring/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-03 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Danh sách workflow: loại, Task, trạng thái, bước và agent hiện tại, thời gian chạy, prompt chờ; lọc theo trạng thái; workflow đang hoạt động ở trên — UX-MONITOR-001; H7</li>
+<li>Trạng thái tự cập nhật theo từng event, không tải lại trang, không stream token — UX-MONITOR-005; ticket AC01; H9</li>
+<li>Nút Tạm dừng, Tiếp tục, Hủy chỉ hiện khi hợp lệ (18.2; Tạm dừng cả ở Waiting for User, DEC-53); Hủy hỏi xác nhận và nêu hệ quả cho Task — UX-MONITOR-004; H8</li>
+<li>Workflow Interrupted: Recovery decision với ba lựa chọn tiếp tục, chạy lại bước, hủy; chưa quyết định thì không gửi gì — ticket AC02; CTX-RECOVERY-001; NFR-REC-002; H11</li>
+<li>Chi tiết workflow hai chế độ xem: dòng thời gian và danh sách bước — UX-MONITOR-002; H10</li>
+<li>Chi tiết Agent Run: agent, Provider Connection và model, context đầu vào, công cụ, đầu ra, usage, thời gian, số lần thử, lỗi; không hiển thị suy luận nội bộ, không hiển thị API key; phần debug theo chế độ debug — UX-MONITOR-003; H12</li>
+<li>Usage theo Agent Run và tổng của workflow; chi phí chỉ khi có và luôn ghi “ước tính”; không chặn, không cảnh báo theo ngân sách — NFR-USAGE-001–004; H14; tổng hợp theo project, Task, agent, kết nối, thời gian chờ I1</li>
+<li>Agent List: 10 dòng, nhãn trạng thái theo ngôn ngữ giao diện, ưu tiên Chờ bạn > Lỗi > Gián đoạn > Đang chạy > Đang rảnh — design.md §3, §4; H15</li>
+<li>Chấm Đang chạy, thanh tiến độ theo design.md 2.4, 2.4.1 (DEC-51, DEC-52); reduced motion đứng yên — PID-00012 ghi chú; H4</li>
+<li>Thẻ Interactive Agent Prompt của shell cho prompt đang chờ trong chi tiết workflow, chỉ gọi <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code> — PID-00012 H8; H2</li>
+<li>Không làm lại số trên TopBar, rail — PID-00012 H1; H3. Tab Thảo luận thuộc PID-00083 — ticket “Không gồm”; H5</li>
+<li>Bất biến: Researcher quyết định khôi phục, hủy; giao diện không tự gửi lệnh; audit trail chỉ đọc.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/GlobalActivity.dc.html</code>, <code>ProjectActivity.dc.html</code>, <code>Workflow.dc.html</code>, <code>AgentList.dc.html</code>, <code>AgentListPreview.dc.html</code>, <code>History.dc.html</code> và các trang trạng thái — có; Recovery decision của thiết kế có lựa chọn “Chạy lại toàn bộ — tạo workflow mới” lệch PRD và hợp đồng (Phải sửa ở nguồn mục 1)</li>
+<li><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code> (workflow, Agent Run, debug transcript, audit event, <code>/events</code>), <code>components/schemas/orchestration.yaml</code> — có; không có operation tổng hợp usage (I1); <code>AuditEvent</code> không có nhóm sự kiện (I2)</li>
+<li><code>apps/web/src/features/monitoring/index.tsx</code> (placeholder bốn route), <code>i18n/vi.json</code>, <code>en.json</code> — có</li>
+<li>Shell (PID-00012) và mock (PID-00013) — chưa có trên <code>main</code> ngày 27/11/2026</li>
+<li>Quy tắc chủ mock: PID-00037 H9, PID-00060 H8 (nhánh <code>docs/clarify-pid-00037-00060</code>); PID-00060 đã ghi <code>listWorkflows</code> thuộc PID này — có (H6)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 GlobalActivity, ProjectActivity, Workflow, AgentList, History trong <code>apps/web/src/features/monitoring/</code>, i18n vi/en, đang tải, trống, lỗi → S01–S06</li>
+<li>O2 mock 10 operation của khu vực trong <code>apps/web/src/features/monitoring/__mocks__/</code> → S01</li>
+<li>O3 <code>activity.spec.tsx</code> → S02; O4 <code>workflow.spec.tsx</code> → S03; O5 <code>agent-run.spec.tsx</code> → S04; O6 <code>agent-list.spec.tsx</code> → S05; O7 <code>history.spec.tsx</code> → S06 (O5–O7 thêm khi làm rõ, H18)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>Workflow</code>, <code>WorkflowStep</code>, <code>AgentRun</code>, <code>Checkpoint</code>, <code>RecoveryDecision</code>, <code>AuditEvent</code> = Workflow, Workflow Step, Agent Run, Checkpoint, Recovery decision, Audit Event (PRD 1.5)</li>
+<li>Agent Activity = danh sách và chi tiết workflow; Agent List = tóm tắt việc của 10 agent trong project</li>
+<li>Đang hoạt động = Created, Running, Waiting for User, Paused, Interrupted; Đã kết thúc = Succeeded, Failed, Cancelled (<code>WorkflowStatus</code>)</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00059</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

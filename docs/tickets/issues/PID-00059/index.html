@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../tickets/index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00059</p><h1>PID-00059 — Khu vực monitoring: Activity, Workflow, AgentList, History</h1>
-<p class="meta">Xác nhận: Đề xuất — chờ PO duyệt · Soạn 05/11/2026 · Làm rõ theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Xác nhận: chốt theo đề xuất (PO ủy quyền 26/11/2026) · Soạn 05/11/2026 · Làm rõ 27/11/2026 theo spec-clarify-skill · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
 <li><a href="#s-1">1. Ticket</a></li>
 <li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
@@ -30,73 +30,130 @@
 <li><a href="#s-7">7. Điểm dừng</a></li>
 <li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
 
-<p>Trang vào của ticket. Đọc file này trước, rồi <code>specs/</code>. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00059/report.md</code>, không ghi ở đây.</p>
+<p>Trang vào của ticket. Dev đọc file này trước, rồi <code>specs/</code>, rồi từng slice theo thứ tự. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00059/report.md</code>, không ghi ở đây.</p>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">Luồng</th><td>web/monitoring</td></tr>
-<tr><th scope="row">Giai đoạn</th><td>PH-03</td></tr>
-<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging: Chat, monitoring</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-03 theo kế hoạch gốc</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Xây với mock (PH-02, D-UI); Hội tụ trên staging: Chat, monitoring (cổng PH-03)</td></tr>
 <tr><th scope="row">Đợt song song</th><td>Đ4</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00012/index.html">PID-00012</a>, <a href="../PID-00013/index.html">PID-00013</a></td></tr>
-<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
-<tr><th scope="row">Làm rõ</th><td>Chưa làm rõ</td></tr>
-<tr><th scope="row">Trạng thái</th><td>Chưa sẵn sàng — chờ PO làm rõ bằng spec-clarify-skill và duyệt</td></tr>
+<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai; PRD 15 (UX-MONITOR-001–005), 16 (NFR-USAGE-002–004), 14 (CTX-RECOVERY-001, WF-06); DEC-51, DEC-52, DEC-53; ủy quyền của PO 26/11/2026 (D-UI); ghi chú của PID-00012 (H1, H8)</td></tr>
+<tr><th scope="row">Làm rõ</th><td>27/11/2026 · spec-clarify-skill, chốt theo đề xuất (PO ủy quyền 26/11/2026): H1–H20; phiếu mở I1, I2 (không chặn)</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Sẵn sàng — chốt theo đề xuất (PO ủy quyền 26/11/2026); bắt đầu khi PID-00012, PID-00013 đã vào develop; I1, I2 mở, không chặn</td></tr>
 </tbody></table></div>
 
 <h2 id="files">Tài liệu trong hồ sơ</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
-<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent</td></tr>
-<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Màn và trạng thái cần dựng</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục (spec-docs-skill; sửa khi làm rõ 27/11/2026)</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi P1–P13, ngoài phạm vi N1–N9, edge case EC01–EC37</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-area-frame-mock.html">S01</a></td><td>Route, i18n và mock của khu vực monitoring</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-activity-lists.html">S02</a></td><td>Agent Activity cấp Global và cấp project</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-workflow-detail.html">S03</a></td><td>Chi tiết workflow và Recovery decision</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S04-agent-run.html">S04</a></td><td>Chi tiết Agent Run, debug và usage</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S05-agent-list.html">S05</a></td><td>Agent List</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S06-history.html">S06</a></td><td>Activity and History</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Màn tham chiếu, trạng thái, điều thiết kế chốt khi làm rõ 27/11/2026</td></tr>
+<tr><td><code>others/</code></td><td><a href="others/issues.html">issues.html</a></td><td>Phiếu I1 (tổng hợp usage), I2 (nhóm sự kiện của History), còn mở, không chặn</td></tr>
 </tbody></table></div>
-<p>Khi PO chạy spec-clarify-skill, hồ sơ có thêm <code>specs/brief.html</code>, <code>specs/scope.html</code>, <code>specs/acceptance.html</code>, <code>specs/slices/</code>.</p>
 
 <h2 id="s-1">1. Ticket</h2>
 <ul><li><strong>Mục đích:</strong> Researcher theo dõi và điều khiển workflow chạy lâu; đây là giao diện của WF-06.</li>
 <li><strong>Gồm:</strong> G8 GlobalActivity, P9 ProjectActivity; Chi tiết Workflow hai chế độ xem, AgentList; P10 History; Nút Tạm dừng, Tiếp tục, Hủy, Recovery decision.</li>
-<li><strong>Không gồm:</strong> Tab Thảo luận (<a href="../PID-00083/index.html">PID-00083</a>).</li></ul>
+<li><strong>Không gồm:</strong> Tab Thảo luận (<a href="../PID-00083/index.html">PID-00083</a>).</li>
+<li><strong>Thêm khi làm rõ 27/11/2026</strong> (chốt theo đề xuất, PO ủy quyền 26/11/2026): chi tiết Agent Run có phần debug (H12); route Agent Run làm đích liên kết từ Chat (H13); usage theo Agent Run và tổng của workflow (H14). Lượt này là “Xây với mock”; “Hội tụ” với backend thật ở cổng PH-03 (H1). Chi tiết: <a href="specs/scope.html">specs/scope.html</a>.</li></ul>
 <h3 id="dau-vao">Đầu vào</h3>
-<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00012/index.html">PID-00012</a>, <a href="../PID-00013/index.html">PID-00013</a></li>
-<li><strong>Hợp đồng:</strong> 0 operation hiện thực, 12 operation gọi (<a href="specs/index.html#s-2-3">spec mục 2.3</a>)</li>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00012/index.html">PID-00012</a>, <a href="../PID-00013/index.html">PID-00013</a> (đã vào <code>develop</code>)</li>
+<li><strong>Hợp đồng:</strong> 0 operation hiện thực; 10 operation khai mock ở khu vực này, 7 operation dùng mock của khu vực khác (H6, H20); sự kiện qua client SSE của shell (<a href="specs/index.html#s-2-3">spec mục 2.3</a>)</li>
 <li><strong>Thiết kế:</strong> GlobalActivity, ProjectActivity, Workflow, AgentList, AgentListPreview, History (<a href="designs/notes.html">designs/notes.html</a>)</li></ul>
 <h3 id="dau-ra">Đầu ra</h3>
 <ul><li>Màn hình: <code>apps/web/src/features/monitoring/</code> — Màn: GlobalActivity, ProjectActivity, Workflow, AgentList, AgentListPreview, History; i18n, trạng thái loading, empty, error</li>
-<li>Mock: <code>apps/web/src/features/monitoring/__mocks__/</code> — Mock 12 operation sinh từ OpenAPI</li>
-<li>Test: <code>apps/web/src/features/monitoring/activity.test.tsx</code> — Test theo Tiêu chí nghiệm thu</li>
-<li>Test: <code>apps/web/src/features/monitoring/workflow.test.tsx</code> — Test theo Tiêu chí nghiệm thu</li></ul>
+<li>Mock: <code>apps/web/src/features/monitoring/__mocks__/</code> — Override có trạng thái của 10 operation của khu vực trên mock sinh từ OpenAPI (PID-00013) (H6)</li>
+<li>Test: <code>apps/web/src/features/monitoring/activity.spec.tsx</code> — Test theo Tiêu chí nghiệm thu (đổi từ <code>activity.test.tsx</code>, H18)</li>
+<li>Test: <code>apps/web/src/features/monitoring/workflow.spec.tsx</code> — Test theo Tiêu chí nghiệm thu (đổi từ <code>workflow.test.tsx</code>, H18)</li>
+<li>Thêm khi làm rõ 27/11/2026: <code>apps/web/src/features/monitoring/agent-run.spec.tsx</code>, <code>agent-list.spec.tsx</code>, <code>history.spec.tsx</code> cùng thư mục, theo slice S04–S06 (H18)</li></ul>
 
 <h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
 <ul><li><strong>PID-00059-AC01</strong> Given workflow đổi trạng thái, When SSE báo, Then danh sách tự cập nhật không cần tải lại.</li>
 <li><strong>PID-00059-AC02</strong> Given workflow Interrupted, When mở chi tiết, Then hiện Recovery decision; nút không hợp lệ theo trạng thái thì ẩn.</li>
-<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-001">UX-MONITOR-001</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-002">UX-MONITOR-002</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-003">UX-MONITOR-003</a> (AC01, AC02); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-004">UX-MONITOR-004</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-005">UX-MONITOR-005</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-002">NFR-USAGE-002</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-003">NFR-USAGE-003</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-004">NFR-USAGE-004</a> (AC01).</li></ul>
+<li>AC requirement liên quan, phần thuộc luồng này: <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-001">UX-MONITOR-001</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-002">UX-MONITOR-002</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-003">UX-MONITOR-003</a> (AC01, AC02); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-004">UX-MONITOR-004</a> (AC01); <a href="../../../overview/sections/15-ui-ux-requirements.html#req-ux-monitor-005">UX-MONITOR-005</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-002">NFR-USAGE-002</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-003">NFR-USAGE-003</a> (AC01); <a href="../../../overview/sections/16-non-functional-requirements.html#req-nfr-usage-004">NFR-USAGE-004</a> (AC01).</li>
+<li>NFR-USAGE-002-AC01 lượt này kiểm phần tổng của workflow; phần theo project, Task, agent, kết nối, thời gian chờ I1. Chi tiết Given–When–Then có số và test: <a href="specs/acceptance.html">specs/acceptance.html</a>.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
-<ul><li>PID phải xong trước: <a href="../PID-00012/index.html">PID-00012</a> Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung; <a href="../PID-00013/index.html">PID-00013</a> Mock theo OpenAPI cho các khu vực.</li>
-<li>Không phải chờ backend: dùng mock sinh từ OpenAPI.</li>
-<li>OQ, AQ, DBQ đang chặn: không có.</li>
+<ul><li>PID phải xong trước: <a href="../PID-00012/index.html">PID-00012</a> Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung; <a href="../PID-00013/index.html">PID-00013</a> Mock theo OpenAPI cho các khu vực. Ngày làm rõ cả hai chưa merge: ghi nhận, không chặn trạng thái Sẵn sàng (H19). Dev bắt đầu khi cả hai đã vào <code>develop</code>.</li>
+<li>Dùng từ shell: hợp đồng <code>Feature</code>, client API (CSRF, <code>Idempotency-Key</code>, <code>Problem</code>), client SSE (đăng ký theo loại và project, “đã nối lại”, “cần tải lại”), thẻ prompt (S10), chip và trạng thái dùng chung (S06), chấm Đang chạy, thẻ thao tác dài (design.md 2.4.1), khung điện thoại (S03).</li>
+<li>Mock của khu vực khác dùng ở đây (H6): <code>getPrompt</code>, <code>answerPrompt</code> (<a href="../PID-00060/index.html">PID-00060</a>), <code>listProjects</code> (<a href="../PID-00037/index.html">PID-00037</a>), <code>listTasks</code> (planning, <a href="../PID-00082/index.html">PID-00082</a>), <code>listAgents</code>, <code>listAgentModelAssignments</code>, <code>listProviderConnections</code> (<a href="../PID-00036/index.html">PID-00036</a>). Chưa có thì mock sinh từ OpenAPI; test override cục bộ.</li>
+<li>Khu vực khác dùng mock của PID này: <code>listWorkflows</code> (PID-00037, PID-00058, PID-00060), <code>getWorkflow</code>, <code>getAgentRun</code> (PID-00058).</li>
+<li>Backend cho Hội tụ (cổng PH-03): orchestration (workflow, Agent Run, Recovery decision), audit và gateway SSE của lát 2. Không phải chờ backend để làm: dùng mock.</li>
+<li>OQ, AQ, DBQ đang chặn: không có. Phiếu mở: <a href="others/issues.html#i1">I1</a>, <a href="others/issues.html#i2">I2</a>, không chặn.</li>
 <li>PID chờ PID này: <a href="../PID-00081/index.html">PID-00081</a>, <a href="../PID-00083/index.html">PID-00083</a>.</li></ul>
 
 <h2 id="s-4">4. Cổng sẵn sàng</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
-<tr><td>Chưa: chờ PO duyệt</td><td>Có, đề xuất</td><td>Chưa: 2 PID</td><td>Không có</td><td>Chưa kiểm</td></tr>
+<tr><td>Đạt: chốt theo đề xuất (PO ủy quyền 26/11/2026), H1–H20</td><td>Có; sửa khi làm rõ 27/11/2026 (mục 1, 2.3, 2.4, 3, 6); 6 slice</td><td>Ghi nhận, không chặn (H19): PID-00012, PID-00013 chưa merge</td><td>I1, I2 mở, không chặn (phần liên quan ở Ngoài phạm vi tới khi PO trả lời)</td><td><code>pnpm --filter @sires/web dev</code> với mock của PID-00013, preview web cổng 5173; chưa kiểm trên máy Dev</td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Làm rõ</h2>
-<p>Chưa làm rõ. PO chạy <code>spec-clarify-skill PID-00059</code> khi chuẩn bị giao Dev.</p>
+<h3 id="phien-27-11">Phiên 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026)</h3>
+<p>Phiên do phiên điều phối của PO mở. Ủy quyền của PO (26–27/11/2026): xây giao diện trước, kéo task UI lên sớm trong PH-02; vấn đề phát sinh chốt theo đề xuất, xuất PC nêu rõ các điểm đã chốt. Quyết định chung áp dụng: D-UI. Mọi câu dưới đây ghi “chốt theo đề xuất (PO ủy quyền 26/11/2026)”; phiên điều phối ghi vào PC-06 nhóm H. Điều không có căn cứ để đề xuất ghi phiếu I1, I2. Không cấp mã toàn cục.</p>
+<ul>
+<li><strong>H1</strong>: Giai đoạn của PID này? → Đ: PH-02 ở mức “Xây với mock” trên mock của PID-00013; Hội tụ với backend thật ở cổng PH-03 như kế hoạch gốc. Sổ task-registry giữ PH-03 (cùng cách PID-00060). Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: D-UI; FIG-301. · Ảnh hưởng: dòng Giai đoạn, Ô trên FIG-301; N1.</li>
+<li><strong>H2</strong> (từ PID-00012 H8): Prompt đang chờ trong chi tiết workflow? → Đ: bước có <code>openPromptId</code> hiện thẻ prompt của shell (<code>getPrompt</code>), trả lời qua <code>answerPrompt</code>, cập nhật theo <code>prompt.status_changed</code>; khu vực chỉ gọi <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code>; thẻ thiếu loại cần dùng thì dừng và báo phiên điều phối. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: PID-00012 H8, S10; UX-PROMPT-005; <code>Workflow.dc.html</code> (“Cũng trả lời được trong Project AI Chat”). · Ảnh hưởng: S03; EC18.</li>
+<li><strong>H3</strong> (từ PID-00012 H1): Màn có làm lại số trên TopBar, rail không? → Đ: Không. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: PID-00012 H1, S07. · Ảnh hưởng: N9.</li>
+<li><strong>H4</strong> (DEC-51, DEC-52): Chấm Đang chạy, thanh tiến độ dùng thế nào? → Đ: theo design.md 2.4, 2.4.1: chấm Đang chạy cạnh bước và agent đang chạy (Workflow, AgentList, dòng danh sách); thanh tiến độ xác định theo số bước Succeeded trên tổng ở chi tiết workflow, một thanh cho mỗi workflow, không spinner; thời gian chạy của Agent Run; reduced motion đứng yên. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: DEC-51, DEC-52; design.md 2.4.1 (màn tham chiếu Workflow, AgentList); ghi chú của phiên điều phối. · Ảnh hưởng: S02, S03, S05; EC20.</li>
+<li><strong>H5</strong>: Tab Thảo luận và bước deliberation? → Đ: tab Thảo luận, Deliberation Board, usage của phiên thuộc PID-00083; bước deliberation hiện như bước thường (trạng thái, agent), các trang <code>Workflow--view-deliberation-*</code> không dựng ở PID này. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: ticket “Không gồm”. · Ảnh hưởng: S03; EC19; N2.</li>
+<li><strong>H6</strong>: Mock của operation dùng chung đặt ở đâu (PID-00013 mục 5)? → Đ: cùng quy tắc PID-00037 H9, PID-00060 H8 (một khu vực chủ mỗi operation; khu vực khác override trong test). PID này khai 10 operation: <code>listWorkflows</code>, <code>getWorkflow</code>, <code>pauseWorkflow</code>, <code>resumeWorkflow</code>, <code>cancelWorkflow</code>, <code>decideWorkflowRecovery</code>, <code>listAgentRuns</code>, <code>getAgentRun</code>, <code>getAgentRunDebugTranscript</code>, <code>listProjectAuditEvents</code>. Bỏ khỏi danh sách: <code>getSharedContext</code>, <code>listContextItems</code> (không màn nào của monitoring dùng; Shared Context do PID-00058 giữ), <code>listAccountAuditEvents</code> (không có màn). Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: PID-00013 mục 5, EC10; PID-00037 H9; PID-00060 H8 (đã ghi <code>listWorkflows</code> thuộc PID này); thiết kế của sáu màn. · Ảnh hưởng: Đầu ra Mock, spec O2, 2.3; S01; N6, N7.</li>
+<li><strong>H7</strong>: Danh sách workflow sắp, lọc, đếm thế nào khi <code>Page</code> không có tổng? → Đ: Đang hoạt động (Created, Running, Waiting for User, Paused, Interrupted) ở trên, sau đó đã kết thúc theo <code>endedAt</code> giảm dần; bộ lọc Đang hoạt động, Đã kết thúc, Tất cả gửi <code>status</code>; số đếm trên mục đã tải, thêm “+” khi còn trang; Global mặc định hiện workflow đang hoạt động và 3 workflow kết thúc gần nhất, “Xem thêm”. Cột Project, Task lấy tên từ <code>listProjects</code>, <code>listTasks</code>; prompt chờ là số bước có <code>openPromptId</code>; thời gian tính từ <code>startedAt</code>, gồm cả lúc chờ. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: UX-MONITOR-001 và AC01; <code>GlobalActivity.dc.html</code>, <code>ProjectActivity.dc.html</code>; <code>Page</code>; cùng cách PID-00060 H4. · Ảnh hưởng: S02; EC01–EC03, EC06, EC07.</li>
+<li><strong>H8</strong>: Nút điều khiển theo trạng thái và lệnh? → Đ: Running, Waiting for User → Tạm dừng, Hủy; Paused → Tiếp tục, Hủy; Interrupted → “Mở Recovery decision” (Hủy nằm trong Recovery decision); Created và đã kết thúc → không nút. Hủy qua dialog nêu hệ quả cho Task (về Ready hoặc Blocked theo readiness, đầu ra giữ Draft, prompt Open chuyển Cancelled), lý do tùy chọn, nút hủy “Giữ workflow”. Mỗi lệnh một <code>Idempotency-Key</code>, nút vô hiệu khi đang gửi; <code>409 invalid_transition</code> → đọc lại, báo trạng thái hiện tại. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: UX-MONITOR-004 và AC01; PRD 18.2; DEC-53; ghi chú của <code>GlobalActivity.dc.html</code>; <code>cancelWorkflow</code>, <code>pauseWorkflow</code>, <code>resumeWorkflow</code>. · Ảnh hưởng: S02, S03; PID-00059-AC02; EC08–EC11.</li>
+<li><strong>H9</strong>: Tự cập nhật theo sự kiện thế nào? → Đ: nghe <code>workflow.status_changed</code>, <code>agent_run.status_changed</code>, <code>prompt.status_changed</code> qua client SSE của shell; mỗi sự kiện đọc lại <code>getWorkflow</code> của workflow liên quan rồi cập nhật dòng, sắp lại; “cần tải lại” đọc lại trang; dòng “Cập nhật” ghi giờ của lần cập nhật gần nhất; không stream token. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: ticket AC01; UX-MONITOR-005 và AC01; NFR-PERF-003; <code>Event</code>; PID-00012 S05, S12. · Ảnh hưởng: S02, S03; EC04, EC05.</li>
+<li><strong>H10</strong>: Hai chế độ xem của chi tiết workflow dựng từ dữ liệu nào? → Đ: Dòng thời gian dựng ở trình duyệt từ <code>steps</code> và <code>listAgentRuns</code>: Orchestrator giao việc (Agent Run đầu của bước bắt đầu), handoff (đầu ra của bước trước là đầu vào của bước sau), đầu ra, prompt, lỗi, theo thời gian. Danh sách bước: thứ tự trên tổng, mô tả, agent, chip, đầu vào và đầu ra theo <code>TypedRef</code> (liên kết khi có route), Agent Run dưới tên bước. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: UX-MONITOR-002 và AC01; <code>WorkflowStep</code>, <code>AgentRun</code>; <code>Workflow--view-steps</code>; hợp đồng không có operation dòng thời gian riêng. · Ảnh hưởng: S03; EC16, EC17.</li>
+<li><strong>H11</strong>: Recovery decision có những lựa chọn nào, khi thiết kế có “Chạy lại toàn bộ — tạo workflow mới” còn PRD và hợp đồng có tiếp tục, chạy lại bước, hủy? → Đ: theo PRD và hợp đồng: “Tiếp tục từ checkpoint” (<code>continue</code>), “Chạy lại bước” (<code>rerun_step</code> kèm chọn bước, mặc định bước dừng), “Hủy” (<code>cancel</code>); radio không chọn sẵn, nút xác nhận vô hiệu tới khi chọn; khối nêu bước dừng, agent, thời điểm, checkpoint gần nhất; không có checkpoint nhất quán thì “Tiếp tục” vô hiệu kèm lý do; trước khi xác nhận không gửi lệnh nào. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: CTX-RECOVERY-001 (“tiếp tục từ bước dở, chạy lại bước, hoặc hủy”); <code>RecoveryDecision</code>; NFR-REC-002-AC01; thứ tự ưu tiên ở docs/tickets/README.md (PRD, hợp đồng trước thiết kế). · Ảnh hưởng: S03; PID-00059-AC02; EC12–EC14; Phải sửa ở nguồn mục 1.</li>
+<li><strong>H12</strong>: Chi tiết Agent Run và phần debug? → Đ: <code>getAgentRun</code>: agent (A, B theo <code>instance</code>), tên Provider Connection (<code>listProviderConnections</code>) và model thực tế, <code>inputSummary</code>, <code>contextManifest</code>, <code>toolCalls</code>, đầu ra (<code>outputRefs</code>, <code>structuredOutput</code> rút gọn), usage, thời gian, <code>attempts</code>, lỗi (mã, không nguyên văn của provider), nhãn discarded; không có API key, không có suy luận nội bộ. <code>hasDebugTranscript</code> đúng → phần toàn văn thu gọn kèm ngày tự xóa, mở thì gọi <code>getAgentRunDebugTranscript</code> (<code>404</code> → hết hạn); sai → “Không lưu toàn văn (chế độ debug tắt)”. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: UX-MONITOR-003 và AC01, AC02; <code>AgentRun</code>, <code>DebugTranscript</code>; <code>Workflow--debug</code>; NFR-SECRETS-001. · Ảnh hưởng: S04; EC22–EC24; spec 2.3 thêm <code>getAgentRunDebugTranscript</code>.</li>
+<li><strong>H13</strong>: Liên kết Agent Run từ Chat đi đâu, khi route của monitoring không có trang Agent Run? → Đ: thêm route <code>/projects/:projectId/activity/agent-runs/:agentRunId</code>: <code>getAgentRun</code> → chuyển tới trang workflow của Agent Run với <code>?agentRun=</code> mã để mở khung Agent Run; <code>404</code> → “không tìm thấy”. Bảng route ở <code>apps/web/README.md</code> là file chung: báo phiên điều phối thêm. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: UX-CHAT-002 (liên kết tới Agent Run); PID-00058 H8; <code>Message.agentRunId</code>. · Ảnh hưởng: S01, S04; EC29.</li>
+<li><strong>H14</strong>: Usage và chi phí hiện ở đâu, thế nào? → Đ: usage theo Agent Run (token in, token out, số lời gọi; <code>noData</code> → “không có dữ liệu”, <code>null</code> → “—”) và tổng của workflow cộng chính xác từ <code>listAgentRuns</code>, gồm cả Agent Run discarded; chi phí chỉ khi có <code>usage.extra.cost</code>, luôn ghi “ước tính”; web không có bảng giá; không chặn, không cảnh báo ngân sách. Tổng hợp theo project, Task, agent, kết nối, thời gian chờ I1. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: NFR-USAGE-001–004; <code>AgentRunUsage</code> (chi phí chỉ tính khi hiển thị và có bảng giá; <code>cost</code> chỉ khi provider trả). · Ảnh hưởng: S04; EC25–EC28; N3, N8.</li>
+<li><strong>H15</strong>: Agent List lấy trạng thái từ đâu? → Đ: từ workflow đang hoạt động của project (<code>listWorkflows</code>, bước hiện tại, <code>assignedAgent</code>, Agent Run Failed của bước) và kết nối hiệu lực của agent (<code>listAgentModelAssignments</code>, <code>listProviderConnections</code>): Chờ bạn (bước Waiting for User), Lỗi (Agent Run Failed hoặc kết nối Invalid), Gián đoạn (workflow Interrupted), Đang chạy (bước Running), Đang rảnh; nhiều việc lấy việc khẩn nhất theo thứ tự đó; đủ 10 dòng, tên và vai trò từ <code>listAgents</code>; nhãn theo ngôn ngữ giao diện; token sáng, biến thể tối chỉ qua token, không có công tắc. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: design.md §3 (ngoại lệ nhãn agent), §4 (Agent List); ghi chú trong <code>AgentList.dc.html</code> (thứ tự ưu tiên, Diagram Agent lỗi do kết nối bị từ chối); PID-00012 N12. · Ảnh hưởng: S05; EC30–EC32; N8.</li>
+<li><strong>H16</strong>: Bộ lọc của History khi <code>actorType</code> chỉ có researcher, agent, system và AuditEvent không có nhóm sự kiện? → Đ: Actor: Researcher, System lọc ở server; Orchestrator, Specialist Agent gửi <code>actorType=agent</code> rồi phân biệt theo <code>actor.agent</code> trên mục đã tải. Loại sự kiện: “Phê duyệt” = có <code>apr</code>, “Sự kiện agent” = actor agent; “Thay đổi”, “Quyết định” chờ I2. Task: <code>objectType=task</code>, <code>objectId</code>. Mới nhất trước, “Xem thêm”, chỉ đọc. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: <code>History.dc.html</code>; <code>listProjectAuditEvents</code>; <code>AuditEvent</code>; CTX-AUDIT-001. · Ảnh hưởng: S06; EC33–EC35; N4.</li>
+<li><strong>H17</strong>: Màn nào có trên điện thoại? → Đ: GlobalActivity (đích tab “Agent” của thanh tab dưới trên điện thoại) và chi tiết workflow dùng được ở 390 px: mỗi workflow một thẻ, nút 44–48 px, không cuộn ngang; ProjectActivity, History giữ bảng cuộn trong thẻ. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: design.md §5 (điện thoại cho theo dõi tiến độ); <code>MobilePending.dc.html</code> (tab “Agent” tới <code>GlobalActivity</code>); PID-00012 EC18. · Ảnh hưởng: S02, S03; EC36.</li>
+<li><strong>H18</strong>: Tên file test ở Đầu ra? → Đ: <code>activity.test.tsx</code>, <code>workflow.test.tsx</code> đổi thành <code>activity.spec.tsx</code>, <code>workflow.spec.tsx</code>; thêm <code>agent-run.spec.tsx</code>, <code>agent-list.spec.tsx</code>, <code>history.spec.tsx</code>. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: <code>nx.json</code>; PID-00012, PID-00036, PID-00060 cùng cách; quy tắc 1.4.13. · Ảnh hưởng: Đầu ra; spec O3–O7, mục 6.</li>
+<li><strong>H19</strong>: PID-00012, PID-00013 chưa merge có chặn trạng thái Sẵn sàng không? → Đ: Không; Dev bắt đầu khi cả hai đã vào <code>develop</code>. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: PID-00012 H10 (quyết định chung D6). · Ảnh hưởng: cổng “Phụ thuộc”; mục 3.</li>
+<li><strong>H20</strong>: Danh sách operation gọi, trạng thái trống và đã kết thúc? → Đ: 17 operation: 10 của khu vực (H6) và 7 của khu vực khác: <code>getPrompt</code>, <code>answerPrompt</code>, <code>listProjects</code>, <code>listTasks</code>, <code>listAgents</code>, <code>listAgentModelAssignments</code>, <code>listProviderConnections</code>; <code>listPrompts</code> không cần vì prompt đến theo <code>openPromptId</code> của bước; cộng sự kiện <code>workflow.status_changed</code>, <code>agent_run.status_changed</code>, <code>prompt.status_changed</code>. Workflow đã kết thúc chỉ xem; không có Agent Run thì trạng thái trống có lý do. Chốt theo đề xuất (PO ủy quyền 26/11/2026). · Căn cứ: spec 4.7; H7–H16. · Ảnh hưởng: spec 2.3; EC15, EC21.</li>
+</ul>
+<p>Trạng thái: đặt <code>Sẵn sàng</code> ngày 27/11/2026 theo ủy quyền. Không slice nào bị chặn trong lượt Xây với mock; phần tổng hợp usage và hai nhóm lọc của History ngoài phạm vi tới khi PO trả lời I1, I2.</p>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Không có.</li></ul>
+<p>Không mục nào chặn lượt Xây với mock.</p>
+<ol>
+<li><strong>Recovery decision (H11):</strong> <code>docs/ui-design/source/Workflow.dc.html</code> (trạng thái <code>state-interrupted</code>): đổi lựa chọn “Chạy lại toàn bộ — tạo workflow mới cho T-2.3” thành “Chạy lại bước — chọn bước” theo CTX-RECOVERY-001 và <code>RecoveryDecision</code>; câu của “Tiếp tục từ checkpoint” bỏ “chạy lại bước 3” cho khỏi trùng; dựng lại <code>pages/</code>.</li>
+<li><strong>Tổng hợp usage (I1):</strong> tùy câu trả lời của PO — thêm operation tổng hợp ở <code>docs/api-design</code> và khối Usage ở thiết kế, hoặc sửa NFR-USAGE-002.</li>
+<li><strong>Nhóm sự kiện của audit (I2):</strong> tùy câu trả lời của PO — thêm <code>category</code> vào <code>AuditEvent</code> và tham số lọc, hoặc sửa thiết kế History.</li>
+</ol>
+<p>Ghi nhận cho PID khác (không chặn): <code>apps/web/README.md</code> thêm route Agent Run (H13; file chung, phiên điều phối xếp người sửa); PID-00058 liên kết tới route này; PID-00037, PID-00058, PID-00060 dùng mock <code>listWorkflows</code> của PID này.</p>
 <h3 id="con-mo">Còn mở</h3>
-<ul><li>Không có.</li></ul>
+<ul><li><a href="others/issues.html#i1">I1</a> — Usage tổng hợp theo project, Task, agent, Provider Connection và khoảng thời gian hiển thị ở đâu, lấy từ operation nào. Không chặn: phần này ở Ngoài phạm vi (N3).</li>
+<li><a href="others/issues.html#i2">I2</a> — Bộ lọc “Loại sự kiện” của History phân nhóm thế nào. Không chặn: S06 chỉ hiện hai nhóm có nguồn (N4).</li></ul>
 
 <h2 id="s-6">6. Slice</h2>
-<p>Chưa chia. spec-clarify-skill chia các bước ở <a href="specs/index.html#s-5">spec mục 5</a> thành slice.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-area-frame-mock.html">S01</a></td><td>Route, i18n, mock 10 operation và fixture của khu vực</td><td>— (nền cho mọi AC)</td><td>PID-00012, PID-00013 trên <code>develop</code></td></tr>
+<tr><td><a href="specs/slices/S02-activity-lists.html">S02</a></td><td>GlobalActivity, ProjectActivity: danh sách, lọc, điều khiển, tự cập nhật, 390 px</td><td>PID-00059-AC01, UX-MONITOR-001-AC01, UX-MONITOR-005-AC01</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S03-workflow-detail.html">S03</a></td><td>Chi tiết workflow, hai chế độ xem, Recovery decision, prompt đang chờ</td><td>PID-00059-AC02, UX-MONITOR-002-AC01, UX-MONITOR-004-AC01</td><td>S01, S02</td></tr>
+<tr><td><a href="specs/slices/S04-agent-run.html">S04</a></td><td>Agent Run, debug, usage, route Agent Run</td><td>UX-MONITOR-003-AC01, AC02, NFR-USAGE-002-AC01 (phần workflow), NFR-USAGE-003-AC01, NFR-USAGE-004-AC01</td><td>S03</td></tr>
+<tr><td><a href="specs/slices/S05-agent-list.html">S05</a></td><td>Agent List</td><td>— (màn AgentList)</td><td>S02, S03</td></tr>
+<tr><td><a href="specs/slices/S06-history.html">S06</a></td><td>Activity and History</td><td>— (P10)</td><td>S01</td></tr>
+</tbody></table></div>
+<p>S02 và S06 làm song song sau S01; S03 sau S02; S04, S05 sau S03. Hội tụ với backend thật không phải slice của lượt này (H1, N1).</p>
 
 <h2 id="s-7">7. Điểm dừng</h2>
-<ul><li>Không được sửa: thư mục ngoài luồng <code>web/monitoring</code>; <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<ul><li>Không được sửa: thư mục ngoài luồng <code>web/monitoring</code> (gồm <code>apps/web/src/shell/</code>, <code>apps/web/README.md</code> và khu vực khác); <code>docs/</code>; file sinh tự động; migration đã có.</li>
+<li>Không viết tay kiểu dữ liệu của hợp đồng; không hiển thị API key hay suy luận nội bộ của model.</li>
+<li>Thẻ prompt hay phần khung của shell thiếu điều cần dùng → dừng slice, ghi “Cần PO” trong <code>report.md</code>, báo phiên điều phối (quy tắc 1.4.9).</li>
 <li>Gặp điều spec không nói tới mà đổi hành vi → dừng, ghi trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
 <li>Cần sửa luồng khác → dừng, đề xuất PID cho luồng đó (quy tắc 1.4).</li></ul>
 
 <h2 id="s-8">8. Kiểm tra hoàn thành</h2>
 <ul><li>Lệnh: <code>pnpm nx run @sires/web:test</code>; <code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code>; <code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
-<li>Bảng AC → test: <a href="specs/index.html#s-6">spec mục 6</a>.</li></ul>
+<li>Thao tác tay: bật mock của PID-00013, mở năm route ở 1440×900, 1024×768 (GlobalActivity và chi tiết workflow thêm 390×844); tạm dừng, tiếp tục, hủy, Recovery decision; bật reduced motion; đổi VI/EN.</li>
+<li>Bảng AC → test: <a href="specs/acceptance.html">specs/acceptance.html</a> (spec mục 6).</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html#pids">Danh sách PID</a></nav>
 </main>
 <footer>SIRes · Ticket PID-00059 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
