@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00115.">
+<title>PID-00115 — S03 Cây file, dàn ý, thao tác file | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S03 — Cây file, dàn ý, thao tác file</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Manuscript-states.html">designs/Manuscript-states.html</a> khối 5.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>MS-EDITOR-001-AC01, MS-EDITOR-001-AC03</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O7</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B10, B11</td></tr>
+<tr><th scope="row">Edge case</th><td>EC08–EC15, EC17 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Cây “Tệp” từ <code>listManuscriptFiles</code>: thư mục suy ra từ <code>path</code>, file chữ mono như Manuscript.html; chọn file mở ở editor (S04) và đổi route sang đường dẫn file. Dàn ý: <code>\section</code>, <code>\subsection</code> theo thứ tự <code>\input</code>, <code>\include</code> từ file chính (<code>Manuscript.mainFile</code>), bỏ dòng chú thích; chọn → mở file tại dòng (H9).</li>
+<li>Thao tác (menu của mục và nút trên đầu cây, dùng được bằng bàn phím): Tạo file, Tạo thư mục, Đổi tên/di chuyển, Xóa, Tải lên. Mỗi thao tác là một <code>commitManuscriptChanges</code> với <code>baseRevisionId</code> hiện hành và <code>Idempotency-Key</code>; 409 xử lý như S04 (H7).</li>
+<li>Kiểm đường dẫn trước khi gửi (EC08, EC09): tương đối, không <code>..</code>, không bắt đầu bằng <code>/</code>, không <code>\</code>, không đoạn rỗng, không trùng file Active; lỗi viết dưới ô, nêu chưa lưu; <code>400</code> của server hiện lỗi từng trường.</li>
+<li>Nơi tham chiếu (EC10): quét nội dung các file <code>.tex</code> Active tìm <code>\input{…}</code>, <code>\include{…}</code> trỏ tới file (có hoặc không đuôi <code>.tex</code>); đổi tên, di chuyển, xóa file có nơi tham chiếu → hộp xác nhận liệt kê file:dòng trước khi gửi; sau khi xong, banner liệt kê nơi còn trỏ tên cũ, nói build sẽ báo thiếu file nếu chưa sửa, mỗi mục mở file tại dòng.</li>
+<li>Xóa (EC11): hộp xác nhận (design.md §4) nêu xóa mềm, khôi phục được từ Lịch sử; thư mục nêu số file, một revision cho cả thư mục. File đang có thay đổi chưa lưu: đổi tên, xóa vô hiệu kèm lý do (EC17).</li>
+<li><code>bibliography/references.bib</code> (EC12): không đổi tên, không xóa; mở chỉ đọc với câu “System sinh từ Trusted Reference — không sửa tay”.</li>
+<li>Tải lên (EC13): <code>uploadFile</code> (multipart, kèm <code>projectId</code>) rồi commit <code>add</code> với <code>fileUploadId</code>; hình mặc định vào <code>figures/</code>, file khác vào thư mục đang chọn; 413 báo giới hạn, không tạo revision. Thư mục mới chưa có file chỉ ở giao diện (EC14). Mở hình → xem ảnh; nhị phân khác → “Không xem trước được” (EC15).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/files.spec.tsx</code> › đường dẫn có ../ bị từ chối (MS-EDITOR-001-AC03, EC08); › tên trùng (EC09); › cảnh báo tham chiếu khi đổi tên (MS-EDITOR-001-AC01, EC10); › xóa thư mục (EC11); › references.bib chỉ đọc (EC12); › tải lên hình; › tải lên quá lớn (EC13); › thư mục rỗng (EC14); › xem hình (EC15); › file đang sửa không đổi tên được (EC17)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Cây file và dàn ý đúng dữ liệu mock; mọi thao tác file tạo revision qua commit, kiểm đường dẫn và cảnh báo tham chiếu đúng AC</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

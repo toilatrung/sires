@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00115.">
+<title>PID-00115 — S02 Khung màn, khởi tạo, chỉ đọc, bố cục | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S02 — Khung màn, khởi tạo, chỉ đọc, bố cục</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Manuscript-states.html">designs/Manuscript-states.html</a> khối 1–4, 16.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>MS-INIT-001-AC03 (phần giao diện)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B3, B10, B11</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC07 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S01, S02, S03, S04, S06, S07 trên <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thay Placeholder ở route <code>projects/:projectId/manuscript/*</code> (có sẵn trong <code>apps/web/src/features/manuscript/index.tsx</code>) bằng màn Manuscript; phần sau <code>manuscript/</code> là đường dẫn file đang mở (PRD 4.3), tham số <code>proposal</code> xử lý ở S06. Namespace i18n <code>manuscript</code> (vi, en có sẵn).</li>
+<li>Thanh công cụ theo Manuscript.html và H2: “Project” về <code>/projects/{projectId}/overview</code>, chip build (nối dữ liệu ở S08), nhãn “revision N · đã lưu HH:mm”, nhóm tab vùng phải PDF, Build log, Lịch sử kèm nút ẩn vùng phải (H4), nút phụ “Lưu” (S04), “Export” (S08), nút chính “Build PDF” (S08). Chân trang: active task từ dữ liệu điều hướng của shell (không có thì “Không có active task”), compiler · natbib, “thay đổi chưa lưu được giữ cục bộ”.</li>
+<li>Bố cục (H4): ≥ 1280px ba vùng (cây file 200–230px, editor, vùng phải) bằng hàng flex-wrap của design.md §5; vùng phải ẩn được; 768–1279px ba tab Tệp, Soạn thảo, Xem; dưới 768px chuyển sang màn của S09. Không cuộn ngang trang.</li>
+<li>Nạp <code>getManuscript</code>: đang tải → skeleton theo bố cục dòng thật và <code>role="status"</code>; lỗi theo trạng thái dùng chung của shell, tại từng vùng (EC05); 404 → khối khởi tạo (EC01); project không thấy → “Không tìm thấy” (EC04).</li>
+<li>Khởi tạo (H5): radio Default, Blank kèm hệ quả, không chọn sẵn, “Chế độ không đổi được sau khi tạo”; nút chính “Khởi tạo bản thảo” vô hiệu tới khi chọn; <code>initManuscript</code> chỉ gửi <code>initMode</code>, kèm <code>Idempotency-Key</code>; 201 → mở <code>main.tex</code>; 409 → tải lại (EC02).</li>
+<li>Project Archived (H20): banner viền 1.5px muted; editor chỉ đọc; ẩn Lưu, Build PDF, thao tác file, chấp nhận, từ chối, yêu cầu tạo lại, khởi tạo; vẫn xem PDF, log, lịch sử, export (EC03). Các slice sau dùng chung cờ chỉ đọc này.</li>
+<li>Chuỗi vi/en cho mọi nhãn của khung; đổi ngôn ngữ không mất trạng thái (EC07).</li>
+<li>Nếu cần gói editor hay PDF ở slice này: khai trong <code>apps/web/package.json</code> theo H22.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/layout.spec.tsx</code> › khởi tạo Default (EC01); › khởi tạo khi đã có (MS-INIT-001-AC03, EC02); › project Archived chỉ đọc (EC03); › không tìm thấy (EC04); › lỗi tại vùng (EC05); › ẩn vùng phải; › tablet ba tab (EC06); › đổi ngôn ngữ giữ nội dung (EC07)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li>
+<li>Thao tác tay: preview <code>web</code> 1440×900 và 1024×768, vi và en, so với <code>docs/ui-design/pages/Manuscript.html</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Màn mở được trên mock ở hai độ rộng, khởi tạo được bản thảo, Archived chỉ đọc, các vùng có trạng thái đang tải, lỗi, trống; check-ui sạch lỗi</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
