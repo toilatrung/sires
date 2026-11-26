@@ -141,7 +141,7 @@ Cùng vòng (`LOOP_PROMPT`: tìm trong thư viện, đọc từng reference, tr�
 
 **Đề xuất: Pydantic AI**, dùng trong ranh giới một Agent Run qua một lớp `Model` riêng nối vào Model Gateway (ADR-08), không dùng model provider có sẵn của Pydantic AI. Lý do:
 
-1. Cả hai chạy cùng vòng với cùng số lời gọi (3 lời gọi trên mỗi adapter thật) và token gần nhau nhưng không bằng nhau (1 296–1 506 vào, 174–193 ra, do mỗi bên dựng message khác nhau) trên bốn adapter, nên không có khác biệt năng lực.
+1. Cả hai chạy cùng vòng với cùng số lời gọi (3 lời gọi trên mỗi adapter thật) và token gần nhau nhưng không bằng nhau (1 296–2 068 vào, 174–219 ra; theo adapter: OpenAI và Messages qua cổng 1 296–1 506 / 174–193, Gemini 1 862–2 068 / 179–219; do mỗi bên dựng message khác nhau) trên bốn adapter, nên không có khác biệt năng lực.
 2. Pydantic AI có sẵn đúng các quy tắc của kiến trúc 8.1 và 8.5 (kiểm đầu ra bằng Pydantic, sửa định dạng có giới hạn, giới hạn số lời gọi) và đếm usage đối chiếu được.
 3. Thế mạnh riêng của LangGraph (checkpointer, lưu trạng thái, ngắt chờ người) là đúng phần ADR-08 không cho dùng trong agent-core.
 4. Ít phụ thuộc hơn, không kéo `langchain-core` (ADR-08 đã loại LangChain toàn phần).
@@ -365,7 +365,7 @@ Chưa cộng: 12 lời gọi phép thử của `base_url.py compare` với OpenA
 | G1, G2 | Đóng theo quyết định của PO (S-K1, S-K2, S-DK) | Claude, Gemini ghi “không đo được qua proxy”; AC03 bỏ phần so với endpoint chính thức |
 | G3 | Đã sửa ở Lần 2 | — |
 | G4 | Còn mở (MEDIUM) | Chờ PO theo OQ-113 và M1; spike giữ nguyên để đúng số đo, Lần 3 lặp lại đúng chỗ lệch |
-| G5 | Đã sửa | Mục 3: lượt d, e ghi usage không stream “có (ở lời gọi thành công…)”; Gemini 69 lời gọi có usage (3 lời gọi burst hết giờ không có usage), tổng 223; lý do 1 của đề xuất framework ghi token khác nhau 1 296–1 506 vào, 174–193 ra |
+| G5 | Đã sửa | Mục 3: lượt d, e ghi usage không stream “có (ở lời gọi thành công…)”; Gemini 69 lời gọi có usage (3 lời gọi burst hết giờ không có usage), tổng 223; lý do 1 của đề xuất framework ghi token khác nhau 1 296–2 068 vào, 174–219 ra (QC Lần 4 sửa khoảng số: QC Lần 1 chỉ tính dòng 7–12, bỏ sót ba dòng Gemini) |
 | G6 | Đã sửa | `frameworks.py` mặc định ghi `evidence/frameworks` (`EVIDENCE_ROOT / "frameworks"`), khớp lệnh chạy lại ở mục 3 và README |
 | G7 | Ghi lại, không sửa | Thuộc luồng infra (`scripts/development/setup-windows.ps1` băm `requirements.txt` theo byte, lệch khi checkout đổi CRLF); S-G7 chọn chuẩn hóa xuống dòng trước khi băm |
 | G8 | Đã sửa | `redact_ids()` trong `redact()` che `request id: …` (và `request_id`) và tên nhóm sau “under group”; che lại lần nữa không đổi kết quả. Đã che 9 request id và tên nhóm trong evidence Lần 1 (`capabilities/anthropic-claude-haiku-4-5/results.jsonl`, `errors/results.jsonl`) và một dòng ở mục 3 của file này. Các giá trị cũ vẫn còn trong lịch sử git của `main` |
