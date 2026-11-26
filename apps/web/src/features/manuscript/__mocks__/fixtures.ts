@@ -42,10 +42,10 @@ export function mainTex(line4 = '\\usepackage{booktabs}', title = 'Retrieval ove
     '\\usepackage[numbers]{natbib}',
     `\\title{${title}}`,
     '\\author{[Tác giả] \\and [Đơn vị]}',
-    '',
     '\\begin{document}',
     '\\maketitle',
     '\\input{sections/intro}',
+    '\\input{sections/related-work}',
     '\\input{sections/method}',
     '',
     '\\bibliographystyle{plainnat}',
@@ -70,6 +70,14 @@ export const INTRO_R17 = [
   'However, unverified generation can introduce unsupported claims \\citep{doe2023hd}.',
   '% TODO: so sánh với các framework kiểm citation khác (mục 2.3)',
   'Prior work shows retrieval always helps.',
+  '',
+].join('\n');
+
+export const RELATED_WORK = [
+  '\\section{Related Work}',
+  '\\label{sec:related}',
+  '',
+  'Retrieval-augmented generation grounds answers in retrieved documents \\citep{lewis2020rag}.',
   '',
 ].join('\n');
 
@@ -100,8 +108,10 @@ export function referencesBib(entries: readonly { bibtexKey: string; bibtex?: st
   return [header, '', ...entries.map((entry) => `${entry.bibtex ?? BIB_ENTRIES[entry.bibtexKey] ?? `@misc{${entry.bibtexKey}}`}\n`)].join('\n');
 }
 
-/** 1×1 PNG, the figure of the demo. */
-export const PRISMA_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+/** 1×1 PNG, the pipeline figure of the demo at r15–r17. */
+export const PIPELINE_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+/** The pipeline figure as redrawn at r18 (another 1×1 PNG). */
+export const PIPELINE_PNG_R18 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGPQz98KAAIkAVQq5guWAAAAAElFTkSuQmCC';
 
 export type FileKind = Schemas['ManuscriptFile']['fileType'];
 
@@ -148,11 +158,12 @@ export function demoRevisions(): RevisionSnapshot[] {
     file(2, 'bibliography/references.bib', 'bib', referencesBib(bibliography), 15),
     file(3, 'sections/intro.tex', 'tex', INTRO_R15, 15),
     file(4, 'sections/method.tex', 'tex', METHOD_R15, 15),
-    file(5, 'figures/prisma.png', 'figure', PRISMA_PNG_BASE64, 15, true),
+    file(5, 'figures/pipeline.png', 'figure', PIPELINE_PNG_BASE64, 15, true),
+    file(6, 'sections/related-work.tex', 'tex', RELATED_WORK, 15),
   ];
   const r16 = at(r15, { 'main.tex': [mainTex('\\usepackage{amsmath}'), 16] });
   const r17 = at(r16, { 'main.tex': [mainTex(), 17], 'sections/intro.tex': [INTRO_R17, 17] });
-  const r18 = at(r17, { 'sections/method.tex': [METHOD_R18, 18] });
+  const r18 = at(r17, { 'sections/method.tex': [METHOD_R18, 18], 'figures/pipeline.png': [PIPELINE_PNG_R18, 18] });
   return [
     { revision: revisionRow(15, 'init', SYSTEM, 24 * 38, r15.map((row) => ({ path: row.path, operation: 'add' as const })), { message: 'Default' }), files: byId(r15) },
     { revision: revisionRow(16, 'direct_edit', researcher, 24 * 28, [{ path: 'main.tex', operation: 'modify' }]), files: byId(r16) },
@@ -162,7 +173,7 @@ export function demoRevisions(): RevisionSnapshot[] {
       }),
       files: byId(r17),
     },
-    { revision: revisionRow(18, 'direct_edit', researcher, 2, [{ path: 'sections/method.tex', operation: 'modify' }]), files: byId(r18) },
+    { revision: revisionRow(18, 'direct_edit', researcher, 2, [{ path: 'sections/method.tex', operation: 'modify' }, { path: 'figures/pipeline.png', operation: 'modify' }]), files: byId(r18) },
   ];
 }
 
@@ -323,8 +334,8 @@ export const BUILD_LOG_R16 = [
   '',
 ].join('\n');
 
-export const MISSING_PACKAGE_VI = 'Môi trường build chưa có package booktabs. Bỏ dòng \\usepackage{booktabs} ở main.tex hoặc dựng bảng không cần booktabs.';
-const UNDEFINED_CITATION_VI = 'Key gao2023survy không có trong references.bib. Có thể bạn định dùng gao2023survey.';
+/** Hint written in the account's uiLanguage at build time (BuildIssue.friendlyMessage); the sentence comes from code and params. */
+const UNDEFINED_CITATION_VI = 'Có thể bạn định dùng gao2023survey.';
 
 export function demoBuilds(): Schemas['Build'][] {
   return [
@@ -337,8 +348,8 @@ export function demoBuilds(): Schemas['Build'][] {
       id: buildId(17), manuscriptId: MANUSCRIPT_ID, revisionId: revisionId(17), revisionNumber: 17, compiler: 'pdflatex',
       status: 'Failed', queuedAt: ago(2.9), startedAt: ago(2.895), endedAt: ago(2.89), hasPdf: false,
       issues: [
-        { severity: 'error', file: 'main.tex', line: 4, code: 'missing_package', message: "! LaTeX Error: File `booktabs.sty' not found.", friendlyMessage: MISSING_PACKAGE_VI },
-        { severity: 'warning', file: 'sections/intro.tex', line: 7, code: 'undefined_citation', message: "LaTeX Warning: Citation `gao2023survy' on page 1 undefined on input line 7.", friendlyMessage: UNDEFINED_CITATION_VI },
+        { severity: 'error', file: 'main.tex', line: 4, code: 'missing_package', params: { package: 'booktabs' }, message: "! LaTeX Error: File `booktabs.sty' not found." },
+        { severity: 'warning', file: 'sections/intro.tex', line: 7, code: 'undefined_citation', params: { key: 'gao2023survy' }, message: "LaTeX Warning: Citation `gao2023survy' on page 1 undefined on input line 7.", friendlyMessage: UNDEFINED_CITATION_VI },
       ],
       citationKeysFound: ['lewis2020rag', 'gao2023survey', 'doe2023hd'], unresolvedKeys: ['gao2023survy'],
     },

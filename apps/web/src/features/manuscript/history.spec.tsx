@@ -11,7 +11,7 @@ import { feature } from '.';
 import { demoFixtures } from '../../shell/mock';
 import { agent, projects, researcher } from '../../shell/mock/fixtures/ids';
 import { useMockServer } from '../../shell/mock/node';
-import { CLAIMS, demoProposals, METHOD_R18, PRISMA_PNG_BASE64, proposalId, RAG, WRITING_TASK, WRITING_WORKFLOW } from './__mocks__/fixtures';
+import { CLAIMS, demoProposals, METHOD_R18, PIPELINE_PNG_BASE64, proposalId, RAG, WRITING_TASK, WRITING_WORKFLOW } from './__mocks__/fixtures';
 import { editorText, main, openManuscript, otherAreas, projectPath, typeInEditor } from './__mocks__/render';
 import { activeFiles, commit, currentSnapshot, initProject, resetManuscriptStore, testStore } from './__mocks__/store';
 
@@ -42,7 +42,7 @@ describe('Lịch sử revision (S07)', () => {
   it('so sánh hai revision (UX-MS-006-AC01)', async () => {
     const { user } = await openHistory();
     expect(within(rowOf(18)).getByText(`· ${ACCOUNT_NAME} ·`, { exact: false })).toBeTruthy();
-    expect(within(rowOf(18)).getByText('Sửa trực tiếp · method.tex')).toBeTruthy();
+    expect(within(rowOf(18)).getByText('Sửa trực tiếp · method.tex, pipeline.png')).toBeTruthy();
     expect(within(rowOf(17)).getByText('Proposal đã chấp nhận · T-2.1')).toBeTruthy();
     expect(within(rowOf(15)).getByText('Khởi tạo Default')).toBeTruthy();
     await user.click(within(historyList()).getByRole('checkbox', { name: 'Chọn r16 để so sánh' }));
@@ -125,15 +125,15 @@ describe('Lịch sử revision (S07)', () => {
       { path: 'sections/related.tex', operation: 'add', content: '\\section{Related Work}\nRAG systems.\n' },
     ], { createdBy: researcher, source: 'direct_edit' });
     // The figure itself changed too (another upload in the same revision).
-    const prisma = [...currentSnapshot(pm).files.values()].find((row) => row.path === 'figures/prisma.png')!;
-    prisma.content = `${PRISMA_PNG_BASE64.slice(0, -4)}AAAA`;
+    const prisma = [...currentSnapshot(pm).files.values()].find((row) => row.path === 'figures/pipeline.png')!;
+    prisma.content = `${PIPELINE_PNG_BASE64.slice(0, -4)}AAAA`;
     prisma.updatedInRevision = revision.revisionNumber;
     const { user } = await openHistory();
     await user.click(within(historyList()).getByRole('checkbox', { name: 'Chọn r18 để so sánh' }));
     await user.click(within(historyList()).getByRole('checkbox', { name: 'Chọn r19 để so sánh' }));
     await user.click(main().getByRole('button', { name: 'So sánh r18 ↔ r19' }));
     const compare = await main().findByRole('region', { name: 'So sánh r18 ↔ r19' });
-    const figure = await within(compare).findByRole('region', { name: 'figures/prisma.png' });
+    const figure = await within(compare).findByRole('region', { name: 'figures/pipeline.png' });
     expect(within(figure).getByText('File nhị phân — đã đổi, không so sánh theo dòng.')).toBeTruthy();
     expect(within(figure).queryByLabelText(/^Khác biệt của/)).toBeNull();
     const added = within(compare).getByRole('region', { name: 'figures/flow.png' });
@@ -179,7 +179,7 @@ describe('Lịch sử revision (S07)', () => {
 
   it('khôi phục file đã xóa (EC42)', async () => {
     const pm = rag();
-    commit(testStore(), pm, [{ path: 'sections/method.tex', operation: 'delete' }], { createdBy: researcher, source: 'direct_edit' });
+    commit(testStore(), pm, [{ path: 'sections/method.tex', operation: 'delete' }, { path: 'figures/pipeline.png', operation: 'delete' }], { createdBy: researcher, source: 'direct_edit' });
     const { user } = await openHistory();
     // Unsaved change on main.tex: restoring main.tex is off, with the reason.
     typeInEditor(`${editorText()}% chưa lưu\n`);
@@ -190,22 +190,66 @@ describe('Lịch sử revision (S07)', () => {
     expect(forMain.hasAttribute('disabled')).toBe(true);
     expect(within(forMain.closest('li')!).getByText('Lưu hoặc bỏ thay đổi của file này trước.')).toBeTruthy();
     await user.click(within(detail).getByRole('button', { name: 'Quay lại danh sách' }));
-    // Binary file: off, with the reason (N6).
+    // Binary file deleted since r15: restored with restoreFromRevisionId like a text file (contract 27/11/2026).
+    const sent: unknown[] = [];
+    mock.server.events.on('request:start', ({ request }) => {
+      if (request.method === 'POST' && request.url.endsWith('/manuscript/revisions')) void request.clone().json().then((body) => sent.push(body));
+    });
     await user.click(within(rowOf(15)).getByRole('button', { name: 'Xem r15' }));
     detail = await main().findByRole('region', { name: 'Revision r15' });
-    const figure = (await within(detail).findByText('figures/prisma.png')).closest('li') as HTMLElement;
-    await waitFor(() => expect(within(figure).getByRole('button', { name: 'Khôi phục file này về r15' }).hasAttribute('disabled')).toBe(true));
-    expect(within(figure).getByText('Chưa khôi phục được file nhị phân; tải lên lại bản cần dùng.')).toBeTruthy();
-    await user.click(within(detail).getByRole('button', { name: 'Quay lại danh sách' }));
+    const figure = (await within(detail).findByText('figures/pipeline.png')).closest('li') as HTMLElement;
+    const restoreFigure = within(figure).getByRole('button', { name: 'Khôi phục file này về r15' });
+    await waitFor(() => expect(restoreFigure.hasAttribute('disabled')).toBe(false));
+    await user.click(restoreFigure);
+    expect(await main().findByText('Đã khôi phục figures/pipeline.png về r15 trong revision r20. Các revision cũ vẫn còn.')).toBeTruthy();
+    const png = activeFiles(currentSnapshot(pm)).find((row) => row.path === 'figures/pipeline.png')!;
+    expect(png.binary).toBe(true);
+    expect(png.content).toBe(PIPELINE_PNG_BASE64);
+    await waitFor(() => expect(sent.at(-1)).toMatchObject({ changes: [{ path: 'figures/pipeline.png', operation: 'add', restoreFromRevisionId: pm.revisions[0]!.revision.id }] }));
     // Deleted since r18: restoring sends add.
     await user.click(within(rowOf(18)).getByRole('button', { name: 'Xem r18' }));
     detail = await main().findByRole('region', { name: 'Revision r18' });
     const method = (await within(detail).findByText('sections/method.tex')).closest('li') as HTMLElement;
     await user.click(await within(method).findByRole('button', { name: 'Khôi phục file này về r18' }));
-    expect(await main().findByText('Đã khôi phục sections/method.tex về r18 trong revision r20. Các revision cũ vẫn còn.')).toBeTruthy();
+    expect(await main().findByText('Đã khôi phục sections/method.tex về r18 trong revision r21. Các revision cũ vẫn còn.')).toBeTruthy();
     const now = currentSnapshot(pm);
     expect(now.revision.changes).toEqual([expect.objectContaining({ path: 'sections/method.tex', operation: 'add' })]);
     expect(activeFiles(now).find((row) => row.path === 'sections/method.tex')!.content).toBe(METHOD_R18);
+    mock.server.events.removeAllListeners();
+  });
+
+  it('khôi phục toàn bộ (EC57)', async () => {
+    const pm = rag();
+    const r18 = currentSnapshot(pm);
+    commit(testStore(), pm, [
+      { path: 'main.tex', operation: 'modify', content: '\\documentclass{article}\n' },
+      { path: 'sections/method.tex', operation: 'delete' },
+      { path: 'sections/new.tex', operation: 'add', content: '\\section{New}\n' },
+    ], { createdBy: researcher, source: 'direct_edit' });
+    const bibBefore = activeFiles(currentSnapshot(pm)).find((row) => row.fileType === 'bib')!.content;
+    const { user } = await openHistory();
+    // Unsaved changes: off, with the reason.
+    const original = editorText();
+    typeInEditor(`${original}% chưa lưu\n`);
+    await user.click(within(rowOf(18)).getByRole('button', { name: 'Xem r18' }));
+    const detail = await main().findByRole('region', { name: 'Revision r18' });
+    const all = within(detail).getByRole('button', { name: 'Khôi phục toàn bộ về r18' });
+    await waitFor(() => expect(all.hasAttribute('disabled')).toBe(true));
+    expect(within(detail).getByText('Lưu hoặc bỏ mọi thay đổi chưa lưu trước.')).toBeTruthy();
+    typeInEditor(original);
+    await waitFor(() => expect(all.hasAttribute('disabled')).toBe(false));
+    await user.click(all);
+    const dialog = await screen.findByRole('dialog', { name: 'Khôi phục toàn bộ bản thảo về r18' });
+    expect(within(dialog).getByText('1 file sửa, 1 file thêm lại, 1 file xóa.')).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: 'Khôi phục toàn bộ' }));
+    expect(await main().findByText('Đã khôi phục toàn bộ bản thảo về r18 trong revision r20. Các revision cũ vẫn còn.')).toBeTruthy();
+    const now = currentSnapshot(pm);
+    expect(now.revision.revisionNumber).toBe(20);
+    expect(now.revision.changes.map((change) => `${change.operation} ${change.path}`).sort()).toEqual(['add sections/method.tex', 'delete sections/new.tex', 'modify main.tex']);
+    const files = activeFiles(now);
+    for (const row of activeFiles(r18).filter((file) => file.fileType !== 'bib')) expect(files.find((file) => file.path === row.path)?.content).toBe(row.content);
+    expect(files.some((row) => row.path === 'sections/new.tex')).toBe(false);
+    expect(files.find((row) => row.fileType === 'bib')!.content).toBe(bibBefore);
   });
 
   it('tải thêm (EC43)', async () => {

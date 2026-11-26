@@ -24,6 +24,8 @@ export function useSourceLabel(): (revision: Revision, taskKey?: string) => stri
   const { t } = useTranslation('manuscript');
   return useCallback((revision: Revision, taskKey?: string) => {
     if (revision.source === 'init') return [t('history.source.init'), revision.message].filter(Boolean).join(' ');
+    // A diagram insertion is a change_proposal with artifactVersionIds (ManuscriptRevision.source, 27/11/2026).
+    if (revision.source === 'change_proposal' && revision.artifactVersionIds?.length) return [t('history.source.diagram'), taskKey].filter(Boolean).join(' · ');
     if (revision.source === 'change_proposal') return [t('history.source.change_proposal'), taskKey].filter(Boolean).join(' · ');
     const names = [...new Set(revision.changes.map((change) => baseName(change.newPath ?? change.path)))];
     return [t('history.source.direct_edit'), names.join(', ')].filter(Boolean).join(' · ');

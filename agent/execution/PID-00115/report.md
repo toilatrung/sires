@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00115](../../../docs/tickets/issues/PID-00115/index.html) · **Luồng:** `web/manuscript` · **Giai đoạn:** PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-06
-- **Nhánh:** `web/manuscript-pid-00115` (từ `preview/ui-ph02` 3c05b2d, gộp hồ sơ `docs/pid-00115-clarify` của #135; đã commit) · **PR:** [#150](https://github.com/toilatrung/sires/pull/150)
+- **Nhánh:** `web/manuscript-pid-00115` (từ `preview/ui-ph02` 3c05b2d, gộp hồ sơ `docs/pid-00115-clarify` của #135 và nguồn `docs/pid-00115-sources` của #154; đã commit) · **PR:** [#150](https://github.com/toilatrung/sires/pull/150)
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO `toilatrung` giao, làm thay assignee `congminh1705`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
@@ -60,7 +60,7 @@ Không có.
 - **Yêu cầu hợp đồng:** `BuildIssue` chưa có tham số (tên package, key) để dựng tiêu đề đầy đủ (đã ghi ở UX-MS-004-AC01).
 - **Đề xuất cho PO:** shell nên có hàm GET thô (text, PDF, zip) và gửi multipart; khu vực tạm dùng `fetch(api.url(...))` (`model.ts`, `files/upload.ts`).
 - **Còn mở:** không có.
-- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00115` trên PR #150 (vào `develop`, xếp chồng trên #120, #138, #131, #135).
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00115` trên PR #150 (vào `develop`, xếp chồng trên #120, #138, #131, #135, #154); Lần 1 đã nghiệm thu theo AC ở `c8cf274`, Lần 2 kiểm theo AC của #154.
 - **Tài liệu đi kèm:**
   - `manuscript-1440.jpg`: ba vùng, hộp proposal Proposed trong editor (deep link), PDF revision 16.
   - `proposal-outdated-1440.jpg`: hộp proposal Outdated với lý do và “Yêu cầu tạo lại”.
@@ -70,6 +70,18 @@ Không có.
   - `mobile-390.jpg`: điện thoại 390×844, duyệt proposal.
 
 ---
+
+
+## Lần 2 — 27/11/2026
+
+Phiên điều phối chốt (theo đề xuất của QC): #150 nghiệm thu Lần 1 theo AC ở `c8cf274` (QC chéo ĐẠT ở `ad74b90`); phần hồ sơ đổi ở #154 (`docs/pid-00115-sources`) là Lần 2 (PC-05 P37).
+
+- Merge `origin/docs/pid-00115-sources` (head `f4508e4`), không rebase. Xung đột: `docs/api-design/README.md` giữ cả hai mục thay đổi; PID-00013 mục 5 lấy dòng “Mock trùng operation” của nguồn (thêm path 12) và giữ dòng tín hiệu SSE của nhánh; file sinh (`taskboard.html`, `docs/tickets/issues/index.html`, `docs/ui-design/index.html`, `pages/`) dựng lại bằng `update-index.mjs`, `render.mjs` (99 trang); `dist/openapi.bundled.yaml` dựng lại trùng bản đã gộp.
+- Build log (UX-MS-004-AC01 bản mới, EC47): danh mục 10 mã `BuildIssue.code`, thêm `unbalanced_braces`, `shell_escape_disabled`, `path_outside_manuscript`, `infrastructure_unavailable`, bỏ `undefined_reference` (ngoài danh mục). Câu giải thích dựng từ `params` theo ngôn ngữ giao diện; thiếu tham số thì câu chung của mã; `friendlyMessage` hiện là “Gợi ý”, `message` là thông báo gốc (mã ngoài danh mục).
+- Khôi phục (EC42, EC57): file văn bản và nhị phân khôi phục bằng `FileChange.restoreFromRevisionId`; thêm “Khôi phục toàn bộ về rN” (hộp xác nhận nêu số file sửa, thêm lại, xóa; một commit; bỏ qua `references.bib`; 409 như H7). Lỗi 400 hiện thông báo của trường.
+- Theo hồ sơ mới: chip Queued ghi “Chờ build · mm:ss”; Lịch sử ghi “Chèn sơ đồ” cho revision từ proposal có `artifactVersionIds`; fixture thêm `sections/related-work.tex`, hình đổi thành `figures/pipeline.png`, r18 đổi `method.tex` và `pipeline.png`, issue của r17 có `params`; mock nhận `restoreFromRevisionId` (400 khi revision không có file), test của mock đặt tên theo S01.
+- Kiểm: `npx vitest run` (apps/web) 29 file, 229 test đạt; tsc, eslint sạch; `vite build` đạt (chunk Manuscript riêng); `check-ui` 0 lỗi.
+- Trạng thái: Xong — chờ QC (Lần 2).
 
 ---
 

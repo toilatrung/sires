@@ -14,7 +14,7 @@ import { demoProjectReferences } from './fixtures';
 import { operations } from './generated';
 import {
   activeFiles, addEntry, commit, currentSnapshot, emit, fileBytes, fileRow, initProject, invalidPath, isArchived,
-  manuscriptBody, manuscriptStore, nextId, outdate, pdfBytes, proposalChanges, serverEdit, snapshotOf, startBuild,
+  manuscriptBody, manuscriptStore, nextId, outdate, pdfBytes, proposalChanges, restoredVersion, serverEdit, snapshotOf, startBuild,
   type ManuscriptStore,
 } from './store';
 
@@ -111,6 +111,9 @@ export default defineMocks({
           if (change.operation === 'add' && active.some((row) => row.path === change.path)) errors.push({ field: `changes[${index}].path`, code: 'invalid_value', message: 'Đã có file với đường dẫn này.' });
           if (change.operation !== 'add' && !active.some((row) => row.path === change.path)) errors.push({ field: `changes[${index}].path`, code: 'invalid_value', message: 'Không có file này ở revision hiện hành.' });
           if (/^bibliography\/references\.bib$/.test(change.path)) errors.push({ field: `changes[${index}].path`, code: 'invalid_value', message: 'references.bib do System sinh từ Trusted Reference.' });
+          if (change.restoreFromRevisionId && !restoredVersion(pm, change.restoreFromRevisionId, change.path)) {
+            errors.push({ field: `changes[${index}].restoreFromRevisionId`, code: 'invalid_value', message: 'Revision không có file với đường dẫn này.' });
+          }
         });
         if (!changes.length) errors.push({ field: 'changes', code: 'too_small' });
         if (errors.length) return { status: 400 as const, body: problem(400, 'validation_failed', undefined, { errors }) };
@@ -187,6 +190,7 @@ export default defineMocks({
         const revision = commit(store, pm, changes, {
           createdBy: proposal.provenance.createdBy, source: 'change_proposal', changeProposalId: proposal.id,
           ...(proposal.taskId ? { taskId: proposal.taskId } : {}), ...(proposal.summary ? { message: proposal.summary } : {}),
+          ...(proposal.artifactVersionIds?.length ? { artifactVersionIds: proposal.artifactVersionIds } : {}),
         });
         proposal.resultingRevisionId = revision.id;
         emit(pm.projectId, 'change_proposal', proposal.id, 'Proposed', 'Accepted');
@@ -225,7 +229,7 @@ export default defineMocks({
         const lines = target.content.split('\n');
         const after = Math.min(lines.length, Math.max(0, body?.afterLine ?? lines.length - 1));
         const label = body?.label ?? 'fig:diagram';
-        const figure = ['\\begin{figure}[t]', '  \\centering', '  \\includegraphics[width=\\linewidth]{figures/prisma.png}', `  \\caption{${body?.caption ?? 'Sơ đồ'}}`, `  \\label{${label}}`, '\\end{figure}'];
+        const figure = ['\\begin{figure}[t]', '  \\centering', '  \\includegraphics[width=\\linewidth]{figures/pipeline.png}', `  \\caption{${body?.caption ?? 'Sơ đồ'}}`, `  \\label{${label}}`, '\\end{figure}'];
         const proposal: Schemas['ChangeProposal'] = {
           id: nextId(store, 'e2'), accountId: pm.manuscript.accountId, projectId: pm.projectId, createdAt: new Date().toISOString(), createdBy: { type: 'agent', agent: 'writing', agentRunId: nextId(store, '7c') }, rowVersion: 1,
           manuscriptId: pm.manuscript.id, baseRevisionId: pm.manuscript.currentRevisionId, status: 'Proposed', summary: `Chèn sơ đồ ${label} vào ${target.path}.`,

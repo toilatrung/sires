@@ -123,8 +123,8 @@ describe('cây file và thao tác file (S03)', () => {
   it('xóa thư mục (EC11)', async () => {
     const { user } = await openManuscript();
     await user.click((await menu(user, 'sections/')).getByRole('menuitem', { name: 'Xóa thư mục' }));
-    const dialog = within(await screen.findByRole('alertdialog', { name: 'Xóa thư mục sections/ và 2 file trong đó?' }));
-    expect(dialog.getByText(/Xóa mềm 2 file trong một revision; .* khôi phục được từ Lịch sử\./)).toBeTruthy();
+    const dialog = within(await screen.findByRole('alertdialog', { name: 'Xóa thư mục sections/ và 3 file trong đó?' }));
+    expect(dialog.getByText(/Xóa mềm 3 file trong một revision; .* khôi phục được từ Lịch sử\./)).toBeTruthy();
     expect(await dialog.findByText('main.tex:11')).toBeTruthy();
     expect(dialog.getByText('main.tex:12')).toBeTruthy();
     expect(commits()).toHaveLength(0);
@@ -136,7 +136,7 @@ describe('cây file và thao tác file (S03)', () => {
     // One commit, one revision with both deletes.
     expect(commits()).toHaveLength(1);
     expect(revision()).toBe(19);
-    expect(currentSnapshot(rag()).revision.changes.map((change) => `${change.operation} ${change.path}`)).toEqual(['delete sections/intro.tex', 'delete sections/method.tex']);
+    expect(currentSnapshot(rag()).revision.changes.map((change) => `${change.operation} ${change.path}`)).toEqual(['delete sections/intro.tex', 'delete sections/method.tex', 'delete sections/related-work.tex']);
     await waitFor(() => expect(pane().queryByRole('button', { name: 'intro.tex' })).toBeNull());
   });
 
@@ -236,10 +236,10 @@ describe('cây file và thao tác file (S03)', () => {
     const store = testStore();
     commit(store, rag(), [{ path: 'data/raw.bin', operation: 'add', fileUploadId: 'f1000000-0000-4000-8000-000000000002' }], { createdBy: { type: 'researcher' }, source: 'direct_edit' });
     const { user } = await openManuscript();
-    await user.click(pane().getByRole('button', { name: 'prisma.png' }));
+    await user.click(pane().getByRole('button', { name: 'pipeline.png' }));
     const figure = await screen.findByRole('figure');
-    expect(within(figure).getByText('figures/prisma.png')).toBeTruthy();
-    expect(screen.queryByRole('textbox', { name: 'Nội dung figures/prisma.png' })).toBeNull();
+    expect(within(figure).getByText('figures/pipeline.png')).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: 'Nội dung figures/pipeline.png' })).toBeNull();
 
     await user.click(pane().getByRole('button', { name: 'raw.bin' }));
     expect(await screen.findByText('Không xem trước được data/raw.bin. File vẫn được build và export.')).toBeTruthy();
@@ -262,8 +262,8 @@ describe('cây file và thao tác file (S03)', () => {
     const { user } = await openManuscript();
     const outline = within(pane().getByRole('region', { name: 'Dàn ý' }));
     const items = await outline.findAllByRole('button');
-    expect(items.map((item) => item.textContent)).toEqual(['1Introduction', '2Method']);
-    await user.click(outline.getByRole('button', { name: '2Method' }));
+    expect(items.map((item) => item.textContent)).toEqual(['1Introduction', '2Related Work', '3Method']);
+    await user.click(outline.getByRole('button', { name: '3Method' }));
     await waitForFile('sections/method.tex');
     await waitFor(() => expect(editorView().state.doc.lineAt(editorView().state.selection.main.head).number).toBe(1));
   });

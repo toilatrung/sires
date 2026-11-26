@@ -4,7 +4,8 @@
 
 // One revision (PID-00115 S07, MS-REVISION-001-AC02, H14): who made it, its files, and where it came from — the Task
 // (planning area), the Agent Run of the Change Proposal (its workflow in Agent Activity) and the proposal's claims.
-// A revision from a proposal without Task has no Task link (EC43). Text files can be restored to this revision.
+// A revision from a proposal without Task has no Task link (EC43). Files (text and binary) or the whole manuscript
+// can be restored to this revision (EC42, EC57).
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,7 @@ import { type ManuscriptFile, type Proposal, type Revision } from '../model';
 import { useManuscript } from '../state';
 import { agentLabel, useActorLabel } from '../ui';
 import { revisionTime } from './labels';
-import { RestoreButton, useRestore, type Restored } from './restore';
+import { RestoreAllButton, RestoreButton, useRestore, type Restored } from './restore';
 
 export interface RevisionDetailProps {
   revision: Revision;
@@ -70,6 +71,7 @@ export function RevisionDetail({ revision, source, taskKey, onBack, onRestored }
           {t('history.back')}
         </button>
         <h3 className="msh-title">{title}</h3>
+        <RestoreAllButton revisionId={revision.id} revisionNumber={revision.revisionNumber} onDone={onRestored} />
       </div>
       <p className="msh-meta">
         <span className="sires-id">r{revision.revisionNumber}</span> · {actorLabel(revision.createdBy)} · {revisionTime(revision.createdAt)}
@@ -106,6 +108,7 @@ export function RevisionDetail({ revision, source, taskKey, onBack, onRestored }
       {tools.error && (
         <ErrorState
           error={tools.error.error}
+          {...(tools.error.detail ? { description: tools.error.detail } : {})}
           ns="manuscript"
           title={t('history.restoreFailed', { path: tools.error.path })}
           notSaved={t('history.restoreKept')}
