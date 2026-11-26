@@ -66,4 +66,25 @@ describe('Tasks của mọi project (PID-00082 S07)', () => {
     mock.server.events.removeAllListeners();
     unmountAll();
   });
+
+  it('listProjects nhiều trang: project của trang sau vẫn có (EC05)', async () => {
+    const projects = (demoFixtures.ResearchProject ?? []).filter((p) => p.status === 'Active').slice(0, 2);
+    const cursors: (string | null)[] = [];
+    mock.use({
+      overrides: {
+        listProjects: ({ query }) => {
+          cursors.push((query.cursor as string | undefined) ?? null);
+          return query.cursor
+            ? { status: 200, body: { items: [projects[1]!], nextCursor: null } }
+            : { status: 200, body: { items: [projects[0]!], nextCursor: 'page-2' } };
+        },
+      },
+    });
+    const { unmountAll } = renderPlanning('/tasks');
+    await screen.findByRole('heading', { level: 1, name: 'Tasks & Plan' });
+    await waitFor(() => expect((screen.getByRole('combobox', { name: 'Project' }) as HTMLSelectElement).options[0]!.textContent).toBe('Tất cả · 2'));
+    // The page (and the shell's project switcher) read the second page too.
+    expect(cursors).toContain('page-2');
+    unmountAll();
+  });
 });

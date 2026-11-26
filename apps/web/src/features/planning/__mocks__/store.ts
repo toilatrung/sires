@@ -6,6 +6,7 @@
 // of PRD 9.8 (Task) and 5.2 (Plan Version); a command not allowed in the current state answers 409, a stale If-Match
 // 412; status changes emit task.status_changed / plan_version.status_changed on the mock /events.
 
+import { ACCOUNT_ID, id } from '../../../shell/mock';
 import type { EventInput, Schemas } from '../../../shell/mock';
 import { addedEdges, findCycles } from '../graph';
 import { initialReviews, initialTasks, initialVersions, PASS_DETAIL, PLAN_ID, PROJECT_ID, readiness } from './fixtures';
@@ -294,6 +295,25 @@ export function confirmValid(task: Task): boolean {
  * Ask the Orchestrator for a Plan. Without a Plan the mock answers as if the proposal were done at once: the fixture
  * Plan appears and plan_version.status_changed tells the screens. With an open version already: 409.
  */
+/** Workflow of a Plan proposal, the body of the 202 of requestPlanProposal. */
+export function proposalWorkflow(projectId: string): Schemas['Workflow'] {
+  const now = new Date().toISOString();
+  return {
+    id: id('workflow', 90),
+    accountId: ACCOUNT_ID,
+    projectId,
+    createdAt: now,
+    createdBy: { type: 'researcher', accountId: ACCOUNT_ID },
+    rowVersion: 1,
+    idempotencyKey: `plan-proposal-${projectId}`,
+    type: 'plan_proposal',
+    triggeredBy: { type: 'researcher', accountId: ACCOUNT_ID },
+    status: 'Running',
+    startedAt: now,
+    steps: [],
+  };
+}
+
 export function requestProposal(): boolean {
   if (state.planExists && openVersion()) return false;
   state.planExists = true;

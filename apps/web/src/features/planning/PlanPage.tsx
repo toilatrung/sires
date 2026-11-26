@@ -16,6 +16,7 @@ import {
   ExecutionLabel,
   isApiError,
   LoadingState,
+  LongOperation,
   StatusChip,
   useApi,
   useEvents,
@@ -24,7 +25,7 @@ import {
   useShell,
   useStreamSignal,
 } from '../../shell';
-import { DeliberationLabel, itemsOf, keyOf, TASK_STATUS_ORDER, useResource, type PlanVersion, type ResearchPlan, type Schemas, type Task, type TaskDefinition, type TaskStatus } from './common';
+import { DeliberationLabel, itemsOf, keyOf, PAGE_LIMIT, readAll, TASK_STATUS_ORDER, useResource, type PlanVersion, type ResearchPlan, type Schemas, type Task, type TaskDefinition, type TaskStatus } from './common';
 import { DraftActions, GraphView } from './GraphView';
 import { AGENT_NAMES, TaskPanel } from './TaskPanel';
 
@@ -54,33 +55,56 @@ export function PlanPage() {
   return <PlanView projectId={projectId} plan={plan.data!} reloadPlan={plan.reload} />;
 }
 
-/** No Plan yet (EC01): ask the Orchestrator for a proposal, or go to Project AI Chat. */
+/**
+ * No Plan yet (EC01): ask the Orchestrator for a proposal, or go to Project AI Chat. Once asked, the 202's Workflow is a
+ * long operation (design.md §2.4.1): who works, the elapsed time, its workflow, and that the page can be left; the Plan
+ * replaces it when plan_version.status_changed arrives.
+ */
 function NoPlan({ projectId, onRequested }: { projectId: string; onRequested: () => void }) {
   const { t } = useTranslation('planning');
   const api = useApi();
   const { idempotency } = useShell();
   const archived = useArchived(projectId);
-  const [state, setState] = useState<{ busy?: boolean; sent?: boolean; error?: ApiError }>({});
+  const [state, setState] = useState<{ busy?: boolean; sent?: boolean; sentAt?: string; workflow?: Schemas['Workflow']; error?: ApiError }>({});
+  if (state.sent) {
+    const workflow = state.workflow;
+    return (
+      <div className="planning-page">
+        <h1 className="planning-title">{t('plan.title')}</h1>
+        <LongOperation title={t('plan.proposing')} actor="Orchestrator" startedAt={workflow?.startedAt ?? workflow?.createdAt ?? state.sentAt ?? new Date().toISOString()} />
+        <p className="planning-note">
+          {t('plan.requested')}
+          {workflow?.id && (
+            <>
+              {' '}
+              <Link to={`/projects/${encodeURIComponent(projectId)}/activity/workflows/${encodeURIComponent(workflow.id)}`}>{t('plan.viewWorkflow')}</Link>
+            </>
+          )}
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="planning-page">
       <h1 className="planning-title">{t('plan.title')}</h1>
       <EmptyState
         title={t('plan.noPlan')}
-        reason={state.sent ? t('plan.requested') : t('plan.noPlanReason')}
+        reason={t('plan.noPlanReason')}
         action={
           <div className="planning-row">
             <button
               type="button"
               className="sires-button"
               data-variant="primary"
-              disabled={archived || state.busy || state.sent}
+              disabled={archived || state.busy}
               onClick={async () => {
                 setState({ busy: true });
                 try {
-                  await idempotency.run(`requestPlanProposal:${projectId}`, (key) =>
+                  const sentAt = new Date().toISOString();
+                  const { data } = await idempotency.run(`requestPlanProposal:${projectId}`, (key) =>
                     api.post('/projects/{projectId}/plan/proposals', { path: { projectId }, idempotencyKey: key, body: {} }),
                   );
-                  setState({ sent: true });
+                  setState({ sent: true, sentAt, workflow: (data as Schemas['Workflow'] | undefined) ?? undefined });
                   onRequested();
                 } catch (err) {
                   setState({ error: isApiError(err) ? err : new ApiError('network') });
@@ -131,7 +155,12 @@ function PlanView({ projectId, plan, reloadPlan }: { projectId: string; plan: Re
   // Server filters on the baseline board; otherwise the version's own definitions are filtered on screen.
   const serverFilter = isBaseline && view === 'board';
   const query = serverFilter ? { phaseId: phase || undefined, executionLabel: (label || undefined) as Schemas['ExecutionLabel'] | undefined } : {};
-  const tasks = useResource(() => api.get('/projects/{projectId}/tasks', { path: { projectId }, query }), [api, projectId, serverFilter, phase, label]);
+  const tasks = useResource(
+    async () => ({
+      data: { items: await readAll<Task>((cursor) => api.get('/projects/{projectId}/tasks', { path: { projectId }, query: { ...query, limit: PAGE_LIMIT, ...(cursor ? { cursor } : {}) } })) },
+    }),
+    [api, projectId, serverFilter, phase, label],
+  );
   const basedOn = version.data?.status === 'Draft' ? version.data.basedOnVersionId : undefined;
   const base = useResource(
     () => (basedOn ? api.get('/projects/{projectId}/plan/versions/{planVersionId}', { path: { projectId, planVersionId: basedOn } }) : Promise.resolve({ data: undefined })),
@@ -321,6 +350,7 @@ function PlanView({ projectId, plan, reloadPlan }: { projectId: string; plan: Re
       {taskId && (
         <TaskPanel
           key={taskId}
+          quiet={current?.status === 'Draft'}
           projectId={projectId}
           taskId={taskId}
           definition={selectedDef}

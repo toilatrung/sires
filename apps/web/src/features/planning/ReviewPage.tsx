@@ -10,8 +10,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useParams } from 'react-router';
-import { ApiError, ErrorState, isApiError, LoadingState, StatusChip, useApi, useDraft, useEvents, useRefreshNavigation, useShell } from '../../shell';
-import { ConfirmDialog, itemsOf, keyOf, useResource, type Schemas, type Task } from './common';
+import { ApiError, ConfirmDialog, ErrorState, isApiError, LoadingState, StatusChip, useApi, useDraft, useEvents, useRefreshNavigation, useShell } from '../../shell';
+import { itemsOf, keyOf, useResource, type Schemas, type Task } from './common';
 import { useArchived } from './PlanPage';
 import { AGENT_NAMES } from './TaskPanel';
 
@@ -323,7 +323,7 @@ function Output({ projectId, artifact, archived, onChanged }: { projectId: strin
       <div className="planning-row">
         {status === 'Draft' && (
           <>
-            <button type="button" className="sires-button" data-variant="primary" data-size="sm" disabled={busy || archived} onClick={() => void decide('accept')}>
+            <button type="button" className="sires-button" data-variant="outline" data-size="sm" disabled={busy || archived} onClick={() => void decide('accept')}>
               {t('review.acceptVersion')}
             </button>
             <button type="button" className="sires-button" data-variant="secondary" data-size="sm" disabled={busy || archived} onClick={() => void decide('reject')}>

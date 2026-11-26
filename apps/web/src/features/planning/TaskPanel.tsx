@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
   ApiError,
+  ConfirmDialog,
   ErrorState,
   ExecutionLabel,
   formatDateTime,
@@ -26,7 +27,7 @@ import {
   useEvents,
   useShell,
 } from '../../shell';
-import { ConfirmDialog, isManual, itemsOf, keyOf, useResource, type Resource, type Schemas, type Task, type TaskDefinition, type TaskStatus } from './common';
+import { isManual, itemsOf, keyOf, useResource, type Resource, type Schemas, type Task, type TaskDefinition, type TaskStatus } from './common';
 
 type Check = Schemas['ReadinessCheck'];
 
@@ -56,9 +57,16 @@ export interface TaskPanelProps {
   /** Status of another Task of the plan, to offer “Mở T-x” only for prerequisites not Completed. */
   taskStatus?: (taskId: string) => TaskStatus | undefined;
   archived: boolean;
+  /**
+   * Another primary action is on screen (“Trình duyệt” of a Draft): the panel's main button uses the outline style, so
+   * the screen keeps one filled primary button (design.md §1.5, §8).
+   */
+  quiet?: boolean;
   onChanged: () => void;
   onClose: () => void;
 }
+
+type MainVariant = 'primary' | 'outline';
 
 type Pending = { kind: 'activate' | 'start' | 'dequeue' } | { kind: 'cancel' | 'reopen' };
 
@@ -203,6 +211,7 @@ export function TaskPanel(props: TaskPanelProps) {
 
       {manual ? (
         <ManualWork
+          variant={props.quiet ? 'outline' : 'primary'}
           projectId={projectId}
           task={current}
           definition={definition}
@@ -216,7 +225,7 @@ export function TaskPanel(props: TaskPanelProps) {
       ) : (
         <section className="planning-panel__actions" aria-label={t('panel.actions')}>
           <div className="planning-row">
-            <button type="button" className="sires-button" data-variant="primary" disabled={!canActivate} onClick={() => setPending({ kind: 'activate' })}>
+            <button type="button" className="sires-button" data-variant={props.quiet ? 'outline' : 'primary'} disabled={!canActivate} onClick={() => setPending({ kind: 'activate' })}>
               {t('panel.activate')}
             </button>
             {allowed.has('recheck_readiness') && (
@@ -463,7 +472,23 @@ function ActiveTaskButton({ projectId, taskId, disabled }: { projectId: string; 
   );
 }
 
-function ManualWork({ projectId, task, definition, archived, onStart, onSubmitted }: { projectId: string; task: Task; definition: TaskDefinition; archived: boolean; onStart: () => void; onSubmitted: () => void }) {
+function ManualWork({
+  projectId,
+  task,
+  definition,
+  archived,
+  variant,
+  onStart,
+  onSubmitted,
+}: {
+  projectId: string;
+  task: Task;
+  definition: TaskDefinition;
+  archived: boolean;
+  variant: MainVariant;
+  onStart: () => void;
+  onSubmitted: () => void;
+}) {
   const { t } = useTranslation('planning');
   const required = definition.expectedOutputs.filter((o) => o.required);
   const allowed = new Set(task.allowedActions ?? []);
@@ -480,12 +505,12 @@ function ManualWork({ projectId, task, definition, archived, onStart, onSubmitte
       </ul>
       {task.status === 'Ready' && allowed.has('activate') && (
         <div className="planning-row">
-          <button type="button" className="sires-button" data-variant="primary" disabled={archived} onClick={onStart}>
+          <button type="button" className="sires-button" data-variant={variant} disabled={archived} onClick={onStart}>
             {t('panel.start')}
           </button>
         </div>
       )}
-      {task.status === 'In Progress' && allowed.has('submit_manual') && <ManualForm projectId={projectId} task={task} definition={definition} archived={archived} onSubmitted={onSubmitted} />}
+      {task.status === 'In Progress' && allowed.has('submit_manual') && <ManualForm projectId={projectId} task={task} definition={definition} archived={archived} variant={variant} onSubmitted={onSubmitted} />}
     </section>
   );
 }
@@ -525,7 +550,21 @@ function OutputField({ taskId, index, label, required, missing, fields }: { task
   );
 }
 
-function ManualForm({ projectId, task, definition, archived, onSubmitted }: { projectId: string; task: Task; definition: TaskDefinition; archived: boolean; onSubmitted: () => void }) {
+function ManualForm({
+  projectId,
+  task,
+  definition,
+  archived,
+  variant,
+  onSubmitted,
+}: {
+  projectId: string;
+  task: Task;
+  definition: TaskDefinition;
+  archived: boolean;
+  variant: MainVariant;
+  onSubmitted: () => void;
+}) {
   const { t } = useTranslation('planning');
   const api = useApi();
   const { idempotency } = useShell();
@@ -613,7 +652,7 @@ function ManualForm({ projectId, task, definition, archived, onSubmitted }: { pr
           }
         />
       )}
-      <button type="submit" className="sires-button" data-variant="primary" disabled={archived || busy}>
+      <button type="submit" className="sires-button" data-variant={variant} disabled={archived || busy}>
         {t('manual.submit')}
       </button>
     </form>

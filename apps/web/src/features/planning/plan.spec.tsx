@@ -8,6 +8,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import i18next from 'i18next';
 import { describe, expect, it } from 'vitest';
+import { id } from '../../shell/mock';
 import { PROJECT_ID, planningState, renderPlanning, T, textOf, usePlanningMock, V2, V4, V5, waitForStream } from './testing';
 
 const planPath = (query = '') => `/projects/${PROJECT_ID}/plan${query}`;
@@ -188,10 +189,81 @@ describe('Chưa có Plan (PID-00082 S02, EC01)', () => {
     mock.server.events.removeAllListeners();
     unmountAll();
   });
+
+  it('đang đề xuất: thẻ thao tác dài theo Workflow của 202 (EC01, design.md §2.4.1)', async () => {
+    const workflowId = id('workflow', 90);
+    mock.use({
+      overrides: {
+        // The Orchestrator is still working: 202 with its Workflow, no Plan yet.
+        requestPlanProposal: ({ params }) => ({
+          status: 202,
+          body: {
+            id: workflowId,
+            accountId: planningState().tasks[0]!.accountId,
+            projectId: params.projectId,
+            createdAt: new Date(Date.now() - 65_000).toISOString(),
+            createdBy: { type: 'researcher' },
+            rowVersion: 1,
+            idempotencyKey: 'k',
+            type: 'plan_proposal',
+            triggeredBy: { type: 'researcher' },
+            status: 'Running',
+            startedAt: new Date(Date.now() - 65_000).toISOString(),
+            steps: [],
+          },
+        }),
+      },
+    });
+    const { user, unmountAll } = renderPlanning(planPath());
+    await user.click(await screen.findByRole('button', { name: 'Yêu cầu Orchestrator đề xuất Plan' }));
+    const status = await screen.findByRole('status');
+    expect(textOf(status)).toContain('Orchestrator đang đề xuất Plan từ Research Context');
+    expect(textOf(status)).toMatch(/Orchestrator · đã chạy \d/);
+    expect(screen.getByText('Rời trang được; kết quả báo qua notification.')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Xem workflow' }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity/workflows/${workflowId}`);
+    expect(screen.queryByRole('button', { name: 'Yêu cầu Orchestrator đề xuất Plan' })).toBeNull();
+    unmountAll();
+  });
+});
+
+describe('Đọc hết các trang (PID-00082, EC05)', () => {
+  const mock = usePlanningMock();
+
+  it('listTasks nhiều trang: đủ thẻ và số mỗi nhóm', async () => {
+    const all = planningState().tasks;
+    const half = Math.ceil(all.length / 2);
+    const cursors: (string | null)[] = [];
+    mock.use({
+      overrides: {
+        listTasks: ({ query }) => {
+          cursors.push((query.cursor as string | undefined) ?? null);
+          return query.cursor
+            ? { status: 200, body: { items: all.slice(half), nextCursor: null } }
+            : { status: 200, body: { items: all.slice(0, half), nextCursor: 'page-2' } };
+        },
+      },
+    });
+    const { unmountAll } = await openPlan();
+    await waitFor(() => expect(cursors).toEqual([null, 'page-2']));
+    // A Task of the second page is on the board.
+    const last = all[all.length - 1]!;
+    const key = last.currentDefinition?.stableKey ?? '';
+    await waitFor(() => expect(cardKeys()).toContain(key));
+    unmountAll();
+  });
 });
 
 describe('Đồ thị phụ thuộc và Draft (PID-00082 S03)', () => {
   const mock = usePlanningMock();
+
+  it('Draft kèm panel Task: chỉ Trình duyệt tô màu (design.md §1.5)', async () => {
+    const { unmountAll } = await openPlan(`?version=${V5}&view=graph&task=${T['2.5']}`);
+    await screen.findByRole('button', { name: 'Trình duyệt' });
+    await screen.findByRole('button', { name: 'Thực thi' });
+    expect([...document.querySelectorAll('[data-variant="primary"]')].map((b) => textOf(b))).toEqual(['Trình duyệt']);
+    expect(screen.getByRole('button', { name: 'Thực thi' }).getAttribute('data-variant')).toBe('outline');
+    unmountAll();
+  });
 
   it('chu trình chặn trình duyệt (PID-00082-AC02, EC10)', async () => {
     const submits: string[] = [];

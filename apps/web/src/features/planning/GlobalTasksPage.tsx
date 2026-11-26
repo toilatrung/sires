@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 import { EmptyState, ErrorState, ExecutionLabel, LoadingState, StatusChip, useApi, useEvents } from '../../shell';
-import { itemsOf, keyOf, TASK_STATUS_ORDER, useResource, type Schemas, type Task } from './common';
+import { keyOf, PAGE_LIMIT, readAll, TASK_STATUS_ORDER, useResource, type Schemas, type Task } from './common';
 import { AGENT_NAMES } from './TaskPanel';
 
 interface Row {
@@ -22,10 +22,14 @@ export function GlobalTasksPage() {
   const api = useApi();
   const [search, setSearch] = useSearchParams();
   const data = useResource(async () => {
-    const { data: projects } = await api.get('/projects', { query: { status: 'Active' } });
-    const list = itemsOf<Schemas['ResearchProject']>(projects);
-    const pages = await Promise.all(list.map((project) => api.get('/projects/{projectId}/tasks', { path: { projectId: project.id } })));
-    const rows: Row[] = pages.flatMap((page, i) => itemsOf<Task>(page.data).map((task) => ({ task, project: list[i]! })));
+    // Every page of the projects and of each project's Tasks (EC05: counts per group stay right beyond one page).
+    const list = await readAll<Schemas['ResearchProject']>((cursor) => api.get('/projects', { query: { status: 'Active', limit: PAGE_LIMIT, ...(cursor ? { cursor } : {}) } }));
+    const pages = await Promise.all(
+      list.map((project) =>
+        readAll<Task>((cursor) => api.get('/projects/{projectId}/tasks', { path: { projectId: project.id }, query: { limit: PAGE_LIMIT, ...(cursor ? { cursor } : {}) } })),
+      ),
+    );
+    const rows: Row[] = pages.flatMap((tasks, i) => tasks.map((task) => ({ task, project: list[i]! })));
     return { data: { projects: list, rows } };
   }, [api]);
   useEvents({ types: ['task.status_changed'] }, () => void data.reload());

@@ -6,6 +6,11 @@
 // one store (./store). Operations of other areas (getSharedContext, setActiveTask, listWorkflows, listArtifacts…) are
 // not claimed here: the composed dev mock answers them, tests override them locally. Projects other than the RAG project read the
 // shared demo data (shell/mock/fixtures/planning.ts), read only.
+//
+// Accepting or rejecting an output version (acceptArtifactVersion, rejectArtifactVersion; S06) and listArtifacts belong
+// to the research area's mock (PID-00114, research/__mocks__): claiming them here too would make the composed mock
+// throw (two sources, one operation). Until both are composed, the S06 flow completes in review.spec.tsx (local
+// overrides) but not on dev:mock, where the generated answer leaves the artifact Draft (QC B1).
 
 import { defineMocks, type Fixtures } from '../../../shell/mock';
 import { operations } from './generated';
@@ -44,8 +49,10 @@ export default defineMocks({
       return store.planningState().planExists ? { status: 200, body: store.planOf() } : notFound('Research Plan');
     },
     requestPlanProposal: ({ params }) => {
-      if (!store.isRag(params.projectId)) return { status: 202 };
-      return store.requestProposal() ? { status: 202 } : { status: 409, body: store.problem(409, 'open_plan_version_exists', 'Đã có Plan Version đang mở.') };
+      if (!store.isRag(params.projectId)) return { status: 202, body: store.proposalWorkflow(params.projectId) };
+      return store.requestProposal()
+        ? { status: 202, body: store.proposalWorkflow(params.projectId) }
+        : { status: 409, body: store.problem(409, 'open_plan_version_exists', 'Đã có Plan Version đang mở.') };
     },
     getPlanVersion: ({ params, fixtures }) => {
       const version = versionOf(params.projectId, params.planVersionId) ?? shared.version(fixtures, params.projectId, params.planVersionId);

@@ -6,7 +6,7 @@
 // Version, the confirmation dialog and small helpers.
 
 import type { PublicApi } from '@sires/contracts';
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ApiError, isApiError } from '../../shell';
@@ -20,6 +20,24 @@ export type ResearchPlan = Schemas['ResearchPlan'];
 
 /** Items of a list response: the contract types `Page.items` as unknown[] and the operation narrows it. */
 export const itemsOf = <T,>(page: { items?: unknown } | undefined): T[] => ((page?.items as T[] | undefined) ?? []);
+
+/** Page size for lists read in full (parameters.yaml Limit: maximum 200). */
+export const PAGE_LIMIT = 200;
+
+/**
+ * Every item of a list operation: follows `nextCursor` until the last page, so boards, groups and counts are complete
+ * beyond the first page (listTasks, listProjects; EC05).
+ */
+export async function readAll<T>(page: (cursor: string | undefined) => Promise<{ data: { items?: unknown; nextCursor?: string | null } }>): Promise<T[]> {
+  const items: T[] = [];
+  let cursor: string | undefined;
+  do {
+    const { data } = await page(cursor);
+    items.push(...itemsOf<T>(data));
+    cursor = data.nextCursor ?? undefined;
+  } while (cursor);
+  return items;
+}
 
 /** Task statuses in the order of the state table (PRD 9.8); the board groups by it. */
 export const TASK_STATUS_ORDER: readonly TaskStatus[] = [
@@ -88,82 +106,6 @@ export function DeliberationLabel({ provenance, projectId }: { provenance?: Plan
         </>
       )}
     </span>
-  );
-}
-
-export interface ConfirmDialogProps {
-  title: ReactNode;
-  /** The consequence, in numbers when known (design.md §4 Dialog). */
-  children: ReactNode;
-  confirmLabel: string;
-  /** Names the safe option (“Không thực thi”). */
-  cancelLabel: string;
-  busy?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-/**
- * Dialog (design.md §4): 480px, scrim, the consequence before the confirm button. Escape cancels; Tab and Shift+Tab
- * stay inside the dialog; focus returns to the opener when it closes.
- */
-export function ConfirmDialog({ title, children, confirmLabel, cancelLabel, busy, onConfirm, onCancel }: ConfirmDialogProps) {
-  const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const cancel = useRef(onCancel);
-  cancel.current = onCancel;
-  // Focus the safe option once, when the dialog opens; typing in a field of the dialog keeps its focus.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    cancelRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        cancel.current();
-        return;
-      }
-      if (event.key !== 'Tab' || !dialogRef.current) return;
-      const items = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (items.length === 0) return;
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
-      const active = document.activeElement;
-      if (!dialogRef.current.contains(active)) {
-        event.preventDefault();
-        first.focus();
-      } else if (event.shiftKey && active === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      opener?.focus?.();
-    };
-  }, []);
-  return (
-    <div className="planning-scrim">
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="planning-dialog">
-        <h2 id={titleId} className="planning-dialog__title">
-          {title}
-        </h2>
-        <div className="planning-dialog__body">{children}</div>
-        <div className="planning-dialog__actions">
-          <button ref={cancelRef} type="button" className="sires-button" data-variant="secondary" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button type="button" className="sires-button" data-variant="primary" disabled={busy} onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

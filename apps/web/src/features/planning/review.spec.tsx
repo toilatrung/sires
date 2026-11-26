@@ -10,6 +10,10 @@ import { describe, expect, it } from 'vitest';
 import type { MockServer } from '../../shell/mock/node';
 import type { Schemas } from '../../shell/mock';
 import { artifact, emptyPage, PROJECT_ID, planningState, renderPlanning, T, textOf, usePlanningMock } from './testing';
+import fs from 'node:fs';
+
+// The stylesheet as written (CSS imports are not applied under jsdom); vitest runs in apps/web.
+const planningCss = fs.readFileSync('src/features/planning/planning.css', 'utf8');
 
 const reviewPath = (taskId: string) => `/projects/${PROJECT_ID}/tasks/${taskId}`;
 const t21 = () => planningState().tasks.find((t) => t.id === T['2.1'])!;
@@ -124,6 +128,22 @@ describe('Nghiệm thu Task (PID-00082 S06)', () => {
     await second.user.click(within(draft as HTMLElement).getByRole('button', { name: 'Từ chối' }));
     await waitFor(() => expect(again.decisions).toEqual(['reject Định nghĩa hallucination']));
     second.unmountAll();
+  });
+
+  it('một nút chính tô màu; tóm tắt đầu ra dùng chữ giao diện (design.md §1.5, §2.2)', async () => {
+    outputs(mock, false);
+    const { unmountAll } = await openReview();
+    await screen.findByRole('heading', { name: /“Định nghĩa hallucination” v2/ });
+    for (const box of screen.getAllByRole('checkbox')) box.click();
+    // “Chấp nhận version này” is an outline button (TaskReview.dc.html:218); “Nghiệm thu” is the only filled one.
+    const accepts = screen.getAllByRole('button', { name: 'Chấp nhận version này' });
+    expect(accepts.map((b) => b.getAttribute('data-variant'))).toEqual(['outline']);
+    expect([...document.querySelectorAll('main [data-variant="primary"]')].map((b) => textOf(b))).toEqual(['Nghiệm thu']);
+    // Serif only in the PDF preview and evidence quotes: the output summary has no font-family of its own.
+    const rule = planningCss.match(/\.planning-output__summary\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(rule).not.toBe('');
+    expect(rule).not.toMatch(/font-family/);
+    unmountAll();
   });
 
   it('trả lại và hủy (EC33)', async () => {
