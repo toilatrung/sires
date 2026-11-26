@@ -4,7 +4,7 @@
 
 - **Ticket:** [PID-00160](../../../docs/tickets/issues/PID-00160/index.html) · **Luồng:** `infra` · **Giai đoạn:** PH-02
 - **Người làm:** phiên do PO `toilatrung` giao, làm thay assignee `congminh1705`
-- **Nhánh:** `infra/pid-00160-oidc-mock` (từ `origin/develop` `1aa6a70`) · **PR:** vào `develop` (D-BRANCH; H6)
+- **Nhánh:** `infra/pid-00160-oidc-mock` (từ `origin/develop` `1aa6a70`) · **PR:** [#130](https://github.com/toilatrung/sires/pull/130) vào `develop` (D-BRANCH; H6)
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
