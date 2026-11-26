@@ -13,7 +13,7 @@ import { asApiError, fileContent, isText, lineDiff, type DiffLine, type Manuscri
 import { useManuscript } from '../state';
 import { Banner, useActorLabel } from '../ui';
 import { revisionTime } from './labels';
-import { RestoreButton, useRestore, type Restored } from './restore';
+import { RestoreAllButton, RestoreButton, useRestore, type Restored } from './restore';
 
 
 type Kind = 'modified' | 'added' | 'deleted' | 'renamed';
@@ -142,6 +142,7 @@ export function CompareView({ older, newer, sourceOf, onBack, onRestored }: Comp
           {t('history.back')}
         </button>
         <h3 className="msh-title">{title}</h3>
+        <RestoreAllButton revisionId={older.id} revisionNumber={older.revisionNumber} onDone={onRestored} />
       </div>
       <div className="msh-sides">
         <Side revision={older} source={sourceOf(older)} />
@@ -151,6 +152,7 @@ export function CompareView({ older, newer, sourceOf, onBack, onRestored }: Comp
       {tools.error && (
         <ErrorState
           error={tools.error.error}
+          {...(tools.error.detail ? { description: tools.error.detail } : {})}
           ns="manuscript"
           title={t('history.restoreFailed', { path: tools.error.path })}
           notSaved={t('history.restoreKept')}

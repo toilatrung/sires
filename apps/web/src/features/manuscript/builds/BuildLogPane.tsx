@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 // Build log in two layers (PID-00115 S08, H16, UX-MS-004): layer 1 summarises the latest build — titles translated
-// from BuildIssue.code (the explanation is friendlyMessage for now), file, line and “Đi tới main.tex:4”; layer 2 is
+// and sentences from BuildIssue.code and params (friendlyMessage is a hint), file, line, “Đi tới main.tex:4”; layer 2 is
 // the raw log, loaded only when opened (EC49) and shown verbatim as text in every language (MS-BUILD-001-AC02).
 
 import { useCallback, useState } from 'react';
@@ -15,16 +15,39 @@ import { buildTime, isBuilding } from './BuildChip';
 import { compilerName } from './PdfPane';
 import './build.css';
 
-/** Codes with their own title (H16); others get the generic title of their severity with the code (EC47). */
-export const KNOWN_CODES = ['missing_package', 'missing_file', 'undefined_citation', 'undefined_reference', 'undefined_control_sequence', 'timeout', 'memory_limit'] as const;
+/** The catalog of BuildIssue.code (contract 27/11/2026); other codes get the generic title of their severity (EC47). */
+export const KNOWN_CODES = [
+  'unbalanced_braces', 'undefined_control_sequence', 'missing_file', 'missing_package', 'undefined_citation',
+  'shell_escape_disabled', 'path_outside_manuscript', 'timeout', 'memory_limit', 'infrastructure_unavailable',
+] as const;
+type KnownCode = (typeof KNOWN_CODES)[number];
+
+/** Parameters each sentence needs; when one is missing the code's general sentence is used, never an invented name. */
+const NEEDS: Record<KnownCode, readonly string[]> = {
+  unbalanced_braces: [], undefined_control_sequence: ['command'], missing_file: ['path'], missing_package: ['package'],
+  undefined_citation: ['key'], shell_escape_disabled: ['command'], path_outside_manuscript: ['path'], timeout: ['limit'],
+  memory_limit: ['limit'], infrastructure_unavailable: [],
+};
+
+/** i18n key of the explanation of a catalog issue, built from its params (UX-MS-004-AC01). */
+export function sentenceKey(code: KnownCode, params: Record<string, string>): string {
+  if (code === 'memory_limit' && params.reason === 'tex_capacity') return 'build.issue.text.memory_limit_tex';
+  if (code === 'missing_package' && params.package && params.command) return 'build.issue.text.missing_package_command';
+  return NEEDS[code].every((name) => params[name]) ? `build.issue.text.${code}` : `build.issue.general.${code}`;
+}
 
 function IssueRow({ issue }: { issue: BuildIssue }) {
   const { t } = useTranslation('manuscript');
   const { openFile, fileList } = useManuscript();
-  const known = issue.code && (KNOWN_CODES as readonly string[]).includes(issue.code);
+  const code = (KNOWN_CODES as readonly string[]).includes(issue.code ?? '') ? (issue.code as KnownCode) : undefined;
   const severity = issue.severity === 'warning' ? 'warning' : 'error';
-  const title = known ? t(`build.issue.${issue.code}`) : t(`build.issue.generic.${severity}`, { code: issue.code ?? '—' });
-  const body = issue.friendlyMessage ?? issue.message;
+  const params = issue.params ?? {};
+  const title = code ? t(`build.issue.${code}`) : t(`build.issue.generic.${severity}`, { code: issue.code ?? '—' });
+  // Catalog codes: the sentence comes from code and params in the interface language; friendlyMessage (written in the
+  // account's language at build time) is only a hint. Other codes: the hint, else the compiler's own message.
+  const sentence = code ? t(sentenceKey(code, params), { ...params, interpolation: { escapeValue: false } }) : undefined;
+  const hint = issue.friendlyMessage;
+  const body = sentence ?? (hint ? undefined : issue.message);
   const canGo = Boolean(issue.file && issue.line && fileList.some((file) => file.path === issue.file));
   return (
     <li className="ms-issue" data-severity={severity}>
@@ -33,6 +56,7 @@ function IssueRow({ issue }: { issue: BuildIssue }) {
         <span className="ms-issue__severity">{t(`build.severity.${severity}`)}</span>
       </div>
       {body && <p className="ms-issue__body">{body}</p>}
+      {hint && <p className="ms-issue__hint">{t('build.issue.hint', { text: hint, interpolation: { escapeValue: false } })}</p>}
       {(issue.file || issue.line) && (
         <p className="ms-issue__where">
           {issue.file && <span className="sires-id">{issue.file}</span>}

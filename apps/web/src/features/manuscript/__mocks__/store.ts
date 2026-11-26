@@ -12,7 +12,7 @@ import { researcher } from '../../../shell/mock/fixtures/ids';
 import type { Fixtures, Schemas } from '../../../shell/mock/types';
 import { base64ToBytes, contentHash, makePdf } from './binary';
 import {
-  ARCHIVED_BUILD_ID, ARCHIVED_MANUSCRIPT_ID, ARCHIVED_PROJECT, BUILD_LOG_R16, BUILD_LOG_R17, MANUSCRIPT_ID, PRISMA_PNG_BASE64, RAG, SYSTEM,
+  ARCHIVED_BUILD_ID, ARCHIVED_MANUSCRIPT_ID, ARCHIVED_PROJECT, BUILD_LOG_R16, BUILD_LOG_R17, MANUSCRIPT_ID, PIPELINE_PNG_BASE64, RAG, SYSTEM,
   archivedRevisions, demoBibliography, demoBuilds, demoProjectReferences, demoProposals, demoRevisions, manuscriptRow, referencesBib, templateFiles,
   type FileVersion, type RevisionSnapshot,
 } from './fixtures';
@@ -197,11 +197,22 @@ export function commit(
   for (const change of changes) {
     const row = find(change.path);
     const beforeHash = row ? contentHash(row.content) : undefined;
-    if (change.operation === 'add') {
+    const restored = change.restoreFromRevisionId ? restoredVersion(pm, change.restoreFromRevisionId, change.path) : undefined;
+    if (restored && row && change.operation === 'modify') {
+      row.content = restored.content;
+      row.binary = restored.binary;
+      row.updatedInRevision = number;
+    } else if (restored && change.operation === 'add') {
+      const added: FileVersion = {
+        id: row?.id ?? restored.id, path: change.path, fileType: fileType(change.path), content: restored.content,
+        ...(restored.binary ? { binary: true } : {}), status: 'Active', updatedInRevision: number,
+      };
+      files.set(added.id, added);
+    } else if (change.operation === 'add') {
       const binary = Boolean(change.fileUploadId);
       const added: FileVersion = {
         id: row?.id ?? nextId(store, 'e1'), path: change.path, fileType: fileType(change.path),
-        content: binary ? PRISMA_PNG_BASE64 : change.content ?? '', ...(binary ? { binary: true } : {}), status: 'Active', updatedInRevision: number,
+        content: binary ? PIPELINE_PNG_BASE64 : change.content ?? '', ...(binary ? { binary: true } : {}), status: 'Active', updatedInRevision: number,
       };
       files.set(added.id, added);
     } else if (row && change.operation === 'modify') {
@@ -233,6 +244,12 @@ export function commit(
   const touched = new Set(recorded.flatMap((change) => [change.path, change.newPath].filter(Boolean) as string[]));
   outdate(pm, (proposal) => proposal.diff.some((entry) => entry.path && touched.has(entry.path)));
   return revision;
+}
+
+/** The file with `path` at an older revision, the source of a restore (FileChange.restoreFromRevisionId). */
+export function restoredVersion(pm: ProjectManuscript, revisionId: string, path: string): FileVersion | undefined {
+  const snapshot = pm.revisions.find((row) => row.revision.id === revisionId);
+  return snapshot ? [...snapshot.files.values()].find((row) => row.path === path && row.status === 'Active') : undefined;
 }
 
 /** Proposed proposals matching `which` become Outdated (MS-DIFF-001). */
@@ -324,19 +341,19 @@ export function analyse(pm: ProjectManuscript, snapshot: RevisionSnapshot): { is
       const line = index + 1;
       const code = text.replace(/(^|[^\\])%.*$/, '$1');
       if (/\\usepackage(\[[^\]]*\])?\{booktabs\}/.test(code)) {
-        issues.push({ severity: 'error', file: row.path, line, code: 'missing_package', message: "! LaTeX Error: File `booktabs.sty' not found.", friendlyMessage: 'Môi trường build chưa có package booktabs. Bỏ dòng \\usepackage{booktabs} hoặc dựng bảng không cần booktabs.' });
+        issues.push({ severity: 'error', file: row.path, line, code: 'missing_package', params: { package: 'booktabs' }, message: "! LaTeX Error: File `booktabs.sty' not found." });
         log.push('', "! LaTeX Error: File `booktabs.sty' not found.", `l.${line} ${text.trim()}`);
       }
       for (const match of code.matchAll(/\\(input|include)\{([^}]+)\}/g)) {
         const target = /\.tex$/.test(match[2]!) ? match[2]! : `${match[2]}.tex`;
         if (!paths.has(target)) {
-          issues.push({ severity: 'error', file: row.path, line, code: 'missing_file', message: `! LaTeX Error: File \`${target}' not found.`, friendlyMessage: `Không tìm thấy ${target}. Sửa đường dẫn trong \\${match[1]} hoặc thêm file.` });
+          issues.push({ severity: 'error', file: row.path, line, code: 'missing_file', params: { path: target }, message: `! LaTeX Error: File \`${target}' not found.` });
           log.push('', `! LaTeX Error: File \`${target}' not found.`, `l.${line} ${text.trim()}`);
         }
       }
       for (const match of code.matchAll(/\\includegraphics(\[[^\]]*\])?\{([^}]+)\}/g)) {
         if (!paths.has(match[2]!) && ![...paths].some((path) => path.startsWith(`${match[2]}.`))) {
-          issues.push({ severity: 'error', file: row.path, line, code: 'missing_file', message: `! LaTeX Error: File \`${match[2]}' not found.`, friendlyMessage: `Không tìm thấy hình ${match[2]}. Tải hình lên hoặc sửa đường dẫn.` });
+          issues.push({ severity: 'error', file: row.path, line, code: 'missing_file', params: { path: match[2]! }, message: `! LaTeX Error: File \`${match[2]}' not found.` });
           log.push('', `! LaTeX Error: File \`${match[2]}' not found.`, `l.${line} ${text.trim()}`);
         }
       }
@@ -345,7 +362,7 @@ export function analyse(pm: ProjectManuscript, snapshot: RevisionSnapshot): { is
           found.add(key);
           if (!keys.has(key)) {
             unresolved.add(key);
-            issues.push({ severity: 'warning', file: row.path, line, code: 'undefined_citation', message: `LaTeX Warning: Citation \`${key}' on page 1 undefined on input line ${line}.`, friendlyMessage: `Key ${key} không có trong references.bib.` });
+            issues.push({ severity: 'warning', file: row.path, line, code: 'undefined_citation', params: { key }, message: `LaTeX Warning: Citation \`${key}' on page 1 undefined on input line ${line}.` });
             log.push(`LaTeX Warning: Citation \`${key}' on page 1 undefined on input line ${line}.`);
           }
         }

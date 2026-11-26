@@ -29,7 +29,7 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 | UX-MS-001-AC01 | `citations.spec.tsx › gợi ý smith2020` | Đạt |
 | UX-MS-002-AC01 | `proposal.spec.tsx › citation lỗi` | Đạt |
 | UX-MS-003-AC01 | `proposal.spec.tsx › outdated hiện lý do, không chấp nhận`, `› yêu cầu tạo lại` | Đạt |
-| UX-MS-004-AC01 | `build.spec.tsx › thiếu package tiếng Việt` | Đạt (tiêu đề chưa có tên package: hợp đồng chưa có tham số, như AC ghi) |
+| UX-MS-004-AC01 | `build.spec.tsx › thiếu package tiếng Việt`, `› danh mục 10 mã dựng câu từ params` | Đạt (Lần 2: câu dựng từ `params.package`, không lấy `friendlyMessage`) |
 | UX-MS-005-AC01 | `citations.spec.tsx › key không phân giải`, `› rê chuột vào key hiện tooltip` | Đạt |
 | UX-MS-006-AC01 | `history.spec.tsx › so sánh hai revision` | Đạt |
 | MS-EDITOR-001-AC01 | `files.spec.tsx › cảnh báo tham chiếu khi đổi tên` | Đạt (phần giao diện) |
@@ -95,12 +95,12 @@ Phần backend của các AC kiểm khi Hội tụ ở cổng PH-06 (H1, N1).
 | EC39 | đã giải quyết | `proposal.spec.tsx › sự kiện proposal` |
 | EC40 | đã giải quyết | `history.spec.tsx › so sánh có file nhị phân` |
 | EC41 | đã giải quyết | `history.spec.tsx › chọn đúng hai` |
-| EC42 | đã giải quyết | `history.spec.tsx › khôi phục file đã xóa` |
+| EC42 | đã giải quyết | `history.spec.tsx › khôi phục file đã xóa` (Lần 2: file nhị phân khôi phục bằng `restoreFromRevisionId`) |
 | EC43 | đã giải quyết | `history.spec.tsx › tải thêm` |
 | EC44 | đã giải quyết | `build.spec.tsx › lưu trước khi build` (cả lưu lỗi và xung đột) |
 | EC45 | đã giải quyết | `build.spec.tsx › build đã có` |
 | EC46 | đã giải quyết | `build.spec.tsx › đang build` |
-| EC47 | đã giải quyết | `build.spec.tsx › code chưa dịch` |
+| EC47 | đã giải quyết | `build.spec.tsx › code chưa dịch` (gợi ý ghi “Gợi ý:”), `› danh mục 10 mã dựng câu từ params` (thiếu tham số → câu chung) |
 | EC48 | đã giải quyết | `build.spec.tsx › giữ PDF cũ khi build lỗi` |
 | EC49 | đã giải quyết | `build.spec.tsx › tóm tắt trước, log gốc ở lớp sau` |
 | EC50 | đã giải quyết | `build.spec.tsx › giữ vị trí khi build mới` |
@@ -110,6 +110,7 @@ Phần backend của các AC kiểm khi Hội tụ ở cổng PH-06 (H1, N1).
 | EC54 | đã giải quyết | `mobile.spec.tsx › trống` |
 | EC55 | đã giải quyết | `proposal.spec.tsx › bàn phím`; `citations.spec.tsx › gợi ý dùng được bằng bàn phím`; `history.spec.tsx › chọn đúng hai` |
 | EC56 | đã giải quyết | `__mocks__/manuscript-mock.spec.ts › đăng ký không trùng` |
+| EC57 | đã giải quyết | `history.spec.tsx › khôi phục toàn bộ` (Lần 2) |
 
 ## 4. Rà theo DEC-58
 
@@ -120,6 +121,23 @@ Phần backend của các AC kiểm khi Hội tụ ở cổng PH-06 (H1, N1).
 - [x] Không gọi model, không có OIDC thật; mọi dữ liệu qua mock path 12 của khu vực và mock của PID-00013.
 
 ---
+
+
+## Lần 2 — 27/11/2026
+
+Theo hồ sơ ở #154 (`docs/pid-00115-sources`, merge vào nhánh): UX-MS-004-AC01 bản mới, EC42, EC47 đổi, EC57 mới; tên test của mock theo S01.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `npx vitest run` (apps/web) | 29 file, 229 test đạt. `build.spec.tsx` 17, `history.spec.tsx` 9, `__mocks__/manuscript-mock.spec.ts` 10 (`đăng ký không trùng`, `commit lệch base trả 409`, `commit khôi phục từ revision cũ`, `lưu file làm proposal Outdated`, `accept chuyển Accepted và tạo revision`, `build qua các trạng thái và phát sự kiện`, …) |
+| `nx run-many -t generate-ts generate-mocks`, `nx run @sires/contracts:build` | Đạt; type có `BuildIssue.params`, `FileChange.restoreFromRevisionId` |
+| `npx tsc -p tsconfig.json --noEmit`, `npx eslint src/features/manuscript` | 0 lỗi |
+| `npx vite build` | Đạt; bundle chính 393 kB, chunk Manuscript 401 kB, không cảnh báo 500 kB |
+| `check-ui.mjs apps/web/src/features/manuscript` | 0 lỗi, 15 cảnh báo shadow ở lớp nổi như Lần 1 |
+| `redocly lint openapi.yaml`, `bundle` sau merge | Hợp lệ; bundle trùng bản đã gộp |
+| `render.mjs`, `update-index.mjs` sau merge | 99 trang; chỉ mục khớp |
+
+Không còn khoảng trống CRITICAL, HIGH. Kết luận: Đạt.
 
 ---
 

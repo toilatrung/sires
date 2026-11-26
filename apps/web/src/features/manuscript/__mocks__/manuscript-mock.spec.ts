@@ -13,7 +13,7 @@ import { loadSpec } from '../../../shell/mock/generator/openapi.mjs';
 import { mockFetch, useMockServer } from '../../../shell/mock/node';
 import { features } from '../../../shell/features';
 import mocks from '.';
-import { demoBibliography, demoBuilds, demoProjectReferences, demoProposals, demoRevisions, proposalId, RAG, referenceId, revisionId } from './fixtures';
+import { demoBibliography, demoBuilds, demoProjectReferences, demoProposals, demoRevisions, METHOD_R15, proposalId, RAG, referenceId, revisionId } from './fixtures';
 import { activeFiles, currentSnapshot, finishBuilds, resetManuscriptStore, setManuscriptEventSink, testStore } from './store';
 
 const PATH_12 = [
@@ -68,7 +68,7 @@ describe('mock path 12 (S01)', () => {
     expect(manuscript.currentRevisionNumber).toBe(18);
     expect(manuscript.latestBuild).toMatchObject({ status: 'Failed', revisionNumber: 17 });
     const files = await get<{ items: { path: string }[] }>('/files');
-    expect(files.items.map((row) => row.path)).toEqual(['bibliography/references.bib', 'figures/prisma.png', 'main.tex', 'sections/intro.tex', 'sections/method.tex']);
+    expect(files.items.map((row) => row.path)).toEqual(['bibliography/references.bib', 'figures/pipeline.png', 'main.tex', 'sections/intro.tex', 'sections/method.tex', 'sections/related-work.tex']);
     const main = currentSnapshot(testStore().projects.get(RAG)!).files.values().next().value!;
     expect(main.content.split('\n')[11]).toBe('\\input{sections/method}');
     expect(main.content.split('\n')[3]).toBe('\\usepackage{booktabs}');
@@ -76,16 +76,40 @@ describe('mock path 12 (S01)', () => {
     expect(proposals.items.map((row) => row.status).sort()).toEqual(['Accepted', 'Outdated', 'Proposed', 'Proposed']);
   });
 
-  it('lưu tạo một revision, 409 khi revision gốc cũ, proposal trên file đó thành Outdated', async () => {
+  it('commit lệch base trả 409', async () => {
+    const first = await mockFetch(`${base}/revisions`, json({ baseRevisionId: revisionId(18), changes: [{ path: 'main.tex', operation: 'modify', content: 'a\n' }] }));
+    expect(first.status).toBe(201);
+    const stale = await mockFetch(`${base}/revisions`, json({ baseRevisionId: revisionId(18), changes: [{ path: 'main.tex', operation: 'modify', content: 'x' }] }));
+    expect(stale.status).toBe(409);
+    expect(((await stale.json()) as { code: string }).code).toBe('base_revision_mismatch');
+    expect(testStore().projects.get(RAG)!.manuscript.currentRevisionNumber).toBe(19);
+  });
+
+  it('commit khôi phục từ revision cũ', async () => {
+    const pm = testStore().projects.get(RAG)!;
+    const r15 = pm.revisions[0]!.revision.id;
+    const restored = await mockFetch(`${base}/revisions`, json({ baseRevisionId: revisionId(18), changes: [
+      { path: 'sections/method.tex', operation: 'modify', restoreFromRevisionId: r15 },
+      { path: 'figures/pipeline.png', operation: 'modify', restoreFromRevisionId: r15 },
+    ] }));
+    expect(restored.status).toBe(201);
+    const files = activeFiles(currentSnapshot(pm));
+    expect(files.find((row) => row.path === 'sections/method.tex')!.content).toBe(METHOD_R15);
+    expect(files.find((row) => row.path === 'figures/pipeline.png')!.binary).toBe(true);
+    // A revision without that path: 400 on the field (contract: validation_failed).
+    const missing = await mockFetch(`${base}/revisions`, json({ baseRevisionId: pm.manuscript.currentRevisionId, changes: [{ path: 'sections/new.tex', operation: 'add', restoreFromRevisionId: r15 }] }));
+    expect(missing.status).toBe(400);
+    expect(((await missing.json()) as { errors: { field: string }[] }).errors[0]!.field).toBe('changes[0].restoreFromRevisionId');
+    expect(pm.manuscript.currentRevisionNumber).toBe(19);
+  });
+
+  it('lưu file làm proposal Outdated', async () => {
     const files = await get<{ items: { id: string; path: string }[] }>('/files');
     const intro = files.items.find((row) => row.path === 'sections/intro.tex')!;
     const text = await (await mockFetch(`${base}/files/${intro.id}/content`)).text();
     const response = await mockFetch(`${base}/revisions`, json({ baseRevisionId: revisionId(18), changes: [{ path: intro.path, operation: 'modify', content: `${text}% sửa\n` }] }));
     expect(response.status).toBe(201);
     expect(((await response.json()) as { revisionNumber: number }).revisionNumber).toBe(19);
-    const stale = await mockFetch(`${base}/revisions`, json({ baseRevisionId: revisionId(18), changes: [{ path: 'main.tex', operation: 'modify', content: 'x' }] }));
-    expect(stale.status).toBe(409);
-    expect(((await stale.json()) as { code: string }).code).toBe('base_revision_mismatch');
     const proposal = await get<{ status: string }>(`/change-proposals/${proposalId(1)}`);
     expect(proposal.status).toBe('Outdated');
     expect(events.map((event) => `${event.objectType}:${event.toState}`)).toEqual(['revision:Created', 'change_proposal:Outdated']);
@@ -93,7 +117,7 @@ describe('mock path 12 (S01)', () => {
     expect(invalid.status).toBe(400);
   });
 
-  it('chấp nhận áp dụng cả proposal; citation lỗi bị từ chối', async () => {
+  it('accept chuyển Accepted và tạo revision', async () => {
     const accepted = await mockFetch(`${base}/change-proposals/${proposalId(1)}/accept`, json(undefined));
     expect(accepted.status).toBe(200);
     const pm = testStore().projects.get(RAG)!;
@@ -109,7 +133,7 @@ describe('mock path 12 (S01)', () => {
     expect(((await failed.json()) as { code: string }).code).toBe('citation_check_failed');
   });
 
-  it('build chạy theo nội dung revision, giữ log và PDF', async () => {
+  it('build qua các trạng thái và phát sự kiện', async () => {
     const started = await mockFetch(`${base}/builds`, json({}));
     expect(started.status).toBe(202);
     const build = (await started.json()) as { id: string; status: string };

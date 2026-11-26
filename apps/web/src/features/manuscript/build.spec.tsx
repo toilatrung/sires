@@ -133,7 +133,9 @@ describe('Build log (S08)', () => {
     const { user } = await openManuscript();
     const pane = await openPane(user, 'Build log');
     const issue = within(pane).getByText('Thiếu package').closest('li')!;
-    expect(within(issue).getByText(/booktabs/).textContent).toContain('Môi trường build chưa có package booktabs');
+    // The sentence is built from code and params.package, not from friendlyMessage (contract 27/11/2026).
+    expect(within(issue).getByText(/^Package booktabs chưa được nạp/)).toBeTruthy();
+    expect(build17().issues![0]!.friendlyMessage).toBeUndefined();
     await user.click(within(pane).getByRole('button', { name: /Log gốc/ }));
     expect((await within(pane).findByLabelText('Log gốc của build')).textContent).toContain('l.4 \\usepackage');
     await user.click(within(issue).getByRole('button', { name: 'Đi tới main.tex:4' }));
@@ -145,13 +147,14 @@ describe('Build log (S08)', () => {
   });
 
   it('file hình không tìm thấy (MS-BUILD-001-AC01)', async () => {
-    seedBuild('Failed', [{ severity: 'error', file: 'main.tex', line: 9, code: 'missing_file', message: "! LaTeX Error: File `figures/x.png' not found.", friendlyMessage: 'Không tìm thấy figures/x.png. Tải hình lên hoặc sửa đường dẫn trong \\includegraphics.' }]);
+    seedBuild('Failed', [{ severity: 'error', file: 'main.tex', line: 9, code: 'missing_file', params: { path: 'figures/x.png' }, message: "! LaTeX Error: File `figures/x.png' not found.", friendlyMessage: 'Tải hình lên ở cây file.' }]);
     const { user } = await openManuscript(projectPath(RAG, '/sections/intro.tex'), 'sections/intro.tex');
     const pane = await openPane(user, 'Build log');
     const issue = within(pane).getByText('Không tìm thấy file').closest('li')!;
     expect(within(issue).getByText('main.tex')).toBeTruthy();
     expect(within(issue).getByText(/dòng 9/)).toBeTruthy();
-    expect(within(issue).getByText(/Tải hình lên hoặc sửa đường dẫn/)).toBeTruthy();
+    expect(within(issue).getByText('Không tìm thấy figures/x.png. Sửa đường dẫn hoặc thêm file vào bản thảo.')).toBeTruthy();
+    expect(within(issue).getByText('Gợi ý: Tải hình lên ở cây file.')).toBeTruthy();
     await user.click(within(issue).getByRole('button', { name: 'Đi tới main.tex:9' }));
     await waitForFile('main.tex');
     await waitFor(() => {
@@ -186,11 +189,42 @@ describe('Build log (S08)', () => {
     const { user } = await openManuscript();
     const pane = await openPane(user, 'Build log');
     const error = within(pane).getByText('Lỗi build (shell_escape_denied)').closest('li')!;
-    expect(within(error).getByText('Môi trường build không cho chạy lệnh ngoài; bỏ package minted.')).toBeTruthy();
+    // Outside the catalog: the hint is the body, marked as a hint.
+    expect(within(error).getByText('Gợi ý: Môi trường build không cho chạy lệnh ngoài; bỏ package minted.')).toBeTruthy();
     const warning = within(pane).getByText('Cảnh báo build (font_shape_undefined)').closest('li')!;
     expect(within(warning).getByText("LaTeX Font Warning: Font shape `T1/cmr/m/scit' undefined.")).toBeTruthy();
     // No file or line: no “Đi tới”.
     expect(within(pane).queryByRole('button', { name: /^Đi tới/ })).toBeNull();
+  });
+
+  it('danh mục 10 mã dựng câu từ params (UX-MS-004, EC47)', async () => {
+    seedBuild('Failed', [
+      { severity: 'error', code: 'unbalanced_braces', message: 'Runaway argument?' },
+      { severity: 'error', code: 'undefined_control_sequence', params: { command: '\\toprule' }, message: '! Undefined control sequence.' },
+      { severity: 'error', code: 'missing_file', params: { path: 'figures/pipeline.png' }, message: 'not found' },
+      { severity: 'error', code: 'missing_package', params: { package: 'booktabs', command: '\\toprule' }, message: 'not found' },
+      { severity: 'warning', code: 'undefined_citation', message: 'undefined' },
+      { severity: 'error', code: 'shell_escape_disabled', params: { command: '\\inputminted' }, message: 'shell escape' },
+      { severity: 'error', code: 'path_outside_manuscript', params: { path: '/etc/passwd' }, message: 'outside' },
+      { severity: 'error', code: 'timeout', params: { limit: '120' }, message: 'timeout' },
+      { severity: 'error', code: 'memory_limit', params: { limit: '2048', reason: 'tex_capacity' }, message: 'TeX capacity exceeded' },
+      { severity: 'error', code: 'infrastructure_unavailable', message: 'no runner' },
+    ]);
+    const { user } = await openManuscript();
+    const pane = await openPane(user, 'Build log');
+    const text = (title: string) => within(pane).getByText(title).closest('li')!.textContent;
+    expect(text('Thiếu hoặc thừa dấu ngoặc')).toContain('Có dấu { hoặc } thiếu hoặc thừa.');
+    expect(text('Lệnh LaTeX không xác định')).toContain('Lệnh \\toprule chưa được định nghĩa.');
+    expect(text('Không tìm thấy file')).toContain('Không tìm thấy figures/pipeline.png.');
+    expect(text('Thiếu package')).toContain('\\toprule cần package booktabs');
+    // Missing key in params: the general sentence of the code, no invented name.
+    expect(text('Citation không phân giải')).toContain('Có key citation không có trong bibliography.');
+    expect(text('Lệnh cần shell-escape')).toContain('\\inputminted cần shell-escape');
+    expect(text('Đọc file ngoài bản thảo')).toContain('Build không đọc /etc/passwd');
+    expect(text('Build quá thời gian')).toContain('Build dừng sau 120 giây.');
+    expect(text('Build vượt giới hạn bộ nhớ')).toContain('TeX hết dung lượng bộ nhớ trong.');
+    expect(text('Không cấp được môi trường build')).toContain('Thử Build PDF lại sau');
+    expect(within(pane).queryByText(/^Lỗi build \(/)).toBeNull();
   });
 
   it('log và thông báo hiện dạng chữ (EC36)', async () => {
@@ -198,7 +232,7 @@ describe('Build log (S08)', () => {
     rag().logs.set(rag().builds.at(-1)!.id, '<b>not bold</b>\n');
     const { user } = await openManuscript();
     const pane = await openPane(user, 'Build log');
-    expect(within(pane).getByText('<script>alert(1)</script>')).toBeTruthy();
+    expect(within(pane).getByText('Gợi ý: <script>alert(1)</script>')).toBeTruthy();
     expect(pane.querySelector('script, img')).toBeNull();
     await user.click(within(pane).getByRole('button', { name: /Log gốc/ }));
     const raw = await within(pane).findByLabelText('Log gốc của build');
@@ -240,7 +274,7 @@ describe('Build và PDF (S08)', () => {
   it('đang build (EC46)', async () => {
     const { user } = await openManuscript();
     await user.click(buildButton());
-    const chip = await within(toolbar()).findByText(/^Queued · \d\d:\d\d$/);
+    const chip = await within(toolbar()).findByText(/^Chờ build · \d\d:\d\d$/);
     expect(chip).toBeTruthy();
     const pane = right();
     expect(await within(pane).findByText('Đang build revision 18 · pdfLaTeX')).toBeTruthy();
@@ -274,14 +308,14 @@ describe('Build và PDF (S08)', () => {
   it('sửa khi đang build (EC25)', async () => {
     const { user } = await openManuscript();
     await user.click(buildButton());
-    await within(toolbar()).findByText(/^Queued · /);
+    await within(toolbar()).findByText(/^Chờ build · /);
     expect(buildButton()).toHaveProperty('disabled', true);
     typeInEditor(`${editorText()}% thêm ghi chú\n`);
     await user.click(within(toolbar()).getByRole('button', { name: 'Lưu' }));
     await waitFor(() => expect(rag().manuscript.currentRevisionNumber).toBe(19));
     expect(await within(toolbar()).findByText(/revision 19/)).toBeTruthy();
     // The chip still follows the running build of r18; Build PDF is on again for the newer revision.
-    expect(within(toolbar()).getByText(/^Queued · /)).toBeTruthy();
+    expect(within(toolbar()).getByText(/^Chờ build · /)).toBeTruthy();
     expect(buildButton()).toHaveProperty('disabled', false);
     expect(rag().builds.at(-1)!.revisionNumber).toBe(18);
   });
