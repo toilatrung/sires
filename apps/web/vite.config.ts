@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 // gateway is the only backend the SPA talks to (architecture 3.2); same origin in every environment.
 const gateway = process.env.SIRES_GATEWAY_URL ?? 'http://localhost:3000';
@@ -13,5 +13,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: { '/api': gateway, '/auth': gateway, '/events': gateway },
+  },
+  test: {
+    // UI tests render React in jsdom; pure modules may opt into `// @vitest-environment node`.
+    environment: 'jsdom',
+    include: ['src/**/*.spec.{ts,tsx}'],
+    setupFiles: ['src/shell/test/setup.ts'],
+    restoreMocks: true,
   },
 });
