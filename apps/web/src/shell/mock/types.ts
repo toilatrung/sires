@@ -6,7 +6,6 @@
 // public OpenAPI fails typecheck (PID-00013 AC01).
 
 import type { PublicApi } from '@sires/contracts';
-import type { EventInput } from './events';
 
 type Operations = PublicApi.operations;
 export type OperationId = keyof Operations & string;
@@ -47,8 +46,6 @@ export interface MockRequest<K extends OperationId> {
   generated: <S extends Status<K>>(status: S) => ResponseBodyOf<K, S>;
   /** Shared demo data merged from shell/mock/fixtures and every area's fixtures. */
   fixtures: Fixtures;
-  /** Sends an event on the mock /events stream (workflow finished, status changed…); no-op without a stream. */
-  emit: (event: EventInput) => void;
 }
 
 export type Resolver<K extends OperationId> = (request: MockRequest<K>) => MockReply<K> | Promise<MockReply<K>>;

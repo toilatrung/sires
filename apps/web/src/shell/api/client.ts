@@ -185,11 +185,8 @@ export class ApiClient {
     }
     if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey;
     if (opts.ifMatch) headers['If-Match'] = opts.ifMatch;
-    let body: string | FormData | undefined;
-    if (opts.body instanceof FormData) {
-      // multipart/form-data operations (PDF upload, PID-00098): fetch sets the boundary itself.
-      body = opts.body;
-    } else if (opts.body !== undefined) {
+    let body: string | undefined;
+    if (opts.body !== undefined) {
       headers['Content-Type'] = opts.contentType ?? 'application/json';
       body = JSON.stringify(opts.body);
     }
