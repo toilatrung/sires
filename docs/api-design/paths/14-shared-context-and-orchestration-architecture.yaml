@@ -651,14 +651,31 @@
     tags: [Audit]
     operationId: listAccountAuditEvents
     summary: Audit Event cấp tài khoản (Settings, Provider Connection, Trusted Library)
-    x-requirements: [CTX-AUDIT-001]
+    description: |
+      Lọc theo đối tượng như `listProjectAuditEvents`. Lịch sử một reference (UX-REF-003 “các phiên bản metadata”,
+      LIB-LIFECYCLE-001-AC04 “lịch sử trạng thái, người thực hiện và lý do”): `objectType = reference`, `objectId` = mã
+      reference; mỗi Audit Event có người (`actor`), thời điểm (`at`), chuyển trạng thái (`fromState`, `toState`), phiên bản
+      metadata (`objectVersion`), lý do (thu hồi, từ chối, duyệt lại) trong `summary`. Thêm lọc 27/11/2026 (chốt theo đề xuất,
+      PO ủy quyền 26/11/2026; PID-00098 mục 7).
+    x-requirements: [CTX-AUDIT-001, UX-REF-003, LIB-LIFECYCLE-001]
     x-priority: P0
     parameters:
+      - name: objectType
+        in: query
+        schema: { type: string, examples: [reference, provider_connection] }
+      - name: objectId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: actorType
+        in: query
+        schema: { type: string, enum: [researcher, agent, system] }
+      - { name: from, in: query, schema: { type: string, format: date-time } }
+      - { name: to, in: query, schema: { type: string, format: date-time } }
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
     responses:
       '200':
-        description: Trang Audit Event.
+        description: Trang Audit Event, mới nhất trước.
         content:
           application/json:
             schema:

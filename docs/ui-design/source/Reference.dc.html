@@ -194,49 +194,66 @@ a{color:#025FAC}a:hover{color:#1C1B18}
 <div style="min-height: 1000px; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
   <dc-import name="TopBar" mode="global" active="library" hint-size="100%,57px"></dc-import>
   <main style="max-width: 1240px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 32px) 64px; display: flex; flex-direction: column; gap: 20px">
-    <nav aria-label="Vị trí" style="font-size: 14px"><a href="Library.dc.html">Trusted Library</a> <span aria-hidden="true" style="color: #4D4A44">/</span> <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">lewis2020rag</span></nav>
+    <nav aria-label="Vị trí" style="font-size: 14px"><a href="Library.dc.html">Trusted Library</a> <span aria-hidden="true" style="color: #4D4A44">/</span> <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">{{key}}</span></nav>
     <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px">
       <div style="flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
-        <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px; line-height: 1.2">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</h1>
-        <span style="font-size: 15px; color: #4D4A44">P. Lewis, E. Perez, A. Piktus, F. Petroni, et al. · NeurIPS 2020 · arXiv:2005.11401</span>
+        <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px; line-height: 1.2">{{title}}</h1>
+        <span style="font-size: 15px; color: #4D4A44">{{byline}}</span>
         <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
-          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 12px; font-weight: 600">Duyệt: Trusted</span>
-          <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1px solid #1C1B18; font: 500 12px 'JetBrains Mono', monospace">index: Indexed · 142 đoạn</span>
-          <span style="font-size: 13px; color: #4D4A44">Dùng được cho citation và evidence</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 4px; border: {{ap.b}}; background: {{ap.bg}}; color: {{ap.fg}}; font-size: 12px; font-weight: 600"><sc-if value="{{ap.needsYou}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg></sc-if>Duyệt: {{ap.label}}</span>
+          <span data-running="{{ix.run}}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: {{ix.b}}; background: {{ix.bg}}; color: {{ix.fg}}; font: 500 12px 'JetBrains Mono', monospace">index: {{ix.label}}</span>
+          <span style="font-size: 13px; color: #4D4A44">{{explain}}</span>
         </div>
       </div>
       <div style="display: flex; flex-wrap: wrap; gap: 8px">
-        <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Sửa metadata</button>
-        <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Thêm vào project</button>
-        <button style="height: 40px; padding: 0 14px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Thu hồi</button>
+        <sc-for list="{{actions}}" as="a" hint-placeholder-count="3">
+          <button style="height: 40px; padding: 0 14px; border: 1px solid {{a.bd}}; border-radius: 6px; background: {{a.bg}}; color: {{a.fg}}; font: {{a.w}} 14px Montserrat, sans-serif">{{a.label}}</button>
+        </sc-for>
       </div>
     </header>
+
+    <sc-if value="{{failed}}" hint-placeholder-val="{{ false }}">
+      <div role="alert" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: #FFF1F2; border: 1.5px solid #BE123C; border-radius: 8px">
+        <span style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #1C1B18"><strong style="font-weight: 600; color: #9F1239">Indexing lỗi: PDF không có lớp văn bản</strong><span style="font-size: 13px; color: #4D4A44">Mã <span style="font-family: 'JetBrains Mono', monospace">pdf_without_text_layer</span> · 28/10 09:40. Reference vẫn Trusted, dùng được cho citation; chưa dùng được cho evidence tới khi Indexed.</span></span>
+        <span style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 600 14px Montserrat, sans-serif">Thử lại indexing</button>
+          <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tải PDF khác</button>
+        </span>
+      </div>
+    </sc-if>
+    <sc-if value="{{revoked}}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px; font-size: 14px">
+        <strong style="font-weight: 600">Đã thu hồi 30/10/2026 16:05 bởi Nguyễn Thanh</strong>
+        <span style="font-size: 13px; line-height: 1.5; color: #4D4A44">Lý do: tác giả đã rút preprint. 2 evidence chuyển Stale; 1 claim và 1 citation ở “RAG trong tổng quan tài liệu” cần xem lại. Metadata chỉ đọc; duyệt lại để dùng tiếp.</span>
+      </div>
+    </sc-if>
 
     <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
       <div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
         <section aria-labelledby="md" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
-          <h2 id="md" style="margin: 0; padding: 14px 18px; border-bottom: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Metadata · phiên bản 2</h2>
+          <h2 id="md" style="margin: 0; padding: 14px 18px; border-bottom: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Metadata · phiên bản {{mdVersion}}<span style="font-size: 13px; font-weight: 500; color: #4D4A44">{{mdNote}}</span></h2>
           <dl style="margin: 0; padding: 8px 18px 14px; display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 10px 16px; font-size: 14px">
-            <dt style="color: #4D4A44">Tiêu đề</dt><dd style="margin: 0">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</dd>
-            <dt style="color: #4D4A44">Tác giả</dt><dd style="margin: 0">Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal, Küttler, Lewis, Yih, Rocktäschel, Riedel, Kiela</dd>
-            <dt style="color: #4D4A44">Venue / Năm</dt><dd style="margin: 0">NeurIPS · 2020</dd>
-            <dt style="color: #4D4A44">Định danh</dt><dd style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px">arXiv:2005.11401</dd>
-            <dt style="color: #4D4A44">Source Document</dt><dd style="margin: 0">lewis2020.pdf · 1,8 MB · có lớp văn bản</dd>
+            <sc-for list="{{md}}" as="m" hint-placeholder-count="8">
+              <dt style="color: #4D4A44">{{m.k}}</dt><dd style="margin: 0; {{m.f}}">{{m.v}}</dd>
+            </sc-for>
           </dl>
-          <pre style="margin: 0 18px 18px; padding: 12px 14px; background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; font: 400 12px/1.6 'JetBrains Mono', monospace; overflow-x: auto">@inproceedings{lewis2020rag,
-  title     = {Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks},
-  author    = {Lewis, Patrick and Perez, Ethan and others},
-  booktitle = {Advances in Neural Information Processing Systems},
-  year      = {2020}
-}</pre>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 18px 14px; font-size: 13px">
+            <sc-for list="{{docActions}}" as="d" hint-placeholder-count="2"><a href="#" style="font-weight: 500">{{d}}</a></sc-for>
+          </div>
+          <p style="margin: 0 18px 6px; font-size: 12px; color: #4D4A44">BibTeX · sinh từ metadata phiên bản {{mdVersion}}, chỉ đọc</p>
+          <pre style="margin: 0 18px 18px; padding: 12px 14px; background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; font: 400 12px/1.6 'JetBrains Mono', monospace; overflow-x: auto">{{bibtex}}</pre>
         </section>
         <section aria-labelledby="pu" style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
           <h2 id="pu" style="margin: 0; padding: 14px 18px; border-bottom: 1px solid #DBD3C7; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 20px">Project đang dùng</h2>
+          <sc-if value="{{hasUsage}}" hint-placeholder-val="{{ true }}">
           <ul style="margin: 0; padding: 0; list-style: none; font-size: 14px">
-            <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 18px"><a href="Evidence.dc.html" style="font-weight: 600">RAG trong tổng quan tài liệu</a><span style="color: #4D4A44">7 evidence · 4 claim · 3 citation</span></li>
-            <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 18px; border-top: 1px solid #DBD3C7"><a href="Evidence.dc.html" style="font-weight: 600">Học máy trong chẩn đoán ảnh</a><span style="color: #4D4A44">1 evidence · 1 citation</span></li>
+            <sc-for list="{{usage}}" as="u" hint-placeholder-count="2">
+              <li style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 18px; border-top: {{u.div}}"><a href="Evidence.dc.html" style="font-weight: 600">{{u.name}}</a><span style="color: #4D4A44">{{u.counts}}<sc-if value="{{u.review}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 11px; font-weight: 600">needs review</span></sc-if></span></li>
+            </sc-for>
           </ul>
-          <p style="margin: 0; padding: 12px 18px; border-top: 1px solid #DBD3C7; font-size: 13px; line-height: 1.5; color: #4D4A44">Thu hồi sẽ chuyển evidence sang Stale và gắn cờ needs review cho claim, citation và Task phụ thuộc ở cả hai project.</p>
+          <p style="margin: 0; padding: 12px 18px; border-top: 1px solid #DBD3C7; font-size: 13px; line-height: 1.5; color: #4D4A44">{{usageNote}}</p>
+          </sc-if>
+          <sc-if value="{{noUsage}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: 14px 18px; font-size: 14px; color: #4D4A44">Chưa project nào dùng reference này.</p></sc-if>
         </section>
       </div>
 
@@ -255,17 +272,101 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["trusted","pending","revoked","failed","unavailable"],"default":"trusted"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
+    // One reference per state, same data as Library (design.md §6): lewis2020rag Trusted Indexed; huang2024survey
+    // Pending Approval; doe2023hd Revoked; gao2023survey Trusted Failed (PID-00098-AC02); liu2024lost Trusted Unavailable (UX-REF-002).
+    const state = this.props.state ?? 'trusted';
+    const div = (i) => (i === 0 ? '0' : '1px solid #DBD3C7');
+    const mono = "font-family: 'JetBrains Mono', monospace; font-size: 13px";
+    const AP = {
+      trusted: { label: 'Trusted', b: '1.5px solid #1C1B18', bg: 'transparent', fg: '#1C1B18', needsYou: false },
+      pending: { label: 'Pending Approval', b: '1px solid #80B9EE', bg: '#EAF4FE', fg: '#025FAC', needsYou: true },
+      revoked: { label: 'Revoked', b: '1.5px solid #9A3412', bg: 'transparent', fg: '#9A3412', needsYou: false }
+    };
+    const IX = {
+      Indexed: { b: '1px solid #1C1B18', bg: 'transparent', fg: '#1C1B18', run: false },
+      // Failed, Unavailable: kiểu Lỗi (design.md §3 bổ sung theo PC-05 P1; PID-00098 H18).
+      Failed: { b: '1px solid #BE123C', bg: '#FFF1F2', fg: '#9F1239', run: false },
+      Unavailable: { b: '1px solid #BE123C', bg: '#FFF1F2', fg: '#9F1239', run: false },
+      'Not Indexed': { b: '1px dashed #4D4A44', bg: 'transparent', fg: '#1C1B18', run: false }
+    };
+    const btn = (label, kind) => kind === 'primary' ? { label, bd: '#0277DD', bg: '#0277DD', fg: '#FFFFFF', w: '600' }
+      : kind === 'danger' ? { label, bd: '#BE123C', bg: '#FCF9F5', fg: '#BE123C', w: '600' }
+      : { label, bd: '#DBD3C7', bg: '#FCF9F5', fg: '#1C1B18', w: '500' };
+    const trustedActions = [btn('Sửa metadata'), btn('Thêm vào project'), btn('Thu hồi', 'danger')];
+    const disc = (time, q) => ({ time, actor: 'Discovery Agent', text: 'phát hiện qua OpenAlex · lần tìm ở Discover', hasQ: true, q });
+    const R = {
+      trusted: {
+        key: 'lewis2020rag', title: 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks',
+        byline: 'P. Lewis, E. Perez, A. Piktus, F. Petroni, et al. · NeurIPS 2020 · arXiv:2005.11401',
+        ap: AP.trusted, ixLabel: 'Indexed · 142 đoạn', ixKey: 'Indexed', explain: 'Dùng được cho citation và evidence',
+        actions: trustedActions, mdVersion: '2', mdNote: '',
+        md: [['Tiêu đề', 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks'], ['Tác giả', 'Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal, Küttler, Lewis, Yih, Rocktäschel, Riedel, Kiela'], ['Venue / Năm', 'NeurIPS · 2020'], ['Loại tài liệu', 'conference'], ['Định danh', 'arXiv:2005.11401', mono], ['URL', 'https://arxiv.org/abs/2005.11401', mono], ['BibTeX key', 'lewis2020rag', mono], ['Source Document', 'lewis2020.pdf · 1,8 MB · 18 trang · có lớp văn bản']],
+        docActions: ['Tải PDF', 'Thay PDF'],
+        bibtex: '@inproceedings{lewis2020rag,\n  title     = {Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks},\n  author    = {Lewis, Patrick and Perez, Ethan and others},\n  booktitle = {Advances in Neural Information Processing Systems},\n  year      = {2020}\n}',
+        usage: [{ name: 'RAG trong tổng quan tài liệu', counts: '7 evidence · 4 claim · 3 citation', review: false }, { name: 'Học máy trong chẩn đoán ảnh', counts: '1 evidence · 1 claim · 1 citation', review: false }],
+        usageNote: 'Thu hồi sẽ chuyển 8 evidence sang Stale và gắn cờ needs review cho 5 claim, 4 citation và Task phụ thuộc ở cả hai project.',
+        prov: [disc('27/10 14:02', 'query: "retrieval augmented generation" · 2019–2026'), { time: '27/10 14:03', actor: 'Reference Processing Agent', text: 'chuẩn hóa metadata, không thấy trùng → Pending Approval · lô nhập 4 mục' }, { time: '27/10 14:20', actor: 'Nguyễn Thanh', text: 'duyệt phiên bản 1 trong lô 4 mục: Pending Approval → Trusted' }, { time: '27/10 14:31', actor: 'System', text: 'index xong: Indexing → Indexed · OpenAI text-embedding-3-small' }, { time: '29/10 10:15', actor: 'Nguyễn Thanh', text: 'sửa metadata (tác giả) → phiên bản 2' }]
+      },
+      pending: {
+        key: 'huang2024survey', title: 'A Survey on Hallucination in Large Language Models',
+        byline: 'L. Huang, W. Yu, W. Ma, et al. · ACM TOIS 2024 · doi:10.1145/3703155',
+        ap: AP.pending, ixLabel: 'Not Indexed', ixKey: 'Not Indexed', explain: 'Chưa duyệt — chưa dùng được ở đâu',
+        actions: [btn('Duyệt', 'primary'), btn('Sửa rồi duyệt'), btn('Từ chối')], mdVersion: '1', mdNote: '',
+        md: [['Tiêu đề', 'A Survey on Hallucination in Large Language Models'], ['Tác giả', 'Huang, Yu, Ma, Zhong, Feng, Wang, Chen, Peng, Feng, Qin, Liu'], ['Venue / Năm', 'ACM TOIS · 2024'], ['Loại tài liệu', 'article'], ['Định danh', 'doi:10.1145/3703155', mono], ['URL', 'https://doi.org/10.1145/3703155', mono], ['BibTeX key', 'huang2024survey', mono], ['Source Document', 'Chưa có PDF; tải lên được sau khi duyệt']],
+        docActions: [],
+        bibtex: '@article{huang2024survey,\n  title   = {A Survey on Hallucination in Large Language Models},\n  author  = {Huang, Lei and Yu, Weijiang and others},\n  journal = {ACM Transactions on Information Systems},\n  year    = {2024},\n  doi     = {10.1145/3703155}\n}',
+        usage: [], usageNote: '',
+        prov: [disc('31/10 09:51', 'query: "retrieval augmented generation hallucination literature review" · 2019–2026'), { time: '31/10 09:55', actor: 'Reference Processing Agent', text: 'chuẩn hóa metadata, không thấy trùng → Pending Approval · lô nhập 5 mục' }]
+      },
+      revoked: {
+        key: 'doe2023hd', title: 'Hallucination detection preprint (đã rút)',
+        byline: 'J. Doe, A. Roe · arXiv 2023 · arXiv:2306.01234',
+        ap: AP.revoked, ixLabel: 'Indexed · 64 đoạn', ixKey: 'Indexed', explain: 'Đã thu hồi — không dùng cho evidence mới; citation tới reference này báo lỗi khi kiểm tra',
+        actions: [btn('Duyệt lại')], mdVersion: '1', mdNote: ' · chỉ đọc',
+        md: [['Tiêu đề', 'Hallucination detection preprint (đã rút)'], ['Tác giả', 'Doe, Roe'], ['Venue / Năm', 'arXiv · 2023'], ['Loại tài liệu', 'preprint'], ['Định danh', 'arXiv:2306.01234', mono], ['URL', 'https://arxiv.org/abs/2306.01234', mono], ['BibTeX key', 'doe2023hd', mono], ['Source Document', 'doe2023.pdf · 0,9 MB · 9 trang · có lớp văn bản']],
+        docActions: ['Tải PDF'],
+        bibtex: '@misc{doe2023hd,\n  title  = {Hallucination detection preprint},\n  author = {Doe, Jane and Roe, Alex},\n  year   = {2023},\n  eprint = {2306.01234}\n}',
+        usage: [{ name: 'RAG trong tổng quan tài liệu', counts: '2 evidence Stale · 1 claim · 1 citation', review: true }],
+        usageNote: 'Bản thảo trích dẫn reference này báo lỗi khi kiểm tra citation tới khi bạn thay citation hoặc duyệt lại reference.',
+        prov: [disc('20/10 08:40', 'query: "hallucination detection" · 2022–2026'), { time: '20/10 08:41', actor: 'Reference Processing Agent', text: 'chuẩn hóa metadata, không thấy trùng → Pending Approval' }, { time: '20/10 09:05', actor: 'Nguyễn Thanh', text: 'duyệt phiên bản 1: Pending Approval → Trusted' }, { time: '20/10 09:12', actor: 'System', text: 'index xong: Indexing → Indexed · OpenAI text-embedding-3-small' }, { time: '30/10 16:05', actor: 'Nguyễn Thanh', text: 'thu hồi: Trusted → Revoked · lý do: tác giả đã rút preprint' }]
+      },
+      failed: {
+        key: 'gao2023survey', title: 'Survey of RAG for Large Language Models',
+        byline: 'Y. Gao, Y. Xiong, X. Gao, et al. · arXiv 2023 · arXiv:2312.10997',
+        ap: AP.trusted, ixLabel: 'Failed', ixKey: 'Failed', explain: 'Dùng được cho citation; evidence khi đã Indexed',
+        actions: trustedActions, mdVersion: '1', mdNote: '',
+        md: [['Tiêu đề', 'Survey of RAG for Large Language Models'], ['Tác giả', 'Gao, Xiong, Gao, Jia, Pan, Bi, Dai, Sun, Wang, Wang'], ['Venue / Năm', 'arXiv · 2023'], ['Loại tài liệu', 'preprint'], ['Định danh', 'arXiv:2312.10997', mono], ['URL', 'https://arxiv.org/abs/2312.10997', mono], ['BibTeX key', 'gao2023survey', mono], ['Source Document', 'gao2023-scan.pdf · 6,4 MB · 21 trang · không có lớp văn bản']],
+        docActions: ['Tải PDF'],
+        bibtex: '@misc{gao2023survey,\n  title  = {Survey of RAG for Large Language Models},\n  author = {Gao, Yunfan and Xiong, Yun and others},\n  year   = {2023},\n  eprint = {2312.10997}\n}',
+        usage: [{ name: 'RAG trong tổng quan tài liệu', counts: '0 evidence · 0 claim · 2 citation', review: false }],
+        usageNote: 'Chưa có evidence vì reference chưa Indexed; citation vẫn dùng được.',
+        prov: [disc('28/10 09:20', 'query: "retrieval augmented generation survey" · 2022–2026'), { time: '28/10 09:22', actor: 'Reference Processing Agent', text: 'chuẩn hóa metadata, không thấy trùng → Pending Approval' }, { time: '28/10 09:31', actor: 'Nguyễn Thanh', text: 'duyệt phiên bản 1: Pending Approval → Trusted' }, { time: '28/10 09:40', actor: 'System', text: 'index lỗi: Indexing → Failed · pdf_without_text_layer' }]
+      },
+      unavailable: {
+        key: 'liu2024lost', title: 'Lost in the Middle: How Language Models Use Long Contexts',
+        byline: 'N. F. Liu, K. Lin, J. Hewitt, et al. · TACL 2024 · doi:10.1162/tacl_a_00638',
+        ap: AP.trusted, ixLabel: 'Unavailable', ixKey: 'Unavailable', explain: 'Dùng được cho citation, không dùng được cho evidence',
+        actions: trustedActions, mdVersion: '1', mdNote: '',
+        md: [['Tiêu đề', 'Lost in the Middle: How Language Models Use Long Contexts'], ['Tác giả', 'Liu, Lin, Hewitt, Paranjape, Bevilacqua, Petroni, Liang'], ['Venue / Năm', 'TACL · 2024'], ['Loại tài liệu', 'article'], ['Định danh', 'doi:10.1162/tacl_a_00638', mono], ['URL', 'https://doi.org/10.1162/tacl_a_00638', mono], ['BibTeX key', 'liu2024lost', mono], ['Source Document', 'Chưa có PDF']],
+        docActions: ['Tải PDF lên'],
+        bibtex: '@article{liu2024lost,\n  title   = {Lost in the Middle: How Language Models Use Long Contexts},\n  author  = {Liu, Nelson F. and Lin, Kevin and others},\n  journal = {Transactions of the Association for Computational Linguistics},\n  year    = {2024},\n  doi     = {10.1162/tacl_a_00638}\n}',
+        usage: [{ name: 'RAG trong tổng quan tài liệu', counts: '0 evidence · 0 claim · 1 citation', review: false }],
+        usageNote: 'Tải PDF lên để index; sau khi Indexed, reference dùng được cho evidence.',
+        prov: [{ time: '28/10 10:02', actor: 'Nguyễn Thanh', text: 'nhập thủ công bằng DOI → Pending Approval' }, { time: '28/10 10:06', actor: 'Nguyễn Thanh', text: 'duyệt phiên bản 1: Pending Approval → Trusted' }, { time: '28/10 10:06', actor: 'System', text: 'không có nội dung để index: Unavailable' }]
+      }
+    };
+    const r = R[state] || R.trusted;
     return {
-      prov: [
-        { time: '27/10 14:02', actor: 'Discovery Agent', text: 'phát hiện qua Google Scholar (dịch vụ trung gian)', hasQ: true, q: 'query: "retrieval augmented generation" 2019–2026' },
-        { time: '27/10 14:03', actor: 'Reference Processing Agent', text: 'chuẩn hóa metadata, không thấy trùng', hasQ: false, q: '' },
-        { time: '27/10 14:20', actor: 'Nguyễn Thanh', text: 'duyệt trong lô 4 mục → Trusted', hasQ: false, q: '' },
-        { time: '27/10 14:31', actor: 'System', text: 'index xong · embedding OpenAI text-embedding-3-small', hasQ: false, q: '' },
-        { time: '29/10 10:15', actor: 'Nguyễn Thanh', text: 'sửa metadata (tác giả) → phiên bản 2', hasQ: false, q: '' }
-      ]
+      ...r,
+      failed: state === 'failed', revoked: state === 'revoked',
+      ix: { ...IX[r.ixKey], label: r.ixLabel },
+      md: r.md.map(([k, v, f]) => ({ k, v, f: f || '' })),
+      hasUsage: r.usage.length > 0, noUsage: r.usage.length === 0,
+      usage: r.usage.map((u, i) => ({ ...u, div: div(i) })),
+      prov: r.prov.map((p) => ({ hasQ: false, q: '', ...p }))
     };
   }
 }

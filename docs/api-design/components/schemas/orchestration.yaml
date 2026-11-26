@@ -87,6 +87,37 @@ Workflow:
           oneOf:
             - $ref: '#/Checkpoint'
             - type: 'null'
+        scholarSearch:
+          type: object
+          readOnly: true
+          description: |
+            Chỉ với `type = discovery` (cả tìm theo tác giả): Google Scholar của lần chạy (PRD 18.1 `Workflow.scholarSearch`;
+            DISC-SCHOLAR-003, DISC-SCHOLAR-004; PC-05 GS-A1, GS-A2, GS-A5). `limit` là hạn mức hiệu lực ghi khi bắt đầu
+            (`googleScholar` của request hoặc `Preferences.googleScholarDiscovery`; `0` khi không dùng Google Scholar);
+            `used` là số lượt đã dùng, một lượt là một trang kết quả SerpApi. Lượt chưa dùng không chuyển sang lần chạy
+            khác. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
+          required: [limit, used]
+          properties:
+            limit: { type: integer, minimum: 0, maximum: 20 }
+            used: { type: integer, minimum: 0 }
+            limitReached:
+              type: object
+              description: |
+                Có khi System dừng gọi Google Scholar vì hết hạn mức mà vẫn còn truy vấn hay tài liệu nguồn `primary` không
+                có (DISC-SCHOLAR-004 bước 5; PC-05 GS-A5). Giao diện nêu số lượt đã dùng, phần chưa tìm và cách nới hạn mức
+                trên danh sách kết quả (UX-REF-004). `run_limit`: hết `limit` của lần chạy, Researcher nới ở Settings hoặc ghi
+                đè ở lần tìm sau; `monthly_limit`: tài khoản hết hạn mức tháng (`DiscoverySource.monthlyQuota`), Researcher
+                không nới được. Workflow không chuyển Waiting for User hay Failed vì lý do này.
+              required: [reason, at, pending]
+              properties:
+                reason:
+                  type: string
+                  enum: [run_limit, monthly_limit]
+                at: { $ref: common.yaml#/Timestamp }
+                pending:
+                  type: array
+                  description: Truy vấn, hoặc tài liệu (DOI hay tiêu đề), chưa tìm trên Google Scholar.
+                  items: { type: string }
 
 Checkpoint:
   type: object

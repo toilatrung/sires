@@ -76,9 +76,9 @@
 <tr><td><code>GET</code></td><td><code>/references/{referenceId}/document</code></td><td><code>getReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tải file Source Document</td><td>Khu vực này</td></tr>
 <tr><td><code>PUT</code></td><td><code>/references/{referenceId}/document</code></td><td><code>uploadReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Cung cấp hoặc thay file PDF cho reference</td><td>Khu vực này</td></tr>
 <tr><td><code>POST</code></td><td><code>/references/{referenceId}/indexing/retry</code></td><td><code>retryReferenceIndexing</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Thử lại indexing (Failed → Queued)</td><td>Khu vực này</td></tr>
-<tr><td><code>GET</code></td><td><code>/projects/{projectId}/references</code></td><td><code>listProjectReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Reference được chọn cho project (chỉ mock; giao diện ở khu vực research, N9)</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/discovered-results/{discoveredResultId}</code></td><td><code>getDiscoveredResult</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nguồn phát hiện và truy vấn gốc trên trang Reference (H26; operation mới 27/11/2026)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/restore</code></td><td><code>restoreReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Khôi phục reference đã xóa mềm (H29; operation mới 27/11/2026)</td><td>Khu vực này</td></tr>
 <tr><td><code>POST</code></td><td><code>/projects/{projectId}/references</code></td><td><code>selectReferencesForProject</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chọn Trusted Reference vào project</td><td>Khu vực này</td></tr>
-<tr><td><code>DELETE</code></td><td><code>/projects/{projectId}/references/{referenceId}</code></td><td><code>removeReferenceFromProject</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Bỏ chọn reference khỏi project (chỉ mock; giao diện ở khu vực research, N9)</td><td>Khu vực này</td></tr>
 <tr><td><code>GET</code></td><td><code>/workflows/{workflowId}</code></td><td><code>getWorkflow</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Khôi phục lần tìm, lô nhập theo địa chỉ (H8)</td><td>monitoring (PID-00059); test override</td></tr>
 <tr><td><code>POST</code></td><td><code>/workflows/{workflowId}/cancel</code></td><td><code>cancelWorkflow</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Hủy tìm (H8)</td><td>monitoring (PID-00059); test override</td></tr>
 <tr><td><code>GET</code></td><td><code>/prompts</code></td><td><code>listPrompts</code></td><td><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml</code></td><td>Prompt chọn hồ sơ tác giả của workflow (H11)</td><td>global (PID-00060); test override</td></tr>
@@ -86,6 +86,7 @@
 <tr><td><code>POST</code></td><td><code>/prompts/{promptId}/response</code></td><td><code>answerPrompt</code></td><td><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml</code></td><td>Trả lời prompt chọn hồ sơ (H11)</td><td>global (PID-00060); test override</td></tr>
 <tr><td><code>GET</code></td><td><code>/projects</code></td><td><code>listProjects</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Project Active cho dialog “Thêm vào project” (H17)</td><td>global (PID-00037); test override</td></tr>
 <tr><td><code>GET</code></td><td><code>/me</code></td><td><code>getMe</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td><code>Profile.googleScholarProfileUrl</code> cho “Công bố của tôi”, tên người ở provenance (H11, H15)</td><td>shell (PID-00013); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/me/audit-events</code></td><td><code>listAccountAuditEvents</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Lịch sử reference trên trang Reference, lọc <code>objectType = reference</code>, <code>objectId</code> (H26)</td><td>Audit; mock sinh từ OpenAPI, test override</td></tr>
 </tbody></table></div>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
@@ -117,7 +118,7 @@ pnpm --filter @sires/web dev   # bật mock theo README của apps/web/src/shell
 <ul><li>G3 Discover có trạng thái đang tìm — H6–H11</li>
 <li>G4 Library, trạng thái rỗng, đang tải — H13</li>
 <li>G5 Reference: metadata, provenance, tài liệu, nơi đang dùng — H15–H17</li>
-<li>Duyệt theo lô, nhập BibTeX, RIS (chờ hợp đồng, N4), DOI, PDF — H12, H14</li>
+<li>Duyệt theo lô, nhập BibTeX, RIS (H25), DOI, PDF — H12, H14, H25</li>
 <li>Chi tiết: <a href="brief.html#quy-tac">brief.html</a></li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
 <p>Theo <a href="../designs/notes.html">designs/notes.html</a> và sketch <a href="../designs/Discover-Library-Reference.html">Discover-Library-Reference.html</a>. Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review.</p>
@@ -136,7 +137,7 @@ pnpm --filter @sires/web dev   # bật mock theo README của apps/web/src/shell
 <li id="b2"><strong>B2</strong> Dựng theo skill sires-ui-executor: G3 Discover có trạng thái đang tìm — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S02–S04)</li>
 <li id="b3"><strong>B3</strong> Dựng theo skill sires-ui-executor: G4 Library, trạng thái rỗng, đang tải — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S06)</li>
 <li id="b4"><strong>B4</strong> Dựng theo skill sires-ui-executor: G5 Reference: metadata, provenance, tài liệu, nơi đang dùng — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S08, S09)</li>
-<li id="b5"><strong>B5</strong> Dựng theo skill sires-ui-executor: Duyệt theo lô, nhập BibTeX, DOI, PDF (RIS chờ hợp đồng) — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S03, S05, S07)</li>
+<li id="b5"><strong>B5</strong> Dựng theo skill sires-ui-executor: Duyệt theo lô, nhập BibTeX, RIS, DOI, PDF — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S03, S05, S07)</li>
 <li id="b6"><strong>B6</strong> Nối client API từ type sinh, override mock trong <code>__mocks__/</code> của khu vực — Kết quả: Không viết tay kiểu dữ liệu — Kiểm tra: <code>pnpm nx run @sires/web:typecheck</code> (S01)</li>
 <li id="b7"><strong>B7</strong> Chuỗi vi/en theo namespace khu vực; trạng thái loading, empty, error — Kết quả: Không còn chuỗi cứng — Kiểm tra: Đổi ngôn ngữ trên preview (S02–S09)</li>
 <li id="b8"><strong>B8</strong> Viết test Vitest, chạy <code>check-ui.mjs</code> — Kết quả: Test đạt — Kiểm tra: <code>pnpm nx run @sires/web:test</code> (mỗi slice)</li>

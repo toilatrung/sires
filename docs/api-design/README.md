@@ -4,13 +4,29 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — DEC-61, PO chốt 22/11/2026
+### Thay đổi gần nhất — Google Scholar trong discovery và sửa nguồn của PID-00098, chốt theo đề xuất (PO ủy quyền 26/11/2026), 27/11/2026
+
+Căn cứ: PRD 10 (DISC-SCHOLAR-003, DISC-SCHOLAR-004, DISC-AUTHOR-001), 15 (UX-REF-004, UX-SETTINGS-006), 18.1 (`Account.googleScholarDiscovery`, `Workflow.scholarSearch`, `DiscoveredResult.source`) viết ở PR #132; phiếu chốt cuối PH-01 (PC-05) nhóm II mục A (GS-A1–GS-A7) và GS-B11; hồ sơ PID-00098 mục 5 “Phải sửa ở nguồn” mục 1–12 (trừ mục 13 trùng DOI, chờ PO). Phần hợp đồng còn lại của PR #132 (việc “Việc hợp đồng còn lại” trong mô tả PR) trừ endpoint connector và kế hoạch công bố.
+
+- Google Scholar trong discovery (PID-00098 mục 1): schema mới `GoogleScholarRunOption` (`enabled`, `searchLimit` 0–20), dùng ở `googleScholar` của `DiscoverySearchRequest` và `AuthorSearchRequest`; `Preferences.googleScholarDiscovery` (`enabled` mặc định `false`, `searchLimitPerRun` 0–20 mặc định 5); `Workflow.scholarSearch` (`limit`, `used`, `limitReached` với `reason` `run_limit` | `monthly_limit` và `pending`); `DiscoverySource.monthlyQuota` (`limit`, `used`, `resetsAt`); mô tả `DiscoverySource.role` (`primary`, `fallback`), `listDiscoverySources`, `startDiscoverySearch` (bỏ câu “tham số hạn mức thêm sau phiếu chốt PC-03”); `DiscoveredResult.source` thành enum `openalex` | `google_scholar`. `DiscoverySearchRequest.source` chỉ nhận nguồn `primary`: Google Scholar chọn bằng `googleScholar`, gửi `google_scholar` trả `400 validation_failed`. `updatePreferences` thêm UX-SETTINGS-006, DISC-SCHOLAR-003.
+- Tìm theo tác giả (mục 2 vế b): `AuthorSearchRequest.source` bỏ `default: google_scholar`; không gửi thì tên tác giả dùng nguồn `primary`, URL hồ sơ dùng `google_scholar` (DEC-60, DEC-61); Google Scholar không dùng cho lần chạy mà request đòi `google_scholar` trả `400`. Vế a (bước chọn hồ sơ ứng viên qua prompt `choice`, PID-00098 H11) không vào hợp đồng: cách tạm, chờ PO.
+- Trùng và lô nhập (mục 3, 4): `DiscoveredResult.duplicateOfReferenceId` mô tả mọi trạng thái duyệt; thêm `duplicateOfReferenceStatus`, `importState` (`workflowId`, `status` `queued` | `processing` | `created` | `duplicate` | `failed`, `error`, `updatedAt`); `listDiscoveredResults` thêm lọc `importWorkflowId`; mô tả `importDiscoveredResults` nêu cách đọc trạng thái từng mục.
+- Nhập thủ công (mục 5): `ReferenceManualCreate` thêm `dois` (1–50 DOI) và `ris`; mọi cách nhập tối đa 50 mục mỗi lệnh; `errors[].input` nêu mục lỗi.
+- Trang Reference (mục 6–8, 10): operation mới `getDiscoveredResult` (`GET /discovered-results/{discoveredResultId}`, truy vấn gốc, nguồn, lần tìm, lô nhập); `listAccountAuditEvents` thêm lọc `objectType`, `objectId`, `actorType`, `from`, `to` như `listProjectAuditEvents` (lịch sử reference); `Reference.bibtex` chỉ đọc; `ReferenceUsage.projects[].claimCount`; `listReferences` thêm `selectedInProject`.
+- BibTeX key (mục 9): `ReferenceUpdate.bibtexKey` `deprecated`, giá trị khác key hiện tại trả `400 validation_failed` (LIB-METADATA-001).
+- Khôi phục (mục 11): operation mới `restoreReference` (`POST /references/{referenceId}/restore`, `409 restore_window_expired` như `restoreProject`); `listReferences` thêm `deleted`; `Reference.purgeAfter`; mô tả `deleteReference` ghi xóa mềm 30 ngày (APR-08).
+- `supportedFilters` (mục 12): giá trị `title`, `author`, `keywords`, `year`.
+- Tương thích: thêm trường, tham số và operation tùy chọn. Đổi nghĩa khi chưa có bên gọi hay hiện thực (`apps/library` chưa có discovery, import, approval): `DiscoverySearchRequest.source` chỉ nhận nguồn `primary`, `AuthorSearchRequest.source` bỏ mặc định `google_scholar`, `DiscoveredResult.source` thành enum, `supportedFilters` thành enum, `ReferenceUpdate.bibtexKey` từ chối giá trị khác, `ReferenceManualCreate` giới hạn 50 mục. Không đổi `internal/*.yaml`, `events/asyncapi.yaml` (`searchSourcesTool` dùng chung `DiscoverySearchRequest`, `AuthorSearchRequest` nên nhận `googleScholar`).
+- Chưa làm: endpoint connector Google Scholar và kế hoạch công bố (PC-05 nhóm II mục B); cách library biết hạn mức hiệu lực và ghi số lượt về `Workflow` (hợp đồng nội bộ, kiến trúc 3); DDL cho các trường cần lưu (`identity`: Preferences Google Scholar; `orchestration.workflow`: `scholarSearch`; `library.discovered_result`: `import_state`, `search_workflow_id`; `library.reference`: `deleted_at`). Ticket còn phải cập nhật mục 2.3 khi làm rõ: PID-00050, PID-00076, PID-00036, PID-00041, PID-00045, PID-00059, PID-00101.
+- Ticket cập nhật: PID-00098 (mục 5 “Phải sửa ở nguồn” ghi đã sửa; phạm vi, slice theo hợp đồng mới). `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, 9 file `internal/`, `events/asyncapi.yaml` sạch); `index.html`: path 10 có 25 operation, tổng 135 path, 167 operation.
+
+### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
 - Chỉ đổi mô tả: `paths/10-academic-discovery-and-trusted-library.yaml` (`listDiscoverySources`) và `DiscoverySearchRequest.source` ghi Google Scholar chỉ dùng khi Researcher chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61, trả lời OQ-114). Không đổi schema, enum hay operation.
 - Tham số hạn mức, `AuthorSearchRequest.source`, `DiscoverySource.role` và endpoint connector, kế hoạch công bố (DEC-61, trả lời OQ-115) sửa sau khi PO chốt [phiếu chốt PC-03](../overview/phieu-chot-google-scholar.html).
 - `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml`.
 
-### Thay đổi trước — nguồn discovery theo DEC-60, PO chốt 22/11/2026
+### Nguồn discovery theo DEC-60, PO chốt 22/11/2026
 
 DEC-60 (sửa DEC-19) sau đánh giá thực tế 19–21/11/2026 (SPK-03, PID-00025): OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng), phía trước là module connector Google Scholar của SIRes; Semantic Scholar bỏ khỏi phạm vi.
 

@@ -28,17 +28,17 @@
 <tr><th scope="row">AC</th><td>LIB-IMPORT-002-AC01, LIB-IMPORT-002-AC02, LIB-IMPORT-002-AC03</td></tr>
 <tr><th scope="row">Output spec</th><td>O1, O5</td></tr>
 <tr><th scope="row">Bước spec</th><td>B5, B7, B8</td></tr>
-<tr><th scope="row">Edge case</th><td>EC13, EC22–EC27, EC43</td></tr>
+<tr><th scope="row">Edge case</th><td>EC13, EC22–EC27, EC43, EC50</td></tr>
 <tr><th scope="row">Phụ thuộc</th><td>S01, S02 (cột phải Discover); PID-00012 S09 (kho nháp)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
 <ol><li>Panel “Nhập thủ công” ở cột phải của Discover với <code>id="nhap-thu-cong"</code>; mở <code>/discover#nhap-thu-cong</code> thì cuộn và đặt focus vào panel (nút của Trusted Library ở S06 dẫn tới đây).</li>
-<li>DOI: ô nhiều dòng; bỏ tiền tố, kiểm mẫu, tối đa 50 dòng theo H12 (EC22); mỗi DOI một <code>createReferenceManually</code> tuần tự, mỗi lệnh một <code>Idempotency-Key</code>; <code>422</code> → mục lỗi, dòng giữ lại (EC23).</li>
+<li>DOI: ô nhiều dòng; bỏ tiền tố, kiểm mẫu, tối đa 50 dòng theo H12 (EC22); một <code>createReferenceManually</code> với <code>dois</code> (tối đa 50) và một <code>Idempotency-Key</code>; DOI lỗi theo <code>errors[].input</code> hiện lý do, dòng giữ lại (EC23, EC50; H25, thay cách gửi từng DOI của H12).</li>
 <li>BibTeX: ô dán và nút chọn tệp <code>.bib</code> (đọc thành chữ trên máy); một <code>createReferenceManually</code>; hiện <code>items</code> và <code>errors</code> theo từng mục (EC24).</li>
 <li>PDF: chọn tệp; kiểm trên máy kiểu và kích thước (EC26); <code>importReferenceFromPdf</code> multipart với <code>Idempotency-Key</code> → 202 → thẻ thao tác dài; <code>413</code>, <code>422 pdf_without_text_layer</code>, <code>415</code> → lý do theo mã.</li>
 <li>Nút “Thêm vào luồng duyệt” gửi mọi phần đã điền; danh sách kết quả từng mục: Pending Approval (liên kết reference), trùng (<code>duplicateWarnings</code> → reference có sẵn, đề xuất gộp ở Trusted Library; EC25), lỗi kèm lý do và mã. Nội dung hiện dạng chữ (EC13).</li>
-<li>Ô DOI và BibTeX đăng ký kho nháp của shell; xóa nháp sau khi gửi xong không lỗi (EC27); đổi VI/EN giữ nội dung (EC43). RIS không làm (N4).</li>
-<li>Test trong <code>apps/web/src/features/library/import.spec.tsx</code> (tạo mới): ba DOI chờ duyệt, DOI sai mẫu, DOI không phân giải, BibTeX có entry lỗi, BibTeX trùng DOI, PDF bị từ chối, giữ nháp nhập thủ công, đổi ngôn ngữ giữ nội dung.</li></ol>
+<li>Ô DOI và BibTeX đăng ký kho nháp của shell; xóa nháp sau khi gửi xong không lỗi (EC27); đổi VI/EN giữ nội dung (EC43). RIS (H25): chọn định dạng BibTeX hoặc RIS cho ô dán, hoặc chọn tệp <code>.bib</code>, <code>.ris</code> (đọc thành chữ trên máy); RIS gửi <code>createReferenceManually</code> với <code>ris</code>; bản ghi lỗi theo <code>errors[].input</code> (EC50).</li>
+<li>Test trong <code>apps/web/src/features/library/import.spec.tsx</code> (tạo mới): ba DOI chờ duyệt, DOI sai mẫu, DOI không phân giải, BibTeX có entry lỗi, BibTeX trùng DOI, PDF bị từ chối, giữ nháp nhập thủ công, đổi ngôn ngữ giữ nội dung, nhiều DOI có mục lỗi, RIS có bản ghi lỗi.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/web:test</code> → test của S05 đạt</li>
 <li>Test: <code>apps/web/src/features/library/import.spec.tsx › ba DOI chờ duyệt</code> (LIB-IMPORT-002-AC01); <code>› BibTeX trùng DOI</code> (LIB-IMPORT-002-AC02); <code>› PDF bị từ chối</code> (LIB-IMPORT-002-AC03)</li>

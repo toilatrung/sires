@@ -28,7 +28,7 @@
 <tr><th scope="row">AC</th><td>UX-STATE-002-AC01, DISC-SCHOLAR-002-AC02, UX-REF-002-AC01 (dòng trong bảng)</td></tr>
 <tr><th scope="row">Output spec</th><td>O1, O6</td></tr>
 <tr><th scope="row">Bước spec</th><td>B3, B7, B8</td></tr>
-<tr><th scope="row">Edge case</th><td>EC28–EC31, EC44–EC46</td></tr>
+<tr><th scope="row">Edge case</th><td>EC28–EC31, EC44–EC46, EC53</td></tr>
 <tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S06, S11 (chip Indexed, Not Indexed, Unavailable, Revoked)</td></tr>
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
@@ -36,8 +36,9 @@
 <li>Bộ lọc theo H13 (tìm <code>q</code>, Duyệt, Indexing, Năm); đổi lọc gọi lại <code>listReferences</code> từ trang đầu; lọc rỗng → “Không có reference khớp bộ lọc” và “Xóa lọc” (EC28).</li>
 <li>Bảng năm cột theo H13: chip duyệt kèm ngày duyệt, chip indexing kèm ghi chú (Failed: <code>indexingError.message</code>; Unavailable: “Dùng được cho citation, không dùng được cho evidence”), Project dùng kèm cờ “needs review” khi Revoked đang dùng; tiêu đề mở <code>/library/</code> mã reference; bảng cuộn trong thẻ; trang 50 mục, “Tải thêm” (EC30).</li>
 <li>Trống tài khoản → “Thư viện chưa có reference nào”, nút chính “Tìm tài liệu ở Discover” (EC28); đang tải → skeleton 6 dòng và <code>role="status"</code> (EC45); lỗi → trạng thái lỗi có mã, “Thử lại” (EC29). Không gọi operation discovery nào trên màn này.</li>
+<li>Lọc Project (H28): danh sách project từ <code>listProjects</code> (mock của global, test override), gửi <code>selectedInProject</code>. Duyệt thêm “Đã xóa” (H29): <code>listReferences</code> với <code>deleted = true</code>, bảng Reference, BibTeX key, Đã xóa (<code>deletedAt</code>), Xóa vĩnh viễn sau (<code>purgeAfter</code>), nút “Khôi phục” → <code>restoreReference</code> → dòng rời danh sách, reference về bảng Trusted; <code>409</code> → lý do (EC53). Chip Failed, Unavailable kiểu Lỗi (H18).</li>
 <li>Nghe <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code> → đọc lại dòng bằng <code>getReference</code>; tín hiệu cần tải lại → tải lại trang đầu (EC31).</li>
-<li>Test trong <code>apps/web/src/features/library/library.spec.tsx</code> (tạo mới): thư viện trống, lọc rỗng, đang tải, lỗi tại phần, tải thêm, cập nhật theo sự kiện, nguồn discovery lỗi không ảnh hưởng, ghi chú Unavailable trong bảng.</li></ol>
+<li>Test trong <code>apps/web/src/features/library/library.spec.tsx</code> (tạo mới): thư viện trống, lọc rỗng, đang tải, lỗi tại phần, tải thêm, cập nhật theo sự kiện, nguồn discovery lỗi không ảnh hưởng, ghi chú Unavailable trong bảng, lọc theo project, khôi phục reference đã xóa, khôi phục quá hạn.</li></ol>
 <h2 id="kiem">Kiểm</h2>
 <ul><li><code>pnpm nx run @sires/web:test</code> → test của S06 đạt</li>
 <li>Test: <code>apps/web/src/features/library/library.spec.tsx › thư viện trống</code> (UX-STATE-002-AC01); <code>› nguồn discovery lỗi không ảnh hưởng</code> (DISC-SCHOLAR-002-AC02)</li>

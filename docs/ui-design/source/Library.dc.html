@@ -198,14 +198,14 @@ a{color:#025FAC}a:hover{color:#1C1B18}
       <h1 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 26px">Trusted Library</h1>
       <div style="display: flex; gap: 8px">
         <a href="Discover.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; text-decoration: none; font-size: 14px; font-weight: 500">Tìm ở Discover</a>
-        <a href="Discover.dc.html" style="border: 1px solid #DBD3C7; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 6px; background: #FCF9F5; color: #1C1B18; text-decoration: none; font-size: 14px; font-weight: 600">Nhập DOI / BibTeX / PDF</a>
+        <a href="Discover.dc.html" style="border: 1px solid #DBD3C7; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 6px; background: #FCF9F5; color: #1C1B18; text-decoration: none; font-size: 14px; font-weight: 600">Nhập DOI / BibTeX / RIS / PDF</a>
       </div>
     </div>
 
     <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
       <section style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 48px 40px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px">
         <h2 style="margin: 0; font-family: Montserrat, system-ui, sans-serif; font-weight: 600; font-size: 24px">Thư viện chưa có reference nào</h2>
-        <p style="margin: 0; max-width: 560px; font-size: 15px; line-height: 1.55; color: #4D4A44">Agent chỉ dùng Trusted Reference làm nguồn. Tìm tài liệu ở Discover hoặc nhập DOI/BibTeX/PDF, rồi duyệt để thêm vào đây.</p>
+        <p style="margin: 0; max-width: 560px; font-size: 15px; line-height: 1.55; color: #4D4A44">Agent chỉ dùng Trusted Reference làm nguồn. Tìm tài liệu ở Discover hoặc nhập DOI/BibTeX/RIS/PDF, rồi duyệt để thêm vào đây.</p>
         <a href="Discover.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 6px; background: #0277DD; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600">Tìm tài liệu ở Discover</a>
       </section>
     </sc-if>
@@ -215,37 +215,56 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #DBD3C7">
           <div style="display: flex; flex-direction: column; gap: 3px">
             <h2 id="ap" style="margin: 0; font-size: 16px; font-weight: 600">5 reference chờ duyệt <span style="font-weight: 400; color: #4D4A44">· từ truy vấn Discover 09:51 · Reference Processing Agent</span></h2>
-            <span style="font-size: 13px; color: #4D4A44">Duyệt theo lô. Bỏ chọn mục bạn không muốn trước khi duyệt; có thể sửa metadata từng mục.</span>
+            <span style="font-size: 13px; color: #4D4A44">Duyệt theo lô. Bỏ chọn mục bạn không muốn trước khi duyệt; có thể sửa metadata từng mục. Mục có thể trùng không vào lô, quyết định riêng.</span>
           </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px">
-            <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Từ chối đã chọn</button>
-            <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Duyệt 4 mục đã chọn</button>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button style="height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Từ chối đã chọn</button>
+              <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Duyệt 3 mục đã chọn</button>
+            </div>
+            <span style="max-width: 420px; font-size: 12px; line-height: 1.45; color: #4D4A44; text-align: right">Duyệt: 3 reference thành Trusted, dùng được cho citation; reference có PDF được đưa vào indexing.</span>
           </div>
         </div>
         <ul style="margin: 0; padding: 0; list-style: none">
           <sc-for list="{{queue}}" as="q" hint-placeholder-count="5">
             <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 18px; border-top: {{q.div}}">
-              <input type="checkbox" checked="{{q.checked}}" aria-label="Chọn: {{q.title}}" style="width: 18px; height: 18px">
-              <span style="flex: 1 1 360px; min-width: 0; font-size: 14px"><strong style="font-weight: 600">{{q.title}}</strong><span style="color: #4D4A44"> · {{q.meta}}</span></span>
+              <sc-if value="{{q.batch}}" hint-placeholder-val="{{ true }}"><input type="checkbox" checked="{{q.checked}}" aria-label="Chọn: {{q.title}}" style="width: 18px; height: 18px"></sc-if>
+              <sc-if value="{{q.dup}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 18px"></span></sc-if>
+              <span style="flex: 1 1 360px; min-width: 0; font-size: 14px"><strong style="font-weight: 600">{{q.title}}</strong><span style="color: #4D4A44"> · {{q.meta}} · {{q.via}}</span></span>
               <sc-if value="{{q.dup}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 12px; font-weight: 600">Có thể trùng: Chen 2023 preprint</span></sc-if>
-              <button style="height: 32px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 13px Montserrat, sans-serif">Sửa metadata</button>
+              <sc-if value="{{q.batch}}" hint-placeholder-val="{{ true }}"><button style="height: 32px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 13px Montserrat, sans-serif">Sửa metadata</button></sc-if>
+              <sc-if value="{{q.dup}}" hint-placeholder-val="{{ false }}">
+                <span style="flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-left: 32px">
+                  <span style="font-size: 12px; color: #4D4A44">Không vào lô duyệt; chọn một cách:</span>
+                  <button style="min-height: 40px; padding: 0 12px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 500 13px Montserrat, sans-serif">Gộp vào reference có sẵn</button>
+                  <button style="min-height: 40px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Giữ riêng và duyệt</button>
+                  <button style="min-height: 40px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Từ chối</button>
+                </span>
+              </sc-if>
             </li>
           </sc-for>
         </ul>
       </section>
 
       <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
-        <label style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Tìm trong Trusted Library
+        <label style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Tìm trong Trusted Library
           <input type="search" placeholder="Tác giả, tiêu đề, DOI, BibTeX key…" style="height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif; color: #1C1B18; background: #E5DED5">
         </label>
         <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Duyệt
-          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Trusted</option><option>Revoked</option><option>Rejected</option></select>
+          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><sc-for list="{{approvalOptions}}" as="o" hint-placeholder-count="5"><option selected="{{o.sel}}">{{o.label}}</option></sc-for></select>
         </label>
         <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Indexing
-          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option><option>Indexed</option><option>Failed</option><option>Unavailable</option></select>
+          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả</option><option>Not Indexed</option><option>Queued</option><option>Indexing</option><option>Indexed</option><option>Failed</option><option>Unavailable</option></select>
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Năm
+          <input inputmode="numeric" placeholder="Tất cả" style="width: 88px; height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px Montserrat, sans-serif; color: #1C1B18; background: #E5DED5">
+        </label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4D4A44">Project
+          <select style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Tất cả project</option><option>RAG trong tổng quan tài liệu</option><option>Học máy trong chẩn đoán ảnh</option></select>
         </label>
       </div>
 
+      <sc-if value="{{listTrusted}}" hint-placeholder-val="{{ true }}">
       <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
         <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
           <thead>
@@ -262,14 +281,44 @@ a{color:#025FAC}a:hover{color:#1C1B18}
               <tr>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><a href="Reference.dc.html" style="display: block; font-weight: 600; color: #1C1B18; text-decoration: none">{{r.title}}</a><span style="font-size: 13px; color: #4D4A44">{{r.meta}}</span></td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{r.key}}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.ab}}; color: {{r.af}}; font-size: 12px; font-weight: 600">{{r.ap}}</span></td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span data-running="{{r.ixRun}}" style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px {{r.ib}}; color: {{r.if}}; font: 500 11px 'JetBrains Mono', monospace">{{r.ix}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44">{{r.ixNote}}</span></td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44">{{r.used}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{r.ab}}; color: {{r.af}}; font-size: 12px; font-weight: 600">{{r.ap}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44; font-variant-numeric: tabular-nums">{{r.decided}}</span></td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span data-running="{{r.ixRun}}" style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px {{r.ib}}; background: {{r.ibg}}; color: {{r.if}}; font: 500 11px 'JetBrains Mono', monospace">{{r.ix}}</span><span style="display: block; margin-top: 4px; max-width: 220px; font-size: 12px; line-height: 1.4; color: #4D4A44">{{r.ixNote}}</span></td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44">{{r.used}}<sc-if value="{{r.review}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 11px; font-weight: 600">needs review</span></sc-if></td>
               </tr>
             </sc-for>
           </tbody>
         </table>
       </div>
+      <button type="button" style="align-self: flex-start; height: 40px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tải thêm</button>
+      </sc-if>
+
+      <sc-if value="{{listDeleted}}" hint-placeholder-val="{{ false }}">
+      <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Reference đã xóa được giữ 30 ngày rồi xóa vĩnh viễn. Khôi phục đưa reference về Trusted Library với trạng thái duyệt, indexing và metadata như trước khi xóa.</p>
+      <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
+        <table style="width: 100%; min-width: 820px; border-collapse: collapse; font-size: 14px">
+          <thead>
+            <tr style="text-align: left; font-size: 12px; color: #4D4A44">
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Reference</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">BibTeX key</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Đã xóa</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Xóa vĩnh viễn sau</th>
+              <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Thao tác</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{deleted}}" as="d" hint-placeholder-count="2">
+              <tr>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: block; font-weight: 600">{{d.title}}</span><span style="font-size: 13px; color: #4D4A44">{{d.meta}}</span></td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{d.key}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44; font-variant-numeric: tabular-nums">{{d.deletedAt}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44; font-variant-numeric: tabular-nums">{{d.purgeAfter}}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; text-align: right"><button style="height: 36px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Khôi phục</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      </sc-if>
     </sc-if>
 
     <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
@@ -302,33 +351,44 @@ a{color:#025FAC}a:hover{color:#1C1B18}
   </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","empty","loading"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["normal","empty","loading","deleted"],"default":"normal"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
+    // normal: Trusted filter; deleted: filter Duyệt = Đã xóa (soft-deleted within 30 days, restoreReference); empty; loading.
     const state = this.props.state ?? 'normal';
     const empty = state === 'empty';
     const loading = state === 'loading';
+    const deleted = state === 'deleted';
     const div = (i) => i === 0 ? '0' : '1px solid #DBD3C7';
     const T = { ab: 'solid #1C1B18', af: '#1C1B18', ap: 'Trusted' };
     const R = { ab: 'solid #9A3412', af: '#9A3412', ap: 'Revoked' };
-    const ix = (k, note) => ({ ix: k, ixRun: k === 'Indexing', ixNote: note || '', ib: k === 'Failed' ? 'solid #BE123C' : k === 'Indexed' ? 'solid #1C1B18' : k === 'Indexing' ? 'solid #0277DD' : 'dashed #4D4A44', if: k === 'Failed' ? '#BE123C' : '#1C1B18' });
+    // Failed, Unavailable: kiểu Lỗi (design.md §3 bổ sung theo PC-05 P1; PID-00098 H18).
+    const ix = (k, note) => ({ ix: k, ixRun: k === 'Indexing', ixNote: note || '', ib: (k === 'Failed' || k === 'Unavailable') ? 'solid #BE123C' : k === 'Indexed' ? 'solid #1C1B18' : k === 'Indexing' ? 'solid #0277DD' : 'dashed #4D4A44', ibg: (k === 'Failed' || k === 'Unavailable') ? '#FFF1F2' : k === 'Indexing' ? '#EAF4FE' : 'transparent', if: (k === 'Failed' || k === 'Unavailable') ? '#9F1239' : '#1C1B18' });
+    const via = 'OpenAlex';
     return {
-      isEmpty: empty, hasData: state === 'normal', isLoading: loading,
+      isEmpty: empty, hasData: state === 'normal' || deleted, isLoading: loading,
+      listTrusted: state === 'normal', listDeleted: deleted,
+      approvalOptions: ['Trusted', 'Revoked', 'Rejected', 'Tất cả', 'Đã xóa'].map((label, i) => ({ label, sel: deleted ? i === 4 : i === 0 })),
       skeleton: ['72%', '58%', '66%', '80%', '52%', '62%'].map((w) => ({ w })),
+      // Pending Approval panel (LIB-APPROVAL-001-AC05, AC06): the possible duplicate has no checkbox and is decided on its own.
       queue: [
-        { title: 'A Survey on Hallucination in Large Language Models', meta: 'Huang et al. · 2024 · ACM TOIS', checked: true, dup: false },
-        { title: 'Benchmarking Large Language Models in Retrieval-Augmented Generation', meta: 'Chen et al. · 2024 · AAAI', checked: true, dup: true },
-        { title: 'Active Retrieval Augmented Generation', meta: 'Jiang et al. · 2023 · EMNLP', checked: true, dup: false },
-        { title: 'RAGAS: Automated Evaluation of Retrieval Augmented Generation', meta: 'Es et al. · 2024 · EACL Demo', checked: true, dup: false },
-        { title: 'Large Language Models Can Be Easily Distracted by Irrelevant Context', meta: 'Shi et al. · 2023 · ICML', checked: false, dup: false }
+        { title: 'A Survey on Hallucination in Large Language Models', meta: 'Huang et al. · 2024 · ACM TOIS', via, checked: true, batch: true, dup: false },
+        { title: 'Benchmarking Large Language Models in Retrieval-Augmented Generation', meta: 'Chen et al. · 2024 · AAAI', via, checked: false, batch: false, dup: true },
+        { title: 'Active Retrieval Augmented Generation', meta: 'Jiang et al. · 2023 · EMNLP', via, checked: true, batch: true, dup: false },
+        { title: 'RAGAS: Automated Evaluation of Retrieval Augmented Generation', meta: 'Es et al. · 2024 · EACL Demo', via, checked: true, batch: true, dup: false },
+        { title: 'Large Language Models Can Be Easily Distracted by Irrelevant Context', meta: 'Shi et al. · 2023 · ICML', via, checked: false, batch: true, dup: false }
       ].map((q, i) => ({ ...q, div: div(i) })),
       refs: [
-        { title: 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', meta: 'Lewis et al. · 2020 · NeurIPS', key: 'lewis2020rag', ...T, ...ix('Indexed'), used: '2 project' },
-        { title: 'Dense Passage Retrieval for Open-Domain Question Answering', meta: 'Karpukhin et al. · 2020 · EMNLP', key: 'karpukhin2020dpr', ...T, ...ix('Indexed'), used: '1 project' },
-        { title: 'Survey of RAG for Large Language Models', meta: 'Gao et al. · 2023 · arXiv', key: 'gao2023survey', ...T, ...ix('Failed', 'PDF không có lớp văn bản'), used: '1 project' },
-        { title: 'Lost in the Middle: How Language Models Use Long Contexts', meta: 'Liu et al. · 2024 · TACL', key: 'liu2024lost', ...T, ...ix('Unavailable', 'Citation được, evidence không'), used: '1 project' },
-        { title: 'Self-RAG: Learning to Retrieve, Generate, and Critique', meta: 'Asai et al. · 2024 · ICLR', key: 'asai2024selfrag', ...T, ...ix('Indexing'), used: '—' },
-        { title: 'Hallucination detection preprint (đã rút)', meta: 'Doe et al. · 2023 · arXiv', key: 'doe2023hd', ...R, ...ix('Indexed'), used: '1 project · needs review' }
+        { title: 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', meta: 'Lewis et al. · 2020 · NeurIPS', key: 'lewis2020rag', ...T, decided: '27/10/2026', ...ix('Indexed'), used: '2 project', review: false },
+        { title: 'Dense Passage Retrieval for Open-Domain Question Answering', meta: 'Karpukhin et al. · 2020 · EMNLP', key: 'karpukhin2020dpr', ...T, decided: '27/10/2026', ...ix('Indexed'), used: '1 project', review: false },
+        { title: 'Survey of RAG for Large Language Models', meta: 'Gao et al. · 2023 · arXiv', key: 'gao2023survey', ...T, decided: '28/10/2026', ...ix('Failed', 'PDF không có lớp văn bản'), used: '1 project', review: false },
+        { title: 'Lost in the Middle: How Language Models Use Long Contexts', meta: 'Liu et al. · 2024 · TACL', key: 'liu2024lost', ...T, decided: '28/10/2026', ...ix('Unavailable', 'Dùng được cho citation, không dùng được cho evidence'), used: '1 project', review: false },
+        { title: 'Self-RAG: Learning to Retrieve, Generate, and Critique', meta: 'Asai et al. · 2024 · ICLR', key: 'asai2024selfrag', ...T, decided: '30/10/2026', ...ix('Indexing'), used: '—', review: false },
+        { title: 'Hallucination detection preprint (đã rút)', meta: 'Doe et al. · 2023 · arXiv', key: 'doe2023hd', ...R, decided: 'thu hồi 30/10/2026', ...ix('Indexed'), used: '1 project', review: true }
+      ],
+      deleted: [
+        { title: 'REALM: Retrieval-Augmented Language Model Pre-Training', meta: 'Guu et al. · 2020 · ICML', key: 'guu2020realm', deletedAt: '20/11/2026 15:40', purgeAfter: '20/12/2026' },
+        { title: 'Dense X Retrieval: What Retrieval Granularity Should We Use?', meta: 'Chen et al. · 2023 · arXiv', key: 'chen2023densex', deletedAt: '05/11/2026 09:12', purgeAfter: '05/12/2026' }
       ]
     };
   }
