@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ErrorState, LoadingState, PromptCard, isApiError, useApi, useEvents, useShell, useStreamSignal, type ApiError, type InteractiveAgentPrompt } from '../../shell';
+import { DeliberationCard, isDeliberationProposal } from './deliberation-card';
 import { NS, agentKey, objectHref, useResource, type Schemas } from './shared';
 
 type PromptResponse = Schemas['PromptResponse'];
@@ -79,9 +80,12 @@ export function PromptInline({ projectId, promptId }: { projectId: string; promp
     }
   };
 
-  // PID-00084 slot (one line, added by the PR merged later): isDeliberationProposal(prompt) ? <DeliberationCard … /> : <PromptCard … />
+  // A deliberation proposal gets the card of PID-00084 (it answers once itself); any other prompt the shell's card.
   return (
     <div className="sires-chat__prompt">
+      {isDeliberationProposal(prompt) ? (
+        <DeliberationCard prompt={prompt} projectId={projectId} onChange={(next) => resource.setData(() => next)} />
+      ) : (
       <PromptCard
         prompt={prompt}
         fieldLabels={fieldLabels}
@@ -95,6 +99,7 @@ export function PromptInline({ projectId, promptId }: { projectId: string; promp
           </Link>
         )}
       </PromptCard>
+      )}
       {elsewhere && (
         <p role="status" className="sires-chat__meta">
           {t('prompt.handledElsewhere')}

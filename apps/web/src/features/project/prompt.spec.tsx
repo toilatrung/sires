@@ -21,7 +21,9 @@ beforeEach(() => resetProjectChatMockState());
 
 const PROMPT_ID = id('prompt', 1);
 const base = (): Prompt => structuredClone(demoFixtures.InteractiveAgentPrompt!.find((p) => p.id === PROMPT_ID)!);
-const withPrompt = (prompt: Prompt) => mock.use({ overrides: { getPrompt: () => ({ status: 200, body: prompt }) } });
+// Only the prompt under test changes; the deliberation proposal of the same conversation (PID-00084) stays as it is.
+const withPrompt = (prompt: Prompt) =>
+  mock.use({ overrides: { getPrompt: ({ params, fixtures }) => ({ status: 200, body: params.promptId === PROMPT_ID ? prompt : fixtures.InteractiveAgentPrompt!.find((p) => p.id === params.promptId)! }) } });
 
 async function openChat() {
   const view = renderProject(`/projects/${projectIds.rag}/chat`);
@@ -100,8 +102,8 @@ describe('Prompt trong luồng chat (S05)', () => {
   it('Cancelled, Expired (UX-PROMPT-004-AC01, EC23)', async () => {
     withPrompt({ ...base(), status: 'Cancelled', statusReason: 'Plan Version chờ duyệt đã có phiên bản mới.' });
     await openChat();
-    expect(await screen.findByText(/Plan Version chờ duyệt đã có phiên bản mới/)).toBeTruthy();
-    expect(screen.getByText('Không được tính là đồng ý.')).toBeTruthy();
+    const reason = await screen.findByText(/Plan Version chờ duyệt đã có phiên bản mới/);
+    expect(within(reason.closest('.sires-chat__prompt') as HTMLElement).getByText('Không được tính là đồng ý.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Xác nhận/ })).toBeNull();
   });
 
@@ -141,7 +143,8 @@ describe('Prompt trong luồng chat (S05)', () => {
     let calls = 0;
     mock.use({
       overrides: {
-        getPrompt: () => {
+        getPrompt: ({ params, fixtures }) => {
+          if (params.promptId !== PROMPT_ID) return { status: 200, body: fixtures.InteractiveAgentPrompt!.find((p) => p.id === params.promptId)! };
           calls += 1;
           return calls === 1 ? problem(503, 'service_unavailable') : { status: 200, body: base() };
         },

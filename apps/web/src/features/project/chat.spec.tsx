@@ -13,6 +13,7 @@ import { demoFixtures, id, projectIds, type EventInput } from '../../shell/mock'
 import { useMockServer } from '../../shell/mock/node';
 import { waitForFrame } from '../../shell/test/render';
 import { resetProjectChatMockState } from './__mocks__';
+import { openProposal, proposalMessage, skippedResultMessage } from './__mocks__/deliberation-card';
 import { problem, renderProject } from './test-helpers';
 import { feature } from '.';
 
@@ -323,5 +324,32 @@ describe('Chat: context và lỗi (S01, S06)', () => {
     expect(await screen.findByText('SIRes tạm thời không phục vụ được.')).toBeTruthy();
     await view.user.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(await screen.findByText(/Chưa có tin nhắn/)).toBeTruthy();
+  });
+});
+
+describe('Chat: đề xuất thảo luận (PID-00084 trong luồng)', () => {
+  it('bỏ qua thảo luận ra nhãn Không qua thảo luận (PID-00084-AC01)', async () => {
+    const proposal = openProposal();
+    let skipped = false;
+    const newestFirst = (list: Message[]) => [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    mock.use({
+      overrides: {
+        listMessages: () => page(newestFirst([...fixtureMessages(), proposalMessage(), ...(skipped ? [skippedResultMessage()] : [])])),
+        answerPrompt: ({ params }) => {
+          if (params.promptId !== proposal.id) return problem(409, 'invalid_transition');
+          skipped = true;
+          return { status: 200, body: { ...proposal, status: 'Answered', response: { choiceIds: ['skip'], respondedBy: { type: 'researcher' }, respondedAt: new Date().toISOString() } } };
+        },
+      },
+    });
+    const { user, calls } = await openChat();
+    // The proposal of the flow is the card of PID-00084, not the standard prompt card.
+    await user.click(await screen.findByRole('button', { name: 'Bỏ qua' }));
+    expect(await screen.findByText(/^Bạn đã chọn Bỏ qua/)).toBeTruthy();
+    expect(JSON.parse(calls('POST', `/prompts/${proposal.id}/response`)[0]!.body ?? '{}')).toEqual({ choiceIds: ['skip'] });
+    // The Orchestrator's result arrives: it carries the label of Chat--deliberation-skipped.
+    mock.events.emit({ type: 'message.posted', projectId: P, objectType: 'message', objectId: skippedResultMessage().id });
+    const result = (await screen.findByText(/^Tôi đề xuất so sánh theo ba trục/)).closest('li')!;
+    expect(within(result).getByText('Không qua thảo luận')).toBeTruthy();
   });
 });
