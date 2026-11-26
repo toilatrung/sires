@@ -21,7 +21,7 @@
 .deliberation-card:focus { outline: none; }
 .deliberation-card:focus-visible { outline: 3px solid var(--sires-brand-line); outline-offset: 2px; }
 .deliberation-card[data-status="Answered"] { border-color: var(--sires-line); }
-.deliberation-card[data-status="Expired"], .deliberation-card[data-status="Cancelled"] { border: 1.5px dashed var(--sires-muted); }
+.deliberation-card[data-status="Expired"], .deliberation-card[data-status="Cancelled"] { border: 1.5px dashed var(--sires-muted); background: var(--sires-ground); }
 
 .deliberation-card__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
 .deliberation-card__kind {
@@ -51,6 +51,8 @@
 .deliberation-card__note { color: var(--sires-muted); }
 .deliberation-card__warning {
   margin: 0;
+  display: flex;
+  gap: 8px;
   padding: 8px 12px;
   border: 1.5px solid var(--sires-warn);
   border-radius: var(--sires-radius-control);
@@ -58,10 +60,17 @@
   line-height: 1.45;
 }
 .deliberation-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.deliberation-card__actions .sires-button { height: 38px; }
+.deliberation-card__warning svg { flex: none; margin-top: 2px; color: var(--sires-warn); }
+.deliberation-card__actions .sires-button { height: 38px; font-size: 13px; }
 .deliberation-card__explain { margin: 0; font-size: 13px; color: var(--sires-muted); }
+/* Live region (always present): an empty one takes no room in the card's 12px gap. */
+.deliberation-card__result { display: flex; flex-direction: column; gap: 8px; }
+.deliberation-card__result:empty { margin-top: -12px; }
 .deliberation-card__answered, .deliberation-card__closed, .deliberation-card__elsewhere { margin: 0; font-size: 13px; }
 .deliberation-card__closed { color: var(--sires-muted); }
+.deliberation-card__closed strong { color: var(--sires-ink); }
+.deliberation-card__standard { display: flex; flex-direction: column; gap: 8px; }
+.deliberation-card__standard > .deliberation-card__result:empty { margin-top: -8px; }
 
 /* Narrow: one column (EC12). */
 @media (max-width: 720px) {

@@ -6,7 +6,8 @@
 // test route, talking to the mock server of PID-00013. Operations of other areas (getPrompt, answerPrompt,
 // listProviderConnections, getWorkflow) are overridden per test.
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import i18next from 'i18next';
 import { expect } from 'vitest';
@@ -43,11 +44,23 @@ export function useCardContext(mock: MockServer): void {
   });
 }
 
+/**
+ * The card as the Chat of PID-00058 mounts it: the Chat holds a copy of the prompt and passes `onChange`. `setPrompt`
+ * re-renders the card with another copy (the Chat re-rendering with its old one, say); `changes` lists every prompt
+ * the card handed back.
+ */
 export function renderCard(prompt: InteractiveAgentPrompt) {
   const services = createShellServices({ fetch: fetchInJsdom, browser: testBrowser(), i18n: i18next, sseRetryDelays: [10] });
+  const changes: InteractiveAgentPrompt[] = [];
+  let setHeld: (next: InteractiveAgentPrompt) => void = () => undefined;
+  function ChatStandIn() {
+    const [held, set] = useState(prompt);
+    setHeld = set;
+    return <DeliberationCard prompt={held} projectId={PROJECT_ID} onChange={(next) => changes.push(next)} />;
+  }
   const cardFeature: Feature = {
     id: 'deliberation-card-test',
-    routes: [{ path: 'projects/:projectId/chat', element: <DeliberationCard prompt={prompt} projectId={PROJECT_ID} /> }],
+    routes: [{ path: 'projects/:projectId/chat', element: <ChatStandIn /> }],
     messages: { vi: {}, en: {} },
   };
   const router = createMemoryRouter(createRoutes([cardFeature, ...neutralFeatures]), { initialEntries: [`/projects/${PROJECT_ID}/chat`] });
@@ -63,6 +76,8 @@ export function renderCard(prompt: InteractiveAgentPrompt) {
     services,
     router,
     user,
+    changes,
+    setPrompt: (next: InteractiveAgentPrompt) => act(() => setHeld(next)),
     unmountAll() {
       services.events.close();
       detach();

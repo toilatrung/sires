@@ -5,7 +5,7 @@
 // Typed fixtures of the deliberation proposal card (PID-00084 H7), from the block “Đề xuất thảo luận” of Chat.dc.html
 // and Chat--deliberation-skipped: an Open proposal, the same-model variant, the missing-configuration flow, Answered,
 // Expired, Cancelled, a proposal missing a choice, and the Orchestrator message after “Bỏ qua”. Data only: no
-// operation is claimed here (getPrompt, answerPrompt belong to PID-00058; tests override them locally). PID-00058
+// operation is claimed here (getPrompt, answerPrompt belong to PID-00060; tests override them locally). PID-00058
 // merges these into the project area's mocks when its Chat lands.
 
 import { ACCOUNT_ID, id, projectIds } from '../../../shell/mock';
@@ -126,7 +126,7 @@ export const answeredProposal = (): Prompt =>
 
 /** Expired and Cancelled (EC08). */
 export const expiredProposal = (): Prompt => proposal(46, { status: 'Expired', statusReason: 'Hết hạn sau 24 giờ không có câu trả lời.' });
-export const cancelledProposal = (): Prompt => proposal(47, { status: 'Cancelled', statusReason: 'Workflow wf-52d đã bị hủy.' });
+export const cancelledProposal = (): Prompt => proposal(47, { status: 'Cancelled', statusReason: 'Workflow wf-052 đã bị hủy.' });
 
 /** Missing the skip choice: the standard card applies (EC10). */
 export const withoutSkip = (): Prompt => proposal(48, { choices: [DELIBERATE_CHOICE] });

@@ -7,9 +7,16 @@
 // parties, the cost on the Researcher's API key and a same-model warning; answers once with answerPrompt; Answered,
 // Expired and Cancelled are read only. A prompt without both choices falls back to the shell's standard card (EC10).
 //
-// PID-00058's Chat uses it with one import, in place of PromptCard for these prompts:
+// Mounting contract with PID-00058's Chat (one import, in place of PromptCard for these prompts):
 //   import { DeliberationCard, isDeliberationProposal } from './deliberation-card';
-//   isDeliberationProposal(prompt) ? <DeliberationCard prompt={prompt} projectId={projectId} /> : <PromptCard … />
+//   isDeliberationProposal(prompt)
+//     ? <DeliberationCard key={prompt.id} prompt={prompt} projectId={projectId} onChange={updatePrompt} />
+//     : <PromptCard … />
+// - The card answers by itself (answerPrompt with Idempotency-Key) and reads the prompt again on 409 or on a
+//   prompt.status_changed from elsewhere; `onChange` hands the Chat every prompt the server returns, so the Chat can
+//   replace its own copy.
+// - A `prompt` prop replaces the card's copy only when it is newer (another prompt, a higher rowVersion, or no longer
+//   Open while the card still is): a Chat that re-renders with its old Open copy does not reopen an answered card.
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,31 +38,59 @@ import './deliberation-card.css';
 
 type Schemas = PublicApi.components['schemas'];
 type Participant = Schemas['DeliberationProposal']['participants'][number];
+type Choice = NonNullable<InteractiveAgentPrompt['choices']>[number];
 
 export const DELIBERATE = 'deliberate';
 export const SKIP = 'skip';
 
-/** The card applies: purpose deliberation_proposal, a proposal, and both choices deliberate and skip (EC10). */
-export function isDeliberationProposal(prompt: InteractiveAgentPrompt): boolean {
-  if (prompt.purpose !== 'deliberation_proposal' || !prompt.deliberationProposal) return false;
-  const ids = new Set((prompt.choices ?? []).map((c) => c.id));
-  return ids.has(DELIBERATE) && ids.has(SKIP);
+interface ProposalParts {
+  proposal: Schemas['DeliberationProposal'];
+  deliberate: Choice;
+  skip: Choice;
 }
 
+/** The proposal and its two choices, or undefined when the card does not apply. */
+function proposalParts(prompt: InteractiveAgentPrompt): ProposalParts | undefined {
+  if (prompt.purpose !== 'deliberation_proposal' || !prompt.deliberationProposal) return undefined;
+  const choices = prompt.choices ?? [];
+  const deliberate = choices.find((c) => c.id === DELIBERATE);
+  const skip = choices.find((c) => c.id === SKIP);
+  return deliberate && skip ? { proposal: prompt.deliberationProposal, deliberate, skip } : undefined;
+}
+
+/** The card applies: purpose deliberation_proposal, a proposal, and both choices deliberate and skip (EC10). */
+export function isDeliberationProposal(prompt: InteractiveAgentPrompt): boolean {
+  return proposalParts(prompt) !== undefined;
+}
+
+const workflowHref = (projectId: string, workflowId: string) =>
+  `/projects/${encodeURIComponent(projectId)}/activity/workflows/${encodeURIComponent(workflowId)}`;
+
 /** The Deliberation tab of the workflow page (PID-00083, monitoring). */
-export const deliberationTabHref = (projectId: string, workflowId: string) =>
-  `/projects/${encodeURIComponent(projectId)}/activity/workflows/${encodeURIComponent(workflowId)}?view=deliberation`;
+export const deliberationTabHref = (projectId: string, workflowId: string) => `${workflowHref(projectId, workflowId)}?view=deliberation`;
+
+/** Short code as the monitoring area writes it (`dl-301`): a prefix and the last three characters of the id. */
+const shortCode = (prefix: string, id: string) => `${prefix}-${id.replace(/-/g, '').slice(-3)}`;
 
 export interface DeliberationCardProps {
   prompt: InteractiveAgentPrompt;
   projectId: string;
-  /** Called with the prompt as the server returns it after an answer or a refresh. */
+  /** Called with the prompt as the server returns it after an answer or a refresh; the Chat replaces its copy. */
   onChange?: (prompt: InteractiveAgentPrompt) => void;
 }
 
 export function DeliberationCard(props: DeliberationCardProps) {
-  return isDeliberationProposal(props.prompt) ? <ProposalCard {...props} /> : <StandardCard {...props} />;
+  const state = usePromptAnswer(props);
+  // The prompt the card holds decides: a refresh that no longer carries a full proposal falls back to the standard card.
+  const parts = proposalParts(state.prompt);
+  return parts ? <ProposalCard projectId={props.projectId} parts={parts} state={state} /> : <StandardCard state={state} />;
 }
+
+/** Newer than the card's copy: another prompt, a higher rowVersion, or closed while the card still shows it Open. */
+const isNewer = (next: InteractiveAgentPrompt, current: InteractiveAgentPrompt) =>
+  next.id !== current.id || next.rowVersion > current.rowVersion || (current.status === 'Open' && next.status !== 'Open');
+
+type AnswerState = ReturnType<typeof usePromptAnswer>;
 
 /** Shared answer flow: answerPrompt once with Idempotency-Key; 409 or prompt.status_changed → read the prompt again. */
 function usePromptAnswer({ prompt: initial, projectId, onChange }: DeliberationCardProps) {
@@ -66,40 +101,60 @@ function usePromptAnswer({ prompt: initial, projectId, onChange }: DeliberationC
   const [error, setError] = useState<ApiError>();
   const [elsewhere, setElsewhere] = useState(false);
   const sending = useRef(false);
+  const current = useRef(prompt);
+  current.current = prompt;
 
-  useEffect(() => setPrompt(initial), [initial]);
+  // A prop older than the card's copy (the Chat's Open copy after the card answered) changes nothing (G4).
+  useEffect(() => {
+    if (!isNewer(initial, current.current)) return;
+    if (initial.id !== current.current.id) {
+      setError(undefined);
+      setElsewhere(false);
+    }
+    current.current = initial;
+    setPrompt(initial);
+  }, [initial]);
 
-  const refresh = async (fromElsewhere: boolean) => {
+  const update = (next: InteractiveAgentPrompt) => {
+    current.current = next;
+    setPrompt(next);
+    onChange?.(next);
+  };
+
+  // Read the prompt again after it changed elsewhere (409, or an event while the card shows it Open).
+  const refresh = async () => {
     try {
-      const { data } = await api.get('/prompts/{promptId}', { path: { promptId: initial.id } });
-      setPrompt(data);
-      onChange?.(data);
-      if (fromElsewhere && data.status !== 'Open') setElsewhere(true);
+      const { data } = await api.get('/prompts/{promptId}', { path: { promptId: current.current.id } });
+      update(data);
+      if (data.status !== 'Open') setElsewhere(true);
     } catch (err) {
       setError(isApiError(err) ? err : new ApiError('network'));
     }
   };
 
-  // Answered or closed elsewhere (another tab, the Orchestrator): read it again, never send again (EC07).
+  // Answered or closed elsewhere (another tab, the Orchestrator): read it again, never send again (EC07). Answered,
+  // Expired and Cancelled are final, so once the card holds one of them (its own answer included, whose
+  // prompt.status_changed arrives after the POST returned) events of this prompt change nothing (G1).
   useEvents({ types: ['prompt.status_changed'], projectId }, (event) => {
-    if (event.objectId === initial.id && !sending.current) void refresh(true);
+    if (event.objectId !== current.current.id || sending.current || current.current.status !== 'Open') return;
+    void refresh();
   });
 
   const answer = async (response: Schemas['PromptResponse']) => {
     // One call only, even on a double click (EC06).
-    if (sending.current || prompt.status !== 'Open') return;
+    if (sending.current || current.current.status !== 'Open') return;
+    const promptId = current.current.id;
     sending.current = true;
     setBusy(true);
     setError(undefined);
     try {
-      const { data } = await idempotency.run(`answerPrompt:${prompt.id}`, (key) =>
-        api.post('/prompts/{promptId}/response', { path: { promptId: prompt.id }, idempotencyKey: key, body: response }),
+      const { data } = await idempotency.run(`answerPrompt:${promptId}`, (key) =>
+        api.post('/prompts/{promptId}/response', { path: { promptId }, idempotencyKey: key, body: response }),
       );
-      setPrompt(data);
-      onChange?.(data);
+      update(data);
     } catch (err) {
       const apiError = isApiError(err) ? err : new ApiError('network');
-      if (apiError.status === 409) await refresh(true);
+      if (apiError.status === 409) await refresh();
       else setError(apiError);
     } finally {
       sending.current = false;
@@ -110,21 +165,32 @@ function usePromptAnswer({ prompt: initial, projectId, onChange }: DeliberationC
 }
 
 /** The shell's card with the same answer flow, for a deliberation_proposal prompt missing a choice (EC10). */
-function StandardCard(props: DeliberationCardProps) {
-  const { prompt, busy, answer } = usePromptAnswer(props);
-  return <PromptCard prompt={prompt} submitting={busy} agentLabel="Orchestrator" onAnswer={(response) => answer(response)} />;
+function StandardCard({ state }: { state: AnswerState }) {
+  const { t } = useTranslation('project');
+  const { prompt, busy, error, elsewhere, answer } = state;
+  return (
+    <div className="deliberation-card__standard">
+      <PromptCard prompt={prompt} submitting={busy} agentLabel="Orchestrator" onAnswer={(response) => answer(response)} />
+      {error && <ErrorState error={error} title={t('deliberationCard.answerFailed')} notSaved={t('deliberationCard.notSent')} />}
+      <div role="status" className="deliberation-card__result">
+        {elsewhere && <p className="deliberation-card__elsewhere">{t('deliberationCard.elsewhere')}</p>}
+      </div>
+    </div>
+  );
 }
 
-function ProposalCard(props: DeliberationCardProps) {
-  const { projectId } = props;
+/** Connections of the account: a map once listed, 'error' when the list failed, undefined while loading. */
+type Connections = ReadonlyMap<string, Schemas['ProviderConnection']> | 'error' | undefined;
+
+function ProposalCard({ projectId, parts, state }: { projectId: string; parts: ProposalParts; state: AnswerState }) {
   const { t } = useTranslation('project');
   const api = useApi();
-  const { prompt, busy, error, elsewhere, answer } = usePromptAnswer(props);
-  const [connections, setConnections] = useState<ReadonlyMap<string, Schemas['ProviderConnection']>>();
+  const { prompt, busy, error, elsewhere, answer } = state;
+  const { proposal, deliberate, skip } = parts;
+  const [connections, setConnections] = useState<Connections>();
   const [step, setStep] = useState<{ current: number; total: number }>();
   const cardRef = useRef<HTMLElement>(null);
   const headingId = useId();
-  const proposal = prompt.deliberationProposal!;
 
   // Connection names for the cost line; unknown → the party's model (EC03).
   useEffect(() => {
@@ -135,7 +201,7 @@ function ProposalCard(props: DeliberationCardProps) {
         const items = (data.items ?? []) as Schemas['ProviderConnection'][];
         if (live) setConnections(new Map(items.map((c) => [c.id, c])));
       })
-      .catch(() => live && setConnections(new Map()));
+      .catch(() => live && setConnections('error'));
     return () => {
       live = false;
     };
@@ -163,27 +229,34 @@ function ProposalCard(props: DeliberationCardProps) {
     cardRef.current?.focus();
   };
 
-  const choice = (choiceId: string) => (prompt.choices ?? []).find((c) => c.id === choiceId);
-  const deliberate = choice(DELIBERATE)!;
-  const skip = choice(SKIP)!;
+  const listed = connections instanceof Map ? connections : undefined;
   const analysis = proposal.participants.filter((p) => p.agent === 'analysis');
   const partyName = (p: Participant) => (p.agent === 'orchestrator' ? 'Orchestrator' : `Analysis Agent${p.instance ? ` ${p.instance}` : ''}`);
-  const connectionName = (p: Participant) => connections?.get(p.providerConnectionId)?.name ?? `${p.model}`;
+  const connectionName = (p: Participant) => listed?.get(p.providerConnectionId)?.name ?? `${p.model}`;
   const costConnections = [...new Set(analysis.map(connectionName))].join(', ');
-  // An Analysis Agent whose connection is listed but not valid needs configuring (EC09); an unknown connection only
-  // loses its name on the cost line (EC03).
-  const configIssue = analysis.some((p) => {
-    const connection = connections?.get(p.providerConnectionId);
-    return connection !== undefined && connection.testStatus !== 'Valid';
-  });
-  const chosen = prompt.response?.choiceIds?.[0];
+  // An Analysis Agent may miss a valid configuration (EC09) when it has no model, when its connection is not Valid or
+  // not in the account's list, or when the list cannot be read: the card then links to Agent Models. The contract
+  // has no flag for this flow yet (report.md, Đề xuất cho PO); an unknown connection also loses its name (EC03).
+  const configIssue =
+    connections !== undefined &&
+    analysis.some((p) => {
+      if (!p.model.trim() || connections === 'error') return true;
+      const connection = connections.get(p.providerConnectionId);
+      return connection === undefined || connection.testStatus !== 'Valid';
+    });
+  const chosenId = prompt.response?.choiceIds?.[0];
+  const chosen = chosenId === DELIBERATE ? deliberate : chosenId === SKIP ? skip : undefined;
   const closed = prompt.status === 'Expired' || prompt.status === 'Cancelled';
-  const workflowLabel = `wf-${prompt.workflowId.slice(0, 3)}`;
+  const modelsLink = <Link to="/settings/agents">{t('deliberationCard.openModels')}</Link>;
 
   return (
     <article ref={cardRef} tabIndex={-1} className="deliberation-card" data-status={prompt.status} aria-labelledby={headingId}>
       <div className="deliberation-card__top">
         <span className="deliberation-card__kind">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v6M12 16.5v.5" />
+          </svg>
           {t('deliberationCard.title')} · <span lang="en">{proposal.problemType}</span>
         </span>
         <span className="deliberation-card__meta">
@@ -191,7 +264,10 @@ function ProposalCard(props: DeliberationCardProps) {
           {step && (
             <>
               {' · '}
-              {t('deliberationCard.step', { current: step.current, total: step.total })} <span className="sires-id">{workflowLabel}</span>
+              {t('deliberationCard.step', { current: step.current, total: step.total })}{' '}
+              <Link className="sires-id" to={workflowHref(projectId, prompt.workflowId)}>
+                {shortCode('wf', prompt.workflowId)}
+              </Link>
             </>
           )}
           {prompt.status !== 'Open' && (
@@ -209,12 +285,7 @@ function ProposalCard(props: DeliberationCardProps) {
         <dt>{t('deliberationCard.why')}</dt>
         <dd>
           {proposal.reason}
-          {configIssue && (
-            <>
-              {' '}
-              <Link to="/settings/agents">{t('deliberationCard.openModels')}</Link>
-            </>
-          )}
+          {configIssue && <> {modelsLink}</>}
         </dd>
         <dt>{t('deliberationCard.parties')}</dt>
         <dd>{proposal.participants.map((p) => (p.perspective ? `${partyName(p)} (${p.perspective})` : partyName(p))).join(' · ')}</dd>
@@ -226,16 +297,17 @@ function ProposalCard(props: DeliberationCardProps) {
       </dl>
       {proposal.sameModelWarning && (
         <p className="deliberation-card__warning" role="note">
-          {t('deliberationCard.sameModel')} <span className="sires-id">{analysis[0]?.model}</span>.{' '}
-          <Link to="/settings/agents">{t('deliberationCard.changeModels')}</Link>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+            <path d="M12 3l9.5 17h-19z" />
+            <path d="M12 10v4.5M12 17.5v.5" />
+          </svg>
+          <span>
+            {t('deliberationCard.sameModel')} <span className="sires-id">{analysis[0]?.model}</span>.{' '}
+            <Link to="/settings/agents">{t('deliberationCard.changeModels')}</Link>
+          </span>
         </p>
       )}
       {error && <ErrorState error={error} title={t('deliberationCard.answerFailed')} notSaved={t('deliberationCard.notSent')} />}
-      {elsewhere && (
-        <p role="status" className="deliberation-card__elsewhere">
-          {t('deliberationCard.elsewhere')}
-        </p>
-      )}
 
       {prompt.status === 'Open' && (
         <>
@@ -252,30 +324,34 @@ function ProposalCard(props: DeliberationCardProps) {
         </>
       )}
 
-      {prompt.status === 'Answered' && chosen && (
-        <p className="deliberation-card__answered">
-          {t('deliberationCard.youChose', { label: choice(chosen)?.label ?? chosen })}
-          {prompt.response?.respondedAt && (
-            <>
-              {' · '}
-              <span className="sires-num">{formatTime(prompt.response.respondedAt)}</span>
-            </>
-          )}
-          {chosen === DELIBERATE && (
-            <>
-              {' · '}
-              <Link to={deliberationTabHref(projectId, prompt.workflowId)}>{t('deliberationCard.openTab')}</Link>
-            </>
-          )}
-        </p>
-      )}
-
-      {closed && (
-        <p className="deliberation-card__closed">
-          {prompt.statusReason && <>{prompt.statusReason} </>}
-          {t('deliberationCard.notConsent')}
-        </p>
-      )}
+      {/* One live region for what changes after an answer or an event (G11): elsewhere, the choice, closed. */}
+      <div role="status" className="deliberation-card__result">
+        {elsewhere && <p className="deliberation-card__elsewhere">{t('deliberationCard.elsewhere')}</p>}
+        {prompt.status === 'Answered' && chosenId && (
+          <p className="deliberation-card__answered">
+            {t('deliberationCard.youChose', { label: chosen?.label ?? chosenId })}
+            {prompt.response?.respondedAt && (
+              <>
+                {' · '}
+                <span className="sires-num">{formatTime(prompt.response.respondedAt)}</span>
+              </>
+            )}
+            {chosenId === DELIBERATE && (
+              <>
+                {' · '}
+                {/* Missing configuration: the System checks again and opens no session yet, so Agent Models (G12). */}
+                {configIssue ? modelsLink : <Link to={deliberationTabHref(projectId, prompt.workflowId)}>{t('deliberationCard.openTab')}</Link>}
+              </>
+            )}
+          </p>
+        )}
+        {closed && (
+          <p className="deliberation-card__closed">
+            {prompt.statusReason && <>{prompt.statusReason} </>}
+            <strong>{t('deliberationCard.notConsent')}</strong>
+          </p>
+        )}
+      </div>
     </article>
   );
 }

@@ -49,7 +49,9 @@ describe('Thẻ đề xuất thảo luận (PID-00084 S01)', () => {
     const { unmountAll } = await open(openProposal());
     const article = card();
     expect(textOf(article.querySelector('.deliberation-card__kind'))).toBe('Đề xuất thảo luận · methodology');
-    await waitFor(() => expect(textOf(article.querySelector('.deliberation-card__meta'))).toMatch(/^Orchestrator · \d{2}:\d{2} · bước 4\/5 của wf-7a0$/));
+    await waitFor(() => expect(textOf(article.querySelector('.deliberation-card__meta'))).toMatch(/^Orchestrator · \d{2}:\d{2} · bước 4\/5 của wf-052$/));
+    // The workflow code links to the workflow page, short code as the monitoring area writes it.
+    expect(within(article).getByRole('link', { name: 'wf-052' }).getAttribute('href')).toBe(`/projects/${PROJECT_ID}/activity/workflows/${WORKFLOW_ID}`);
     await waitFor(() =>
       expect(facts()).toEqual([
         'Vì sao thảo luận: Có ít nhất ba cách so sánh hợp lý; chọn sai sẽ phải làm lại ma trận.',
@@ -108,13 +110,67 @@ describe('Thẻ đề xuất thảo luận (PID-00084 S01)', () => {
     unmountAll();
   });
 
+  it('thiếu cấu hình: kết nối không có trong danh sách, danh sách lỗi, chưa có model (EC09)', async () => {
+    const modelsLink = () => within(card()).findByRole('link', { name: 'Mở Agent Models' });
+    // A connection the account's list does not have.
+    useCardContext(mock);
+    let view = await open(sparseProposal());
+    expect(await modelsLink()).toBeTruthy();
+    view.unmountAll();
+
+    // The list cannot be read.
+    mock.use({
+      overrides: {
+        listProviderConnections: () =>
+          new Response(JSON.stringify({ type: 'about:blank', title: 'internal_error', status: 500, code: 'internal_error' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/problem+json' },
+          }),
+      },
+    });
+    view = await open(openProposal());
+    expect(await modelsLink()).toBeTruthy();
+    view.unmountAll();
+
+    // An Analysis Agent with no model.
+    mock.server.resetHandlers();
+    useCardContext(mock);
+    const noModel = openProposal();
+    noModel.deliberationProposal!.participants[2].model = '';
+    view = await open(noModel);
+    expect(await modelsLink()).toBeTruthy();
+    view.unmountAll();
+  });
+
   it('thiếu lựa chọn dùng thẻ chuẩn (EC10)', async () => {
     useCardContext(mock);
     const prompt = withoutSkip();
-    const { unmountAll } = renderCard(prompt);
+    mock.use({ overrides: { answerPrompt: () => new Response('', { status: 503 }) } });
+    const { user, unmountAll } = renderCard(prompt);
     expect(await screen.findByText(prompt.question)).toBeTruthy();
     expect(document.querySelector('.deliberation-card')).toBeNull();
     expect(screen.queryByText('Vì sao thảo luận')).toBeNull();
+    // The standard card shows a failed answer too.
+    await user.click(screen.getByRole('radio', { name: /Thảo luận/ }));
+    await user.click(screen.getByRole('button', { name: 'Xác nhận' }));
+    expect(await screen.findByText('Chưa gửi được câu trả lời')).toBeTruthy();
+    unmountAll();
+  });
+
+  it('bản đọc lại không còn đủ đề xuất: thẻ chuẩn, không lỗi (EC10)', async () => {
+    useCardContext(mock);
+    const prompt = openProposal();
+    mock.use({
+      overrides: {
+        answerPrompt: () => ({ status: 409, body: { type: 'x', title: 'x', status: 409, code: 'invalid_transition' } }),
+        getPrompt: () => ({ status: 200, body: { ...answered(prompt, 'deliberate'), deliberationProposal: undefined } }),
+      },
+    });
+    const { user, unmountAll } = await open(prompt);
+    await user.click(within(card()).getByRole('button', { name: 'Bỏ qua' }));
+    expect(await screen.findByText('Đề xuất này đã được xử lý ở nơi khác; thẻ hiện trạng thái mới, không gửi lại.')).toBeTruthy();
+    expect(document.querySelector('.deliberation-card')).toBeNull();
+    expect(screen.getByText(prompt.question)).toBeTruthy();
     unmountAll();
   });
 
@@ -168,11 +224,7 @@ describe('Trả lời đề xuất (PID-00084 S02)', () => {
   it('bỏ qua (PID-00084-AC01, UX-MONITOR-007-AC01, EC04)', async () => {
     useCardContext(mock);
     const prompt = openProposal();
-    const writes: string[] = [];
     let sent: { body: unknown; key: string | null } | undefined;
-    mock.server.events.on('request:start', ({ request }) => {
-      if (request.method !== 'GET') writes.push(`${request.method} ${new URL(request.url).pathname}`);
-    });
     mock.use({
       overrides: {
         answerPrompt: async ({ request }) => {
@@ -181,17 +233,60 @@ describe('Trả lời đề xuất (PID-00084 S02)', () => {
         },
       },
     });
-    const { user, unmountAll } = await open(prompt);
+    const { user, services, changes, unmountAll } = await open(prompt);
+    await waitForStream(services, mock);
+    // The card's reads are done (connection names, step of the workflow) before the click.
+    await waitFor(() => expect(textOf(card().querySelector('.deliberation-card__meta'))).toContain('bước 4/5'));
+    await waitFor(() => expect(facts()[2]).toContain('Claude cá nhân'));
+    const after: string[] = [];
+    mock.server.events.on('request:start', ({ request }) => after.push(`${request.method} ${new URL(request.url).pathname}`));
+
     await user.click(within(card()).getByRole('button', { name: 'Bỏ qua' }));
     expect(await within(card()).findByText(/^Bạn đã chọn Bỏ qua/)).toBeTruthy();
     expect(sent?.body).toEqual({ choiceIds: ['skip'] });
     expect(sent?.key).toMatch(/^[0-9a-f-]{36}$/);
-    // Only answerPrompt: the screen opens no session and starts no Agent Run.
-    expect(writes).toEqual([`POST /api/v1/prompts/${prompt.id}/response`]);
+    // The answer is in the card's live region; the Chat gets the answered prompt.
+    expect(textOf(card().querySelector('[role="status"]'))).toMatch(/^Bạn đã chọn Bỏ qua/);
+    expect(changes.map((p) => p.status)).toEqual(['Answered']);
+
+    // The outbox then sends prompt.status_changed for this very answer: not “elsewhere”, nothing read again (EC07).
+    const delivered = new Promise<void>((resolve) => {
+      const off = services.events.subscribe({ types: ['prompt.status_changed'] }, () => {
+        off();
+        resolve();
+      });
+    });
+    mock.events.emit({ type: 'prompt.status_changed', projectId: PROJECT_ID, objectType: 'interactive_agent_prompt', objectId: prompt.id, fromState: 'Open', toState: 'Answered' });
+    await delivered;
+    await new Promise((r) => setTimeout(r, 30));
+    expect(screen.queryByText(/ở nơi khác/)).toBeNull();
+    // Every request after the click: only answerPrompt; the screen opens no session and starts no Agent Run.
+    expect(after).toEqual([`POST /api/v1/prompts/${prompt.id}/response`]);
     expect(card().getAttribute('data-status')).toBe('Answered');
     expect(within(card()).queryByRole('link', { name: 'Mở tab Thảo luận' })).toBeNull();
     mock.server.events.removeAllListeners();
     unmountAll();
+  });
+
+  it('Chat render lại với bản cũ (Open) sau khi trả lời: thẻ giữ Answered', async () => {
+    useCardContext(mock);
+    const prompt = openProposal();
+    mock.use({ overrides: { answerPrompt: () => ({ status: 200, body: answered(prompt, 'skip') }) } });
+    const a = await open(prompt);
+    await a.user.click(within(card()).getByRole('button', { name: 'Bỏ qua' }));
+    await within(card()).findByText(/^Bạn đã chọn Bỏ qua/);
+    a.setPrompt({ ...prompt });
+    expect(card().getAttribute('data-status')).toBe('Answered');
+    expect(within(card()).queryAllByRole('button')).toEqual([]);
+    a.unmountAll();
+
+    // A copy that is newer (closed while the card shows it Open) replaces the card's.
+    const b = await open(openProposal());
+    b.setPrompt(expiredProposal());
+    expect(card().getAttribute('data-status')).toBe('Expired');
+    b.setPrompt({ ...openProposal(), id: expiredProposal().id });
+    expect(card().getAttribute('data-status')).toBe('Expired');
+    b.unmountAll();
   });
 
   it('thảo luận (EC05)', async () => {
@@ -262,6 +357,19 @@ describe('Trả lời đề xuất (PID-00084 S02)', () => {
     await waitFor(() => expect(card().getAttribute('data-status')).toBe('Cancelled'));
     expect(within(card()).queryAllByRole('button')).toEqual([]);
     b.unmountAll();
+  });
+
+  it('thiếu cấu hình, chọn cấu hình lại: dẫn tới Agent Models, không tới tab Thảo luận', async () => {
+    useCardContext(mock);
+    const prompt = missingConfigProposal();
+    mock.use({ overrides: { answerPrompt: () => ({ status: 200, body: answered(prompt, 'deliberate') }) } });
+    const { user, unmountAll } = await open(prompt);
+    await within(card()).findByRole('link', { name: 'Mở Agent Models' });
+    await user.click(within(card()).getByRole('button', { name: 'Cấu hình lại rồi thảo luận' }));
+    const line = await within(card()).findByText(/^Bạn đã chọn Cấu hình lại rồi thảo luận/);
+    expect(within(line).getByRole('link', { name: 'Mở Agent Models' }).getAttribute('href')).toBe('/settings/agents');
+    expect(within(card()).queryByRole('link', { name: 'Mở tab Thảo luận' })).toBeNull();
+    unmountAll();
   });
 
   it('thẻ đã trả lời chỉ đọc', async () => {
