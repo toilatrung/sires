@@ -5106,7 +5106,8 @@ paths:
       summary: Chấp nhận version (APR-03 / APR-06 / APR-07 theo loại)
       description: |
         Draft → Accepted; version Accepted cũ → Superseded trong cùng giao dịch. Synthesis cần mọi claim liên kết đã được
-        quyết định (SYN-HUMAN-REVIEW-001); diagram cần đã qua kiểm tra cú pháp (DIAG-REVIEW-001).
+        quyết định (SYN-HUMAN-REVIEW-001); diagram cần đã qua kiểm tra cú pháp và render, tức `validation.status = valid`
+        (DIAG-REVIEW-001).
       x-requirements:
         - SYN-HUMAN-REVIEW-001
         - SYN-PERSIST-001
@@ -6339,6 +6340,12 @@ components:
           $ref: '#/components/schemas/Id'
         version:
           type: integer
+        artifactId:
+          $ref: '#/components/schemas/Id'
+          readOnly: true
+          description: |
+            Có khi `type = artifact_version`: artifact chứa version `id`, để mở trang artifact từ Provenance hay danh sách đầu
+            vào (PRD 4.3: điều hướng hai chiều). Server điền khi trả; bên ghi không cần gửi.
     ProblemBrief:
       type: object
       description: |
@@ -7193,6 +7200,16 @@ components:
               $ref: '#/components/schemas/Id'
             planVersionId:
               $ref: '#/components/schemas/Id'
+            subject:
+              allOf:
+                - $ref: '#/components/schemas/TypedRef'
+              readOnly: true
+              description: |
+                Đối tượng mà workflow xử lý khi workflow được tạo từ thao tác trên một đối tượng: claim của `verifyClaim`
+                (`type = claim`), artifact được sửa của `requestDiagram` có `revisesArtifactId` (`type = artifact`). Giao diện
+                dùng để gắn lại thẻ thao tác dài vào đúng đối tượng sau khi tải lại trang (UX-STATE-001: rời trang được mà
+                thao tác vẫn tiếp tục), bằng `listWorkflows` theo `type`, `status` rồi lọc theo `subject`. Không có khi workflow
+                không gắn một đối tượng.
             triggeredBy:
               $ref: '#/components/schemas/ActorRef'
             status:
@@ -8831,6 +8848,41 @@ components:
               evidenceId:
                 $ref: '#/components/schemas/Id'
                 description: Có khi persist = true.
+    ManuscriptUsage:
+      type: object
+      readOnly: true
+      description: |
+        Vị trí một claim, evidence hoặc artifact version được dùng trong bản thảo (SYN-PERSIST-001: khi được dùng trong bản
+        thảo, ghi vị trí sử dụng — file, revision — từ Change Proposal đã chấp nhận; PRD 4.3 điều hướng hai chiều). Có một
+        mục cho mỗi file trong `diff` của Change Proposal đã chấp nhận chứa đối tượng ở `claimIds`, `evidenceIds` hoặc
+        `artifactVersionIds` (Change Proposal không ghi đối tượng nằm ở file nào). Vị trí giữ nguyên khi có revision hay
+        version Accepted mới hơn (SYN-PERSIST-001). Dữ liệu gốc thuộc manuscript; đường dữ liệu sang research (sự kiện hoặc
+        API nội bộ) bổ sung khi làm hợp đồng manuscript (PID-00079), tới khi đó các trường dùng schema này không có.
+      required:
+        - path
+        - revisionId
+        - changeProposalId
+      properties:
+        path:
+          type: string
+          examples:
+            - sections/related-work.tex
+        revisionId:
+          $ref: '#/components/schemas/Id'
+          description: Revision tạo ra khi chấp nhận Change Proposal (`resultingRevisionId`).
+        revisionNumber:
+          type: integer
+        changeProposalId:
+          $ref: '#/components/schemas/Id'
+        citationKeys:
+          type: array
+          description: |
+            Chỉ với evidence — BibTeX key của citation trong file đó trỏ tới reference của evidence (CLAIM-CITATION-001: liên
+            kết từng citation tới evidence).
+          items:
+            type: string
+        at:
+          $ref: '#/components/schemas/Timestamp'
     EvidenceInContext:
       description: Evidence kèm đoạn văn xung quanh trong nguồn (EVID-INSPECTOR-001).
       allOf:
@@ -8847,6 +8899,23 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Id'
+            linkedArtifactVersions:
+              type: array
+              readOnly: true
+              description: |
+                Artifact Version dùng evidence này: có evidence trong `provenance.inputs`, hoặc có claim (`claimIds`) liên kết
+                evidence. Mỗi mục `type = artifact_version`, có `artifactId` để mở trang artifact (PRD 4.3: artifact ↔ evidence
+                điều hướng hai chiều; EVID-INSPECTOR-001 mở evidence từ artifact).
+              items:
+                $ref: '#/components/schemas/TypedRef'
+            manuscriptUsages:
+              type: array
+              readOnly: true
+              description: |
+                Vị trí evidence được dùng trong bản thảo, kèm citation tại đó (`citationKeys`; CLAIM-CITATION-001,
+                EVID-INSPECTOR-001 mở evidence từ citation). Rỗng khi chưa dùng.
+              items:
+                $ref: '#/components/schemas/ManuscriptUsage'
     ClaimApprovalStatus:
       type: string
       enum:
@@ -8911,12 +8980,58 @@ components:
             - mismatch
         details:
           type: array
+          description: |
+            Đánh giá theo từng evidence (claim) hoặc citation (citation, change_proposal), lấy từ `assessments` mà Verification
+            Agent gửi qua `recordVerificationResults`: quan hệ, điểm, lý do ngắn trỏ tới evidence cụ thể (CLAIM-SUPPORT-001),
+            để Inspector hiện lý do kiểm chứng. Vẫn cho trường khác (`additionalProperties`) để tương thích ngược.
           items:
             type: object
             additionalProperties: true
+            properties:
+              evidenceId:
+                $ref: '#/components/schemas/Id'
+              citationKey:
+                type: string
+              relation:
+                type: string
+                enum:
+                  - supports
+                  - contradicts
+                  - context
+                  - matches
+                  - mismatch
+              score:
+                type: number
+                minimum: 0
+                maximum: 1
+              rationale:
+                type: string
         thresholdsUsed:
           $ref: '#/components/schemas/VerificationThresholds'
           description: Bản chụp ngưỡng tại thời điểm kiểm chứng (OQ-092).
+        at:
+          $ref: '#/components/schemas/Timestamp'
+    SupportStatusOverrideRecord:
+      type: object
+      readOnly: true
+      description: Bản ghi một lần Researcher ghi đè mức hỗ trợ (CLAIM-SUPPORT-001; PRD 18.2, lý do bắt buộc).
+      required:
+        - supportStatus
+        - reason
+        - by
+        - at
+      properties:
+        supportStatus:
+          type: string
+          enum:
+            - Supported
+            - Partially Supported
+            - Unsupported
+            - Conflicting
+        reason:
+          type: string
+        by:
+          $ref: '#/components/schemas/ActorRef'
         at:
           $ref: '#/components/schemas/Timestamp'
     Claim:
@@ -8948,6 +9063,46 @@ components:
               $ref: '#/components/schemas/VerificationResult'
             needsReview:
               type: boolean
+            needsReviewReasons:
+              type: array
+              readOnly: true
+              description: |
+                Lý do của cờ needs review, cùng dạng `Task.needsReviewReasons` (PRD 18.1): Reference bị thu hồi
+                (LIB-LIFECYCLE-001, PRD 5.6), evidence liên kết chuyển Stale (CLAIM-SUPPORT-001-AC03) hoặc bị loại
+                (EVID-INSPECTOR-001-AC02). Rỗng khi `needsReview = false`.
+              items:
+                type: object
+                properties:
+                  cause:
+                    type: string
+                    examples:
+                      - reference_revoked
+                      - evidence_stale
+                      - evidence_excluded
+                  sourceType:
+                    type: string
+                    examples:
+                      - reference
+                      - evidence
+                  sourceId:
+                    $ref: '#/components/schemas/Id'
+                  at:
+                    $ref: '#/components/schemas/Timestamp'
+            supportOverride:
+              description: |
+                Lần Researcher ghi đè mức hỗ trợ (`overrideClaimSupportStatus`) đang quyết định `supportStatus` hiện hành, để
+                giao diện hiển thị “đã ghi đè” (CLAIM-SUPPORT-001); `null` khi mức hỗ trợ hiện hành do Verification Agent gán.
+              oneOf:
+                - $ref: '#/components/schemas/SupportStatusOverrideRecord'
+                - type: 'null'
+            manuscriptUsages:
+              type: array
+              readOnly: true
+              description: |
+                Vị trí claim được dùng trong bản thảo (SYN-PERSIST-001-AC01: mở claim thấy file và revision nơi nó xuất hiện;
+                PRD 4.3). Rỗng khi chưa dùng.
+              items:
+                $ref: '#/components/schemas/ManuscriptUsage'
             approval:
               $ref: '#/components/schemas/ApprovalRecord'
             provenance:
@@ -9400,7 +9555,9 @@ components:
             type: string
     DiagramType:
       type: object
-      description: Loại sơ đồ hỗ trợ (DIAG-TYPES-001). Chỉ Mermaid trong MVP (OQ-059).
+      description: |
+        Loại sơ đồ hỗ trợ (DIAG-TYPES-001): đúng năm loại Sequence, Component, Activity, State, Workflow; cả năm dùng Mermaid
+        trong MVP (OQ-059). Loại ngoài danh sách (ví dụ Gantt) không hỗ trợ (DIAG-TYPES-001-AC02).
       required:
         - id
         - label
@@ -9408,14 +9565,15 @@ components:
       properties:
         id:
           type: string
+          description: |
+            Mã loại. Cú pháp mặc định theo DIAG-TYPES-001: `sequence` → sequenceDiagram; `component` → flowchart có subgraph
+            cho từng thành phần; `activity`, `workflow` → flowchart; `state` → stateDiagram-v2.
           examples:
-            - flowchart
             - sequence
-            - class
+            - component
+            - activity
             - state
-            - er
-            - gantt
-            - mindmap
+            - workflow
         label:
           type: string
         syntax:
@@ -9432,8 +9590,9 @@ components:
           minLength: 1
         diagramType:
           type: string
+          description: '`DiagramType.id`. Bỏ trống thì Orchestrator chọn loại (DIAG-TYPES-001); khi sửa sơ đồ thì giữ loại hiện tại.'
           examples:
-            - flowchart
+            - workflow
         taskId:
           $ref: '#/components/schemas/Id'
         inputRefs:
@@ -9829,6 +9988,64 @@ components:
               description: Tối đa một version Accepted hiện hành.
             latestVersion:
               $ref: '#/components/schemas/ArtifactVersionSummary'
+    ClaimAnchor:
+      type: object
+      readOnly: true
+      description: |
+        Vị trí một claim trong `content` của version synthesis (UX-CLAIM-001-AC01). Khoảng nửa mở `[charStart, charEnd)`, đếm
+        từ 0, cùng cách đếm với `Evidence.location.charStart`, `charEnd`; chip mức hỗ trợ đặt ngay sau `charEnd`. Hai claim
+        có thể cùng một khoảng (một câu gắn nhiều claim).
+      required:
+        - claimId
+        - charStart
+        - charEnd
+      properties:
+        claimId:
+          $ref: '#/components/schemas/Id'
+        charStart:
+          type: integer
+          minimum: 0
+        charEnd:
+          type: integer
+          minimum: 0
+    DiagramValidationStatus:
+      type: string
+      description: |
+        Trạng thái kiểm tra nguồn sơ đồ (DIAG-VALIDATE-001): `valid` — cú pháp đúng và render được preview; `syntax_error` —
+        trình phân tích Mermaid báo lỗi cú pháp; `render_error` — cú pháp đúng nhưng render lỗi (quá lớn, quá thời gian;
+        WF-07.E2).
+      enum:
+        - valid
+        - syntax_error
+        - render_error
+    DiagramValidation:
+      type: object
+      readOnly: true
+      description: |
+        Kết quả kiểm tra nguồn của chính Artifact Version diagram (DIAG-SOURCE-001: mỗi version lưu trạng thái kiểm tra;
+        DIAG-VALIDATE-001). System ghi khi tạo version — Diagram Agent ghi đầu ra hoặc Researcher lưu nguồn
+        (`createArtifactVersion`) — bằng cùng bộ kiểm tất định của `validateDiagramSource`; version bất biến nên kết quả không
+        đổi. Version khác `valid` vẫn được lưu ở Draft kèm lỗi để Researcher sửa tay, nhưng không chấp nhận được
+        (DIAG-REVIEW-001).
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/DiagramValidationStatus'
+        errors:
+          type: array
+          description: Có khi `status` khác `valid`; cùng dạng `DiagramValidationResult.errors`.
+          items:
+            type: object
+            required:
+              - message
+            properties:
+              line:
+                type: integer
+                minimum: 1
+                description: Dòng của nguồn, đếm từ 1 (DIAG-VALIDATE-001-AC01); không có với lỗi render.
+              message:
+                type: string
     ArtifactVersion:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
@@ -9877,6 +10094,38 @@ components:
               description: Claim gắn với bản tổng hợp (synthesis).
               items:
                 $ref: '#/components/schemas/Id'
+            claimAnchors:
+              type: array
+              readOnly: true
+              description: |
+                Chỉ với synthesis — vị trí của claim trong `content`, để giao diện hiện nhãn mức hỗ trợ ngay tại câu
+                (UX-CLAIM-001-AC01; SYN-REVIEW-001: mỗi câu khẳng định gắn claim). Synthesis Agent gửi vị trí cùng claim
+                (`createClaimsBatch` nội bộ, trường `anchor`); research kiểm vị trí nằm trong `content` rồi trả ở đây theo
+                thứ tự `charStart`. Claim trong `claimIds` không có mục ở đây thì giao diện hiện ở nhóm “chưa định vị”, vẫn có
+                nhãn (KPI-01). Sửa phát biểu claim không đổi vị trí (nội dung version bất biến).
+              items:
+                $ref: '#/components/schemas/ClaimAnchor'
+            diagramType:
+              type: string
+              description: |
+                Chỉ với diagram — `DiagramType.id` của version (DIAG-TYPES-001: loại sơ đồ và cú pháp ghi trong Artifact
+                Version; cú pháp là `format`, `mermaid` trong MVP).
+              examples:
+                - workflow
+            validation:
+              allOf:
+                - $ref: '#/components/schemas/DiagramValidation'
+              description: |
+                Chỉ với diagram — trạng thái kiểm tra của nguồn trong version này (DIAG-SOURCE-001, DIAG-VALIDATE-001). Chỉ
+                version có `status = valid` chấp nhận được (`acceptArtifactVersion`, DIAG-REVIEW-001).
+            manuscriptUsages:
+              type: array
+              readOnly: true
+              description: |
+                Vị trí version này được dùng trong bản thảo (SYN-PERSIST-001-AC01; PRD 4.3: artifact → vị trí được dùng trong
+                bản thảo). Rỗng khi chưa dùng; chỉ version Accepted được đưa vào bản thảo.
+              items:
+                $ref: '#/components/schemas/ManuscriptUsage'
             review:
               type: object
               properties:
@@ -9892,7 +10141,9 @@ components:
               $ref: '#/components/schemas/ApprovalRecord'
     ArtifactVersionCreate:
       type: object
-      description: Researcher sửa nội dung — tạo version Draft mới, không sửa tại chỗ.
+      description: |
+        Researcher sửa nội dung — tạo version Draft mới, không sửa tại chỗ. Với diagram, System kiểm tra nguồn mới và ghi
+        `validation` vào version mới (DIAG-VALIDATE-001: mỗi lần lưu nguồn); nguồn còn lỗi vẫn lưu được.
       required:
         - basedOnVersionId
       properties:
@@ -9904,6 +10155,11 @@ components:
           $ref: '#/components/schemas/Id'
         note:
           type: string
+        diagramType:
+          type: string
+          description: Chỉ với diagram — `DiagramType.id` (DIAG-TYPES-001); bỏ trống thì giữ loại của `basedOnVersionId`.
+          examples:
+            - state
     ArtifactDecision:
       type: object
       description: |

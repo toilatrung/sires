@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 83 trang HTML tĩnh (35 nguồn + 48 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 90 trang HTML tĩnh (35 nguồn + 55 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -52,8 +52,8 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5 | UX-TASK-001–005 |
 | P4 | PlanCompare | So sánh và duyệt Plan Version | UX-PLAN-001/002 |
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
-| P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
-| P7 | Artifacts | Research Artifacts, phiên bản, provenance | 5.7, 13 |
+| P6 | Evidence | References and Evidence: tab Claims (mặc định) với Inspector của claim Conflicting và thao tác duyệt; biến thể `view`: references (reference của project, chip duyệt và indexing, Unavailable), evidence (Evidence Inspector của một evidence: claim đang dùng, artifact và bản thảo dùng evidence), evidence-stale; `dialog`: accept-claim, link-evidence, remove-reference, exclude-evidence — PID-00114 H4–H6 | UX-EVID-001, UX-CLAIM-001, EVID-INSPECTOR-001, LIB-PROJECT-001 |
+| P7 | Artifacts | Research Artifacts: một dòng mỗi artifact (version mới nhất, “Đang dùng” khi version Accepted khác), lọc theo có hay chưa có version Accepted; phiên bản, provenance (đầu vào artifact version có liên kết), dòng “Dùng trong” — PID-00114 H8 | 5.7, 13 |
 | P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; biến thể khung phải build log, lịch sử; proposal citation lỗi, outdated; đang build | 15.7, UX-STATE-001 |
 | P9 | ProjectActivity | Agent Activity cấp project: danh sách workflow + Agent List; biến thể đang hoạt động, đã kết thúc | UX-MONITOR-001, UX-MONITOR-004 |
 | P9 | Workflow | Chi tiết workflow wf-52d + Agent Run + Recovery decision. Mặc định Waiting for User; biến thể state running, interrupted; view danh sách bước, thảo luận đang chạy, hoàn tất, Failed, Cancelled; debug | UX-MONITOR-002–004, UX-MONITOR-006, ORCH-DELIB-002, WF-06 |
