@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00060 — Sketch: Pending Actions, Notifications, trợ lý, điện thoại, khối Dashboard</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header small { color:var(--mute); }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:24px; padding:24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; }
+  .state h2 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:12px; color:var(--mute); }
+  .ph + .ph { margin-top:8px; }
+  .ph b { color:var(--ink); }
+  .row { display:flex; gap:8px; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:6px 0; }
+  .row:last-child { border-bottom:0; }
+  .chip { border:1px solid var(--line); border-radius:4px; padding:0 6px; font-size:12px; }
+  .dash { border-style:dashed; }
+  .btn { border:1px solid var(--ink); border-radius:6px; padding:2px 8px; font-size:13px; white-space:nowrap; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+  .tabs { display:flex; justify-content:space-around; border-top:1px solid var(--line); margin-top:12px; padding-top:8px; font-size:12px; color:var(--mute); }
+</style>
+</head>
+<body>
+<header>
+  <strong>PID-00060 — Pending Actions, Notifications, trợ lý, điện thoại, khối Dashboard</strong> · sketch bố cục và trạng thái<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/PendingActions.html, Notifications.html, Assistant.html, MobilePending.html, MobilePrompt.html, Dashboard.html · route /pending-actions, /notifications, /pending-actions/prompts/{promptId}, khung Trợ lý · tác nhân Researcher · nguồn: H3–H9</small>
+</header>
+<main>
+  <section class="state"><h2>1 · Pending Actions — có dữ liệu</h2><p class="why">H4; UX-PENDING-001-AC01</p><div class="ph">Tất cả 8 · Plan approval request 2 · Interactive Agent Prompt 2 · …</div><div class="ph"><div class="row"><span>29/10 16:20 <span class="chip">Plan approval request</span> Độ tin cậy của LLM…</span><span><span class="btn">Mở để duyệt</span></span></div><div class="row"><span>31/10 09:05 <span class="chip">Reference approval</span> Trusted Library</span><span><span class="btn">Duyệt</span></span></div><div class="row"><span>31/10 09:42 <span class="chip">Interactive Agent Prompt</span> RAG…</span><span><span class="btn">Trả lời</span></span></div></div></section>
+  <section class="state"><h2>2 · Hết hiệu lực</h2><p class="why">AC01; UX-PENDING-002-AC01; EC01, EC02</p><div class="ph dash">Hết hiệu lực · 2<div class="row"><span>Discovery Agent hỏi nguồn bổ sung cho T-1.3 · RAG… — Cancelled: workflow đã bị hủy. Không được tính là đồng ý.</span><span><span class="btn">Đánh dấu đã xem</span></span></div></div></section>
+  <section class="state"><h2>3 · Pending Actions — trống, thiếu deepLink, lỗi</h2><p class="why">EC03, EC06</p><div class="ph">Trống: “Không có việc nào chờ bạn” · Dashboard</div><div class="ph"><div class="row"><span>… <span class="chip">Task review request</span></span><span><span class="btn">Review</span> (vô hiệu) — chưa có địa chỉ mở</span></div></div><div class="ph">Lỗi: chuyện gì xảy ra · mã lỗi · Thử lại</div></section>
+  <section class="state"><h2>4 · Notifications</h2><p class="why">H5; EC09–EC11</p><div class="ph">Tất cả 9 · Chưa đọc 3 · Blocked task 2 · Failure 3 · … &nbsp; <span class="btn">Đánh dấu tất cả đã đọc</span></div><div class="ph"><div class="row"><span>● 31/10 09:50 <span class="chip">Blocked task</span> RAG… T-2.5 readiness check Không đạt</span><span>Mở Task</span></div><div class="row"><span>○ 30/10 14:04 <span class="chip">Provider issue</span> Kết nối “Gemini cá nhân” bị từ chối</span><span>Mở Provider Connections</span></div><div class="row"><span>○ … <span class="chip">Completion</span> loại đối tượng lạ</span><span>(không liên kết)</span></div></div></section>
+  <section class="state"><h2>5 · Trợ lý — khung bên phải</h2><p class="why">H6; UX-LAYOUT-002-AC01; TS-01-05</p><div class="ph">Trang Trusted Library vẫn hiện bên trái</div><div class="ph"><b>Global AI Assistant</b><br>Global — không có ngữ cảnh project</div><div class="ph">Bạn: Tóm tắt evidence của project RAG…<br>Orchestrator: Trợ lý Global không đọc nội dung project. → <u>Mở project RAG trong tổng quan tài liệu</u></div><div class="ph">Orchestrator đang trả lời… (aria-live)</div><div class="ph">[Tin nhắn] <span class="btn primary">Gửi</span><br><small>Trợ lý Global chỉ đọc Trusted Library và danh sách project; không bao giờ đọc nội dung project.</small></div></section>
+  <section class="state"><h2>6 · Trợ lý — chưa có provider, gửi lỗi</h2><p class="why">EC14, EC15</p><div class="ph dash">Chưa có Provider Connection: trợ lý chưa trả lời được · Settings › Agent Models</div><div class="ph">Gửi không thành công · mã lỗi · nội dung ô nhập giữ nguyên · Gửi lại</div></section>
+  <section class="state"><h2>7 · MobilePending 390 px</h2><p class="why">H3; M1; EC06</p><div class="phone"><div class="ph"><b>8 việc chờ bạn</b></div><div class="ph"><span class="chip">Plan approval request</span> 29/10<br>Duyệt Plan Version v1<br><small>Độ tin cậy của LLM trong giáo dục</small></div><div class="ph"><span class="chip">Interactive Agent Prompt</span> 09:42<br>Chọn phạm vi năm cho T-2.3 → mở M2</div><div class="ph"><small>Trên điện thoại: theo dõi tiến độ, trả lời prompt và phê duyệt. Soạn bản thảo dùng máy tính.</small></div><div class="tabs"><span>Dashboard</span><span>Pending · 8</span><span>Agent</span><span>Projects</span></div></div></section>
+  <section class="state"><h2>8 · MobilePrompt 390 px — choice Open</h2><p class="why">AC02; H2, H9</p><div class="phone"><div class="ph">Project · RAG trong tổng quan tài liệu</div><div class="ph"><b>Giới hạn năm xuất bản cho tìm kiếm?</b><br>Discovery Agent · 09:42 · T-2.3</div><div class="ph">○ 2019–2026 · Đề xuất của agent — Khoảng 60 kết quả<br>○ 2022–2026 — Tập nhỏ hơn<br>○ Không giới hạn — Cần lọc thủ công</div><div class="ph"><span class="btn primary">Xác nhận lựa chọn</span> (vô hiệu tới khi chọn; cao 44–48px)</div></div></section>
+  <section class="state"><h2>9 · MobilePrompt — approval 375 px</h2><p class="why">UX-RESP-001-AC01; H9</p><div class="phone"><div class="ph"><b>Duyệt Plan Version v1?</b> hệ quả nêu trên thẻ</div><div class="ph">○ Duyệt ○ Từ chối (kèm lý do)</div><div class="ph"><span class="btn primary">Xác nhận</span></div></div></section>
+  <section class="state"><h2>10 · MobilePrompt — chỉ đọc, 409, không tìm thấy</h2><p class="why">EC19–EC23</p><div class="phone"><div class="ph dash">Expired · Không được tính là đồng ý</div><div class="ph">edit_and_approve: chỉ đọc · Mở Project AI Chat</div><div class="ph">409: prompt đã được trả lời ở nơi khác — tải lại trạng thái</div><div class="ph">Không tìm thấy</div></div></section>
+  <section class="state"><h2>11 · Khối dữ liệu Dashboard</h2><p class="why">H7; WS-DASHBOARD-001-AC01, AC02</p><div class="ph">Pending actions: dòng như Pending Actions, nút mở deepLink</div><div class="ph"><div class="row"><span>task_execution <span class="chip">Interrupted</span></span><span><span class="btn">Mở Recovery decision</span></span></div><div class="row"><span>task_execution · T-2.2 <span class="chip">Running</span> Bước 2/4</span><span>Agent Activity</span></div></div><div class="ph">Project gần đây — cột Bản thảo: Build OK · 09:41 | Chưa khởi tạo | Build lỗi | —</div><div class="ph">Lỗi gần đây: Failure, Provider issue mới nhất (tối đa 3) · trống “Không có lỗi gần đây”</div></section>
+</main>
+</body>
+</html>

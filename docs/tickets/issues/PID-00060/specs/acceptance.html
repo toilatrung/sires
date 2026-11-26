@@ -1,0 +1,43 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00060.">
+<title>PID-00060 — AC → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00060</p><h1>PID-00060 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test, gồm AC của ticket và AC của requirement được phủ (phần giao diện chạy trên mock; phần backend kiểm khi Hội tụ ở cổng PH-03). Số liệu kiểm lấy từ ticket, PRD hoặc câu trả lời H1…; không tự đặt số khi OQ chưa chốt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00060-AC01</td><td>Given mock có 8 pending action Open và 2 Expired (một prompt Cancelled vì workflow bị hủy, một diff Outdated), When mở <code>/pending-actions</code>, Then 2 mục Expired nằm ở nhóm “Hết hiệu lực · 2” tách khỏi danh sách Open, mỗi mục ghi lý do.</td><td><code>apps/web/src/features/global/pending.spec.tsx</code> › hết hiệu lực nằm ở nhóm riêng</td><td>S02</td><td>ticket; H4</td></tr>
+<tr><td>PID-00060-AC02</td><td>Given màn hình 390px, When mở một Interactive Agent Prompt Open loại choice từ MobilePending, Then thấy câu hỏi, mọi phương án kèm hệ quả, chọn được và xác nhận được; <code>answerPrompt</code> được gọi một lần với <code>choiceIds</code> đã chọn và thẻ chuyển Answered.</td><td><code>apps/web/src/features/global/mobile.spec.tsx</code> › 390 px trả lời prompt</td><td>S05</td><td>ticket; H3, H9</td></tr>
+<tr><td>UX-PENDING-001-AC01</td><td>Given hai pending action phát sinh ở hai thời điểm khác nhau, When mở Pending Actions, Then việc phát sinh sớm hơn nằm trên, và mở việc đó điều hướng tới <code>deepLink</code> của nó.</td><td><code>apps/web/src/features/global/pending.spec.tsx</code> › cũ nhất ở trên, mở đúng ngữ cảnh</td><td>S02</td><td>PRD 15; H4</td></tr>
+<tr><td>UX-PENDING-002-AC01</td><td>Given một prompt đã Cancelled vì workflow bị hủy, When mở Pending Actions, Then prompt nằm trong nhóm “Hết hiệu lực” kèm lý do cho tới khi được đánh dấu đã xem.</td><td><code>apps/web/src/features/global/pending.spec.tsx</code> › hết hiệu lực nằm ở nhóm riêng; › đánh dấu đã xem</td><td>S02</td><td>PRD 15; H4</td></tr>
+<tr><td>UX-LAYOUT-002-AC01</td><td>Given đang ở Trusted Library, When mở Global AI Assistant, Then khung trợ lý mở cạnh danh sách, danh sách vẫn hiển thị, và khung ghi “Global — không có ngữ cảnh project”.</td><td><code>apps/web/src/features/global/assistant.spec.tsx</code> › khung cạnh trang hiện tại</td><td>S04</td><td>PRD 15.1; H6</td></tr>
+<tr><td>UX-RESP-001-AC01</td><td>Given màn hình 375px, When mở Pending Actions, Then trả lời được một prompt approval mà không cuộn ngang (test kiểm luồng trả lời; không cuộn ngang kiểm thêm bằng thao tác tay trên preview 375×812).</td><td><code>apps/web/src/features/global/mobile.spec.tsx</code> › 375 px trả lời prompt approval</td><td>S05</td><td>PRD 15; H9</td></tr>
+<tr><td>WS-DASHBOARD-001-AC01</td><td>Given có 2 Interactive Agent Prompt Open ở hai project, When mở Dashboard, Then khối Pending actions hiện đủ 2 mục, mỗi mục ghi tên project và mở đúng <code>deepLink</code> khi chọn.</td><td><code>apps/web/src/features/global/dashboard-data.spec.tsx</code> › hai prompt ở hai project</td><td>S06</td><td>PRD 7.1; H7</td></tr>
+<tr><td>WS-DASHBOARD-001-AC02</td><td>Given một workflow Interrupted, When mở Dashboard, Then workflow đó hiện trong khối Workflow kèm nút “Mở Recovery decision”.</td><td><code>apps/web/src/features/global/dashboard-data.spec.tsx</code> › workflow Interrupted</td><td>S06</td><td>PRD 7.1; H7</td></tr>
+<tr><td>UX-LAYOUT-004-AC01</td><td>Given có 2 pending action và 1 workflow đang chạy, When mở Dashboard, Then 2 pending action xuất hiện trên cùng, trước danh sách project (phần dữ liệu; thứ tự khối do PID-00037 kiểm).</td><td><code>apps/web/src/features/global/dashboard-data.spec.tsx</code> › pending action trước project</td><td>S06</td><td>PRD 15.1; H7</td></tr>
+<tr><td>UX-STATUS-001-AC01</td><td>Given một Task Waiting for User (pending action Task review request hoặc Interactive Agent Prompt) và một Reference Pending Approval (Reference approval), When xem Dashboard, Then cả hai dòng mang cùng chip “cần bạn xử lý” (phần Dashboard).</td><td><code>apps/web/src/features/global/dashboard-data.spec.tsx</code> › cùng dấu hiệu cần bạn xử lý</td><td>S06</td><td>PRD 15; design.md §3</td></tr>
+<tr><td>WS-CHAT-001-AC01</td><td>Given hai project có evidence, When Researcher hỏi trợ lý về nội dung evidence, Then request của giao diện chỉ có nội dung tin nhắn trong hội thoại <code>scope=global</code> (không <code>projectId</code>), và câu trả lời hiện liên kết tới project (phần giao diện; context gửi model kiểm khi Hội tụ).</td><td><code>apps/web/src/features/global/assistant.spec.tsx</code> › TS-01-05 không gửi dữ liệu project</td><td>S04</td><td>PRD 7.4; TS-01-05; H6</td></tr>
+<tr><td>WS-CHAT-001-AC03</td><td>Given đã có hội thoại global từ phiên trước, When mở Global AI Assistant, Then lịch sử hội thoại hiện lại theo thứ tự thời gian (phần giao diện).</td><td><code>apps/web/src/features/global/assistant.spec.tsx</code> › lịch sử hội thoại</td><td>S04</td><td>PRD 7.4; H6</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00060</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00060 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

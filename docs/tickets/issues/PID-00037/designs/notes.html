@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Ghi chú thiết kế PID-00037: Khu vực global: Projects và khung Dashboard.">
+<meta name="description" content="Ghi chú thiết kế của ticket PID-00037.">
 <title>PID-00037 — Ghi chú thiết kế | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
@@ -16,29 +16,36 @@
 <body>
 <a class="skip-link" href="#main-content">Đến nội dung chính</a>
 <div class="document">
-<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00037</span></header>
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00037</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00037</p><h1>PID-00037 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
-<h2 id="giao-dien">Giao diện</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="../../../../ui-design/pages/Projects.html">Projects</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Dashboard--state-first-run.html">Dashboard--state-first-run</a></td><td>state-first-run</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Dashboard--state-recovery.html">Dashboard--state-recovery</a></td><td>state-recovery</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Dashboard.html">Dashboard</a></td><td>Mặc định</td></tr>
-</tbody></table></div>
-<ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
-<li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này ghi màn, trạng thái cần dựng và điều đã chốt khi làm rõ mà spec mục 4 chưa nói (H1…). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Dữ liệu mẫu của mock nhất quán với màn tham chiếu: ba project Active (“RAG trong tổng quan tài liệu”, “Học máy trong chẩn đoán ảnh”, “Độ tin cậy của LLM trong giáo dục”), một Archived; cùng tên, cùng số ở Projects và Dashboard (design.md §6; H9).</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 8 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<ul><li>10 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>; gọi qua client API có type của shell, kèm <code>Idempotency-Key</code> cho tạo, xóa, lưu trữ (H5, H7), <code>If-Match</code> = <code>rowVersion</code> cho sửa (H8); CSRF do client của shell gắn.</li>
+<li>Sự kiện: không tự nghe SSE. Danh sách tải lại sau mỗi thao tác của chính màn; khi shell báo cần tải lại (PID-00012 H5) thì tải lại.</li>
+<li>Mock: override có trạng thái theo H9; một kho dữ liệu chung với mock của PID-00060.</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th><th scope="col">Điều đã chốt</th></tr></thead><tbody>
+<tr><td><a href="../../../../ui-design/pages/Projects.html">Projects</a></td><td>Mặc định; trống; lọc rỗng; đang tải; lỗi</td><td>Ba tab có số đã tải (H6); cột Plan dùng chip Approved / “Chưa có baseline”; form tạo không có lựa chọn bản thảo (H5); menu theo trạng thái (P2)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Dashboard.html">Dashboard</a></td><td>Mặc định; lỗi tại khối; đang tải</td><td>Năm khối theo UX-LAYOUT-004; khung của PID này, nội dung khối của PID-00060 (H2); không có cột “Phase hiện tại” (N5)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Dashboard--state-first-run.html">Dashboard--state-first-run</a></td><td>Chưa có Provider Connection</td><td>Banner viền đứt brand (H3 b)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Dashboard--state-recovery.html">Dashboard--state-recovery</a></td><td>Workflow Interrupted</td><td>Banner viền warn, một hành động (H4)</td></tr>
+<tr><td>Chưa có màn tham chiếu</td><td>Chưa có project Active; dialog lưu trữ, xóa; 409 kèm danh sách workflow; tab Đã xóa; form sửa</td><td>Theo design.md §4 (Trống, Dialog, Banner) và sketch <a href="Projects-Dashboard.html">Projects-Dashboard.html</a></td></tr>
+</tbody></table></div>
+<ul><li>Một nút chính tô màu mỗi màn: Projects là “Tạo project”; Dashboard chỉ có nút chính khi trống (“Tạo project”), còn lại nút viền hoặc liên kết (design.md §4, §8).</li>
+<li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>). Kiểm trên preview web ở 1440×900, 1024×768 và 390×844; vi và en.</li></ul>
 <h2 id="agent-va-model">Agent và model</h2>
 <p>Không có.</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00037</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
-<footer>SIRes · Ghi chú thiết kế PID-00037 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+<footer>SIRes · Ticket PID-00037 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>
