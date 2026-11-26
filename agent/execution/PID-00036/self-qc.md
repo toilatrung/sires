@@ -40,20 +40,59 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | # | Trạng thái | Cách giải quyết (test) hoặc lưu ý (vì sao, ai xử lý) |
 | --- | --- | --- |
-| EC01–EC03 | đã giải quyết | `settings-nav.spec.tsx` (tên test theo EC) |
-| EC04 | đã giải quyết (thao tác tay) | preview 1440×900, 1024×768, 390×844 |
-| EC05–EC11 | đã giải quyết | `signin.spec.tsx` (tên test theo EC) |
-| EC12 | đã giải quyết | `signin.spec.tsx › chế độ mock (EC12)` (`VITE_SIRES_MOCK=1`), thêm thao tác tay trên `dev:mock` |
-| EC13–EC19, EC21–EC22, EC24–EC25 | đã giải quyết | `providers.spec.tsx` (tên test theo EC) |
-| EC14 | đã giải quyết | `› base URL theo provider`, `› provider khóa sau khi tạo (H5, EC14)` |
-| EC20 | đã giải quyết | `› lỗi tạm thời`, `› hạn mức`, `› sửa base URL` (kể cả không hiện `lastError.message`) |
-| EC23 | đã giải quyết | `› sửa về Untested` (chỉ tên), `› sửa key gửi apiKey` |
-| EC26–EC28 | đã giải quyết | `› xóa`, `› xóa cần thay thế`, `› không có kết nối Valid khác`, `› 409 connection_in_use`, `› 409 mở lại với agent mới`, `› dialog bàn phím (S04)` |
-| EC29–EC35 | đã giải quyết | `profile.spec.tsx` (tên test theo EC) |
+| EC01 | đã giải quyết | `settings-nav.spec.tsx › /settings chuyển profile`, `› route lạ` |
+| EC02 | đã giải quyết | `settings-nav.spec.tsx › đang tải`, `› lỗi tải` |
+| EC03 | đã giải quyết | `settings-nav.spec.tsx › đổi ngôn ngữ giữ form` |
+| EC04 | đã giải quyết (thao tác tay) | preview `dev:mock` ở 1440×900, 1024×768, 390×844: không cuộn ngang trang, menu lên trên dưới 768 px, bảng cuộn trong thẻ, nút SignIn 48 px |
+| EC05 | đã giải quyết | `signin.spec.tsx › oidc_unavailable` |
+| EC06 | đã giải quyết | `signin.spec.tsx › login_cancelled` |
+| EC07 | đã giải quyết | `signin.spec.tsx › mã lạ` (login_failed dùng chung khung) |
+| EC08 | đã giải quyết | `signin.spec.tsx › phiên hết hạn`, `› phiên hết hạn cùng lỗi chỉ hiện lỗi` |
+| EC09 | đã giải quyết | `signin.spec.tsx › đã có phiên chuyển đi` |
+| EC10 | đã giải quyết | `signin.spec.tsx › returnTo không hợp lệ` |
+| EC11 | đã giải quyết | `signin.spec.tsx › bấm hai lần` |
+| EC12 | đã giải quyết | `signin.spec.tsx › chế độ mock (EC12)` (`VITE_SIRES_MOCK=1`); thêm thao tác tay trên `dev:mock` |
+| EC13 | đã giải quyết | `providers.spec.tsx › trống hướng dẫn`, `› thông báo kết nối đầu tiên` |
+| EC14 | đã giải quyết | `providers.spec.tsx › base URL theo provider`, `› provider khóa sau khi tạo` |
+| EC15 | đã giải quyết | `providers.spec.tsx › base URL sai` |
+| EC16 | đã giải quyết | `providers.spec.tsx › proxy Valid` |
+| EC17 | đã giải quyết | `providers.spec.tsx › tên trùng` |
+| EC18 | đã giải quyết | `providers.spec.tsx › lỗi trường` (400 máy chủ), `› lỗi trường trên máy khách` |
+| EC19 | đã giải quyết | `providers.spec.tsx › key sai Invalid kèm hành động` |
+| EC20 | đã giải quyết | `providers.spec.tsx › lỗi tạm thời`, `› hạn mức`, `› sửa base URL` (không hiện `lastError.message`) |
+| EC21 | đã giải quyết | `providers.spec.tsx › đang kiểm tra`, `› lệnh kiểm tra lỗi` |
+| EC22 | đã giải quyết | `providers.spec.tsx › đóng form khi Invalid` |
+| EC23 | đã giải quyết | `providers.spec.tsx › sửa về Untested` (chỉ tên, không gửi `apiKey`), `› sửa key gửi apiKey` |
+| EC24 | đã giải quyết | `providers.spec.tsx › không có model` (form và bảng), `agents.spec.tsx › nhập tay` |
+| EC25 | đã giải quyết | `providers.spec.tsx › key không lộ` |
+| EC26 | đã giải quyết | `providers.spec.tsx › xóa`, `› dialog bàn phím (S04)` |
+| EC27 | đã giải quyết | `providers.spec.tsx › xóa cần thay thế`, `› không có kết nối Valid khác` |
+| EC28 | đã giải quyết | `providers.spec.tsx › 409 connection_in_use`, `› 409 mở lại với agent mới` |
+| EC29 | đã giải quyết | `profile.spec.tsx › lần đầu` |
+| EC30 | đã giải quyết | `profile.spec.tsx › URL Scholar sai` |
+| EC31 | đã giải quyết | `profile.spec.tsx › giới hạn độ dài` |
+| EC32 | đã giải quyết | `profile.spec.tsx › xóa trắng` (URL Scholar `null`, đơn vị chuỗi rỗng) |
+| EC33 | đã giải quyết | `profile.spec.tsx › hai lệnh`, `› hai lệnh, lệnh sau lỗi` |
 | EC34 | đã giải quyết | `profile.spec.tsx › 412`, `preferences.spec.tsx › 412`, `› 412 khi lưu ngưỡng` |
-| EC36 | cần lưu ý | `profile.spec.tsx › nháp` dựng lại view, không giả lập phiên hết hạn; việc khôi phục sau đăng nhập là của kho nháp shell (PID-00012 S09), shell đã có test |
-| EC37–EC47 | đã giải quyết | `agents.spec.tsx` (tên test theo EC; 422 ở `› model không còn trong danh sách`; EC47 Invalid ở `› làm mới trả Invalid`) |
-| EC48–EC53 | đã giải quyết | `preferences.spec.tsx` (tên test theo EC; EC48 lỗi ở `› lưu lỗi giữ ngôn ngữ`; EC50 máy chủ ở `› lỗi trường ngưỡng từ máy chủ`; EC52 ở `› ngưỡng mặc định từng dòng`) |
+| EC35 | đã giải quyết | `profile.spec.tsx › hủy` |
+| EC36 | cần lưu ý | `profile.spec.tsx › nháp` dựng lại view, không giả lập phiên hết hạn; khôi phục sau đăng nhập là của kho nháp shell (PID-00012 S09), shell đã có test |
+| EC37 | đã giải quyết | `agents.spec.tsx › chưa có kết nối Valid` |
+| EC38 | đã giải quyết | `agents.spec.tsx › chỉ kết nối Valid` |
+| EC39 | đã giải quyết | `agents.spec.tsx › lọc model`, `› embedding chỉ kết nối có model embedding` |
+| EC40 | đã giải quyết | `agents.spec.tsx › nhập tay` (nhãn “chưa xác minh”), `› model không còn trong danh sách` (422) |
+| EC41 | đã giải quyết | `agents.spec.tsx › cảnh báo năng lực` |
+| EC42 | đã giải quyết | `agents.spec.tsx › cùng model A B` |
+| EC43 | đã giải quyết | `agents.spec.tsx › dùng mặc định` |
+| EC44 | đã giải quyết | `agents.spec.tsx › chưa cấu hình` |
+| EC45 | đã giải quyết | `agents.spec.tsx › embedding lần đầu` |
+| EC46 | đã giải quyết | `agents.spec.tsx › đổi embedding xác nhận` |
+| EC47 | đã giải quyết | `agents.spec.tsx › làm mới danh sách model`, `› làm mới trả Invalid` |
+| EC48 | đã giải quyết | `preferences.spec.tsx › ngôn ngữ sau khi lưu`, `› lưu lỗi giữ ngôn ngữ` |
+| EC49 | đã giải quyết | `preferences.spec.tsx › debug` |
+| EC50 | đã giải quyết | `preferences.spec.tsx › ngưỡng sai`, `› lỗi trường ngưỡng từ máy chủ` |
+| EC51 | đã giải quyết | `preferences.spec.tsx › khôi phục mặc định` |
+| EC52 | đã giải quyết | `preferences.spec.tsx › ngưỡng mặc định từng dòng` (có `defaults` sau #126), `› chưa có giá trị mặc định` (nhánh thiếu `defaults`) |
+| EC53 | đã giải quyết | `preferences.spec.tsx › hai lệnh`, `› ETag mới sau khi lưu ngưỡng` |
 | EC54 | đã giải quyết | `providers.spec.tsx › tên có HTML`, `profile.spec.tsx › tên có HTML` |
 | Mới | cần lưu ý | Mẫu `mocks: import.meta.env.DEV ? …` trong README mock (PID-00013) đưa mock của khu vực vào bản build khi `NODE_ENV=development`. Khu vực dùng điều kiện của `src/mocks/index.ts`; phiên điều phối đã báo phiên web-mocks |
 | Mới | cần lưu ý | Override trả status mà operation không khai (503, hoặc 409 của `updateProviderConnection`) mất thân Problem ở runtime của PID-00013; test và mock dùng `Response` (report.md mục 6) |

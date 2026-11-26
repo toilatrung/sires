@@ -107,10 +107,21 @@ describe('Preferences (S07)', () => {
   });
 
   it('chưa có giá trị mặc định (EC52)', async () => {
+    // A backend without `defaults` (before #126): no default column, one “đã chỉnh” for the group.
+    mock.use({
+      overrides: {
+        getVerificationThresholds: () => ({
+          status: 200,
+          body: { claimSupport: { supported: 0.8, partiallySupported: 0.55 }, citationMismatch: { mismatch: 0.6 }, isDefault: false },
+          headers: { ETag: '"t1"' },
+        }),
+      },
+    });
     await openPreferences();
     const group = within(screen.getByRole('region', { name: /Ngưỡng kiểm chứng/ }));
-    expect(group.queryByText('đã chỉnh')).toBeNull();
-    expect(group.queryByText(/^Mặc định$/)).toBeNull();
+    expect(group.getAllByText('đã chỉnh')).toHaveLength(1);
+    expect(group.getByRole('heading', { name: /Ngưỡng kiểm chứng đã chỉnh/ })).toBeTruthy();
+    expect(group.queryByText(/^Mặc định/)).toBeNull();
     expect(group.getAllByRole('textbox')).toHaveLength(3);
     expect(group.queryByText(/Conflicting/)).toBeNull();
   });

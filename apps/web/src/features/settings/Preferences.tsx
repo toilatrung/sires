@@ -214,7 +214,7 @@ export function PreferencesScreen() {
       <section className="sires-settings__panel" aria-labelledby="sires-thresholds-title">
         <div className="sires-settings__panel-head">
           <h3 id="sires-thresholds-title" className="sires-settings__panel-title">
-            {t('preferences.thresholds.title')}
+            {t('preferences.thresholds.title')}{' '}
             {!hasDefaults && !data.thresholds.isDefault && (
               <span className="sires-chip" data-tone="warning-flag">
                 {t('preferences.thresholds.adjusted')}
