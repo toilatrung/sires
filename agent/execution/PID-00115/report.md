@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00115](../../../docs/tickets/issues/PID-00115/index.html) · **Luồng:** `web/manuscript` · **Giai đoạn:** PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-06
-- **Nhánh:** `web/manuscript-pid-00115` (từ `preview/ui-ph02` 3c05b2d, gộp hồ sơ `docs/pid-00115-clarify` của #135; đã commit) · **PR:** PR_LINK
+- **Nhánh:** `web/manuscript-pid-00115` (từ `preview/ui-ph02` 3c05b2d, gộp hồ sơ `docs/pid-00115-clarify` của #135; đã commit) · **PR:** [#150](https://github.com/toilatrung/sires/pull/150)
 - **Cập nhật:** 27/11/2026
 - **Người làm:** phiên do PO `toilatrung` giao, làm thay assignee `congminh1705`
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
@@ -60,7 +60,7 @@ Không có.
 - **Yêu cầu hợp đồng:** `BuildIssue` chưa có tham số (tên package, key) để dựng tiêu đề đầy đủ (đã ghi ở UX-MS-004-AC01).
 - **Đề xuất cho PO:** shell nên có hàm GET thô (text, PDF, zip) và gửi multipart; khu vực tạm dùng `fetch(api.url(...))` (`model.ts`, `files/upload.ts`).
 - **Còn mở:** không có.
-- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00115` trên PR (vào `develop`, xếp chồng trên #120, #138, #131, #135).
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00115` trên PR #150 (vào `develop`, xếp chồng trên #120, #138, #131, #135).
 - **Tài liệu đi kèm:**
   - `manuscript-1440.jpg`: ba vùng, hộp proposal Proposed trong editor (deep link), PDF revision 16.
   - `proposal-outdated-1440.jpg`: hộp proposal Outdated với lý do và “Yêu cầu tạo lại”.
