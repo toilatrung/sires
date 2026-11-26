@@ -1,6 +1,6 @@
 # PID-00036 — Self-QC của Dev
 
-**Kết luận:** Đạt phần của khu vực. Mọi AC có test đạt, G1–G12 đã xử lý. Còn hai test của shell đỏ, chờ phiên web-shell sửa vì khu vực không sửa file của shell; đã báo phiên điều phối.
+**Kết luận:** Đạt. Mọi AC có test đạt; G1–G12 đã xử lý; toàn `@sires/web` 220/220 sau khi merge head mới của #138 (`3b63522`), không còn test đỏ.
 
 - **Ticket:** [PID-00036](../../../docs/tickets/issues/PID-00036/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
 - **Cập nhật:** 27/11/2026
@@ -11,8 +11,8 @@ Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được th
 
 | Lệnh | Kết quả |
 | --- | --- |
-| `pnpm nx affected -t lint typecheck test build` | Chạy theo project, vì nhánh xếp chồng trên `preview/ui-ph02`: `pnpm nx run-many -t lint typecheck test build -p @sires/web` (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`). Lint, typecheck, build đạt. Test: 26 file, 220 test — 218 đạt, **2 lỗi**: `shell/routes.spec.ts › sign-in không khung… (EC17)` và `shell/preferences.spec.ts › chưa đăng nhập không lưu… (EC28)`. Cả hai bám placeholder `sign-in` hoặc đòi `/sign-in` không gửi request nào; SignIn thật gọi `getSession` (H4). Đã báo phiên điều phối; phiên web-shell sửa |
-| `pnpm nx run @sires/web:test` | Như trên. Riêng `src/features/settings`: 6 file, 82 test đạt |
+| `pnpm nx affected -t lint typecheck test build` | Chạy theo project, vì nhánh xếp chồng trên `preview/ui-ph02`: `pnpm nx run-many -t lint typecheck test build -p @sires/web` (kèm `generate-mocks`, `@sires/contracts:generate-ts`, `build`) sau merge dc9da2b: lint, typecheck, build đạt; test 26 file, 220/220 đạt. Trước merge đó hai test của shell (EC17, EC28) đỏ vì bám placeholder `sign-in`; #138 `3b63522` đã tách test shell khỏi màn thật |
+| `pnpm nx run @sires/web:test` | 220 đạt, 0 lỗi; riêng `src/features/settings`: 6 file, 82 test đạt |
 | `node scripts/docs/add-license.mjs --check` | Đạt (0 file thiếu) |
 | `scripts/development/check-tracks.mjs` trên file đã đổi | Mã: chỉ `web/settings`. Nhánh còn có `docs/` của #122, #126 do merge theo yêu cầu của phiên điều phối; không phải file Dev sửa |
 | `check-ui.mjs`, preview (khi có màn hình) | `check-ui.mjs apps/web/src/features/settings`: 0 lỗi, 4 cảnh báo (bo 32 px của avatar, bóng `--sires-shadow-float` của dialog — đúng design.md §2.3, §4). Preview `dev:mock` ở 1440×900, 1024×768, 390×844: không cuộn ngang trang, bảng cuộn trong thẻ, nút SignIn 48 px, console không lỗi. Ảnh trong thư mục ghi chú của phiên điều phối: `pid-00036-mock-providers-invalid.jpg`, `pid-00036-mock-providers-table.jpg`, `pid-00036-mock-providers-delete.jpg`, `pid-00036-mock-preferences-defaults.jpg` |
