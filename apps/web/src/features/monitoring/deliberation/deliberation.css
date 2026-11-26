@@ -1,0 +1,98 @@
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+/* Deliberation tab (PID-00083), measures of Workflow--view-deliberation-*; tokens of design.md §2. */
+
+.dl-tab, .dl-session { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.dl-title { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--sires-fs-section); font-weight: 600; }
+.dl-subtitle { margin: 0; font-size: 14px; font-weight: 600; }
+.dl-muted { margin: 0; font-size: 13px; color: var(--sires-muted); }
+.dl-kind, .dl-round-count {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--sires-line);
+  border-radius: var(--sires-radius-chip);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sires-muted);
+}
+.dl-label { align-self: flex-start; font-size: 13px; padding: 2px 8px; border: 1px dashed var(--sires-muted); border-radius: var(--sires-radius-chip); color: var(--sires-muted); }
+.dl-label[data-status="deliberated"] { border-style: solid; border-color: var(--sires-ink); color: var(--sires-ink); }
+.dl-picker { max-width: 420px; }
+.dl-session__head { display: flex; flex-direction: column; gap: 6px; }
+.dl-banner { margin: 0; padding: 10px 14px; border-radius: var(--sires-radius-control); font-size: 13px; line-height: 1.5; }
+.dl-banner[data-tone="warn"] { border: 1.5px solid var(--sires-warn); }
+.dl-banner[data-tone="neutral"] { border: 1px solid var(--sires-line); background: var(--sires-ground); }
+.dl-brief, .dl-notopened { padding: 14px 16px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); background: var(--sires-surface); display: flex; flex-direction: column; gap: 8px; }
+.dl-facts { margin: 0; display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 6px 12px; font-size: 13px; line-height: 1.5; }
+.dl-facts dt { color: var(--sires-muted); }
+.dl-facts dd { margin: 0; overflow-wrap: anywhere; }
+
+/* Board: one column per party, one row per round */
+.dl-board { display: flex; flex-direction: column; gap: 12px; }
+.dl-board__head, .dl-round__cells { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.dl-party { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-surface); font-size: 13px; }
+.dl-party__name { font-weight: 600; font-size: 14px; }
+.dl-party__perspective, .dl-party__model { color: var(--sires-muted); }
+/* Status of a party: the shell's chip (running has the dot of motion.css, error the danger tone). */
+.dl-party__status { align-self: flex-start; margin-top: 4px; }
+.dl-round { display: flex; flex-direction: column; gap: 8px; }
+.dl-round__title { margin: 0; font-size: 14px; font-weight: 600; }
+.dl-round__note { font-weight: 400; color: var(--sires-muted); font-size: 13px; }
+.dl-cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dl-cell__party { display: none; font-size: 12px; font-weight: 600; color: var(--sires-muted); }
+.dl-pending, .dl-none { margin: 0; padding: 12px; border: 1px dashed var(--sires-muted); border-radius: var(--sires-radius-control); font-size: 13px; color: var(--sires-muted); display: flex; flex-direction: column; gap: 4px; }
+.dl-pending > [data-running] { display: inline-flex; align-items: center; }
+.dl-none { background: var(--sires-ground); }
+.dl-none p { margin: 0; }
+/* A party whose Agent Run failed (Workflow--view-deliberation-failed): danger tint, solid danger border. */
+.dl-none[data-failed] { gap: 6px; border: 1.5px solid var(--sires-danger); background: var(--sires-danger-tint); color: var(--sires-ink); line-height: 1.5; }
+.dl-none[data-failed] strong { font-weight: 600; color: var(--sires-danger-ink); }
+.dl-none[data-failed] a { font-size: 12px; }
+.dl-step { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.dl-entry { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-control); background: var(--sires-surface); font-size: 13px; line-height: 1.45; }
+.dl-entry[data-state="retracted"] { border-style: dashed; color: var(--sires-muted); }
+.dl-entry[data-state="review"] { border-color: var(--sires-warn); }
+.dl-entry[data-state="replaced"] > summary { cursor: pointer; color: var(--sires-muted); }
+.dl-entry__type { margin: 0; font-size: 12px; color: var(--sires-muted); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dl-entry__option { margin: 0; font-weight: 600; }
+.dl-entry__reason { margin: 0; color: var(--sires-muted); }
+.dl-entry__meta { margin: 0; font-size: 12px; color: var(--sires-muted); }
+.dl-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.dl-point { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: baseline; }
+.dl-point:focus { outline: 3px solid var(--sires-brand-line); outline-offset: 2px; }
+.dl-point__criterion, .dl-sources, .dl-point__critics { font-size: 12px; color: var(--sires-muted); }
+.dl-sources, .dl-point__critics { flex-basis: 100%; }
+.dl-flag { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-chip); font-size: 11px; font-weight: 600; color: var(--sires-muted); }
+.dl-flag[data-flag="assumption"] { border-style: dashed; border-color: var(--sires-warn); color: var(--sires-warn); }
+.dl-flag[data-flag="disagree"] { border-color: var(--sires-danger); color: var(--sires-danger-ink); }
+.dl-flag[data-flag="agree"] { border-color: var(--sires-ink); color: var(--sires-ink); }
+.dl-flag[data-flag="add_information"], .dl-flag[data-flag="changed"] { border-color: var(--sires-brand); color: var(--sires-brand-ink); }
+.dl-flag[data-flag="review"] { border-style: dashed; border-color: var(--sires-warn); color: var(--sires-warn); }
+
+/* Synthesis, usage */
+.dl-synthesis, .dl-usage, .dl-decision { display: flex; flex-direction: column; gap: 8px; }
+.dl-synthesis { padding: 14px 16px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); background: var(--sires-surface); }
+.dl-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.dl-table-scroll { overflow-x: auto; }
+.dl-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dl-table th, .dl-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--sires-line); }
+.dl-table thead th { font-size: 12px; color: var(--sires-muted); font-weight: 600; }
+.dl-table tbody th { font-weight: 500; }
+.dl-table tr[data-recommended] th { font-weight: 600; color: var(--sires-brand-ink); }
+.dl-table__total th, .dl-table__total td { font-weight: 600; }
+.dl-chosen { padding: 12px 14px; border: 1px solid var(--sires-line); border-radius: var(--sires-radius-card); }
+.dl-chosen p { margin: 0; }
+
+/* Under 768 px: the three columns stack, each round shows the parties one after another (EC22); the parties'
+   cards stack too, so perspective, model, connection and status stay on screen. */
+@media (max-width: 767px) {
+  .dl-board__head { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .dl-round__cells { grid-template-columns: minmax(0, 1fr); }
+  .dl-cell__party { display: block; }
+  .dl-facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
