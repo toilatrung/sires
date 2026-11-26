@@ -1,6 +1,6 @@
 # PID-00060 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — G1: 11 test của shell coi `/dashboard` và khung Trợ lý là màn rỗng (file của luồng web/shell); mã của khu vực xong
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00060](../../../docs/tickets/issues/PID-00060/index.html) · **Luồng:** `web/global` · **Giai đoạn:** PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-03
 - **Nhánh:** `web/global-pid-00060` (xếp chồng trên `web/global-pid-00037`, PR #141; đã commit) · **PR:** [#142](https://github.com/toilatrung/sires/pull/142)
@@ -12,7 +12,7 @@ Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N �
 
 ## 1. Tóm tắt
 
-- Slice: 6/6 xong. Bị chặn: không slice nào. CI của `@sires/web` còn 11 test của shell lỗi (G1, ngoài luồng).
+- Slice: 6/6 xong. Bị chặn: không có (G1 đã xử lý ở Lần 3).
 - AC: 12/12 đạt, kiểm trên mock của PID-00013. Edge case: 30/30 đã giải quyết.
 - Yêu cầu thêm: 0 (ghi nhận H13 của phiên điều phối đã có trong hồ sơ, PR #123).
 
@@ -49,7 +49,7 @@ Test: 44 test của PID-00060 đạt. Chi tiết ở `self-qc.md`.
 
 ## 4. Việc còn lại
 
-- G1: phiên web-shell sửa test của shell, để test không phụ thuộc màn thật ở `/dashboard` và trong khung Trợ lý. Đã báo phiên điều phối. Có bản sửa thì gộp vào, chạy lại `pnpm nx run-many -t test -p @sires/web`, đổi trạng thái sang “Xong — chờ QC”.
+- G1: đã xử lý ở Lần 3 (merge #138 qua #141).
 
 ## 5. Yêu cầu thêm
 
@@ -62,8 +62,8 @@ Không có.
   - (2) Khi làm PID-00058, mock hội thoại nên phục vụ cả `scope=global` để trợ lý có dữ liệu khi chạy dev (H8).
   - (3) Các đề xuất sửa nguồn của hồ sơ PID-00060 (deepLink của Notification, thứ tự listPendingActions, đề xuất tạo project trên Message) không đổi.
 - **Yêu cầu hợp đồng:** không có.
-- **Còn mở:** G1 (test của shell).
-- **Bước tiếp theo:** sửa G1 ở luồng web/shell. Mở PR vào `develop`, xếp chồng trên #120, #138, #131, #123 và #141. QC chạy `spec-converge-skill PID-00060`.
+- **Còn mở:** không có.
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00060` trên PR #142 (vào `develop`, xếp chồng trên #120, #138, #131, #123 và #141).
 - **Tài liệu đi kèm:**
   - `dashboard-pending-1440.jpg`, `dashboard-blocks-1440.jpg`: Dashboard với dữ liệu khối (S06).
   - `pending-actions-1440.jpg`: Pending Actions (S02).
@@ -78,6 +78,14 @@ Không có.
 - `dashboard.spec.tsx › thứ tự khối` ở nhánh này kiểm dòng việc chờ thay cho phần giải thích.
 - Kiểm: `npx vitest run src/features/global/ src/shell/i18n.spec.ts` 82 test đạt; lint, typecheck đạt.
 - Trạng thái: không đổi, vẫn chờ G1 (test của shell, phiên web-shell sửa trên #138).
+
+
+## Lần 3 — 27/11/2026
+
+- Merge `origin/web/shell-pid-00012` (#138, head `3b63522`), không rebase. Bản shell đó sửa test của shell để không phụ thuộc màn thật của khu vực (`renderShellFrame`, `neutralFeatures`, `FetchStub.calls(path, method, query)`, `shellStub` trả rỗng các GET của global). G1 đã xử lý.
+- Merge nhánh PID-00037 (#141, head `49ab71c`, đã có #138).
+- Kiểm: `pnpm nx run-many -t lint typecheck test build -p @sires/web` đạt — 27 file test, 206 test (gồm 44 test của PID-00060).
+- Trạng thái: Xong — chờ QC.
 
 ---
 
