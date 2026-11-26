@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00082.">
+<title>S02 — Plan: version, nội dung, board | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00082</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00082</p><h1>S02 — Plan: version, nội dung, board</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H4, H7, H8, H16 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-TASK-001-AC01, UX-LABEL-001-AC01, PLAN-GENERATE-001-AC02 (phần nhãn)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Plan), O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B4, B5, B6; H4, H7, H8, H16</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04, EC05, EC06, EC07, EC08, EC36, EC40 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <code>getSharedContext</code> (PID-00058) cho giả định của Plan</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li><code>/projects/:projectId/plan</code> theo <code>Plan</code>: tiêu đề “Plan and Tasks”; bộ chọn Plan Version từ <code>getPlan.versions</code> (mới nhất trước, nhãn “vN · trạng thái”, baseline ghi “(baseline)”, Draft ghi “(đang soạn)”); mặc định baseline, chưa có baseline thì version mở kèm nhãn “Chưa duyệt” (EC02); chưa có Plan → trạng thái trống với “Yêu cầu Orchestrator đề xuất Plan” (<code>requestPlanProposal</code>) và liên kết Project AI Chat (EC01). Nút “So sánh version” tới màn so sánh.</li>
+<li>Chip Plan Version theo design.md §3: Proposed “Cần bạn xử lý”, Draft đề xuất viền đứt, Approved đã chốt, Superseded, Rejected trung tính (H4). Version Superseded, Rejected chỉ đọc, ghi lý do từ chối (EC03). Nhãn thảo luận theo <code>provenance.deliberation</code> (EC04).</li>
+<li>Khối “Nội dung Plan” thu gọn: mục tiêu, phương pháp, milestone, deliverable, rủi ro, giả định của version (<code>getPlanVersion</code>).</li>
+<li>Board: nhóm theo <code>TaskStatus</code> (thứ tự 9.8) kèm số; lọc Phase (<code>phaseId</code>), label (<code>executionLabel</code>), agent (<code>proposedAgent</code>, lọc trên mục đã tải) (EC05, EC06); thẻ: mã, tiêu đề, execution label có biểu tượng và chữ (component của shell), cờ needs review; bấm mở panel <code>?task=</code>. Không kéo thả (EC07, EC08).</li>
+<li>Với version không phải baseline, board đọc định nghĩa của version, Task mới trong version ghi “mới trong vN”.</li>
+<li>SSE <code>task.status_changed</code>, <code>plan_version.status_changed</code> → đọc lại Task hoặc Plan (EC36). Project Archived: nút thay đổi vô hiệu kèm lý do (EC40).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/planning/plan.spec.tsx › lọc label</code> (UX-TASK-001-AC01, EC05); <code>› label có biểu tượng và chữ</code> (UX-LABEL-001-AC01, EC08); <code>› nhãn thảo luận</code> (PLAN-GENERATE-001-AC02, EC04); <code>› chưa có Plan</code> (EC01); <code>› chưa có baseline</code> (EC02); <code>› version chỉ đọc</code> (EC03); <code>› lọc Phase và agent</code> (EC06); <code>› không kéo thả đổi trạng thái</code> (EC07); <code>› các view khớp sau sự kiện</code> (EC36)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/planning/</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-TASK-001-AC01, UX-LABEL-001-AC01 đạt; Plan hiện đúng version, trạng thái và nhãn</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00082</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00082 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

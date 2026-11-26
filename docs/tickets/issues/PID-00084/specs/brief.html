@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00084.">
+<title>PID-00084 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00084</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00084</p><h1>PID-00084 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H12, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Khi Orchestrator đề xuất mở phiên thảo luận, Project AI Chat hiện thẻ đề xuất (prompt <code>purpose = deliberation_proposal</code>) nêu vấn đề, lý do, các bên và lưu ý chi phí, với hai thao tác “Thảo luận” và “Bỏ qua”. Bỏ qua thì kết quả mang nhãn “không qua thảo luận”. Thẻ thay cho thẻ chuẩn mà PID-00058 dùng tạm cho loại prompt này. Lượt này dựng trong <code>apps/web/src/features/project/deliberation-card/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-04 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Thẻ nêu vấn đề, các bên tham gia, lưu ý chi phí; hai thao tác “Thảo luận”, “Bỏ qua” — UX-MONITOR-007; ORCH-DELIB-001; H3, H4</li>
+<li>Bỏ qua: không có Agent Run của Analysis Agent, kết quả mang nhãn “không qua thảo luận” (backend); giao diện gửi đúng một câu trả lời <code>skip</code> — UX-MONITOR-007-AC01; ticket AC01; H6</li>
+<li>Chi phí là ước lượng số Agent Run, tính trên API key của Researcher; không ước lượng tiền — <code>DeliberationProposal.estimatedAgentRuns</code>, <code>costNote</code>; OQ-099; H3</li>
+<li>Cảnh báo khi Analysis Agent A, B cùng model — ORCH-DELIB-005; DEC-47; H3</li>
+<li>Không chọn sẵn; trả lời một lần; Expired, Cancelled chỉ đọc, “Không được tính là đồng ý” — UX-PROMPT-002, UX-PROMPT-004; PROMPT-LIFECYCLE-001; H4, H5</li>
+<li>Không chiếm operation mà PID-00058 (hội thoại) và PID-00060 (prompt) đã giữ mock — ghi chú của phiên điều phối; H7</li>
+<li>Bất biến: Researcher quyết định mở phiên; giao diện không tự chọn.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/Chat.dc.html</code> (khối “Đề xuất thảo luận”), <code>Chat--deliberation-skipped</code> — có</li>
+<li><code>components/schemas/orchestration.yaml</code> (<code>PromptPurpose</code>, <code>DeliberationProposal</code>, <code>PromptResponse</code>) — có; <code>choices</code> của prompt là <code>deliberate</code>, <code>skip</code></li>
+<li>Luồng tin nhắn và thẻ prompt trong Chat của PID-00058 (cùng khu vực project) — chưa có; làm ở PID-00058 S03, S05</li>
+<li>Shell (PID-00012), mock (PID-00013) — chưa có trên <code>main</code> ngày 27/11/2026</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 thẻ đề xuất thảo luận trong <code>apps/web/src/features/project/deliberation-card/</code>, i18n vi/en, đang tải, lỗi → S01, S02</li>
+<li>O2 fixture prompt <code>deliberation_proposal</code> có type trong <code>apps/web/src/features/project/__mocks__/</code> (không khai operation) → S01</li>
+<li>O3 <code>card.spec.tsx</code> → S01, S02 (đổi tên, H8)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>deliberation_proposal</code> = prompt đề xuất mở phiên thảo luận; <code>deliberate</code> = Thảo luận; <code>skip</code> = Bỏ qua</li>
+<li><code>DeliberationLabel</code> <code>skipped</code> = nhãn “không qua thảo luận”</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00084</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00084 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
