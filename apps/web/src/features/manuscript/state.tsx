@@ -209,7 +209,13 @@ export function ManuscriptProvider({ projectId, initialPath, children }: { proje
     try {
       const content = await fileContent(api, projectId, file);
       if ('blob' in content) {
-        const url = typeof URL.createObjectURL === 'function' && content.blob ? URL.createObjectURL(content.blob) : undefined;
+        let url: string | undefined;
+        try {
+          url = typeof URL.createObjectURL === 'function' && content.blob ? URL.createObjectURL(content.blob) : undefined;
+        } catch {
+          // No object URL (old browser, tests): the viewer shows the path instead of the image.
+          url = undefined;
+        }
         setDoc(file.id, { status: 'ready', baseHash: content.etag ?? file.contentHash, ...(url ? { imageUrl: url } : {}) });
         return;
       }

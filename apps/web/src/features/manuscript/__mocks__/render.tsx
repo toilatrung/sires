@@ -16,6 +16,13 @@ import { viewOf } from '../editor/Editor';
 import { demoProjectReferences, RAG, WRITING_TASK } from './fixtures';
 import { finishBuilds, setManuscriptEventSink, testStore } from './store';
 
+// jsdom has no layout: CodeMirror measures ranges when it scrolls to a line (go to line, outline, banners).
+if (typeof Range !== 'undefined') {
+  const empty = () => ({ length: 0, item: () => null, [Symbol.iterator]: function* () {} }) as unknown as DOMRectList;
+  Range.prototype.getClientRects ??= empty;
+  Range.prototype.getBoundingClientRect ??= () => ({ x: 0, y: 0, top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, toJSON: () => ({}) }) as DOMRect;
+}
+
 export const projectPath = (projectId = RAG, rest = '') => `/projects/${projectId}/manuscript${rest}`;
 
 /** The shell at `path` with the real fetch going to the mock server (this area's mocks and the fallback). */
