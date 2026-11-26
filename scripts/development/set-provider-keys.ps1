@@ -20,6 +20,7 @@ File dạng dotenv (UTF-8, LF), mỗi provider là một kết nối: key chỉ 
   SIRES_BASE_URL_ANTHROPIC, SIRES_BASE_URL_OPENAI, SIRES_BASE_URL_GOOGLE   base URL (OpenAI gồm /v1)
   ANTHROPIC_API_KEY_OFFICIAL, OPENAI_API_KEY_OFFICIAL, GEMINI_API_KEY_OFFICIAL
                                                                key chính thức riêng, chỉ gửi tới endpoint chính thức
+Dòng khác trong file (ví dụ SPK01_MODEL_*) được giữ khi chạy lại; tên cũ SPK01_BASE_URL_*, GOOGLE_API_KEY thì bỏ.
 Thư mục .sires có .gitignore riêng (*) nên Git luôn bỏ qua; quyền đọc của thư mục và file chỉ còn user hiện tại.
 
 Nạp vào phiên hiện tại (không cần chạy script):
@@ -162,6 +163,12 @@ function Show-Access($target) {
   else { Warn "Quyền: còn $($others.Count) mục ngoài user hiện tại hoặc còn kế thừa; chạy lại script (không cờ) để đặt lại" }
 }
 
+# Names in the file that this script does not ask for (SPK01_MODEL_* and the like): kept when the file is rewritten.
+function Get-ExtraNames($values) {
+  $managed = $Names + @($Providers | ForEach-Object { $_.Legacy }) + 'GOOGLE_API_KEY'
+  return @($values.Keys | Where-Object { $managed -notcontains $_ -and $values[$_] })
+}
+
 function Show-State($file, $values) {
   Step "File $file"
   if (-not (Test-Path -LiteralPath $file)) { Warn 'Chưa có file'; return }
@@ -174,6 +181,8 @@ function Show-State($file, $values) {
   }
   $keys = @($Providers | ForEach-Object { $values[$_.Key] } | Where-Object { $_ })
   if ($keys.Count -gt 1 -and @($keys | Select-Object -Unique).Count -eq 1) { Write-Host '  Các provider dùng cùng một key.' }
+  $extra = @(Get-ExtraNames $values)
+  if ($extra.Count) { Write-Host "  Dòng khác (giữ khi chạy lại): $($extra -join ', ')" }
   $user = @($Names + ($Providers | ForEach-Object { $_.Legacy }) + 'GOOGLE_API_KEY' | Where-Object { [Environment]::GetEnvironmentVariable($_, 'User') })
   if ($user.Count) {
     Warn "Biến cấp User đang có: $($user -join ', '). Script SPK-01 ưu tiên biến môi trường hơn file; khác file thì chạy lại script để ghi đè hoặc xóa."
@@ -238,6 +247,17 @@ foreach ($p in $Providers) {
   $lines += ''
   $lines += "# $($p.Label)"
   foreach ($n in @($p.Key, $p.Url, $p.Official)) { if ($values[$n]) { $lines += "$n='$($values[$n])'" } }
+}
+# Other lines of the file (SPK01_MODEL_* and the like) are kept; the old names SPK01_BASE_URL_* and GOOGLE_API_KEY
+# are dropped, SIRES_BASE_URL_* and GEMINI_API_KEY above replace them.
+$extra = @(Get-ExtraNames $values)
+if ($extra.Count) {
+  $lines += ''
+  $lines += '# Dòng khác (giữ nguyên khi chạy lại script)'
+  foreach ($n in $extra) {
+    if ($values[$n] -match "['\r\n]") { Warn "Bỏ dòng $n`: giá trị có dấu nháy đơn hoặc xuống dòng"; continue }
+    $lines += "$n='$($values[$n])'"
+  }
 }
 $tmp = "$Path.tmp"
 [IO.File]::WriteAllText($tmp, (($lines -join "`n") + "`n"), $utf8)
