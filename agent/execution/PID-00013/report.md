@@ -1,38 +1,43 @@
 # PID-00013 — Báo cáo thực thi
 
-**Trạng thái:** Đang làm
+**Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00013](../../../docs/tickets/issues/PID-00013/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
-- **Nhánh:** `web/mock-pid-00013` (tạo từ `origin/main` `c9e745b`; chưa commit mã) · **PR:** chưa mở
+- **Nhánh:** `web/mock-pid-00013` (tạo từ `origin/main` `c9e745b`; đã commit) · **PR:** xem mô tả nhánh trên GitHub (`toilatrung/sires`, base `main`)
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
-Người làm: phiên do PO `toilatrung` giao (assignee `toilatrung`). `check-pid.mjs PID-00013`: ĐỦ để thực thi (0 cảnh báo). PID-00012 (shell) đang làm song song ở nhánh `web/shell-pid-00012`: phần cần client API, client SSE của shell nối vào sau khi PR của PID-00012 merge.
+Người làm: phiên do PO `toilatrung` giao (assignee `toilatrung`). `check-pid.mjs PID-00013`: ĐỦ để thực thi (0 cảnh báo). PID-00012 (shell) đang làm song song ở nhánh `web/shell-pid-00012`, chưa có client API và client SSE: mock đã chạy được với `fetch` và `EventSource` (thử trên trình duyệt), việc nối vào client của shell ghi ở mục 4.
 
 ## 1. Tóm tắt
 
-- Slice: 0/4 xong. Bị chặn: không có.
-- AC: 0/1 đạt. Edge case: 0/13 đã giải quyết.
+- Slice: 4/4 xong (S02, S03 phần nối vào client của PID-00012 còn chờ PID đó merge, mục 4). Bị chặn: không có.
+- AC: 1/1 đạt (kiểm với bản OpenAPI mẫu và bundle thật). Edge case: 13/13 đã giải quyết; 2 cần lưu ý (EC08, EC11 kiểm bằng `fetch` và bộ đọc SSE trong test, chưa qua client của shell).
 - Yêu cầu thêm: 3 (YC1–YC3).
 
 ## 2. Trạng thái công việc
 
 | Slice | Mục tiêu | Trạng thái | File tạo / sửa |
 | --- | --- | --- | --- |
-| S01 | Bộ sinh mock có type từ OpenAPI công khai | Đang làm | — |
-| S02 | Bật mock khi dev và test, ghép mock khu vực, phiên mẫu, build không có mock | Chưa làm | — |
-| S03 | Mock mẫu `/events`, nối lại theo `Last-Event-ID` | Chưa làm | — |
-| S04 | Đổi schema thì typecheck báo lệch; README cho khu vực | Chưa làm | — |
+| S01 | Bộ sinh mock có type từ OpenAPI công khai | Xong | tạo: `apps/web/src/shell/mock/generate.mjs`, `generate.d.mts`, `generator/{openapi,sample,vocabulary}.mjs`, `generator/{openapi,sample}.d.mts`, `mocks.config.json`; sửa: `apps/web/package.json` (devDeps, target `generate-mocks`), `pnpm-lock.yaml` |
+| S02 | Bật mock khi dev và test, ghép mock khu vực, phiên mẫu, build không có mock | Xong (chờ nối client API của PID-00012) | tạo: `shell/mock/{runtime,types,session,index,node,browser}.ts`, `shell/mock/fixtures/*.ts` (YC1), `shell/mock/build.spec.ts`; sửa: `apps/web/src/main.tsx` (điểm nối), `apps/web/src/shell/feature.ts` (`mocks?`), `apps/web/vite.config.ts` (plugin `msw()`), `apps/web/README.md`, `apps/web/package.json` (script `dev:mock`) |
+| S03 | Mock mẫu `/events`, nối lại theo `Last-Event-ID` | Xong (chờ nối client SSE của PID-00012) | tạo: `shell/mock/events.ts`, `shell/mock/events.spec.ts`; vòng sự kiện mẫu ở `shell/mock/browser.ts` |
+| S04 | Đổi schema thì typecheck báo lệch; README cho khu vực | Xong | tạo: `shell/mock/mock.spec.ts`, `shell/mock/__fixtures__/sample-openapi.yaml`, `__fixtures__/sample-override.ts.txt`, `shell/mock/README.md` |
 
 ## 3. Kết quả
 
-Chưa có.
+- `pnpm --filter @sires/web dev:mock` (hoặc `VITE_SIRES_MOCK=1` + `dev`): mọi request `/api/v1/*` có câu trả lời mà không cần gateway; đã thử trên trình duyệt ở cổng riêng: `/api/v1/me` trả “Nguyễn Thị Minh Anh”, `uiLanguage = vi`; `/api/v1/projects` ba project đang hoạt động (vi, en); `/api/v1/dashboard` 4 Pending Action, 3 thông báo chưa đọc; `/api/v1/projects/{id}/tasks` 6 Task ở 6 trạng thái; `/api/v1/events` qua `fetch` và `EventSource` nhận sự kiện, nối lại kèm `Last-Event-ID` nhận đúng sự kiện sau id. Console không có lỗi; MSW in từng request.
+- `pnpm --filter @sires/web dev` không cờ: không nạp mã mock, `/api/v1/me` đi qua proxy Vite (ECONNREFUSED vì không có gateway) — EC06.
+- Bộ sinh: 165/165 operation của bundle, 347 body JSON hợp lệ theo schema (Ajv 2020), typecheck đạt với `PublicApi`.
+- Khu vực thêm mock theo `apps/web/src/shell/mock/README.md`: `mocks.config.json` → `generated/` → `index.ts` có type → `Feature.mocks`.
+- Chi tiết lệnh và kết quả: [self-qc.md](self-qc.md).
 
 ## 4. Việc còn lại
 
-Toàn bộ S01–S04.
+- Khi PR của PID-00012 merge (phiên điều phối báo): rebase, giải xung đột ở `main.tsx`, `feature.ts`, `vite.config.ts`, `package.json`, `pnpm-lock.yaml`; đổi `events.spec.ts` › nối lại sang client SSE của shell (S03 “client SSE của shell nhận sự kiện mẫu…”) và thêm test kiểm phiên của shell chạy trên mock (S02, EC08 qua client API). Mock không cần đổi nếu client gọi `/api/v1/...`.
+- Khi hợp đồng có `replay.unavailable` (PC-05 P2, phiên docs-sources): sinh lại; mock tự gửi tín hiệu, đổi test “chưa có trong hợp đồng thì không giả lập” thành kiểm có tín hiệu.
 
 ## 5. Yêu cầu thêm
 
@@ -40,16 +45,19 @@ Toàn bộ S01–S04.
 
 | # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
 | --- | --- | --- | --- | --- | --- |
-| YC1 | Phiên điều phối của PO (theo ủy quyền trên) | “Dữ liệu mẫu tách theo khu vực … Dữ liệu mẫu giống thật, có cả tiếng Việt và English: project nghiên cứu, Plan, Task, reference, prompt, workflow, agent run, notification… Đủ để màn demo nhìn như thật.” | Đổi phạm vi: mở rộng P1 (dữ liệu sinh) sang bộ dữ liệu demo dùng chung; chạm N1 ở phần dữ liệu (mock riêng, kịch bản, trạng thái vẫn của khu vực) | Làm (chốt theo đề xuất, PO ủy quyền 26/11/2026): bộ dữ liệu demo dùng chung, không giữ trạng thái, nằm trong `apps/web/src/shell/mock/`; khu vực ghi đè ở `features/<khu vực>/__mocks__/` như hồ sơ | — |
-| YC2 | Phiên điều phối của PO | “Chỉ sửa: `apps/web/src/mocks/**` …” | Lệch Đầu ra của ticket (`apps/web/src/shell/mock/`, quy tắc 1.4.13) | Theo hồ sơ: mã ở `apps/web/src/shell/mock/` (đầu ra bắt buộc); ngoài thư mục đó chỉ sửa điểm nối tối thiểu (ghi ở mục 2 khi làm) | — |
-| YC3 | Phiên điều phối của PO | “mock `/events` (gồm cả loại sự kiện `replay.unavailable` theo PC-05 P2 …)” | Đổi phạm vi: bỏ N7 khi hợp đồng có tín hiệu (PC-05 P2, PO ủy quyền) | Làm khi hợp đồng có loại sự kiện; tới lúc đó mock đọc enum `Event.type` từ bundle, không tự đặt tên | — |
+| YC1 | Phiên điều phối của PO (theo ủy quyền trên) | “Dữ liệu mẫu tách theo khu vực … Dữ liệu mẫu giống thật, có cả tiếng Việt và English: project nghiên cứu, Plan, Task, reference, prompt, workflow, agent run, notification… Đủ để màn demo nhìn như thật.” | Đổi phạm vi: mở rộng P1 (dữ liệu sinh) sang bộ dữ liệu demo dùng chung; chạm N1 ở phần dữ liệu (mock riêng, kịch bản, trạng thái vẫn của khu vực) | Làm (chốt theo đề xuất, PO ủy quyền 26/11/2026): dữ liệu demo không giữ trạng thái ở `shell/mock/fixtures/<khu vực>.ts`, trả cho GET khi khu vực chưa có mock riêng; khu vực thêm hoặc thay hàng ở `features/<khu vực>/__mocks__/` như hồ sơ. Dữ liệu sinh theo schema cũng dùng từ điển vi/en. Không dùng lại được dữ liệu 16.4 của e2e (PID-00034): luồng khác, dùng `node:crypto`, nhãn kiểm thử (“Researcher A”, “P1”); giữ cùng dạng entity | `fixtures/*.ts`; `mock.spec.ts` › dữ liệu demo hợp lệ theo schema; › dữ liệu demo theo project và id |
+| YC2 | Phiên điều phối của PO | “Chỉ sửa: `apps/web/src/mocks/**`; `apps/web/package.json`…; một điểm nối mock duy nhất.” | Lệch Đầu ra của ticket (`apps/web/src/shell/mock/`, quy tắc 1.4.13) | Theo hồ sơ: mã ở `apps/web/src/shell/mock/`. Ngoài thư mục đó sửa những gì slice yêu cầu: `main.tsx` (điểm nối), `shell/feature.ts` (S02: trường tùy chọn của `Feature`), `vite.config.ts` (plugin phục vụ service worker khi dev), `apps/web/README.md` (S02: cách bật), `apps/web/package.json` | mục 2 |
+| YC3 | Phiên điều phối của PO | “mock `/events` (gồm cả loại sự kiện `replay.unavailable` theo PC-05 P2, phiên docs-sources đang thêm vào hợp đồng)” | Đổi phạm vi: bỏ N7 khi hợp đồng có tín hiệu (PC-05 P2, PO ủy quyền) | Làm: mock gửi `replay.unavailable` (không id) khi `Last-Event-ID` không còn trong bộ giữ, chỉ khi enum `Event.type` của bundle có giá trị đó; không tự đặt tên hay dạng | `events.spec.ts` › không còn phát lại được: chưa có trong hợp đồng thì không giả lập; › Last-Event-ID quá xa thì gửi tín hiệu trước, không phát lại |
 
 ## 6. Cần PO và tài liệu đi kèm
 
-- **Đề xuất cho PO:** chưa có.
-- **Yêu cầu hợp đồng:** `Event` (`components/schemas/orchestration.yaml#/Event`) chỉ được trỏ qua `x-event-schema` của `/events` nên không có trong `components.schemas` của bundle: `PublicApi` không có type `Event` (PID-00012 S05, PID-00013 S03 cần), và `dist/openapi.bundled.yaml` còn ref hỏng `common.yaml#/Id`, `common.yaml#/Timestamp` trong `/events`. Đã báo phiên điều phối 27/11/2026; phiếu I1.
+- **Đề xuất cho PO:**
+  - Thêm cấu hình `web-mock` vào `.claude/launch.json` (`npm run dev:mock --prefix apps/web -- --port 5183 --strictPort`) để xem demo trong khung preview mà không trùng cổng 5173; chưa sửa vì ngoài thư mục được giao.
+  - `libs/ts/contracts/scripts/generate.mjs` lỗi `EPERM` khi đổi tên `src/generated` trên Windows (gặp 2 lần; xóa thư mục rồi chạy lại thì được; Nx báo task “flaky”): đề xuất PID nhỏ cho luồng contracts (thử lại khi EPERM).
+  - Hồ sơ PID-00036 mục 2.3 liệt kê mock `getSession`, `getMe` cho settings; shell đã giữ hai operation này (S02, EC08), nên khu vực settings khai lại sẽ gặp lỗi EC10 như trang ticket đã báo trước. Cần PO chọn khi làm rõ PID-00036 (tương tự `answerPrompt` giữa PID-00058 và PID-00060).
+- **Yêu cầu hợp đồng:** `Event` (`components/schemas/orchestration.yaml#/Event`) chỉ được trỏ qua `x-event-schema` của `/events` nên không có trong `components.schemas`: `PublicApi` không có type `Event` (PID-00012 S05, PID-00013 S03 cần), bundle còn ref hỏng `common.yaml#/Id`, `common.yaml#/Timestamp`. Đề xuất thêm `Event` vào `components.schemas` của `openapi.yaml` cùng lượt PC-05 P2. Phiếu I1 (đã báo phiên điều phối 27/11/2026; file phiếu soạn sẵn ở thư mục ghi chú của phiên điều phối, chưa đưa vào `docs/` vì `update-index.mjs` là việc của PO). Không chặn: bộ sinh tạm suy type từ `x-event-schema`.
 - **Còn mở:** không có.
-- **Bước tiếp theo:** làm S01–S04.
+- **Bước tiếp theo:** QC độc lập chạy `spec-converge-skill PID-00013`; nối client của PID-00012 khi PR đó merge (mục 4).
 - **Tài liệu đi kèm:** không có.
 
 ---
