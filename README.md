@@ -33,7 +33,7 @@ SIRes không phải chatbot trả lời một lần. Mỗi Research Project có 
 ### Điểm chính
 
 - **Plan và Task dài hạn:** Plan phải được duyệt trước khi thực thi. Plan đã duyệt là baseline có phiên bản. Người dùng chọn từng Task, hệ thống không tự chạy Task tiếp theo.
-- **Trusted Library:** tìm tài liệu qua Google Scholar (dự phòng OpenAlex, Semantic Scholar) hoặc nhập DOI, BibTeX, PDF. Reference được duyệt theo lô và dùng lại ở mọi project.
+- **Trusted Library:** tìm tài liệu qua OpenAlex (nguồn mặc định); Google Scholar qua SerpApi khi người dùng bật, trong giới hạn lượt tìm do họ đặt, chỉ cho tài liệu OpenAlex không có (DEC-60, DEC-61); hoặc nhập DOI, BibTeX, PDF. Reference được duyệt theo lô và dùng lại ở mọi project.
 - **Evidence trước, câu chữ sau:** RAG trên Trusted Reference đã index giúp giảm hallucination. Mỗi claim gắn với evidence hỗ trợ hoặc phản bác, có trang, đoạn và chunk.
 - **Manuscript LaTeX:** editor, build PDF, Change Proposal dạng diff do Writing Agent đề xuất, kiểm tra citation trước khi chấp nhận.
 - **Multi-agent độc lập provider:** Orchestrator và các Specialist Agent (Discovery, Evidence Retrieval, Synthesis, Verification, Writing, Diagram…) chạy trên Claude, OpenAI hoặc Gemini bằng API key của người dùng.
