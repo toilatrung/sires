@@ -111,6 +111,7 @@ function PendingBlock({ state, onRetry, names }: { state: Load<Dashboard>; onRet
           ))}
         </ul>
       )}
+      {count === 0 && <p className="g-note">{t('dashboard.pending.noneReason')}</p>}
     </section>
   );
 }

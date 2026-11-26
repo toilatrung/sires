@@ -66,6 +66,21 @@ Không có.
   - `projects-delete-dialog.jpg`: dialog xóa (S04).
   - `projects-390.jpg`: Research Projects ở 390×844 (S02, EC17).
 
+
+## Lần 2 — 27/11/2026
+
+- **Yêu cầu (phiên điều phối, tóm tắt):** ba khối Dashboard “n việc chờ bạn”, “Workflow đang chạy”, “Lỗi gần đây” chỉ có tiêu đề. Dashboard phải hiện danh sách thì dựng đủ; khối để trống là đúng thì phải có trạng thái trống theo design.md (câu giải thích và hành động tiếp); kiểm nhãn “Task Completed”.
+- **Phân loại:** trong phạm vi (P7, P8; design.md §4 “Trống”). Theo H2 của hồ sơ, dòng của ba khối là PID-00060 S06 (PR #142 đã dựng). Vì vậy #141 không thêm danh sách mà áp dụng ý (2).
+- **Đã làm:**
+  - mỗi khối có một dòng giải thích và nút viền xanh tới màn đầy đủ: “Mở Pending Actions”, “Mở Agent Activity”, “Mở Notifications” (`BlockNote` trong `dashboard/DashboardScreen.tsx`);
+  - khi không có việc chờ, khối hiện câu “Khi agent cần bạn duyệt hoặc trả lời, việc đó hiện ở đây đầu tiên.”;
+  - khi PID-00060 cấp dòng, phần giải thích tự ẩn;
+  - test: `dashboard.spec.tsx › thứ tự khối` kiểm thêm ba liên kết.
+- **Nhãn “Task Completed”:** đúng thiết kế. Cột này ở `docs/ui-design/pages/Dashboard.html` ghi “Task Completed” trong bản tiếng Việt; Task và Completed là thuật ngữ cố định, giữ tiếng Anh (UX-I18N-003, design.md §6).
+- **Sửa thêm** (commit `d6b9c9c`): danh sách workflow chặn lưu trữ, xóa lấy theo project rồi lọc ở client. Mock dùng chung không hiểu `status` dạng mảng.
+- **Kiểm:** `npx vitest run src/features/global/ src/shell/i18n.spec.ts`: 38 test đạt. Ảnh mới: `dashboard-mock-1440.jpg`.
+- **Trạng thái:** không đổi, vẫn chờ G1 (test của shell). Phiên web-shell sửa trên #138; tôi đã ghi bản vá đã đo ở `side-session-notes/…/web-global-shell-tests.md`.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
