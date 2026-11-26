@@ -86,7 +86,9 @@ export function agentStates({ workflows, assignments, connections, deliberations
     const connection = assignment && connections.find((c) => c.id === assignment.providerConnectionId);
     if (connection?.testStatus === 'Invalid') offer(row.key, { state: 'error', connection: { name: connection.name, code: connection.lastError?.code } });
   }
-  const sessions = deliberationAgentStates(deliberations, {
+  // Only sessions of the project's active workflows: a Failed session of an ended workflow is history, not work.
+  const live = deliberations.filter((d) => workflows.some((w) => w.id === d.workflowId));
+  const sessions = deliberationAgentStates(live, {
     openDecisionPromptIds: openPromptIds,
     stepOf: (session) => {
       const workflow = workflows.find((w) => w.id === session.workflowId);
@@ -154,7 +156,9 @@ function AgentRows({ projectId, inputs, tasks, at }: { projectId: string; inputs
     .join(', ');
   return (
     <>
-      <p className="sires-mon__lede">{summary}</p>
+      <p className="sires-mon__lede" aria-live="polite">
+        {summary}
+      </p>
       <p className="sires-mon__hint">{t('agents.scope', { time: formatTime(at) })}</p>
       <ul className="sires-mon__agent-list">
         {ROWS.map((row) => {

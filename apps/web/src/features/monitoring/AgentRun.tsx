@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useParams } from 'react-router';
-import { ErrorState, LoadingState, NotFound, StatusChip, formatDate, formatDateTime, formatNumber, isApiError, useApi, type ApiError } from '../../shell';
+import { ErrorState, LoadingState, NotFound, StatusChip, formatDate, formatDateTime, formatNumber, isApiError, useApi, useEvents, type ApiError } from '../../shell';
 import { NS, RefLink, hrefs, shortId, useAgentName, useResource, type AgentRun, type Workflow } from './shared';
 
 /** Debug transcripts are kept 30 days (NFR-RET-009): the date shown before the transcript is opened. */
@@ -82,6 +82,10 @@ export function AgentRunPanel({ projectId, agentRunId, workflow, onClose }: { pr
     }
     return { run, connection };
   }, [agentRunId]);
+  // A running Agent Run finishes while the panel is open (UX-MONITOR-005, EC24): read it again.
+  useEvents({ types: ['agent_run.status_changed'], projectId }, (event) => {
+    if (event.objectId === agentRunId) void resource.reload();
+  });
   const ready = resource.value.state === 'ready';
   useEffect(() => {
     if (ready) titleRef.current?.focus();

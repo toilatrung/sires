@@ -248,9 +248,10 @@ function WorkflowView({ projectId, detail, tasks, onWorkflow, reload }: { projec
           )}
           {view === 'steps' && runs.length === 0 && <StepList projectId={projectId} workflow={workflow} runs={runs} tab={tab} selected={agentRunId} now={now} />}
 
-          {agentRunId && <AgentRunPanel key={agentRunId} projectId={projectId} agentRunId={agentRunId} workflow={workflow} onClose={closeRun} />}
         </div>
         <aside className="sires-mon__side">
+          {/* Agent Run panel in the side column (design.md §4; Workflow--debug), above the Agent List. */}
+          {agentRunId && <AgentRunPanel key={agentRunId} projectId={projectId} agentRunId={agentRunId} workflow={workflow} onClose={closeRun} />}
           <AgentList projectId={projectId} />
         </aside>
       </div>
@@ -412,14 +413,14 @@ const sameRef = (a: Schemas['TypedRef'], b: Schemas['TypedRef']) => a.type === b
 function Timeline({ projectId, workflow, runs }: { projectId: string; workflow: Workflow; runs: AgentRun[] }) {
   const { t } = useTranslation(NS);
   const agentName = useAgentName();
-  const actorName = useActorName();
   const steps = workflow.steps ?? [];
   const orchestrator = agentName('orchestrator');
   const entries: TimelineEntry[] = [];
   let order = 0;
   const push = (entry: Omit<TimelineEntry, 'order'>) => entries.push({ ...entry, order: order++ });
 
-  push({ at: workflow.createdAt, actor: actorName(workflow.triggeredBy), text: t('timeline.created', { type: workflow.type, count: steps.length }) });
+  // The Orchestrator creates the workflow and plans its steps (Workflow.dc.html); who triggered it is in the header.
+  push({ at: workflow.createdAt, actor: orchestrator, text: t('timeline.created', { type: workflow.type, count: steps.length }) });
   steps.forEach((step, i) => {
     const stepRuns = runs.filter((r) => r.stepId === step.id).sort((a, b) => (a.startedAt ?? a.createdAt).localeCompare(b.startedAt ?? b.createdAt));
     const first = stepRuns[0];
@@ -454,7 +455,7 @@ function Timeline({ projectId, workflow, runs }: { projectId: string; workflow: 
   entries.sort((a, b) => a.at.localeCompare(b.at) || a.order - b.order);
 
   return (
-    <ol className="sires-mon__timeline" aria-label={t('workflow.view.timeline')}>
+    <ol className="sires-mon__timeline" aria-label={t('workflow.view.timeline')} aria-live="polite">
       {entries.map((e) => (
         <li key={e.order} data-tone={e.tone}>
           <time className="sires-num sires-mon__time" dateTime={e.at}>

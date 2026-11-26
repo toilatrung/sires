@@ -60,6 +60,7 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
   const filter: Filter = (['active', 'ended', 'all'] as const).find((f) => f === search.get('filter')) ?? 'all';
   const [expanded, setExpanded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
   const project = scope === 'project' ? projectId : undefined;
 
   const list = (status: typeof ACTIVE, cursor?: string, limit = PAGE): Promise<Page<Workflow>> =>
@@ -93,6 +94,9 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
 
   const upsert = (workflow: Workflow) =>
     resource.setData((old) => {
+      // A late read must not overwrite a newer one (EC05): keep the row with the higher rowVersion.
+      const known = [...old.active, ...old.ended].find((w) => w.id === workflow.id);
+      if (known && known.rowVersion > workflow.rowVersion) return old;
       const rest = (items: Workflow[]) => items.filter((w) => w.id !== workflow.id);
       return isActive(workflow)
         ? { ...old, active: [workflow, ...rest(old.active)].sort(byStart), ended: rest(old.ended), updatedAt: Date.now() }
@@ -169,6 +173,7 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
     }
     if (!data.endedCursor) return;
     setLoadingMore(true);
+    setMoreFailed(false);
     try {
       const next = await list(ENDED, data.endedCursor);
       const missing = [...new Set((next.items ?? []).filter((w) => w.taskId && !data.tasks.has(w.taskId)).map((w) => w.projectId).filter((p): p is string => Boolean(p)))];
@@ -180,6 +185,9 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
         tasks: new Map([...old.tasks, ...tasks]),
       }));
       setExpanded(true);
+    } catch {
+      // The loaded rows stay; the button tries the same page again.
+      setMoreFailed(true);
     } finally {
       setLoadingMore(false);
     }
@@ -202,7 +210,7 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
             <h1 className="sires-mon__title">{title}</h1>
             <p className="sires-mon__lede">
               {scope === 'global' ? t('activity.ledeGlobal') : t('activity.ledeProject')}{' '}
-              <span className="sires-num" data-testid="updated-at">
+              <span className="sires-num" data-testid="updated-at" aria-live="polite">
                 {t('activity.updated', { time: formatTime(updated, { withSeconds: true }), date: formatDate(updated) })}
               </span>
             </p>
@@ -235,6 +243,11 @@ export function ActivityPage({ scope }: { scope: 'global' | 'project' }) {
               </button>
             </div>
           )}
+          {moreFailed && (
+            <p role="alert" className="sires-mon__notice" data-tone="danger">
+              {t('activity.moreFailed')}
+            </p>
+          )}
           <p className="sires-mon__hint">{t('activity.controlsHint')}</p>
         </div>
         {scope === 'project' && project && (
@@ -252,7 +265,7 @@ function WorkflowTable({ rows, scope, data, now, commands }: { rows: Workflow[];
   const agentName = useAgentName();
   return (
     <div className="sires-mon__table-wrap">
-      <table className="sires-mon__table" aria-label={t('activity.tableLabel')}>
+      <table className="sires-mon__table sires-mon__activity" aria-label={t('activity.tableLabel')}>
         <thead>
           <tr>
             <th scope="col">{t('col.workflow')}</th>
@@ -272,14 +285,16 @@ function WorkflowTable({ rows, scope, data, now, commands }: { rows: Workflow[];
             const prompts = steps.filter((s) => s.openPromptId).length;
             const task = taskLabel(data.tasks, w.taskId);
             const projectId = w.projectId ?? '';
+            // An account-level workflow (Trusted Library processing) has no project page to open.
+            const detail = projectId ? hrefs.workflow(projectId, w.id) : undefined;
             return (
               <tr key={w.id} data-workflow={w.id}>
                 <td data-label={t('col.workflow')}>
-                  <span className="sires-id">{shortId('wf', w.id)}</span> <span className="sires-mon__muted">{w.type}</span>
+                  <span className="sires-id sires-mon__nowrap">{shortId('wf', w.id)}</span> <span className="sires-mon__muted sires-mon__block sires-mon__nowrap">{w.type}</span>
                 </td>
                 <td data-label={scope === 'global' ? t('col.projectTask') : t('col.task')}>
-                  {scope === 'global' && <span className="sires-mon__project">{data.projects.get(projectId) ?? shortId('p', projectId)}</span>}
-                  {task && w.taskId ? (
+                  {scope === 'global' && <span className="sires-mon__project">{projectId ? (data.projects.get(projectId) ?? shortId('p', projectId)) : t('activity.noProject')}</span>}
+                  {task && w.taskId && projectId ? (
                     <Link className="sires-mon__link" to={hrefs.task(projectId, w.taskId)}>
                       {task}
                     </Link>
@@ -292,13 +307,13 @@ function WorkflowTable({ rows, scope, data, now, commands }: { rows: Workflow[];
                 </td>
                 <td data-label={t('col.step')}>
                   {current ? (
-                    <>
+                    <span>
                       <span className="sires-num">
                         {t('activity.stepOf', { current: index, total: steps.length })}
                       </span>{' '}
                       {current.description}
                       <span className="sires-mon__muted sires-mon__block">{agentName(current.assignedAgent)}</span>
-                    </>
+                    </span>
                   ) : (
                     <span className="sires-mon__muted">—</span>
                   )}
@@ -311,10 +326,12 @@ function WorkflowTable({ rows, scope, data, now, commands }: { rows: Workflow[];
                 </td>
                 <td data-label={t('col.controls')}>
                   <div className="sires-mon__row-actions">
-                    <WorkflowControls workflow={w} taskLabel={task} commands={commands} size="sm" recoveryHref={hrefs.workflow(projectId, w.id)} />
-                    <Link className="sires-mon__link" to={hrefs.workflow(projectId, w.id)} aria-label={t('activity.detailOf', { id: shortId('wf', w.id) })}>
-                      {t('activity.detail')}
-                    </Link>
+                    <WorkflowControls workflow={w} taskLabel={task} commands={commands} size="sm" recoveryHref={detail} />
+                    {detail && (
+                      <Link className="sires-mon__link" to={detail} aria-label={t('activity.detailOf', { id: shortId('wf', w.id) })}>
+                        {t('activity.detail')}
+                      </Link>
+                    )}
                   </div>
                 </td>
               </tr>

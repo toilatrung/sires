@@ -42,6 +42,7 @@ export function HistoryPage() {
   const taskId = search.get('task') ?? '';
   const actorName = useActorName();
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreFailed, setMoreFailed] = useState(false);
 
   const read = (cursor?: string): Promise<Page<AuditEvent>> =>
     api
@@ -65,9 +66,12 @@ export function HistoryPage() {
   };
   const more = async (cursor: string) => {
     setLoadingMore(true);
+    setMoreFailed(false);
     try {
       const page = await read(cursor);
       events.setData((old) => ({ items: [...old.items, ...(page.items ?? []).filter((e) => !old.items.some((x) => x.id === e.id))], cursor: page.nextCursor ?? null }));
+    } catch {
+      setMoreFailed(true);
     } finally {
       setLoadingMore(false);
     }
@@ -166,6 +170,11 @@ export function HistoryPage() {
                 </div>
               )}
               {localFilter && cursor && <p className="sires-mon__hint">{t('history.loadedOnly')}</p>}
+              {moreFailed && (
+                <p role="alert" className="sires-mon__notice" data-tone="danger">
+                  {t('history.moreFailed')}
+                </p>
+              )}
               {cursor && (
                 <div className="sires-mon__more">
                   <button type="button" className="sires-button" data-size="sm" disabled={loadingMore} onClick={() => void more(cursor)}>

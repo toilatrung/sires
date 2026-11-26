@@ -253,9 +253,10 @@ function command(fixtures: Fixtures, workflowId: string, name: keyof typeof FROM
   return { status: 200 as const, body: structuredClone(workflow) };
 }
 
-/** Every value of a repeated query parameter (`status=Running&status=Paused`): the runtime's `query` keeps only the last one. */
+/** Every value of an array query parameter, repeated (`status=Running&status=Paused`, what the shell client sends;
+ * the runtime's `query` keeps only the last one) or comma-separated (`status=Running,Paused`, the contract's explode: false). */
 const queryList = (request: Request, name: string) => {
-  const values = new URL(request.url).searchParams.getAll(name);
+  const values = new URL(request.url).searchParams.getAll(name).flatMap((v) => v.split(',')).filter(Boolean);
   return values.length ? values : undefined;
 };
 

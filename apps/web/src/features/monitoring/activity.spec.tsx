@@ -116,6 +116,16 @@ describe('Agent Activity: danh sách (S02)', () => {
     expect(textOf(created[5])).toBe('—');
   });
 
+  it('workflow không thuộc project (Global)', async () => {
+    const library = workflow(74, 'Running', [step(74, 1, 'reference_processing', 'Running')], { projectId: undefined, taskId: undefined });
+    mock.use({ overrides: { listWorkflows: serve(() => [library]) } });
+    await renderMonitoring('/activity');
+    await screen.findByRole('table', { name: 'Danh sách workflow' });
+    expect(within(rowOf(74)).getByText('Không thuộc project')).toBeTruthy();
+    expect(within(rowOf(74)).queryByRole('link')).toBeNull();
+    expect(within(rowOf(74)).getByRole('button', { name: 'Tạm dừng' })).toBeTruthy();
+  });
+
   it('thời gian chạy (EC07)', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(at(2)));
