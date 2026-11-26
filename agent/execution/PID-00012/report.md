@@ -3,7 +3,7 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00012](../../../docs/tickets/issues/PID-00012/index.html) · **Luồng:** `web/shell` · **Giai đoạn:** PH-01
-- **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** chưa mở
+- **Nhánh:** `web/shell-pid-00012` (tạo từ `origin/main` `c9e745b`; mã ở `8922479`, `49d3220` và commit sửa theo tự đối chiếu; đã commit có chữ ký và push) · **PR:** [toilatrung/sires#138](https://github.com/toilatrung/sires/pull/138) vào `main`
 - **Cập nhật:** 27/11/2026
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
