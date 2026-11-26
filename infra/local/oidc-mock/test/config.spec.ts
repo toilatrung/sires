@@ -33,7 +33,7 @@ const ACCOUNT_B = { sub: 'b', email: 'b@sires.test', email_verified: true, name:
 const STAGING_CLIENT = {
   client_id: 'sires-gateway-staging',
   client_secret: 's'.repeat(40),
-  redirect_uris: ['https://app.sires.test/auth/callback'],
+  redirect_uris: ['https://app.sires.test/api/v1/auth/callback'],
   post_logout_redirect_uris: ['https://app.sires.test/'],
   grant_types: ['authorization_code', 'refresh_token'],
   response_types: ['code'],
@@ -128,7 +128,7 @@ describe('file mẫu staging bị từ chối khi chưa thay chỗ giữ chỗ',
   it('CHANGE-ME, example.invalid (AC08 ca 5)', async () => {
     await refused(staging({ OIDC_MOCK_ACCOUNTS_FILE: STAGING_ACCOUNTS_EXAMPLE }), /tài khoản #0 dùng mật khẩu cục bộ hay chỗ giữ chỗ/);
     await refused(staging({ OIDC_MOCK_CLIENTS_FILE: STAGING_CLIENTS_EXAMPLE }), /client #0 dùng secret cục bộ hay chỗ giữ chỗ/);
-    const placeholderUri = file([{ ...STAGING_CLIENT, redirect_uris: ['https://staging.example.invalid/auth/callback'] }]);
+    const placeholderUri = file([{ ...STAGING_CLIENT, redirect_uris: ['https://staging.example.invalid/api/v1/auth/callback'] }]);
     await refused(staging({ OIDC_MOCK_CLIENTS_FILE: placeholderUri }), /example\.invalid/);
     await refused(staging({ OIDC_MOCK_ISSUER: 'https://oidc.staging.example.invalid' }), /chỗ giữ chỗ/);
   });
@@ -184,7 +184,7 @@ describe('file cục bộ hợp lệ', () => {
     const clients = readClients(DEFAULT_CLIENTS_FILE);
     expect(clients.map((c) => c.client_id)).toEqual(['sires-gateway-local']);
     expect(clients[0]).toMatchObject({
-      redirect_uris: ['http://localhost:5173/auth/callback', 'http://localhost:3000/auth/callback'],
+      redirect_uris: ['http://localhost:5173/api/v1/auth/callback', 'http://localhost:3000/api/v1/auth/callback'],
       post_logout_redirect_uris: ['http://localhost:5173/', 'http://localhost:3000/'],
       token_endpoint_auth_method: 'client_secret_basic',
     });

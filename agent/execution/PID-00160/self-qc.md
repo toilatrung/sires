@@ -100,6 +100,23 @@ Máy: Windows 11, Node 24.21.0, pnpm 10.34.9; Docker Engine 29.8.2 trong WSL `Ub
 | G5 | partial | LOW | Test EC09 không phân biệt có hay không hàng đợi `POST /token` | Đột biến ở mục 1 | Giữ hàng đợi; ghi `implement.md` mục 3 |
 | G6 | partial | LOW | Liên kết từ `agent/execution/PID-00160/` tới `docs/tickets/issues/PID-00160/` chỉ đúng khi hồ sơ (PR #112, nhánh `docs/pc-06-ph02`) vào `develop` | `report.md` dòng Ticket | PO merge hồ sơ |
 
+## Lần 2 — 27/11/2026
+
+Sửa theo QC độc lập hồ sơ (PR #121, F1 MEDIUM, phiên điều phối chuyển): `redirect_uris` theo hợp đồng gateway `docs/api-design/paths/15-settings-and-sign-in.yaml` — `/auth/callback` dưới base `/api/v1` của `openapi.yaml` (`servers: https://{host}/api/v1`; web chuyển `/api` sang gateway). Mục này theo PC-05 P37.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm exec tsc -p tsconfig.json`, `pnpm exec eslint .` (trong `infra/local/oidc-mock`) | Đạt |
+| `pnpm exec vitest run` | 2 file, 33/33 đạt; `› thiếu PKCE, PKCE plain, redirect_uri chưa đăng ký` thêm ca URI cũ `http://localhost:5173/auth/callback` (thiếu `/api/v1`) → trang lỗi 400, không chuyển hướng |
+| `docker compose -f infra/local/compose.yaml up -d --wait --build oidc-mock` | Mã 0, 80 s, Healthy; `config/clients.local.json` trong container có URI mới |
+| Luồng thật vào container (authorize → đăng nhập B → `/token` → `/userinfo` → `/session/end`) | Callback `http://localhost:5173/api/v1/auth/callback`, state khớp; ID token, userinfo như Lần 1; đăng xuất về `http://localhost:5173/?state=z9` |
+
+| Mục | Đã xử lý |
+| --- | --- |
+| `redirect_uris` cục bộ | `http://localhost:5173/api/v1/auth/callback`, `http://localhost:3000/api/v1/auth/callback` (`config/clients.local.json`, `test/flow.spec.ts`, `test/config.spec.ts`, README) |
+| `redirect_uris` mẫu staging | `https://staging.example.invalid/api/v1/auth/callback` (`config/clients.staging.example.json`) |
+| `post_logout_redirect_uris` | Đã kiểm, giữ `http://localhost:5173/`, `http://localhost:3000/`: sau đăng xuất trình duyệt về trang gốc của web, không phải route API; hợp đồng `/auth/logout` (POST, 204) không quy định URI này. README ghi căn cứ |
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

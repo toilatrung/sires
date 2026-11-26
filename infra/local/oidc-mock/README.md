@@ -43,10 +43,10 @@ Thời hạn như eTroy (K8): access token và ID token 900 giây, refresh token
 | --- | --- |
 | `client_id` | `sires-gateway-local` |
 | `client_secret` | `sires-local-gateway-secret` (`client_secret_basic`) |
-| `redirect_uris` | `http://localhost:5173/auth/callback`, `http://localhost:3000/auth/callback` |
+| `redirect_uris` | `http://localhost:5173/api/v1/auth/callback`, `http://localhost:3000/api/v1/auth/callback` |
 | `post_logout_redirect_uris` | `http://localhost:5173/`, `http://localhost:3000/` |
 
-URI khớp từng ký tự (K13). Gateway hay web đổi route thì sửa file này (luồng infra).
+URI khớp từng ký tự (K13). Callback theo hợp đồng gateway `docs/api-design/paths/15-settings-and-sign-in.yaml`: `/auth/callback` dưới base `/api/v1` của `openapi.yaml` (web chuyển `/api` sang gateway). Sau đăng xuất trình duyệt về trang gốc của web, không phải route API, nên hợp đồng không quy định URI này. Gateway hay web đổi route thì sửa file này (luồng infra).
 
 `config/accounts.local.json`, mật khẩu `sires-local`, chỉ cho máy Dev:
 
@@ -66,7 +66,7 @@ Tên biến đề xuất cho PID-00038 (H7), giá trị cục bộ:
 | `OIDC_ISSUER` | `http://localhost:9400` |
 | `OIDC_CLIENT_ID` | `sires-gateway-local` |
 | `OIDC_CLIENT_SECRET` | `sires-local-gateway-secret` |
-| `OIDC_REDIRECT_URI` | `http://localhost:5173/auth/callback` (qua proxy của web) hoặc `http://localhost:3000/auth/callback` |
+| `OIDC_REDIRECT_URI` | `http://localhost:5173/api/v1/auth/callback` (qua proxy của web) hoặc `http://localhost:3000/api/v1/auth/callback` |
 | `OIDC_POST_LOGOUT_REDIRECT_URI` | `http://localhost:5173/` hoặc `http://localhost:3000/` |
 
 Issuer cục bộ là `http`, nên `openid-client` 6 của gateway phải bật `allowInsecureRequests` **chỉ khi** issuer là `http://localhost` (như spike SPK-02); staging dùng `https`. Gateway chạy trên máy (không trong compose) nên gọi mock qua `localhost:9400`, cùng URL với trình duyệt; issuer trong ID token là `http://localhost:9400`. Đăng xuất: gateway chuyển trình duyệt tới `end_session_endpoint` của IdP đang cấu hình (H1); đăng xuất ở mock kết thúc phiên mock nhưng không thu hồi refresh token đã cấp, gateway gọi `/revoke` nếu cần.

@@ -54,6 +54,13 @@ Không có.
 - **Bước tiếp theo:** QC độc lập `spec-converge-skill PID-00160`; PO review PR vào `develop`, merge sau hồ sơ (PR #112).
 - **Tài liệu đi kèm:** không có (kết quả lệnh ghi ở `self-qc.md`).
 
+## Lần 2 — 27/11/2026
+
+- **Lý do:** QC độc lập hồ sơ PR #121 nêu F1 (MEDIUM): `redirect_uris` cục bộ `/auth/callback` lệch hợp đồng gateway, nơi `/auth/callback` nằm dưới base `/api/v1`. Phiên điều phối giao sửa #130; phiên ph02-plan sửa hồ sơ.
+- **Đã làm:** `redirect_uris` thành `http://localhost:5173/api/v1/auth/callback`, `http://localhost:3000/api/v1/auth/callback` (mẫu staging `https://staging.example.invalid/api/v1/auth/callback`); test, README theo đó; test thêm ca URI cũ bị từ chối. `post_logout_redirect_uris` đã kiểm, giữ nguyên (trang gốc của web, hợp đồng không quy định).
+- **Kết quả:** 33/33 test; container build lại, luồng thật đạt với callback mới (`self-qc.md` Lần 2).
+- **Cho PID-00038:** `OIDC_REDIRECT_URI` cục bộ là `http://localhost:5173/api/v1/auth/callback` hoặc `http://localhost:3000/api/v1/auth/callback`.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

@@ -16,7 +16,7 @@ import { Browser, freePort, parseForm, remember, secretsSeen, type Visit } from 
 
 const CLIENT_ID = 'sires-gateway-local';
 const CLIENT_SECRET = 'sires-local-gateway-secret';
-const CALLBACK = 'http://localhost:5173/auth/callback';
+const CALLBACK = 'http://localhost:5173/api/v1/auth/callback';
 const POST_LOGOUT = 'http://localhost:5173/';
 const SCOPE = 'openid profile email';
 const A = { sub: 'sires-mock-a', email: 'researcher-a@sires.test', name: 'Nguyễn Thị An', password: 'sires-local' };
@@ -143,7 +143,7 @@ describe('discovery và JWKS', () => {
     const accounts = join(dir, 'accounts.json');
     writeFileSync(clients, JSON.stringify([{
       client_id: 'sires-gateway-staging', client_secret: 's'.repeat(40),
-      redirect_uris: ['https://app.sires.test/auth/callback'], post_logout_redirect_uris: ['https://app.sires.test/'],
+      redirect_uris: ['https://app.sires.test/api/v1/auth/callback'], post_logout_redirect_uris: ['https://app.sires.test/'],
       grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'client_secret_basic',
     }]));
     writeFileSync(accounts, JSON.stringify([
@@ -207,11 +207,14 @@ describe('từ chối yêu cầu sai', () => {
       expect(visit.kind === 'redirect' && visit.url.searchParams.get('state')).toBe(started.state);
       expect(visit.kind === 'redirect' && visit.url.searchParams.has('code')).toBe(false);
     }
-    const wrongRedirect = await begin({ redirect_uri: 'http://localhost:5173/auth/callbacK' });
-    const visit = await wrongRedirect.browser.request(wrongRedirect.url);
-    expect(visit.kind).toBe('page');
-    expect(visit.kind === 'page' && visit.status).toBe(400);
-    expect(visit.kind === 'page' && visit.body).toContain('redirect_uri');
+    // Khác một ký tự, và đường dẫn cũ thiếu base /api/v1 của hợp đồng gateway: trang lỗi, không chuyển hướng.
+    for (const uri of ['http://localhost:5173/api/v1/auth/callbacK', 'http://localhost:5173/auth/callback']) {
+      const wrongRedirect = await begin({ redirect_uri: uri });
+      const visit = await wrongRedirect.browser.request(wrongRedirect.url);
+      expect(visit.kind, uri).toBe('page');
+      expect(visit.kind === 'page' && visit.status).toBe(400);
+      expect(visit.kind === 'page' && visit.body).toContain('redirect_uri');
+    }
   });
 
   it('sai mật khẩu, email không có: hiện lại form, không về client (PID-00160-AC03 ca 4; EC06)', async () => {
