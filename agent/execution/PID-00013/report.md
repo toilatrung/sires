@@ -73,6 +73,14 @@ Phiên điều phối trả lời phiếu I1 (nguyên văn): “Trả lời phi�
 - Self-QC: [self-qc.md](self-qc.md) mục “Lần 2”. G5 đã xử lý.
 
 
+## Lần 3 — 27/11/2026
+
+Check `secrets` của PR #128 (gitleaks `generic-api-key`) báo dương tính giả ở commit đầu: hai khóa BibTeX mẫu (dòng 35 và 47 của `apps/web/src/shell/mock/fixtures/library.ts`, trường `key` của kiểu cục bộ `Paper`). Gitleaks quét mọi commit của PR nên commit sửa sau không xóa được. Phiên điều phối chọn (nguyên văn): “Chọn A, chốt theo đề xuất của bạn. Đẩy lịch sử sạch sang `web/mock-pid-00013-v2` và mở PR mới vào `main` … Không force-push, không sửa `infra/ci/gitleaks.toml`.”
+
+- Lịch sử dựng lại: cùng các commit, mọi commit ký SSH; nội dung khác `web/mock-pid-00013` đúng một chỗ: trường `key` của kiểu cục bộ `Paper` (chỉ dùng trong file fixture) đổi thành `cite`. Trường của hợp đồng là `Reference.bibtexKey` (`components/schemas/library.yaml`), vẫn giữ nguyên; `mock.spec.ts` › dữ liệu demo hợp lệ theo schema đạt.
+- Lần đẩy đầu sang `web/mock-pid-00013-v2` (PR #129) lại bị `secrets` báo, vì chính ghi chú Lần 3 trong `report.md` chép nguyên hai giá trị đó. Không force-push được, nên dựng lại thêm một lần ở `web/mock-pid-00013-v3` với ghi chú không chép giá trị, kiểm trước khi đẩy bằng bộ quét theo luật `generic-api-key` (regex và entropy) trên mọi dòng thêm của dải commit. PR #131 (từ `v3`) thay #128 và #129; hai PR cũ đóng sau khi `secrets` của PR mới xanh.
+
+
 ## Lần 4 — 27/11/2026
 
 Phiên điều phối giao (nguyên văn, rút gọn): “PR #131 đang đỏ hai check: `contracts` … và `build` … sửa. Shell PID-00012 đã xong ở PR #138 … Merge `origin/web/shell-pid-00012` vào nhánh của bạn, bằng merge chứ không rebase … để mock gắn vào điểm nối của shell … Mô tả PR ghi ‘xếp chồng trên #120 và #138’. Kiểm `pnpm --filter @sires/web dev:mock`: shell hiện dữ liệu mock … Chụp một ảnh lưu vào thư mục ghi chú.”
@@ -85,14 +93,37 @@ Phiên điều phối giao (nguyên văn, rút gọn): “PR #131 đang đỏ ha
 - Trình duyệt (`dev:mock`, cổng 5183, cấu hình tạm không commit): shell hiện TopBar với Pending Actions 4, 3 thông báo chưa đọc, avatar “NA”; bộ chuyển ngữ cảnh liệt kê 3 project đang hoạt động; vào project “Ứng dụng RAG…” thấy “Plan v2 · Approved”, active task T02, số Pending Actions theo tab; client SSE của shell kết nối `/events`, sau khi cắt nối lại kèm `Last-Event-ID: 1`; console không lỗi. Ảnh: `PID-00013-dev-mock-dashboard.jpg`, `PID-00013-dev-mock-project.jpg` ở thư mục ghi chú của phiên điều phối.
 - PR #131 xếp chồng trên #120 và #138.
 
+
+## Lần 5 — 27/11/2026
+
+Phiên điều phối giao hai việc trên #131, chốt theo đề xuất của phiên web-global (nguyên văn, rút gọn):
+- “README mock (`apps/web/src/shell/mock/README.md`) đang hướng dẫn khu vực khai `mocks: import.meta.env.DEV ? () => import('./__mocks__') : undefined` … Hãy sửa hướng dẫn … Hoặc tốt hơn: export một hằng hay helper dùng chung từ `shell/mock` (ví dụ `mockEnabled`) … Thêm test chặn nếu được.”
+- “bộ mock dùng chung chưa hiểu query dạng mảng … Theo `style`/`explode` của tham số trong OpenAPI, cho mock dùng chung parse và lọc được tham số mảng, kèm test.”
+
+**`mockEnabled`:**
+- Định nghĩa ở `apps/web/src/shell/mock-enabled.ts`, export từ `src/shell`: `import.meta.env.DEV && import.meta.env.MODE !== 'production'`.
+- `src/mocks/index.ts` dùng hằng này. README và chú thích `Feature.mocks` hướng dẫn khai `mocks: mockEnabled ? () => import('./__mocks__') : undefined`.
+- Hằng nằm ngoài `shell/mock` vì hai lẽ:
+  - Bản build giữ hằng này, mà `build.spec` coi mọi file trong `shell/mock` là mock.
+  - Kiểu của mock được typecheck không có kiểu Vite. Để hằng trong `feature.ts` thì `mock.spec` › khu vực sinh mock báo lỗi `import.meta.env`.
+
+**Test chặn** (`build.spec.ts` › khu vực khai mock):
+- Build khu vực mẫu `__fixtures__/guarded-area` ở `production` và `NODE_ENV=development`: không có mock. Ở chế độ `mock`: mock còn trong bundle (đối chứng).
+- Quét `features/*/index.tsx`: dòng `mocks:` phải đứng sau `mockEnabled`, hoặc sau đúng điều kiện đầy đủ. Các PR #141–#144 đang dùng điều kiện đầy đủ, nên vẫn qua.
+
+**Tham số mảng:**
+- Bộ sinh ghi `query: [{ name, style, explode }]` cho tham số query kiểu mảng. Hiện có 4 tham số, đều `form` với `explode: false`: `search.types`, `listTasks.status`, `listReferences.approvalStatus`, `listWorkflows.status`.
+- Runtime `readQuery`:
+  - tách giá trị theo style khi `explode: false` (`status=A,B`), và gom cả khóa lặp (`status=A&status=B`);
+  - lọc fixture: giữ hàng khớp một trong các giá trị; trường là mảng thì khớp khi chứa giá trị đó;
+  - override nhận tham số mảng dạng `string[]`; type `QueryParams` đổi theo hợp đồng.
+- Không override nào của PR #141–#144 đọc tham số mảng qua `query`, nên không vỡ type.
+
+**Phát hiện cho PID-00012 (không sửa ở đây):** client API của shell (`apps/web/src/shell/api/client.ts:113`, `queryString`) gửi mảng dạng lặp `status=A&status=B`, còn hợp đồng quy định `form` với `explode: false` (`status=A,B`). Mock nhận cả hai dạng; gateway làm đúng hợp đồng có thể chỉ đọc một giá trị. Đề xuất phiên điều phối giao PID-00012 sửa.
+
+Self-QC: [self-qc.md](self-qc.md) mục “Lần 5”.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->
 SIRes — Copyright © 2026 The eTroy development team · eTroy One platform. Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited. See [LICENSES.md](../../../LICENSES.md).
-## Lần 3 — 27/11/2026
-
-Check `secrets` của PR #128 (gitleaks `generic-api-key`) báo dương tính giả ở commit đầu: hai khóa BibTeX mẫu (dòng 35 và 47 của `apps/web/src/shell/mock/fixtures/library.ts`, trường `key` của kiểu cục bộ `Paper`). Gitleaks quét mọi commit của PR nên commit sửa sau không xóa được. Phiên điều phối chọn (nguyên văn): “Chọn A, chốt theo đề xuất của bạn. Đẩy lịch sử sạch sang `web/mock-pid-00013-v2` và mở PR mới vào `main` … Không force-push, không sửa `infra/ci/gitleaks.toml`.”
-
-- Lịch sử dựng lại: cùng các commit, mọi commit ký SSH; nội dung khác `web/mock-pid-00013` đúng một chỗ: trường `key` của kiểu cục bộ `Paper` (chỉ dùng trong file fixture) đổi thành `cite`. Trường của hợp đồng là `Reference.bibtexKey` (`components/schemas/library.yaml`), vẫn giữ nguyên; `mock.spec.ts` › dữ liệu demo hợp lệ theo schema đạt.
-- Lần đẩy đầu sang `web/mock-pid-00013-v2` (PR #129) lại bị `secrets` báo, vì chính ghi chú Lần 3 trong `report.md` chép nguyên hai giá trị đó. Không force-push được, nên dựng lại thêm một lần ở `web/mock-pid-00013-v3` với ghi chú không chép giá trị, kiểm trước khi đẩy bằng bộ quét theo luật `generic-api-key` (regex và entropy) trên mọi dòng thêm của dải commit. PR #131 (từ `v3`) thay #128 và #129; hai PR cũ đóng sau khi `secrets` của PR mới xanh.
-
