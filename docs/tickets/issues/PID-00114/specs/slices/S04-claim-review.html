@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00114.">
+<title>PID-00114 — S04 Inspector của claim và duyệt claim | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>S04 — Inspector của claim và duyệt claim</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00114-AC01 (Inspector, sau khi chấp nhận), SYN-HUMAN-REVIEW-001-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B5, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC10, EC15–EC25, EC43–EC46</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03 (thẻ evidence); PID-00012 S06 (thẻ thao tác dài), S09 (kho nháp)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Panel của route <code>/projects/{projectId}/claims/{claimId}</code> theo màn Evidence và H6: <code>getClaim</code> (giữ <code>ETag</code>, <code>rowVersion</code>); đầu panel: phát biểu, chip mức hỗ trợ, chip duyệt, needs review, lần kiểm chứng gần nhất (<code>lastVerification.outcome</code>, thời điểm), Task, artifact version nguồn khi có.</li>
+<li>Evidence liên kết: <code>getEvidence</code> cho từng <code>evidenceLinks</code>, nhóm “Hỗ trợ”, “Phản bác”, “Ngữ cảnh” bằng thẻ evidence của S03; Conflicting luôn hiện hai nhóm đầu (EC15); link tới evidence Stale, Excluded có câu “không tính khi đánh giá mức hỗ trợ” (EC16).</li>
+<li>Claim Draft: “Kiểm chứng” (<code>verifyClaim</code> với <code>Idempotency-Key</code>; 202 → thẻ thao tác dài của shell, liên kết workflow, theo dõi bằng <code>workflow.status_changed</code> và <code>getWorkflow</code>; EC21); “Chấp nhận claim” là nút chính khi đã đánh giá — Not Assessed vô hiệu kèm lý do (EC17), Unsupported và Conflicting qua dialog xác nhận thêm (EC18), gửi <code>rowVersion</code>; “Từ chối” qua dialog lý do tùy chọn; 409, 400 → tải lại, báo (EC19).</li>
+<li>“Sửa phát biểu” cho Draft và Accepted: ô nhập đăng ký kho nháp của shell (EC45), gửi <code>application/merge-patch+json</code> với <code>If-Match</code>; báo trước khi claim Accepted; 412 và rỗng theo EC20.</li>
+<li>“Liên kết evidence”: dialog chọn evidence Active (<code>listEvidence</code> với <code>status=Active</code>, lọc reference) và quan hệ (radio không chọn sẵn), <code>linkEvidenceToClaim</code>; “Bỏ liên kết”, “Đổi quan hệ” trên từng thẻ (<code>unlinkEvidenceFromClaim</code> rồi <code>linkEvidenceToClaim</code>; EC22). Evidence Stale, Excluded không có trong danh sách chọn (EC10).</li>
+<li>Tab Claims: nút phụ “Chấp nhận các claim Supported (n)”, dialog liệt kê claim, gửi <code>acceptClaim</code> lần lượt, tiến độ “k/n”, claim lỗi kèm mã (EC24).</li>
+<li>Claim Accepted, Rejected theo EC25; một request mỗi lần bấm, gửi lại dùng cùng <code>Idempotency-Key</code> (EC44); sự kiện (EC43); vi/en (EC46).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/claim.spec.tsx</code> › Unsupported giữ nhãn ở danh sách, Inspector và sau khi chấp nhận (PID-00114-AC01, EC18); › Not Assessed không chấp nhận được (SYN-HUMAN-REVIEW-001-AC01, EC17); › Conflicting hiện hai phía (EC15); › link tới evidence Stale (EC16); › 409 tải lại claim (EC19); › sửa phát biểu (EC20); › kiểm chứng chạy lâu (EC21); › liên kết evidence (EC22); › đổi quan hệ (EC22); › chấp nhận hàng loạt (EC24); › claim đã quyết định (EC25); › không gửi trùng (EC44)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi; thao tác tay bằng bàn phím cho dialog và radio quan hệ</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Duyệt claim trên mock đủ kiểm chứng, chấp nhận, từ chối, sửa, liên kết; nhãn mức hỗ trợ không đổi khi chấp nhận</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00114</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
