@@ -123,6 +123,29 @@ Phiên điều phối giao hai việc trên #131, chốt theo đề xuất của
 
 Self-QC: [self-qc.md](self-qc.md) mục “Lần 5”.
 
+
+## Lần 6 — 27/11/2026
+
+Phiên điều phối giao (nguyên văn, rút gọn), chốt theo đề xuất:
+- “`apps/web/src/shell/mock/browser.ts:37`: thêm `quiet: true` vào `worker.start`. Không có cờ này, log của MSW in nguyên API key ra console khi chạy `dev:mock` (MEDIUM G1 trong QC của #143; lỗi lộ bí mật, làm trước).”
+- “Đưa phần mock của commit 78baa91 sang #131: `shell/mock/index.ts`, `node.ts`, `runtime.ts`, `types.ts` (`MockRequest.emit`) và README. Rà lại, thêm test.”
+- “Nếu chưa làm: helper điều kiện mock của khu vực, lọc query dạng mảng.” Hai việc này đã làm ở Lần 5.
+- Phần `client.ts` (FormData) và `feature.ts` do phiên web-shell đưa vào #138.
+
+**`quiet`:**
+- Tùy chọn của `worker.start` nay đặt ở `shell/mock/worker-options.ts`: `quiet: true`, `onUnhandledFrame: 'bypass'`, đường dẫn service worker. `browser.ts` chỉ truyền đúng hằng đó.
+- Test `browser.spec.ts` › không log request ra console. Gói `msw/browser` chỉ phân giải được trong trình duyệt, nên test đọc module tùy chọn và kiểm `browser.ts` gọi `worker.start(workerStartOptions)`.
+- README bỏ câu “console in từng request `[MSW]`” và ghi lý do bật `quiet`.
+
+**`MockRequest.emit`** (lấy từ commit `78baa91` của PID-00098, áp sạch lên nhánh này):
+- Override nhận `emit(event)` để đưa sự kiện lên mock `/events`.
+- `createMocks` nối `emit` vào stream của nó; `overrideHandlers(mocks, events)` và `useMockServer().use` nối vào stream của server test.
+- README có ví dụ `cancelWorkflow`.
+- Test `mock.spec.ts` › override phát sự kiện lên /events, kiểm cả override của test (`mock.use`) lẫn override của khu vực (`createMocks`).
+- Phần README về điều kiện mock của `78baa91` không lấy, vì Lần 5 đã thay bằng `mockEnabled`.
+
+Self-QC: [self-qc.md](self-qc.md) mục “Lần 6”.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

@@ -39,7 +39,7 @@ export async function startMockServer(options: MockServerOptions = {}): Promise<
   return {
     server,
     events,
-    use: (mocks) => server.use(...overrideHandlers(mocks)),
+    use: (mocks) => server.use(...overrideHandlers(mocks, events)),
     close: () => {
       events.reset();
       server.close();

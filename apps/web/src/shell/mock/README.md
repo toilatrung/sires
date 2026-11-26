@@ -9,7 +9,7 @@ Mock giả lập `gateway` theo OpenAPI công khai (`docs/api-design/dist/openap
 | Dev | `pnpm --filter @sires/web dev:mock` (sinh lại mock rồi chạy Vite ở mode `mock`). Hoặc đặt `VITE_SIRES_MOCK=1` rồi `pnpm --filter @sires/web dev`. Mặc định tắt: `dev` thường gọi gateway qua proxy |
 | Test (Vitest) | `useMockServer()` từ `shell/mock/node` |
 
-Khi bật, mọi request tới `/api/v1/*` có câu trả lời: request nào cũng mang header `x-sires-mock: <operationId>` (xem ở tab Network), console in từng request `[MSW]`. Trong console trình duyệt, `siresMock.events.emit({ type: 'notification.created', … })` đẩy một sự kiện SSE.
+Khi bật, mọi request tới `/api/v1/*` có câu trả lời: request nào cũng mang header `x-sires-mock: <operationId>` (xem ở tab Network). Worker chạy ở chế độ `quiet` (`worker-options.ts`), nên console không in từng request: log mặc định của MSW in cả thân request, gồm API key của Provider Connections. Trong console trình duyệt, `siresMock.events.emit({ type: 'notification.created', … })` đẩy một sự kiện SSE.
 
 ```ts
 // features/global/Dashboard.spec.tsx
@@ -73,6 +73,11 @@ src/features/<khu vực>/__mocks__/
          return row ? { status: 200, body: { ...row, name: row.name.trim() } } : { status: 404 };
        },
        listProjects: () => ({ status: 200, body: { ...operations.listProjects.responses[200].body(), nextCursor: null } }),
+       // emit đưa sự kiện lên mock /events như gateway (workflow xong, trạng thái đổi); test đọc ở mock.events
+       cancelWorkflow: ({ params, emit, generated }) => {
+         emit({ type: 'workflow.status_changed', objectType: 'workflow', objectId: params.workflowId, toState: 'Cancelled' });
+         return { status: 200, body: generated(200) };
+       },
      },
      fixtures: {
        // thêm hoặc thay hàng demo theo id; mỗi hàng phải đúng component schema
