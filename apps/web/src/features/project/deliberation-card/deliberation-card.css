@@ -1,0 +1,80 @@
+/*
+ * SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+ * Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+ * SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+ */
+/* Deliberation proposal card (PID-00084), measures of the block “Đề xuất thảo luận” in Chat.dc.html; prompt card
+   rules of design.md §3: Open brand border, Answered solid neutral, Expired / Cancelled dashed. */
+
+.deliberation-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--sires-brand);
+  border-radius: var(--sires-radius-card);
+  background: var(--sires-surface);
+  color: var(--sires-ink);
+  max-width: 100%;
+}
+.deliberation-card:focus { outline: none; }
+.deliberation-card:focus-visible { outline: 3px solid var(--sires-brand-line); outline-offset: 2px; }
+.deliberation-card[data-status="Answered"] { border-color: var(--sires-line); }
+.deliberation-card[data-status="Expired"], .deliberation-card[data-status="Cancelled"] { border: 1.5px dashed var(--sires-muted); background: var(--sires-ground); }
+
+.deliberation-card__top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.deliberation-card__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--sires-brand-line);
+  border-radius: var(--sires-radius-chip);
+  background: var(--sires-brand-tint);
+  color: var(--sires-brand-ink);
+  font-weight: 600;
+}
+.deliberation-card__meta { color: var(--sires-muted); display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.deliberation-card__problem { margin: 0; font-size: var(--sires-fs-card); font-weight: 600; line-height: 1.35; }
+.deliberation-card__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 6px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.deliberation-card__facts dt { color: var(--sires-muted); }
+.deliberation-card__facts dd { margin: 0; overflow-wrap: anywhere; }
+.deliberation-card__note { color: var(--sires-muted); }
+.deliberation-card__warning {
+  margin: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--sires-warn);
+  border-radius: var(--sires-radius-control);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.deliberation-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.deliberation-card__warning svg { flex: none; margin-top: 2px; color: var(--sires-warn); }
+.deliberation-card__actions .sires-button { height: 38px; font-size: 13px; }
+.deliberation-card__explain { margin: 0; font-size: 13px; color: var(--sires-muted); }
+/* Live region (always present): an empty one takes no room in the card's 12px gap. */
+.deliberation-card__result { display: flex; flex-direction: column; gap: 8px; }
+.deliberation-card__result:empty { margin-top: -12px; }
+.deliberation-card__answered, .deliberation-card__closed, .deliberation-card__elsewhere { margin: 0; font-size: 13px; }
+.deliberation-card__closed { color: var(--sires-muted); }
+.deliberation-card__closed strong { color: var(--sires-ink); }
+.deliberation-card__standard { display: flex; flex-direction: column; gap: 8px; }
+.deliberation-card__standard > .deliberation-card__result:empty { margin-top: -8px; }
+
+/* Narrow: one column (EC12). */
+@media (max-width: 720px) {
+  .deliberation-card__facts { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .deliberation-card__facts dd { margin-bottom: 6px; }
+  .deliberation-card__actions .sires-button { min-height: 44px; height: auto; }
+}
