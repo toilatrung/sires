@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S07 của ticket PID-00036.">
+<title>S07 — Preferences và Ngưỡng kiểm chứng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00036</p><h1>S07 — Preferences và Ngưỡng kiểm chứng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H12, H15, H16 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-SETTINGS-004-AC01, UX-SETTINGS-005-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (SettingsPreferences), O8</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5, B6, B7, B8; H12, H15, H16</td></tr>
+<tr><th scope="row">Edge case</th><td>EC34, EC48, EC49, EC50, EC51, EC52, EC53 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; i18n của shell (PID-00012 S01) để áp dụng ngôn ngữ sau khi lưu; định dạng số theo ngôn ngữ (PID-00012 H3)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>View <code>/settings/preferences</code> theo <code>SettingsPreferences</code>: Ngôn ngữ giao diện (Tiếng Việt, English) kèm câu “Không đổi nội dung nghiên cứu…”; Ngôn ngữ phản hồi mặc định của agent kèm câu “Bản thảo vẫn viết theo ngôn ngữ của manuscript”; công tắc Chế độ debug kèm giải thích (UX-SETTINGS-004). Dữ liệu từ <code>getMe</code> (<code>preferences</code>) và <code>getVerificationThresholds</code>. Không có ô múi giờ (N7).</li>
+<li>Công tắc debug: tắt ghi “Tắt”; bật ghi “Bật · lưu tới” ngày hôm nay cộng 30 ngày theo design.md §6 (<code>SettingsPreferences--debug</code>) (UX-SETTINGS-004-AC01, EC49).</li>
+<li>Nhóm Ngưỡng kiểm chứng: câu giới thiệu và ghi chú hiệu chỉnh ≥ 85% và ≥ 95% của thiết kế; ba dòng <code>claimSupport.supported</code> (Supported), <code>claimSupport.partiallySupported</code> (Partially Supported), <code>citationMismatch.mismatch</code> (Citation không khớp), không có dòng Conflicting (H15); ô số theo dấu thập phân của ngôn ngữ, 0–1, sai thì lỗi trường (EC50); câu “Áp dụng từ lần kiểm chứng sau; kết quả đã có không đổi”.</li>
+<li>Giá trị mặc định, nhãn “đã chỉnh” từng dòng: từ trường mặc định của hợp đồng (Phải sửa ở nguồn mục 2); tới khi có thì không hiện cột mặc định, nhãn “đã chỉnh” một lần cho cả nhóm khi <code>isDefault = false</code> (EC52). Không ghi cứng giá trị mặc định.</li>
+<li>“Khôi phục mặc định” → dialog xác nhận (design.md §4 Dialog, nút hủy gọi tên phương án an toàn) → <code>resetVerificationThresholds</code>; sửa ngưỡng chưa lưu bị bỏ (UX-SETTINGS-005-AC01, EC51).</li>
+<li>Một nút “Lưu thay đổi”: preferences đổi → <code>updatePreferences</code> (<code>If-Match</code> theo <code>ETag</code> của <code>getMe</code>); ngưỡng đổi → <code>updateVerificationThresholds</code> (<code>If-Match</code> theo <code>ETag</code> của <code>getVerificationThresholds</code>); một lệnh lỗi → báo phần chưa lưu (EC53); <code>412</code> theo H12 (EC34). <code>uiLanguage</code> lưu xong mới đổi ngôn ngữ hiển thị qua i18n của shell, không gửi thêm <code>PATCH</code>; lưu lỗi giữ ngôn ngữ cũ (EC48).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/settings/preferences.spec.tsx › debug</code> (UX-SETTINGS-004-AC01, EC49); <code>› khôi phục mặc định</code> (UX-SETTINGS-005-AC01, EC51); <code>› ngôn ngữ sau khi lưu</code> (EC48); <code>› ngưỡng sai</code> (EC50); <code>› chưa có giá trị mặc định</code> (EC52); <code>› hai lệnh</code> (EC53); <code>› 412</code> (EC34)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/settings/</code></li>
+<li>Thao tác tay trên mock: bật debug, đổi ngôn ngữ rồi lưu, sửa một ngưỡng, khôi phục mặc định</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-SETTINGS-004-AC01, UX-SETTINGS-005-AC01 đạt; ba ngưỡng theo hợp đồng; một nút lưu cho cả view</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00036</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00036 · Slice S07 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

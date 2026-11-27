@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00036.">
+<title>S01 — Khung khu vực, menu Settings, i18n và mock | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00036</p><h1>S01 — Khung khu vực, menu Settings, i18n và mock</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice nền: mọi slice sau dùng route, menu, namespace i18n và mock lập ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; nền cho mọi AC của PID (ticket “Gồm”, spec B1, B6, B7)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (khung), O2, O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B6, B7; H10, H17, H18, H19</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00012 (hợp đồng <code>Feature</code>, router, i18n, client API, trạng thái dùng chung) và PID-00013 (bộ sinh mock, cờ bật mock, tiện ích test, README) đã vào <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc <code>docs/ui-design/design.md</code> (§2–§7), năm màn tham chiếu và các trang trạng thái ở <code>docs/ui-design/pages/</code> (SignIn*, Settings*), <code>designs/notes.html</code>, README của shell và README mock của PID-00013.</li>
+<li><code>apps/web/src/features/settings/index.tsx</code>: thay placeholder bằng route thật qua hợp đồng <code>Feature</code>: <code>sign-in</code>, <code>settings/profile</code>, <code>settings/providers</code>, <code>settings/agents</code>, <code>settings/preferences</code>; thêm <code>settings</code> chuyển tới <code>settings/profile</code> (EC01). Route con lạ để shell hiện “không tìm thấy”.</li>
+<li>Khung Settings dùng chung cho bốn view: menu bên trái bốn mục (Profile, Provider Connections, Agent Models, Preferences) theo <code>SettingsProfile</code>, mục đang mở có <code>aria-current="page"</code>; một panel cho mỗi nhóm; hàng flex <code>flex-wrap: wrap</code> để dưới 768 px menu xếp lên trên (design.md §5, EC04).</li>
+<li>Namespace <code>settings</code> trong <code>apps/web/src/features/settings/i18n/vi.json</code>, <code>en.json</code>: mọi chuỗi của năm màn; nhãn English lấy từ màn tham chiếu khi có, thuật ngữ cố định giữ nguyên (design.md §6). Không còn chuỗi cứng (B7, EC03).</li>
+<li>Mock của khu vực trong <code>apps/web/src/features/settings/__mocks__/</code>: sinh phần mock cho 16 operation theo README của PID-00013 (<code>updateProfile</code>, <code>updatePreferences</code>, <code>getVerificationThresholds</code>, <code>updateVerificationThresholds</code>, <code>resetVerificationThresholds</code>, <code>listProviderConnections</code>, <code>createProviderConnection</code>, <code>updateProviderConnection</code>, <code>testProviderConnection</code>, <code>deleteProviderConnection</code>, <code>listAgents</code>, <code>listAgentModelAssignments</code>, <code>setAgentModelAssignment</code>, <code>clearAgentModelAssignment</code>, <code>getEmbeddingSettings</code>, <code>setEmbeddingSettings</code>); không khai <code>getSession</code>, <code>getMe</code>, <code>startLogin</code> (H10). Khai qua hợp đồng <code>Feature</code>.</li>
+<li>Override có type và fixture lấy dữ liệu mẫu của màn tham chiếu: ba kết nối (Claude cá nhân Valid, OpenAI cá nhân Valid có model embedding, Gemini cá nhân Invalid <code>auth_failed</code>) và một kết nối proxy Valid dùng tên miền ví dụ (<code>https://llm-proxy.example/v1</code>); chín agent (Analysis <code>instances</code> A, B); gán Mặc định và ghi đè như <code>SettingsAgents</code>; embedding <code>text-embedding-3-small</code>; ngưỡng 0,80 / 0,50 / 0,60 (<code>isDefault</code> = <code>true</code>). Không dùng key thật hay host proxy thật (D-KEY). Kho trong bộ nhớ của override giữ thay đổi trong một lần chạy dev để thao tác tay được (EC09 của PID-00013).</li>
+<li>Mỗi view dùng component đang tải, trống, lỗi của shell; lỗi tải hiện theo UX-STATE-003 kèm “Thử lại” (EC02).</li>
+<li>Test <code>apps/web/src/features/settings/settings-nav.spec.tsx</code> dùng tiện ích test của PID-00013.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code>, <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/features/settings/settings-nav.spec.tsx › /settings chuyển profile</code> (EC01); <code>› route lạ</code> (EC01); <code>› menu bốn mục</code>; <code>› đang tải</code>, <code>› lỗi tải</code> (EC02); <code>› đổi ngôn ngữ giữ form</code> (EC03)</li>
+<li>Test kiểm mock của shell (PID-00013) vẫn đạt: không trùng operation giữa khu vực settings và mock dùng chung</li>
+<li>Thao tác tay: bật mock của PID-00013, mở bốn view Settings ở 1440×900, 1024×768, 390×844; không cuộn ngang (EC04)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Bốn view mở được trên mock với menu Settings, hai ngôn ngữ; mock 16 operation không trùng với mock dùng chung; đang tải, lỗi hiển thị đúng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00036</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00036 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
