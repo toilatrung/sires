@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 85 trang HTML tĩnh (35 nguồn + 50 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 90 trang HTML tĩnh (35 nguồn + 55 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -43,17 +43,17 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | G9 | PendingActions | Pending Actions (8 việc, lọc theo loại PRD 4.4) + nhóm Hết hiệu lực | 4.4, UX-PENDING-001/002 |
 | G10 | Notifications | Notifications mở từ chuông TopBar: đã đọc/chưa đọc, lọc theo loại; biến thể chưa đọc | 4.4, UX-STATE-001 |
 | S0 | SignIn | Đăng nhập eTroy OIDC; biến thể lỗi OIDC, hết phiên | UX-AUTH-001/002 |
-| S1 | SettingsProfile | Profile (ảnh chỉ hiển thị, không có nút đổi ảnh: hợp đồng không có tải ảnh, PID-00036 H11); biến thể URL sai | 15.12 |
-| S2 | SettingsProviders | Provider Connections: cột thao tác (Sửa, Kiểm tra lại, Xóa); biến thể `state`: first-connection (chưa có kết nối, thông báo NFR-PRIV-001 với ô “Tôi đã đọc”), delete (dialog xóa chọn kết nối thay thế) — PID-00036 H5, H8, H9 | 15.12, NFR-PRIV-001 |
+| S1 | SettingsProfile | Profile; biến thể URL sai | 15.12 |
+| S2 | SettingsProviders | Provider Connections | 15.12 |
 | S3 | SettingsAgents | Agent Models (dòng Analysis Agent A, B và cảnh báo cùng model); biến thể xác nhận đổi embedding | 15.12, ORCH-DELIB-005 |
-| S4 | SettingsPreferences | Preferences (ba ngưỡng như hợp đồng `VerificationThresholds`, bỏ dòng Conflicting; PID-00036 H15); biến thể debug | 15.12 |
+| S4 | SettingsPreferences | Preferences; biến thể debug | 15.12 |
 | P1 | Overview | Overview, 6 việc chờ của project; biến thể no-plan, archived, recovery | 15.2 |
 | P2 | Chat | Project AI Chat + Interactive Agent Prompt + thẻ đề xuất thảo luận; biến thể bỏ qua thảo luận | 15.3, UX-MONITOR-007 |
 | P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5 | UX-TASK-001–005 |
 | P4 | PlanCompare | So sánh và duyệt Plan Version | UX-PLAN-001/002 |
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
-| P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
-| P7 | Artifacts | Research Artifacts, phiên bản, provenance | 5.7, 13 |
+| P6 | Evidence | References and Evidence: tab Claims (mặc định) với Inspector của claim Conflicting và thao tác duyệt; biến thể `view`: references (reference của project, chip duyệt và indexing, Unavailable), evidence (Evidence Inspector của một evidence: claim đang dùng, artifact và bản thảo dùng evidence), evidence-stale; `dialog`: accept-claim, link-evidence, remove-reference, exclude-evidence — PID-00114 H4–H6 | UX-EVID-001, UX-CLAIM-001, EVID-INSPECTOR-001, LIB-PROJECT-001 |
+| P7 | Artifacts | Research Artifacts: một dòng mỗi artifact (version mới nhất, “Đang dùng” khi version Accepted khác), lọc theo có hay chưa có version Accepted; phiên bản, provenance (đầu vào artifact version có liên kết), dòng “Dùng trong” — PID-00114 H8 | 5.7, 13 |
 | P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; biến thể khung phải build log, lịch sử; proposal citation lỗi, outdated; đang build | 15.7, UX-STATE-001 |
 | P9 | ProjectActivity | Agent Activity cấp project: danh sách workflow + Agent List; biến thể đang hoạt động, đã kết thúc | UX-MONITOR-001, UX-MONITOR-004 |
 | P9 | Workflow | Chi tiết workflow wf-52d + Agent Run + Recovery decision. Mặc định Waiting for User; biến thể state running, interrupted; view danh sách bước, thảo luận đang chạy, hoàn tất, Failed, Cancelled; debug | UX-MONITOR-002–004, UX-MONITOR-006, ORCH-DELIB-002, WF-06 |

@@ -89,7 +89,7 @@ paths:
         Mọi `evidenceId` phải tồn tại, Active và thuộc project. Claim không có liên kết `supports` được ghi với
         supportStatus `Not Assessed` và chỉ có thể thành Unsupported sau kiểm chứng (DEC-32).
       x-callers: [orchestration]
-      x-requirements: [CLAIM-MAPPING-001, DATA-PROV-001]
+      x-requirements: [CLAIM-MAPPING-001, SYN-REVIEW-001, DATA-PROV-001]
       parameters:
         - $ref: ../components/parameters.yaml#/ProjectId
         - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -114,6 +114,16 @@ paths:
                     properties:
                       localId: { type: string, description: Định danh tạm trong Agent Run để artifact tham chiếu. }
                       statement: { type: string }
+                      anchor:
+                        type: object
+                        description: |
+                          Vị trí câu khẳng định của claim trong `content` của artifact version ở `artifactOutputIndex`
+                          (synthesis; SYN-REVIEW-001, UX-CLAIM-001-AC01). Research kiểm vị trí nằm trong `content` và
+                          trả ở `ArtifactVersion.claimAnchors`; cách đếm như `ClaimAnchor`.
+                        required: [charStart, charEnd]
+                        properties:
+                          charStart: { type: integer, minimum: 0 }
+                          charEnd: { type: integer, minimum: 0 }
                       taskId: { $ref: ../components/schemas/common.yaml#/Id }
                       links:
                         type: array
