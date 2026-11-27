@@ -116,6 +116,22 @@ RLS bằng vai trò `_app` và HTTP Fastify qua module thực. `vitest.config.ts
 
 Chỉ luồng `gateway` sửa thư mục này. Không import mã hay đọc database của service khác; gọi qua hợp đồng ở `docs/api-design` (quy tắc 1.4.1–1.4.6, [docs/tickets mục 1](../../docs/tickets/sections/01-tracks-and-boundaries.html#s-1-4)). Migration đặt ở `migrations/`, giá trị Helm riêng ở `deploy/values.yaml`.
 
+## Dựng lại database cục bộ
+
+Migration đầu `migrations/0000_init.sql` của gateway được dựng lại trong PR #63 (PID-00014) trước khi merge. Database
+`sires_gateway` trên máy đã áp một bản cũ của file này sẽ lệch với repo: drizzle không áp lại migration đã ghi sổ. Xóa
+database cục bộ rồi migrate lại (mất dữ liệu cục bộ của gateway, không đụng database khác; PC-05 P41):
+
+```powershell
+pnpm local:reset-db gateway --yes
+pnpm local:migrate gateway
+```
+
+`local:reset-db` xóa `sires_gateway`, tạo lại rỗng và áp vai trò (`infra/local/postgres/init/02-roles.sql`);
+`local:migrate` build gateway rồi chạy `node dist/migrate.js` bằng `sires_gateway_migrator`. Lệnh migrate của gateway
+có từ PID-00014; trước đó `local:migrate` báo bỏ qua gateway. Làm tương tự khi chuyển sang nhánh có migration gateway
+khác bản đã áp.
+
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 -->

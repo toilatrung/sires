@@ -85,8 +85,11 @@ export interface IdentityPostgres {
    * thì rollback và ném lại. Dùng cho test trigger, quyền, RLS như service thật (withAccountTransaction).
    */
   asRole<T>(database: string, role: ServiceRole, accountId: string | undefined, work: (client: Client) => Promise<T>): Promise<T>;
-  /** Chạy 00-common.sql rồi identity.sql đọc từ docs/database/ddl bằng superuser. */
-  applyReferenceDdl(database: string): Promise<void>;
+  /**
+   * Chạy 00-common.sql rồi identity.sql đọc từ docs/database/ddl; mặc định bằng superuser, nêu `connectionString`
+   * (DSN của migrator, enableMigratorLogin) thì bằng vai trò đó như migration (QC PID-00016 G2).
+   */
+  applyReferenceDdl(database: string, connectionString?: string): Promise<void>;
   /** pg_dump --schema-only trong container, bỏ schema sổ phiên bản của drizzle và dòng phụ thuộc lần chạy. */
   dumpSchema(database: string): Promise<string>;
   stop(): Promise<void>;
@@ -143,9 +146,19 @@ export async function startIdentityPostgres(options: { withRoles?: boolean } = {
       if (!IDENTIFIER.test(name)) throw new Error(`Tên database không hợp lệ: ${name}`);
       await admin(server.database, `CREATE DATABASE ${name}`);
     },
-    async applyReferenceDdl(database) {
+    async applyReferenceDdl(database, connectionString) {
       const sql = REFERENCE_DDL_FILES.map((file) => readFileSync(join(DDL_DIR, file), 'utf8')).join('\n');
-      await admin(database, sql);
+      if (connectionString === undefined) {
+        await admin(database, sql);
+        return;
+      }
+      const client = new Client({ connectionString });
+      await client.connect();
+      try {
+        await client.query(sql);
+      } finally {
+        await client.end();
+      }
     },
     async dumpSchema(database) {
       // stdout qua base64 vì exec của Testcontainers giải mã từng khúc: ký tự UTF-8 giữa hai khúc thành U+FFFD (#100).

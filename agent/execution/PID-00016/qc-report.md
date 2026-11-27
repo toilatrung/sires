@@ -1,6 +1,6 @@
 # PID-00016 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Có thể nghiệm thu — 0 CRITICAL, 0 HIGH; còn 3 LOW không chặn merge (Lần 1, 25/11/2026)
+**Kết luận mới nhất:** Merge được PR #113 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 2 LOW (Lần 2, 27/11/2026). G3 đã sửa: `report.md` ghi đúng PR #107 đã merge (`a53e3c9`), trạng thái, bước tiếp theo, thêm Lần 3; `self-qc.md` có Lần 3 theo PC-05 P37. Còn G1, G2 LOW (test EC07, migrate bằng superuser ở describe AC02), làm theo PC-05 P40 cùng PID-00159; không chặn.
 
 - **Ticket:** [PID-00016](../../../docs/tickets/issues/PID-00016/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -100,6 +100,51 @@ Không có việc chặn merge. Việc LOW, Dev làm khi tiện (trước merge 
 3. **Thay key của Provider Connection (trước PID-00042):** DDL cấp `DELETE` nhưng thu `SELECT` của `_app` trên `app.provider_secret`, nên `_app` không xóa được theo `connection_id` (42501), và `INSERT … ON CONFLICT DO UPDATE` cần quyền UPDATE đã thu. NFR-SECRETS-003 (thay key) cần một cách: cấp `SELECT (connection_id)` cho `_app`, thay key bằng `_system`, hay hàm SECURITY DEFINER. Đề xuất mở DBQ trước khi giao PID-00042.
 4. `docs/database/sections/11-security-and-tenancy.html` (dòng “Truy cập trước khi có tenant context”) chưa nhắc policy `owner_lookup`; có thể dẫn sang DBD-14 cho người đọc 11 trước 13.
 5. Khi triển khai identity lên cụm trước khi có KMS thật (PID-00035, PID-00153): `EnvelopeModule` luôn dùng KMS cục bộ, nên Deployment cần `secretName` chứa `IDENTITY_LOCAL_KEK`, `IDENTITY_LOCAL_KEK_ID`, nếu không pod không khởi động (đúng EC10, H1). Không chặn PH-01 (staging dựng ở PH-02).
+
+## Lần 2 — 27/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC do PO `toilatrung` giao, không mang kết luận của Dev. Mã nguồn: PR #113, nhánh `identity/pid-00016-report`, đầu nhánh `fc22f2a` (`fc22f2add4954176f23bf715e3f8698c02285262`), 1 commit, gốc `origin/main` `c9e745b` (nhánh đã cập nhật với `main`). PR chỉ sửa `agent/execution/PID-00016/report.md` và `self-qc.md`; không đổi mã.
+
+Đã đối chiếu: việc còn lại của Lần 1 (G1–G3, đề xuất 3 về `provider_secret`); PC-05 P22, P37, P40; `git log origin/main` (PR #107 = `a53e3c9`, merge 25/11/2026).
+
+### Kiểm lại việc còn lại của Lần 1
+
+| G Lần 1 | Kết quả Lần 2 | Bằng chứng |
+| --- | --- | --- |
+| G1 LOW: test EC07 bỏ cả owner | Còn mở, không chặn | Mã không đổi. `report.md` Bước tiếp theo ghi chờ PC-05 P40 (đề xuất làm cùng PID-00159) |
+| G2 LOW: describe AC02 migrate bằng superuser | Còn mở, không chặn | Như G1 |
+| G3 LOW: `report.md` còn ghi “chưa push · PR chưa mở” | Đã xử lý | `report.md:3` trạng thái nêu #107 đã merge; `:6` Nhánh/PR `#107, đã merge 25/11/2026 vào main (a53e3c9)` — khớp `git log`; `:7` Cập nhật Lần 3; Bước tiếp theo nêu G1, G2 chờ P40 và `provider_secret` chờ P22; mục Lần 3 ở cuối |
+| Đề xuất 3 (`app.provider_secret`: `_app` không xóa, không UPDATE được) | Ghi vào Bước tiếp theo | Chờ PC-05 P22 (đề xuất mở DBQ-13 trước PID-00042) |
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G1 | EC07 · S01 | partial | LOW | Như Lần 1 (`apps/identity/src/migration.spec.ts:259`) | Theo PC-05 P40, cùng PID-00159 |
+| G2 | PID-00016-AC02 · DBD-14 | partial | LOW | Như Lần 1 (`migration.spec.ts:55-62`) | Theo PC-05 P40, cùng PID-00159 |
+
+Không có CRITICAL, HIGH, MEDIUM. Không có G mới. AC: kết luận Lần 1 giữ nguyên vì mã không đổi.
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `git diff --stat origin/main...origin/identity/pid-00016-report` | 2 file, chỉ `agent/execution/PID-00016/` |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00016 --result` (trên cây gộp 7 nhánh) | KẾT QUẢ ĐỦ (0 cảnh báo) |
+| `node scripts/docs/add-license.mjs --check`, `update-index.mjs --check` | 0 thiếu; khớp |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: repo` |
+| `gh api repos/toilatrung/sires/pulls/113/commits` | 1/1 `verified: true`; không có dòng ghi công AI trong commit, mô tả PR |
+| `gh pr checks 113` (run 45653413130 trên `fc22f2a`) | 25/25 đạt; không project Nx nào bị ảnh hưởng |
+| Quét key, host cổng trung gian (chỉ đếm) | 0 |
+
+### Lệch với Self-QC
+
+Không có. `self-qc.md` Lần 3 khớp kết quả QC chạy lại.
+
+### Việc còn lại
+
+1. Phiên điều phối merge #113.
+2. G1, G2: theo PC-05 P40, khi làm PID-00159.
 
 ---
 
