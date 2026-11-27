@@ -75,6 +75,7 @@ export const ERROR_MESSAGES: Record<ProviderErrorCode, string> = {
   invalid_response: 'Phản hồi không đúng API chính thức của provider.',
   network_error: 'Không kết nối được tới base URL.',
   interrupted: 'Bị gián đoạn.',
+  invalid_request: 'Provider từ chối yêu cầu (400).',
 };
 
 /** Fixed ids of the mock rows the area adds (uuid-shaped, distinct from the shell's demo ids). */

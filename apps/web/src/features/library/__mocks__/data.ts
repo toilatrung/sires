@@ -165,7 +165,8 @@ export function demoResults(searchWorkflowId: string, query: string, source = 'o
     createdBy: { type: 'agent', agent: 'discovery', agentRunId: hex('7c', 90 + index) },
     rowVersion: 1,
     searchWorkflowId,
-    source,
+    // The contract (#159) narrows DiscoveredResult.source to the known sources; the mock passes what the search asked.
+    source: source as DiscoveredResult['source'],
     query,
     metadata: metadata(paper, source),
     sourceUrl: paper.arxiv ? `https://arxiv.org/abs/${paper.arxiv}` : `https://doi.org/${paper.doi}`,
