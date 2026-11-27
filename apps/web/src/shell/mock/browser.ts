@@ -11,6 +11,7 @@ import type { Feature } from '../feature';
 import type { EventInput, EventStreamMock } from './events';
 import { id, projectIds } from './fixtures';
 import { createMocks, loadFeatureMocks } from './index';
+import { workerStartOptions } from './worker-options';
 
 const DEMO_INTERVAL_MS = 20_000;
 
@@ -34,7 +35,7 @@ function playDemo(events: EventStreamMock) {
 export async function startMockWorker(features: readonly Feature[]): Promise<EventStreamMock> {
   const { handlers, events } = createMocks(await loadFeatureMocks(features));
   const worker = setupWorker(...handlers);
-  await worker.start({ onUnhandledFrame: 'bypass', serviceWorker: { url: '/mockServiceWorker.js' } });
+  await worker.start(workerStartOptions); // quiet: no request bodies (API keys) in the console
   playDemo(events);
   // Lets a developer push an event from the console: siresMock.events.emit({ type: 'notification.created', … }).
   (globalThis as { siresMock?: unknown }).siresMock = { events, worker };

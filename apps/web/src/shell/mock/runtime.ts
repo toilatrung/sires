@@ -124,6 +124,34 @@ function matches(row: Row, params: Record<string, string>, scope: readonly strin
   return scope.every((name) => !(name in row) || row[name] === params[name]);
 }
 
+const DELIMITERS: Record<string, string> = { form: ',', spaceDelimited: ' ', pipeDelimited: '|' };
+
+/**
+ * Query of a request as the contract declares it: array parameters (descriptor.query) become string[] split by their
+ * style when explode is false (`status=A,B`), repeated keys are collected too (`status=A&status=B`), so either form
+ * filters the same. Other parameters keep their last value.
+ */
+export function readQuery(descriptor: Pick<OperationDescriptor, 'query'>, url: URL): Record<string, string | string[]> {
+  const arrays = new Map((descriptor.query ?? []).map((parameter) => [parameter.name, parameter]));
+  const query: Record<string, string | string[]> = {};
+  for (const name of new Set(url.searchParams.keys())) {
+    const values = url.searchParams.getAll(name);
+    const parameter = arrays.get(name);
+    if (!parameter) {
+      query[name] = values[values.length - 1];
+      continue;
+    }
+    const delimiter = parameter.explode ? undefined : DELIMITERS[parameter.style];
+    query[name] = values.flatMap((value) => (delimiter ? value.split(delimiter) : [value])).filter((value) => value !== '');
+  }
+  return query;
+}
+
+/** A row field equals a query value; array fields (tags, types) match when they contain it. */
+function sameValue(field: unknown, value: string): boolean {
+  return Array.isArray(field) ? field.some((item) => String(item) === value) : String(field) === value;
+}
+
 /** Answers a GET from fixtures when the shared demo data has rows of the returned schema. */
 function fromFixtures(descriptor: OperationDescriptor, fixtures: Fixtures, params: Record<string, string>, url: URL): Response | undefined {
   const resource = descriptor.resource;
@@ -139,11 +167,13 @@ function fromFixtures(descriptor: OperationDescriptor, fixtures: Fixtures, param
     if (descriptor.responses[descriptor.success]?.headers?.includes('ETag')) itemHeaders.ETag = `"${String(row.rowVersion ?? 1)}"`;
     return HttpResponse.json(clone(row), { status: descriptor.success, headers: itemHeaders });
   }
-  const filters = [...url.searchParams].filter(([name]) => !['limit', 'cursor', 'sort', 'order', 'q'].includes(name));
+  // One filter per parameter; an array parameter keeps the rows matching any of its values (status=A,B → A or B).
+  const filters = Object.entries(readQuery(descriptor, url)).filter(([name]) => !['limit', 'cursor', 'sort', 'order', 'q'].includes(name));
   const filtered = scoped.filter((row) => filters.every(([name, value]) => {
     if (!(name in row)) return true;
-    if (value === 'deleted') return Boolean(row.deletedAt);
-    return String(row[name]) === value;
+    const values = Array.isArray(value) ? value : [value];
+    if (!values.length) return true;
+    return values.some((one) => (one === 'deleted' ? Boolean(row.deletedAt) : sameValue(row[name], one)));
   }));
   if (resource.kind === 'list') return HttpResponse.json(clone(filtered), { status: descriptor.success, headers });
   const limit = Math.max(1, Number(url.searchParams.get('limit') ?? 50) || 50);
@@ -212,7 +242,9 @@ async function toResponse(descriptor: OperationDescriptor, reply: AnyReply, requ
   return HttpResponse.json(body as never, { status, headers: { 'Content-Type': entry.contentType, ...headers } });
 }
 
-function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, override?: Overrides[OperationId]): HttpHandler {
+type Emit = MockRequest<OperationId>['emit'];
+
+function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, emit: Emit, override?: Overrides[OperationId]): HttpHandler {
   const method = descriptor.method.toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
   return http[method](toPattern(descriptor.path), async ({ request, params }) => {
     const path = Object.fromEntries(Object.entries(params).map(([name, value]) => [name, String(value)]));
@@ -220,11 +252,12 @@ function handlerFor(descriptor: OperationDescriptor, fixtures: () => Fixtures, o
     const context: MockRequest<OperationId> = {
       operationId: descriptor.operationId as OperationId,
       params: path as never,
-      query: Object.fromEntries(new URL(request.url).searchParams) as never,
+      query: readQuery(descriptor, new URL(request.url)) as never,
       body: (await readBody(request)) as never,
       request,
       generated: ((status: number) => generatedBody(descriptor, status)) as never,
       fixtures: fixtures(),
+      emit,
     };
     const reply = await (override as (request: MockRequest<OperationId>) => AnyReply | Promise<AnyReply>)(context);
     return toResponse(descriptor, reply, request, path);
@@ -239,10 +272,12 @@ export interface ComposeOptions {
   before?: readonly HttpHandler[];
   /** Add the generated fallback for unclaimed operations and a 404 for unknown paths (default true). */
   fallback?: boolean;
+  /** Event sink for overrides (`MockRequest.emit`), usually the /events stream. */
+  emit?: Emit;
 }
 
 /** Every handler, most specific first: claimed operations, then the generated fallback for the rest. */
-export function composeHandlers({ sources, fixtures: base, before = [], fallback = true }: ComposeOptions): HttpHandler[] {
+export function composeHandlers({ sources, fixtures: base, before = [], fallback = true, emit = () => undefined }: ComposeOptions): HttpHandler[] {
   const owner = claims(sources);
   const fixtures = mergeFixtures(base, sources);
   const read = () => fixtures;
@@ -263,5 +298,5 @@ export function composeHandlers({ sources, fixtures: base, before = [], fallback
     { type: 'https://sires.etroy.local/problems/not_found', title: 'Không tìm thấy', status: 404, code: 'not_found' },
     { status: 404, headers: { 'Content-Type': 'application/problem+json', [MOCK_HEADER]: 'not_found' } },
   ));
-  return [...before, ...ordered.map(({ descriptor, override }) => handlerFor(descriptor, read, override)), ...(fallback ? [notFound] : [])];
+  return [...before, ...ordered.map(({ descriptor, override }) => handlerFor(descriptor, read, emit, override)), ...(fallback ? [notFound] : [])];
 }
