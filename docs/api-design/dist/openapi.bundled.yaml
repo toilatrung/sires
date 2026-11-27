@@ -101,10 +101,15 @@ paths:
       operationId: startLogin
       summary: Bắt đầu đăng nhập qua eTroy OIDC
       description: |
-        Chuyển hướng tới eTroy OIDC theo luồng authorization code (có state, nonce, PKCE).
-        Không có phương thức đăng nhập khác (NFR-AUTH-001).
+        Chuyển hướng tới IdP đang cấu hình theo luồng authorization code (có state, nonce, PKCE): eTroy OIDC; cục bộ và
+        staging PH-02 là OIDC mock (PID-00160). Không có phương thức đăng nhập khác (NFR-AUTH-001).
+
+        Đây là điều hướng trình duyệt nên mọi kết quả đều là `302`. IdP không khả dụng (discovery hay JWKS không tải được)
+        thì chuyển về trang đăng nhập của web `/sign-in?error=oidc_unavailable`, giữ `returnTo` nếu có, thay cho `503`
+        (UX-AUTH-002; PID-00036 H3). Bộ mã `error` của trang đăng nhập ở mô tả `completeLogin`.
       x-requirements:
         - INT-OIDC-001
+        - INT-OIDC-004
       x-priority: P0
       security: []
       parameters:
@@ -116,14 +121,13 @@ paths:
             pattern: ^/
       responses:
         '302':
-          description: Chuyển tới endpoint authorize của eTroy OIDC.
+          description: |
+            Chuyển tới endpoint authorize của IdP; hoặc, khi IdP không khả dụng, về `/sign-in?error=oidc_unavailable`
+            (kèm `returnTo` nếu có).
           headers:
             Location:
               schema:
                 type: string
-                format: uri
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
   /auth/callback:
     get:
       tags:
@@ -133,15 +137,25 @@ paths:
       description: |
         Kiểm tra state, nonce, chữ ký, issuer, audience, thời hạn ID token rồi tạo phiên (INT-OIDC-001).
         Lần đầu với một `sub` mới tạo tài khoản SIRes (họ tên, email từ claim); các lần sau dùng lại (INT-OIDC-002).
+
+        IdP trả về hoặc `code` (thành công) hoặc `error` (theo OAuth 2.0, ví dụ người dùng hủy). Thất bại thì chuyển về
+        trang đăng nhập của web `/sign-in?error=<mã>`, giữ `returnTo` của lần đăng nhập, không tạo phiên. Bộ mã `error` của
+        trang đăng nhập (PID-00036 H3, chốt theo đề xuất, PO ủy quyền 26/11/2026):
+        - `login_cancelled`: IdP trả `error=access_denied` (người dùng hủy hoặc không đồng ý).
+        - `oidc_unavailable`: không gọi được IdP khi đổi `code` lấy token hay tải JWKS.
+        - `login_failed`: mọi lỗi khác (IdP trả `error` khác; `state` không khớp hoặc hết hạn; `nonce`, chữ ký, issuer,
+          audience, thời hạn ID token không đạt; thiếu `code`).
+        Web hiển thị mã lạ như `login_failed`.
       x-requirements:
         - INT-OIDC-001
         - INT-OIDC-002
+        - INT-OIDC-004
       x-priority: P0
       security: []
       parameters:
         - name: code
           in: query
-          required: true
+          description: Authorization code; có khi IdP trả thành công (bắt buộc nếu không có `error`).
           schema:
             type: string
         - name: state
@@ -149,9 +163,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: error
+          in: query
+          description: Mã lỗi OAuth 2.0 IdP trả về thay cho `code` (ví dụ `access_denied`).
+          schema:
+            type: string
+        - name: error_description
+          in: query
+          description: Mô tả lỗi của IdP; chỉ ghi log ở gateway, không đưa sang web.
+          schema:
+            type: string
       responses:
         '302':
-          description: Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về trang đăng nhập kèm mã lỗi.
+          description: |
+            Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về `/sign-in?error=<mã>`
+            (`login_cancelled`, `oidc_unavailable`, `login_failed`), kèm `returnTo`; không đặt cookie.
           headers:
             Location:
               schema:
@@ -5728,10 +5754,14 @@ components:
           format: uri
           readOnly: true
         googleScholarProfileUrl:
-          type: string
+          type:
+            - string
+            - 'null'
           format: uri
           pattern: ^https://
-          description: Chỉ là liên kết, không phải đăng nhập Google (ASM-14).
+          description: |
+            Chỉ là liên kết, không phải đăng nhập Google (ASM-14). Gửi `null` trong `updateProfile` (merge-patch) để xóa liên kết
+            (PID-00036 H11).
     Language:
       type: string
       enum:
@@ -5826,6 +5856,32 @@ components:
         isDefault:
           type: boolean
           readOnly: true
+        defaults:
+          type: object
+          readOnly: true
+          description: |
+            Giá trị mặc định hiện hành của hệ thống (cùng cấu trúc `claimSupport`, `citationMismatch`), để giao diện hiện mặc
+            định cạnh giá trị đang dùng và khôi phục mặc định (UX-SETTINGS-005; PID-00036 H16). Giá trị do identity giữ
+            (PID-00041), không ghi cứng ở web.
+          properties:
+            claimSupport:
+              type: object
+              properties:
+                supported:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                partiallySupported:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+            citationMismatch:
+              type: object
+              properties:
+                mismatch:
+                  type: number
+                  minimum: 0
+                  maximum: 1
         updatedAt:
           $ref: '#/components/schemas/Timestamp'
         updatedBy:
@@ -8710,6 +8766,13 @@ components:
           examples:
             - text-embedding-3-large
             - gemini-embedding-001
+        indexedReferenceCount:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: |
+            Số Reference đang có index bằng model hiện tại, tức số phải index lại nếu đổi model; dialog xác nhận đổi model nêu
+            số này trước khi gửi (UX-SETTINGS-003-AC01, EVID-INDEX-003; PID-00036 H14).
         reindex:
           type: object
           readOnly: true
@@ -9972,19 +10035,6 @@ components:
         eTroy OIDC (github.com/toilatrung/eTroy_OIDC) — chỉ dùng giữa backend SIRes (Relying Party) và eTroy;
         client giao diện không giữ token. URL discovery là placeholder, chốt khi tích hợp (ASM-13).
   responses:
-    ServiceUnavailable:
-      description: |
-        `503 service_unavailable`: dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) —
-        INT-OIDC-004, 17.
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-          example:
-            type: https://sires.etroy.local/problems/service_unavailable
-            title: Dịch vụ tạm không khả dụng
-            status: 503
-            code: service_unavailable
     Forbidden:
       description: '`403 forbidden`: thiếu hoặc sai `X-CSRF-Token` (với `POST /auth/logout`: trường `csrfToken` của form).'
       content:
@@ -10095,6 +10145,19 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Workflow'
+    ServiceUnavailable:
+      description: |
+        `503 service_unavailable`: dịch vụ ngoài không khả dụng (eTroy OIDC, dịch vụ trung gian Scholar, provider) —
+        INT-OIDC-004, 17.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://sires.etroy.local/problems/service_unavailable
+            title: Dịch vụ tạm không khả dụng
+            status: 503
+            code: service_unavailable
     PayloadTooLarge:
       description: '`413 payload_too_large`: file vượt giới hạn (PDF ≤ 50 MB — INT-DOC-001). Không cắt ngầm.'
       content:

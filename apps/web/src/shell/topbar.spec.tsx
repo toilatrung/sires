@@ -121,3 +121,20 @@ describe('TopBar', () => {
     expect(banner().getByRole('link', { name: 'Notifications' }).textContent).toBe('');
   });
 });
+
+describe('Trợ lý của khu vực', () => {
+  it('nội dung Trợ lý lấy từ khu vực khai Feature.assistant qua createRoutes', async () => {
+    const assistantArea = {
+      id: 'assistant-test',
+      routes: [],
+      messages: { vi: {}, en: {} },
+      assistant: () => <p>Trợ lý của khu vực global</p>,
+    };
+    const { user } = renderShellFrame({ path: '/discover', features: [assistantArea] });
+    await waitForFrame();
+    await user.click(banner().getByRole('button', { name: 'Trợ lý' }));
+    const panel = screen.getByRole('complementary', { name: 'Trợ lý' });
+    expect(within(panel).getByText('Trợ lý của khu vực global')).toBeTruthy();
+    expect(within(panel).queryByText('Global — không có ngữ cảnh project')).toBeNull();
+  });
+});
