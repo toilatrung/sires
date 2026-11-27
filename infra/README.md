@@ -8,6 +8,7 @@ Luồng `infra` ([docs/tickets 1.3](../docs/tickets/sections/01-tracks-and-bound
 | `docker/` | Dockerfile chung cho service NestJS và Python |
 | `helm/sires-service/` | Chart chung; giá trị riêng ở `apps/<service>/deploy/values.yaml` |
 | `terraform/` | Hạ tầng staging, eval, production (chờ AQ-12) |
+| `local/oidc-mock/` | OIDC mock thay eTroy OIDC cho máy Dev và staging PH-02, service `oidc-mock` của compose ở `http://localhost:9400`; không bao giờ production ([README](local/oidc-mock/README.md), PID-00160) |
 
 ```bash
 pnpm local:up
