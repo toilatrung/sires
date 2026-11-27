@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00059.">
+<title>S02 — Agent Activity cấp Global và cấp project | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>S02 — Agent Activity cấp Global và cấp project</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H7, H8, H9, H17 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00059-AC01, UX-MONITOR-001-AC01, UX-MONITOR-005-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (GlobalActivity, ProjectActivity), O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B4, B6, B8; H7, H8, H9, H17</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04, EC05, EC06, EC07, EC08, EC09, EC10, EC36 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; mock khi chạy dev: <code>listProjects</code> (PID-00037, tên project), <code>listTasks</code> (planning, mã và tên Task)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li><code>/activity</code> theo <code>GlobalActivity</code>: mọi workflow của tài khoản; <code>/projects/:projectId/activity</code> theo <code>ProjectActivity</code> với <code>projectId</code>, bộ lọc <code>ProjectActivity--filter-active</code>, <code>--filter-ended</code>, Agent List ở bên phải (S05).</li>
+<li>Bộ lọc: Đang hoạt động (Created, Running, Waiting for User, Paused, Interrupted), Đã kết thúc (Succeeded, Failed, Cancelled), Tất cả, gửi <code>status</code> của <code>listWorkflows</code>; số đếm trên mục đã tải, “+” khi còn trang (EC03). Mặc định Global: workflow đang hoạt động, sau đó 3 workflow kết thúc gần nhất, “Xem thêm N” (EC02).</li>
+<li>Cột: mã ngắn và loại; Project (Global, tên từ <code>listProjects</code>) và Task (mã, tên từ <code>listTasks</code> của project); chip trạng thái; bước (thứ tự trên tổng, mô tả) và agent hiện tại; thời gian chạy (EC07); prompt chờ (EC06); điều khiển (EC08); “Xem chi tiết”. Danh sách không có <code>steps</code> thì <code>getWorkflow</code> cho dòng đang hoạt động.</li>
+<li>Điều khiển theo trạng thái (H8): Running, Waiting for User → Tạm dừng, Hủy; Paused → Tiếp tục, Hủy; Interrupted → “Mở Recovery decision”; còn lại không nút. Hủy qua dialog (EC09). Mỗi lệnh một <code>Idempotency-Key</code>, nút vô hiệu khi đang gửi; <code>409</code> đọc lại và báo (EC10).</li>
+<li>SSE qua client của shell: <code>workflow.status_changed</code>, <code>agent_run.status_changed</code>, <code>prompt.status_changed</code> → <code>getWorkflow</code> theo <code>objectId</code> (hoặc <code>workflowId</code> của Agent Run, prompt) → cập nhật dòng và sắp lại; “cần tải lại” → đọc lại trang (EC04, EC05). Dòng “Cập nhật” ghi giờ <code>HH:mm:ss</code>, ngày <code>dd/mm/yyyy</code> của lần cập nhật gần nhất. Không stream token.</li>
+<li>Trống: câu dẫn (EC01). Khổ 390 px: mỗi workflow một thẻ, nút 44–48 px, không cuộn ngang (EC36).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/activity.spec.tsx › tự cập nhật theo SSE</code> (PID-00059-AC01, UX-MONITOR-005-AC01, EC04); <code>› đang chạy ở trên</code> (UX-MONITOR-001-AC01, EC02); <code>› trống</code> (EC01); <code>› xem thêm</code> (EC03); <code>› nối lại SSE</code> (EC05); <code>› bước và prompt chờ</code> (EC06); <code>› thời gian chạy</code> (EC07)</li>
+<li><code>apps/web/src/features/monitoring/workflow.spec.tsx › nút theo trạng thái</code>, <code>› hủy cần xác nhận</code>, <code>› 409 invalid_transition</code> chạy cả trên dòng danh sách (EC08–EC10)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/monitoring/</code></li>
+<li>Thao tác tay trên mock: tạm dừng, tiếp tục, hủy; ở 390×844 (EC36)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PID-00059-AC01, UX-MONITOR-001-AC01, UX-MONITOR-005-AC01 đạt; nút chỉ hiện khi hợp lệ; GlobalActivity dùng được ở 390 px</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00059</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

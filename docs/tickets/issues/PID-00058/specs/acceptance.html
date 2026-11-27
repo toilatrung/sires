@@ -1,0 +1,44 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00058.">
+<title>PID-00058 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>PID-00058 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test Vitest trong Nx project <code>@sires/web</code> (chạy <code>pnpm nx run @sires/web:test</code>), dùng mock của khu vực (<code>apps/web/src/features/project/__mocks__/</code>), mock dùng chung và mock <code>/events</code> của PID-00013; operation của khu vực khác override cục bộ trong test (H5). Gồm AC của ticket và phần giao diện của AC requirement thuộc khu vực project. Số liệu lấy từ ticket, PRD, hợp đồng và H1–H20 (chốt theo đề xuất, PO ủy quyền 26/11/2026); dữ liệu mẫu lấy từ <code>Overview.dc.html</code>, <code>Chat.dc.html</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00058-AC01</td><td>Given đã gửi tin “Chạy T-2.3” và mock <code>/events</code> phát ba <code>chat.delta</code> của cùng <code>conversationId</code>, <code>agentRunId</code> = <code>ar-7f21</code>, <code>seq</code> 1, 2, 3 với “Readiness check ”, “Đạt.”, “ Discovery Agent bắt đầu.”, When nhận lần lượt, Then sau mỗi delta bản nháp hiện thêm đúng phần chữ đó (không đợi đủ), dòng đầu ghi “Orchestrator” và liên kết Agent Run <code>ar-7f21</code>; When có <code>message.posted</code>, Then bản nháp được thay bằng tin nhắn đã lưu, chỉ còn một tin.</td><td><code>apps/web/src/features/project/chat.spec.tsx › chữ xuất hiện dần</code></td><td>S04</td><td>Ticket; H6, H7; asyncapi chatDelta</td></tr>
+<tr><td>PID-00058-AC02</td><td>Given thẻ prompt choice “Giới hạn năm xuất bản cho tìm kiếm?” Open trong luồng chat, When mock <code>/events</code> phát <code>prompt.status_changed</code> với <code>objectId</code> của prompt, <code>toState = Answered</code> và <code>getPrompt</code> trả <code>status = Answered</code> kèm câu trả lời, Then thẻ chuyển Answered, chỉ đọc, hiện câu trả lời, người và thời điểm, không cần tải lại trang.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › Answered ở nơi khác</code></td><td>S05</td><td>Ticket; UX-PROMPT-004; H3</td></tr>
+<tr><td>UX-OVERVIEW-001-AC01</td><td>Given baseline v3 có 3 Phase và <code>listTasks</code> trả Task với Phase 1: 4/4 Completed, Phase 2: 2/5, Phase 3: 0/3, When mở Overview, Then mỗi Phase hiện “4/4”, “2/5”, “0/3” Task Completed trên tổng.</td><td><code>apps/web/src/features/project/overview.spec.tsx › tiến độ theo Phase</code></td><td>S02</td><td>PRD 15; H12</td></tr>
+<tr><td>UX-OVERVIEW-002-AC01</td><td>Given <code>getPlan</code> trả <code>baselineVersionId = null</code>, When mở Overview, Then có khối “Project chưa có Plan baseline” với lời nhắc làm rõ ngữ cảnh và nút “Mở Project AI Chat” tới <code>/projects/:projectId/chat</code>.</td><td><code>apps/web/src/features/project/overview.spec.tsx › chưa có Plan</code></td><td>S02</td><td>PRD 15; H13</td></tr>
+<tr><td>UX-OVERVIEW-003-AC01</td><td>Given project <code>status = Archived</code>, When mở Overview, Then nút Sửa research context bị vô hiệu kèm lý do “Project đã lưu trữ — chỉ đọc”, banner “Archived — chỉ đọc” có “Mở lại project”.</td><td><code>apps/web/src/features/project/overview.spec.tsx › archived chỉ đọc</code></td><td>S02</td><td>PRD 15; H13</td></tr>
+<tr><td>UX-CHAT-001-AC01</td><td>Given <code>getProject</code> trả <code>activeTaskId</code> của T-2.3, When gửi tin nhắn, Then chỉ báo “Active task: T-2.3 …” hiện trên ô nhập, body <code>sendMessage</code> có <code>activeTaskId</code> đó và tin nhắn trong lịch sử ghi “T-2.3”.</td><td><code>apps/web/src/features/project/chat.spec.tsx › tham chiếu active task</code></td><td>S03</td><td>PRD 15; H10</td></tr>
+<tr><td>UX-CHAT-002-AC01</td><td>Given tin nhắn có <code>sender.type = agent</code>, <code>sender.agent = synthesis</code>, <code>agentRunId</code>, When xem tin nhắn, Then dòng đầu ghi “Synthesis Agent” và có liên kết tới route Agent Run của monitoring với <code>agentRunId</code> đó.</td><td><code>apps/web/src/features/project/chat.spec.tsx › tên agent và Agent Run</code></td><td>S03</td><td>PRD 15; H8</td></tr>
+<tr><td>UX-PROMPT-001-AC01</td><td>Phần khu vực: Given prompt approval cho Plan Version v4 nhúng trong tin nhắn, When thẻ hiển thị, Then khu vực truyền đủ cho thẻ của shell: loại prompt, câu hỏi, liên kết tới Plan Version (<code>pendingAction.objectType</code>, <code>objectId</code>), các lựa chọn kèm hệ quả, agent tạo prompt, thời điểm tạo.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › thẻ trong luồng</code></td><td>S05</td><td>PRD 15; H3</td></tr>
+<tr><td>UX-PROMPT-002-AC01</td><td>Phần khu vực: Given prompt choice có phương án <code>recommended = true</code>, When thẻ hiển thị trong chat, Then không phương án nào được chọn và nút xác nhận vô hiệu tới khi người dùng chọn; không có <code>answerPrompt</code> nào trước khi xác nhận.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › không chọn sẵn</code></td><td>S05</td><td>PRD 15; H3</td></tr>
+<tr><td>UX-PROMPT-003-AC01</td><td>Phần khu vực: Given prompt edit_and_approve cho metadata reference, When sửa tiêu đề trong thẻ rồi duyệt, Then <code>answerPrompt</code> gửi nội dung đã sửa theo <code>PromptResponse</code>; nội dung gốc vẫn nằm trong prompt (backend lưu cả hai). Chờ thẻ của shell nhận edit_and_approve (H3).</td><td><code>apps/web/src/features/project/prompt.spec.tsx › sửa và duyệt</code></td><td>S05</td><td>PRD 15; H3</td></tr>
+<tr><td>UX-PROMPT-004-AC01</td><td>Given prompt <code>status = Cancelled</code>, <code>statusReason</code> nêu Plan Version chờ duyệt đã có phiên bản mới, When xem thẻ trong chat, Then thẻ chỉ đọc, nêu lý do và có câu “Không được tính là đồng ý”.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › Cancelled, Expired</code></td><td>S05</td><td>PRD 15; H3</td></tr>
+<tr><td>UX-PROMPT-005-AC01</td><td>Given prompt Open hiện trong chat, When được trả lời ở Pending Actions (sự kiện <code>prompt.status_changed</code>), Then thẻ trong chat chuyển Answered không cần tải lại trang. Cùng test với AC02.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › Answered ở nơi khác</code></td><td>S05</td><td>PRD 15; H3</td></tr>
+<tr><td>UX-A11Y-002-AC01</td><td>Phần khu vực: Given thẻ prompt Open trong chat, When chỉ dùng bàn phím (Tab vào thẻ, phím mũi tên chọn, Tab tới nút, Enter), Then chọn được phương án và <code>answerPrompt</code> được gọi với phương án đó.</td><td><code>apps/web/src/features/project/prompt.spec.tsx › bàn phím</code></td><td>S05</td><td>PRD 15; PID-00012 H8; H3</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00058</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Tiêu chí nghiệm thu · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

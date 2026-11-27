@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00059.">
+<title>S01 — Route, i18n và mock của khu vực monitoring | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00059</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00059</p><h1>S01 — Route, i18n và mock của khu vực monitoring</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Slice nền: mọi slice sau dùng route, namespace i18n và mock lập ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; nền cho mọi AC (ticket “Gồm”, spec B1, B6, B7)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (khung), O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B6, B7; H6, H13, H18</td></tr>
+<tr><th scope="row">Edge case</th><td>EC37 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00012 (hợp đồng <code>Feature</code>, router, i18n, client API, client SSE, thẻ prompt, trạng thái dùng chung, chip) và PID-00013 (bộ sinh mock, mock <code>/events</code>, tiện ích test, README) đã vào <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc <code>docs/ui-design/design.md</code> (§2.4, 2.4.1, §3, §4), sáu màn tham chiếu và trang trạng thái, <code>designs/notes.html</code>, README của shell và README mock của PID-00013.</li>
+<li><code>apps/web/src/features/monitoring/index.tsx</code>: route thật <code>activity</code>, <code>projects/:projectId/activity</code>, <code>projects/:projectId/activity/workflows/:workflowId</code>, <code>projects/:projectId/activity/agent-runs/:agentRunId</code> (H13), <code>projects/:projectId/history</code> qua hợp đồng <code>Feature</code>. Bảng route ở <code>apps/web/README.md</code> là file chung: báo phiên điều phối thêm dòng route mới, không tự sửa.</li>
+<li>Namespace <code>monitoring</code> trong <code>apps/web/src/features/monitoring/i18n/vi.json</code>, <code>en.json</code>: mọi chuỗi; tên trạng thái entity giữ tiếng Anh; nhãn trạng thái agent của Agent List theo ngôn ngữ (design.md §3). Không còn chuỗi cứng.</li>
+<li>Mock trong <code>apps/web/src/features/monitoring/__mocks__/</code>: override có trạng thái cho 10 operation của khu vực: <code>listWorkflows</code>, <code>getWorkflow</code>, <code>pauseWorkflow</code>, <code>resumeWorkflow</code>, <code>cancelWorkflow</code>, <code>decideWorkflowRecovery</code>, <code>listAgentRuns</code>, <code>getAgentRun</code>, <code>getAgentRunDebugTranscript</code>, <code>listProjectAuditEvents</code> (H6). Lệnh đổi trạng thái theo 18.2 (lệnh không hợp lệ trả <code>409 invalid_transition</code>) và phát <code>workflow.status_changed</code>, <code>agent_run.status_changed</code> qua mock <code>/events</code> của PID-00013. Operation của khu vực khác dùng mock đã ghép khi chạy dev, override cục bộ trong test.</li>
+<li>Fixture theo màn tham chiếu (wf-52d T-2.3 năm bước; workflow ở đủ tám trạng thái; Agent Run có và không có debug; audit event của bốn loại actor). Không có key hay host thật.</li>
+<li>Đang tải, trống, lỗi bằng component của shell (EC37).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code>, <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/activity.spec.tsx › đổi ngôn ngữ, đang tải, lỗi</code> (EC37); test kiểm mock của PID-00013 vẫn đạt (không trùng operation)</li>
+<li>Thao tác tay: bật mock, mở năm route ở 1440×900</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Năm route mở được trên mock, hai ngôn ngữ; mock 10 operation không trùng khu vực khác</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00059</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00059 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
