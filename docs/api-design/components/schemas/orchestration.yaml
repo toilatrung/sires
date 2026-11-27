@@ -482,6 +482,12 @@ Event:
     `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
     `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
     `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
+
+    `chat.delta` mang thêm dữ liệu của một đoạn câu trả lời đang stream của Orchestrator: `conversationId`, `agentRunId`,
+    `seq`, `text`, `final` — đúng payload `chatDelta` của `events/asyncapi.yaml`, bỏ `accountId` (gateway chỉ đẩy tới
+    phiên của tài khoản đó; PID-00061). Với `chat.delta`, `conversationId`, `agentRunId`, `seq`, `text` luôn có; sự kiện
+    loại khác không có năm trường này. Giao diện ghép đoạn theo `agentRunId` và `seq` tăng dần, bỏ đoạn trùng hoặc cũ,
+    rồi thay bản nháp bằng tin nhắn đã lưu khi có `message.posted` (PID-00058 H6, H7).
   required: [id, type, at]
   properties:
     id: { type: string }
@@ -500,6 +506,21 @@ Event:
     fromState: { type: string }
     toState: { type: string }
     at: { $ref: common.yaml#/Timestamp }
+    conversationId:
+      $ref: common.yaml#/Id
+      description: Chỉ có ở `chat.delta` — hội thoại của câu trả lời.
+    agentRunId:
+      $ref: common.yaml#/Id
+      description: Chỉ có ở `chat.delta` — Agent Run của Orchestrator đang trả lời; trùng `Message.agentRunId` của câu trả lời đã lưu.
+    seq:
+      type: integer
+      description: Chỉ có ở `chat.delta` — thứ tự của đoạn trong Agent Run, tăng dần.
+    text:
+      type: string
+      description: Chỉ có ở `chat.delta` — nội dung của đoạn.
+    final:
+      type: boolean
+      description: Chỉ có ở `chat.delta` — `true` ở đoạn cuối của câu trả lời.
 
 # ---------- Deliberation (PRD 8.7, 14.9, 18.1 — DEC-47, DEC-48) ----------
 # Trạng thái: Assumption — bản đề xuất của biên soạn; service sở hữu: orchestration (ADR-24 (Proposed)).

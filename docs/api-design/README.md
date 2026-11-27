@@ -4,7 +4,17 @@
 Trạng thái: **Assumption — bản đề xuất của biên soạn**, chưa phải quyết định kiến trúc; technology stack chưa chọn (DEC-27, OQ-091).
 Kế hoạch triển khai lập riêng, ngoài PRD (DEC-49); spec không gắn milestone.
 
-### Thay đổi gần nhất — tín hiệu SSE và đăng xuất RP-initiated, PC-05 P2, P3 (27/11/2026)
+### Thay đổi gần nhất — dữ liệu SSE `chat.delta`, Agent Run của lượt trả lời, PID-00058 (27/11/2026)
+
+Phải sửa ở nguồn mục 1, 2 của PID-00058 (H6, H15), chốt theo đề xuất (PO ủy quyền 26/11/2026). Tương thích ngược: chỉ thêm trường tùy chọn ở phản hồi và mô tả.
+
+- `components/schemas/orchestration.yaml#/Event`: thêm trường tùy chọn `conversationId`, `agentRunId`, `seq`, `text`, `final`, chỉ có ở `chat.delta` (khi đó bốn trường đầu luôn có) — đúng payload `chatDelta` của `events/asyncapi.yaml`, bỏ `accountId`. Không tách schema `oneOf`, để type `Event` của `PublicApi` giữ dạng cũ cho PID-00012, PID-00013. Web dùng `Event` thay cho `ChatDeltaMessage` (PID-00058 S04).
+- `paths/14-shared-context-and-orchestration-architecture.yaml#/events` (`streamEvents`): mô tả nêu dữ liệu của `chat.delta`, đoạn không bền và không phát lại, nối lại thì client đọc lại tin nhắn đã lưu bằng `listMessages`; `x-requirements` thêm `NFR-PERF-005`. Hiện thực phía gateway: PID-00061.
+- `components/schemas/project.yaml#/MessageAccepted` (`sendMessage`): thêm `agentRunId` tùy chọn của Agent Run Orchestrator trả lời tin nhắn, để giao diện theo dõi lỗi khi chưa có `chat.delta` và không có `workflowId`. Hiện thực: PID-00063 (`sendMessage`), PID-00068 (lượt chat). Cách điền lúc trả `202` khi F-04 tạo lượt sau `message.posted` (cũng là cách điền `workflowId` sẵn có) chờ PO.
+- `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml`.
+- Ticket cập nhật: PID-00058 (mục 5, brief, S04, S06).
+
+### Thay đổi trước — tín hiệu SSE và đăng xuất RP-initiated, PC-05 P2, P3 (27/11/2026)
 
 Phiếu chốt cuối PH-01 ([PC-05](../overview/phieu-chot-cuoi-ph01.html)) P2, P3, chốt theo đề xuất (PO ủy quyền 26/11/2026); yêu cầu từ PID-00012 H5, H9 (chặn S12, S14).
 

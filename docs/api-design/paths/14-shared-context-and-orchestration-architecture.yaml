@@ -685,7 +685,12 @@
       Client nhận tín hiệu này thì tải lại trạng thái bằng các endpoint GET. Kết nối lần đầu (không có `Last-Event-ID`)
       và nối lại còn trong thời gian giữ log không có tín hiệu này. Dùng loại sự kiện thay vì mã phản hồi vì
       `EventSource` của trình duyệt không đọc được status khi tự nối lại (PID-00012 H5, PC-05 P2).
-    x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001]
+
+      `chat.delta` là một đoạn câu trả lời đang stream của Orchestrator (NFR-PERF-005), gateway chuyển từ stream
+      `sires.stream` (PID-00061); dữ liệu có thêm `conversationId`, `agentRunId`, `seq`, `text`, `final` (Event). Đoạn này
+      không bền và không phát lại khi nối lại: client bỏ bản nháp đang ghép, đọc lại tin nhắn đã lưu bằng `listMessages`,
+      không nhân đôi (PID-00058 H6, H7).
+    x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001, NFR-PERF-005]
     x-priority: P0
     parameters:
       - $ref: ../components/parameters.yaml#/ProjectIdFilter
