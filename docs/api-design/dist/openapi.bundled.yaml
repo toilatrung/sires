@@ -5895,7 +5895,9 @@ components:
       type: string
       description: |
         Bộ mã lỗi chuẩn hóa (8.6). Tạm thời (tự thử lại trong Agent Run): rate_limited, timeout, provider_unavailable,
-        network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision.
+        network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision. `invalid_request` (DEC-62, trả lời
+        OQ-113): provider từ chối yêu cầu bằng HTTP 400 không thuộc mã khác (tham số không hợp lệ; schema hay khai báo công
+        cụ bị từ chối); cố định, không thử lại (kiến trúc 8.4).
       enum:
         - auth_failed
         - permission_denied
@@ -5909,6 +5911,7 @@ components:
         - invalid_response
         - network_error
         - interrupted
+        - invalid_request
     ModelInfo:
       type: object
       required:

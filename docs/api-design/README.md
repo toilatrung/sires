@@ -31,6 +31,13 @@ Theo “Phải sửa ở nguồn” của PID-00036 (H3, H11, H14, H16), chốt 
 - `#/auth/callback` (`completeLogin`): thêm tham số `error`, `error_description` (IdP trả thay cho `code`); `code` hết bắt buộc. Thất bại chuyển về `/sign-in?error=` với `login_cancelled` (`access_denied`), `oidc_unavailable`, `login_failed`, giữ `returnTo`. Phía gateway: PID-00038.
 - `components/schemas/account.yaml`: `VerificationThresholds.defaults` (chỉ đọc, cùng cấu trúc ngưỡng; giá trị do PID-00041 giữ); `EmbeddingSettings.indexedReferenceCount` (chỉ đọc; số Reference phải index lại khi đổi model; phía knowledge); `Profile.googleScholarProfileUrl` nhận `null` (merge-patch xóa liên kết).
 - Tương thích ngược: chỉ thêm trường chỉ đọc, nới kiểu, thêm tham số tùy chọn; `startLogin` đổi `503` sang `302` khi chưa có hiện thực (PID-00038 chưa làm). `dist/openapi.bundled.yaml` dựng lại, lint sạch.
+### Thay đổi gần nhất — mã lỗi provider `invalid_request`, DEC-62 (27/11/2026)
+
+Phiếu chốt cuối PH-01 ([PC-05](../overview/phieu-chot-cuoi-ph01.html)) S-OQ-113, S-M1, chốt theo đề xuất (PO ủy quyền 26/11/2026); trả lời OQ-113 (DEC-62).
+
+- `components/schemas/common.yaml#/ProviderErrorCode`: thêm `invalid_request` — provider từ chối yêu cầu bằng HTTP 400 không thuộc mã khác (tham số không hợp lệ; schema hay khai báo công cụ bị từ chối); cố định, không thử lại. Mô tả theo kiến trúc 8.4 (đã thêm dòng ánh xạ và bảy bổ sung của SPK-01).
+- Tương thích ngược với bên đọc theo hợp đồng (thêm giá trị enum ở dữ liệu trả về: `ProviderConnection` kiểm tra, `AgentRun.error`, `AgentRunResult` nội bộ). Danh mục đóng trong mã phải thêm cùng giá trị: `sires_common.model_gateway.ProviderErrorCode` (luồng platform); adapter thật ở PID-00070.
+- `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, `internal/agent-core.yaml` sạch).
 
 ### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 

@@ -84,6 +84,7 @@ LANGUAGE sql IMMUTABLE AS $$
 $$;
 
 -- Provenance (PRD 18.3): createdBy, inputs[] bắt buộc; thiếu → từ chối ghi (DATA-PROV-001).
+-- inputs: [] (mảng rỗng) hợp lệ: nội dung Researcher nhập tay có thể không có đầu vào (PC-05 P11, 27/11/2026).
 CREATE OR REPLACE FUNCTION app.is_provenance(p jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE AS $$
   SELECT COALESCE((p IS NOT NULL AND jsonb_typeof(p) = 'object'
