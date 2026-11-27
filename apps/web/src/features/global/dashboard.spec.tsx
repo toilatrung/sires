@@ -31,10 +31,9 @@ describe('Dashboard — khung (S05)', () => {
     }
     expect(pending.textContent).toMatch(/^[0-9]+ việc chờ bạn$/);
     expect(main().getByRole('link', { name: 'Tất cả Pending Actions' }).getAttribute('href')).toBe('/pending-actions');
-    // Blocks whose rows come with PID-00060 explain where to look and offer the next action (design.md §4 Trống).
-    expect(main().getByRole('link', { name: 'Mở Pending Actions' }).getAttribute('href')).toBe('/pending-actions');
-    expect(main().getByRole('link', { name: 'Mở Agent Activity' }).getAttribute('href')).toBe('/activity');
-    expect(main().getByRole('link', { name: 'Mở Notifications' }).getAttribute('href')).toBe('/notifications');
+    // With PID-00060 the blocks show their rows (dashboard-data.spec.tsx) instead of the note of PID-00037.
+    expect(await main().findByText('Chọn tiêu chí so sánh cho bảng phương pháp')).toBeTruthy();
+    expect(main().queryByRole('link', { name: 'Mở Pending Actions' })).toBeNull();
   });
 
   it('bỏ project Archived (WS-DASHBOARD-001-AC04, EC05)', async () => {
