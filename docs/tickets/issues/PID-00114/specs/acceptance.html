@@ -1,0 +1,43 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00114.">
+<title>PID-00114 — Tiêu chí nghiệm thu | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>PID-00114 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test, gồm AC của ticket và AC của requirement được phủ (phần giao diện chạy trên mock; phần backend — chuyển trạng thái, Audit Event, kết quả của agent — kiểm khi Hội tụ ở cổng PH-06). Số liệu kiểm lấy từ ticket, PRD, dữ liệu mẫu ở <a href="../designs/notes.html#du-lieu">designs/notes.html</a> hoặc câu trả lời H1…; không tự đặt số khi OQ chưa chốt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00114-AC01</td><td>Given mock có claim “RAG giảm một nửa hallucination ở mọi miền.” mức Unsupported, Draft, 0 evidence, thuộc bản tổng hợp “Định nghĩa hallucination” v2, When hiển thị ở (1) danh sách tab Claims, (2) Inspector của claim, (3) bản tổng hợp, và (4) sau khi Researcher chấp nhận claim qua dialog xác nhận thêm, Then cả bốn chỗ hiện cùng chip Unsupported của shell (viền đứt <code>warn</code>, chữ “Unsupported”); sau (4) chip Accepted hiện cạnh chip Unsupported và chip Unsupported không đổi.</td><td><code>apps/web/src/features/research/claim.spec.tsx</code> › Unsupported giữ nhãn ở danh sách, Inspector và sau khi chấp nhận; <code>apps/web/src/features/research/synthesis.spec.tsx</code> › Unsupported tại câu</td><td>S02, S04, S07</td><td>ticket; UX-CLAIM-001; mô tả <code>acceptClaim</code>; H2, H6, H11</td></tr>
+<tr><td>PID-00114-AC02</td><td>Given artifact diagram “Pipeline RAG trên Trusted Library” có v1 Rejected và v2 Draft (cú pháp hợp lệ) do Diagram Agent tạo cho T-3.5, When mở <code>/projects/{projectId}/artifacts/{artifactId}</code>, Then version đang xem là v2, khối Provenance hiện Diagram Agent kèm mã Agent Run liên kết tới workflow, provider và model, Task T-3.5 có liên kết, đầu vào (Research context v4, artifact version v1), và có hai thao tác “Chấp nhận v2” (nút chính) và “Từ chối” với dòng hệ quả; bấm “Chấp nhận v2” gọi <code>acceptArtifactVersion</code> đúng một lần kèm <code>Idempotency-Key</code> và v2 chuyển Accepted.</td><td><code>apps/web/src/features/research/artifact.spec.tsx</code> › Draft có provenance và thao tác nghiệm thu</td><td>S05, S08</td><td>ticket; màn Artifacts; H8, H9</td></tr>
+<tr><td>UX-EVID-001-AC01</td><td>Given evidence của Lewis et al. 2020 ở trang 7, đoạn 3, được 2 claim dùng, When mở Evidence Inspector của evidence đó, Then đoạn trích được tô (<code>mark</code>) giữa đoạn trước và đoạn sau, dòng vị trí có “trang 7”, và danh sách “claim đang dùng” có đủ 2 claim kèm chip mức hỗ trợ.</td><td><code>apps/web/src/features/research/evidence.spec.tsx</code> › trang 7 trong văn cảnh</td><td>S03</td><td>PRD 15.6; H5</td></tr>
+<tr><td>UX-CLAIM-001-AC01</td><td>Given bản tổng hợp v2 chứa nguyên văn câu của claim Unsupported, When xem bản tổng hợp, Then chip Unsupported nằm ngay sau câu đó trong nội dung (cùng đoạn, trước câu kế tiếp).</td><td><code>apps/web/src/features/research/synthesis.spec.tsx</code> › Unsupported tại câu</td><td>S07</td><td>PRD 15.6; H11</td></tr>
+<tr><td>EVID-INSPECTOR-001-AC01</td><td>Given một claim có evidence, When Researcher mở evidence từ Inspector của claim, Then thấy metadata nguồn (tác giả, năm, tiêu đề, venue, DOI), đoạn trích tô sáng, ít nhất một đoạn liền kề có trong dữ liệu và số trang.</td><td><code>apps/web/src/features/research/evidence.spec.tsx</code> › metadata và ngữ cảnh</td><td>S03</td><td>PRD 11.3; H5</td></tr>
+<tr><td>EVID-INSPECTOR-001-AC02</td><td>Given evidence Active được 2 claim dùng, When Researcher chọn “Loại evidence”, nhập lý do và xác nhận, Then <code>excludeEvidence</code> được gọi một lần với lý do, evidence hiện chip Excluded, dialog đã nêu “2 claim đang dùng được đánh dấu needs review”, và sau khi tải lại hai claim mang chip needs review (phần giao diện; tính lại mức hỗ trợ và Audit Event kiểm khi Hội tụ).</td><td><code>apps/web/src/features/research/evidence.spec.tsx</code> › loại evidence</td><td>S03</td><td>PRD 11.3; mô tả <code>excludeEvidence</code>; H5</td></tr>
+<tr><td>SYN-HUMAN-REVIEW-001-AC01</td><td>Given claim Not Assessed, When Researcher mở claim, Then “Chấp nhận claim” vô hiệu với lý do “Cần kiểm chứng trước” và nút “Kiểm chứng” dùng được; nếu server vẫn trả 400 khi chấp nhận, lý do được hiện (phần giao diện; chặn ở server kiểm khi Hội tụ).</td><td><code>apps/web/src/features/research/claim.spec.tsx</code> › Not Assessed không chấp nhận được</td><td>S04</td><td>PRD 11.9; H6</td></tr>
+<tr><td>SYN-HUMAN-REVIEW-001-AC03</td><td>Given bản tổng hợp v2 có 3 claim, 1 còn Draft, When Researcher mở v2, Then “Chấp nhận v2” vô hiệu, lý do nêu “còn 1 claim chưa quyết định” và liệt kê claim đó kèm liên kết; khi server trả 409 cho lần chấp nhận, hộp lỗi nêu lý do (phần giao diện).</td><td><code>apps/web/src/features/research/artifact.spec.tsx</code> › synthesis còn claim chưa quyết định</td><td>S08</td><td>PRD 11.9; H9</td></tr>
+<tr><td>DIAG-SOURCE-001-AC01</td><td>Given diagram v2 Draft, When Researcher sửa nguồn và chọn “Lưu thành version mới”, Then <code>createArtifactVersion</code> được gọi với <code>basedOnVersionId</code> = v2 và nguồn mới, danh sách version có v3 Draft actor Researcher, và nội dung v2 không đổi (phần giao diện).</td><td><code>apps/web/src/features/research/diagram.spec.tsx</code> › lưu nguồn thành version mới</td><td>S06</td><td>PRD 13.3; H10</td></tr>
+<tr><td>DIAG-SOURCE-001-AC02</td><td>Given một version diagram, When mở, Then thấy cả nguồn Mermaid của version và preview lấy từ <code>getDiagramPreview</code> của chính version đó.</td><td><code>apps/web/src/features/research/diagram.spec.tsx</code> › nguồn và preview cùng version</td><td>S06</td><td>PRD 13.3; H10</td></tr>
+<tr><td>DIAG-VALIDATE-001-AC01</td><td>Given nguồn Mermaid có lỗi cú pháp ở dòng 3, When kiểm tra (khi mở version hoặc bấm “Kiểm tra” trong editor), Then hộp lỗi hiện “dòng 3” và mô tả lỗi, và preview cũ không hiện như thể hợp lệ (phần giao diện).</td><td><code>apps/web/src/features/research/diagram.spec.tsx</code> › lỗi cú pháp</td><td>S06</td><td>PRD 13.4; H10</td></tr>
+<tr><td>DIAG-REVIEW-001-AC01</td><td>Given diagram Draft có lỗi cú pháp, When Researcher mở version, Then “Chấp nhận” vô hiệu với lý do “Sơ đồ còn lỗi, không chấp nhận được”; nếu server trả 409 khi chấp nhận, hộp lỗi nêu lý do (phần giao diện; từ chối ở server kiểm khi Hội tụ).</td><td><code>apps/web/src/features/research/artifact.spec.tsx</code> › diagram lỗi không chấp nhận được</td><td>S06, S08</td><td>PRD 13.5; H9, H10</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00114</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Tiêu chí nghiệm thu · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

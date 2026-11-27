@@ -16,24 +16,44 @@
 <body>
 <a class="skip-link" href="#main-content">Đến nội dung chính</a>
 <div class="document">
-<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00114</p><h1>PID-00114 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
-<h2 id="giao-dien">Giao diện</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="../../../../ui-design/pages/Evidence.html">Evidence</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Artifacts.html">Artifacts</a></td><td>Mặc định</td></tr>
-</tbody></table></div>
-<ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
-<li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này ghi màn, trạng thái cần dựng và điều đã chốt khi làm rõ mà spec mục 4 chưa nói (H1…). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Dữ liệu mẫu của mock (S01) khớp màn tham chiếu và dùng một project “RAG trong tổng quan tài liệu” (cùng tên với mock của khu vực global, design.md §6):</p>
+<ul><li>Reference được chọn: 14, gồm Lewis et al. 2020 “Retrieval-Augmented Generation” (Trusted, Indexed, có tài liệu), Shi et al. 2023 “Distracted by Irrelevant Context” (Trusted, Indexed), một reference Revoked (evidence của nó Stale), một reference Trusted có indexing Unavailable.</li>
+<li>Claim: sáu claim của màn Evidence — “Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.” (Conflicting, 2 hỗ trợ, 1 phản bác, T-2.3); “Hallucination là nội dung không trung thành với nguồn hoặc không có căn cứ.” (Supported, 3 hỗ trợ, T-2.1); “Ngữ cảnh dài làm mô hình bỏ sót thông tin ở giữa.” (Supported, 1 hỗ trợ); “Intrinsic và extrinsic hallucination cần thước đo khác nhau.” (Partially Supported, T-2.1); “RAG giảm một nửa hallucination ở mọi miền.” (Unsupported, 0 evidence, T-2.1); “Bộ phát hiện hallucination dựa trên entropy đạt độ chính xác cao.” (Supported, needs review vì evidence Stale, T-1.3); thêm một claim Not Assessed và một claim Accepted để test.</li>
+<li>Evidence: Lewis et al. 2020 trang 7, đoạn 3 (hỗ trợ, được 2 claim dùng); Shi et al. 2023 trang 2, đoạn 1 (phản bác); một evidence Excluded, một Stale (reference Revoked), một evidence thiếu <code>paragraph</code>, một thiếu <code>before</code>.</li>
+<li>Artifact: sáu artifact của màn Artifacts, mỗi artifact một dòng — diagram “Pipeline RAG trên Trusted Library” (v1 Rejected ghi chú “thiếu bước Verification”, v2 Draft hợp lệ, T-3.5, Diagram Agent, provider và model như màn Artifacts, đầu vào Research context v4 và artifact version “Định nghĩa hallucination” v1); synthesis “Định nghĩa hallucination” (v1 Accepted, v2 Draft chứa nguyên văn phát biểu của ba claim T-2.1, một claim còn Draft); table “Danh sách phương pháp đo” (v3 Accepted, csv, T-1.3); note “Ghi chú đọc 5 bài nền tảng” (v1 Draft, T-2.7); verification_report “Báo cáo kiểm chứng claim” (v1 Superseded, v2 Accepted); thêm diagram “Sơ đồ trạng thái claim” v1 Draft lỗi cú pháp ở dòng 3 và một version do Researcher tạo (<code>inputs: []</code>) để test.</li></ul>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 21 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<ul><li>26 operation gọi qua client API có type của shell ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a> (24 khai mock ở khu vực này, <code>getTask</code> và <code>getWorkflow</code> dùng mock của khu vực khác) và liên kết tài liệu <code>getReferenceDocument</code>; <code>Idempotency-Key</code> cho <code>verifyClaim</code>, <code>acceptClaim</code>, <code>rejectClaim</code>, <code>createArtifactVersion</code>, <code>acceptArtifactVersion</code>, <code>rejectArtifactVersion</code>, <code>requestDiagram</code>; <code>If-Match</code> theo <code>ETag</code> của <code>getClaim</code> cho <code>updateClaimStatement</code>.</li>
+<li>Sự kiện qua client SSE của shell (H13): <code>research.object_status_changed</code> (evidence, claim, artifact version), <code>workflow.status_changed</code> (thẻ thao tác dài), <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code>, <code>project_reference.changed</code> (tab References, evidence Stale); “cần tải lại” của shell khi <code>replay.unavailable</code> (PC-05 P2). Nhận sự kiện thì tải lại bằng GET; không dựng trạng thái từ payload.</li>
+<li>Thiếu ở hợp đồng, đã chốt cách xử lý tạm: trạng thái kiểm tra sơ đồ (gọi <code>validateDiagramSource</code>, H10); vị trí claim trong bản tổng hợp (tìm nguyên văn, H11); artifact và citation dùng evidence, vị trí dùng trong bản thảo (không hiện, H5, H8); lý do needs review (không hiện, H6); <code>artifactId</code> của đầu vào artifact version (không liên kết, H8); tham chiếu đối tượng của workflow (không khôi phục thẻ sau tải lại, H13).</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th><th scope="col">Điều đã chốt</th></tr></thead><tbody>
+<tr><td><a href="../../../../ui-design/pages/Evidence.html">Evidence</a> (tab Claims)</td><td>Có dữ liệu; lọc; Active task; trống; đang tải; lỗi; tải thêm</td><td>Ba tab kèm số; danh sách claim với chip mức hỗ trợ, duyệt, needs review; meta đếm theo quan hệ (H4)</td></tr>
+<tr><td>Evidence, tab References (chỉ có ở sketch)</td><td>Có dữ liệu; Revoked; Unavailable; trống; dialog Bỏ khỏi project</td><td>Hai chip riêng; câu giải thích Unavailable; liên kết thư viện; dialog có số evidence (H4)</td></tr>
+<tr><td>Evidence, tab Evidence (chỉ có ở sketch)</td><td>Có dữ liệu; lọc trạng thái, reference; trống</td><td>Dòng reference, vị trí, trích đoạn, chip (H4)</td></tr>
+<tr><td>Evidence Inspector của evidence (khối aside của <code>Evidence</code>)</td><td>Active; Excluded; Stale; thiếu vị trí, thiếu ngữ cảnh; không có tài liệu; dialog Loại; không tìm thấy</td><td>Thẻ evidence như màn; “Claim đang dùng”; không có dòng artifact, citation (H5)</td></tr>
+<tr><td>Inspector của claim (khối aside của <code>Evidence</code>, claim Conflicting)</td><td>Draft từng mức hỗ trợ; Not Assessed; Accepted; Rejected; needs review; đang kiểm chứng; dialog xác nhận thêm, Từ chối, Liên kết evidence, chấp nhận hàng loạt</td><td>Nhóm Hỗ trợ, Phản bác, Ngữ cảnh; “Chấp nhận claim” là nút chính khi đủ điều kiện (H6)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Artifacts.html">Artifacts</a></td><td>Danh sách; lọc; trống; chi tiết diagram Draft; Rejected; Accepted; so sánh; provenance thiếu trường</td><td>Một dòng mỗi artifact kèm “Đang dùng” (màn vẽ một dòng mỗi version, theo hợp đồng thì theo artifact); khối Provenance; “Chấp nhận v{n}” là nút chính duy nhất (H8, H9)</td></tr>
+<tr><td>Artifacts, sơ đồ (khối figure của <code>Artifacts</code>)</td><td>Hợp lệ; lỗi cú pháp; preview lỗi; chưa kiểm tra được; editor nguồn; yêu cầu Diagram Agent sửa; đang sửa</td><td>Preview là ảnh từ blob; trạng thái kiểm tra bằng chữ và hộp lỗi, không làm chip (H2, H10)</td></tr>
+<tr><td>Artifacts, bản tổng hợp (chỉ có ở sketch)</td><td>Claim tại câu; claim chưa định vị; bảng claim; còn claim Draft</td><td>Chip của shell ngay sau câu (H11)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/States.html">States</a></td><td>Thẻ thao tác dài; trống; lỗi; đang tải</td><td>Component của shell cho kiểm chứng và sửa sơ đồ (H2, H6, H10)</td></tr>
+</tbody></table></div>
+<ul><li>Chip trạng thái theo design.md §3 có bảng bổ sung của PC-05 P1: Supported (đã chốt, brand), Partially Supported (đề xuất), Unsupported (cảnh báo đứt), Conflicting (cảnh báo liền), Not Assessed (trung tính); Active (đã chốt), Excluded (trung tính), Stale (cảnh báo đứt); needs review (cảnh báo đứt); Draft (đề xuất), Accepted (đã chốt), Rejected, Superseded (trung tính); Trusted (đã chốt), Revoked (cảnh báo liền); Indexed (đã chốt), Not Indexed, Queued (trung tính), Indexing (đang chạy), Failed, Unavailable (lỗi). Khu vực không tự đặt kiểu (H2).</li>
+<li>Một nút chính mỗi màn: “Chấp nhận claim” ở References and Evidence khi claim đang mở đủ điều kiện; “Chấp nhận v{n}” ở Research Artifacts khi version Draft. Mọi nút khác là nút phụ, viền xanh hoặc nút chữ (design.md §4).</li>
+<li>Dialog theo design.md §4 (480px, nêu hệ quả bằng con số trước nút xác nhận, nút hủy gọi tên phương án an toàn): Bỏ khỏi project, Loại evidence, chấp nhận claim Unsupported hoặc Conflicting, Từ chối claim, Liên kết evidence, chấp nhận hàng loạt, Từ chối version, Yêu cầu Diagram Agent sửa.</li>
+<li>Sketch trạng thái: <a href="Research-evidence-artifacts.html">Research-evidence-artifacts.html</a>.</li>
+<li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>). Kiểm trên preview <code>web</code> ở 1440×900, 1024×768 và 390×844 (không cuộn ngang trang, không cam kết thao tác soạn trên điện thoại, H17); vi và en.</li></ul>
 <h2 id="agent-va-model">Agent và model</h2>
-<p>Không có.</p>
+<p>Không gọi model. Verification Agent và Diagram Agent chạy trong workflow ở backend; giao diện gửi <code>verifyClaim</code>, <code>requestDiagram</code> và theo dõi qua sự kiện, không sinh hay sửa nội dung bằng model (H6, H10).</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00114</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
 <footer>SIRes · Ghi chú thiết kế PID-00114 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>

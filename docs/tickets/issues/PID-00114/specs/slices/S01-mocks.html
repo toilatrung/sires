@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00114.">
+<title>PID-00114 — S01 Mock của khu vực research | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>S01 — Mock của khu vực: evidence, claim, artifact, sơ đồ, reference của project</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (nền cho test của S02–S08)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC03, EC12, EC19, EC35, EC41 (hành vi mock)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00013 S01, S02, S03</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc README của <code>apps/web/src/shell/mock/</code> (PID-00013): cách khai override qua hợp đồng Feature, helper test, cờ bật mock khi dev, mock <code>/events</code>.</li>
+<li>Kho dữ liệu của khu vực (module trong <code>apps/web/src/features/research/__mocks__/</code>, tạo mới) theo dữ liệu mẫu ở <code>designs/notes.html</code>: một project, reference được chọn, evidence (Active, Excluded, Stale), claim (năm mức hỗ trợ, ba trạng thái duyệt, needs review), artifact và version (diagram hợp lệ và lỗi cú pháp, synthesis chứa nguyên văn phát biểu claim, table csv, note, verification_report), provenance đủ và thiếu trường.</li>
+<li>Override có trạng thái cho 24 operation của H12: <code>listEvidence</code> (lọc <code>status</code>, <code>referenceId</code>, <code>taskId</code>, <code>cursor</code>), <code>getEvidence</code> (404 khi không thấy), <code>excludeEvidence</code> (Active → Excluded, claim liên kết <code>needsReview</code>; khác → 409), <code>restoreEvidence</code> (Excluded → Active; khác → 409), <code>listClaims</code> (lọc <code>approvalStatus</code>, <code>supportStatus</code>, <code>taskId</code>, <code>artifactVersionId</code>, <code>needsReview</code>, <code>cursor</code>), <code>getClaim</code> (header <code>ETag</code>), <code>updateClaimStatement</code> (<code>If-Match</code> sai → 412; Accepted → Draft, Not Assessed), <code>linkEvidenceToClaim</code> (evidence không Active → 422; trùng → 409), <code>unlinkEvidenceFromClaim</code>, <code>acceptClaim</code> (Not Assessed → 400; <code>rowVersion</code> cũ hoặc đã quyết định → 409), <code>rejectClaim</code>, <code>verifyClaim</code> (202 với Workflow <code>verification</code>; sau một khoảng ngắn đổi mức hỗ trợ và phát sự kiện), <code>listArtifacts</code> (lọc <code>type</code>, <code>taskId</code>, <code>hasAccepted</code>), <code>getArtifact</code>, <code>listArtifactVersions</code>, <code>createArtifactVersion</code> (version Draft mới actor researcher; <code>basedOnVersionId</code> sai → 409), <code>acceptArtifactVersion</code> (Draft → Accepted, Accepted cũ → Superseded; synthesis còn claim Draft hoặc diagram lỗi → 409), <code>rejectArtifactVersion</code>, <code>listDiagramTypes</code>, <code>requestDiagram</code> (202; sau một khoảng ngắn thêm version Draft), <code>validateDiagramSource</code> (lỗi theo dòng cho nguồn có đánh dấu lỗi trong dữ liệu mẫu), <code>getDiagramPreview</code> (svg; 404 cho version lỗi render), <code>listProjectReferences</code>, <code>removeReferenceFromProject</code>.</li>
+<li>Khi trạng thái đổi, đẩy sự kiện qua mock <code>/events</code> của PID-00013: <code>research.object_status_changed</code> (<code>objectType</code> evidence, claim, artifact version), <code>workflow.status_changed</code> (workflow kiểm chứng, sửa sơ đồ), <code>project_reference.changed</code>.</li>
+<li>Kịch bản cho test khai qua hàm tạo kho, không qua biến toàn cục: project trống, một trang và nhiều trang, kiểm chứng Failed, workflow sửa sơ đồ Failed, 409, 412.</li>
+<li>Kiểu từ <code>PublicApi</code> của <code>@sires/contracts</code>, không viết tay; đăng ký override qua trường mock của Feature trong <code>apps/web/src/features/research/index.tsx</code>; không khai override cho <code>getTask</code>, <code>getWorkflow</code>, <code>getReferenceDocument</code> (H12).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:typecheck</code> → đạt (override có type)</li>
+<li><code>pnpm nx run @sires/web:test</code> → không có lỗi trùng operation (EC10 của PID-00013)</li>
+<li>Thao tác tay: bật mock khi dev, mở <code>/projects/{projectId}/evidence</code>, <code>/projects/{projectId}/artifacts</code> không cần gateway</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>24 operation có override có trạng thái, dùng chung một kho; test của S02–S08 chạy trên kho này; sự kiện phát khi trạng thái đổi</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00114</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
