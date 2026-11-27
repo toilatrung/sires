@@ -1,0 +1,45 @@
+/* SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+   Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+   SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md */
+
+/* Change Proposal box (PID-00115 S06; Manuscript.html): dashed brand border while Proposed, dashed muted on the
+   ground colour when Outdated (H13). Diff lines are plain text, mono, wrapped (design.md §8). Tokens only. */
+
+.ms-proposal { box-sizing: border-box; margin: 6px 12px 6px 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: var(--sires-surface); border: 1.5px dashed var(--sires-brand); border-radius: var(--sires-radius-card); font: 400 13px/1.5 var(--sires-font); color: var(--sires-ink); white-space: normal; cursor: default; }
+.ms-proposal[data-status="Outdated"] { border-color: var(--sires-muted); background: var(--sires-ground); }
+.ms-proposal[data-status="Accepted"], .ms-proposal[data-status="Rejected"] { border-style: solid; border-color: var(--sires-line); }
+.ms-proposal:focus { outline: none; }
+.ms-proposal:focus-visible { outline: 2px solid var(--sires-brand-line); outline-offset: 2px; }
+.ms-proposal__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--sires-muted); }
+.ms-proposal__kind { font-weight: 600; color: var(--sires-ink); }
+.ms-proposal__meta { margin: 0; font-size: 12px; color: var(--sires-muted); }
+.ms-proposal__summary { margin: 0; font-size: 13px; }
+.ms-proposal__reason { margin: 0; font-size: 13px; font-weight: 600; color: var(--sires-ink); }
+.ms-proposal__diffs { display: flex; flex-direction: column; gap: 8px; }
+.ms-pdiff { display: flex; flex-direction: column; gap: 4px; }
+.ms-pdiff__file { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--sires-muted); }
+.ms-pdiff__file .sires-id { color: var(--sires-ink); }
+.ms-pdiff__tag { padding: 0 6px; border: 1px dashed var(--sires-muted); border-radius: var(--sires-radius-chip); font-size: 11px; }
+.ms-pdiff__hunk { display: flex; flex-direction: column; gap: 2px; }
+.ms-pdiff__at { font-size: 11px; color: var(--sires-muted); }
+.ms-pdiff__lines { margin: 0; padding: 4px 0; background: var(--sires-pdf-paper); border: 1px solid var(--sires-line); border-radius: 6px; font: 12px/1.6 var(--sires-font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ms-pdiff__line { display: block; padding: 0 10px; }
+.ms-pdiff__line[data-kind="add"] { background: var(--sires-brand-tint); }
+.ms-pdiff__line[data-kind="del"] { background: var(--sires-diff-removed); text-decoration: line-through; text-decoration-color: var(--sires-muted); }
+.ms-pdiff__sign { display: inline-block; width: 1.4em; color: var(--sires-muted); }
+.ms-pdiff__bad { background: var(--sires-danger-tint); color: var(--sires-danger-ink); text-decoration: underline dashed var(--sires-danger); text-underline-offset: 3px; }
+.ms-proposal__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ms-proposal__mismatches { margin: 0; padding-left: 18px; font-size: 12px; color: var(--sires-danger-ink); }
+.ms-proposal__warn { margin: 0; font-size: 13px; color: var(--sires-warn); }
+.ms-proposal__notice, .ms-proposal__note { margin: 0; font-size: 13px; color: var(--sires-ink); }
+.ms-proposal__note { color: var(--sires-muted); }
+.ms-proposal__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.ms-proposal__why { flex-basis: 100%; font-size: 12px; color: var(--sires-muted); }
+.ms-proposal__link { padding: 0; border: 0; background: none; font: 500 13px var(--sires-font); color: var(--sires-brand-ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.ms-proposal__link:focus-visible { outline: 2px solid var(--sires-brand-line); outline-offset: 2px; }
+.ms-proposal__textarea { width: 100%; box-sizing: border-box; min-height: 72px; resize: vertical; font: 14px/1.5 var(--sires-font); }
+
+/* Phone (S09): full-width actions, touch height 44–48 px (design.md §5). */
+.ms-proposal[data-variant="mobile"] { margin: 0; padding: 14px; font-size: 14px; }
+.ms-proposal[data-variant="mobile"] .ms-proposal__actions .sires-button { flex: 1 1 140px; height: 46px; }
+.ms-proposal[data-variant="mobile"] .ms-proposal__link { min-height: 44px; display: inline-flex; align-items: center; }

@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 90 trang HTML tĩnh (35 nguồn + 55 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 99 trang HTML tĩnh (35 nguồn + 64 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -54,7 +54,7 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
 | P6 | Evidence | References and Evidence: tab Claims (mặc định) với Inspector của claim Conflicting và thao tác duyệt; biến thể `view`: references (reference của project, chip duyệt và indexing, Unavailable), evidence (Evidence Inspector của một evidence: claim đang dùng, artifact và bản thảo dùng evidence), evidence-stale; `dialog`: accept-claim, link-evidence, remove-reference, exclude-evidence — PID-00114 H4–H6 | UX-EVID-001, UX-CLAIM-001, EVID-INSPECTOR-001, LIB-PROJECT-001 |
 | P7 | Artifacts | Research Artifacts: một dòng mỗi artifact (version mới nhất, “Đang dùng” khi version Accepted khác), lọc theo có hay chưa có version Accepted; phiên bản, provenance (đầu vào artifact version có liên kết), dòng “Dùng trong” — PID-00114 H8 | 5.7, 13 |
-| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; biến thể khung phải build log, lịch sử; proposal citation lỗi, outdated; đang build | 15.7, UX-STATE-001 |
+| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; thanh công cụ có Lưu (số file chưa lưu), Export, nút ẩn vùng phải. Biến thể `rightPane`: build-log, history, compare (so sánh r16 ↔ r18, khôi phục file hoặc toàn bộ), hidden; `proposal`: citation-error, outdated; đang build (không có “Hủy build”, dòng hoạt động gần nhất); `scene`: init, archived, file-menu, new-file, rename, renamed, delete, save-conflict, draft, reject, regenerate, export; `viewport`: tablet (ba tab Tệp, Soạn thảo, Xem), phone (duyệt proposal) — PID-00115 H2–H21 | 15.7, UX-STATE-001, UX-STATE-004, UX-RESP-001 |
 | P9 | ProjectActivity | Agent Activity cấp project: danh sách workflow + Agent List; biến thể đang hoạt động, đã kết thúc | UX-MONITOR-001, UX-MONITOR-004 |
 | P9 | Workflow | Chi tiết workflow wf-52d + Agent Run + Recovery decision. Mặc định Waiting for User; biến thể state running, interrupted; view danh sách bước, thảo luận đang chạy, hoàn tất, Failed, Cancelled; debug | UX-MONITOR-002–004, UX-MONITOR-006, ORCH-DELIB-002, WF-06 |
 | P10 | History | Activity and History | 14.8 |

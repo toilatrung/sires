@@ -191,31 +191,103 @@ body{margin:0;background:#F6F2EE}
 a{color:#025FAC}a:hover{color:#1C1B18}
 </style>
 </helmet>
-<div style="min-height: 900px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+<div style="position: relative; min-height: 900px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+<sc-if value="{{notPhone}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; width: 100%; max-width: {{frameMax}}; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; border-left: {{frameLine}}; border-right: {{frameLine}}">
   <dc-import name="TopBar" mode="project" area="Manuscript" hint-size="100%,57px"></dc-import>
   <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 16px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
       <a href="Overview.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 8px; text-decoration: none; color: #4D4A44"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Project</a>
-      <span data-running="{{building}}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid {{buildBorder}}; color: {{buildColor}}; background: {{buildBg}}; font-size: 12px; font-weight: 600">{{buildLabel}}</span>
-      <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{savedLabel}}</span>
+      <sc-if value="{{hasManuscript}}" hint-placeholder-val="{{ true }}">
+        <span data-running="{{building}}" style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid {{buildBorder}}; color: {{buildColor}}; background: {{buildBg}}; font-size: 12px; font-weight: 600">{{buildLabel}}</span>
+        <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{savedLabel}}</span>
+      </sc-if>
     </div>
-    <div style="display: flex; flex-wrap: wrap; gap: 8px">
-      <div role="tablist" aria-label="Vùng phải" style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
-        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
-          <button role="tab" aria-selected="{{t.sel}}" style="height: 34px; padding: 0 12px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 13px Montserrat, sans-serif">{{t.label}}</button>
-        </sc-for>
-      </div>
-      <sc-if value="{{notBuilding}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Build PDF</button></sc-if>
-      <sc-if value="{{building}}" hint-placeholder-val="{{ false }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy build</button></sc-if>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <sc-if value="{{showPaneTabs}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
+          <div role="tablist" aria-label="Vùng phải" style="display: flex">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+              <button role="tab" aria-selected="{{t.sel}}" style="height: 34px; padding: 0 12px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 13px Montserrat, sans-serif">{{t.label}}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{showHide}}" hint-placeholder-val="{{ true }}"><button aria-label="Ẩn vùng phải" title="Ẩn vùng phải" style="width: 34px; height: 34px; border: 0; border-left: 1px solid #DBD3C7; background: #FFFFFF; color: #4D4A44; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16M10 10l2 2-2 2"/></svg></button></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{showSave}}" hint-placeholder-val="{{ true }}"><button disabled="{{saveDisabled}}" style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: {{saveBg}}; color: {{saveFg}}; font: 500 14px Montserrat, sans-serif">{{saveLabel}}</button></sc-if>
+      <sc-if value="{{hasManuscript}}" hint-placeholder-val="{{ true }}"><button aria-haspopup="menu" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Export<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></sc-if>
+      <sc-if value="{{showBuild}}" hint-placeholder-val="{{ true }}"><button disabled="{{building}}" style="height: 36px; padding: 0 14px; border: 1px solid {{buildBtnBorder}}; border-radius: 6px; background: {{buildBtnBg}}; color: {{buildBtnFg}}; font: 600 14px Montserrat, sans-serif">Build PDF</button></sc-if>
+      <sc-if value="{{building}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #4D4A44">Đang build revision 19</span></sc-if>
     </div>
   </div>
 
+  <sc-if value="{{archived}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 16px 0; padding: 12px 16px; background: #FCF9F5; border: 1.5px solid #4D4A44; border-radius: 8px">
+      <span style="font-size: 14px; line-height: 1.5"><strong>Archived — chỉ đọc.</strong> Bản thảo, Change Proposal và build không đổi được; vẫn xem PDF, Build log, Lịch sử và Export.</span>
+      <a href="Projects.dc.html" style="display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Mở lại ở Research Projects</a>
+    </div>
+  </sc-if>
+  <sc-if value="{{renamed}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 12px 16px 0; padding: 12px 16px; background: #FCF9F5; border: 1.5px solid #9A3412; border-radius: 8px">
+      <span style="font-size: 14px; line-height: 1.5"><strong style="color: #9A3412">Còn trỏ tới tên cũ.</strong> Đã đổi <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">sections/method.tex</code> thành <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">sections/methods.tex</code> (revision 19). <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">main.tex</code> dòng 12 vẫn trỏ tên cũ: build sẽ báo thiếu file cho tới khi sửa.</span>
+      <a href="#" style="display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; color: #025FAC; text-decoration: none; font-size: 14px; font-weight: 600">Mở main.tex:12</a>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isInit}}" hint-placeholder-val="{{ false }}">
+    <main style="flex: 1; padding: 40px 16px">
+      <section aria-labelledby="init-title" style="max-width: 640px; margin: 0 auto; box-sizing: border-box; padding: 24px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; display: flex; flex-direction: column; gap: 16px">
+        <h1 id="init-title" style="margin: 0; font-weight: 600; font-size: 26px">Project chưa có bản thảo</h1>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44">Chọn cách khởi tạo. Chế độ không đổi được sau khi tạo; compiler mặc định pdfLaTeX, bibliography BibTeX với natbib.</p>
+        <div role="radiogroup" aria-labelledby="init-mode" style="display: flex; flex-direction: column; gap: 8px">
+          <span id="init-mode" style="font-size: 13px; font-weight: 600">Chế độ khởi tạo</span>
+          <label style="display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font-size: 14px; line-height: 1.5"><input type="radio" name="init-mode" style="margin-top: 4px"><span><strong>Default</strong><br><span style="color: #4D4A44">Tạo <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">main.tex</code>, <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">bibliography/references.bib</code>, <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">figures/</code> và 5 file trong <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">sections/</code> (introduction, related-work, method, results, conclusion). Build được ngay.</span></span></label>
+          <label style="display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font-size: 14px; line-height: 1.5"><input type="radio" name="init-mode" style="margin-top: 4px"><span><strong>Blank</strong><br><span style="color: #4D4A44">Chỉ tạo <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">main.tex</code> rỗng; cấu hình build trỏ tới file này. Tải lên file .tex, hình đã có sau khi tạo.</span></span></label>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+          <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Khởi tạo bản thảo</button>
+          <span style="font-size: 13px; color: #4D4A44">Chọn Default hoặc Blank trước.</span>
+        </div>
+      </section>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{isTablet}}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 8px 16px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
+      <div role="tablist" aria-label="Vùng làm việc" style="display: inline-flex; border: 1px solid #DBD3C7; border-radius: 6px; overflow: hidden">
+        <sc-for list="{{areaTabs}}" as="t" hint-placeholder-count="3">
+          <button role="tab" aria-selected="{{t.sel}}" style="height: 36px; padding: 0 16px; border: 0; background: {{t.bg}}; color: {{t.fg}}; font: 500 13px Montserrat, sans-serif">{{t.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasManuscript}}" hint-placeholder-val="{{ true }}">
   <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+    <sc-if value="{{showTree}}" hint-placeholder-val="{{ true }}">
     <aside aria-label="Tệp và dàn ý" style="flex: 1 1 200px; max-width: 230px; background: #FCF9F5; border-right: 1px solid #DBD3C7; padding: 12px 8px; display: flex; flex-direction: column; gap: 16px">
       <div style="display: flex; flex-direction: column; gap: 2px">
-        <span style="padding: 0 8px 6px; font-size: 12px; font-weight: 600; color: #4D4A44">Tệp</span>
-        <sc-for list="{{files}}" as="f" hint-placeholder-count="6">
-          <a href="#" style="display: flex; justify-content: space-between; align-items: center; min-height: 34px; padding: 0 8px 0 {{f.pad}}; border-radius: 6px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1C1B18; background: {{f.bg}}"><span>{{f.name}}</span><sc-if value="{{f.mark}}" hint-placeholder-val="{{ false }}"><span style="font: 600 10px Montserrat, sans-serif; color: #025FAC">đề xuất</span></sc-if></a>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 0 6px 8px">
+          <span style="font-size: 12px; font-weight: 600; color: #4D4A44">Tệp</span>
+          <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}">
+            <span style="display: flex; gap: 2px">
+              <button aria-label="Tạo file" title="Tạo file" style="width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #4D4A44; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg></button>
+              <button aria-label="Tạo thư mục" title="Tạo thư mục" style="width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #4D4A44; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/></svg></button>
+              <button aria-label="Tải lên" title="Tải lên hình, file .tex" style="width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: #4D4A44; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></button>
+            </span>
+          </sc-if>
+        </div>
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="8">
+          <div style="display: flex; align-items: center; gap: 2px; border-radius: 6px; background: {{f.bg}}">
+            <a href="#" style="flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 6px; min-height: 34px; padding: 0 8px 0 {{f.pad}}; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1C1B18"><span>{{f.name}}</span><sc-if value="{{f.mark}}" hint-placeholder-val="{{ false }}"><span style="font: 600 10px Montserrat, sans-serif; color: #025FAC">đề xuất</span></sc-if><sc-if value="{{f.ro}}" hint-placeholder-val="{{ false }}"><span style="font: 500 10px Montserrat, sans-serif; color: #4D4A44">chỉ đọc</span></sc-if></a>
+            <sc-if value="{{f.menu}}" hint-placeholder-val="{{ false }}"><button aria-label="Thao tác với {{f.path}}" aria-haspopup="menu" aria-expanded="true" style="width: 30px; height: 30px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></sc-if>
+          </div>
+          <sc-if value="{{f.menu}}" hint-placeholder-val="{{ false }}">
+            <div role="menu" data-popover aria-label="Thao tác với {{f.path}}" style="margin: 2px 0 6px 22px; padding: 4px; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 6px; display: flex; flex-direction: column">
+              <button role="menuitem" style="min-height: 36px; padding: 0 10px; border: 0; border-radius: 4px; background: #E5DED5; color: #1C1B18; text-align: left; font: 500 13px Montserrat, sans-serif">Đổi tên / di chuyển</button>
+              <button role="menuitem" style="min-height: 36px; padding: 0 10px; border: 0; border-radius: 4px; background: transparent; color: #BE123C; text-align: left; font: 500 13px Montserrat, sans-serif">Xóa</button>
+            </div>
+          </sc-if>
         </sc-for>
       </div>
       <div style="display: flex; flex-direction: column; gap: 2px">
@@ -225,12 +297,28 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         </sc-for>
       </div>
     </aside>
+    </sc-if>
 
     <section aria-label="Trình soạn LaTeX" style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; background: #FCF9F5; border-right: 1px solid #DBD3C7">
       <div style="display: flex; align-items: center; gap: 2px; padding: 0 8px; border-bottom: 1px solid #DBD3C7">
-        <span style="height: 38px; display: flex; align-items: center; padding: 0 12px; border-bottom: 2px solid #1C1B18; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500">sections/intro.tex</span>
-        <span style="height: 38px; display: flex; align-items: center; padding: 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4D4A44">main.tex</span>
+        <sc-for list="{{edTabs}}" as="e" hint-placeholder-count="2">
+          <span style="height: 38px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 2px solid {{e.line}}; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: {{e.weight}}; color: {{e.fg}}">{{e.label}}<sc-if value="{{e.dirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="color: #025FAC">●</span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">chưa lưu</span></sc-if></span>
+        </sc-for>
+        <sc-if value="{{archived}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid #DBD3C7; background: #F6F2EE; color: #4D4A44; font-size: 12px; font-weight: 600">Chỉ đọc</span></sc-if>
       </div>
+      <sc-if value="{{showDraft}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 14px 0; padding: 10px 14px; border: 1.5px dashed #025FAC; border-radius: 6px; background: #FFFFFF; font-size: 13px; line-height: 1.5">
+          <span>Có thay đổi chưa lưu của <code style="font-family: 'JetBrains Mono', monospace">sections/intro.tex</code> từ 09:58, giữ trên máy này.</span>
+          <span style="display: flex; gap: 8px"><button style="height: 34px; padding: 0 12px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Khôi phục</button><button style="height: 34px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Bỏ nháp</button></span>
+        </div>
+      </sc-if>
+      <sc-if value="{{showConflict}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" style="display: flex; flex-direction: column; gap: 8px; margin: 10px 14px 0; padding: 12px 14px; border: 1.5px solid #9A3412; border-radius: 6px; background: #FCF9F5; font-size: 13px; line-height: 1.5">
+          <span><strong style="color: #9A3412">sections/intro.tex đã đổi ở nơi khác</strong> — revision 19 · Nguyễn Thanh · 10:02. Chưa lưu; thay đổi của bạn vẫn còn trong editor.</span>
+          <span style="display: flex; flex-wrap: wrap; gap: 8px"><button style="height: 34px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Xem khác biệt</button><button style="height: 34px; padding: 0 12px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Giữ bản của tôi</button><button style="height: 34px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Dùng bản trên server</button></span>
+          <span style="font-size: 12px; color: #4D4A44">Giữ bản của tôi: lưu lên revision 19, bản kia vẫn trong Lịch sử. Dùng bản trên server: bỏ thay đổi của file này sau khi xác nhận.</span>
+        </div>
+      </sc-if>
       <div style="overflow-x: auto; padding: 10px 0; font-family: 'JetBrains Mono', monospace; font-size: 13.5px; line-height: 1.75">
         <sc-for list="{{codeA}}" as="l" hint-placeholder-count="6">
           <div style="display: flex; gap: 14px; padding: 0 14px; white-space: pre"><span style="width: 22px; text-align: right; color: #7A756C; flex-shrink: 0">{{l.n}}</span><span style="color: {{l.color}}">{{l.t}}</span></div>
@@ -246,19 +334,25 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <span style="font-weight: 600; color: {{propBorder}}">Change Proposal · Writing Agent · {{propState}}</span>
             <span>T-2.1 · 2 claim · 3 evidence · 2 file</span>
           </div>
-          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #FFE4E6; color: #9F1239">− Prior work shows retrieval always helps.</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ Retrieval restricted to vetted sources improves factuality \citep{lewis2020rag, asai2024selfrag}.</span></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #FFE4E6; color: #9F1239">− Prior work shows retrieval always helps.</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ Retrieval restricted to vetted sources improves factuality \citep{lewis2020rag, <span style="{{keyStyle}}">{{diffKey}}</span>}.</span></div>
+          <details style="font-size: 13px">
+            <summary style="cursor: pointer; color: #1C1B18">File khác trong proposal: <span style="font-family: 'JetBrains Mono', monospace">sections/related-work.tex</span></summary>
+            <div style="margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #EAF4FE">+ Self-reflective retrieval filters passages before generation \citep{asai2024selfrag}.</span></div>
+          </details>
           <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px">
             <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #0277DD; color: #025FAC; font-weight: 600">Claim Supported</span>
             <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid {{citeBorder}}; color: {{citeColor}}; font-weight: 600">{{citeLabel}}</span>
           </div>
           <sc-if value="{{isOutdated}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; line-height: 1.5">Hết hiệu lực: <span style="font-family: 'JetBrains Mono', monospace">sections/intro.tex</span> đã đổi từ revision 16 (gốc của proposal) sang 18.</span></sc-if>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
             <sc-if value="{{canAccept}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Chấp nhận cả proposal</button></sc-if>
+            <sc-if value="{{unsavedBlocked}}" hint-placeholder-val="{{ false }}"><button disabled style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 13px Montserrat, sans-serif">Chấp nhận cả proposal</button></sc-if>
             <sc-if value="{{citeBlocked}}" hint-placeholder-val="{{ false }}"><button disabled style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 13px Montserrat, sans-serif">Chấp nhận — citation lỗi</button></sc-if>
-            <sc-if value="{{isOutdated}}" hint-placeholder-val="{{ false }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Yêu cầu tạo lại</button></sc-if>
-            <sc-if value="{{notOutdated}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Từ chối</button></sc-if>
+            <sc-if value="{{canRegenerate}}" hint-placeholder-val="{{ false }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">Yêu cầu tạo lại</button></sc-if>
+            <sc-if value="{{canReject}}" hint-placeholder-val="{{ true }}"><button style="height: 36px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Từ chối</button></sc-if>
             <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 36px; padding: 0 6px; font-size: 13px">Xem evidence</a>
           </div>
+          <sc-if value="{{unsavedBlocked}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; line-height: 1.5; color: #4D4A44">Lưu hoặc bỏ thay đổi ở <span style="font-family: 'JetBrains Mono', monospace">sections/intro.tex</span> trước; lưu sẽ làm proposal thành Outdated.</span></sc-if>
         </div>
         <sc-for list="{{codeB}}" as="l" hint-placeholder-count="4">
           <div style="display: flex; gap: 14px; padding: 0 14px; white-space: pre"><span style="width: 22px; text-align: right; color: #7A756C; flex-shrink: 0">{{l.n}}</span><span style="color: {{l.color}}">{{l.t}}</span></div>
@@ -274,7 +368,6 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <span style="font-size: 14px; font-weight: 600">Đang build revision 19 · pdfLaTeX</span>
             <span style="font-size: 13px; color: #4D4A44">System · đã chạy 00:12 · rời trang được, kết quả báo qua notification</span>
             <div data-progress="indeterminate" role="img" aria-label="Chưa biết thời lượng còn lại"></div>
-            <span style="font-size: 12px; color: #4D4A44">Gần nhất 09:52:10 — đang chạy bibtex</span>
           </div>
         </sc-if>
         <article style="background: #FCF9F5; border: 1px solid #DBD3C7; padding: 36px 32px; display: flex; flex-direction: column; gap: 12px; font-family: 'Times New Roman', Times, serif; color: #1C1B18">
@@ -320,42 +413,248 @@ LaTeX Warning: Citation `gao2023survy' undefined.</pre>
         <div style="padding: 12px 18px"><button style="height: 38px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 13px Montserrat, sans-serif">So sánh r16 ↔ r18</button></div>
       </section>
     </sc-if>
+    <sc-if value="{{showCompare}}" hint-placeholder-val="{{ false }}">
+      <section aria-label="So sánh revision" style="flex: 1 1 360px; min-width: 0; background: #FCF9F5; display: flex; flex-direction: column">
+        <div style="padding: 14px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600">So sánh r16 ↔ r18</h2>
+            <button style="min-height: 34px; padding: 0 6px; border: 0; background: transparent; color: #025FAC; font: 600 13px Montserrat, sans-serif">← Lịch sử</button>
+          </div>
+          <span style="font-size: 13px; line-height: 1.5; color: #4D4A44"><strong style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1C1B18">r16</strong> · Nguyễn Thanh · Sửa trực tiếp · main.tex</span>
+          <span style="font-size: 13px; line-height: 1.5; color: #4D4A44"><strong style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #1C1B18">r18</strong> · Nguyễn Thanh · Sửa trực tiếp · method.tex, pipeline.png</span>
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px">
+            <span style="font-size: 13px">2 file khác nhau</span>
+            <button style="height: 34px; padding: 0 12px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 13px Montserrat, sans-serif">Khôi phục toàn bộ về r16</button>
+          </div>
+        </div>
+        <div style="padding: 12px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">sections/method.tex</span><button style="height: 32px; padding: 0 10px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 12px Montserrat, sans-serif">Khôi phục file này về r16</button></div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #FFE4E6; color: #9F1239">− We retrieve passages from every indexed source.</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ We retrieve passages only from Trusted References</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ selected for the project.</span></div>
+        </div>
+        <div style="padding: 12px 18px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px">figures/pipeline.png</span><button style="height: 32px; padding: 0 10px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 12px Montserrat, sans-serif">Khôi phục file này về r16</button></div>
+          <span style="font-size: 13px; color: #4D4A44">File nhị phân đã đổi; không so sánh theo dòng.</span>
+        </div>
+        <p style="margin: 0; padding: 12px 18px; font-size: 12px; line-height: 1.5; color: #4D4A44">Khôi phục tạo một revision mới với actor là bạn; r17, r18 vẫn còn trong lịch sử.</p>
+      </section>
+    </sc-if>
   </div>
+  </sc-if>
 
   <footer style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; padding: 6px 16px; background: #FCF9F5; border-top: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D4A44">
     <span>Active task: T-2.3 · So sánh phương pháp đo</span>
-    <span>pdfLaTeX · natbib · thay đổi chưa lưu được giữ cục bộ</span>
+    <span>{{footerRight}}</span>
   </footer>
 </div>
+</sc-if>
+
+<sc-if value="{{isPhone}}" hint-placeholder-val="{{ false }}">
+<div style="width: 390px; max-width: 100%; min-height: 844px; margin: 0 auto; box-sizing: border-box; display: flex; flex-direction: column; background: #F6F2EE; border-left: 1px solid #DBD3C7; border-right: 1px solid #DBD3C7">
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 16px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
+    <img src="/_blob/4be6b6592c8839a5dc8538b3772a6df0" alt="SIRes" style="height: 26px; width: auto">
+    <button aria-label="Mở menu" style="width: 44px; height: 44px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
+    <a href="Overview.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 6px; text-decoration: none; color: #4D4A44; font-size: 14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Project</a>
+    <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 4px; border: 1.5px solid #1C1B18; font-size: 12px; font-weight: 600">Build OK</span>
+  </div>
+  <main style="flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+    <h1 style="margin: 0; font-weight: 600; font-size: 26px">2 proposal chờ bạn</h1>
+    <article aria-labelledby="mp1" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #FFFFFF; border: 1.5px dashed #025FAC; border-radius: 8px">
+      <span style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: #EAF4FE; color: #025FAC; border: 1px solid #80B9EE; font-size: 11px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>Proposed</span><span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">09:20</span></span>
+      <h2 id="mp1" style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.35">Sửa mục 1 Introduction</h2>
+      <span style="font-size: 13px; line-height: 1.5; color: #4D4A44">Writing Agent · <a href="Plan.dc.html">T-2.1</a> · 2 claim · 3 evidence · 2 file</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">sections/intro.tex</span>
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere"><span style="display: block; background: #FFE4E6; color: #9F1239">− Prior work shows retrieval always helps.</span><span style="display: block; background: #EAF4FE; color: #1C1B18">+ Retrieval restricted to vetted sources improves factuality \citep{lewis2020rag, asai2024selfrag}.</span></div>
+      <details style="font-size: 13px"><summary style="cursor: pointer; min-height: 32px">File khác: <span style="font-family: 'JetBrains Mono', monospace">sections/related-work.tex</span></summary><div style="margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap"><span style="display: block; background: #EAF4FE">+ Self-reflective retrieval filters passages before generation \citep{asai2024selfrag}.</span></div></details>
+      <span style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #0277DD; color: #025FAC; font-weight: 600">Claim Supported</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #1C1B18; font-weight: 600">Citation: 2/2 phân giải</span></span>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <button style="min-height: 48px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Chấp nhận cả proposal</button>
+        <button style="min-height: 48px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Từ chối</button>
+      </div>
+      <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 14px">Xem evidence</a>
+    </article>
+    <article aria-labelledby="mp2" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; background: #FFFFFF; border: 1.5px dashed #025FAC; border-radius: 8px">
+      <span style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: #EAF4FE; color: #025FAC; border: 1px solid #80B9EE; font-size: 11px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>Proposed</span><span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">09:35</span></span>
+      <h2 id="mp2" style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.35">Viết đoạn Related Work về self-RAG</h2>
+      <span style="font-size: 13px; color: #4D4A44">Writing Agent · <a href="Plan.dc.html">T-2.1</a> · 1 file</span>
+      <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #BE123C; background: #FFF1F2; color: #9F1239; font-size: 12px; font-weight: 600">Citation lỗi: asai2024selfrg</span>
+      <button aria-expanded="false" style="min-height: 44px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Xem diff và quyết định</button>
+    </article>
+    <article aria-labelledby="mp3" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; background: #F6F2EE; border: 1.5px dashed #4D4A44; border-radius: 8px">
+      <span style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #4D4A44; color: #4D4A44; font-size: 11px; font-weight: 600">Outdated</span><span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">08:10</span></span>
+      <h2 id="mp3" style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.35">Rút gọn đoạn mở đầu</h2>
+      <span style="font-size: 13px; line-height: 1.5">Hết hiệu lực: <span style="font-family: 'JetBrains Mono', monospace">sections/intro.tex</span> đã đổi từ revision 16 (gốc của proposal) sang 18.</span>
+      <button style="min-height: 48px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Yêu cầu tạo lại</button>
+    </article>
+    <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #4D4A44">Trên điện thoại: xem và quyết định proposal. Soạn bản thảo dùng máy tính hoặc tablet.</p>
+  </main>
+  <nav aria-label="Điều hướng chính" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #FCF9F5; border-top: 1px solid #DBD3C7">
+    <a href="Dashboard.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; font-size: 12px; text-decoration: none; color: #4D4A44">Dashboard</a>
+    <a href="MobilePending.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; font-size: 12px; text-decoration: none; color: #4D4A44">Pending · 8</a>
+    <a href="GlobalActivity.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; font-size: 12px; text-decoration: none; color: #4D4A44">Agent</a>
+    <a href="Projects.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; font-size: 12px; text-decoration: none; color: #4D4A44">Projects</a>
+  </nav>
+</div>
+</sc-if>
+
+<sc-if value="{{hasDialog}}" hint-placeholder-val="{{ false }}">
+  <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+    <sc-if value="{{dlgNewFile}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-new" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-new" style="margin: 0; font-weight: 600; font-size: 22px">Tạo file</h3>
+        <label for="new-path" style="font-size: 13px; font-weight: 600">Đường dẫn trong bản thảo</label>
+        <input id="new-path" value="../notes.tex" aria-invalid="true" aria-describedby="new-path-err" style="height: 40px; box-sizing: border-box; padding: 0 12px; background: #E5DED5; border: 1.5px solid #BE123C; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace; color: #1C1B18">
+        <span id="new-path-err" role="alert" style="font-size: 13px; line-height: 1.5; color: #BE123C">Đường dẫn không được ra ngoài thư mục bản thảo (có <code style="font-family: 'JetBrains Mono', monospace">../</code>). Chưa tạo file.</span>
+        <span style="font-size: 13px; color: #4D4A44">Đường dẫn tương đối, ví dụ <code style="font-family: 'JetBrains Mono', monospace">sections/discussion.tex</code>; không bắt đầu bằng <code style="font-family: 'JetBrains Mono', monospace">/</code>.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Tạo file</button>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{dlgRename}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-rename" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-rename" style="margin: 0; font-weight: 600; font-size: 22px">Đổi tên hoặc di chuyển file</h3>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #4D4A44">sections/method.tex</span>
+        <label for="rename-path" style="font-size: 13px; font-weight: 600">Đường dẫn mới</label>
+        <input id="rename-path" value="sections/methods.tex" style="height: 40px; box-sizing: border-box; padding: 0 12px; background: #E5DED5; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace; color: #1C1B18">
+        <div style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1.5px solid #9A3412; border-radius: 6px; font-size: 13px; line-height: 1.5">
+          <strong style="color: #9A3412">Đang được tham chiếu ở 1 nơi</strong>
+          <span><code style="font-family: 'JetBrains Mono', monospace">main.tex</code> dòng 12: <code style="font-family: 'JetBrains Mono', monospace">\input{sections/method}</code></span>
+          <span>Sau khi đổi tên, build sẽ báo thiếu file cho tới khi bạn sửa tham chiếu này.</span>
+        </div>
+        <span style="font-size: 13px; color: #4D4A44">Đổi tên tạo một revision mới.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Giữ tên cũ</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Đổi tên</button>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{dlgDelete}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-delete" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-delete" style="margin: 0; font-weight: 600; font-size: 22px">Xóa sections/method.tex?</h3>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6">
+          <li>File chuyển sang Deleted trong 1 revision mới; khôi phục được từ Lịch sử.</li>
+          <li>Đang được tham chiếu ở <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px">main.tex</code> dòng 12: build sẽ báo thiếu file.</li>
+        </ul>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Giữ file</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Xóa file</button>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{dlgReject}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-reject" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-reject" style="margin: 0; font-weight: 600; font-size: 22px">Từ chối Change Proposal?</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Proposal của Writing Agent cho T-2.1 (2 file). Bản thảo không đổi. Không hoàn tác được; muốn giữ một phần, yêu cầu proposal nhỏ hơn hoặc sửa trực tiếp file.</p>
+        <label for="reject-reason" style="font-size: 13px; font-weight: 600">Lý do (tùy chọn)</label>
+        <textarea id="reject-reason" rows="3" style="box-sizing: border-box; padding: 10px 12px; background: #E5DED5; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px/1.5 Montserrat, sans-serif; color: #1C1B18; resize: vertical"></textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Giữ proposal</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Từ chối proposal</button>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{dlgRegenerate}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-regen" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-regen" style="margin: 0; font-weight: 600; font-size: 22px">Yêu cầu Writing Agent tạo lại</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44">Gửi tới Orchestrator trong Project AI Chat, kèm Task T-2.1. Sửa được chỉ dẫn trước khi gửi.</p>
+        <label for="regen-text" style="font-size: 13px; font-weight: 600">Chỉ dẫn</label>
+        <textarea id="regen-text" rows="5" style="box-sizing: border-box; padding: 10px 12px; background: #E5DED5; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px/1.5 Montserrat, sans-serif; color: #1C1B18; resize: vertical">Tạo lại Change Proposal cho sections/intro.tex trên revision 18. Proposal cũ (gốc revision 16): “Rút gọn đoạn mở đầu”, thay câu “Prior work shows retrieval always helps.” bằng câu có citation tới Trusted Reference.</textarea>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Hủy</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Gửi yêu cầu</button>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{dlgExport}}" hint-placeholder-val="{{ false }}">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-export" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 12px">
+        <h3 id="dlg-export" style="margin: 0; font-weight: 600; font-size: 22px">PDF thuộc revision 16</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Revision hiện hành là 18. PDF chưa có thay đổi của revision 17, 18 (build revision 17 lỗi lúc 08:52).</p>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Zip mã nguồn (.tex, .bib) luôn lấy revision hiện hành.</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Tải PDF revision 16</button>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Build revision 18</button>
+        </div>
+      </section>
+    </sc-if>
+  </div>
+</sc-if>
+</div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"rightPane":{"editor":"enum","options":["pdf","build-log","history"],"default":"pdf"},"proposal":{"editor":"enum","options":["ok","citation-error","outdated"],"default":"ok"},"building":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"rightPane":{"editor":"enum","options":["pdf","build-log","history","compare","hidden"],"default":"pdf"},"proposal":{"editor":"enum","options":["ok","citation-error","outdated"],"default":"ok"},"building":{"editor":"boolean","default":false},"scene":{"editor":"enum","options":["workspace","init","archived","file-menu","new-file","rename","renamed","delete","save-conflict","draft","reject","regenerate","export"],"default":"workspace"},"viewport":{"editor":"enum","options":["desktop","tablet","phone"],"default":"desktop"},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const pane = this.props.rightPane ?? 'pdf';
-    const p = this.props.proposal ?? 'ok';
+    const scene = this.props.scene ?? 'workspace';
+    const vp = this.props.viewport ?? 'desktop';
+    // Regenerate request starts from an Outdated proposal (PID-00115 H13).
+    const p = scene === 'regenerate' ? 'outdated' : (this.props.proposal ?? 'ok');
     const cmd = '#025FAC', txt = '#1C1B18', dim = '#4D4A44';
     const line = (n, t, color) => ({ n: String(n), t, color: color || txt });
-    const failed = pane === 'build-log';
+    const isPhone = vp === 'phone', isTablet = vp === 'tablet';
+    const isInit = scene === 'init', archived = scene === 'archived', renamed = scene === 'renamed';
+    const canEdit = !archived;
+    // Build log tab and the export dialog show the moment after build r17 failed; the PDF of r16 is kept.
+    const failed = pane === 'build-log' || scene === 'export';
     // Build in progress (UX-STATE-001): revision 19 saved 09:52 is building; the preview keeps revision 18.
-    const building = !!this.props.building && !failed;
+    // No cancel button and no "latest activity" line: the contract has neither (PID-00115 H15).
+    const building = !!this.props.building && !failed && !isInit;
+    // Unsaved files: main.tex in the default workspace; sections/intro.tex when saving hits a newer revision.
+    const introDirty = scene === 'save-conflict';
+    const mainDirty = scene === 'workspace' && !building;
+    const unsaved = (introDirty ? 1 : 0) + (mainDirty ? 1 : 0);
+    const rightPane = isTablet ? 'none' : pane;
+    const sel = (k, cur) => ({ sel: k === cur ? 'true' : 'false', bg: k === cur ? '#1C1B18' : '#FFFFFF', fg: k === cur ? '#FFFFFF' : '#4D4A44' });
+    const dialogs = { 'new-file': 'dlgNewFile', rename: 'dlgRename', delete: 'dlgDelete', reject: 'dlgReject', regenerate: 'dlgRegenerate', export: 'dlgExport' };
+    const dlg = isPhone ? '' : (dialogs[scene] || '');
+    const outdated = p === 'outdated';
+    const acts = canEdit;
     return {
+      isPhone, notPhone: !isPhone, isTablet, isInit, archived, renamed, canEdit,
+      hasManuscript: !isInit,
+      frameMax: isTablet ? '1024px' : 'none', frameLine: isTablet ? '1px solid #DBD3C7' : '0',
       building, notBuilding: !building,
-      savedLabel: building ? 'revision 19 · đã lưu 09:52' : 'revision 18 · đã lưu 09:41',
-      pdfRev: building ? ' · revision 18 (bản build gần nhất)' : '',
+      savedLabel: building ? 'revision 19 · đã lưu 09:52' : renamed ? 'revision 19 · đã lưu 10:05' : 'revision 18 · đã lưu 09:41',
+      pdfRev: building ? ' · revision 18 (bản build gần nhất)' : failed ? ' · revision 16' : '',
       buildBg: building ? '#EAF4FE' : 'transparent',
-      showPdf: pane === 'pdf', showLog: failed, showHistory: pane === 'history',
-      tabs: [['pdf', 'PDF'], ['build-log', 'Build log'], ['history', 'Lịch sử']].map(([k, label]) => ({ label, sel: k === pane ? 'true' : 'false', bg: k === pane ? '#1C1B18' : '#FFFFFF', fg: k === pane ? '#FFFFFF' : '#4D4A44' })),
       buildLabel: building ? 'Đang build · 00:12' : failed ? 'Build lỗi · 08:52' : 'Build OK · 09:41', buildBorder: building ? '#0277DD' : failed ? '#BE123C' : '#1C1B18', buildColor: failed ? '#BE123C' : '#1C1B18',
-      propState: p === 'outdated' ? 'Outdated' : 'Proposed', propBorder: p === 'outdated' ? '#4D4A44' : '#025FAC', propBg: p === 'outdated' ? '#F6F2EE' : '#FFFFFF',
-      isOutdated: p === 'outdated', notOutdated: p !== 'outdated', canAccept: p === 'ok', citeBlocked: p === 'citation-error',
+      showPaneTabs: !isInit && !isTablet,
+      tabs: [['pdf', 'PDF'], ['build-log', 'Build log'], ['history', 'Lịch sử']].map(([k, label]) => ({ label, ...sel(k, pane === 'compare' ? 'history' : pane) })),
+      showHide: pane !== 'hidden',
+      areaTabs: [['files', 'Tệp'], ['editor', 'Soạn thảo'], ['view', 'Xem']].map(([k, label]) => ({ label, ...sel(k, 'editor') })),
+      showSave: !isInit && canEdit, saveDisabled: unsaved === 0, saveLabel: unsaved ? 'Lưu (' + unsaved + ')' : 'Lưu',
+      saveBg: unsaved ? '#FCF9F5' : '#F6F2EE', saveFg: unsaved ? '#1C1B18' : '#7A756C',
+      showBuild: !isInit && canEdit,
+      buildBtnBorder: building ? '#DBD3C7' : '#0277DD', buildBtnBg: building ? '#F6F2EE' : '#0277DD', buildBtnFg: building ? '#7A756C' : '#FFFFFF',
+      showTree: !isTablet,
+      showPdf: rightPane === 'pdf', showLog: rightPane === 'build-log', showHistory: rightPane === 'history', showCompare: rightPane === 'compare',
+      showDraft: scene === 'draft', showConflict: introDirty,
+      edTabs: [
+        { label: 'sections/intro.tex', line: '#1C1B18', weight: '500', fg: '#1C1B18', dirty: introDirty },
+        { label: 'main.tex', line: 'transparent', weight: '400', fg: '#4D4A44', dirty: mainDirty }
+      ],
+      propState: outdated ? 'Outdated' : 'Proposed', propBorder: outdated ? '#4D4A44' : '#025FAC', propBg: outdated ? '#F6F2EE' : '#FFFFFF',
+      isOutdated: outdated,
+      canAccept: acts && p === 'ok' && !introDirty, unsavedBlocked: acts && p === 'ok' && introDirty,
+      citeBlocked: acts && p === 'citation-error', canRegenerate: acts && outdated, canReject: acts && !outdated,
+      diffKey: p === 'citation-error' ? 'asai2024selfrg' : 'asai2024selfrag',
+      keyStyle: p === 'citation-error' ? 'border-bottom: 2px dashed #BE123C; color: #BE123C' : '',
       citeLabel: p === 'citation-error' ? 'Citation lỗi: asai2024selfrg' : 'Citation: 2/2 phân giải', citeBorder: p === 'citation-error' ? '#BE123C' : '#1C1B18', citeColor: p === 'citation-error' ? '#BE123C' : '#1C1B18',
+      footerRight: isInit ? 'Chưa có bản thảo' : 'pdfLaTeX · natbib · thay đổi chưa lưu được giữ cục bộ',
+      hasDialog: !!dlg, dlgNewFile: dlg === 'dlgNewFile', dlgRename: dlg === 'dlgRename', dlgDelete: dlg === 'dlgDelete',
+      dlgReject: dlg === 'dlgReject', dlgRegenerate: dlg === 'dlgRegenerate', dlgExport: dlg === 'dlgExport',
       files: [
-        { name: 'main.tex', pad: '8px', bg: 'transparent', mark: false },
-        { name: 'references.bib', pad: '8px', bg: 'transparent', mark: false },
-        { name: 'sections/', pad: '8px', bg: 'transparent', mark: false },
-        { name: 'intro.tex', pad: '22px', bg: '#EAF4FE', mark: true },
-        { name: 'method.tex', pad: '22px', bg: 'transparent', mark: false },
-        { name: 'figures/', pad: '8px', bg: 'transparent', mark: false }
+        { name: 'main.tex', path: 'main.tex', pad: '8px', bg: 'transparent', mark: false, ro: false, menu: false },
+        { name: 'bibliography/', path: 'bibliography/', pad: '8px', bg: 'transparent', mark: false, ro: false, menu: false },
+        { name: 'references.bib', path: 'bibliography/references.bib', pad: '22px', bg: 'transparent', mark: false, ro: true, menu: false },
+        { name: 'sections/', path: 'sections/', pad: '8px', bg: 'transparent', mark: false, ro: false, menu: false },
+        { name: 'intro.tex', path: 'sections/intro.tex', pad: '22px', bg: '#EAF4FE', mark: true, ro: false, menu: false },
+        { name: 'related-work.tex', path: 'sections/related-work.tex', pad: '22px', bg: 'transparent', mark: true, ro: false, menu: false },
+        { name: renamed ? 'methods.tex' : 'method.tex', path: renamed ? 'sections/methods.tex' : 'sections/method.tex', pad: '22px', bg: 'transparent', mark: false, ro: false, menu: scene === 'file-menu' },
+        { name: 'figures/', path: 'figures/', pad: '8px', bg: 'transparent', mark: false, ro: false, menu: false },
+        { name: 'pipeline.png', path: 'figures/pipeline.png', pad: '22px', bg: 'transparent', mark: false, ro: false, menu: false }
       ],
       outline: ['1 Introduction', '2 Related Work', '3 Method', '4 Results', '5 Discussion'],
       codeA: [
@@ -370,10 +669,10 @@ class Component extends DCLogic {
         line(9, ''),
         line(10, '% Active task T-2.3 — so sánh phương pháp đo', dim),
         line(11, 'Prior work shows retrieval always helps.'),
-        line(12, '\\input{sections/method}', cmd)
+        line(12, '\\subsection{Contributions}', cmd)
       ],
       revs: [
-        { n: '18', actor: 'Nguyễn Thanh', time: '09:41', src: 'Sửa trực tiếp · method.tex', sel: true },
+        { n: '18', actor: 'Nguyễn Thanh', time: '09:41', src: 'Sửa trực tiếp · method.tex, pipeline.png', sel: true },
         { n: '17', actor: 'Writing Agent', time: '08:50', src: 'Proposal đã chấp nhận · T-2.1', sel: false },
         { n: '16', actor: 'Nguyễn Thanh', time: '30/10 17:02', src: 'Sửa trực tiếp · main.tex', sel: true },
         { n: '15', actor: 'System', time: '20/10 10:00', src: 'Khởi tạo Default', sel: false }
