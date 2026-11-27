@@ -15,7 +15,8 @@ type SourceUnavailable = NonNullable<
   LibraryInternal.operations['searchSourcesTool']['responses'][200]['content']['application/json']['unavailable']
 >;
 export type SourceErrorCode = NonNullable<SourceUnavailable['code']>;
-export type SourceAdapterKey = 'scholar_intermediary' | 'openalex' | 'semantic_scholar';
+/** Sources since DEC-60: OpenAlex (default) and Google Scholar through an intermediary; Semantic Scholar is dropped. */
+export type SourceAdapterKey = 'scholar_intermediary' | 'openalex';
 export type SourceOperation = 'search' | 'getRecord' | 'listAuthorPublications';
 
 export interface SourcePage {
@@ -67,7 +68,6 @@ export interface SourceCall {
 const SOURCE_NAME: Record<SourceAdapterKey, string> = {
   scholar_intermediary: 'google_scholar',
   openalex: 'openalex',
-  semantic_scholar: 'semantic_scholar',
 };
 
 export class FakeSourceAdapter implements SourceAdapter {
