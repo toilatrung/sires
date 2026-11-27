@@ -3915,6 +3915,8 @@ paths:
       description: |
         Thêm, sửa, đổi tên, xóa file trong một revision. `baseRevisionId` khác revision hiện hành trả
         `409 base_revision_mismatch`. Change Proposal đang Proposed trên file bị đổi chuyển Outdated.
+        Khôi phục một file (văn bản hoặc nhị phân) hoặc toàn bộ bản thảo về revision cũ cũng đi qua operation này, bằng
+        `FileChange.restoreFromRevisionId` (MS-REVISION-001).
       x-requirements:
         - MS-EDITOR-001
         - MS-REVISION-001
@@ -7121,7 +7123,9 @@ components:
               $ref: '#/components/schemas/Timestamp'
             deepLink:
               type: string
-              description: Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4).
+              description: |
+                Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4). Với `manuscript_change_proposal`:
+                `/projects/{projectId}/manuscript?proposal={proposalId}` (MS-DIFF-001).
     WorkflowType:
       type: string
       description: |
@@ -9206,6 +9210,9 @@ components:
         - Failed
     BuildIssue:
       type: object
+      description: |
+        Lỗi hoặc cảnh báo đã phân tích từ log (MS-BUILD-001). Giao diện dựng tiêu đề và câu giải thích theo ngôn ngữ giao diện từ
+        `code` và `params` (UX-MS-004, UX-I18N-002); log gốc xem bằng `getBuildLog`.
       properties:
         severity:
           type: string
@@ -9218,15 +9225,42 @@ components:
           type: integer
         code:
           type: string
+          description: |
+            Mã ổn định để client dịch. Danh mục cho lỗi phổ biến, phân loại bằng quy tắc xác định (MS-BUILD-001, MS-BUILDENV-001):
+            `unbalanced_braces` (thiếu hoặc thừa dấu ngoặc); `undefined_control_sequence` (lệnh không xác định; `params.command`);
+            `missing_file` (không tìm thấy file được `\input`, `\include`, `\includegraphics`; `params.path`); `missing_package`
+            (package chưa được nạp hoặc không có trong bộ TeX Live của build; `params.package`, thêm `params.command` khi biết lệnh cần
+            package); `undefined_citation` (citation key không có trong bibliography; `params.key`); `shell_escape_disabled` (lệnh cần
+            shell-escape không được chạy; `params.command`); `path_outside_manuscript` (đọc file ngoài thư mục Manuscript;
+            `params.path`); `timeout` (quá thời gian; `params.limit`); `memory_limit` (quá bộ nhớ, kể cả TeX hết dung lượng trong;
+            `params.limit`, `params.reason`); `infrastructure_unavailable` (không cấp được môi trường build). Mã ngoài danh mục là lỗi
+            chưa có quy tắc xác định: client hiện tiêu đề chung theo `severity` kèm mã.
           examples:
+            - missing_package
             - undefined_citation
             - missing_file
             - timeout
             - memory_limit
+        params:
+          type: object
+          description: |
+            Tham số để dựng câu theo ngôn ngữ giao diện, khóa theo `code`: `package`, `path`, `key`, `command`, `limit` (giới hạn đã
+            vượt: số giây với `timeout`, số MB với `memory_limit`), `reason` (với `memory_limit`: `tex_capacity` khi TeX hết dung lượng
+            trong, `memory` khi chạm giới hạn bộ nhớ của môi trường build). Giá trị giữ nguyên văn từ tài liệu hoặc log, không dịch.
+          additionalProperties:
+            type: string
+          examples:
+            - package: booktabs
+              command: \toprule
         message:
           type: string
+          description: Thông báo gốc trích từ log của compiler, không dịch.
         friendlyMessage:
           type: string
+          description: |
+            Gợi ý giải thích thêm, có thể do agent soạn cho lỗi ngoài danh mục (MS-BUILD-001: “ghi rõ là gợi ý”). Viết theo
+            `Preferences.uiLanguage` của tài khoản lúc build, không dịch lại khi đổi ngôn ngữ; không thay câu giao diện dựng từ
+            `code`, `params`.
     Build:
       type: object
       readOnly: true
@@ -9368,6 +9402,9 @@ components:
           type: integer
     FileChange:
       type: object
+      description: |
+        Một thay đổi file. Với `add`, `modify` gửi đúng một nguồn nội dung: `content` (văn bản), `fileUploadId` (file vừa tải lên)
+        hoặc `restoreFromRevisionId` (nội dung của file ở một revision cũ).
       required:
         - path
         - operation
@@ -9390,6 +9427,13 @@ components:
         fileUploadId:
           $ref: '#/components/schemas/Id'
           description: File nhị phân (hình) đã tải lên.
+        restoreFromRevisionId:
+          $ref: '#/components/schemas/Id'
+          writeOnly: true
+          description: |
+            Khôi phục (MS-REVISION-001): với `add`, `modify`, nội dung (văn bản hoặc nhị phân) lấy từ file có cùng `path` ở revision
+            này của cùng Manuscript, thay cho `content`, `fileUploadId`. Revision không thuộc Manuscript hoặc không có file `path`
+            trả `400 validation_failed`. Không dùng cho `bibliography/references.bib` (System sinh lại từ Bibliography Entry, MS-BIB-001).
         beforeHash:
           type: string
         afterHash:
@@ -9422,6 +9466,10 @@ components:
             - direct_edit
             - change_proposal
             - init
+          description: |
+            Nguồn của revision (PRD 18.1). Chèn sơ đồ (MS-DIAGRAM-001) đi qua Change Proposal tạo bởi `insertDiagramIntoManuscript`,
+            nên revision có `source = change_proposal` và `artifactVersionIds` khác rỗng; giao diện ghi nguồn này là “Chèn sơ đồ”
+            (MS-REVISION-001). Khôi phục về revision cũ (`restoreFromRevisionId`) là `direct_edit`, actor Researcher.
         changeProposalId:
           $ref: '#/components/schemas/Id'
         taskId:
@@ -9441,6 +9489,9 @@ components:
       description: |
         Researcher sửa trực tiếp (MS-EDITOR-001). Mọi thay đổi file tạo một Manuscript Revision (MS-REVISION-001).
         `baseRevisionId` phải là revision hiện hành, nếu không trả 409 base_revision_mismatch. Xóa file thuộc APR-08 (xóa mềm).
+        Khôi phục một file hoặc toàn bộ bản thảo về revision cũ là một revision mới, lịch sử giữ nguyên (MS-REVISION-001): mỗi file
+        khác revision đích gửi `modify` (hoặc `add` nếu file đã xóa) kèm `restoreFromRevisionId`; khôi phục toàn bộ thì file không
+        có ở revision đích gửi `delete`.
       required:
         - baseRevisionId
         - changes
@@ -9463,17 +9514,26 @@ components:
         - Outdated
     DiffHunk:
       type: object
+      description: |
+        Một khối thay đổi theo unified diff: `oldStart`, `oldLines`, `newStart`, `newLines` là bốn số của dòng đầu khối
+        `@@ -oldStart,oldLines +newStart,newLines @@`.
       properties:
         oldStart:
           type: integer
         oldLines:
           type: integer
+          description: Số dòng ngữ cảnh và dòng bỏ.
         newStart:
           type: integer
         newLines:
           type: integer
+          description: Số dòng ngữ cảnh và dòng thêm.
         lines:
           type: array
+          description: |
+            Các dòng theo quy ước unified diff: ký tự đầu `+` (dòng thêm), `-` (dòng bỏ) hoặc dấu cách (dòng ngữ cảnh, không đổi),
+            tiếp theo là nội dung dòng, không kèm ký tự xuống dòng. Dòng bắt đầu bằng `\` là ghi chú (ví dụ
+            `\ No newline at end of file`), không tính vào `oldLines`, `newLines`.
           items:
             type: string
     ChangeProposal:

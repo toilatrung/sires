@@ -49,6 +49,17 @@ Theo “Phải sửa ở nguồn” của PID-00114 (khu vực research; H5–H8
 - `internal/research.yaml` (`createClaimsBatch`): mỗi claim nhận `anchor {charStart, charEnd}` trong `content` của artifact version ở `artifactOutputIndex`; thêm SYN-REVIEW-001 vào `x-requirements`. `paths/14-…` (`acceptArtifactVersion`): mô tả ghi điều kiện `validation.status = valid`.
 - Phía backend: PID-00106 (Artifact: `validation`, `diagramType`, `claimAnchors`, `manuscriptUsages`), PID-00107 (kiểm nguồn khi lưu), PID-00078 (Claim: `needsReviewReasons`, `supportOverride`, `anchor`), PID-00094 (`details`), PID-00052 (`linkedArtifactVersions`), PID-00046 (`Workflow.subject`), PID-00120 (Synthesis Agent gửi `anchor`). Đường dữ liệu `ManuscriptUsage` từ manuscript sang research chưa có; bổ sung khi làm hợp đồng manuscript (PID-00079). DDL tham chiếu (DEC-57) chưa có cột cho `validation`, `diagramType`, vị trí claim và `Workflow.subject`: luồng backend ghi DBQ khi hiện thực.
 - Ticket cập nhật: PID-00114 (mục 5, S01, S06, S07, EC34, EC38, EC39, acceptance, brief, designs/notes). `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint `openapi.yaml`, `internal/*.yaml`, `events/asyncapi.yaml` sạch).
+### Thay đổi gần nhất — lỗi build, khôi phục, diff, nguồn revision cho PID-00115 (27/11/2026)
+
+Theo “Phải sửa ở nguồn” của PID-00115 (mục 1, 3, 6, 7, 9; H11, H14, H16), chốt theo đề xuất, PO ủy quyền 26/11/2026.
+
+- `components/schemas/manuscript.yaml#/BuildIssue`: danh mục `code` cho lỗi phổ biến (`unbalanced_braces`, `undefined_control_sequence`, `missing_file`, `missing_package`, `undefined_citation`, `shell_escape_disabled`, `path_outside_manuscript`, `timeout`, `memory_limit`, `infrastructure_unavailable`; MS-BUILD-001, MS-BUILDENV-001), mã ngoài danh mục hiện tiêu đề chung; thêm `params` (đối tượng chuỗi: `package`, `path`, `key`, `command`, `limit`, `reason`) để giao diện dựng câu theo ngôn ngữ giao diện (UX-MS-004, UX-I18N-002); `message` là thông báo gốc của compiler; `friendlyMessage` là gợi ý, có thể do agent, viết theo `Preferences.uiLanguage` lúc build. `code` vẫn là chuỗi. Dùng chung với `SandboxResult.issues` (`internal/schemas.yaml`). Phía backend: PID-00108 (sandbox-runner, manuscript).
+- `FileChange.restoreFromRevisionId` (chỉ ghi): khôi phục file văn bản hoặc nhị phân về nội dung của revision cũ; `RevisionCreate` và `commitManuscriptChanges` mô tả khôi phục một file hoặc toàn bộ bản thảo bằng một revision mới (MS-REVISION-001). Phía backend: PID-00053.
+- `DiffHunk`: mô tả quy ước unified diff cho `lines` và bốn số của dòng `@@`.
+- `ManuscriptRevision.source`: giữ ba giá trị như PRD 18.1 và DDL `manuscript.sql` (CHECK của `source`); mô tả ghi chèn sơ đồ là `change_proposal` có `artifactVersionIds`, khôi phục là `direct_edit`. `manual_submission` của MS-REVISION-001 không thêm (là loại Artifact của research, chưa có luồng tạo revision; chờ PO).
+- `components/schemas/project.yaml#/PendingAction.deepLink`: mô tả đường dẫn của `manuscript_change_proposal` là `/projects/{projectId}/manuscript?proposal={proposalId}` (PID-00115 mục 9, H11).
+- Chưa sửa: ánh xạ citation tới claim tại vị trí và vị trí citation trong PDF (mục 2) vì cần mô hình dữ liệu mới (DBQ), chờ PO.
+- Tương thích ngược: chỉ thêm trường tùy chọn và mô tả. Lint `openapi.yaml`, `internal/manuscript.yaml`, `events/asyncapi.yaml` sạch; `dist/openapi.bundled.yaml` dựng lại.
 
 ### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
