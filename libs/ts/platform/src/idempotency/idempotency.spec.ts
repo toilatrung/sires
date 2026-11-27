@@ -44,7 +44,7 @@ class NoteController {
   }
 }
 
-describe('Idempotency-Key trên PostgreSQL thật (PID-00002 S03)', { timeout: 30_000 }, () => {
+describe('Idempotency-Key trên PostgreSQL thật (PID-00002 S03)', () => {
   let stack: MessagingTestStack;
   let app: NestFastifyApplication;
   let url: string;
@@ -78,7 +78,7 @@ describe('Idempotency-Key trên PostgreSQL thật (PID-00002 S03)', { timeout: 3
   afterAll(async () => {
     await app?.close();
     await stack?.stop();
-  }, 60_000);
+  });
 
   beforeEach(() => {
     calls.create = 0;

@@ -1,10 +1,11 @@
 # PID-00021 — Báo cáo thực thi
 
-**Trạng thái:** Bị chặn — EC01: chưa có key chính thức Anthropic, Google, OpenAI; key cổng trung gian không có kênh Claude, cổng không giữ structured output của Gemini. PO cho merge kết luận một phần (21/11/2026, Lần 2)
+**Trạng thái:** Xong — chờ QC (Lần 3, 27/11/2026): chạy qua proxy theo D-KEY (PC-05 S-K1, S-K2, S-DK). OpenAI đạt, đo qua proxy; Claude, Gemini không đo được qua proxy, kết luận chuyển sang ô Hội tụ của PID-00070; G5, G6, G8 đã sửa
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Luồng:** `agent-core` · **Giai đoạn:** PH-01
-- **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main`
-- **Cập nhật:** 21/11/2026
+- **Nhánh:** `agent-core/spk-01-providers` (đã commit, đã merge `origin/main` tại `1fe6d66`) · **PR:** [#55](https://github.com/toilatrung/sires/pull/55) → `main` (Lần 1, 2)
+- **Nhánh Lần 3:** `agent-core/spk-01-lan-3`, xếp chồng trên [#118](https://github.com/toilatrung/sires/pull/118) (nhánh `dev-tools/provider-keys`: đọc file key, sửa G9) · **PR:** [#139](https://github.com/toilatrung/sires/pull/139) → `main`
+- **Cập nhật:** 27/11/2026 (Lần 3)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
@@ -52,10 +53,10 @@ Cùng schema `ResearchAnswer` (model Pydantic, lồng `Finding`, enum, số th�
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | a | openai (Chat Completions) | gpt-4.1-nano | đạt | đạt (2 lời gọi) | đạt / đạt / đạt | đạt | đạt (3 vòng, 4 tool call, 0 lần sửa) | đạt (27 mảnh) | có / có |
 | a | openai-responses (Responses) | gpt-4.1-nano | đạt | đạt (2) | đạt / đạt / đạt | đạt | đạt (3 vòng) | đạt (24 mảnh, TTFT 0,68 s) | có / có |
-| b | anthropic (Messages) | claude-haiku-4-5 | **Bị chặn** — HTTP 503 “No available channel for model … under group cheap” | | | | | | |
+| b | anthropic (Messages) | claude-haiku-4-5 | **Bị chặn** — HTTP 503 “No available channel for model … under group [REDACTED:group]” | | | | | | |
 | c | anthropic (Messages, API của cổng) | gpt-4.1-nano (không phải Claude) | đạt | đạt (2) | không / không / không — cổng bỏ `output_config`, trả văn bản | đạt | không — `invalid_response` sau 2 lần sửa | đạt (47 mảnh) | có / có |
-| d | google (`generateContent` gốc) | gemini-2.5-flash-lite | đạt | đạt (2) | không / hết giờ 60 s / không — cổng bỏ `response_json_schema`, trả văn bản | đạt | không — hết giờ ở vòng 3 | đạt (3 mảnh, TTFT 55 s) | có / có |
-| e | openai (Chat, API của cổng) | gemini-2.5-flash-lite | không — HTTP 400: cổng từ chối `strict` trong khai báo tool | không | không / không / không | không (400) | không (400) | đạt | có / có |
+| d | google (`generateContent` gốc) | gemini-2.5-flash-lite | đạt | đạt (2) | không / hết giờ 60 s / không — cổng bỏ `response_json_schema`, trả văn bản | đạt | không — hết giờ ở vòng 3 | đạt (3 mảnh, TTFT 55 s) | có (ở lời gọi thành công; lời gọi lỗi không có usage) / có |
+| e | openai (Chat, API của cổng) | gemini-2.5-flash-lite | không — HTTP 400: cổng từ chối `strict` trong khai báo tool | không | không / không / không | không (400) | không (400) | đạt | có (ở lời gọi thành công; lời gọi lỗi không có usage) / có |
 
 Đọc kết quả:
 
@@ -140,7 +141,7 @@ Cùng vòng (`LOOP_PROMPT`: tìm trong thư viện, đọc từng reference, tr�
 
 **Đề xuất: Pydantic AI**, dùng trong ranh giới một Agent Run qua một lớp `Model` riêng nối vào Model Gateway (ADR-08), không dùng model provider có sẵn của Pydantic AI. Lý do:
 
-1. Cả hai chạy cùng vòng với cùng số lời gọi và token trên bốn adapter, nên không có khác biệt năng lực.
+1. Cả hai chạy cùng vòng với cùng số lời gọi (3 lời gọi trên mỗi adapter thật) và token gần nhau nhưng không bằng nhau (1 296–2 068 vào, 174–219 ra; theo adapter: OpenAI và Messages qua cổng 1 296–1 506 / 174–193, Gemini 1 862–2 068 / 179–219; do mỗi bên dựng message khác nhau) trên bốn adapter, nên không có khác biệt năng lực.
 2. Pydantic AI có sẵn đúng các quy tắc của kiến trúc 8.1 và 8.5 (kiểm đầu ra bằng Pydantic, sửa định dạng có giới hạn, giới hạn số lời gọi) và đếm usage đối chiếu được.
 3. Thế mạnh riêng của LangGraph (checkpointer, lưu trạng thái, ngắt chờ người) là đúng phần ADR-08 không cho dùng trong agent-core.
 4. Ít phụ thuộc hơn, không kéo `langchain-core` (ADR-08 đã loại LangChain toàn phần).
@@ -155,8 +156,8 @@ Lưu ý khi dùng:
 | Model | Lời gọi có usage | Token vào / ra | Ước tính theo giá niêm yết (genai-prices 0.2.5) |
 | --- | --- | --- | --- |
 | gpt-4.1-nano | 154 | 21 630 / 3 458 | 0,0035 USD |
-| gemini-2.5-flash-lite | 72 | 9 113 / 1 397 | 0,0015 USD |
-| Tổng | 226 | | **0,005 USD** |
+| gemini-2.5-flash-lite | 69 (3 lời gọi burst hết giờ, không có usage) | 9 113 / 1 397 | 0,0015 USD |
+| Tổng | 223 | | **0,005 USD** |
 
 Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a) đầu bị lỗi mã spike (11 lời gọi, ~0,0014 USD), các lời gọi bị từ chối (key sai, không có kênh: không tính tiền). Số thật là số cổng trung gian tính trên tài khoản của PO, theo giá của cổng; tổng ước tính dưới 0,01 USD.
 
@@ -169,6 +170,8 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
 | ASM-03 (base URL tùy chỉnh trỏ tới endpoint tương thích API chính thức) | **Cơ chế đạt**: ba SDK nhận base URL có tiền tố đường dẫn, gọi qua proxy cho kết quả tương đương đích của nó. **Chưa so với endpoint chính thức** (không có key chính thức). Cổng “tương thích” không bảo đảm năng lực: liệt kê 173 model nhưng không có Claude, bỏ structured output với API dạng Anthropic và Gemini, từ chối `strict`, đổi ngữ nghĩa lỗi (503 cho model không có). Kiểm tra kết nối chỉ bằng liệt kê model là chưa đủ | S02; `evidence/base_url/`, `evidence/errors/` |
 
 ## 4. Việc còn lại
+
+Lần 3 (27/11/2026) chạy qua proxy theo D-KEY, không cần key chính thức; việc còn lại sau Lần 3 ở mục “Lần 3”, phần Trạng thái sau Lần 3. Hai ý dưới là việc còn lại của Lần 2, giữ làm lịch sử.
 
 - S01 cho Claude và Gemini, xác nhận OpenAI trên endpoint chính thức, AC03 phần endpoint chính thức: cần PO cấp key chính thức của Anthropic, Google AI Studio và OpenAI (với Claude có thể thay bằng nhóm key của cổng có kênh Claude, nhưng vẫn là phép đo qua cổng). Có key thì chạy lại theo mục 3 thành **Lần 3**: không cần sửa mã.
 - 429 thật chưa gây được (EC03): mã lỗi dựa trên tài liệu. Muốn kiểm thật cần key của tài khoản bậc thấp; không nên thử trên key dùng chung.
@@ -197,11 +200,13 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
   5. Câu hỏi đề xuất (chưa cấp mã): HTTP 400 không thuộc 11 mã chuẩn (tham số không hợp lệ, schema bị từ chối) ánh xạ về mã nào — thêm mã mới (ví dụ `invalid_request`) hay gộp vào mã có sẵn? PO quyết, cập nhật PRD 8.6.
   6. Luồng infra: `infra/docker/python/Dockerfile` chép nguyên `apps/agent-core`, nên mã trong `apps/<service>/spikes/` vào image nếu không bị loại ở dockerignore. Đề xuất loại `apps/*/spikes` khỏi build context của mọi image service — đã làm ở **#51** (`infra/docker/python/Dockerfile.dockerignore`, `infra/docker/node/Dockerfile.dockerignore`, đã merge vào `main` tại `1fe6d66`); PR này không sửa `infra/` (YC2, quyết định B của PO).
 - **Yêu cầu hợp đồng:** không có.
-- **Còn mở:** S01 (Claude, Gemini; OpenAI trên endpoint chính thức) và AC03 (endpoint chính thức) chờ key chính thức — PO đã chấp nhận merge kết luận một phần (Lần 2); câu hỏi đề xuất ở mục 5 của Đề xuất.
-- **Bước tiếp theo:** khi có key chính thức Dev chạy Lần 3 (S01, AC03), không cần sửa mã.
+- **Kết luận Lần 3 (27/11/2026, theo D-KEY):** ASM-02 đạt với OpenAI, đo qua proxy (`gpt-4.1-mini`, Chat Completions và Responses, mọi phép thử); Claude và Gemini không đo được qua proxy (Claude HTTP 503 không có kênh; Gemini HTTP 404 `model_not_found`, trước đó hết thời gian chờ), kết luận chuyển sang ô Hội tụ của PID-00070. ASM-10: token đạt với OpenAI, đo qua proxy; chi phí không có trong phản hồi, luôn ước tính. ASM-03: cơ chế base URL đạt; phần so với endpoint chính thức bỏ theo S-DK. Chi tiết ở mục “Lần 3”.
+- **Còn mở:** G4 (MEDIUM: mã cho HTTP 400 ngoài 11 mã chuẩn; “mã trong thân ưu tiên hơn status”) chờ PO theo OQ-113 và M1; G7 thuộc luồng infra (`setup-windows.ps1`). Câu hỏi đề xuất ở mục 5 của Đề xuất.
+- **Bước tiếp theo:** QC độc lập Lần 3 (spec-converge-skill), PO nghiệm thu và ghi kiến trúc 12.2, 8.2–8.4, PRD 20.2, PRD 8.6 (S-DK điều kiện 6, 7). Năng lực Claude, Gemini đo ở ô Hội tụ của PID-00070 khi có key có kênh tương ứng.
 - **Tài liệu đi kèm** (mỗi thư mục: `results.jsonl` từng lời gọi, `summary.md` bảng, `environment.json` phiên bản Python và gói). Key và host của cổng đã che; `scan_secrets.py` quét 0 chỗ khớp (EC04).
   - `evidence/capabilities/openai-gpt-4.1-nano/` — S01 lượt a (AC01, AC02); `anthropic-claude-haiku-4-5/` — lượt b, bằng chứng bị chặn (EC01); `anthropic-api-gpt-4.1-nano/` — lượt c; `google-gemini-2.5-flash-lite/` — lượt d; `openai-api-gemini-2.5-flash-lite/` — lượt e.
   - `evidence/base_url/` — S02, AC03. `evidence/errors/` — S02, AC04, EC03. `evidence/frameworks/` — S03, AC05.
+  - `evidence/lan-3/` — Lần 3 qua proxy (27/11/2026): `capabilities/openai-gpt-4.1-mini/` (S01 OpenAI Chat, Responses), `capabilities/anthropic-claude-haiku-4-5/`, `capabilities/google-gemini-2.5-flash-lite/` (không đo được qua proxy), `base_url/` (AC03), `errors/` (AC04, không burst), `frameworks/` (AC05).
   - Danh sách file:
     - `evidence/base_url/environment.json`
     - `evidence/base_url/results.jsonl`
@@ -227,6 +232,24 @@ Chưa cộng: các probe của `base_url.py` (32 lời gọi ngắn), lượt (a
     - `evidence/frameworks/environment.json`
     - `evidence/frameworks/results.jsonl`
     - `evidence/frameworks/summary.md`
+    - `evidence/lan-3/base_url/environment.json`
+    - `evidence/lan-3/base_url/results.jsonl`
+    - `evidence/lan-3/base_url/summary.md`
+    - `evidence/lan-3/capabilities/anthropic-claude-haiku-4-5/environment.json`
+    - `evidence/lan-3/capabilities/anthropic-claude-haiku-4-5/results.jsonl`
+    - `evidence/lan-3/capabilities/anthropic-claude-haiku-4-5/summary.md`
+    - `evidence/lan-3/capabilities/google-gemini-2.5-flash-lite/environment.json`
+    - `evidence/lan-3/capabilities/google-gemini-2.5-flash-lite/results.jsonl`
+    - `evidence/lan-3/capabilities/google-gemini-2.5-flash-lite/summary.md`
+    - `evidence/lan-3/capabilities/openai-gpt-4.1-mini/environment.json`
+    - `evidence/lan-3/capabilities/openai-gpt-4.1-mini/results.jsonl`
+    - `evidence/lan-3/capabilities/openai-gpt-4.1-mini/summary.md`
+    - `evidence/lan-3/errors/environment.json`
+    - `evidence/lan-3/errors/results.jsonl`
+    - `evidence/lan-3/errors/summary.md`
+    - `evidence/lan-3/frameworks/environment.json`
+    - `evidence/lan-3/frameworks/results.jsonl`
+    - `evidence/lan-3/frameworks/summary.md`
 
 ## Lần 2 — 21/11/2026
 
@@ -250,6 +273,111 @@ Người làm: phiên do PO `toilatrung` giao, theo G3 của [qc-report.md](qc-r
 - Lần này không xử lý G4 (MEDIUM, chờ PO quyết mã lỗi cho HTTP 400) và G5–G10 (LOW) của QC Lần 1.
 - Khi PO ghi ASM-02, ASM-10 vào kiến trúc 12.2: ghi đúng mức “đạt qua cổng trung gian, chưa xác nhận trên endpoint chính thức”.
 - Việc còn lại: Lần 3 khi có key chính thức (mục 4), không cần sửa mã.
+
+## Lần 3 — 27/11/2026
+
+Người làm: phiên do PO `toilatrung` giao, theo yêu cầu của phiên điều phối (PC-05) và lời PO trong phiên. Chạy lại cả bốn script qua proxy; sửa G5, G6, G8 của [qc-report.md](qc-report.md) Lần 1. Nhánh `agent-core/spk-01-lan-3`, xếp chồng trên #118 (đọc file key, sửa G9).
+
+### Yêu cầu thêm
+
+| # | Người yêu cầu | Nguyên văn | Phân loại | Quyết định | Đã làm, kiểm bằng |
+| --- | --- | --- | --- | --- | --- |
+| YC4 | PO, 26/11/2026 (D-KEY, phiên điều phối chuyển nguyên văn), và trong phiên này 27/11/2026 | D-KEY: “vấn đề API Key của provider điều chỉnh cho phép test và sử dụng key proxy vì đây là key mà của chúng tôi tự cung cấp”. Trong phiên: “tôi chỉ đưa proxy key thôi các key provider chính thức tôi đang đưa tạm key của proxy nên cứ dùng như bình thường đi, đừng phân biệt” | Đổi điều kiện hoàn tất (EC01, AC03) theo quyết định của PO; PC-05 ghi ở S-K1, S-K2, S-DK (PR #124) | Làm: key proxy tính là key provider cho cả ba; Lần 3 chạy qua proxy, không cần key chính thức; Claude, Gemini không gọi được qua proxy ghi “không đo được qua proxy” kèm mã lỗi đã che; AC03 bỏ phần so với endpoint chính thức; trần chi phí 1 USD | Các mục dưới |
+| YC5 | Phiên điều phối, theo PC-05 S-G5–S-G10 (chốt theo đề xuất, PO ủy quyền 26/11/2026) | Sửa G5 (ba câu cho khớp dữ liệu), G6 (mặc định `evidence/frameworks`), G8 (che request id và tên nhóm trong `redact()` cùng evidence hiện có); G7 chỉ ghi lại (luồng infra); G10 chấp nhận theo EC03 | Trong phạm vi O1, O2 của ticket | Làm | Mục “Sửa theo QC Lần 1” |
+
+### Môi trường, key và lệnh
+
+- Như Lần 1 (Windows 11, Python 3.12.16 gốc của uv, cùng phiên bản gói; `environment.json` trong từng thư mục evidence).
+- Key: key của proxy trong file key của máy Dev (`.sires/provider-keys.env` ở checkout chính, ngoài Git, chỉ user hiện tại đọc được), cùng một key cho cả ba provider, base URL của proxy cho cả ba (host đã che). Kiểm dạng key không in giá trị: `set-provider-keys.ps1 -Check` báo 51 ký tự, tiền tố `sk-`, quyền chỉ user hiện tại (S-DK điều kiện 1). Biến cấp User đặt 21/11 trùng giá trị với file.
+- Model: `gpt-4.1-mini` cho OpenAI (`SPK01_MODEL_OPENAI` trong file key) vì `gpt-4.1-nano` không còn trên cổng: cổng liệt kê 139 model, không có model Claude nào, không có `gpt-4.1-nano`. `claude-haiku-4-5`, `gemini-2.5-flash-lite` như Lần 1.
+- Evidence ghi vào `evidence/lan-3/<script>/` (đặt `SPK01_EVIDENCE`), giữ nguyên evidence Lần 1. Lệnh, từ gốc repo, PowerShell, sau khi đặt `$env:SPK01_EVIDENCE` trỏ `agent\execution\PID-00021\evidence\lan-3`:
+  - `run.ps1 capabilities.py --variants openai openai-responses --out <lan-3>\capabilities\openai-gpt-4.1-mini`
+  - `run.ps1 capabilities.py --variants anthropic --fail-fast --out <lan-3>\capabilities\anthropic-claude-haiku-4-5`
+  - `run.ps1 capabilities.py --variants google --fail-fast --out <lan-3>\capabilities\google-gemini-2.5-flash-lite`
+  - `run.ps1 errors.py --no-burst`
+  - `run.ps1 frameworks.py --variants fake openai openai-responses`
+  - `run.ps1 base_url.py compare`
+
+### S01 — năng lực (AC01, AC02)
+
+| Adapter (API) | Model | Tool calling | Nhiều tool một lượt | Structured native raw / inline / typelist | Structured qua output tool | Tool + schema (vòng, ≤ 8) | Streaming | Usage không stream / trong stream | Lời gọi / token vào / ra | Chi phí ước tính |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| openai (Chat Completions) | gpt-4.1-mini | đạt | đạt (2 lời gọi) | đạt / đạt / đạt | đạt | đạt (3 vòng, 3 tool call, 0 lần sửa) | đạt (34 mảnh) | có / có (cả khi không đặt `include_usage`: 33 mảnh) | 12 / 3 770 / 811 | 0,0028 USD |
+| openai-responses (Responses) | gpt-4.1-mini | đạt | đạt (2) | đạt / đạt / đạt | đạt | đạt (3 vòng, 4 tool call, 0 lần sửa) | đạt (21 mảnh) | có / có | 11 / 3 871 / 819 | 0,0029 USD |
+| anthropic (Messages) | claude-haiku-4-5 | **không đo được qua proxy** — HTTP 503 → `provider_unavailable`, “No available channel for model claude-haiku-4-5 under group [REDACTED:group]” | | | | | | | 0 | 0 |
+| google (`generateContent`) | gemini-2.5-flash-lite | **không đo được qua proxy** — HTTP 404 → `model_not_found` (“The requested resource or model was not found”, request id đã che) | | | | | | | 0 | 0 |
+
+- OpenAI: kết quả trùng Lần 1 (`gpt-4.1-nano`) trên một model khác cùng họ; mọi phép đo vẫn đi qua proxy.
+- Claude, Gemini: mỗi adapter thử lại một lần bằng `--fail-fast` (dừng sau lời gọi đầu bị chặn). Thử nhỏ trước đó cùng ngày (một lời gọi, tối đa 16 token): Claude 503; Gemini `generateContent` hết thời gian chờ 40 s rồi 90 s ở `gemini-2.5-flash-lite` và `gemini-2.5-flash`; Gemini qua Chat Completions 404 `model_not_found`; định dạng Gemini liệt kê 0 model. Đường Gemini của cổng vì vậy không ổn định (hết giờ hoặc 404), dù model có trong danh sách của định dạng OpenAI. Theo S-DK, đây là “không đo được qua proxy”, không phải provider thiếu năng lực (EC02 không áp dụng).
+
+### S02 — base URL (AC03)
+
+Theo S-DK điều kiện 3, `base_url.py compare` không cần đường endpoint chính thức; AC03 bỏ phần so sánh đó. Cột endpoint chính thức ghi “bỏ qua (không có key chính thức)”: key của proxy không còn bị gửi tới endpoint chính thức (G9, #118).
+
+| Adapter | Cổng trung gian | Proxy cục bộ → cổng | Cổng ↔ proxy | Đường dẫn proxy nhận |
+| --- | --- | --- | --- | --- |
+| openai Chat | đạt 4/4 | đạt 4/4 | tương đương 4/4 | `GET /v1/models` 200, `POST /v1/chat/completions` 200 |
+| openai Responses | đạt 4/4 | đạt 4/4 | tương đương 4/4 | `GET /v1/models` 200, `POST /v1/responses` 200 |
+| anthropic (claude-haiku-4-5) | models đạt; structured, tool, stream `provider_unavailable` | giống cổng | tương đương 4/4 | `GET /v1/models` 200, `POST /v1/messages` 503 |
+| google (gemini-2.5-flash-lite) | models 0; structured, tool, stream `model_not_found` | giống cổng | tương đương 4/4 | `GET /v1beta/models` 200, `POST …:generateContent` 404, `…:streamGenerateContent` 404 |
+
+Proxy chuyển tiếp tương đương đích của nó ở 16/16 phép thử; chỉ 8 phép thử của OpenAI là phép thử năng lực thật.
+
+### S02 — ánh xạ lỗi (AC04)
+
+`errors.py --no-burst` (không chạy 50 lời gọi đồng thời: G10, không thử 429 trên key dùng chung). Bảng ở `evidence/lan-3/errors/summary.md`. Khớp mã mong đợi 17/18 ở cả bốn adapter; chỗ lệch duy nhất vẫn là “model không có” qua cổng: HTTP 503 → `provider_unavailable`, `retryable: true` (G4). Mọi dòng còn lại trùng bảng mục 3. Khác Lần 1: `timeout_client` gọi tới endpoint của kết nối (cổng) thay vì endpoint chính thức; key sai trên endpoint chính thức và lỗi mạng dùng key giả, nên key của proxy không rời khỏi kết nối của nó.
+
+### S03 — framework (AC05)
+
+| Adapter, model | Vòng thường | Pydantic AI 2.71 | LangGraph 1.2.24 |
+| --- | --- | --- | --- |
+| fake | đạt, 4 lời gọi, 3 tool call | đạt, 4, 3 | đạt, 4, 3 |
+| openai Chat, gpt-4.1-mini | đạt, 3 lời gọi, 4 tool call, 1 506 / 205 token, 5,8 s | đạt, 3, 3, 1 234 / 173, 5,3 s | đạt, **4**, 4, 1 888 / 191, 6,4 s |
+| openai Responses, gpt-4.1-mini | đạt, 3, 4, 1 467 / 195, 5,3 s | đạt, 3, 3, 1 217 / 178, 5,9 s | đạt, 3, 4, 1 467 / 206, 5,8 s |
+
+- Cả ba cách đạt mọi ô. Lần này LangGraph trên Chat Completions cần 4 lời gọi (model gọi tool theo thứ tự khác), nên câu “cùng số lời gọi” ở mục 3 chỉ đúng cho Lần 1; không đổi kết luận về năng lực.
+- `RunUsage` của Pydantic AI khớp số đếm của gateway (requests, token, tool call).
+- Import trên máy lúc chạy: Pydantic AI 9,1 s, LangGraph 8,0 s (Lần 1: 3,7 s, 4,0 s; thời gian import phụ thuộc cache đĩa, không dùng để so).
+- Đề xuất giữ nguyên: **Pydantic AI** (lý do ở mục 3).
+
+### Chi phí Lần 3
+
+| Phần | Lời gọi có usage | Ước tính theo giá niêm yết (genai-prices 0.2.5) |
+| --- | --- | --- |
+| `capabilities.py` OpenAI Chat, Responses | 23 | 0,0057 USD |
+| `frameworks.py` OpenAI Chat, Responses | 19 | 0,0054 USD |
+| Tổng ghi trong evidence | 42 | **0,011 USD** |
+
+Chưa cộng: 12 lời gọi phép thử của `base_url.py compare` với OpenAI (không ghi chi phí) và khoảng 10 lời gọi kiểm key trước khi chạy (tối đa 16 token ra mỗi lời gọi); tổng ước tính dưới 0,02 USD, dưới trần 1 USD. Lời gọi bị từ chối (503, 404, key sai) không tính tiền.
+
+### Kết luận theo giả định (Lần 3, theo D-KEY)
+
+| Giả định | Kết luận | Căn cứ |
+| --- | --- | --- |
+| ASM-02 | **OpenAI: đạt, đo qua proxy** (`gpt-4.1-mini` ở Lần 3 và `gpt-4.1-nano` ở Lần 1; Chat Completions và Responses; mọi phép thử, cả ba biến thể schema, output tool, vòng tool + schema). **Claude, Gemini: không đo được qua proxy** (Claude HTTP 503 không có kênh; Gemini HTTP 404 hoặc hết thời gian chờ); kết luận chuyển sang ô Hội tụ của PID-00070 (S-DK, S-P70). Adapter chuẩn hóa ba định dạng API về một `ModelResult`; output tool là đường dự phòng chung | `evidence/lan-3/capabilities/` |
+| ASM-10 | **Token: đạt với OpenAI, đo qua proxy** (Chat: `usage` và chunk cuối của stream; Responses: `usage` và `response.completed`). Định dạng usage của Messages và `generateContent` chỉ có từ Lần 1, qua lớp dịch của cổng; Claude, Gemini không đo được qua proxy ở Lần 3. **Chi phí: không** có trong phản hồi; luôn ước tính từ bảng giá (NFR-USAGE-003) | `evidence/lan-3/capabilities/`, `evidence/lan-3/frameworks/` |
+| ASM-03 | **Cơ chế base URL: đạt** (SDK ghép đúng đường dẫn chuẩn; proxy cục bộ tương đương đích 16/16). Phần so với endpoint chính thức bỏ theo S-DK. Một cổng “tương thích” không bảo đảm năng lực: không có Claude; định dạng Gemini trả 404 hoặc hết giờ dù model có trong danh sách. Kiểm tra kết nối cần lời gọi thử năng lực (đề xuất mục 6, ý 3) | `evidence/lan-3/base_url/` |
+
+### Sửa theo QC Lần 1
+
+| G | Trạng thái | Cách xử lý |
+| --- | --- | --- |
+| G1, G2 | Đóng theo quyết định của PO (S-K1, S-K2, S-DK) | Claude, Gemini ghi “không đo được qua proxy”; AC03 bỏ phần so với endpoint chính thức |
+| G3 | Đã sửa ở Lần 2 | — |
+| G4 | Còn mở (MEDIUM) | Chờ PO theo OQ-113 và M1; spike giữ nguyên để đúng số đo, Lần 3 lặp lại đúng chỗ lệch |
+| G5 | Đã sửa | Mục 3: lượt d, e ghi usage không stream “có (ở lời gọi thành công…)”; Gemini 69 lời gọi có usage (3 lời gọi burst hết giờ không có usage), tổng 223; lý do 1 của đề xuất framework ghi token khác nhau 1 296–2 068 vào, 174–219 ra (QC Lần 4 sửa khoảng số: QC Lần 1 chỉ tính dòng 7–12, bỏ sót ba dòng Gemini) |
+| G6 | Đã sửa | `frameworks.py` mặc định ghi `evidence/frameworks` (`EVIDENCE_ROOT / "frameworks"`), khớp lệnh chạy lại ở mục 3 và README |
+| G7 | Ghi lại, không sửa | Thuộc luồng infra (`scripts/development/setup-windows.ps1` băm `requirements.txt` theo byte, lệch khi checkout đổi CRLF); S-G7 chọn chuẩn hóa xuống dòng trước khi băm |
+| G8 | Đã sửa | `redact_ids()` trong `redact()` che `request id: …` (và `request_id`) và tên nhóm sau “under group”; che lại lần nữa không đổi kết quả. Đã che 9 request id và tên nhóm trong evidence Lần 1 (`capabilities/anthropic-claude-haiku-4-5/results.jsonl`, `errors/results.jsonl`) và một dòng ở mục 3 của file này. Các giá trị cũ vẫn còn trong lịch sử git của `main` |
+| G9 | Đã sửa ở #118 | Key của kết nối chỉ gửi tới base URL của chính nó; `compare` chỉ gọi endpoint chính thức với key chính thức riêng (`*_API_KEY_OFFICIAL`), thiếu thì bỏ qua |
+| G10 | Chấp nhận theo EC03 | `errors.py --no-burst`; 429 thật kiểm ở ô Hội tụ của PID-00070 với key bậc thấp riêng |
+
+### Trạng thái sau Lần 3
+
+- Slice: S01, S02, S03 **Xong** theo điều kiện hoàn tất đã sửa (S-DK): S01 cho OpenAI đo đủ qua proxy, Claude và Gemini ghi “không đo được qua proxy” kèm lỗi; S02 base URL và ánh xạ lỗi xong, AC03 không so với endpoint chính thức; S03 đề xuất giữ nguyên.
+- AC: AC01, AC02 đạt cho OpenAI qua proxy, Claude và Gemini không đo được qua proxy (theo S-DK); AC03 đạt phần proxy (bỏ phần endpoint chính thức theo S-DK); AC04, AC05 đạt.
+- S-DK: điều kiện 1–5 đạt; điều kiện 6 (QC độc lập Lần 3, PO nghiệm thu) và 7 (PO ghi kiến trúc 12.2, 8.2–8.4, PRD 20.2, PRD 8.6) là việc của PO.
+- EC04: `scan_secrets.py` quét 70 file (`agent/execution/PID-00021/`, mã spike, `scripts/development/`, `AGENT.md`) với key và host cổng: 0 chỗ khớp.
 
 ---
 

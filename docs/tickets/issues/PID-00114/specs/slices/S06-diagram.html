@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00114.">
+<title>PID-00114 — S06 Sơ đồ: preview, nguồn, kiểm tra, sửa | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00114</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00114</p><h1>S06 — Sơ đồ: preview, nguồn, kiểm tra, sửa nguồn, yêu cầu Diagram Agent sửa</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>DIAG-SOURCE-001-AC01, DIAG-SOURCE-001-AC02, DIAG-VALIDATE-001-AC01, DIAG-REVIEW-001-AC01 (trạng thái kiểm tra cho S08)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B5, B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC29, EC32–EC37, EC43–EC46</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S05; PID-00012 S06 (thẻ thao tác dài), S09 (kho nháp)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Vùng nội dung của version diagram theo khối figure của <code>docs/ui-design/pages/Artifacts.html</code> và H10: preview từ <code>getDiagramPreview</code> (<code>format=svg</code>) của chính version, hiện bằng ảnh từ blob (EC29); nguồn Mermaid trong khối mono cuộn được; lỗi preview theo EC33.</li>
+<li>Trạng thái kiểm tra: đọc <code>validation</code> của version (<code>ArtifactVersion.validation</code>, hợp đồng sửa 27/11/2026 theo mục 5 của hồ sơ; H10: khi có thì đọc trường, không đổi giao diện); <code>valid</code> → dòng như màn, ví dụ “Draft · Mermaid · cú pháp hợp lệ” (từ đầu là trạng thái của version); <code>syntax_error</code>, <code>render_error</code> → hộp lỗi theo dòng từ <code>validation.errors</code> (EC32); version không có <code>validation</code> → EC34. Xuất trạng thái này cho S08 để chặn “Chấp nhận”.</li>
+<li>“Sửa nguồn”: editor mono cạnh preview, đăng ký kho nháp của shell (EC45); “Kiểm tra” gọi <code>validateDiagramSource</code> (lỗi hoặc <code>previewSvg</code> hiện bằng ảnh); “Lưu thành version mới” gọi <code>createArtifactVersion</code> với <code>basedOnVersionId</code> là version đang xem và <code>Idempotency-Key</code>, chuyển <code>?version</code> sang version mới, xóa nháp; nguồn còn lỗi và 409 theo EC35.</li>
+<li>“Yêu cầu Diagram Agent sửa” (cả version Rejected): dialog chỉ dẫn bắt buộc (đăng ký kho nháp), loại sơ đồ tùy chọn từ <code>listDiagramTypes</code>; gửi <code>requestDiagram</code> với <code>description</code>, <code>diagramType</code> khi chọn, <code>taskId</code>, <code>revisesArtifactId</code>, <code>Idempotency-Key</code> (EC36); 202 → thẻ thao tác dài của shell, theo dõi bằng <code>workflow.status_changed</code> và <code>getWorkflow</code>, xong thì tải lại version, Failed theo EC37.</li>
+<li>Một request mỗi lần bấm (EC44); sự kiện (EC43); vi/en (EC46).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/diagram.spec.tsx</code> › nguồn và preview cùng version (DIAG-SOURCE-001-AC02); › lưu nguồn thành version mới (DIAG-SOURCE-001-AC01, EC35); › lỗi cú pháp (DIAG-VALIDATE-001-AC01, EC32); › preview lỗi (EC33); › chưa kiểm tra được (EC34); › yêu cầu Diagram Agent sửa (EC36); › workflow sửa sơ đồ (EC37); › nháp nguồn sơ đồ (EC45)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Sơ đồ trên mock hiện preview khớp nguồn, báo lỗi cú pháp theo dòng, lưu nguồn sửa thành version mới, gửi yêu cầu Diagram Agent sửa và theo dõi được</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00114</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00114 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

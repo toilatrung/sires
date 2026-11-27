@@ -69,6 +69,9 @@ ManuscriptFile:
 
 FileChange:
   type: object
+  description: |
+    Một thay đổi file. Với `add`, `modify` gửi đúng một nguồn nội dung: `content` (văn bản), `fileUploadId` (file vừa tải lên)
+    hoặc `restoreFromRevisionId` (nội dung của file ở một revision cũ).
   required: [path, operation]
   properties:
     path: { type: string }
@@ -84,6 +87,13 @@ FileChange:
     fileUploadId:
       $ref: common.yaml#/Id
       description: File nhị phân (hình) đã tải lên.
+    restoreFromRevisionId:
+      $ref: common.yaml#/Id
+      writeOnly: true
+      description: |
+        Khôi phục (MS-REVISION-001): với `add`, `modify`, nội dung (văn bản hoặc nhị phân) lấy từ file có cùng `path` ở revision
+        này của cùng Manuscript, thay cho `content`, `fileUploadId`. Revision không thuộc Manuscript hoặc không có file `path`
+        trả `400 validation_failed`. Không dùng cho `bibliography/references.bib` (System sinh lại từ Bibliography Entry, MS-BIB-001).
     beforeHash: { type: string }
     afterHash: { type: string, readOnly: true }
 
@@ -92,6 +102,9 @@ RevisionCreate:
   description: |
     Researcher sửa trực tiếp (MS-EDITOR-001). Mọi thay đổi file tạo một Manuscript Revision (MS-REVISION-001).
     `baseRevisionId` phải là revision hiện hành, nếu không trả 409 base_revision_mismatch. Xóa file thuộc APR-08 (xóa mềm).
+    Khôi phục một file hoặc toàn bộ bản thảo về revision cũ là một revision mới, lịch sử giữ nguyên (MS-REVISION-001): mỗi file
+    khác revision đích gửi `modify` (hoặc `add` nếu file đã xóa) kèm `restoreFromRevisionId`; khôi phục toàn bộ thì file không
+    có ở revision đích gửi `delete`.
   required: [baseRevisionId, changes]
   properties:
     baseRevisionId: { $ref: common.yaml#/Id }
@@ -115,6 +128,10 @@ ManuscriptRevision:
     source:
       type: string
       enum: [direct_edit, change_proposal, init]
+      description: |
+        Nguồn của revision (PRD 18.1). Chèn sơ đồ (MS-DIAGRAM-001) đi qua Change Proposal tạo bởi `insertDiagramIntoManuscript`,
+        nên revision có `source = change_proposal` và `artifactVersionIds` khác rỗng; giao diện ghi nguồn này là “Chèn sơ đồ”
+        (MS-REVISION-001). Khôi phục về revision cũ (`restoreFromRevisionId`) là `direct_edit`, actor Researcher.
     changeProposalId: { $ref: common.yaml#/Id }
     taskId: { $ref: common.yaml#/Id }
     artifactVersionIds:
@@ -126,13 +143,20 @@ ManuscriptRevision:
 
 DiffHunk:
   type: object
+  description: |
+    Một khối thay đổi theo unified diff: `oldStart`, `oldLines`, `newStart`, `newLines` là bốn số của dòng đầu khối
+    `@@ -oldStart,oldLines +newStart,newLines @@`.
   properties:
     oldStart: { type: integer }
-    oldLines: { type: integer }
+    oldLines: { type: integer, description: Số dòng ngữ cảnh và dòng bỏ. }
     newStart: { type: integer }
-    newLines: { type: integer }
+    newLines: { type: integer, description: Số dòng ngữ cảnh và dòng thêm. }
     lines:
       type: array
+      description: |
+        Các dòng theo quy ước unified diff: ký tự đầu `+` (dòng thêm), `-` (dòng bỏ) hoặc dấu cách (dòng ngữ cảnh, không đổi),
+        tiếp theo là nội dung dòng, không kèm ký tự xuống dòng. Dòng bắt đầu bằng `\` là ghi chú (ví dụ
+        `\ No newline at end of file`), không tính vào `oldLines`, `newLines`.
       items: { type: string }
 
 ChangeProposalStatus:
@@ -230,15 +254,46 @@ BuildStatus:
 
 BuildIssue:
   type: object
+  description: |
+    Lỗi hoặc cảnh báo đã phân tích từ log (MS-BUILD-001). Giao diện dựng tiêu đề và câu giải thích theo ngôn ngữ giao diện từ
+    `code` và `params` (UX-MS-004, UX-I18N-002); log gốc xem bằng `getBuildLog`.
   properties:
     severity:
       type: string
       enum: [error, warning]
     file: { type: string }
     line: { type: integer }
-    code: { type: string, examples: [undefined_citation, missing_file, timeout, memory_limit] }
-    message: { type: string }
-    friendlyMessage: { type: string }
+    code:
+      type: string
+      description: |
+        Mã ổn định để client dịch. Danh mục cho lỗi phổ biến, phân loại bằng quy tắc xác định (MS-BUILD-001, MS-BUILDENV-001):
+        `unbalanced_braces` (thiếu hoặc thừa dấu ngoặc); `undefined_control_sequence` (lệnh không xác định; `params.command`);
+        `missing_file` (không tìm thấy file được `\input`, `\include`, `\includegraphics`; `params.path`); `missing_package`
+        (package chưa được nạp hoặc không có trong bộ TeX Live của build; `params.package`, thêm `params.command` khi biết lệnh cần
+        package); `undefined_citation` (citation key không có trong bibliography; `params.key`); `shell_escape_disabled` (lệnh cần
+        shell-escape không được chạy; `params.command`); `path_outside_manuscript` (đọc file ngoài thư mục Manuscript;
+        `params.path`); `timeout` (quá thời gian; `params.limit`); `memory_limit` (quá bộ nhớ, kể cả TeX hết dung lượng trong;
+        `params.limit`, `params.reason`); `infrastructure_unavailable` (không cấp được môi trường build). Mã ngoài danh mục là lỗi
+        chưa có quy tắc xác định: client hiện tiêu đề chung theo `severity` kèm mã.
+      examples: [missing_package, undefined_citation, missing_file, timeout, memory_limit]
+    params:
+      type: object
+      description: |
+        Tham số để dựng câu theo ngôn ngữ giao diện, khóa theo `code`: `package`, `path`, `key`, `command`, `limit` (giới hạn đã
+        vượt: số giây với `timeout`, số MB với `memory_limit`), `reason` (với `memory_limit`: `tex_capacity` khi TeX hết dung lượng
+        trong, `memory` khi chạm giới hạn bộ nhớ của môi trường build). Giá trị giữ nguyên văn từ tài liệu hoặc log, không dịch.
+      additionalProperties: { type: string }
+      examples:
+        - { package: booktabs, command: '\toprule' }
+    message:
+      type: string
+      description: Thông báo gốc trích từ log của compiler, không dịch.
+    friendlyMessage:
+      type: string
+      description: |
+        Gợi ý giải thích thêm, có thể do agent soạn cho lỗi ngoài danh mục (MS-BUILD-001: “ghi rõ là gợi ý”). Viết theo
+        `Preferences.uiLanguage` của tài khoản lúc build, không dịch lại khi đổi ngôn ngữ; không thay câu giao diện dựng từ
+        `code`, `params`.
 
 Build:
   type: object
@@ -268,10 +323,17 @@ Build:
 
 DiagramType:
   type: object
-  description: Loại sơ đồ hỗ trợ (DIAG-TYPES-001). Chỉ Mermaid trong MVP (OQ-059).
+  description: |
+    Loại sơ đồ hỗ trợ (DIAG-TYPES-001): đúng năm loại Sequence, Component, Activity, State, Workflow; cả năm dùng Mermaid
+    trong MVP (OQ-059). Loại ngoài danh sách (ví dụ Gantt) không hỗ trợ (DIAG-TYPES-001-AC02).
   required: [id, label, syntax]
   properties:
-    id: { type: string, examples: [flowchart, sequence, class, state, er, gantt, mindmap] }
+    id:
+      type: string
+      description: |
+        Mã loại. Cú pháp mặc định theo DIAG-TYPES-001: `sequence` → sequenceDiagram; `component` → flowchart có subgraph
+        cho từng thành phần; `activity`, `workflow` → flowchart; `state` → stateDiagram-v2.
+      examples: [sequence, component, activity, state, workflow]
     label: { type: string }
     syntax: { type: string, const: mermaid }
 
@@ -281,7 +343,10 @@ DiagramRequest:
   required: [description]
   properties:
     description: { type: string, minLength: 1 }
-    diagramType: { type: string, examples: [flowchart] }
+    diagramType:
+      type: string
+      description: "`DiagramType.id`. Bỏ trống thì Orchestrator chọn loại (DIAG-TYPES-001); khi sửa sơ đồ thì giữ loại hiện tại."
+      examples: [workflow]
     taskId: { $ref: common.yaml#/Id }
     inputRefs:
       type: array
@@ -311,3 +376,62 @@ DiagramValidationResult:
     previewSvg:
       type: string
       description: SVG render khi hợp lệ (renderer cô lập — INT-DIAGRAM).
+
+DiagramValidationStatus:
+  type: string
+  description: |
+    Trạng thái kiểm tra nguồn sơ đồ (DIAG-VALIDATE-001): `valid` — cú pháp đúng và render được preview; `syntax_error` —
+    trình phân tích Mermaid báo lỗi cú pháp; `render_error` — cú pháp đúng nhưng render lỗi (quá lớn, quá thời gian;
+    WF-07.E2).
+  enum: [valid, syntax_error, render_error]
+
+DiagramValidation:
+  type: object
+  readOnly: true
+  description: |
+    Kết quả kiểm tra nguồn của chính Artifact Version diagram (DIAG-SOURCE-001: mỗi version lưu trạng thái kiểm tra;
+    DIAG-VALIDATE-001). System ghi khi tạo version — Diagram Agent ghi đầu ra hoặc Researcher lưu nguồn
+    (`createArtifactVersion`) — bằng cùng bộ kiểm tất định của `validateDiagramSource`; version bất biến nên kết quả không
+    đổi. Version khác `valid` vẫn được lưu ở Draft kèm lỗi để Researcher sửa tay, nhưng không chấp nhận được
+    (DIAG-REVIEW-001).
+  required: [status]
+  properties:
+    status: { $ref: '#/DiagramValidationStatus' }
+    errors:
+      type: array
+      description: Có khi `status` khác `valid`; cùng dạng `DiagramValidationResult.errors`.
+      items:
+        type: object
+        required: [message]
+        properties:
+          line:
+            type: integer
+            minimum: 1
+            description: Dòng của nguồn, đếm từ 1 (DIAG-VALIDATE-001-AC01); không có với lỗi render.
+          message: { type: string }
+
+ManuscriptUsage:
+  type: object
+  readOnly: true
+  description: |
+    Vị trí một claim, evidence hoặc artifact version được dùng trong bản thảo (SYN-PERSIST-001: khi được dùng trong bản
+    thảo, ghi vị trí sử dụng — file, revision — từ Change Proposal đã chấp nhận; PRD 4.3 điều hướng hai chiều). Có một
+    mục cho mỗi file trong `diff` của Change Proposal đã chấp nhận chứa đối tượng ở `claimIds`, `evidenceIds` hoặc
+    `artifactVersionIds` (Change Proposal không ghi đối tượng nằm ở file nào). Vị trí giữ nguyên khi có revision hay
+    version Accepted mới hơn (SYN-PERSIST-001). Dữ liệu gốc thuộc manuscript; đường dữ liệu sang research (sự kiện hoặc
+    API nội bộ) bổ sung khi làm hợp đồng manuscript (PID-00079), tới khi đó các trường dùng schema này không có.
+  required: [path, revisionId, changeProposalId]
+  properties:
+    path: { type: string, examples: [sections/related-work.tex] }
+    revisionId:
+      $ref: common.yaml#/Id
+      description: Revision tạo ra khi chấp nhận Change Proposal (`resultingRevisionId`).
+    revisionNumber: { type: integer }
+    changeProposalId: { $ref: common.yaml#/Id }
+    citationKeys:
+      type: array
+      description: |
+        Chỉ với evidence — BibTeX key của citation trong file đó trỏ tới reference của evidence (CLAIM-CITATION-001: liên
+        kết từng citation tới evidence).
+      items: { type: string }
+    at: { $ref: common.yaml#/Timestamp }

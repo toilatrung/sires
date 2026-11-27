@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00058.">
+<title>PID-00058 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>PID-00058 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H20, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Overview là trang vào của mỗi project: research context hiện hành, Plan baseline và tiến độ theo Phase, Task đang hoạt động, việc chờ, bản thảo và build gần nhất, các banner Archived, chưa có Plan, khôi phục. Project AI Chat là nơi Researcher trao đổi với Orchestrator: câu trả lời hiện dần qua <code>chat.delta</code>, mỗi tin nhắn của agent nêu agent nào trả lời và liên kết tới Agent Run, Interactive Agent Prompt hiện trong luồng bằng thẻ của shell, có chỉ báo active task. Lượt này dựng hai màn trong <code>apps/web/src/features/project/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-03 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Overview hiển thị research context hiện hành (câu hỏi, mục tiêu, ràng buộc, giả định còn mở), Plan baseline và tiến độ theo Phase, Task đang hoạt động, việc chờ của project, trạng thái bản thảo và build gần nhất — UX-OVERVIEW-001; H11, H12</li>
+<li>Chưa có Plan baseline: Overview hướng tới Project AI Chat — UX-OVERVIEW-002; H13</li>
+<li>Project Archived: nhãn “Archived — chỉ đọc”, mọi nút thay đổi vô hiệu kèm lý do; Chat ẩn ô nhập — UX-OVERVIEW-003; H13, H14</li>
+<li>Câu trả lời của Orchestrator hiện dần theo <code>chat.delta</code>, thay bằng tin nhắn đã lưu khi có <code>message.posted</code>; mất SSE giữa chừng thì tải lại tin nhắn, không nhân đôi — ticket AC01; spec 4.7; H6, H7</li>
+<li>Tin nhắn của agent nêu agent và liên kết tới Agent Run; tin nhắn gửi khi có active task mang tham chiếu Task — UX-CHAT-001, UX-CHAT-002; H8, H10</li>
+<li>Chỉ báo active task ngay trên ô nhập, bỏ bằng một thao tác — UX-CHAT-001; H10</li>
+<li>Thẻ Interactive Agent Prompt của shell, chỉ gọi <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code>; không chọn sẵn; bốn trạng thái; dùng được bằng bàn phím; trả lời ở nơi khác cập nhật ngay qua SSE — UX-PROMPT-001–005, UX-A11Y-002; PID-00012 H8; ticket AC02; H3</li>
+<li>Ô nhập Chat đăng ký với kho nháp của shell — PID-00012 H7; UX-STATE-004; H2</li>
+<li>Không làm lại số trên TopBar, rail — PID-00012 H1; H4</li>
+<li>Lỗi provider trong Chat nêu tên Provider Connection và hành động — spec 4.7; UX-STATE-006; H15</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định — giao diện không tự trả lời prompt, không chọn sẵn phương án; sửa research context tạo version mới (PROJ-CONTEXT-001).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/Overview.dc.html</code>, <code>Chat.dc.html</code> và các trang trạng thái trong <code>pages/</code> — có; khối “Bước tiếp theo gợi ý” chưa có nguồn dữ liệu (I1)</li>
+<li><code>docs/api-design/paths/07-workspace-and-project.yaml</code> (project, context version, active task, conversation, message), <code>14-…#/projects/{projectId}/shared-context</code>, <code>#/events</code>, <code>components/schemas/project.yaml</code>, <code>orchestration.yaml#/Event</code> — có; <code>Event</code> có trường tùy chọn <code>conversationId</code>, <code>agentRunId</code>, <code>seq</code>, <code>text</code>, <code>final</code> của <code>chat.delta</code> (Phải sửa ở nguồn mục 1, đã sửa 27/11/2026); <code>MessageAccepted.agentRunId</code> (mục 2, đã sửa 27/11/2026); <code>events/asyncapi.yaml#chatDelta</code> có payload <code>conversationId</code>, <code>agentRunId</code>, <code>seq</code>, <code>text</code>, <code>final</code></li>
+<li><code>apps/web/src/features/project/index.tsx</code> (placeholder hai route), <code>i18n/vi.json</code>, <code>en.json</code> — có</li>
+<li>Shell (PID-00012: client API, client SSE, kho nháp, thẻ prompt) và mock (PID-00013) — chưa có trên <code>main</code> ngày 27/11/2026</li>
+<li>Quy tắc chủ mock của operation dùng chung: PID-00037 H9, PID-00060 H8 (nhánh <code>docs/clarify-pid-00037-00060</code>) — có; PID này theo cùng quy tắc (H5)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Overview, Chat trong <code>apps/web/src/features/project/</code>, i18n vi/en, đang tải, trống, lỗi → S01–S06</li>
+<li>O2 mock 9 operation của khu vực trong <code>apps/web/src/features/project/__mocks__/</code> → S01</li>
+<li>O3 <code>chat.spec.tsx</code> → S03, S04, S06; O4 <code>prompt.spec.tsx</code> → S05; O5 <code>overview.spec.tsx</code> → S02 (thêm khi làm rõ, H17)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>ResearchProject</code> = Research Project; <code>ResearchContextVersion</code> = Research Context (bản bất biến); <code>SharedContextView</code> = Shared Context</li>
+<li><code>Conversation</code> có <code>scope = project</code> = Project AI Chat; <code>Message</code> = tin nhắn; <code>chat.delta</code> = đoạn câu trả lời đang stream</li>
+<li><code>InteractiveAgentPrompt</code> = Interactive Agent Prompt; <code>activeTaskId</code> = active task của Project AI Chat</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00058</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

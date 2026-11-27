@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00084.">
+<title>PID-00084 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00084</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00084</p><h1>PID-00084 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc H1–H12 ở <a href="../index.html#s-5">trang ticket mục 5</a> (chốt theo đề xuất, PO ủy quyền 26/11/2026). Mọi test nằm trong <code>apps/web/src/features/project/deliberation-card/</code> và chạy với mock của PID-00013.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Thẻ đề xuất trong luồng Chat thay thẻ chuẩn cho prompt <code>purpose = deliberation_proposal</code></td><td>ticket “Gồm”; PID-00058 H3, H18; H2</td><td>S01</td></tr>
+<tr><td>P2</td><td>Nội dung thẻ: loại vấn đề, người đề xuất và bước, vấn đề, vì sao thảo luận, các bên và góc nhìn, chi phí (số Agent Run, kết nối, số vòng), cảnh báo cùng model, câu giải thích Bỏ qua</td><td>UX-MONITOR-007; <code>Chat.dc.html</code>; H3</td><td>S01</td></tr>
+<tr><td>P3</td><td>Bốn trạng thái của thẻ: Open, Answered, Expired, Cancelled</td><td>UX-PROMPT-004; H5</td><td>S01</td></tr>
+<tr><td>P4</td><td>Trả lời “Thảo luận” hoặc “Bỏ qua” bằng <code>answerPrompt</code>; sau Bỏ qua tin kết quả mang nhãn “Không qua thảo luận”</td><td>ticket AC01; UX-MONITOR-007-AC01; H4, H6</td><td>S02</td></tr>
+<tr><td>P5</td><td>Fixture prompt đề xuất có type cho test</td><td>ticket Đầu ra (Mock); H7</td><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Hội tụ với backend thật trên staging</td><td>D-UI: Hội tụ ở cổng PH-04 (H1)</td><td>PID này lần sau</td></tr>
+<tr><td>N2</td><td>Tab Thảo luận</td><td>Ticket “Không gồm”</td><td>PID-00083</td></tr>
+<tr><td>N3</td><td>Thẻ đề xuất trong chi tiết workflow và trên điện thoại</td><td>Chi tiết workflow dùng thẻ chuẩn của shell (PID-00059 H2); điện thoại trả lời ở MobilePrompt (PID-00060)</td><td>PID-00059, PID-00060</td></tr>
+<tr><td>N4</td><td>Nhãn “không qua thảo luận” trên Plan Version</td><td>Thuộc màn Plan (PID-00082 H7)</td><td>PID-00082</td></tr>
+<tr><td>N5</td><td>Khai mock <code>getPrompt</code>, <code>answerPrompt</code>, hội thoại</td><td>PID-00060 giữ mock prompt, PID-00058 giữ mock hội thoại (H7)</td><td>PID-00060, PID-00058</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Quét theo nhóm áp dụng cho thẻ: dữ liệu biên (thiếu ghi chú chi phí, không tra được tên kết nối, prompt thiếu lựa chọn chuẩn); trạng thái (Open, Answered, Expired, Cancelled); đồng thời (bấm hai lần, đã trả lời ở nơi khác, <code>409</code>); luồng lỗi (Analysis Agent thiếu cấu hình); giao diện (vi/en, bàn phím, khổ hẹp); nội dung nguy hiểm (HTML trong vấn đề, lý do). Các nhóm khác không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Prompt <code>deliberation_proposal</code> Open với đủ <code>deliberationProposal</code></td><td>Thẻ theo <code>Chat.dc.html</code>: “Đề xuất thảo luận · loại vấn đề”, Orchestrator · giờ · bước m/n của workflow, vấn đề, “Vì sao thảo luận”, “Các bên” (Orchestrator · Analysis Agent A, B kèm góc nhìn), “Chi phí” (khoảng N Agent Run tính trên API key của bạn kèm tên kết nối, tối đa N vòng sau Vòng 1), hai nút, câu giải thích Bỏ qua</td><td>UX-MONITOR-007; H3</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › nội dung thẻ</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td><code>sameModelWarning = true</code></td><td>Dòng cảnh báo “Analysis Agent A và B đang dùng cùng model …” kèm liên kết “Đổi trong Agent Models” (<code>/settings/agents</code>)</td><td>ORCH-DELIB-005; H3</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › cảnh báo cùng model</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>Không có <code>costNote</code>; không tra được tên kết nối</td><td>Bỏ dòng ghi chú; tên kết nối thay bằng provider và model của bên đó</td><td><code>DeliberationProposal</code>; H3</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › thiếu dữ liệu chi phí</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Bấm “Bỏ qua”</td><td><code>answerPrompt</code> với <code>choiceIds</code> = id của lựa chọn <code>skip</code>, <code>Idempotency-Key</code>; thẻ chuyển Answered “Bạn đã chọn Bỏ qua”; tin kết quả tiếp theo của Orchestrator mang nhãn “Không qua thảo luận”</td><td>ticket AC01; UX-MONITOR-007-AC01; H4, H6</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › bỏ qua</code></td><td>S02</td></tr>
+<tr><td>EC05</td><td>Bấm “Thảo luận”</td><td><code>answerPrompt</code> với id của <code>deliberate</code>; thẻ chuyển Answered “Bạn đã chọn Thảo luận” kèm liên kết tới tab Thảo luận của workflow (PID-00083)</td><td>UX-MONITOR-007; H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › thảo luận</code></td><td>S02</td></tr>
+<tr><td>EC06</td><td>Bấm hai lần</td><td>Nút vô hiệu khi đang gửi; đúng một lời gọi <code>answerPrompt</code></td><td>PROMPT-LIFECYCLE-001 (trả lời một lần); H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › bấm hai lần</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Đã trả lời ở nơi khác (<code>409</code> hoặc <code>prompt.status_changed</code>)</td><td>Đọc lại prompt; thẻ chuyển trạng thái mới, báo đã được xử lý ở nơi khác; không gửi lại</td><td>UX-PROMPT-005; H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › trả lời ở nơi khác</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Prompt Expired hoặc Cancelled</td><td>Thẻ chỉ đọc, nêu <code>statusReason</code>, câu “Không được tính là đồng ý”; không có nút</td><td>UX-PROMPT-004; H5</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › Expired, Cancelled</code></td><td>S01</td></tr>
+<tr><td>EC09</td><td>Luồng Analysis Agent thiếu cấu hình hợp lệ</td><td>Nhãn nút và hệ quả lấy từ <code>choices[].label</code>, <code>consequence</code> của server (“Cấu hình lại rồi thảo luận”, “Tiếp tục không thảo luận”); <code>reason</code> nêu instance còn thiếu; liên kết “Mở Agent Models”</td><td><code>PromptPurpose</code> (luồng thiếu cấu hình); H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › thiếu cấu hình</code></td><td>S01</td></tr>
+<tr><td>EC10</td><td>Prompt thiếu lựa chọn <code>deliberate</code> hoặc <code>skip</code></td><td>Không dùng thẻ đề xuất; hiện thẻ chuẩn của shell (PID-00058 H3)</td><td>H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › thiếu lựa chọn dùng thẻ chuẩn</code></td><td>S01</td></tr>
+<tr><td>EC11</td><td>Chỉ dùng bàn phím</td><td>Tab tới từng nút, Enter hoặc Space để chọn; không nút nào được chọn sẵn; focus giữ trên thẻ sau khi trả lời</td><td>UX-A11Y-002; UX-PROMPT-002; H4</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › bàn phím</code></td><td>S01</td></tr>
+<tr><td>EC12</td><td>Đổi VI/EN; khổ dưới 1280 px; nội dung có HTML</td><td>Nhãn đổi, loại vấn đề và trạng thái giữ tiếng Anh; thẻ một cột, không cuộn ngang; nội dung dạng chữ</td><td>UX-I18N-002; design.md §5; H9</td><td><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › đổi ngôn ngữ và nội dung có HTML</code></td><td>S01</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00084</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00084 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,7 +1,8 @@
 # SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
 # Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
 # SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
-# Local environment (architecture 11.1): PostgreSQL 16 + pgvector, RabbitMQ, MinIO.
+# Local environment (architecture 11.1): PostgreSQL 16 + pgvector, RabbitMQ, MinIO, OIDC mock thay eTroy OIDC
+# (D-OIDC, PID-00160; chỉ cục bộ và staging, không bao giờ production).
 # Services under development run with nx/uv on the host. Pin image digests in PH-01.
 name: sires-local
 
@@ -16,7 +17,8 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sires"]
+      # Qua TCP: server tạm của entrypoint lúc chạy init chỉ nghe socket, nên healthy chỉ khi server thật đã lên.
+      test: ["CMD-SHELL", "pg_isready -U sires -h 127.0.0.1"]
       interval: 5s
       retries: 10
 
@@ -38,6 +40,21 @@ services:
     ports: ["9000:9000", "9001:9001"]
     volumes:
       - minio-data:/data
+
+  oidc-mock:
+    # OpenID Provider giả lập cho gateway (infra/local/oidc-mock/README.md). Sửa mã thì chạy pnpm local:up --build.
+    build:
+      context: ../..
+      dockerfile: infra/local/oidc-mock/Dockerfile
+    image: sires/oidc-mock:local
+    environment:
+      OIDC_MOCK_ENV: local
+      OIDC_MOCK_ISSUER: http://localhost:9400
+    ports: ["9400:9400"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:9400/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      retries: 10
 
 volumes:
   postgres-data:

@@ -9,7 +9,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "node dist/migrate.js"
   },
   "dependencies": {
     "@nestjs/common": "catalog:",
@@ -18,7 +19,9 @@
     "@sires/contracts": "workspace:*",
     "@sires/platform": "workspace:*",
     "reflect-metadata": "catalog:",
-    "rxjs": "catalog:"
+    "rxjs": "catalog:",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:"
   },
   "devDependencies": {
     "@nestjs/cli": "catalog:",
@@ -27,13 +30,35 @@
     "@types/node": "catalog:",
     "openid-client": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:"
   },
   "nx": {
     "tags": [
       "type:app",
       "lang:ts",
       "scope:gateway"
-    ]
-  }
+    ],
+    "targets": {
+      "migrate": {
+        "dependsOn": [
+          "build"
+        ],
+        "cache": false
+      },
+      "test": {
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/docs/database/ddl/00-common.sql",
+          "{workspaceRoot}/docs/database/ddl/gateway.sql"
+        ]
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ]
 }

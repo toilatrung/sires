@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00036.">
+<title>S05 — Profile | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00036</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00036</p><h1>S05 — Profile</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H11, H12, H19 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-SETTINGS-001-AC01, UX-SETTINGS-001-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (SettingsProfile), O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B6, B7, B8; H11, H12, H19</td></tr>
+<tr><th scope="row">Edge case</th><td>EC29, EC30, EC31, EC32, EC33, EC34, EC35, EC36, EC54 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <code>getMe</code> của mock dùng chung (PID-00013 S02); kho nháp của shell (PID-00012 S09)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>View <code>/settings/profile</code> theo <code>SettingsProfile</code> (đích của mục “Hồ sơ” trong menu avatar, H19): ảnh đại diện chỉ hiển thị (<code>avatarUrl</code>, không có thì chữ viết tắt của họ tên); không dựng “Đổi ảnh đại diện” (H11). Trường: Họ tên hiển thị (ghi “Lần đầu lấy từ eTroy”), Email chỉ đọc “do eTroy quản lý”, Đơn vị công tác, Lĩnh vực nghiên cứu, URL hồ sơ Google Scholar (ghi “Chỉ là liên kết, không phải đăng nhập Google”); câu “Không có mật khẩu hay phương thức đăng nhập nào khác ngoài eTroy” (UX-SETTINGS-001-AC01, EC29).</li>
+<li>Công tắc “Dùng lĩnh vực nghiên cứu làm context cho agent” (nhãn ghi trạng thái bằng chữ, design.md §4 Công tắc) kèm giải thích của thiết kế; giá trị từ <code>preferences.includeResearchFieldInContext</code>.</li>
+<li>Kiểm trên máy khách trước khi gửi: họ tên 1–200, đơn vị và lĩnh vực tối đa 300 (EC31); URL Scholar phải là URL bắt đầu bằng <code>https://</code>, sai thì trạng thái <code>SettingsProfile--state-invalid-url</code>, không gửi (UX-SETTINGS-001-AC02, EC30).</li>
+<li>“Lưu thay đổi”: chỉ gửi trường đã đổi; hồ sơ đổi → <code>updateProfile</code> (<code>application/merge-patch+json</code>, <code>If-Match</code> theo <code>ETag</code> của <code>getMe</code>, CSRF); công tắc đổi → tiếp <code>updatePreferences</code> với <code>ETag</code> từ phản hồi trước (EC33). Xóa trắng URL Scholar gửi <code>null</code>, đơn vị và lĩnh vực gửi chuỗi rỗng (EC32; nếu type sinh chưa cho <code>null</code> thì dùng một hàm chuyển có type duy nhất, ghi trong <code>implement.md</code>, tới khi Phải sửa ở nguồn mục 4 xong). Dùng <code>Account</code> và <code>ETag</code> trong phản hồi làm giá trị mới.</li>
+<li><code>412</code> → đọc lại <code>getMe</code>, giữ giá trị đang nhập, báo dữ liệu đã đổi ở nơi khác kèm <code>precondition_failed</code>, không tự gửi lại (EC34). Lệnh sau lỗi → báo phần chưa lưu (EC33). “Hủy” về giá trị đã lưu (EC35).</li>
+<li>Bốn ô văn bản đăng ký với kho nháp của shell theo README của shell (EC36).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/settings/profile.spec.tsx › lần đầu</code> (UX-SETTINGS-001-AC01, EC29); <code>› URL Scholar sai</code> (UX-SETTINGS-001-AC02, EC30); <code>› giới hạn độ dài</code> (EC31); <code>› xóa trắng</code> (EC32); <code>› hai lệnh</code> (EC33); <code>› 412</code> (EC34); <code>› hủy</code> (EC35); <code>› nháp</code> (EC36); <code>› tên có HTML</code> (EC54)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/settings/</code></li>
+<li>Thao tác tay trên mock: sửa đơn vị, bật công tắc, lưu; nhập URL sai; mở từ menu avatar → <code>/settings/profile</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-SETTINGS-001-AC01, AC02 đạt; một nút lưu cho cả hồ sơ và công tắc; <code>412</code> không làm mất giá trị đang nhập</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00036</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00036 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

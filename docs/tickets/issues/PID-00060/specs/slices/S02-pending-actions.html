@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00060.">
+<title>PID-00060 — S02 Pending Actions (G9) | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00060</p><h1>S02 — Pending Actions (G9)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00060-AC01, UX-PENDING-001-AC01, UX-PENDING-002-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC08, EC29, EC30</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S04, S05, S06</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Màn <code>/pending-actions</code> theo <code>docs/ui-design/pages/PendingActions.html</code> và H4: bộ lọc trái, danh sách Open cũ nhất trên, mỗi dòng một nút viền xanh theo loại mở <code>deepLink</code>.</li>
+<li>Nhóm “Hết hiệu lực · n” viền đứt với lý do và “Đánh dấu đã xem” (EC01, EC02).</li>
+<li>Tên project từ <code>listProjects</code> (EC04, EC05); thiếu <code>deepLink</code> (EC03); trống (EC06); “Tải thêm” (EC07).</li>
+<li>Nghe <code>pending_action.changed</code> qua client SSE của shell, tải lại (EC08).</li>
+<li>Chuỗi vi/en; tên loại giữ tiếng Anh; thời điểm theo EC30.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/global/pending.spec.tsx</code> › hết hiệu lực nằm ở nhóm riêng (PID-00060-AC01, UX-PENDING-002-AC01, EC01); › đánh dấu đã xem (EC02); › cũ nhất ở trên, mở đúng ngữ cảnh (UX-PENDING-001-AC01); › thiếu deepLink (EC03); › project không còn (EC04); › reference approval ở Trusted Library (EC05); › trống (EC06); › tải thêm (EC07); › tải lại khi có sự kiện (EC08); › đổi ngôn ngữ (EC29); › định dạng thời điểm (EC30)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Pending Actions trên mock đúng thứ tự, nhóm, lọc, xử lý hết hiệu lực; khớp màn tham chiếu</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00060</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00060 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

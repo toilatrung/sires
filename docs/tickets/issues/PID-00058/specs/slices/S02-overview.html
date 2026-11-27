@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00058.">
+<title>S02 — Overview | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>S02 — Overview</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H11, H12, H13 (chốt theo đề xuất, PO ủy quyền 26/11/2026). Khối “Bước tiếp theo gợi ý” ngoài phạm vi tới khi PO trả lời I1 (N3).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-OVERVIEW-001-AC01, UX-OVERVIEW-002-AC01, UX-OVERVIEW-003-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Overview), O5</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B4, B5, B6; H11, H12, H13</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC04, EC05, EC06 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; mock của khu vực khác khi chạy dev: <code>getPlan</code>, <code>getPlanVersion</code>, <code>listTasks</code> (planning), <code>listPendingActions</code> (PID-00060), <code>listWorkflows</code> (PID-00059), <code>getManuscript</code> (PID-00115), <code>unarchiveProject</code> (PID-00037)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đầu trang theo <code>Overview</code>: tên project, ngày tạo, hoạt động cuối, thông tin bản thảo; dữ liệu từ <code>getProject</code>.</li>
+<li>Research context: <code>getSharedContext</code> (<code>researchContext</code>: câu hỏi nghiên cứu, mục tiêu, ràng buộc) và giả định còn mở (<code>activeContextItems</code> có <code>kind = assumption</code>, nhãn “assumption · cần xác nhận”). “Sửa” mở form: câu hỏi (bắt buộc), mục tiêu, ràng buộc; các trường khác của <code>ResearchContextInput</code> giữ như version hiện hành; lưu gọi <code>createContextVersion</code> kèm <code>basedOnVersionId</code>, <code>Idempotency-Key</code> (EC06).</li>
+<li>Plan: <code>getPlan</code>; có baseline thì <code>getPlanVersion</code> lấy Phase và định nghĩa Task, <code>listTasks</code> lấy trạng thái; mỗi Phase hiện Task Completed trên tổng (UX-OVERVIEW-001-AC01, EC04); dòng “Plan v… · Approved” và “Mở Plan and Tasks”. Task đang hoạt động: Task trạng thái In Progress, Queued, Waiting for User, Needs Review kèm mã, tên, chip.</li>
+<li>Việc chờ: <code>listPendingActions</code> (<code>projectId</code>, <code>status=Open</code>): “Chờ bạn · N” và danh sách gọn, mỗi dòng mở <code>deepLink</code>; số change proposal chờ đếm theo <code>kind = manuscript_change_proposal</code>.</li>
+<li>Bản thảo: <code>getManuscript</code> → <code>latestBuild</code>: “Build OK · HH:mm · revision N”, “Build lỗi”, “Đang build”; <code>404</code> → “Chưa khởi tạo”; lỗi khác → “—” (EC05); nút “Mở Manuscript”.</li>
+<li>Banner (design.md §4 Banner): chưa có baseline → <code>Overview--state-no-plan</code>, nút “Mở Project AI Chat” (EC01); Archived → nhãn chỉ đọc, mọi nút thay đổi vô hiệu kèm lý do, “Mở lại project” gọi <code>unarchiveProject</code> (EC02); có workflow Interrupted (<code>listWorkflows</code> với <code>projectId</code>, <code>status=Interrupted</code>) → banner khôi phục, “Mở Recovery decision” tới <code>/projects/:projectId/activity/workflows/:workflowId</code> (EC03).</li>
+<li>Không làm lại số trên TopBar, rail (H4).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/project/overview.spec.tsx › tiến độ theo Phase</code> (UX-OVERVIEW-001-AC01, EC04); <code>› chưa có Plan</code> (UX-OVERVIEW-002-AC01, EC01); <code>› archived chỉ đọc</code> (UX-OVERVIEW-003-AC01, EC02); <code>› banner khôi phục</code> (EC03); <code>› khối bản thảo</code> (EC05); <code>› sửa research context</code> (EC06)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/project/</code></li>
+<li>Thao tác tay trên mock: ba trạng thái của <code>Overview--state-*</code> và mặc định ở 1440×900</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-OVERVIEW-001-AC01, UX-OVERVIEW-002-AC01, UX-OVERVIEW-003-AC01 đạt; Overview chạy với mock ở mọi trạng thái của thiết kế (trừ khối chờ I1)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00058</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

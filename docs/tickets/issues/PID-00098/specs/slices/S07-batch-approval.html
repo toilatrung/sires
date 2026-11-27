@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S07 của ticket PID-00098.">
+<title>PID-00098 — S07 Duyệt theo lô | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S07 — Duyệt theo lô, từ chối, sửa rồi duyệt, nghi trùng xử lý riêng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>LIB-APPROVAL-001-AC02, LIB-APPROVAL-001-AC05, LIB-APPROVAL-001-AC06, LIB-APPROVAL-001-AC07</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC29, EC30, EC32–EC34, EC44</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S06</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Panel “n reference chờ duyệt” ở đầu Trusted Library theo H14: <code>listReferences</code> với <code>approvalStatus = Pending Approval</code>, cũ nhất trên, trang 50 mục, “Tải thêm” (EC30); lỗi tải panel không ảnh hưởng bảng (EC29); không có mục thì không hiện panel.</li>
+<li>Dòng: ô chọn (mục không nghi trùng chọn sẵn), tiêu đề · tác giả · năm · venue, cách nhập, “Sửa metadata”; câu hệ quả cạnh nút; nút chính “Duyệt n mục đã chọn” gửi một <code>decideReferences</code> với <code>Idempotency-Key</code>, mỗi mục <code>approve</code> và <code>metadataVersion</code>; nút phụ “Từ chối đã chọn” mở dialog (hệ quả, lý do tùy chọn) rồi gửi <code>reject</code>; hủy dialog không gọi API (EC34).</li>
+<li>Kết quả theo <code>ReferenceApprovalResult</code>: trusted, rejected rời panel và bảng tải lại; skipped hoặc có <code>problem</code> ở lại kèm lý do, đọc lại metadata (EC32, EC33).</li>
+<li>Mục có <code>duplicateWarnings</code>: không ô chọn, không vào lô; chip cảnh báo viền đứt “Có thể trùng” kèm tên reference kia (<code>getReference</code>); ba nút “Gộp vào reference có sẵn” (<code>mergeReference</code>, dialog hệ quả), “Giữ riêng và duyệt” (<code>decideReferences</code> một mục), “Từ chối” (EC32).</li>
+<li>“Sửa metadata” mở form metadata tại dòng (component của khu vực dựng ở slice này, các trường theo H17; S09 dùng lại); “Lưu và duyệt” gửi một mục với <code>editedMetadata</code>.</li>
+<li>Nghe <code>pending_action.changed</code>, <code>reference.status_changed</code> → tải lại panel. Ở 390 px dòng xếp dọc, nút cao từ 44px, không cuộn ngang (EC44).</li>
+<li>Test trong <code>apps/web/src/features/library/library.spec.tsx</code>: duyệt lô 20, mục nghi trùng ngoài lô, sửa năm rồi duyệt, reference DOI vẫn chờ duyệt, duyệt một phần lỗi, hủy dialog không đổi gì.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → test của S07 đạt</li>
+<li>Test: <code>apps/web/src/features/library/library.spec.tsx › duyệt lô 20</code> (LIB-APPROVAL-001-AC05); <code>› mục nghi trùng ngoài lô</code> (LIB-APPROVAL-001-AC06); <code>› sửa năm rồi duyệt</code> (LIB-APPROVAL-001-AC02); <code>› reference DOI vẫn chờ duyệt</code> (LIB-APPROVAL-001-AC07)</li>
+<li>Thao tác tay: duyệt và từ chối chỉ bằng bàn phím; 390×844</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Duyệt theo lô gửi một lệnh nhiều quyết định, mục nghi trùng luôn xử lý riêng, kết quả từng mục hiện đúng; test đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S07 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

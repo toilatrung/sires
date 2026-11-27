@@ -10,9 +10,13 @@
     operationId: startLogin
     summary: Bắt đầu đăng nhập qua eTroy OIDC
     description: |
-      Chuyển hướng tới eTroy OIDC theo luồng authorization code (có state, nonce, PKCE).
-      Không có phương thức đăng nhập khác (NFR-AUTH-001).
-    x-requirements: [INT-OIDC-001]
+      Chuyển hướng tới IdP đang cấu hình theo luồng authorization code (có state, nonce, PKCE): eTroy OIDC; cục bộ và
+      staging PH-02 là OIDC mock (PID-00160). Không có phương thức đăng nhập khác (NFR-AUTH-001).
+
+      Đây là điều hướng trình duyệt nên mọi kết quả đều là `302`. IdP không khả dụng (discovery hay JWKS không tải được)
+      thì chuyển về trang đăng nhập của web `/sign-in?error=oidc_unavailable`, giữ `returnTo` nếu có, thay cho `503`
+      (UX-AUTH-002; PID-00036 H3). Bộ mã `error` của trang đăng nhập ở mô tả `completeLogin`.
+    x-requirements: [INT-OIDC-001, INT-OIDC-004]
     x-priority: P0
     security: []
     parameters:
@@ -22,11 +26,11 @@
         schema: { type: string, pattern: '^/' }
     responses:
       '302':
-        description: Chuyển tới endpoint authorize của eTroy OIDC.
+        description: |
+          Chuyển tới endpoint authorize của IdP; hoặc, khi IdP không khả dụng, về `/sign-in?error=oidc_unavailable`
+          (kèm `returnTo` nếu có).
         headers:
-          Location: { schema: { type: string, format: uri } }
-      '503':
-        $ref: ../components/responses.yaml#/ServiceUnavailable
+          Location: { schema: { type: string } }
 
 /auth/callback:
   get:
@@ -36,15 +40,37 @@
     description: |
       Kiểm tra state, nonce, chữ ký, issuer, audience, thời hạn ID token rồi tạo phiên (INT-OIDC-001).
       Lần đầu với một `sub` mới tạo tài khoản SIRes (họ tên, email từ claim); các lần sau dùng lại (INT-OIDC-002).
-    x-requirements: [INT-OIDC-001, INT-OIDC-002]
+
+      IdP trả về hoặc `code` (thành công) hoặc `error` (theo OAuth 2.0, ví dụ người dùng hủy). Thất bại thì chuyển về
+      trang đăng nhập của web `/sign-in?error=<mã>`, giữ `returnTo` của lần đăng nhập, không tạo phiên. Bộ mã `error` của
+      trang đăng nhập (PID-00036 H3, chốt theo đề xuất, PO ủy quyền 26/11/2026):
+      - `login_cancelled`: IdP trả `error=access_denied` (người dùng hủy hoặc không đồng ý).
+      - `oidc_unavailable`: không gọi được IdP khi đổi `code` lấy token hay tải JWKS.
+      - `login_failed`: mọi lỗi khác (IdP trả `error` khác; `state` không khớp hoặc hết hạn; `nonce`, chữ ký, issuer,
+        audience, thời hạn ID token không đạt; thiếu `code`).
+      Web hiển thị mã lạ như `login_failed`.
+    x-requirements: [INT-OIDC-001, INT-OIDC-002, INT-OIDC-004]
     x-priority: P0
     security: []
     parameters:
-      - { name: code, in: query, required: true, schema: { type: string } }
+      - name: code
+        in: query
+        description: Authorization code; có khi IdP trả thành công (bắt buộc nếu không có `error`).
+        schema: { type: string }
       - { name: state, in: query, required: true, schema: { type: string } }
+      - name: error
+        in: query
+        description: Mã lỗi OAuth 2.0 IdP trả về thay cho `code` (ví dụ `access_denied`).
+        schema: { type: string }
+      - name: error_description
+        in: query
+        description: Mô tả lỗi của IdP; chỉ ghi log ở gateway, không đưa sang web.
+        schema: { type: string }
     responses:
       '302':
-        description: Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về trang đăng nhập kèm mã lỗi.
+        description: |
+          Thành công — đặt cookie `sires_session` và chuyển về `returnTo`. Thất bại — chuyển về `/sign-in?error=<mã>`
+          (`login_cancelled`, `oidc_unavailable`, `login_failed`), kèm `returnTo`; không đặt cookie.
         headers:
           Location: { schema: { type: string } }
           Set-Cookie: { schema: { type: string } }
@@ -53,15 +79,53 @@
   post:
     tags: [Auth]
     operationId: logout
-    summary: Đăng xuất
-    description: Kết thúc phiên SIRes và thu hồi token phía server (INT-OIDC-003).
+    summary: Đăng xuất (RP-initiated logout)
+    description: |
+      Kết thúc phiên SIRes, thu hồi token phía server, rồi đưa trình duyệt tới trang kết thúc phiên của IdP để kết
+      thúc cả phiên eTroy (INT-OIDC-003, DEC-55, ADR-27). PID-00012 H9, PC-05 P3.
+
+      Web gửi bằng form HTML điều hướng cả trang, không dùng `fetch`: `<form method="post" action="/api/v1/auth/logout">`
+      với trường ẩn `csrfToken` lấy từ `GET /auth/session` ngay trước khi gửi. Form không gửi được header, nên riêng
+      operation này nhận CSRF token ở trường `csrfToken` của body thay cho header `X-CSRF-Token`. Trước khi gửi, web
+      xóa nháp của tài khoản và đóng kết nối SSE.
+
+      - Phiên hợp lệ, `csrfToken` khớp: gateway hủy phiên server-side, thu hồi token, xóa cookie `sires_session`, trả
+        `303` tới `end_session_endpoint` (lấy từ discovery) của IdP đang cấu hình kèm `client_id` và
+        `post_logout_redirect_uri` (URL `/sign-in` của SIRes đã đăng ký với IdP, ADR-27). IdP là eTroy OIDC; cục bộ và
+        staging PH-02 là OIDC mock (PID-00160). Không gửi `id_token_hint` vì token OIDC không xuống trình duyệt
+        (kiến trúc 10.2). IdP kết thúc phiên rồi đưa trình duyệt về `post_logout_redirect_uri`. IdP không công bố
+        `end_session_endpoint` thì `303` thẳng tới `post_logout_redirect_uri` (kiến trúc 8.8).
+      - Không còn phiên (cookie không có, hoặc phiên đã hết hạn, đã đăng xuất ở tab khác): không kiểm `csrfToken`, xóa
+        cookie nếu request có gửi kèm, `303` tới `post_logout_redirect_uri`, không gọi IdP.
+      - Phiên hợp lệ nhưng thiếu hoặc sai `csrfToken`: `403 forbidden`, phiên giữ nguyên. Web luôn lấy token mới ngay
+        trước khi gửi nên lỗi này chỉ gặp với request không đến từ web; trình duyệt hiện nguyên phản hồi lỗi, web
+        không xử lý.
     x-requirements: [INT-OIDC-003]
+    x-decisions: [DEC-55]
     x-priority: P0
-    parameters:
-      - $ref: ../components/parameters.yaml#/CsrfToken
+    requestBody:
+      required: true
+      content:
+        application/x-www-form-urlencoded:
+          schema:
+            type: object
+            required: [csrfToken]
+            properties:
+              csrfToken:
+                type: string
+                description: CSRF token của phiên, lấy từ `GET /auth/session` (cùng giá trị web gửi ở header `X-CSRF-Token`).
     responses:
-      '204': { $ref: ../components/responses.yaml#/NoContent }
-      '401': { $ref: ../components/responses.yaml#/Unauthorized }
+      '303':
+        description: |
+          Đã đăng xuất (hoặc không còn phiên). `Location` là `end_session_endpoint` của IdP kèm `client_id`,
+          `post_logout_redirect_uri`; hoặc chính `post_logout_redirect_uri` khi không còn phiên hay IdP không có
+          `end_session_endpoint`.
+        headers:
+          Location: { schema: { type: string, format: uri } }
+          Set-Cookie:
+            description: Xóa cookie `sires_session` (`Max-Age=0`) khi request có gửi kèm cookie.
+            schema: { type: string }
+      '403': { $ref: ../components/responses.yaml#/Forbidden }
 
 /auth/session:
   get:
@@ -141,8 +205,8 @@
   patch:
     tags: [Account & Settings]
     operationId: updatePreferences
-    summary: Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug
-    x-requirements: [UX-I18N-001, CTX-ASSEMBLY-001, CTX-REGISTRY-002]
+    summary: Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug, Google Scholar trong discovery
+    x-requirements: [UX-I18N-001, CTX-ASSEMBLY-001, CTX-REGISTRY-002, UX-SETTINGS-006, DISC-SCHOLAR-003]
     x-apr: APR-09
     x-priority: P0
     parameters:

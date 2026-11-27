@@ -13,7 +13,7 @@ thật (ticket, mục Không gồm).
 | `loop.py` | Vòng tool calling không framework (≤ 8 vòng), structured output kiểm bằng Pydantic, sửa định dạng ≤ 2 lần |
 | `common.py` | Schema chung `ResearchAnswer` và ba biến thể JSON Schema, tool `search_library`/`get_reference` trên thư viện giả, đọc key, che key, ghi evidence, ước tính chi phí |
 | `capabilities.py` | S01: tool calling, structured output cùng schema, streaming, usage (AC01, AC02) |
-| `base_url.py` | S02: proxy cục bộ chuyển tiếp tới endpoint chính thức, giả lỗi theo định dạng của provider; so endpoint chính thức với proxy (AC03) |
+| `base_url.py` | S02: proxy cục bộ chuyển tiếp tới endpoint đã cấu hình (không có thì endpoint chính thức), giả lỗi theo định dạng của provider; so endpoint với proxy (AC03) |
 | `errors.py` | S02: gây lỗi có chủ đích, bảng ánh xạ lỗi (AC04) |
 | `frameworks.py` | S03: vòng thường, Pydantic AI, LangGraph trên cùng một vòng tool calling (AC05); `--variants fake` chạy không mạng |
 | `scan_secrets.py` | EC04: tìm key trong evidence, báo cáo trước khi nộp |
@@ -22,9 +22,15 @@ thật (ticket, mục Không gồm).
 
 ## Chạy
 
-Key chỉ đọc từ biến môi trường `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` (hoặc `GOOGLE_API_KEY`); trên
-Windows đọc cả biến cấp User vừa đặt. Không in, không ghi key. Model mặc định giá thấp, đổi bằng
-`SPK01_MODEL_ANTHROPIC`, `SPK01_MODEL_OPENAI`, `SPK01_MODEL_GOOGLE`.
+Key đọc từ biến môi trường `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` (hoặc `GOOGLE_API_KEY`), trên
+Windows cả biến cấp User vừa đặt; chưa có thì đọc file key của máy Dev do
+[`set-provider-keys.ps1`](../../../../scripts/development/README.md#key-provider) ghi (`SIRES_PROVIDER_KEYS_FILE`, mặc
+định `<checkout chính>/.sires/provider-keys.env`). Key và base URL (`SIRES_BASE_URL_*`, tên cũ `SPK01_BASE_URL_*`) của
+một provider lấy từ cùng một nguồn; key chỉ gửi tới base URL của chính kết nối đó. Endpoint chính thức chỉ nhận key
+chính thức: key của kết nối khi không đặt base URL, còn không thì `ANTHROPIC_API_KEY_OFFICIAL`,
+`OPENAI_API_KEY_OFFICIAL`, `GEMINI_API_KEY_OFFICIAL`; thiếu thì `base_url.py compare` bỏ qua cột endpoint chính thức.
+Không in, không ghi key; host của cổng thành `[gateway-host]`. Model mặc định giá thấp, đổi bằng
+`SPK01_MODEL_ANTHROPIC`, `SPK01_MODEL_OPENAI`, `SPK01_MODEL_GOOGLE` (biến môi trường hoặc một dòng trong file key).
 
 Cài một lần bằng script môi trường (quy tắc ở [scripts/development/README.md](../../../../scripts/development/README.md)),
 gói vào `%LOCALAPPDATA%\sires\spikes\spk-01`:

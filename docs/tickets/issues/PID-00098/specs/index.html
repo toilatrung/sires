@@ -19,7 +19,7 @@
 <header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
 <main id="main-content">
 <p class="eyebrow">Spec kỹ thuật · PID-00098</p><h1>PID-00098 — Khu vực library: Discover, Library, Reference</h1>
-<p class="meta">Trạng thái biên soạn: Chờ duyệt · Xác nhận: Đề xuất — chờ PO duyệt · Ticket: <a href="../index.html">PID-00098</a> · Luồng: <code>web/library</code> · Giai đoạn: PH-05 · Soạn 05/11/2026 · Dev thực thi theo spec-execution-skill</p>
+<p class="meta">Trạng thái biên soạn: Đã duyệt · Xác nhận: chốt theo đề xuất (PO ủy quyền 26/11/2026) · Ticket: <a href="../index.html">PID-00098</a> · Luồng: <code>web/library</code> · Giai đoạn: PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-05 · Soạn 05/11/2026, sửa khi làm rõ 27/11/2026 · Dev thực thi theo spec-execution-skill</p>
 <details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#s-1">1. Phạm vi và căn cứ</a></li>
 <li><a href="#s-2">2. Input</a></li>
 <li><a href="#s-3">3. Output</a></li>
@@ -31,100 +31,116 @@
 <h2 id="s-1">1. Phạm vi và căn cứ</h2>
 <div class="table-wrap"><table><tbody>
 <tr><th scope="row">Mục đích</th><td>Researcher tìm, nhập và duyệt reference; ranh giới Discovered Result và Trusted phải luôn rõ.</td></tr>
-<tr><th scope="row">Luồng, giai đoạn</th><td><code>web/library</code> · PH-05</td></tr>
-<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging · Library</td></tr>
-<tr><th scope="row">AC phủ trong spec</th><td>PID-00098-AC01, PID-00098-AC02</td></tr>
-<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai</td></tr>
-<tr><th scope="row">Không làm ở spec này</th><td>Backend (<a href="../../PID-00050/index.html">PID-00050</a>, <a href="../../PID-00076/index.html">PID-00076</a>, <a href="../../PID-00104/index.html">PID-00104</a>)</td></tr>
+<tr><th scope="row">Luồng, giai đoạn</th><td><code>web/library</code> · PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-05</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Xây với stub · Xây với mock trên mock của PID-00013 (D-UI, PH-02); Hội tụ trên staging · Library ở cổng PH-05</td></tr>
+<tr><th scope="row">AC phủ trong spec</th><td>PID-00098-AC01, PID-00098-AC02; AC requirement ở <a href="acceptance.html">acceptance.html</a></td></tr>
+<tr><th scope="row">Căn cứ</th><td>Kế hoạch triển khai (tickets 1.5); PRD 10, 15.6, UX-STATE-001–004, 17.2; DEC-60, DEC-61; PC-05 GS-A1–GS-A7; mục Làm rõ của ticket (H1–H20)</td></tr>
+<tr><th scope="row">Không làm ở spec này</th><td>Backend (<a href="../../PID-00050/index.html">PID-00050</a>, <a href="../../PID-00076/index.html">PID-00076</a>, <a href="../../PID-00104/index.html">PID-00104</a>); xem <a href="scope.html#ngoai-pham-vi">Ngoài phạm vi</a></td></tr>
 </tbody></table></div>
 
 <h2 id="s-2">2. Input</h2>
 <h3 id="s-2-1">2.1. Tài liệu</h3>
 <ul><li><a href="../../../../tickets/sections/03-track-plans.html#s-3-2">Kế hoạch luồng web</a></li>
-<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-05">Giai đoạn PH-05, cổng ra</a></li>
+<li><a href="../../../../tickets/sections/02-phases-and-gates.html#ph-02">Giai đoạn PH-02 (Giao diện trước, DEC-64)</a>, <a href="../../../../tickets/sections/02-phases-and-gates.html#ph-05">PH-05 (Hội tụ)</a></li>
 <li><a href="../../../../tickets/sections/01-tracks-and-boundaries.html#rule-1-4-1">Quy tắc ranh giới 1.4</a></li>
 <li><a href="../../../../ui-design/design.md">Thiết kế: design.md</a></li>
 <li><a href="../designs/notes.html">Ghi chú thiết kế của PID này</a></li>
-<li>Requirement: <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-001">UX-REF-001</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-002">UX-REF-002</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-003">UX-REF-003</a>, <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#lib-library-001">LIB-LIBRARY-001</a></li></ul>
+<li>Requirement: <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-001">UX-REF-001</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-002">UX-REF-002</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-ref-003">UX-REF-003</a>, <a href="../../../../overview/sections/15-ui-ux-requirements.html#req-ux-state-001">UX-STATE-001</a>–004, <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#lib-library-001">LIB-LIBRARY-001</a>, <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#disc-scholar-001">DISC-SCHOLAR-001</a>, DISC-SCHOLAR-002, DISC-REVIEW-001, DISC-AUTHOR-001, DISC-ADAPTER-001, LIB-IMPORT-001–002, LIB-APPROVAL-001, LIB-PROJECT-001, LIB-CONTENT-001, LIB-METADATA-001, LIB-LIFECYCLE-001 (PRD 10), <a href="../../../../overview/sections/17-integrations-and-external-dependencies.html#s-17-2">INT-SCHOLAR-001–007</a></li>
+<li>Quyết định: DEC-60, DEC-61 (PRD 20.1); <a href="../../../../overview/phieu-chot-cuoi-ph01.html">phiếu chốt cuối PH-01 (PC-05)</a> nhóm II GS-A1–GS-A7, P1, P2</li></ul>
 <h3 id="s-2-2">2.2. Mã nguồn</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Đường dẫn</th><th scope="col">Đọc để</th></tr></thead><tbody>
 <tr><td><code>apps/web/src/main.tsx</code></td><td>Điểm vào ứng dụng</td></tr>
-<tr><td><code>apps/web/src/features/library/index.tsx</code></td><td>Điểm vào khu vực</td></tr>
+<tr><td><code>apps/web/src/features/library/index.tsx</code></td><td>Điểm vào khu vực (route <code>discover</code>, <code>library</code>, <code>library/:referenceId</code>; messages qua hợp đồng Feature)</td></tr>
+<tr><td><code>apps/web/src/shell/</code></td><td>API của shell: hợp đồng Feature, client API và idempotency, client SSE và tín hiệu cần tải lại, i18n và hàm định dạng, trạng thái dùng chung, chip, thẻ thao tác dài, thẻ prompt, kho nháp (PID-00012)</td></tr>
+<tr><td><code>apps/web/src/shell/mock/</code></td><td>Bộ sinh mock, cách khai override của khu vực, helper test, mock <code>/events</code>, README (PID-00013)</td></tr>
 </tbody></table></div>
 <h3 id="s-2-3">2.3. Hợp đồng và dữ liệu</h3>
-<h4>Operation gọi (dùng mock tới khi hội tụ)</h4><div class="table-wrap"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">operationId</th><th scope="col">File</th><th scope="col">Tóm tắt</th></tr></thead><tbody>
-<tr><td><code>GET</code></td><td><code>/discovery/sources</code></td><td><code>listDiscoverySources</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nguồn discovery khả dụng và năng lực</td></tr>
-<tr><td><code>POST</code></td><td><code>/discovery/searches</code></td><td><code>startDiscoverySearch</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tìm tài liệu (workflow discovery)</td></tr>
-<tr><td><code>POST</code></td><td><code>/discovery/author-searches</code></td><td><code>startAuthorSearch</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tìm công bố theo tác giả</td></tr>
-<tr><td><code>GET</code></td><td><code>/discovered-results</code></td><td><code>listDiscoveredResults</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Kết quả tìm kiếm để review</td></tr>
-<tr><td><code>PATCH</code></td><td><code>/discovered-results/{discoveredResultId}</code></td><td><code>setDiscoveredResultStatus</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chọn, bỏ chọn hoặc loại một kết quả</td></tr>
-<tr><td><code>POST</code></td><td><code>/discovered-results/import</code></td><td><code>importDiscoveredResults</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập kết quả đã chọn thành Reference chờ duyệt (từng cái hoặc theo lô)</td></tr>
-<tr><td><code>GET</code></td><td><code>/references</code></td><td><code>listReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Trusted Library và reference chờ duyệt</td></tr>
-<tr><td><code>POST</code></td><td><code>/references</code></td><td><code>createReferenceManually</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập reference thủ công theo DOI hoặc BibTeX</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/pdf-imports</code></td><td><code>importReferenceFromPdf</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập reference từ file PDF</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/approvals</code></td><td><code>decideReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Duyệt hoặc từ chối reference theo lô (APR-04)</td></tr>
-<tr><td><code>GET</code></td><td><code>/references/{referenceId}</code></td><td><code>getReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chi tiết reference</td></tr>
-<tr><td><code>PATCH</code></td><td><code>/references/{referenceId}</code></td><td><code>updateReferenceMetadata</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Sửa metadata (tạo metadataVersion mới)</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/{referenceId}/revoke</code></td><td><code>revokeReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Thu hồi Trusted Reference (APR-04)</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/{referenceId}/reinstate</code></td><td><code>reinstateReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Duyệt lại reference Revoked hoặc Rejected (APR-04)</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/{referenceId}/merge</code></td><td><code>mergeReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Gộp reference trùng vào reference khác</td></tr>
-<tr><td><code>GET</code></td><td><code>/references/{referenceId}/usage</code></td><td><code>getReferenceUsage</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Reference đang được dùng ở project nào</td></tr>
-<tr><td><code>GET</code></td><td><code>/references/{referenceId}/document</code></td><td><code>getReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tải file Source Document</td></tr>
-<tr><td><code>PUT</code></td><td><code>/references/{referenceId}/document</code></td><td><code>uploadReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Cung cấp hoặc thay file PDF cho reference</td></tr>
-<tr><td><code>POST</code></td><td><code>/references/{referenceId}/indexing/retry</code></td><td><code>retryReferenceIndexing</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Thử lại indexing (Failed → Queued)</td></tr>
-<tr><td><code>GET</code></td><td><code>/projects/{projectId}/references</code></td><td><code>listProjectReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Reference được chọn cho project</td></tr>
-<tr><td><code>POST</code></td><td><code>/projects/{projectId}/references</code></td><td><code>selectReferencesForProject</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chọn Trusted Reference vào project</td></tr>
-<tr><td><code>DELETE</code></td><td><code>/projects/{projectId}/references/{referenceId}</code></td><td><code>removeReferenceFromProject</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Bỏ chọn reference khỏi project (Active → Removed)</td></tr>
+<h4>Operation gọi (dùng mock tới khi hội tụ)</h4><div class="table-wrap"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">operationId</th><th scope="col">File</th><th scope="col">Tóm tắt</th><th scope="col">Mock (H4)</th></tr></thead><tbody>
+<tr><td><code>GET</code></td><td><code>/discovery/sources</code></td><td><code>listDiscoverySources</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nguồn discovery khả dụng và năng lực</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/discovery/searches</code></td><td><code>startDiscoverySearch</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tìm tài liệu (workflow discovery)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/discovery/author-searches</code></td><td><code>startAuthorSearch</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tìm công bố theo tác giả</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/discovered-results</code></td><td><code>listDiscoveredResults</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Kết quả tìm kiếm để review</td><td>Khu vực này</td></tr>
+<tr><td><code>PATCH</code></td><td><code>/discovered-results/{discoveredResultId}</code></td><td><code>setDiscoveredResultStatus</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chọn, bỏ chọn hoặc loại một kết quả</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/discovered-results/import</code></td><td><code>importDiscoveredResults</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập kết quả đã chọn thành Reference chờ duyệt (từng cái hoặc theo lô)</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/references</code></td><td><code>listReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Trusted Library và reference chờ duyệt</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references</code></td><td><code>createReferenceManually</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập reference thủ công theo DOI hoặc BibTeX</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/pdf-imports</code></td><td><code>importReferenceFromPdf</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nhập reference từ file PDF</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/approvals</code></td><td><code>decideReferences</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Duyệt hoặc từ chối reference theo lô (APR-04)</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/references/{referenceId}</code></td><td><code>getReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chi tiết reference</td><td>Khu vực này</td></tr>
+<tr><td><code>PATCH</code></td><td><code>/references/{referenceId}</code></td><td><code>updateReferenceMetadata</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Sửa metadata (tạo metadataVersion mới)</td><td>Khu vực này</td></tr>
+<tr><td><code>DELETE</code></td><td><code>/references/{referenceId}</code></td><td><code>deleteReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Xóa reference (APR-08), chỉ khi không project nào dùng</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/revoke</code></td><td><code>revokeReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Thu hồi Trusted Reference (APR-04)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/reinstate</code></td><td><code>reinstateReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Duyệt lại reference Revoked hoặc Rejected (APR-04)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/merge</code></td><td><code>mergeReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Gộp reference trùng vào reference khác</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/references/{referenceId}/usage</code></td><td><code>getReferenceUsage</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Reference đang được dùng ở project nào</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/references/{referenceId}/document</code></td><td><code>getReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Tải file Source Document</td><td>Khu vực này</td></tr>
+<tr><td><code>PUT</code></td><td><code>/references/{referenceId}/document</code></td><td><code>uploadReferenceDocument</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Cung cấp hoặc thay file PDF cho reference</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/indexing/retry</code></td><td><code>retryReferenceIndexing</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Thử lại indexing (Failed → Queued)</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/discovered-results/{discoveredResultId}</code></td><td><code>getDiscoveredResult</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Nguồn phát hiện và truy vấn gốc trên trang Reference (H26; operation mới 27/11/2026)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/references/{referenceId}/restore</code></td><td><code>restoreReference</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Khôi phục reference đã xóa mềm (H29; operation mới 27/11/2026)</td><td>Khu vực này</td></tr>
+<tr><td><code>POST</code></td><td><code>/projects/{projectId}/references</code></td><td><code>selectReferencesForProject</code></td><td><code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code></td><td>Chọn Trusted Reference vào project</td><td>Khu vực này</td></tr>
+<tr><td><code>GET</code></td><td><code>/workflows/{workflowId}</code></td><td><code>getWorkflow</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Khôi phục lần tìm, lô nhập theo địa chỉ (H8)</td><td>monitoring (PID-00059); test override</td></tr>
+<tr><td><code>POST</code></td><td><code>/workflows/{workflowId}/cancel</code></td><td><code>cancelWorkflow</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Hủy tìm (H8)</td><td>monitoring (PID-00059); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/prompts</code></td><td><code>listPrompts</code></td><td><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml</code></td><td>Prompt chọn hồ sơ tác giả của workflow (H11)</td><td>global (PID-00060); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/prompts/{promptId}</code></td><td><code>getPrompt</code></td><td><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml</code></td><td>Đọc lại prompt khi trạng thái đổi (H11)</td><td>global (PID-00060); test override</td></tr>
+<tr><td><code>POST</code></td><td><code>/prompts/{promptId}/response</code></td><td><code>answerPrompt</code></td><td><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml</code></td><td>Trả lời prompt chọn hồ sơ (H11)</td><td>global (PID-00060); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/projects</code></td><td><code>listProjects</code></td><td><code>docs/api-design/paths/07-workspace-and-project.yaml</code></td><td>Project Active cho dialog “Thêm vào project” (H17)</td><td>global (PID-00037); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/me</code></td><td><code>getMe</code></td><td><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code></td><td><code>Profile.googleScholarProfileUrl</code> cho “Công bố của tôi”, tên người ở provenance (H11, H15)</td><td>shell (PID-00013); test override</td></tr>
+<tr><td><code>GET</code></td><td><code>/me/audit-events</code></td><td><code>listAccountAuditEvents</code></td><td><code>docs/api-design/paths/14-shared-context-and-orchestration-architecture.yaml</code></td><td>Lịch sử reference trên trang Reference, lọc <code>objectType = reference</code>, <code>objectId</code> (H26)</td><td>Audit; mock sinh từ OpenAPI, test override</td></tr>
 </tbody></table></div>
 <h3 id="s-2-4">2.4. Điều kiện tiên quyết</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Điều kiện</th><th scope="col">Hiện trạng</th><th scope="col">Chặn?</th></tr></thead><tbody>
-<tr><td><a href="../../PID-00012/index.html">PID-00012</a> Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</td><td>Chưa làm</td><td>Có</td></tr>
-<tr><td><a href="../../PID-00013/index.html">PID-00013</a> Mock theo OpenAPI cho các khu vực</td><td>Chưa làm</td><td>Có</td></tr>
+<tr><td><a href="../../PID-00012/index.html">PID-00012</a> Shell: routing, token Cream, i18n, client API, client SSE, trạng thái dùng chung</td><td>Đang làm (27/11/2026), chưa vào <code>develop</code>; S11, S12 chờ sửa nguồn</td><td>Không chặn Sẵn sàng (H2); Dev chờ merge</td></tr>
+<tr><td><a href="../../PID-00013/index.html">PID-00013</a> Mock theo OpenAPI cho các khu vực</td><td>Đang làm (27/11/2026), chưa vào <code>develop</code></td><td>Không chặn Sẵn sàng (H2); Dev chờ merge</td></tr>
 </tbody></table></div>
 <h3 id="s-2-5">2.5. Môi trường và lệnh</h3>
-<pre>pnpm install
-pnpm --filter @sires/web dev</pre>
+<pre>pnpm install --frozen-lockfile
+pnpm --filter @sires/web dev   # bật mock theo README của apps/web/src/shell/mock</pre>
 
 <h2 id="s-3">3. Output</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Loại</th><th scope="col">Đường dẫn</th><th scope="col">Mô tả</th><th scope="col">Kiểm bằng</th></tr></thead><tbody>
-<tr><td id="o1">O1</td><td>Màn hình</td><td><code>apps/web/src/features/library/</code> (có sẵn)</td><td>Màn: Discover, Library, Reference; i18n, trạng thái loading, empty, error</td><td>Test ở dòng dưới</td></tr>
-<tr><td id="o2">O2</td><td>Mock</td><td><code>apps/web/src/features/library/__mocks__/</code> (tạo mới)</td><td>Mock 22 operation sinh từ OpenAPI</td><td>Vitest</td></tr>
-<tr><td id="o3">O3</td><td>Test</td><td><code>apps/web/src/features/library/discover.test.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
-<tr><td id="o4">O4</td><td>Test</td><td><code>apps/web/src/features/library/reference.test.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o1">O1</td><td>Màn hình</td><td><code>apps/web/src/features/library/</code> (có sẵn)</td><td>Màn: Discover, Library, Reference; i18n, trạng thái loading, empty, error</td><td>Test ở O3–O6</td></tr>
+<tr><td id="o2">O2</td><td>Mock</td><td><code>apps/web/src/features/library/__mocks__/</code> (tạo mới)</td><td>Override có trạng thái của 23 operation path 10 trên mock sinh từ OpenAPI (PID-00013), H4</td><td>Vitest qua O3–O6</td></tr>
+<tr><td id="o3">O3</td><td>Test</td><td><code>apps/web/src/features/library/discover.spec.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu: Discover (tìm, kết quả, chọn, lô, tác giả)</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o4">O4</td><td>Test</td><td><code>apps/web/src/features/library/reference.spec.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu: trang Reference và thao tác</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o5">O5</td><td>Test</td><td><code>apps/web/src/features/library/import.spec.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu: nhập thủ công DOI, BibTeX, PDF</td><td>Lệnh ở mục 6</td></tr>
+<tr><td id="o6">O6</td><td>Test</td><td><code>apps/web/src/features/library/library.spec.tsx</code> (tạo mới)</td><td>Test theo Tiêu chí nghiệm thu: Trusted Library, duyệt theo lô</td><td>Lệnh ở mục 6</td></tr>
 </tbody></table></div>
 
 <h2 id="s-4">4. Thiết kế kỹ thuật</h2>
 <h3 id="s-4-1">4.1. Dữ liệu</h3>
 <p>Không có bảng mới.</p>
 <h3 id="s-4-2">4.2. API</h3>
-<p>Không có API mới.</p>
+<p>Không có API mới. Hợp đồng thiếu điều cần dùng: ghi ở mục “Phải sửa ở nguồn” của <a href="../index.html#sua-o-nguon">trang ticket</a>, không tự thêm trường.</p>
 <h3 id="s-4-3">4.3. Sự kiện</h3>
-<p>Không có sự kiện.</p>
+<p>Không phát sự kiện. Nghe qua client SSE của shell: <code>workflow.status_changed</code>, <code>prompt.status_changed</code>, <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code>, <code>pending_action.changed</code>, <code>project_reference.changed</code>; tải lại khi shell báo cần tải lại (H19).</p>
 <h3 id="s-4-4">4.4. Quy tắc và trạng thái</h3>
-<ul><li>G3 Discover có trạng thái đang tìm</li>
-<li>G4 Library, trạng thái rỗng, đang tải</li>
-<li>G5 Reference: metadata, provenance, tài liệu, nơi đang dùng</li>
-<li>Duyệt theo lô, nhập BibTeX, RIS, DOI, PDF</li></ul>
+<ul><li>G3 Discover có trạng thái đang tìm — H6–H11</li>
+<li>G4 Library, trạng thái rỗng, đang tải — H13</li>
+<li>G5 Reference: metadata, provenance, tài liệu, nơi đang dùng — H15–H17</li>
+<li>Duyệt theo lô, nhập BibTeX, RIS (H25), DOI, PDF — H12, H14, H25</li>
+<li>Chi tiết: <a href="brief.html#quy-tac">brief.html</a></li></ul>
 <h3 id="s-4-5">4.5. Giao diện</h3>
-<p>Theo <a href="../designs/notes.html">designs/notes.html</a>. Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review.</p>
+<p>Theo <a href="../designs/notes.html">designs/notes.html</a> và sketch <a href="../designs/Discover-Library-Reference.html">Discover-Library-Reference.html</a>. Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review.</p>
 <h3 id="s-4-6">4.6. Agent và model</h3>
 <p>Không gọi model trực tiếp.</p>
 <h3 id="s-4-7">4.7. Lỗi và trường hợp biên</h3>
 <div class="table-wrap"><table><thead><tr><th scope="col">Trường hợp</th><th scope="col">Xử lý</th></tr></thead><tbody>
-<tr><td>Nguồn không khả dụng</td><td>Đề nghị nhập thủ công</td></tr>
-<tr><td>Reference đang được dùng</td><td>Xóa bị từ chối, nêu nơi dùng</td></tr>
+<tr><td>Nguồn không khả dụng</td><td>Đề nghị nhập thủ công (H8, EC03–EC05)</td></tr>
+<tr><td>Reference đang được dùng</td><td>Xóa bị từ chối, nêu nơi dùng, gợi ý thu hồi (H17, EC39)</td></tr>
+<tr><td>Danh sách đầy đủ</td><td><a href="scope.html#edge-case">scope.html — Edge case EC01–EC46</a></td></tr>
 </tbody></table></div>
 
 <h2 id="s-5">5. Các bước thực hiện</h2>
 <ol>
-<li id="b1"><strong>B1</strong> Đọc <code>docs/ui-design/design.md</code>, màn tham chiếu, <code>designs/notes.html</code> — Kết quả: Danh sách màn và trạng thái — Kiểm tra: Khớp mục 4.5</li>
-<li id="b2"><strong>B2</strong> Dựng theo skill sires-ui-executor: G3 Discover có trạng thái đang tìm — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b3"><strong>B3</strong> Dựng theo skill sires-ui-executor: G4 Library, trạng thái rỗng, đang tải — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b4"><strong>B4</strong> Dựng theo skill sires-ui-executor: G5 Reference: metadata, provenance, tài liệu, nơi đang dùng — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b5"><strong>B5</strong> Dựng theo skill sires-ui-executor: Duyệt theo lô, nhập BibTeX, RIS, DOI, PDF — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code></li>
-<li id="b6"><strong>B6</strong> Nối client API từ type sinh, mock trong thư mục test của khu vực — Kết quả: Không viết tay kiểu dữ liệu — Kiểm tra: <code>pnpm nx run @sires/web:typecheck</code></li>
-<li id="b7"><strong>B7</strong> Chuỗi vi/en theo namespace khu vực; trạng thái loading, empty, error — Kết quả: Không còn chuỗi cứng — Kiểm tra: Đổi ngôn ngữ trên preview</li>
-<li id="b8"><strong>B8</strong> Viết test Vitest, chạy <code>check-ui.mjs</code> — Kết quả: Test đạt — Kiểm tra: pnpm nx run @sires/web:test</li>
+<li id="b1"><strong>B1</strong> Đọc <code>docs/ui-design/design.md</code>, màn tham chiếu, <code>designs/notes.html</code>, README shell và mock của PID-00012, PID-00013 — Kết quả: Danh sách màn và trạng thái — Kiểm tra: Khớp mục 4.5 (S01)</li>
+<li id="b2"><strong>B2</strong> Dựng theo skill sires-ui-executor: G3 Discover có trạng thái đang tìm — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S02–S04)</li>
+<li id="b3"><strong>B3</strong> Dựng theo skill sires-ui-executor: G4 Library, trạng thái rỗng, đang tải — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S06)</li>
+<li id="b4"><strong>B4</strong> Dựng theo skill sires-ui-executor: G5 Reference: metadata, provenance, tài liệu, nơi đang dùng — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S08, S09)</li>
+<li id="b5"><strong>B5</strong> Dựng theo skill sires-ui-executor: Duyệt theo lô, nhập BibTeX, RIS, DOI, PDF — Kết quả: Màn chạy với mock — Kiểm tra: Xem trên preview <code>web</code> (S03, S05, S07)</li>
+<li id="b6"><strong>B6</strong> Nối client API từ type sinh, override mock trong <code>__mocks__/</code> của khu vực — Kết quả: Không viết tay kiểu dữ liệu — Kiểm tra: <code>pnpm nx run @sires/web:typecheck</code> (S01)</li>
+<li id="b7"><strong>B7</strong> Chuỗi vi/en theo namespace khu vực; trạng thái loading, empty, error — Kết quả: Không còn chuỗi cứng — Kiểm tra: Đổi ngôn ngữ trên preview (S02–S09)</li>
+<li id="b8"><strong>B8</strong> Viết test Vitest, chạy <code>check-ui.mjs</code> — Kết quả: Test đạt — Kiểm tra: <code>pnpm nx run @sires/web:test</code> (mỗi slice)</li>
 </ol>
 
 <h2 id="s-6">6. Kiểm tra hoàn thành</h2>
@@ -133,14 +149,15 @@ node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src
 pnpm nx affected -t lint typecheck test build
 node scripts/development/check-tracks.mjs
 node scripts/docs/add-license.mjs --check</pre>
+<p>Bảng AC → test → slice đầy đủ (35 AC) ở <a href="acceptance.html">acceptance.html</a>. Hai AC của ticket:</p>
 <div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Test</th><th scope="col">Kết quả mong đợi</th></tr></thead><tbody>
-<tr><td>PID-00098-AC01</td><td><code>apps/web/src/features/library/discover.test.tsx</code></td><td>Given Discovered Result, When hiển thị, Then không bao giờ giống Reference Trusted.</td></tr>
-<tr><td>PID-00098-AC02</td><td><code>apps/web/src/features/library/reference.test.tsx</code></td><td>Given indexing lỗi, When mở Reference, Then hiện lỗi và nút thử lại.</td></tr>
+<tr><td>PID-00098-AC01</td><td><code>apps/web/src/features/library/discover.spec.tsx</code> › kết quả không giống Trusted</td><td>Given lần tìm trả 5 Discovered Result, trong đó 1 trùng Trusted Reference R, When hiển thị danh sách, Then 4 dòng có nhãn viền đứt “Chưa duyệt — không dùng làm nguồn”, không dòng nào có chip Trusted, chip indexing, BibTeX key hay kiểu viền liền của trạng thái đã chốt cho chính kết quả; dòng trùng ghi “Đã có trong Trusted Library” kèm liên kết tới R và ô chọn vô hiệu.</td></tr>
+<tr><td>PID-00098-AC02</td><td><code>apps/web/src/features/library/reference.spec.tsx</code> › indexing lỗi có thử lại</td><td>Given Reference Trusted có <code>indexingStatus = Failed</code> và <code>indexingError</code>, When mở trang Reference, Then hộp lỗi hiện lý do và mã, “Thử lại indexing” gọi <code>retryReferenceIndexing</code> một lần và chip chuyển Queued; “Tải PDF khác” mở chọn tệp.</td></tr>
 </tbody></table></div>
 
 <h2 id="s-7">7. Giới hạn và điểm dừng</h2>
 <ul><li><strong>Không được sửa:</strong> thư mục ngoài luồng <code>web/library</code>; <code>docs/</code>; file sinh tự động (<code>libs/ts/contracts/src/generated/</code>, <code>docs/ui-design/pages/</code>, <code>docs/api-design/dist/</code>); migration đã có.</li>
-<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng; gặp hành vi spec không nói tới; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
+<li><strong>Dừng và hỏi khi:</strong> hợp đồng hay DDL thiếu điều cần dùng ngoài những gì mục Làm rõ đã ghi; gặp hành vi spec không nói tới; shell thiếu API cần dùng; cần sửa luồng khác (đề xuất PID riêng, quy tắc 1.4).</li>
 <li><strong>Câu hỏi đề xuất (chưa cấp mã):</strong> Không có.</li></ul>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Ticket PID-00098</a><a href="../../../index.html#pids">Danh sách PID</a></nav>
 </main>

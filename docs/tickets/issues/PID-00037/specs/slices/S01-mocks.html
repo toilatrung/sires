@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00037.">
+<title>PID-00037 — S01 Mock của khu vực: project và Dashboard | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00037</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00037</p><h1>S01 — Mock của khu vực: project và Dashboard</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (nền cho test của S02–S06)</td></tr>
+<tr><th scope="row">Output spec</th><td>O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B4</td></tr>
+<tr><th scope="row">Edge case</th><td>EC19 (kho chung)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00013 S01, S02 đã merge vào <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc README của <code>apps/web/src/shell/mock/</code> (PID-00013): cách khai override qua hợp đồng Feature, helper test, cờ bật mock khi dev.</li>
+<li>Viết override có trạng thái trong <code>apps/web/src/features/global/__mocks__/</code> (tạo mới) cho <code>listProjects</code> (lọc <code>status</code>, phân trang <code>cursor</code>), <code>createProject</code>, <code>updateProject</code> (<code>If-Match</code>, <code>412</code>), <code>archiveProject</code>, <code>unarchiveProject</code>, <code>deleteProject</code> (<code>purgeAfter</code> = +30 ngày), <code>restoreProject</code> (<code>409 restore_window_expired</code>), <code>getDashboard</code>; kiểu lấy từ <code>PublicApi</code> của <code>@sires/contracts</code>, không viết tay.</li>
+<li>Kho dữ liệu chung của khu vực (module trong <code>__mocks__/</code>) để mock của PID-00060 dùng cùng project, pending action; dữ liệu mẫu theo designs/notes.html.</li>
+<li>Kịch bản cho test: tài khoản trống (first-run), có workflow Interrupted, project có workflow hoạt động (409 <code>active_workflow_exists</code>), xung đột phiên bản; khai qua hàm tạo kho, không qua biến toàn cục.</li>
+<li>Đăng ký override qua trường mock của Feature trong <code>apps/web/src/features/global/index.tsx</code>; không khai <code>listProviderConnections</code>, <code>listWorkflows</code> (H9).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:typecheck</code> → đạt (override có type)</li>
+<li><code>pnpm nx run @sires/web:test</code> → không có lỗi trùng operation (EC10 của PID-00013)</li>
+<li>Thao tác tay: bật mock khi dev, mở <code>/projects</code>, <code>/dashboard</code> không cần gateway</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Tám operation có override có trạng thái, dùng chung một kho; test của S02–S06 chạy trên kho này</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00037</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00037 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

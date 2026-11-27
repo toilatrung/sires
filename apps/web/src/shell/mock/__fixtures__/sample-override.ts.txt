@@ -1,0 +1,10 @@
+// Typed override of the sample mock (PID-00013 AC01). The test copies it next to the generated module as
+// override.ts and typechecks it; it is a .txt here so the web project's own typecheck does not compile it.
+import { operations } from './generated';
+
+const note = operations.getNote.responses[200].body();
+
+// The line below reads the field the test renames in the sample OpenAPI.
+export const heading: string = note.title.toUpperCase();
+
+export const published = { ...note, status: 'Published' as const };

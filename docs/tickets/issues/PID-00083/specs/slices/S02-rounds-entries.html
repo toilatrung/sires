@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S02 của ticket PID-00083.">
+<title>S02 — Problem Brief, cột theo bên, entry theo vòng | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00083</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00083</p><h1>S02 — Problem Brief, cột theo bên, entry theo vòng</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H2, H5, H6, H12, H15, H18 (chốt theo đề xuất, PO ủy quyền 26/11/2026). Giao diện chỉ hiện điều server trả; quy tắc ẩn theo vòng do backend thực thi (OQ-101).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00083-AC01, UX-MONITOR-006-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B3; H2, H5, H6, H12, H15, H18</td></tr>
+<tr><th scope="row">Edge case</th><td>EC02, EC03, EC04, EC05, EC06, EC07, EC08, EC09, EC10, EC19, EC22 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đầu phiên theo <code>Workflow--view-deliberation-*</code>: mã phiên, loại vấn đề, bước, giờ mở, Context Snapshot (số entity), số vòng tối đa sau Vòng 1. Problem Brief: vấn đề, ràng buộc, tiêu chí, phương án đã biết, góc nhìn của từng Analysis Agent.</li>
+<li>Ba cột theo <code>participants</code>: tên bên, góc nhìn, model và kết nối (<code>providerConnectionName</code>), chip trạng thái chạy (idle, running, error; running có chấm Đang chạy). Hàng theo <code>rounds</code>: Vòng 1 đề xuất độc lập, Vòng 2 phản biện chéo, vòng hẹp kèm <code>focus</code> (EC10).</li>
+<li>Entry (<code>entries</code>): lập trường (phương án, điểm theo loại lý do kèm tiêu chí / giả định / rủi ro, độ tin cậy), phản biện (mỗi điểm: loại, lý do, liên kết tới <code>targetPointId</code>; điểm đích ghi số phản biện, liên kết ngược, đi được bằng bàn phím), phát hiện; nhãn “Giả định” cho <code>assumption = true</code>, “Nguồn:” cho <code>sourceRefs</code> (EC04–EC06).</li>
+<li><code>pendingEntries</code> của vòng đang mở → ô “Đang viết, mở khi vòng đóng”, không có nội dung (PID-00083-AC01, EC02, EC03); bên không có entry ở vòng đã đóng → “Không có lập trường” (EC09).</li>
+<li>Đổi lập trường: entry mới ghi “Đổi lập trường” và <code>changeReason</code>, entry cũ thu gọn “Đã thay” (EC07); rút lại: “Đã rút lại” kèm lý do; <code>needsReview</code> → “Cần xem lại” (EC08). Nội dung dạng chữ.</li>
+<li>SSE <code>deliberation.round_closed</code>, <code>deliberation.entry_retracted</code>, <code>deliberation.status_changed</code> của phiên đang xem → đọc lại <code>getDeliberation</code> (EC19). Dưới 768 px cột xếp chồng theo vòng (EC22).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › vòng 1 còn ẩn</code> (PID-00083-AC01, EC02); <code>› ba cột theo vòng</code> (UX-MONITOR-006-AC01, EC04); <code>› vòng 2 đang mở</code> (EC03); <code>› nối điểm bị phản biện</code> (EC05); <code>› nhãn giả định và nguồn</code> (EC06); <code>› đổi lập trường</code> (EC07); <code>› rút lại và cần xem lại</code> (EC08); <code>› không có lập trường</code> (EC09); <code>› vòng hẹp</code> (EC10); <code>› vòng đóng theo SSE</code> (EC19)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/monitoring/</code></li>
+<li>Thao tác tay trên mock: <code>Workflow--view-deliberation-running</code>, <code>-done</code> ở 1440×900 và 390×844 (EC22)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PID-00083-AC01 đạt; entry của vòng đang mở không lộ nội dung</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00083</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00083 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

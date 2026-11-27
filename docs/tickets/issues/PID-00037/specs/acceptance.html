@@ -1,0 +1,44 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00037.">
+<title>PID-00037 — AC → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00037</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00037</p><h1>PID-00037 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test, gồm AC của ticket và AC của requirement được phủ (phần giao diện chạy trên mock; phần backend kiểm khi Hội tụ). Số liệu kiểm lấy từ ticket, PRD hoặc câu trả lời H1…; không tự đặt số khi OQ chưa chốt.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00037-AC01</td><td>Given tài khoản chưa có project (mock trả <code>recentProjects</code> rỗng, <code>listProjects</code> rỗng), When mở <code>/dashboard</code>, Then khối Project gần đây hiện trạng thái first-run có nút “Tạo project”; điền tên và câu hỏi nghiên cứu rồi xác nhận thì <code>createProject</code> được gọi một lần và mở <code>/projects/{projectId}/chat</code> của project mới.</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › first-run tạo project</td><td>S06, S03</td><td>ticket; H3, H5</td></tr>
+<tr><td>UX-LAYOUT-004-AC01</td><td>Given Dashboard có 2 pending action và 1 workflow đang chạy, When mở Dashboard, Then khối Pending actions đứng trên cùng, trước khối Project gần đây (phần khung; nội dung dòng do PID-00060 kiểm).</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › thứ tự khối</td><td>S05</td><td>PRD 15.1; H2</td></tr>
+<tr><td>UX-STATE-005-AC01</td><td>Given một workflow Interrupted trong <code>interruptedWorkflows</code>, When mở Dashboard sau khi đăng nhập lại, Then banner khôi phục hiện với nút “Mở Recovery decision” tới đúng đối tượng.</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › banner khôi phục</td><td>S06</td><td>PRD 15.4; H4</td></tr>
+<tr><td>WS-DASHBOARD-001-AC03</td><td>Given tài khoản chưa có project, When mở Dashboard, Then hiển thị trạng thái rỗng với nút tạo project.</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › first-run tạo project</td><td>S06</td><td>PRD 7.1</td></tr>
+<tr><td>WS-DASHBOARD-001-AC04</td><td>Given một project Archived, When mở Dashboard, Then project đó không xuất hiện trong khối Project gần đây.</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › bỏ project Archived</td><td>S05</td><td>PRD 7.1</td></tr>
+<tr><td>PROJ-CRUD-001-AC01</td><td>Given form có tên và câu hỏi nghiên cứu, When xác nhận, Then <code>createProject</code> gửi đúng <code>ProjectCreate</code> và Project AI Chat của project mới được mở (phần giao diện; tạo trong backend kiểm khi Hội tụ).</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › tạo project mở chat</td><td>S03</td><td>PRD 7.2; H5</td></tr>
+<tr><td>PROJ-CRUD-001-AC02</td><td>Given form thiếu câu hỏi nghiên cứu, When xác nhận, Then không có request tạo project và trường thiếu được chỉ rõ.</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › thiếu câu hỏi nghiên cứu</td><td>S03</td><td>PRD 7.2</td></tr>
+<tr><td>PROJ-CRUD-002-AC02</td><td>Given project Archived, When mở form sửa, Then các trường ở chế độ chỉ đọc.</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › Archived chỉ đọc</td><td>S04</td><td>PRD 7.2; H8</td></tr>
+<tr><td>PROJ-CRUD-003-AC01</td><td>Given project có một workflow Running, When chọn lưu trữ và xác nhận, Then mock trả <code>409 active_workflow_exists</code>, project vẫn Active và dialog liệt kê workflow đó.</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › chặn khi còn workflow</td><td>S04</td><td>PRD 7.2; H7</td></tr>
+<tr><td>PROJ-CRUD-003-AC05</td><td>Given project Active không có workflow hoạt động, When xác nhận xóa, Then project biến khỏi tab Active và xuất hiện ở tab Đã xóa kèm ngày xóa vĩnh viễn dự kiến (phần giao diện).</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › xóa rồi khôi phục</td><td>S04</td><td>PRD 7.2; H7</td></tr>
+<tr><td>PROJ-CRUD-003-AC06</td><td>Given project đã xóa mềm 10 ngày trước, When chọn Khôi phục, Then project trở về tab của trạng thái trước khi xóa (phần giao diện).</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › xóa rồi khôi phục</td><td>S04</td><td>PRD 7.2; H7</td></tr>
+<tr><td>PROJ-CRUD-003-AC08</td><td>Given project có workflow Waiting for User, When chọn xóa và xác nhận, Then thao tác bị chặn và workflow được liệt kê.</td><td><code>apps/web/src/features/global/projects.spec.tsx</code> › chặn khi còn workflow</td><td>S04</td><td>PRD 7.2; H7</td></tr>
+<tr><td>UX-SETTINGS-002-AC02</td><td>Given tài khoản chưa có Provider Connection, When mở Dashboard, Then thấy hướng dẫn thêm API key và liên kết tới Settings › Provider Connections (phần Dashboard).</td><td><code>apps/web/src/features/global/dashboard.spec.tsx</code> › banner API key</td><td>S06</td><td>PRD 15.12; H3</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00037</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00037 · AC → test · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

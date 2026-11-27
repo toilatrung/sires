@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00098.">
+<title>PID-00098 — S03 Discover: kết quả, chọn, gửi lô | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S03 — Discover: kết quả, nhãn phân biệt, chọn và loại, gửi lô, tóm tắt lô</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00098-AC01, UX-REF-001-AC01, DISC-SCHOLAR-001-AC01, DISC-SCHOLAR-001-AC04, DISC-REVIEW-001-AC01, LIB-IMPORT-001-AC01, LIB-IMPORT-001-AC03, LIB-APPROVAL-001-AC04, UX-REF-004-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B5, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC09–EC18, EC30, EC44, EC45, EC48</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02; PID-00012 S06, S11 (chip Selected, Imported, New)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Danh sách kết quả theo H9: <code>listDiscoveredResults</code> với <code>workflowId</code>, trang 20 mục, “Tải thêm” theo <code>nextCursor</code> (EC30); dòng gồm ô chọn, tiêu đề, tác giả · venue · năm, định danh mono, đoạn mô tả, số trích dẫn, nguồn, liên kết “Bản ghi nguồn” (EC14); thiếu metadata hiện “—” (EC12); nội dung hiện dạng chữ (EC13); đang tải dùng skeleton (EC45).</li>
+<li>Nhãn phân biệt theo H9: viền đứt “Chưa duyệt — không dùng làm nguồn”; dòng có <code>duplicateOfReferenceId</code> gọi nhãn theo <code>duplicateOfReferenceStatus</code> (H23; không gọi <code>getReference</code> từng dòng) và ghi “Đã có trong Trusted Library”, “Đã từ chối trước đây”, “Đang chờ duyệt” hoặc “Đã thu hồi” kèm liên kết, ô chọn vô hiệu (EC09–EC11). Không dùng chip Trusted, chip indexing hay BibTeX key cho kết quả.</li>
+<li>Chọn, bỏ chọn, “Loại”, “Chọn lại”, “Chọn tất cả trên trang” gọi <code>setDiscoveredResultStatus</code>; lỗi trả ô về trạng thái cũ (EC15). Cột phải: “Đã chọn · n” (đếm <code>status = Selected</code>), nút chính “Gửi n kết quả vào luồng duyệt”, vô hiệu khi 0 hoặc hơn 50 kèm lý do (EC16).</li>
+<li>Gửi → <code>importDiscoveredResults</code> (<code>Idempotency-Key</code>) → thẻ thao tác dài “Đang xử lý lô n mục”; nghe <code>workflow.status_changed</code>; kết thúc → đọc lại các mục đã gửi và hiện tóm tắt từng mục theo H10 (đọc <code>listDiscoveredResults</code> với <code>importWorkflowId</code>; theo <code>importState.status</code>: đã tạo, trùng, lỗi kèm lý do từ <code>importState.error</code>; khi đang chạy hiện chờ, đang xử lý; H24), “Thử lại các mục lỗi”, liên kết “Mở Trusted Library để duyệt” (EC17); Interrupted → liên kết Recovery decision, không tự gửi lại (EC18).</li>
+<li>Nguồn mỗi dòng theo <code>DiscoveredResult.source</code> (“OpenAlex”, “Google Scholar”; UX-REF-004-AC02); dòng tóm tắt ghi “Google Scholar: đã dùng n/limit lượt” từ <code>Workflow.scholarSearch</code> khi lần tìm dùng Google Scholar; có <code>limitReached</code> → thông báo trên danh sách theo EC48 (H21).</li>
+<li>Bố cục 1024 và 390 px theo H20 (EC44).</li>
+<li>Test trong <code>apps/web/src/features/library/discover.spec.tsx</code>: kết quả không giống Trusted, nhãn đã có và chưa duyệt, metadata và bản ghi nguồn, đã từ chối trước đây, reference trùng không đọc được, thiếu metadata, nội dung HTML hiện dạng chữ, chọn 3 loại 2, chọn lỗi trả lại trạng thái, giới hạn lô 50, tóm tắt lô có mục lỗi, mục trùng trong lô, lô bị gián đoạn, nhãn nguồn, hết hạn mức Google Scholar.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → test của S03 đạt</li>
+<li>Test: <code>apps/web/src/features/library/discover.spec.tsx › kết quả không giống Trusted</code> (PID-00098-AC01); <code>› nhãn đã có và chưa duyệt</code> (UX-REF-001-AC01, DISC-SCHOLAR-001-AC04); <code>› metadata và bản ghi nguồn</code> (DISC-SCHOLAR-001-AC01); <code>› chọn 3 loại 2</code> (DISC-REVIEW-001-AC01); <code>› tóm tắt lô có mục lỗi</code> (LIB-IMPORT-001-AC01); <code>› mục trùng trong lô</code> (LIB-IMPORT-001-AC03); <code>› đã từ chối trước đây</code> (LIB-APPROVAL-001-AC04)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li>
+<li>Thao tác tay: preview 1440×900, 1024×768, 390×844, vi và en</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Kết quả luôn có nhãn phân biệt với Trusted; chọn, loại, gửi lô và tóm tắt lô chạy trên mock; test đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

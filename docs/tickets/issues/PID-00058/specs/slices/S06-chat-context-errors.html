@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00058.">
+<title>S06 — Chat: khung context và lỗi provider | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>S06 — Chat: khung context và lỗi provider</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H11, H15, H16 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng của ticket; phủ spec 4.7 “Lỗi provider” và khung context của thiết kế</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Chat), O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4, B6; H11, H15, H16</td></tr>
+<tr><th scope="row">Edge case</th><td>EC28, EC29, EC30 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S03; mock khi chạy dev: <code>getPlan</code> (planning), <code>listProjectReferences</code> (library), <code>getWorkflow</code>, <code>getAgentRun</code> (PID-00059), <code>listProviderConnections</code> (PID-00036), <code>getMe</code> (mock dùng chung)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Khung “Context của cuộc trò chuyện” bên phải theo <code>Chat.dc.html</code>: research context (version, số giả định mở) từ <code>getSharedContext</code>; Plan baseline (số version, trạng thái) từ <code>getPlan</code>; Task (mã, tên active task); Trusted Reference được chọn (số <code>selectedReferenceIds</code>, số Indexed từ <code>listProjectReferences</code>); Lĩnh vực nghiên cứu: “Gửi” hoặc “Không gửi (tắt trong Profile)” theo <code>getMe</code> <code>preferences.includeResearchFieldInContext</code>, liên kết <code>/settings/profile</code>; “Xem workflow đang chạy” khi <code>activeWorkflowIds</code> có phần tử (EC29).</li>
+<li>Lỗi provider: theo dõi <code>MessageAccepted.workflowId</code>, <code>MessageAccepted.agentRunId</code> (khi có) và <code>agentRunId</code> của delta; <code>workflow.status_changed</code> sang Failed hoặc <code>agent_run.status_changed</code> sang Failed → <code>getWorkflow</code> (<code>lastError</code>) hoặc <code>getAgentRun</code> (<code>error</code>, <code>providerConnectionId</code>); khối lỗi trong luồng nêu agent, mã lỗi, tên Provider Connection (<code>listProviderConnections</code>), hành động: <code>auth_failed</code>, <code>permission_denied</code> → “Mở Provider Connections” (<code>/settings/providers</code>); lỗi tạm thời → “System đã thử lại” và “Mở Agent Activity”; không hiển thị nguyên văn <code>message</code> của provider (EC28).</li>
+<li>Khổ dưới 1280 px: khung context xếp xuống dưới; 390 px không cuộn ngang (EC30).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/project/chat.spec.tsx › lỗi provider</code> (EC28); <code>› khung context</code> (EC29)</li>
+<li>Thao tác tay trên mock: kịch bản lỗi <code>auth_failed</code>; khổ 1024×768 và 390×844 (EC30)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Khung context đủ các dòng của thiết kế; lỗi provider hiện tên kết nối và hành động</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00058</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

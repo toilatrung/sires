@@ -24,10 +24,12 @@ Profile:
       format: uri
       readOnly: true
     googleScholarProfileUrl:
-      type: string
+      type: [string, 'null']
       format: uri
       pattern: '^https://'
-      description: Chỉ là liên kết, không phải đăng nhập Google (ASM-14).
+      description: |
+        Chỉ là liên kết, không phải đăng nhập Google (ASM-14). Gửi `null` trong `updateProfile` (merge-patch) để xóa liên kết
+        (PID-00036 H11).
 
 Preferences:
   type: object
@@ -41,10 +43,34 @@ Preferences:
     timezone:
       type: string
       examples: [Asia/Saigon]
+      description: |
+        Giao diện không dùng trường này để hiển thị: ngày giờ luôn theo múi giờ của trình duyệt (UX-I18N-004,
+        PID-00012 EC21, PC-05 P4). Công dụng khác của trường (nếu có) chưa chốt.
     debugMode:
       type: boolean
       default: false
       description: Bật thì lưu toàn văn prompt/phản hồi model 30 ngày (OQ-062, CTX-REGISTRY-002).
+    googleScholarDiscovery:
+      type: object
+      description: |
+        Mặc định Google Scholar trong discovery của tài khoản (PRD 18.1 `Account.googleScholarDiscovery`; UX-SETTINGS-006,
+        DISC-SCHOLAR-003; PC-05 GS-A2, GS-A3): dùng Google Scholar cho tài liệu OpenAlex không có hay không, và số lượt tối
+        đa mỗi lần chạy discovery. Mỗi lần chạy ghi đè được bằng `googleScholar` của `DiscoverySearchRequest`,
+        `AuthorSearchRequest` (Discover, chỉ dẫn cho agent); ghi đè không đổi giá trị ở đây. Giá trị ngoài 0–20 hoặc không
+        nguyên trả `400 validation_failed`, không lưu. Không có trường SerpApi API key: hệ thống trả phí lượt tìm trong hạn
+        mức tháng của tài khoản (`DiscoverySource.monthlyQuota`; PC-05 GS-A6). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy
+        quyền 26/11/2026; PID-00098 mục 1).
+      properties:
+        enabled:
+          type: boolean
+          default: false
+          description: Mặc định không dùng vì Google Scholar chỉ dùng khi Researcher chọn (DEC-61).
+        searchLimitPerRun:
+          type: integer
+          minimum: 0
+          maximum: 20
+          default: 5
+          description: Số lượt Google Scholar tối đa mỗi lần chạy discovery; một lượt là một trang kết quả SerpApi; 0 là tắt.
 
 Account:
   allOf:
@@ -88,6 +114,23 @@ VerificationThresholds:
       properties:
         mismatch: { type: number, minimum: 0, maximum: 1 }
     isDefault: { type: boolean, readOnly: true }
+    defaults:
+      type: object
+      readOnly: true
+      description: |
+        Giá trị mặc định hiện hành của hệ thống (cùng cấu trúc `claimSupport`, `citationMismatch`), để giao diện hiện mặc
+        định cạnh giá trị đang dùng và khôi phục mặc định (UX-SETTINGS-005; PID-00036 H16). Giá trị do identity giữ
+        (PID-00041), không ghi cứng ở web.
+      properties:
+        claimSupport:
+          type: object
+          properties:
+            supported: { type: number, minimum: 0, maximum: 1 }
+            partiallySupported: { type: number, minimum: 0, maximum: 1 }
+        citationMismatch:
+          type: object
+          properties:
+            mismatch: { type: number, minimum: 0, maximum: 1 }
     updatedAt: { $ref: common.yaml#/Timestamp }
     updatedBy: { $ref: common.yaml#/ActorRef }
 
@@ -251,6 +294,13 @@ EmbeddingSettings:
   properties:
     providerConnectionId: { $ref: common.yaml#/Id }
     model: { type: string, examples: [text-embedding-3-large, gemini-embedding-001] }
+    indexedReferenceCount:
+      type: integer
+      minimum: 0
+      readOnly: true
+      description: |
+        Số Reference đang có index bằng model hiện tại, tức số phải index lại nếu đổi model; dialog xác nhận đổi model nêu
+        số này trước khi gửi (UX-SETTINGS-003-AC01, EVID-INDEX-003; PID-00036 H14).
     reindex:
       type: object
       readOnly: true

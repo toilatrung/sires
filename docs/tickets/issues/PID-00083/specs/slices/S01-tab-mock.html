@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00083.">
+<title>S01 — Tab Thảo luận, chọn phiên và mock | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00083</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00083</p><h1>S01 — Tab Thảo luận, chọn phiên và mock</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H3, H4, H13 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; nền cho PID-00083-AC01, UX-MONITOR-006-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (khung tab), O2</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2; H3, H4, H13</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC20, EC23 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00012, PID-00013 trên <code>develop</code>; trang chi tiết workflow của PID-00059 (S03) để gắn tab</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc design.md, <code>Workflow.dc.html</code> các trạng thái <code>view-deliberation-*</code>, <code>AgentList.dc.html</code>, <code>designs/notes.html</code>.</li>
+<li>Thêm tab “Thảo luận” vào trang workflow của PID-00059 (cùng khu vực monitoring), trạng thái tab theo <code>?view=deliberation&amp;deliberation=</code> mã; tab chỉ hiện khi <code>listDeliberations</code> (<code>workflowId</code>) có phiên, hoặc có bước chờ prompt <code>purpose = deliberation_proposal</code> (EC01). Bước deliberation trong danh sách bước có liên kết “Xem thảo luận”.</li>
+<li>Nhiều phiên: bộ chọn phiên (mới nhất trước, loại vấn đề, trạng thái) (EC20).</li>
+<li>Mock trong <code>apps/web/src/features/monitoring/__mocks__/</code>: override có trạng thái cho <code>listDeliberations</code>, <code>getDeliberation</code> (H4); kịch bản phiên Running ở Vòng 1, Vòng 2, Completed, Failed, Cancelled, cùng model, snapshot lỗi thời; phát <code>deliberation.*</code>, <code>context_snapshot.outdated</code> qua mock <code>/events</code>. Không khai operation của PID-00059 hay PID-00060.</li>
+<li>Chuỗi i18n trong namespace <code>monitoring</code>, file của PID này đặt trong <code>apps/web/src/features/monitoring/deliberation/</code>; đang tải, trống, lỗi của shell (EC23).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code>, <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › không có phiên không có tab</code> (EC01); <code>› chọn phiên</code> (EC20); <code>› đổi ngôn ngữ, đang tải, lỗi</code> (EC23)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Tab hiện đúng lúc, chọn được phiên; mock 2 operation không trùng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00083</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00083 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

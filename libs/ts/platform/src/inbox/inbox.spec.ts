@@ -5,6 +5,7 @@
 import { SpanKind, trace } from '@opentelemetry/api';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace';
 import { connect, type Channel, type ChannelModel } from 'amqplib';
+import { createServer, connect as connectTcp, type Server, type Socket } from 'node:net';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { emitAudit, type AuditEvent } from '../audit/audit';
@@ -81,7 +82,7 @@ function taskEvent(taskId: string, version: number, toState: string, id = uuidv7
   });
 }
 
-describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', { timeout: 30_000 }, () => {
+describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', () => {
   let stack: MessagingTestStack;
   let connection: ChannelModel;
   let publisher: Channel;
@@ -172,7 +173,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     await Promise.all(consumers.map((consumer) => consumer.stop()));
     await connection?.close().catch(() => undefined);
     await stack?.stop();
-  }, 60_000);
+  });
 
   const reset = () => {
     outcomes.length = 0;
@@ -405,7 +406,72 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
-  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', { timeout: 60_000 }, async () => {
+  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', async () => {
+    // A TCP proxy to the broker that is not listening yet: the first attempt is refused, as when the broker is down.
+    const broker = new URL(stack.rabbit.amqpUrl);
+    const sockets = new Set<Socket>();
+    const proxy: Server = createServer((client) => {
+      const upstream = connectTcp(Number(broker.port), broker.hostname);
+      for (const socket of [client, upstream]) {
+        sockets.add(socket);
+        socket.on('error', () => undefined);
+        socket.on('close', () => sockets.delete(socket));
+      }
+      client.pipe(upstream).pipe(client);
+    });
+    const port = await new Promise<number>((resolve) => {
+      const probe = createServer().listen(0, '127.0.0.1', () => {
+        const { port: free } = probe.address() as { port: number };
+        probe.close(() => resolve(free));
+      });
+    });
+    const amqpUrl = `amqp://${broker.username}:${broker.password}@127.0.0.1:${port}${broker.pathname}`;
+    const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'late-broker',
+      db: stack.systemDb,
+      amqpUrl,
+      handlers: [
+        {
+          routingKeys: ['project.lifecycle_changed.*'],
+          handle: async (event, tx) => {
+            await tx.execute(sql`INSERT INTO app.note (id, account_id, body) VALUES (${uuidv7()}, ${event.accountId}, ${event.id})`);
+          },
+        },
+      ],
+      reconnectDelayMs: 100,
+      reconnectMaxDelayMs: 300,
+      onOutcome: (outcome, id) => results.push({ outcome, id }),
+      logger: recordingLogger(logs),
+    });
+    consumers.push(consumer);
+    try {
+      await expect(consumer.start()).resolves.toBeUndefined();
+      expect(consumer.isConsuming).toBe(false);
+      const first = logs.filter((entry) => entry.msg === 'consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại');
+      expect(first.map((entry) => entry.level)).toEqual(['warn']);
+      expect(first[0]?.fields).toMatchObject({ queue: 'late-broker.events' });
+      // Still refused for a while: the loop keeps trying.
+      await waitUntil(() => logs.some((entry) => entry.msg === 'consumer: kết nối lại AMQP chưa được, thử lại'), 'a failed retry');
+
+      await new Promise<void>((resolve) => proxy.listen(port, '127.0.0.1', resolve));
+      await waitUntil(() => consumer.isConsuming, 'consumer up once the broker is reachable');
+      expect(logs.filter((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp')).toHaveLength(1);
+
+      const event = projectEvent();
+      publishEvent(event);
+      await waitUntil(() => results.some((entry) => entry.id === event.id), 'event after the late connection');
+      expect(results.filter((entry) => entry.id === event.id).map((entry) => entry.outcome)).toEqual(['applied']);
+      expect(await notesFor(event.id)).toBe(1);
+    } finally {
+      await consumer.stop();
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => proxy.close(resolve));
+    }
+  });
+
+  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', async () => {
     const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
     const logs: LogEntry[] = [];
     const closeWhileHandling = new Set<string>();
@@ -530,6 +596,86 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
       expect(quitterLogs.some((entry) => entry.msg === 'consumer: đã kết nối lại AMQP, consume tiếp')).toBe(false);
     } finally {
       await relay.stop();
+    }
+  });
+});
+
+describe('start() khi broker không tới được (QC PID-00002 G5)', () => {
+  it('stop() trong lúc chờ backoff: dừng sạch, không còn timer, không kết nối lại', async () => {
+    // Nothing listens on this port: each attempt is refused at once.
+    const port = await new Promise<number>((resolve) => {
+      const probe = createServer().listen(0, '127.0.0.1', () => {
+        const { port: free } = probe.address() as { port: number };
+        probe.close(() => resolve(free));
+      });
+    });
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'no-broker',
+      db: {} as never,
+      amqpUrl: `amqp://guest:guest@127.0.0.1:${port}`,
+      handlers: [{ routingKeys: ['project.lifecycle_changed.*'], handle: async () => undefined }],
+      reconnectDelayMs: 200,
+      reconnectMaxDelayMs: 200,
+      logger: recordingLogger(logs),
+    });
+    await expect(consumer.start()).resolves.toBeUndefined();
+    expect(consumer.isConsuming).toBe(false);
+    expect(logs.map((entry) => entry.msg)).toEqual(['consumer: kết nối AMQP lần đầu chưa được, sẽ thử lại']);
+    // The retry is waiting on its timer.
+    expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeDefined();
+
+    await consumer.stop();
+    expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeUndefined();
+    // Longer than a few backoff periods: no attempt was made after stop().
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(logs).toHaveLength(1);
+    expect(consumer.isConsuming).toBe(false);
+  });
+
+  it('stop() giữa lần kết nối đang dở (broker nhận TCP mà không trả lời) trả về ngay, đóng socket (PC-05 P25)', async () => {
+    // A mute broker: accepts the TCP connection and never answers the AMQP handshake.
+    const sockets: Socket[] = [];
+    const mute = createServer((socket) => {
+      socket.on('error', () => undefined);
+      // Reads and drops the handshake, so that the client closing the socket is seen.
+      socket.resume();
+      sockets.push(socket);
+    });
+    await new Promise<void>((resolve) => mute.listen(0, '127.0.0.1', resolve));
+    const { port } = mute.address() as { port: number };
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'mute-broker',
+      db: {} as never,
+      amqpUrl: `amqp://guest:guest@127.0.0.1:${port}`,
+      handlers: [{ routingKeys: ['project.lifecycle_changed.*'], handle: async () => undefined }],
+      reconnectDelayMs: 200,
+      reconnectMaxDelayMs: 200,
+      logger: recordingLogger(logs),
+    });
+    try {
+      const starting = consumer.start();
+      await waitUntil(() => sockets.length === 1, 'kết nối TCP tới broker câm', 5_000);
+      const closed = new Promise<void>((resolve) => sockets[0]!.once('close', () => resolve()));
+
+      const before = Date.now();
+      await consumer.stop();
+      // Well under CONNECT_TIMEOUT_MS (10 s): the attempt was cancelled, not waited for.
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await expect(starting).resolves.toBeUndefined();
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await closed;
+      expect(consumer.isConsuming).toBe(false);
+      expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeUndefined();
+      // A cancelled attempt is not a failure to report, and no new attempt follows stop().
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      expect(logs).toEqual([]);
+      expect(sockets).toHaveLength(1);
+    } finally {
+      await consumer.stop();
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => mute.close(resolve));
     }
   });
 });

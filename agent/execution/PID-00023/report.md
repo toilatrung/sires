@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00023](../../../docs/tickets/issues/PID-00023/index.html) · **Luồng:** `planning` · **Giai đoạn:** PH-01
-- **Nhánh:** `planning/pid-00023-migration-state-machine` (đã commit, đã push) · **PR:** [#71](https://github.com/toilatrung/sires/pull/71)
-- **Cập nhật:** 22/11/2026
+- **Nhánh:** `planning/pid-00023-migration-state-machine` (đã commit, đã push) · **PR:** [#71](https://github.com/toilatrung/sires/pull/71) · đã merge; sửa sau rà 24/11: [#88](https://github.com/toilatrung/sires/pull/88)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 2, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.

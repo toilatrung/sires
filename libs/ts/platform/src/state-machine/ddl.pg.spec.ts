@@ -117,7 +117,7 @@ describe('state machine trên PostgreSQL 16 — đối chiếu docs/database/ddl
   afterAll(async () => {
     await client?.end();
     await postgres?.stop();
-  }, 60_000);
+  });
 
   it('khớp mọi khối INSERT của docs/database/ddl', async () => {
     const files = ddlFiles();

@@ -81,8 +81,10 @@ Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, re
 <tr><td>HTTP 403</td><td><code>permission_denied</code></td><td>Không</td></tr>
 <tr><td>HTTP 404 model</td><td><code>model_not_found</code></td><td>Không</td></tr>
 <tr><td>HTTP 429 hạn mức tốc độ</td><td><code>rate_limited</code></td><td>Có, theo <code>Retry-After</code></td></tr>
-<tr><td>HTTP 429/402 hết hạn mức thanh toán (phân biệt bằng mã lỗi trong thân phản hồi)</td><td><code>quota_exceeded</code></td><td>Không</td></tr>
+<tr><td>HTTP 429/402 hết hạn mức thanh toán (phân biệt bằng mã lỗi trong thân phản hồi; Gemini: <code>QuotaFailure.quotaId</code> phân biệt hạn mức ngày với giới hạn tốc độ; Anthropic: 402 <code>billing_error</code>, theo SDK, chưa kiểm thật)</td><td><code>quota_exceeded</code></td><td>Không</td></tr>
 <tr><td>HTTP 400 vượt context</td><td><code>context_too_long</code></td><td>Không</td></tr>
+<tr><td>HTTP 400 INVALID_ARGUMENT, reason <code>API_KEY_INVALID</code> (Gemini, key sai)</td><td><code>auth_failed</code></td><td>Không</td></tr>
+<tr><td>HTTP 400 khác (tham số không hợp lệ; schema hay khai báo công cụ bị từ chối)</td><td><code>invalid_request</code> (DEC-62)</td><td>Không</td></tr>
 <tr><td>Bị chặn bởi chính sách an toàn</td><td><code>content_refused</code></td><td>Không</td></tr>
 <tr><td>Hết thời gian chờ</td><td><code>timeout</code></td><td>Có</td></tr>
 <tr><td>HTTP 5xx, 529 quá tải</td><td><code>provider_unavailable</code></td><td>Có</td></tr>
@@ -90,6 +92,17 @@ Lỗi:           GatewayError(code ∈ bộ mã chuẩn 8.6, retryable: bool, re
 <tr><td>Đầu ra không qua schema</td><td><code>invalid_response</code></td><td>Sửa định dạng ≤ 2 lần</td></tr>
 </tbody></table></div>
 <p>Timeout mặc định: 120 giây cho mỗi lời gọi sinh nội dung, 30 giây cho embedding và liệt kê model; cấu hình theo agent.</p>
+<p>Bổ sung từ SPK-01 (PID-00021, report.md mục 6, đề xuất 4), PO duyệt 27/11/2026 (<a href="../../overview/phieu-chot-cuoi-ph01.html">PC-05</a> S-M1, S-OQ-113; chốt theo đề xuất, PO ủy quyền 26/11/2026); PID-00070 làm theo:</p>
+<ol>
+<li>Mã lỗi trong thân phản hồi ưu tiên hơn HTTP status. Ví dụ proxy trả 503 kèm <code>code: model_not_found</code> → <code>model_not_found</code>, không phải <code>provider_unavailable</code>, nên không thử lại.</li>
+<li>Gemini báo key sai bằng HTTP 400 INVALID_ARGUMENT, reason <code>API_KEY_INVALID</code> → <code>auth_failed</code> (dòng riêng ở bảng trên).</li>
+<li><code>google-genai</code> ném thẳng exception của httpx (<code>ConnectTimeout</code>, <code>ConnectError</code>, <code>ReadTimeout</code>) và <code>JSONDecodeError</code>: gateway tự ánh xạ thành <code>timeout</code>, <code>network_error</code>, <code>invalid_response</code>.</li>
+<li>429 của Gemini phân biệt giới hạn tốc độ (<code>rate_limited</code>) với hạn mức ngày (<code>quota_exceeded</code>) bằng <code>QuotaFailure.quotaId</code>.</li>
+<li>Anthropic hết tiền là 402 <code>billing_error</code> → <code>quota_exceeded</code> (theo SDK 2.12, chưa kiểm thật).</li>
+<li>SDK Anthropic, OpenAI tự thử lại 2 lần: gateway đặt <code>max_retries=0</code> để tự thử lại theo bảng trên và đếm đúng số lần thử (8.5, NFR-USAGE).</li>
+<li>Stream OpenAI luôn đặt <code>stream_options.include_usage</code> để có usage (8.6).</li>
+</ol>
+<p>Mã <code>invalid_request</code> (DEC-62, trả lời OQ-113): HTTP 400 không thuộc các dòng trên là lỗi của yêu cầu; không thử lại; Agent Run báo yêu cầu bị provider từ chối và gợi ý kiểm model, base URL.</p>
 
 <h2 id="s-8-5">8.5. Structured output và sửa định dạng</h2>
 <ol>

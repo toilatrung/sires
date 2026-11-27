@@ -1,0 +1,76 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00098.">
+<title>PID-00098 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>PID-00098 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill (<code>references/brief-template.md</code>), <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc <code>H1</code>…</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Researcher (đã đăng nhập; cục bộ và staging PH-02 dùng OIDC mock của PID-00160, D-OIDC) tìm tài liệu học thuật ở Discover (OpenAlex mặc định, Google Scholar khi Researcher chọn), chọn hoặc loại kết quả, gửi kết quả đã chọn vào luồng duyệt, nhập thủ công DOI, BibTeX, PDF; duyệt reference theo lô trong Trusted Library; mở trang Reference để xem trạng thái duyệt và indexing, metadata, tài liệu, project đang dùng, provenance, và thực hiện sửa metadata, thêm vào project, thu hồi, duyệt lại, gộp, xóa. Ranh giới giữa Discovered Result (chưa duyệt, không dùng làm nguồn) và Trusted Reference luôn nhìn thấy được. Lần này dựng giao diện chạy trên mock (D-UI), hội tụ với backend ở cổng PH-05 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Discovered Result không phải Trusted Reference, không dùng được làm evidence hay citation, không xuất hiện trong References and Evidence của project; giao diện dùng nhãn và kiểu khác nhau — <a href="../../../../overview/sections/10-academic-discovery-and-trusted-library.html#disc-scholar-001">DISC-SCHOLAR-001</a>; DISC-REVIEW-001; UX-REF-001; design.md §1.2; H9</li>
+<li>OpenAlex là nguồn mặc định; Google Scholar qua SerpApi chỉ khi Researcher chọn, cho tài liệu OpenAlex không có; hạn mức theo phiên ở backend và hợp đồng (chưa có) — DEC-60, DEC-61; PC-05 GS-A1–GS-A7; H6</li>
+<li>Không thử vượt giới hạn của nguồn: lỗi rõ ràng, không tự gửi lại, gợi ý nhập thủ công — DISC-SCHOLAR-001 (luồng lỗi), INT-SCHOLAR-002, INT-SCHOLAR-006, OOS-06; H8</li>
+<li>Tìm là thao tác dài: hiện bước, agent, thời gian đã chạy, hoạt động gần nhất; rời trang được — UX-STATE-001; design.md 2.4.1; H8</li>
+<li>Tìm theo tác giả: hiện các hồ sơ ứng viên để chọn, không tải công bố trước khi chọn; luôn ghi “danh sách có thể không đầy đủ”; chọn tất cả đủ điều kiện vẫn qua duyệt; “Công bố của tôi” dùng URL hồ sơ Google Scholar đã lưu — DISC-AUTHOR-001; ASM-14; GS-B11; H11</li>
+<li>Nhập (từ kết quả hay thủ công) chỉ tạo Reference Pending Approval, không bao giờ vào thẳng Trusted; mỗi lô tối đa 50 mục; metadata tối thiểu tiêu đề, một tác giả, năm; PDF có lớp văn bản, tối đa 50 MB, không OCR — LIB-IMPORT-001, LIB-IMPORT-002; OQ-040, OQ-050; H10, H12</li>
+<li>Chỉ APR-04 đưa Reference vào Trusted; duyệt theo lô được, mỗi reference một ApprovalRecord; reference nghi trùng xử lý riêng (gộp, giữ riêng, từ chối); không có mức tin cậy tự động theo nguồn — LIB-APPROVAL-001; OQ-039, OQ-090; H14</li>
+<li>Mỗi Reference hiện trạng thái duyệt và trạng thái indexing riêng; Unavailable “dùng được cho citation, không dùng được cho evidence” — UX-REF-002; LIB-CONTENT-001; H13, H15</li>
+<li>Trang Reference hiện provenance: nguồn phát hiện, người duyệt, thời điểm, phiên bản metadata, project đang dùng, truy vấn gốc (<code>getDiscoveredResult</code>) và lịch sử đầy đủ (<code>listAccountAuditEvents</code>), khối BibTeX — UX-REF-003; LIB-LIBRARY-001; LIB-LIFECYCLE-001-AC04; H15, H26, H27</li>
+<li>Indexing lỗi: nêu lý do, thử lại hoặc cung cấp tệp khác — PID-00098-AC02; WF-04.E2; EVID-INDEX-002; H16</li>
+<li>Sau duyệt chỉ Researcher sửa metadata; mỗi lần sửa tạo phiên bản mới; BibTeX key ổn định — LIB-METADATA-001; H17</li>
+<li>Thu hồi (APR-04) kèm lý do, nêu hệ quả trước khi xác nhận (evidence Stale, citation báo lỗi, đối tượng phụ thuộc cần xem lại ở mọi project) — LIB-LIFECYCLE-001; design.md §4 Dialog; H17</li>
+<li>Chỉ reference Trusted được chọn vào project; chọn không cần duyệt lại — LIB-PROJECT-001; LIB-LIBRARY-001-AC01; H17</li>
+<li>Xóa reference là APR-08, chỉ khi không project nào dùng; đang dùng thì nêu nơi dùng, dùng thu hồi thay thế — APR-08; spec 4.7; <code>deleteReference</code>; H17</li>
+<li>Trusted Library trống nêu lý do và nút “Tìm tài liệu ở Discover”; Trusted Library vẫn dùng được khi nguồn discovery lỗi — UX-STATE-002; DISC-SCHOLAR-002-AC02; H13</li>
+<li>Số trên TopBar, rail do shell làm — PID-00012 H1; H3</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; Trusted Library cấp tài khoản (OWN-02), dùng lại qua mọi project; mở reference của tài khoản khác → “không tìm thấy” (PRD 4.3).</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Hợp đồng: 23 operation ở <code>docs/api-design/paths/10-academic-discovery-and-trusted-library.yaml</code> — có (spec liệt kê 22, thiếu <code>deleteReference</code>, H4); schema <code>DiscoverySource</code>, <code>DiscoverySearchRequest</code>, <code>AuthorSearchRequest</code>, <code>DiscoveredResult</code>, <code>Reference</code>, <code>ReferenceManualCreate</code>, <code>ReferenceUpdate</code>, <code>ReferenceApprovalBatch</code>, <code>ReferenceApprovalResult</code>, <code>SourceDocument</code>, <code>ProjectReferenceSelection</code>, <code>ReferenceUsage</code> ở <code>components/schemas/library.yaml</code> — có</li>
+<li>Operation của khu vực khác: <code>getWorkflow</code>, <code>cancelWorkflow</code> (path 14), <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code> (path 08), <code>listProjects</code> (path 07), <code>getMe</code> (path 15, <code>Profile.googleScholarProfileUrl</code>) — có</li>
+<li>Mã lỗi: <code>validation_failed</code>, <code>precondition_failed</code>, <code>payload_too_large</code>, <code>unsupported_media_type</code>, <code>pdf_without_text_layer</code>, <code>reference_not_trusted</code>, <code>service_unavailable</code>, <code>rate_limited</code> trong <code>ErrorCode</code>; <code>Workflow.lastError.code</code> theo <code>ProviderErrorCode</code> — có</li>
+<li>Sự kiện SSE: <code>workflow.status_changed</code>, <code>prompt.status_changed</code>, <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code>, <code>pending_action.changed</code>, <code>project_reference.changed</code> trong <code>orchestration.yaml#/Event</code> — có</li>
+<li>Hợp đồng thiếu: tham số hạn mức Google Scholar; cách trả hồ sơ tác giả ứng viên; lý do lỗi từng mục của lô nhập; RIS; nhiều DOI một lệnh; truy vấn gốc và lịch sử của Reference; chuỗi BibTeX; lọc theo project; số claim; khôi phục reference đã xóa — đã chốt cách làm hoặc gạt ra ngoài phạm vi (H6, H10–H12, H15, H17), ghi Phải sửa ở nguồn, không chặn Xây với mock. Sửa nguồn 27/11/2026: hợp đồng nay có mọi mục trên trừ cách trả hồ sơ tác giả ứng viên (H11 tạm, chờ PO); hồ sơ cập nhật theo H21–H31: Google Scholar cho lần tìm (số lượt 0–20, số lượt đã dùng, hết hạn mức), nhãn trùng theo trạng thái, trạng thái từng mục của lô, nhiều DOI một lệnh, RIS, truy vấn gốc, lịch sử, BibTeX, lọc theo project, số claim, khôi phục reference đã xóa.</li>
+<li>Mã nguồn: <code>apps/web/src/features/library/index.tsx</code> (Placeholder cho <code>discover</code>, <code>library</code>, <code>library/:referenceId</code>; i18n rỗng), <code>apps/web/src/main.tsx</code> — có; shell và mock (PID-00012, PID-00013) — đang làm, chưa vào <code>develop</code></li>
+<li>Màn tham chiếu: <code>docs/ui-design/pages/Discover.html</code>, <code>Discover--state-searching.html</code>, <code>Library.html</code>, <code>Library--state-empty.html</code>, <code>Library--state-loading.html</code>, <code>Reference.html</code> — có; lệch nguồn đã ghi Phải sửa ở nguồn mục 14–16</li>
+<li>DDL: không dùng (khu vực web)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Màn Discover, Trusted Library, Reference trong <code>apps/web/src/features/library/</code> → S02–S09</li>
+<li>O2 Override mock trong <code>apps/web/src/features/library/__mocks__/</code> → S01</li>
+<li>O3 <code>apps/web/src/features/library/discover.spec.tsx</code> → S02–S04</li>
+<li>O4 <code>apps/web/src/features/library/reference.spec.tsx</code> → S08, S09</li>
+<li>O5 <code>apps/web/src/features/library/import.spec.tsx</code> → S05</li>
+<li>O6 <code>apps/web/src/features/library/library.spec.tsx</code> → S06, S07</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>Discovered Result = kết quả tìm kiếm (New, Selected, Rejected, Imported); Reference = tài liệu đã nhập (Pending Approval, Trusted, Rejected, Revoked); Trusted Reference = Reference Trusted (PRD 1.5, 5.6)</li>
+<li>Trusted Library = thư viện cấp tài khoản; References and Evidence = khu vực của project (research), không thuộc PID này</li>
+<li>lô nhập = một lần gửi tối đa 50 mục vào luồng duyệt (LIB-IMPORT-001); duyệt theo lô = một <code>decideReferences</code> nhiều mục</li>
+<li>nghi trùng = <code>duplicateWarnings</code> trên Reference; trùng chắc chắn = <code>duplicateOfReferenceId</code> trên Discovered Result</li>
+<li>Xây với mock / Hội tụ = hai ô của FIG-301 (D-UI)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00098</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

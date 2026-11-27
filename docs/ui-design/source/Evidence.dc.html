@@ -191,16 +191,16 @@ body{margin:0;background:#F6F2EE}
 a{color:#025FAC}a:hover{color:#1C1B18}
 </style>
 </helmet>
-<div style="min-height: 1000px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
+<div style="position: relative; min-height: 1000px; display: flex; flex-direction: column; background: #F6F2EE; color: #1C1B18; font-family: Montserrat, system-ui, sans-serif">
   <dc-import name="TopBar" mode="project" area="References and Evidence" hint-size="100%,57px"></dc-import>
   <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
     <div style="flex: 1 1 220px; max-width: 240px; display: flex"><dc-import name="ProjectRail" active="evidence" hint-size="240px,943px"></dc-import></div>
     <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
       <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 24px; background: #FCF9F5; border-bottom: 1px solid #DBD3C7">
         <div role="tablist" aria-label="Chế độ" style="display: flex; gap: 2px">
-          <button role="tab" aria-selected="false" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">References · 14</button>
-          <button role="tab" aria-selected="true" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid #1C1B18; background: transparent; font: 600 14px Montserrat, sans-serif; color: #1C1B18">Claims · 23</button>
-          <button role="tab" aria-selected="false" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 500 14px Montserrat, sans-serif; color: #4D4A44">Evidence · 61</button>
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+            <button role="tab" aria-selected="{{t.sel}}" style="height: 38px; padding: 0 12px; border: 0; border-bottom: 2px solid {{t.line}}; background: transparent; font: {{t.w}} 14px Montserrat, sans-serif; color: {{t.fg}}">{{t.label}}</button>
+          </sc-for>
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 8px">
           <label style="display: flex; align-items: center; gap: 6px; font-size: 13px"><input type="checkbox" checked>Chỉ liên quan T-2.3</label>
@@ -208,6 +208,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         </div>
       </div>
       <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: stretch">
+        <sc-if value="{{isClaims}}" hint-placeholder-val="{{ true }}">
         <section aria-label="Claim" style="flex: 1 1 420px; min-width: 0; border-right: 1px solid #DBD3C7">
           <sc-for list="{{claims}}" as="c" hint-placeholder-count="6">
             <a href="Evidence.dc.html" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 20px; border-bottom: 1px solid #DBD3C7; background: {{c.bg}}; text-decoration: none; color: #1C1B18">
@@ -220,11 +221,67 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             </a>
           </sc-for>
         </section>
+        </sc-if>
+
+        <sc-if value="{{isReferences}}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Reference của project" style="flex: 1 1 420px; min-width: 0; border-right: 1px solid #DBD3C7">
+          <sc-for list="{{refs}}" as="r" hint-placeholder-count="5">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 14px 20px; border-bottom: 1px solid #DBD3C7; background: {{r.bg}}">
+              <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                <a href="Reference.dc.html" style="font-size: 14px; font-weight: 600; line-height: 1.45">{{r.title}}</a>
+                <span style="font-size: 12px; color: #4D4A44">{{r.meta}}</span>
+                <span style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+                  <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{r.ab}}; color: {{r.af}}; font-size: 12px; font-weight: 600">{{r.approval}}</span>
+                  <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{r.ib}}; color: {{r.if}}; background: {{r.ibg}}; font-size: 12px; font-weight: 600">{{r.index}}</span>
+                </span>
+                <sc-if value="{{r.note}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #4D4A44">{{r.note}}</span></sc-if>
+              </div>
+              <button style="height: 34px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif">Bỏ khỏi project</button>
+            </div>
+          </sc-for>
+        </section>
+        </sc-if>
+
+        <sc-if value="{{isEvidence}}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Evidence" style="flex: 1 1 420px; min-width: 0; border-right: 1px solid #DBD3C7">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px; border-bottom: 1px solid #DBD3C7">
+            <select aria-label="Trạng thái" style="height: 34px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>Mọi trạng thái</option><option>Active</option><option>Excluded</option><option>Stale</option></select>
+            <select aria-label="Reference" style="height: 34px; padding: 0 8px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 13px Montserrat, sans-serif"><option>Mọi reference</option><option>Lewis et al. 2020</option><option>Shi et al. 2023</option><option>Doe et al. 2023</option></select>
+          </div>
+          <sc-for list="{{evList}}" as="e" hint-placeholder-count="5">
+            <a href="Evidence.dc.html" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 20px; border-bottom: 1px solid #DBD3C7; background: {{e.bg}}; text-decoration: none; color: #1C1B18">
+              <span style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: #4D4A44">
+                <span style="font-variant-numeric: tabular-nums">{{e.ref}} · {{e.loc}}</span>
+                <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{e.b}}; color: {{e.fg}}; background: {{e.bgc}}; font-size: 12px; font-weight: 600">{{e.state}}</span>
+              </span>
+              <span style="font-family: 'Times New Roman', Times, serif; font-size: 15px; line-height: 1.5; color: #4D4A44; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{e.quote}}</span>
+            </a>
+          </sc-for>
+        </section>
+        </sc-if>
 
         <aside aria-labelledby="ei" style="flex: 1 1 420px; min-width: 0; background: #FCF9F5; display: flex; flex-direction: column">
           <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 6px">
             <h2 id="ei" style="margin: 0; font-size: 15px; font-weight: 600">Evidence Inspector</h2>
-            <span style="font-size: 13px; color: #4D4A44">Claim <strong style="color: #1C1B18">Conflicting</strong> — hiển thị cả evidence hỗ trợ và phản bác</span>
+            <sc-if value="{{isClaims}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; color: #4D4A44">Claim <strong style="color: #1C1B18">Conflicting</strong> — hiển thị cả evidence hỗ trợ và phản bác</span></sc-if>
+            <sc-if value="{{isEvidence}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #4D4A44">Evidence trong ngữ cảnh nguồn — đoạn trích lấy từ tài liệu đã index, không sinh lại</span></sc-if>
+          </div>
+
+          <sc-if value="{{isClaims}}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 10px">
+            <p style="margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5">Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.</p>
+            <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: #4D4A44">
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px solid #9A3412; color: #9A3412; font-weight: 600">Conflicting</span>
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #4D4A44; color: #4D4A44; font-weight: 600">Draft</span>
+              <span style="font-variant-numeric: tabular-nums">Kiểm chứng gần nhất 31/10/2026 09:12 · Verification Agent · <span style="font-family: 'JetBrains Mono', monospace">T-2.3</span></span>
+            </span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <button style="height: 38px; padding: 0 14px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Chấp nhận claim</button>
+              <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Từ chối</button>
+              <button style="height: 38px; padding: 0 14px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Kiểm chứng</button>
+              <button style="height: 38px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 14px Montserrat, sans-serif">Sửa phát biểu</button>
+              <button style="height: 38px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 14px Montserrat, sans-serif">Liên kết evidence</button>
+            </div>
           </div>
           <sc-for list="{{ev}}" as="e" hint-placeholder-count="2">
             <article style="padding: 16px 20px; border-bottom: 1px solid #DBD3C7; display: flex; flex-direction: column; gap: 10px">
@@ -239,18 +296,170 @@ a{color:#025FAC}a:hover{color:#1C1B18}
               <div style="display: flex; gap: 8px"><button style="height: 34px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif">Loại evidence (Excluded)</button><button style="height: 34px; padding: 0 10px; border: 0; background: transparent; color: #025FAC; font: 500 13px Montserrat, sans-serif">Mở PDF tại trang</button></div>
             </article>
           </sc-for>
+          </sc-if>
+
+          <sc-if value="{{isReferences}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; padding: 16px 20px; font-size: 14px; line-height: 1.55; color: #4D4A44">Chọn một claim hoặc evidence để xem trong Evidence Inspector. Reference Unavailable vẫn dùng được cho citation nhưng không truy xuất evidence mới.</p>
+          </sc-if>
+
+          <sc-if value="{{isEvidence}}" hint-placeholder-val="{{ false }}">
+          <article style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px">
+              <a href="Reference.dc.html" style="font-size: 15px; font-weight: 600; line-height: 1.45">{{sel.ref}}</a>
+              <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{sel.b}}; color: {{sel.fg}}; font-size: 12px; font-weight: 600">{{sel.state}}</span>
+            </div>
+            <span style="font-size: 13px; color: #4D4A44">{{sel.meta}}</span>
+            <span style="font-variant-numeric: tabular-nums; font-size: 12px; color: #4D4A44">{{sel.loc}}</span>
+            <sc-if value="{{sel.stale}}" hint-placeholder-val="{{ false }}"><div role="note" style="padding: 10px 12px; border: 1.5px dashed #9A3412; border-radius: 6px; font-size: 13px; line-height: 1.5; color: #9A3412">Stale — {{sel.reason}}. Evidence này không được tính khi đánh giá mức hỗ trợ; không loại và không liên kết mới được.</div></sc-if>
+            <blockquote style="margin: 0; padding: 12px 14px; background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; font-family: 'Times New Roman', Times, serif; font-size: 15px; line-height: 1.6; color: #4D4A44">{{sel.before}} <mark style="background: #CFE6FC; color: #1C1B18; padding: 1px 2px">{{sel.hit}}</mark> {{sel.after}}</blockquote>
+            <h3 style="margin: 4px 0 0; font-size: 14px; font-weight: 600">Claim đang dùng ({{sel.claimCount}})</h3>
+            <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+              <sc-for list="{{sel.claims}}" as="c" hint-placeholder-count="2">
+                <li style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; line-height: 1.5"><a href="Evidence.dc.html">{{c.text}}</a><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; font-size: 12px; font-weight: 600">{{c.level}}</span><sc-if value="{{c.review}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; border: 1.5px dashed #9A3412; color: #9A3412; font-size: 12px; font-weight: 600">needs review</span></sc-if></li>
+              </sc-for>
+            </ul>
+            <h3 style="margin: 4px 0 0; font-size: 14px; font-weight: 600">Dùng trong artifact và bản thảo</h3>
+            <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.5">
+              <sc-for list="{{sel.uses}}" as="u" hint-placeholder-count="2">
+                <li><span style="color: #4D4A44">{{u.kind}}</span> <a href="{{u.href}}">{{u.label}}</a> <span style="color: #4D4A44">{{u.meta}}</span></li>
+              </sc-for>
+            </ul>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <sc-if value="{{sel.canExclude}}" hint-placeholder-val="{{ true }}"><button style="height: 34px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; font: 500 13px Montserrat, sans-serif">Loại evidence (Excluded)</button></sc-if>
+              <a href="Reference.dc.html" style="display: inline-flex; align-items: center; min-height: 34px; padding: 0 10px; color: #025FAC; text-decoration: none; font: 500 13px Montserrat, sans-serif">Mở PDF tại trang {{sel.page}}</a>
+            </div>
+          </article>
+          </sc-if>
         </aside>
       </div>
     </main>
   </div>
+
+  <sc-if value="{{dlgAccept}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-accept" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="dlg-accept" style="margin: 0; font-size: 22px; font-weight: 600">Chấp nhận claim Conflicting?</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">“Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.”</p>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6">
+          <li><strong>2 evidence hỗ trợ</strong> và <strong>1 evidence phản bác</strong>.</li>
+          <li>Claim giữ nhãn Conflicting ở mọi nơi dùng (bản tổng hợp, bản thảo).</li>
+        </ul>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+          <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Giữ Draft</a>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Chấp nhận claim</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{dlgLink}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-link" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="dlg-link" style="margin: 0; font-size: 22px; font-weight: 600">Liên kết evidence</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Chỉ evidence Active của project. Liên kết đổi mức hỗ trợ ở lần kiểm chứng sau.</p>
+        <select aria-label="Reference" style="height: 40px; padding: 0 10px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif"><option>Mọi reference</option><option>Lewis et al. 2020</option><option>Shi et al. 2023</option></select>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px">
+          <legend style="padding: 0 0 6px; font-size: 13px; font-weight: 600">Evidence</legend>
+          <sc-for list="{{pick}}" as="p" hint-placeholder-count="3">
+            <label style="display: flex; align-items: flex-start; gap: 8px; min-height: 40px; padding: 8px 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 13px; line-height: 1.45"><input type="radio" name="evidence" style="margin: 2px 0 0">{{p.label}}</label>
+          </sc-for>
+        </fieldset>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 8px">
+          <legend style="padding: 0 0 6px; font-size: 13px; font-weight: 600">Quan hệ</legend>
+          <label style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px"><input type="radio" name="relation" style="margin: 0">supports</label>
+          <label style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px"><input type="radio" name="relation" style="margin: 0">contradicts</label>
+          <label style="display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px"><input type="radio" name="relation" style="margin: 0">context</label>
+        </fieldset>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px">
+          <span style="font-size: 13px; color: #4D4A44">Chọn evidence và quan hệ</span>
+          <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Hủy</a>
+          <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Liên kết</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{dlgRemove}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-remove" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="dlg-remove" style="margin: 0; font-size: 22px; font-weight: 600">Bỏ Lewis et al. 2020 khỏi project?</h3>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6">
+          <li><strong>4 evidence</strong> của reference này trong project giữ nguyên nhưng không truy xuất evidence mới.</li>
+          <li>Task cần reference này bị chặn (RC-05) khi readiness được tính lại.</li>
+          <li>Reference vẫn ở Trusted Library; chọn lại được từ đó.</li>
+        </ul>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+          <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Giữ reference</a>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #BE123C; border-radius: 6px; background: #FCF9F5; color: #BE123C; font: 600 14px Montserrat, sans-serif">Bỏ khỏi project</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{dlgExclude}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 24, 0.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <section role="dialog" aria-modal="true" aria-labelledby="dlg-exclude" style="width: 100%; max-width: 480px; box-sizing: border-box; background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="dlg-exclude" style="margin: 0; font-size: 22px; font-weight: 600">Loại evidence này?</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Lewis et al. 2020 · trang 7 · đoạn 3. Evidence chuyển Excluded; khôi phục được sau.</p>
+        <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6">
+          <li><strong>2 claim</strong> đang dùng được đánh dấu needs review và được tính lại mức hỗ trợ ở lần kiểm chứng sau.</li>
+        </ul>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Lý do (tùy chọn)
+          <textarea rows="3" style="padding: 8px 12px; border: 1px solid #C7C7C7; border-radius: 6px; background: #E5DED5; font: 400 14px Montserrat, sans-serif; resize: vertical"></textarea>
+        </label>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+          <a href="Evidence.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; color: #1C1B18; text-decoration: none; font-size: 14px">Giữ evidence</a>
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Loại evidence</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","options":["claims","references","evidence","evidence-stale"],"default":"claims"},"dialog":{"editor":"enum","options":["none","accept-claim","link-evidence","remove-reference","exclude-evidence"],"default":"none"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
+    // PID-00114 H4–H6 (chốt theo đề xuất, PO ủy quyền 26/11/2026): ba tab, Evidence Inspector của một evidence, Stale và các dialog.
+    // Dialog Bỏ khỏi project mở trên tab References, dialog Loại evidence trên tab Evidence; hai dialog còn lại trên tab Claims.
+    const dialog = this.props.dialog ?? 'none';
+    const view = dialog === 'remove-reference' ? 'references' : dialog === 'exclude-evidence' ? 'evidence' : (dialog === 'none' ? (this.props.view ?? 'claims') : 'claims');
+    const stale = view === 'evidence-stale';
+    const evView = view === 'evidence' || stale;
     const L = { Supported: ['solid #0277DD', '#025FAC'], 'Partially Supported': ['dashed #0277DD', '#025FAC'], Unsupported: ['dashed #9A3412', '#9A3412'], Conflicting: ['solid #9A3412', '#9A3412'], 'Not Assessed': ['solid #DBD3C7', '#4D4A44'] };
+    const E = { Active: ['solid #1C1B18', '#1C1B18', 'transparent'], Excluded: ['solid #DBD3C7', '#4D4A44', '#F6F2EE'], Stale: ['dashed #9A3412', '#9A3412', 'transparent'] };
     const c = (text, level, meta, sel, review) => ({ text, level, b: L[level][0], fg: L[level][1], meta, bg: sel ? '#EAF4FE' : '#F6F2EE', review: !!review });
+    const tab = (label, on) => ({ label, sel: on ? 'true' : 'false', line: on ? '#1C1B18' : 'transparent', w: on ? 600 : 500, fg: on ? '#1C1B18' : '#4D4A44' });
+    const T = { approval: 'Trusted', ab: 'solid #1C1B18', af: '#1C1B18' };
+    const R = { approval: 'Revoked', ab: 'solid #9A3412', af: '#9A3412' };
+    const ix = (k) => k === 'Unavailable' ? { index: k, ib: 'solid #BE123C', if: '#9F1239', ibg: '#FFF1F2' } : { index: k, ib: 'solid #1C1B18', if: '#1C1B18', ibg: 'transparent' };
+    const ref = (title, meta, evidence, a, i, note, sel) => ({ title, meta, evidence, ...a, ...ix(i), note: note || '', bg: sel ? '#EAF4FE' : '#F6F2EE' });
+    const evRow = (ref, loc, quote, state, sel) => ({ ref, loc, quote, state, b: E[state][0], fg: E[state][1], bgc: E[state][2], bg: sel ? '#EAF4FE' : '#F6F2EE' });
+    const lewis = {
+      ref: 'Lewis et al. 2020 — Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', meta: 'NeurIPS 2020 · [DOI hoặc liên kết]', loc: 'trang 7 · đoạn 3 · chunk #58', page: 7,
+      state: 'Active', b: E.Active[0], fg: E.Active[1], stale: false, reason: '', canExclude: true,
+      before: '[câu đứng trước]', hit: '[đoạn trích hỗ trợ: mô hình có truy xuất cho câu trả lời đúng sự thật hơn mô hình chỉ dùng tham số]', after: '[câu đứng sau]',
+      claimCount: 2,
+      claims: [
+        c('Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.', 'Conflicting', ''),
+        c('Hallucination là nội dung không trung thành với nguồn hoặc không có căn cứ.', 'Supported', '')
+      ],
+      uses: [
+        { kind: 'Artifact', label: 'synthesis “Định nghĩa hallucination” · v1', meta: 'Accepted', href: 'Artifacts.dc.html' },
+        { kind: 'Bản thảo', label: 'main.tex · revision 16', meta: 'citation lewis2020rag', href: 'Manuscript.dc.html' }
+      ]
+    };
+    const doe = {
+      ref: 'Doe et al. 2023 — Hallucination detection preprint (đã rút)', meta: 'arXiv 2023 · Reference Revoked', loc: 'trang 4 · đoạn 2 · chunk #17', page: 4,
+      state: 'Stale', b: E.Stale[0], fg: E.Stale[1], stale: true, reason: 'Reference đã bị thu hồi khỏi Trusted Library 30/10/2026', canExclude: false,
+      before: '[câu đứng trước]', hit: '[đoạn trích: bộ phát hiện dựa trên entropy đạt độ chính xác cao trên tập thử]', after: '[câu đứng sau]',
+      claimCount: 1,
+      claims: [c('Bộ phát hiện hallucination dựa trên entropy đạt độ chính xác cao.', 'Supported', '', false, true)],
+      uses: [{ kind: 'Artifact', label: 'note “Ghi chú đọc 5 bài nền tảng” · v1', meta: 'Draft', href: 'Artifacts.dc.html' }]
+    };
     return {
+      isClaims: view === 'claims', isReferences: view === 'references', isEvidence: evView,
+      dlgAccept: dialog === 'accept-claim', dlgLink: dialog === 'link-evidence', dlgRemove: dialog === 'remove-reference', dlgExclude: dialog === 'exclude-evidence',
+      tabs: [tab('References · 14', view === 'references'), tab('Claims · 23', view === 'claims'), tab('Evidence · 61', evView)],
       claims: [
         c('Truy xuất giới hạn trong nguồn đã duyệt làm tăng độ chính xác của câu trả lời.', 'Conflicting', '2 hỗ trợ · 1 phản bác · T-2.3', true),
         c('Hallucination là nội dung không trung thành với nguồn hoặc không có căn cứ.', 'Supported', '3 hỗ trợ · T-2.1'),
@@ -262,6 +471,26 @@ class Component extends DCLogic {
       ev: [
         { role: 'Hỗ trợ', roleColor: '#025FAC', state: 'Active', ref: 'Lewis et al. 2020 — Retrieval-Augmented Generation', loc: 'trang 7 · đoạn 3 · chunk #58', before: '[câu đứng trước]', hit: '[đoạn trích hỗ trợ: mô hình có truy xuất cho câu trả lời đúng sự thật hơn mô hình chỉ dùng tham số]', after: '[câu đứng sau]', used: 'Dùng bởi 2 claim · 1 artifact · 1 citation trong main.tex' },
         { role: 'Phản bác', roleColor: '#9A3412', state: 'Active', ref: 'Shi et al. 2023 — Distracted by Irrelevant Context', loc: 'trang 2 · đoạn 1 · chunk #4', before: '[câu đứng trước]', hit: '[đoạn trích phản bác: độ chính xác giảm khi ngữ cảnh truy xuất chứa thông tin không liên quan]', after: '[câu đứng sau]', used: 'Dùng bởi 1 claim' }
+      ],
+      refs: [
+        ref('Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', 'Lewis et al. · 2020 · NeurIPS', '4 evidence', T, 'Indexed', '', true),
+        ref('Large Language Models Can Be Easily Distracted by Irrelevant Context', 'Shi et al. · 2023 · ICML', '2 evidence', T, 'Indexed'),
+        ref('Lost in the Middle: How Language Models Use Long Contexts', 'Liu et al. · 2024 · TACL', '0 evidence', T, 'Unavailable', 'Dùng được cho citation, không dùng được cho evidence'),
+        ref('Dense Passage Retrieval for Open-Domain Question Answering', 'Karpukhin et al. · 2020 · EMNLP', '3 evidence', T, 'Indexed'),
+        ref('Hallucination detection preprint (đã rút)', 'Doe et al. · 2023 · arXiv', '1 evidence Stale', R, 'Indexed', 'Evidence của reference này đã chuyển Stale; claim dùng nó cần xem lại')
+      ],
+      evList: [
+        evRow('Lewis et al. 2020', 'trang 7 · đoạn 3', '“[mô hình có truy xuất cho câu trả lời đúng sự thật hơn mô hình chỉ dùng tham số]”', 'Active', !stale),
+        evRow('Shi et al. 2023', 'trang 2 · đoạn 1', '“[độ chính xác giảm khi ngữ cảnh truy xuất chứa thông tin không liên quan]”', 'Active'),
+        evRow('Doe et al. 2023', 'trang 4 · đoạn 2', '“[bộ phát hiện dựa trên entropy đạt độ chính xác cao trên tập thử]”', 'Stale', stale),
+        evRow('Karpukhin et al. 2020', 'trang 3', '“[truy xuất dày đặc vượt BM25 trên các tập hỏi đáp mở]”', 'Active'),
+        evRow('Lewis et al. 2020', 'trang 9 · đoạn 1', '“[đoạn trích không còn phù hợp với câu hỏi nghiên cứu]”', 'Excluded')
+      ],
+      sel: stale ? doe : lewis,
+      pick: [
+        { label: 'Lewis et al. 2020 · trang 5 · “[đoạn trích về truy xuất trên corpus đã duyệt]”' },
+        { label: 'Karpukhin et al. 2020 · trang 3 · “[truy xuất dày đặc vượt BM25 trên các tập hỏi đáp mở]”' },
+        { label: 'Shi et al. 2023 · trang 6 · “[đoạn trích về lọc ngữ cảnh không liên quan]”' }
       ]
     };
   }

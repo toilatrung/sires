@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S01 của ticket PID-00084.">
+<title>S01 — Thẻ đề xuất thảo luận: nội dung và trạng thái | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00084</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00084</p><h1>S01 — Thẻ đề xuất thảo luận: nội dung và trạng thái</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H2, H3, H4, H5, H7, H9 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; nền cho PID-00084-AC01, UX-MONITOR-007-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2; H2–H5, H7, H9</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01, EC02, EC03, EC08, EC09, EC10, EC11, EC12 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>PID-00012, PID-00013 trên <code>develop</code>; luồng tin nhắn và chỗ đặt thẻ prompt của PID-00058 (S03, S05, cùng khu vực project); <code>listProviderConnections</code> (PID-00036) khi chạy dev</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Đọc design.md (§3 thẻ prompt, §4), khối “Đề xuất thảo luận” và <code>Chat--deliberation-skipped</code> ở <code>Chat.dc.html</code>, <code>designs/notes.html</code>.</li>
+<li>Component trong <code>apps/web/src/features/project/deliberation-card/</code>: nhận <code>InteractiveAgentPrompt</code> có <code>purpose = deliberation_proposal</code> và callback trả lời. Trong luồng Chat của PID-00058 (cùng khu vực), prompt loại này hiện bằng component này thay thẻ chuẩn; prompt thiếu lựa chọn <code>deliberate</code> hoặc <code>skip</code> vẫn dùng thẻ chuẩn (EC10).</li>
+<li>Nội dung theo <code>Chat.dc.html</code> (EC01): đầu thẻ “Đề xuất thảo luận · loại vấn đề”, Orchestrator, giờ, bước của workflow; vấn đề; “Vì sao thảo luận” (<code>reason</code>); “Các bên” (Orchestrator, Analysis Agent A, B kèm <code>perspective</code>); “Chi phí” (khoảng <code>estimatedAgentRuns</code> Agent Run tính trên API key của bạn, tên kết nối từ <code>listProviderConnections</code> theo <code>providerConnectionId</code>, tối đa <code>maxRounds</code> vòng sau Vòng 1, <code>costNote</code>) (EC03); <code>sameModelWarning</code> → dòng cảnh báo kèm “Đổi trong Agent Models” (EC02); hai nút theo <code>choices</code> (nhãn và hệ quả của server, EC09) và câu giải thích Bỏ qua.</li>
+<li>Trạng thái: Open (viền brand, hai nút, không nút nào chọn sẵn, dùng được bằng bàn phím, EC11); Answered (chỉ đọc, “Bạn đã chọn …”, người, giờ); Expired, Cancelled (viền đứt, <code>statusReason</code>, “Không được tính là đồng ý”) (EC08). Nhãn theo namespace <code>project</code>; nội dung dạng chữ; một cột ở khổ hẹp (EC12).</li>
+<li>Fixture có type trong <code>apps/web/src/features/project/__mocks__/</code>: prompt đề xuất (đủ dữ liệu, cùng model, thiếu cấu hình, Answered, Cancelled) và tin nhắn có <code>embeddedPromptId</code> của prompt đó; không khai operation (H7).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code>, <code>pnpm nx run @sires/web:typecheck</code>, <code>pnpm nx run @sires/web:lint</code> → đạt</li>
+<li><code>apps/web/src/features/project/deliberation-card/card.spec.tsx › nội dung thẻ</code> (EC01); <code>› cảnh báo cùng model</code> (EC02); <code>› thiếu dữ liệu chi phí</code> (EC03); <code>› Expired, Cancelled</code> (EC08); <code>› thiếu cấu hình</code> (EC09); <code>› thiếu lựa chọn dùng thẻ chuẩn</code> (EC10); <code>› bàn phím</code> (EC11); <code>› đổi ngôn ngữ và nội dung có HTML</code> (EC12)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/project/</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Thẻ hiện đủ nội dung của thiết kế ở bốn trạng thái</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00084</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00084 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

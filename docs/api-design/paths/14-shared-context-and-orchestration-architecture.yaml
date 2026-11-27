@@ -495,7 +495,8 @@
     summary: Chấp nhận version (APR-03 / APR-06 / APR-07 theo loại)
     description: |
       Draft → Accepted; version Accepted cũ → Superseded trong cùng giao dịch. Synthesis cần mọi claim liên kết đã được
-      quyết định (SYN-HUMAN-REVIEW-001); diagram cần đã qua kiểm tra cú pháp (DIAG-REVIEW-001).
+      quyết định (SYN-HUMAN-REVIEW-001); diagram cần đã qua kiểm tra cú pháp và render, tức `validation.status = valid`
+      (DIAG-REVIEW-001).
     x-requirements: [SYN-HUMAN-REVIEW-001, SYN-PERSIST-001, DIAG-REVIEW-001, CTX-CONSISTENCY-003]
     x-apr: [APR-03, APR-06, APR-07]
     x-priority: P0
@@ -651,14 +652,31 @@
     tags: [Audit]
     operationId: listAccountAuditEvents
     summary: Audit Event cấp tài khoản (Settings, Provider Connection, Trusted Library)
-    x-requirements: [CTX-AUDIT-001]
+    description: |
+      Lọc theo đối tượng như `listProjectAuditEvents`. Lịch sử một reference (UX-REF-003 “các phiên bản metadata”,
+      LIB-LIFECYCLE-001-AC04 “lịch sử trạng thái, người thực hiện và lý do”): `objectType = reference`, `objectId` = mã
+      reference; mỗi Audit Event có người (`actor`), thời điểm (`at`), chuyển trạng thái (`fromState`, `toState`), phiên bản
+      metadata (`objectVersion`), lý do (thu hồi, từ chối, duyệt lại) trong `summary`. Thêm lọc 27/11/2026 (chốt theo đề xuất,
+      PO ủy quyền 26/11/2026; PID-00098 mục 7).
+    x-requirements: [CTX-AUDIT-001, UX-REF-003, LIB-LIFECYCLE-001]
     x-priority: P0
     parameters:
+      - name: objectType
+        in: query
+        schema: { type: string, examples: [reference, provider_connection] }
+      - name: objectId
+        in: query
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: actorType
+        in: query
+        schema: { type: string, enum: [researcher, agent, system] }
+      - { name: from, in: query, schema: { type: string, format: date-time } }
+      - { name: to, in: query, schema: { type: string, format: date-time } }
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
     responses:
       '200':
-        description: Trang Audit Event.
+        description: Trang Audit Event, mới nhất trước.
         content:
           application/json:
             schema:
@@ -676,9 +694,21 @@
     summary: Luồng sự kiện realtime (Server-Sent Events)
     description: |
       Phát sau khi giao dịch commit (outbox, DATA-PERSIST-001) để giao diện cập nhật Agent Activity, prompt, Task,
-      build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; nếu quá xa, client tải lại trạng thái bằng
-      các endpoint GET. Sự kiện chỉ thuộc tài khoản của phiên.
-    x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001]
+      build, indexing. Kết nối lại với `Last-Event-ID` để nhận sự kiện bị lỡ; gateway giữ log phát lại 24 giờ (ADR-07).
+      Sự kiện chỉ thuộc tài khoản của phiên.
+
+      Khi `Last-Event-ID` không còn phát lại được (cũ hơn thời gian giữ log, không có trong log của tài khoản, hoặc
+      không đúng định dạng), gateway vẫn trả `200` và gửi đầu luồng, trước mọi sự kiện khác, một bản ghi
+      `event: replay.unavailable` (Event có `type = replay.unavailable`); sau đó chỉ phát sự kiện mới, không phát lại.
+      Client nhận tín hiệu này thì tải lại trạng thái bằng các endpoint GET. Kết nối lần đầu (không có `Last-Event-ID`)
+      và nối lại còn trong thời gian giữ log không có tín hiệu này. Dùng loại sự kiện thay vì mã phản hồi vì
+      `EventSource` của trình duyệt không đọc được status khi tự nối lại (PID-00012 H5, PC-05 P2).
+
+      `chat.delta` là một đoạn câu trả lời đang stream của Orchestrator (NFR-PERF-005), gateway chuyển từ stream
+      `sires.stream` (PID-00061); dữ liệu có thêm `conversationId`, `agentRunId`, `seq`, `text`, `final` (Event). Đoạn này
+      không bền và không phát lại khi nối lại: client bỏ bản nháp đang ghép, đọc lại tin nhắn đã lưu bằng `listMessages`,
+      không nhân đôi (PID-00058 H6, H7).
+    x-requirements: [UX-MONITOR-001, UX-STATE-001, DATA-PERSIST-001, NFR-PERF-005]
     x-priority: P0
     parameters:
       - $ref: ../components/parameters.yaml#/ProjectIdFilter

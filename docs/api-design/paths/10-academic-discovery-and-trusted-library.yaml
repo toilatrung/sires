@@ -12,9 +12,12 @@
     description: |
       OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng của DEC-19),
       phía trước là module connector Google Scholar của SIRes (DEC-60, sửa DEC-19). Google Scholar chỉ dùng khi Researcher
-      chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức
-      thêm sau phiếu chốt PC-03.
-    x-requirements: [DISC-SCHOLAR-002, DISC-ADAPTER-001, INT-SCHOLAR-001]
+      chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61). Mỗi nguồn ghi
+      `role` (`primary` chạy trước, `fallback` chỉ khi Researcher chọn), bộ lọc hỗ trợ (`supportedFilters`) và, với Google
+      Scholar, hạn mức tháng của tài khoản (`monthlyQuota`). Researcher chọn dùng Google Scholar và số lượt cho từng lần chạy
+      bằng `googleScholar` của `startDiscoverySearch`, `startAuthorSearch`; mặc định ở `Preferences.googleScholarDiscovery`
+      (DISC-SCHOLAR-003; PC-05 GS-A1–GS-A7; chốt theo đề xuất, PO ủy quyền 26/11/2026).
+    x-requirements: [DISC-SCHOLAR-002, DISC-SCHOLAR-003, DISC-ADAPTER-001, INT-SCHOLAR-001]
     x-priority: P0
     responses:
       '200':
@@ -36,7 +39,16 @@
     description: |
       Discovery Agent truy vấn nguồn; kết quả lưu thành Discovered Result ở trạng thái New. Discovered Result không bao giờ
       là nguồn evidence. Nguồn không khả dụng: workflow Failed với gợi ý nhập thủ công (INT-SCHOLAR-006).
-    x-requirements: [DISC-SCHOLAR-001, INT-SCHOLAR-002, DATA-IDEMP-001]
+
+      Google Scholar (DISC-SCHOLAR-003, DISC-SCHOLAR-004): khi workflow bắt đầu, System ghi hạn mức hiệu lực của lần chạy ở
+      `Workflow.scholarSearch.limit` (theo `googleScholar` của request, không gửi thì theo `Preferences.googleScholarDiscovery`;
+      không dùng thì `0`) và đếm lượt đã dùng ở `scholarSearch.used`. Chỉ gọi Google Scholar cho truy vấn trả 0 kết quả trên
+      nguồn `primary` hoặc tài liệu cụ thể nguồn `primary` không có. Hết hạn mức của lần chạy hoặc hạn mức tháng của tài
+      khoản khi còn phần chưa tìm: dừng gọi Google Scholar, ghi `scholarSearch.limitReached` và mục Agent Activity của Agent
+      Run, workflow tiếp tục với kết quả đã có, không chuyển Waiting for User hay Failed vì lý do này (PC-05 GS-A5). SerpApi
+      lỗi hoặc bị giới hạn: không thử vượt, workflow tiếp tục với kết quả nguồn `primary` (INT-SCHOLAR-002, INT-SCHOLAR-007).
+      Chốt theo đề xuất (PO ủy quyền 26/11/2026), 27/11/2026; PID-00098 mục 1.
+    x-requirements: [DISC-SCHOLAR-001, DISC-SCHOLAR-003, DISC-SCHOLAR-004, UX-REF-004, INT-SCHOLAR-002, DATA-IDEMP-001]
     x-priority: P0
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -57,8 +69,14 @@
     tags: [Discovery]
     operationId: startAuthorSearch
     summary: Tìm công bố theo tác giả
-    description: Kết quả có thể không đầy đủ (`completeness = partial`, 17.6).
-    x-requirements: [DISC-AUTHOR-001]
+    description: |
+      Kết quả có thể không đầy đủ (`completeness = partial`, 17.6). Nguồn mặc định và điều kiện dùng Google Scholar theo
+      `AuthorSearchRequest.source` (DEC-60, DEC-61): tên tác giả tìm trên nguồn `primary`; URL hồ sơ Google Scholar (lối tắt
+      “Công bố của tôi”) tìm trên `google_scholar`, mỗi trang kết quả trừ một lượt Google Scholar của lần chạy
+      (`Workflow.scholarSearch`; DISC-SCHOLAR-003, DISC-AUTHOR-001-AC05; PC-05 GS-B11). Google Scholar không dùng cho lần chạy
+      mà request đòi `google_scholar` → `400 validation_failed`. Chốt theo đề xuất (PO ủy quyền 26/11/2026), 27/11/2026;
+      PID-00098 mục 2.
+    x-requirements: [DISC-AUTHOR-001, DISC-SCHOLAR-003]
     x-priority: P1
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -85,6 +103,12 @@
         in: query
         description: Lọc theo lần tìm kiếm.
         schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: importWorkflowId
+        in: query
+        description: |
+          Lọc theo lô nhập: các kết quả có `importState.workflowId` bằng mã này, để đọc trạng thái từng mục của lô
+          (LIB-IMPORT-001). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 4).
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
       - name: status
         in: query
         schema: { $ref: ../components/schemas/library.yaml#/DiscoveredResultStatus }
@@ -109,6 +133,24 @@
       in: path
       required: true
       schema: { $ref: ../components/schemas/common.yaml#/Id }
+  get:
+    tags: [Discovery]
+    operationId: getDiscoveredResult
+    summary: Chi tiết một kết quả tìm kiếm
+    description: |
+      Đọc một Discovered Result, kể cả khi đã nhập (`Imported`): truy vấn, nguồn, lần tìm (`searchWorkflowId`), thời điểm
+      (`createdAt`), Agent Run (`createdByAgentRunId`), lô nhập (`importState.workflowId`). Trang Reference gọi với
+      `Reference.discoveredResultId` để hiện nguồn phát hiện và truy vấn gốc (UX-REF-003-AC01). Thêm 27/11/2026 (chốt theo
+      đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 6).
+    x-requirements: [UX-REF-003, DISC-REVIEW-001]
+    x-priority: P0
+    responses:
+      '200':
+        description: Discovered Result.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/library.yaml#/DiscoveredResult }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
   patch:
     tags: [Discovery]
     operationId: setDiscoveredResultStatus
@@ -142,6 +184,12 @@
     description: |
       Tạo Reference ở Pending Approval (Reference Processing Agent chuẩn hóa metadata) và pending action
       `reference_approval`. Kết quả trùng với reference đã có được đánh dấu cảnh báo, không tạo bản sao.
+
+      Trạng thái từng mục (LIB-IMPORT-001 bước 1): mỗi kết quả gửi đi có `importState` (`queued` khi nhận lô, rồi
+      `processing`, `created`, `duplicate` hoặc `failed` kèm `error`). Client đọc bằng `listDiscoveredResults` với
+      `importWorkflowId` = mã workflow trong phản hồi `202`, khi nhận `workflow.status_changed` của workflow đó và khi workflow
+      kết thúc; không có sự kiện riêng cho từng mục. Lý do lỗi của từng mục ở `importState.error`, không lấy từ
+      `Workflow.lastError`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 4).
     x-requirements: [LIB-IMPORT-001, LIB-METADATA-001, DATA-IDEMP-001]
     x-priority: P0
     parameters:
@@ -191,6 +239,20 @@
         in: query
         description: Chỉ reference chưa được chọn vào project này (khi chọn reference cho project).
         schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: selectedInProject
+        in: query
+        description: |
+          Chỉ reference đang được chọn (selection `Active`) vào project này (LIB-LIBRARY-001 “lọc theo … project”). Thêm
+          27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 10).
+        schema: { $ref: ../components/schemas/common.yaml#/Id }
+      - name: deleted
+        in: query
+        description: |
+          `true`: chỉ liệt kê reference đã xóa mềm còn trong hạn khôi phục 30 ngày (có `deletedAt`, `purgeAfter`), để khôi
+          phục bằng `restoreReference` (APR-08). Mặc định `false`: reference đã xóa mềm không có trong danh sách. Như project
+          đã xóa mềm (DATA-STATE-001), reference đã xóa mềm chỉ xem được trong danh sách này và khôi phục được; thao tác khác
+          trên nó trả `404`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 11).
+        schema: { type: boolean, default: false }
       - $ref: ../components/parameters.yaml#/Limit
       - $ref: ../components/parameters.yaml#/Cursor
     responses:
@@ -208,9 +270,13 @@
   post:
     tags: [Trusted Library]
     operationId: createReferenceManually
-    summary: Nhập reference thủ công theo DOI hoặc BibTeX
-    description: Reference tạo ra ở Pending Approval; không bỏ qua bước duyệt (LIB-IMPORT-002).
-    x-requirements: [LIB-IMPORT-002, LIB-METADATA-001]
+    summary: Nhập reference thủ công theo DOI, nhiều DOI, BibTeX hoặc RIS
+    description: |
+      Reference tạo ra ở Pending Approval; không bỏ qua bước duyệt (LIB-IMPORT-002). Một lệnh nhận một DOI (`doi`), một
+      hoặc nhiều DOI (`dois`, tối đa 50), nội dung BibTeX (`bibtex`) hoặc RIS (`ris`); mỗi mục thành công ở `items`, mỗi mục
+      lỗi ở `errors` (`input` nêu mục). `422` chỉ khi gửi một `doi` không phân giải được (giữ như trước). Thêm `dois`, `ris`
+      27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 5).
+    x-requirements: [LIB-IMPORT-002, LIB-METADATA-001, INT-SCHOLAR-006]
     x-priority: P0
     parameters:
       - $ref: ../components/parameters.yaml#/IdempotencyKey
@@ -222,7 +288,7 @@
           schema: { $ref: ../components/schemas/library.yaml#/ReferenceManualCreate }
     responses:
       '201':
-        description: Reference đã tạo (một hoặc nhiều với BibTeX nhiều entry).
+        description: Reference đã tạo (một hoặc nhiều với nhiều DOI, BibTeX hay RIS nhiều mục).
         content:
           application/json:
             schema:
@@ -233,8 +299,17 @@
                   items: { $ref: ../components/schemas/library.yaml#/Reference }
                 errors:
                   type: array
-                  description: Entry BibTeX không phân tích được.
-                  items: { $ref: ../components/schemas/common.yaml#/Problem }
+                  description: Entry BibTeX hoặc bản ghi RIS không phân tích được; DOI không phân giải được (khi gửi `dois`).
+                  items:
+                    allOf:
+                      - $ref: ../components/schemas/common.yaml#/Problem
+                      - type: object
+                        properties:
+                          input:
+                            type: string
+                            description: |
+                              Mục lỗi: DOI, citation key của entry BibTeX hoặc thẻ `ID` của bản ghi RIS (khi có), không thì
+                              số thứ tự của mục tính từ 1. Thêm 27/11/2026 (PID-00098 mục 5).
       '400': { $ref: ../components/responses.yaml#/BadRequest }
       '422': { $ref: ../components/responses.yaml#/UnprocessableEntity }
 
@@ -321,7 +396,9 @@
     tags: [Trusted Library]
     operationId: updateReferenceMetadata
     summary: Sửa metadata (tạo metadataVersion mới)
-    description: BibliographyEntry đang dùng version cũ được đề xuất cập nhật; Revoked/Rejected chỉ đọc.
+    description: |
+      BibliographyEntry đang dùng version cũ được đề xuất cập nhật; Revoked/Rejected chỉ đọc. BibTeX key không đổi được
+      (LIB-METADATA-001; xem `ReferenceUpdate.bibtexKey`); `bibtex` sinh lại theo metadata mới.
     x-requirements: [LIB-METADATA-001]
     x-priority: P0
     parameters:
@@ -344,7 +421,11 @@
     tags: [Trusted Library]
     operationId: deleteReference
     summary: Xóa reference (APR-08)
-    description: Chỉ khi không project nào dùng; nếu đang dùng trả `409` — dùng thu hồi thay thế.
+    description: |
+      Chỉ khi không project nào dùng; nếu đang dùng trả `409` — dùng thu hồi thay thế. Xóa là xóa mềm (APR-08): ghi
+      `deletedAt`, `purgeAfter` (= +30 ngày); reference rời Trusted Library, khôi phục bằng `restoreReference` trước
+      `purgeAfter`, sau hạn System xóa vĩnh viễn trừ khi provenance còn tham chiếu (OWN-05). Ghi rõ 27/11/2026 (chốt theo
+      đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 11).
     x-requirements: [LIB-LIFECYCLE-001]
     x-apr: APR-08
     x-priority: P0
@@ -352,6 +433,31 @@
       - $ref: ../components/parameters.yaml#/CsrfToken
     responses:
       '204': { $ref: ../components/responses.yaml#/NoContent }
+      '409': { $ref: ../components/responses.yaml#/Conflict }
+
+/references/{referenceId}/restore:
+  parameters:
+    - $ref: ../components/parameters.yaml#/ReferenceId
+  post:
+    tags: [Trusted Library]
+    operationId: restoreReference
+    summary: Khôi phục reference đã xóa mềm
+    description: |
+      Chỉ khi now < `purgeAfter`; quá hạn trả `409 restore_window_expired` (APR-08: xóa mềm, khôi phục trong 30 ngày; cùng
+      cách với `restoreProject`). Reference trở lại Trusted Library với trạng thái duyệt, indexing và metadata như trước khi
+      xóa; reference chưa xóa trả `409 invalid_transition`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026;
+      PID-00098 mục 11).
+    x-requirements: [LIB-LIFECYCLE-001, LIB-LIBRARY-001]
+    x-priority: P0
+    parameters:
+      - $ref: ../components/parameters.yaml#/CsrfToken
+    responses:
+      '200':
+        description: Reference đã khôi phục.
+        content:
+          application/json:
+            schema: { $ref: ../components/schemas/library.yaml#/Reference }
+      '404': { $ref: ../components/responses.yaml#/NotFound }
       '409': { $ref: ../components/responses.yaml#/Conflict }
 
 /references/{referenceId}/revoke:

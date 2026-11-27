@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Ghi chú thiết kế PID-00060: Khu vực global: Pending Actions, Notifications, Global Assistant, màn điện thoại.">
+<meta name="description" content="Ghi chú thiết kế của ticket PID-00060.">
 <title>PID-00060 — Ghi chú thiết kế | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
@@ -16,31 +16,38 @@
 <body>
 <a class="skip-link" href="#main-content">Đến nội dung chính</a>
 <div class="document">
-<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00060</p><h1>PID-00060 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
-<h2 id="giao-dien">Giao diện</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="../../../../ui-design/pages/PendingActions.html">PendingActions</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Notifications--filter-unread.html">Notifications--filter-unread</a></td><td>filter-unread</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Notifications.html">Notifications</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Assistant.html">Assistant</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/MobilePending.html">MobilePending</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/MobilePrompt.html">MobilePrompt</a></td><td>Mặc định</td></tr>
-</tbody></table></div>
-<ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
-<li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này ghi màn, trạng thái cần dựng và điều đã chốt khi làm rõ mà spec mục 4 chưa nói (H1…). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Dữ liệu mẫu của mock khớp màn tham chiếu và kho chung của PID-00037: 8 pending action Open (2 Plan approval request, 1 Reference approval, 1 Manuscript change proposal, 2 Task review request, 2 Interactive Agent Prompt), 2 Expired (một prompt Cancelled, một diff Outdated); 9 notification, 3 chưa đọc; prompt “Giới hạn năm xuất bản cho tìm kiếm?” loại choice của Discovery Agent cho T-2.3, thêm một prompt approval cho UX-RESP-001-AC01, một prompt choice đề xuất thảo luận (<code>purpose=deliberation_proposal</code>, PID-00084), một prompt <code>edit_and_approve</code> và một prompt <code>information_request</code> (design.md §6; H8, H13).</p>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 7 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<ul><li>16 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>; gọi qua client API có type của shell; <code>Idempotency-Key</code> cho <code>sendMessage</code>, <code>answerPrompt</code>.</li>
+<li>Sự kiện qua client SSE của shell: <code>pending_action.changed</code> (Pending Actions, khối Dashboard), <code>notification.created</code> (Notifications, Lỗi gần đây), <code>prompt.status_changed</code> (MobilePrompt đang mở), <code>message.posted</code> (trợ lý), <code>workflow.status_changed</code> (khối Workflow). Nhận sự kiện thì tải lại bằng GET; không dựng trạng thái từ payload sự kiện.</li>
+<li>Liên kết của notification và của <code>Message.links</code>: bảng ở H5 trang ticket.</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th><th scope="col">Điều đã chốt</th></tr></thead><tbody>
+<tr><td><a href="../../../../ui-design/pages/PendingActions.html">PendingActions</a></td><td>Mặc định; lọc theo loại; Hết hiệu lực; trống; đang tải; lỗi</td><td>Bộ lọc trái, danh sách cũ nhất trên, nút theo loại, nhóm Hết hiệu lực (H4)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Notifications.html">Notifications</a>, <a href="../../../../ui-design/pages/Notifications--filter-unread.html">Notifications--filter-unread</a></td><td>Mặc định; Chưa đọc; lọc loại; trống; lỗi</td><td>Một dòng <code>message</code> (hợp đồng không tách tiêu đề và mô tả như màn vẽ); nút “Đánh dấu tất cả đã đọc” dạng viền (H5)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Assistant.html">Assistant</a></td><td>Có lịch sử; chưa có hội thoại; đang chờ trả lời; gửi lỗi; chưa có provider</td><td>Khung bên phải của shell; nhãn “Global — không có ngữ cảnh project”; không có thẻ “Đề xuất tạo project” (N5) (H6)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/MobilePending.html">MobilePending</a></td><td>390px; trống; Hết hiệu lực</td><td>Nội dung của khu vực trong khung điện thoại của shell (H3)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/MobilePrompt.html">MobilePrompt</a></td><td>Open choice, approval, information_request; Answered; Expired, Cancelled; edit_and_approve chỉ đọc; 409; không tìm thấy</td><td>Route <code>/pending-actions/prompts/{promptId}</code>; thẻ của shell (H2, H3, H9)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Dashboard.html">Dashboard</a></td><td>Khối Pending actions, Workflow, cột Bản thảo, Lỗi gần đây: có dữ liệu, trống, lỗi tại khối</td><td>Trong khung của PID-00037 (H7)</td></tr>
+</tbody></table></div>
+<ul><li>Không nút chính tô màu ở Notifications; Pending Actions không có nút chính, mỗi dòng một nút viền xanh (design.md §4). MobilePrompt: nút xác nhận là nút chính duy nhất của màn.</li>
+<li>Sketch trạng thái: <a href="Global-pending.html">Global-pending.html</a>.</li>
+<li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>). Kiểm trên preview web ở 1440×900, 1024×768, 390×844 và 375×812; vi và en.</li></ul>
 <h2 id="agent-va-model">Agent và model</h2>
-<p>Không có.</p>
+<p>Không gọi model. Trả lời của Orchestrator đến qua sự kiện; giao diện không gửi context project cho trợ lý (H6).</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00060</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
-<footer>SIRes · Ghi chú thiết kế PID-00060 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+<footer>SIRes · Ticket PID-00060 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>

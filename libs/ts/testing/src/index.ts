@@ -7,3 +7,4 @@
 // FakeModelGateway is Python (sires_common); TypeScript services use the agent-core fake mode instead.
 export * from './containers';
 export * from './fakes';
+export * from './vitest';

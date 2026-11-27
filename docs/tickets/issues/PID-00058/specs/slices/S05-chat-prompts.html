@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00058.">
+<title>S05 — Thẻ Interactive Agent Prompt trong luồng chat | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>S05 — Thẻ Interactive Agent Prompt trong luồng chat</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H3 (PID-00012 H8; chốt theo đề xuất, PO ủy quyền 26/11/2026). Thẻ là component của shell; khu vực chỉ truyền dữ liệu, gọi API và nghe sự kiện.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00058-AC02, UX-PROMPT-001-AC01, UX-PROMPT-002-AC01, UX-PROMPT-003-AC01, UX-PROMPT-004-AC01, UX-PROMPT-005-AC01, UX-A11Y-002-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Chat), O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4, B6; H3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC20, EC21, EC22, EC23, EC24, EC25, EC26, EC27 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S03; thẻ prompt của shell (PID-00012 S10); mock <code>getPrompt</code>, <code>answerPrompt</code> của PID-00060 khi chạy dev</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tin nhắn có <code>embeddedPromptId</code> → <code>getPrompt</code> → thẻ prompt của shell trong luồng, truyền đủ loại, câu hỏi, đối tượng liên quan (liên kết theo <code>pendingAction</code>), lựa chọn kèm hệ quả, agent, thời điểm (UX-PROMPT-001-AC01, EC20). Lỗi tải thẻ: dòng lỗi kèm “Thử lại”.</li>
+<li>Callback xác nhận của thẻ → <code>answerPrompt</code> theo <code>PromptResponse</code> (kèm <code>objectVersion</code> khi prompt có), một <code>Idempotency-Key</code> mỗi lần xác nhận; <code>409</code> (đã xử lý ở nơi khác) → đọc lại prompt, báo, không gửi lại (EC22). Không có lời gọi nào trước khi người dùng xác nhận (UX-PROMPT-002-AC01, EC24).</li>
+<li>Nghe <code>prompt.status_changed</code> của project: <code>objectId</code> là prompt đang hiện → <code>getPrompt</code>, thẻ đổi trạng thái ngay (PID-00058-AC02, UX-PROMPT-005-AC01, EC21). Cancelled, Expired: thẻ chỉ đọc kèm <code>statusReason</code> và “Không được tính là đồng ý” (UX-PROMPT-004-AC01, EC23, EC27).</li>
+<li>edit_and_approve: thẻ cho sửa <code>editablePayload</code> rồi duyệt, khu vực gửi nội dung đã sửa (UX-PROMPT-003-AC01). Thẻ của shell chưa nhận loại cần dùng → dừng phần đó, ghi “Cần PO”, báo phiên điều phối (EC25).</li>
+<li>Prompt <code>purpose = deliberation_proposal</code>: thẻ chuẩn tới khi PID-00084 làm thẻ riêng (EC26).</li>
+<li>Chỉ gọi <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code> cho prompt; không tự làm thẻ trong khu vực.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/project/prompt.spec.tsx › Answered ở nơi khác</code> (PID-00058-AC02, UX-PROMPT-005-AC01, EC21); <code>› thẻ trong luồng</code> (UX-PROMPT-001-AC01, EC20); <code>› không chọn sẵn</code> (UX-PROMPT-002-AC01, EC24); <code>› sửa và duyệt</code> (UX-PROMPT-003-AC01); <code>› Cancelled, Expired</code> (UX-PROMPT-004-AC01, EC23); <code>› bàn phím</code> (UX-A11Y-002-AC01); <code>› trả lời trễ 409</code> (EC22); <code>› đề xuất thảo luận thẻ chuẩn</code> (EC26)</li>
+<li>Thao tác tay trên mock: trả lời prompt choice chỉ bằng bàn phím; mở cùng prompt ở Pending Actions (khi PID-00060 đã có) và trả lời ở đó</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>PID-00058-AC02 và các AC prompt đạt; thẻ trong chat đổi trạng thái theo SSE</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00058</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -48,6 +48,21 @@ EvidenceInContext:
         linkedClaimIds:
           type: array
           items: { $ref: common.yaml#/Id }
+        linkedArtifactVersions:
+          type: array
+          readOnly: true
+          description: |
+            Artifact Version dùng evidence này: có evidence trong `provenance.inputs`, hoặc có claim (`claimIds`) liên kết
+            evidence. Mỗi mục `type = artifact_version`, có `artifactId` để mở trang artifact (PRD 4.3: artifact ↔ evidence
+            điều hướng hai chiều; EVID-INSPECTOR-001 mở evidence từ artifact).
+          items: { $ref: common.yaml#/TypedRef }
+        manuscriptUsages:
+          type: array
+          readOnly: true
+          description: |
+            Vị trí evidence được dùng trong bản thảo, kèm citation tại đó (`citationKeys`; CLAIM-CITATION-001,
+            EVID-INSPECTOR-001 mở evidence từ citation). Rỗng khi chưa dùng.
+          items: { $ref: manuscript.yaml#/ManuscriptUsage }
 
 EvidenceRetrievalRequest:
   type: object
@@ -124,6 +139,38 @@ Claim:
           items: { $ref: '#/ClaimEvidenceLink' }
         lastVerification: { $ref: '#/VerificationResult' }
         needsReview: { type: boolean }
+        needsReviewReasons:
+          type: array
+          readOnly: true
+          description: |
+            Lý do của cờ needs review, cùng dạng `Task.needsReviewReasons` (PRD 18.1): Reference bị thu hồi
+            (LIB-LIFECYCLE-001, PRD 5.6), evidence liên kết chuyển Stale (CLAIM-SUPPORT-001-AC03) hoặc bị loại
+            (EVID-INSPECTOR-001-AC02). Rỗng khi `needsReview = false`.
+          items:
+            type: object
+            properties:
+              cause:
+                type: string
+                examples: [reference_revoked, evidence_stale, evidence_excluded]
+              sourceType:
+                type: string
+                examples: [reference, evidence]
+              sourceId: { $ref: common.yaml#/Id }
+              at: { $ref: common.yaml#/Timestamp }
+        supportOverride:
+          description: |
+            Lần Researcher ghi đè mức hỗ trợ (`overrideClaimSupportStatus`) đang quyết định `supportStatus` hiện hành, để
+            giao diện hiển thị “đã ghi đè” (CLAIM-SUPPORT-001); `null` khi mức hỗ trợ hiện hành do Verification Agent gán.
+          oneOf:
+            - $ref: '#/SupportStatusOverrideRecord'
+            - type: 'null'
+        manuscriptUsages:
+          type: array
+          readOnly: true
+          description: |
+            Vị trí claim được dùng trong bản thảo (SYN-PERSIST-001-AC01: mở claim thấy file và revision nơi nó xuất hiện;
+            PRD 4.3). Rỗng khi chưa dùng.
+          items: { $ref: manuscript.yaml#/ManuscriptUsage }
         approval: { $ref: common.yaml#/ApprovalRecord }
         provenance: { $ref: common.yaml#/Provenance }
 
@@ -144,6 +191,19 @@ SupportStatusOverride:
       enum: [Supported, Partially Supported, Unsupported, Conflicting]
     reason: { type: string, minLength: 1 }
 
+SupportStatusOverrideRecord:
+  type: object
+  readOnly: true
+  description: Bản ghi một lần Researcher ghi đè mức hỗ trợ (CLAIM-SUPPORT-001; PRD 18.2, lý do bắt buộc).
+  required: [supportStatus, reason, by, at]
+  properties:
+    supportStatus:
+      type: string
+      enum: [Supported, Partially Supported, Unsupported, Conflicting]
+    reason: { type: string }
+    by: { $ref: common.yaml#/ActorRef }
+    at: { $ref: common.yaml#/Timestamp }
+
 VerificationResult:
   type: object
   readOnly: true
@@ -161,9 +221,21 @@ VerificationResult:
       examples: [Supported, mismatch]
     details:
       type: array
+      description: |
+        Đánh giá theo từng evidence (claim) hoặc citation (citation, change_proposal), lấy từ `assessments` mà Verification
+        Agent gửi qua `recordVerificationResults`: quan hệ, điểm, lý do ngắn trỏ tới evidence cụ thể (CLAIM-SUPPORT-001),
+        để Inspector hiện lý do kiểm chứng. Vẫn cho trường khác (`additionalProperties`) để tương thích ngược.
       items:
         type: object
         additionalProperties: true
+        properties:
+          evidenceId: { $ref: common.yaml#/Id }
+          citationKey: { type: string }
+          relation:
+            type: string
+            enum: [supports, contradicts, context, matches, mismatch]
+          score: { type: number, minimum: 0, maximum: 1 }
+          rationale: { type: string }
     thresholdsUsed:
       $ref: account.yaml#/VerificationThresholds
       description: Bản chụp ngưỡng tại thời điểm kiểm chứng (OQ-092).

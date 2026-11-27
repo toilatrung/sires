@@ -8,7 +8,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Ghi chú thiết kế PID-00098: Khu vực library: Discover, Library, Reference.">
+<meta name="description" content="Ghi chú thiết kế của ticket PID-00098.">
 <title>PID-00098 — Ghi chú thiết kế | SIRes Delivery Plan</title>
 <link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
@@ -16,31 +16,45 @@
 <body>
 <a class="skip-link" href="#main-content">Đến nội dung chính</a>
 <div class="document">
-<header class="site-header"><a class="brand" href="../../../../tickets/index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
 <main id="main-content">
 <p class="eyebrow">Ticket · PID-00098</p><h1>PID-00098 — Ghi chú thiết kế</h1>
-<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này chỉ liệt kê màn và trạng thái cần dựng cho PID; điều mới chốt khi làm rõ sẽ ghi thêm ở đây.</p>
-<h2 id="giao-dien">Giao diện</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th></tr></thead><tbody>
-<tr><td><a href="../../../../ui-design/pages/Discover--state-searching.html">Discover--state-searching</a></td><td>state-searching</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Discover.html">Discover</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Library--state-empty.html">Library--state-empty</a></td><td>state-empty</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Library--state-loading.html">Library--state-loading</a></td><td>state-loading</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Library.html">Library</a></td><td>Mặc định</td></tr>
-<tr><td><a href="../../../../ui-design/pages/Reference.html">Reference</a></td><td>Mặc định</td></tr>
-</tbody></table></div>
-<ul><li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>).</li>
-<li>Mỗi màn có trạng thái đang tải, trống, lỗi và chạy lâu nếu có thao tác dài; hai ngôn ngữ vi, en.</li>
-<li>Kiểm trên preview <code>web</code> ở 1440×900; màn có trên điện thoại kiểm thêm 390×844.</li></ul>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#du-lieu">Dữ liệu</a></li>
+<li><a href="#api-va-su-kien">API và sự kiện</a></li>
+<li><a href="#giao-dien">Giao diện</a></li>
+<li><a href="#agent-va-model">Agent và model</a></li></ul></details>
+
+<p>Thiết kế đã duyệt nằm ở <a href="../../../../ui-design/design.md">design.md</a> và các màn dưới đây (DEC-18). File này ghi màn, trạng thái cần dựng và điều đã chốt khi làm rõ mà spec mục 4 chưa nói (H1…). Chi tiết hiện thực Dev tự quyết ghi ở <code>implement.md</code>.</p>
 <h2 id="du-lieu">Dữ liệu</h2>
-<p>Không có.</p>
+<p>Không có bảng. Dữ liệu mẫu của mock nhất quán với màn tham chiếu và với mock của khu vực global (design.md §6; H4):</p>
+<ul><li>Trusted Library: <code>lewis2020rag</code> (Trusted, Indexed 142 đoạn, dùng ở “RAG trong tổng quan tài liệu” và “Học máy trong chẩn đoán ảnh”), <code>karpukhin2020dpr</code> (Trusted, Indexed, 1 project), <code>gao2023survey</code> (Trusted, Failed, <code>pdf_without_text_layer</code>), <code>liu2024lost</code> (Trusted, Unavailable, 1 project), <code>asai2024selfrag</code> (Trusted, Indexing), <code>doe2023hd</code> (Revoked, Indexed, 1 project, needs review).</li>
+<li>Chờ duyệt: năm mục của màn Library (Huang 2024, Chen 2024 nghi trùng với một preprint Chen 2023, Jiang 2023, Es 2024, Shi 2023).</li>
+<li>Discover: năm kết quả của màn Discover; vì <code>asai2024selfrag</code> đã Trusted, kết quả Self-RAG mang nhãn “Đã có trong Trusted Library” (màn Discover đã sửa theo Phải sửa ở nguồn mục 14, 27/11/2026).</li>
+<li>Tên project trùng với mock của PID-00037 (“RAG trong tổng quan tài liệu”, “Học máy trong chẩn đoán ảnh”).</li></ul>
 <h2 id="api-va-su-kien">API và sự kiện</h2>
-<p>Dùng 22 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>.</p>
+<ul><li>31 operation ở <a href="../specs/index.html#s-2-3">spec mục 2.3</a>; gọi qua client API có type của shell; <code>Idempotency-Key</code> cho mọi lệnh có tham số này (tìm, nhập, duyệt, thu hồi, duyệt lại, gộp, hủy tìm); <code>If-Match</code> = <code>ETag</code> cho sửa metadata (H17); CSRF do client của shell gắn.</li>
+<li>Sự kiện qua client SSE của shell theo H19; tín hiệu cần tải lại theo PC-05 P2.</li>
+<li>Mock: override có trạng thái của 23 operation path 10 trong một kho; operation của khu vực khác chỉ override trong test (H4).</li>
+<li>Hợp đồng sửa 27/11/2026 (Google Scholar cho lần tìm, nhãn trùng theo trạng thái, trạng thái từng mục của lô, nhiều DOI, RIS, truy vấn gốc, lịch sử, BibTeX, lọc theo project, số claim, khôi phục): dùng theo H21–H31. Còn thiếu cách trả hồ sơ tác giả ứng viên (H11 tạm, chờ PO): không tự thêm trường; xem mục “Phải sửa ở nguồn” của <a href="../index.html#sua-o-nguon">trang ticket</a>.</li></ul>
+<h2 id="giao-dien">Giao diện</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Màn tham chiếu</th><th scope="col">Trạng thái</th><th scope="col">Điều đã chốt</th></tr></thead><tbody>
+<tr><td><a href="../../../../ui-design/pages/Discover.html">Discover</a></td><td>Có kết quả; chọn; gửi lô; tóm tắt lô; 0 kết quả; lỗi nguồn; tác giả; nhập thủ công</td><td>Dòng nguồn từ <code>listDiscoverySources</code>, OpenAlex mặc định (H6); bốn tab theo H7; nhãn phân biệt và “Tải thêm” thay “Trang 1 / 3” (H9); nút “Loại”, nguồn và “Bản ghi nguồn” mỗi dòng (H9, H10); bỏ “Có thể trùng” ở kết quả; một nút chính là “Gửi n kết quả vào luồng duyệt”</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Discover--state-searching.html">Discover--state-searching</a></td><td>Đang tìm</td><td>Thẻ thao tác dài của shell, nguồn thực tế, nút “Hủy tìm” (H8)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Library.html">Library</a></td><td>Có dữ liệu; panel chờ duyệt; lọc rỗng; lỗi</td><td>Mục nghi trùng không vào lô, ba nút riêng (H14); thêm lọc Năm, “Tất cả” của Duyệt, ngày duyệt dưới chip (H13); ghi chú Unavailable theo UX-REF-002; một nút chính là “Duyệt n mục đã chọn”</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Library--state-empty.html">Library--state-empty</a></td><td>Trống</td><td>Nút chính “Tìm tài liệu ở Discover” (UX-STATE-002)</td></tr>
+<tr><td><a href="../../../../ui-design/pages/Library--state-loading.html">Library--state-loading</a></td><td>Đang tải</td><td>Skeleton 6 dòng, <code>role="status"</code></td></tr>
+<tr><td><a href="../../../../ui-design/pages/Reference.html">Reference</a></td><td>Trusted, Indexed</td><td>Câu giải thích theo cặp trạng thái; provenance dựng từ trường của Reference, nguồn thực tế thay “Google Scholar (dịch vụ trung gian)”; khối BibTeX từ <code>Reference.bibtex</code> (H27) và số claim từ <code>claimCount</code> (H28); truy vấn gốc và lịch sử (H26); nút theo trạng thái (H15, H17). Biến thể pending, revoked, failed, unavailable có ở màn tham chiếu từ 27/11/2026</td></tr>
+<tr><td>Chưa có màn tham chiếu</td><td>Discover: lỗi nguồn, thẻ chọn hồ sơ tác giả, tóm tắt lô, kết quả nhập thủ công (0 kết quả, Google Scholar, hết hạn mức có từ 27/11/2026). Reference: Rejected, đã gộp; dialog thu hồi, gộp, xóa, thêm vào project, từ chối (Pending Approval, Revoked, Unavailable, indexing Failed có từ 27/11/2026)</td><td>Theo design.md §3, §4 (Trống, Lỗi, Dialog, Banner, Thẻ prompt) và sketch <a href="Discover-Library-Reference.html">Discover-Library-Reference.html</a></td></tr>
+</tbody></table></div>
+<ul><li>Một nút chính tô màu mỗi màn: Discover “Gửi n kết quả vào luồng duyệt” (khi không có kết quả: không có nút chính, Tìm là nút phụ); Trusted Library “Duyệt n mục đã chọn” khi có panel chờ duyệt, “Tìm tài liệu ở Discover” khi trống; Reference “Duyệt” khi Pending Approval, còn lại không có nút chính (design.md §4, §8).</li>
+<li>Thu hồi, Xóa là nút phá hủy (viền và chữ <code>danger</code>); dialog 480px nêu hệ quả bằng số trước nút xác nhận, nút hủy gọi tên phương án an toàn (“Giữ Trusted”, “Giữ reference”).</li>
+<li>Chip qua shell theo H18; tên trạng thái tiếng Anh ở cả hai ngôn ngữ; nhãn “Chưa duyệt — không dùng làm nguồn” và các nhãn trùng của H9 dịch theo ngôn ngữ giao diện.</li>
+<li>Dựng bằng skill sires-ui-executor, rà bằng sires-ui-review (<code>check-ui.mjs</code>). Kiểm trên preview web ở 1440×900, 1024×768 và 390×844; vi và en.</li></ul>
 <h2 id="agent-va-model">Agent và model</h2>
-<p>Không có.</p>
+<p>Không gọi model. Màn chỉ hiện việc của Discovery Agent và Reference Processing Agent qua workflow và thẻ prompt (H8, H10, H11).</p>
 <nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00098</a><a href="../../index.html">Danh sách ticket</a></nav>
 </main>
-<footer>SIRes · Ghi chú thiết kế PID-00098 · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+<footer>SIRes · Ticket PID-00098 · Ghi chú thiết kế · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
 </div>
 </body>
 </html>
