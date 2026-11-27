@@ -34,9 +34,9 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | — | AgentListPreview | Agent List light và dark cạnh nhau, cùng bảy biến thể `wfState` như AgentList | design.md 2.1 (dark) |
 | G1 | Dashboard | Dashboard, 8 việc chờ (cũ nhất trên); biến thể recovery, first-run | 15.1, UX-PENDING-001, UX-STATE-005, UX-SETTINGS-002 |
 | G2 | Projects | Research Projects + tạo project | 7.2 |
-| G3 | Discover | Tìm Google Scholar + nhập thủ công; biến thể đang tìm | 10.1–10.4, UX-STATE-001 |
-| G4 | Library | Trusted Library, duyệt theo lô; biến thể empty, loading | 10.6–10.8, UX-REF-001/002 |
-| G5 | Reference | Chi tiết Reference + provenance | UX-REF-003 |
+| G3 | Discover | Tìm (OpenAlex mặc định, Google Scholar khi bật cho lần tìm, số lượt 0–20), nhãn nguồn và “Bản ghi nguồn” mỗi kết quả, “Loại”, “Tải thêm”, nhập thủ công DOI nhiều dòng, BibTeX, RIS, PDF; biến thể `state`: searching (đang tìm OpenAlex), no-results (0 kết quả, “Tìm lại với Google Scholar”), scholar (kết quả Google Scholar, số lượt đã dùng), scholar-limit (hết hạn mức tháng). Sửa 27/11/2026 theo PID-00098 mục 14, PC-05 nhóm II | 10.1–10.4, UX-STATE-001, UX-REF-004 |
+| G4 | Library | Trusted Library, duyệt theo lô (mục có thể trùng không vào lô, ba nút riêng), lọc Duyệt (Trusted, Revoked, Rejected, Tất cả, Đã xóa), Indexing, Năm, Project, ngày duyệt dưới chip, Failed và Unavailable kiểu Lỗi; biến thể `state`: empty, loading, deleted (đã xóa mềm, Khôi phục). Sửa 27/11/2026 theo PID-00098 mục 15 | 10.6–10.8, UX-REF-001/002 |
+| G5 | Reference | Chi tiết Reference: hai chip và câu giải thích theo cặp trạng thái, metadata, BibTeX chỉ đọc, Project đang dùng (evidence, claim, citation), provenance với nguồn thực tế và truy vấn gốc; biến thể `state`: pending (Duyệt là nút chính), revoked (Duyệt lại, chỉ đọc), failed (indexing lỗi, Thử lại indexing), unavailable. Sửa 27/11/2026 theo PID-00098 mục 16 | UX-REF-002, UX-REF-003 |
 | G6 | Assistant | Global AI Assistant (khung bên) | UX-LAYOUT-002 |
 | G7 | GlobalTasks | Tasks & Plan tổng hợp (chỉ đọc) | 9.12 |
 | G8 | GlobalActivity | Agent Activity cấp Global: workflow đang hoạt động trên cùng, Tạm dừng cho cả Waiting for User (DEC-53) | UX-MONITOR-001, UX-MONITOR-004 |
