@@ -82,7 +82,7 @@ function taskEvent(taskId: string, version: number, toState: string, id = uuidv7
   });
 }
 
-describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', { timeout: 30_000 }, () => {
+describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', () => {
   let stack: MessagingTestStack;
   let connection: ChannelModel;
   let publisher: Channel;
@@ -173,7 +173,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     await Promise.all(consumers.map((consumer) => consumer.stop()));
     await connection?.close().catch(() => undefined);
     await stack?.stop();
-  }, 60_000);
+  });
 
   const reset = () => {
     outcomes.length = 0;
@@ -406,7 +406,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
-  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', { timeout: 60_000 }, async () => {
+  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', async () => {
     // A TCP proxy to the broker that is not listening yet: the first attempt is refused, as when the broker is down.
     const broker = new URL(stack.rabbit.amqpUrl);
     const sockets = new Set<Socket>();
@@ -471,7 +471,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
-  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', { timeout: 60_000 }, async () => {
+  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', async () => {
     const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
     const logs: LogEntry[] = [];
     const closeWhileHandling = new Set<string>();

@@ -104,7 +104,7 @@ describe('If-Match — cập nhật trên PostgreSQL thật', () => {
     await app?.close();
     await pool?.end();
     await database?.stop();
-  }, 60_000);
+  });
 
   async function seedNote(): Promise<string> {
     const id = uuidv7();
