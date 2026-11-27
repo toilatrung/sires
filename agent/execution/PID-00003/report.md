@@ -3,8 +3,8 @@
 **Trạng thái:** Xong — chờ QC
 
 - **Ticket:** [PID-00003](../../../docs/tickets/issues/PID-00003/index.html) · **Luồng:** `platform` · **Giai đoạn:** PH-01
-- **Nhánh:** `platform/ts-service-auth` (đã commit, đã push) · **PR:** [#34](https://github.com/toilatrung/sires/pull/34)
-- **Cập nhật:** 18/11/2026 (Lần 2)
+- **Nhánh:** `platform/ts-service-auth` (đã commit, đã push) · **PR:** [#34](https://github.com/toilatrung/sires/pull/34) · đã merge; sửa sau rà 24/11: [#86](https://github.com/toilatrung/sires/pull/86), [#87](https://github.com/toilatrung/sires/pull/87)
+- **Cập nhật:** 25/11/2026 (dòng PR sau merge; kết quả rà 24/11/2026 ở `self-qc.md` Lần 3, PC-04 A7)
 - **Triển khai:** [implement.md](implement.md) · **Self-QC:** [self-qc.md](self-qc.md)
 
 Lần chạy sau cập nhật trạng thái ở trên và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.

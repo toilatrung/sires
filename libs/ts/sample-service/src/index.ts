@@ -3,5 +3,5 @@
 // SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
 
 export { SampleModule, SampleController } from './sample.module';
-export { SampleService, createSampleConsumer, SAMPLE_SERVICE_IDENTITY, SAMPLE_CONSUMER } from './sample.service';
+export { SampleService, createSampleConsumer, SAMPLE_SERVICE_IDENTITY, SAMPLE_CONSUMER, SAMPLE_EVENT_TYPE } from './sample.service';
 export { sampleRecord } from './schema';

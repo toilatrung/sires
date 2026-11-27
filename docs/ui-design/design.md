@@ -128,13 +128,16 @@ Mỗi trạng thái chuẩn (PRD mục 5) có một nhãn duy nhất, cùng ch�
 
 | Ý nghĩa | Kiểu | Dùng cho |
 | --- | --- | --- |
-| Đề xuất / chưa chốt | Viền 1.5px **nét đứt**, chữ brand-ink hoặc muted | Draft, Proposed, Discovered (“Chưa duyệt — không dùng làm nguồn”), Partially Supported |
-| Đã chốt | Viền 1.5px **nét liền** | Approved, Ready (brand), Accepted, Trusted, Completed, Succeeded (ink) |
-| **Cần bạn xử lý** | Nền `brand-tint`, viền `brand-line`, chữ `brand-ink`, kèm biểu tượng tròn có dấu chấm than | Waiting for User, In Review, Plan Proposed, Pending Approval, mọi pending action |
+| Đề xuất / chưa chốt | Viền 1.5px **nét đứt**, chữ brand-ink hoặc muted | Draft, Proposed (của entity khác Plan Version và Change Proposal), Discovered (“Chưa duyệt — không dùng làm nguồn”), Partially Supported, Selected, Imported |
+| Đã chốt | Viền 1.5px **nét liền** | Approved, Ready, Supported (brand), Accepted, Trusted, Indexed, Valid, Active, Completed, Succeeded (ink) |
+| **Cần bạn xử lý** | Nền `brand-tint`, viền `brand-line`, chữ `brand-ink`, kèm biểu tượng tròn có dấu chấm than | Waiting for User, In Review, Proposed của Plan Version và Change Proposal, Pending Approval, mọi pending action |
 | Đang chạy | Viền liền `brand`, nền `brand-tint`, chữ ink, chấm 7px nhấp nháy trước nhãn (mục 2.4.1), đứng yên khi `prefers-reduced-motion` | In Progress, Running, Indexing, Đang chạy, Đang build, Đang tìm |
-| Cảnh báo | Viền `warn` (liền = trạng thái, đứt = cờ nhẹ) | Blocked, Interrupted, Gián đoạn (agent), Conflicting (liền); Unsupported, needs review (đứt) |
-| Lỗi | Viền `danger`, nền `danger-tint`, chữ `danger-ink` | Failed, Invalid, Lỗi |
-| Trung tính / kết thúc | Viền `line`, nền `ground`, chữ muted | Queued, Pending (bước), Cancelled, Superseded, Rejected, Paused, Đang rảnh |
+| Cảnh báo | Viền `warn` (liền = trạng thái, đứt = cờ nhẹ) | Blocked, Interrupted, Gián đoạn (agent), Conflicting, Revoked (liền); Unsupported, needs review, Stale, Outdated (đứt) |
+| Lỗi | Viền `danger`, nền `danger-tint`, chữ `danger-ink` | Failed, Invalid, Unavailable, Lỗi |
+| Trung tính / kết thúc | Viền `line`, nền `ground`, chữ muted | Queued, Pending (bước), Created, New, Not Indexed, Not Assessed, Untested, Excluded, Answered, Archived, Cancelled, Superseded, Rejected, Paused, Đang rảnh |
+| Trung tính viền đứt | Viền 1.5px **nét đứt** `muted`, nền `ground`, chữ muted (như thẻ prompt Expired) | Expired |
+
+Bảng bổ sung ngày 27/11/2026 (PID-00012 H4, phiếu chốt PC-05 P1) các trạng thái chuẩn trước đó chưa có dòng: Supported, Not Assessed (Claim); Indexed, Not Indexed, Unavailable (indexing của Reference); Revoked (duyệt Reference); Valid, Untested (kiểm tra Provider Connection); Active, Archived (Project); Active, Excluded, Stale (Evidence); New, Selected, Imported (kết quả discovery); Answered, Expired (Interactive Agent Prompt); Outdated (Change Proposal); Created; và kiểu “Trung tính viền đứt”. `Proposed` chọn kiểu theo loại entity: Plan Version và Change Proposal cần Researcher duyệt nên là “Cần bạn xử lý”, entity khác là “Đề xuất”. Trạng thái không có trong bảng thì không tự đặt kiểu; báo PO bổ sung bảng. Chip mẫu ở `Components`.
 
 **Ngoại lệ: trạng thái của agent trong Agent List.** Quy tắc “tên trạng thái giữ tiếng Anh” áp dụng cho trạng thái chuẩn của entity ở PRD mục 5 (Task, Workflow, Workflow Step, Agent Run, Deliberation, Reference…). Agent (Orchestrator, Discovery Agent…) không phải entity có trạng thái chuẩn; Agent List chỉ tóm tắt việc agent đang làm trong project, nên dùng nhãn theo ngôn ngữ giao diện (EN: Running, Needs you, Interrupted, Error, Idle). Năm nhãn tiếng Việt, mỗi nhãn đúng một kiểu ở bảng trên:
 
@@ -158,7 +161,7 @@ Nguồn tham chiếu ở `source/`, bản render ở `pages/`.
 
 | Component | Tham chiếu | Quy tắc |
 | --- | --- | --- |
-| Top bar | `TopBar` | Logo → Dashboard; bộ chuyển ngữ cảnh (“Global” hoặc tên project); tab khu vực Global (gạch chân màu `ink`, không dùng brand); bên phải: Trợ lý (chỉ ở Global), Pending Actions kèm số đếm mọi pending action của tài khoản (phần khung duy nhất có viền brand), chuông Notifications kèm số chưa đọc (mở `Notifications`), VI/EN, Settings, avatar. Có trên mọi màn. Số trên Pending Actions bằng số mục ở `PendingActions`, `Dashboard`, `MobilePending`; tổng số trên Project rail bằng số pending action của project đó. |
+| Top bar | `TopBar` | Logo → Dashboard; bộ chuyển ngữ cảnh (“Global” hoặc tên project); tab khu vực Global (gạch chân màu `ink`, không dùng brand); bên phải: Trợ lý (chỉ ở Global), Pending Actions kèm số đếm mọi pending action của tài khoản (phần khung duy nhất có viền brand), chuông Notifications kèm số chưa đọc (mở `Notifications`), VI/EN, Settings, avatar. Avatar là nút mở menu tài khoản (lớp nổi, mục 2.3): họ tên và email, “Hồ sơ” (EN “Profile”, tới Settings → Profile, `/settings/profile`) và “Đăng xuất” (EN “Sign out”); mở, chọn, đóng bằng bàn phím (Enter, Space, mũi tên, Esc), Esc trả focus về avatar. “Đăng xuất” gửi form `POST /auth/logout` kèm CSRF token (hợp đồng `logout`) để trình duyệt rời SIRes tới trang kết thúc phiên của IdP. Biến thể `menu: vi`, `menu: en` của `TopBar`. Có trên mọi màn. Số trên Pending Actions bằng số mục ở `PendingActions`, `Dashboard`, `MobilePending`; tổng số trên Project rail bằng số pending action của project đó. |
 | Project rail | `ProjectRail` | 220–240px, nền `surface`, tên project + trạng thái Plan, tám khu vực, số việc chờ người dùng, ô active task ở đáy. Mục đang chọn: nền `control`, chữ ink. Manuscript ẩn rail để đủ chỗ và có nút “Project” để quay lại. |
 | Nút | `Components`, `Main` | Chính: nền `brand`, chữ trắng, **một nút mỗi màn**. Phụ: nền `surface`, viền `line`, chữ ink. Viền xanh (hành động phụ trong thẻ quyết định): viền `brand`, chữ brand-ink. Nút chữ: brand-ink, không viền. Phá hủy: viền và chữ `danger` trên `surface`. Vô hiệu: nền `ground`, chữ `disabled-ink`, kèm lý do viết cạnh nút. |
 | Ô nhập | mọi form | Nhãn phía trên (13px/600), cao 40px, nền `control`, viền `line-control`, bo 6px. Lỗi: viền 1.5px `danger` + thông báo dưới ô nêu sai gì và cho biết chưa lưu. |
@@ -192,7 +195,7 @@ Nguồn tham chiếu ở `source/`, bản render ở `pages/`.
 - Ngôn ngữ giao diện tiếng Việt hoặc English (bộ chuyển có trên mọi màn); nội dung nghiên cứu, bản thảo và thuật ngữ cố định (Task, Plan, Artifact, Trusted Reference, Agent Run, tên trạng thái, execution label) giữ nguyên.
 - Tiêu đề là danh từ (“Pending Actions”, “Plan Version v4”), không phải câu hay lời chào.
 - Lỗi và banner: chuyện gì xảy ra, ảnh hưởng, bước tiếp, mã lỗi. Nút gọi tên hành động (“Duyệt v4”, “Mở Recovery decision”), không dùng “Bắt đầu ngay” hay “Tìm hiểu thêm”.
-- Ngày `dd/mm/yyyy`, giờ `HH:mm`, theo múi giờ máy; số dùng chữ số đều cột.
+- Ngày `dd/mm/yyyy`, giờ `HH:mm`, theo múi giờ máy; số dùng chữ số đều cột. English: dấu phẩy ngăn nghìn, dấu chấm thập phân; tiếng Việt: dấu chấm ngăn nghìn, dấu phẩy thập phân; ngày giờ cùng mẫu ở cả hai ngôn ngữ (PID-00012 H3, PC-05 P4).
 - Dữ liệu mẫu phải hợp lý và nhất quán (tổng khớp, cùng một Task có cùng mã và trạng thái ở mọi nơi); dùng ngoặc vuông khi chưa có giá trị thật.
 
 ## 7. Khả năng tiếp cận

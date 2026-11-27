@@ -1,0 +1,1661 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu chốt cuối PH-01 (đề nghị PC-05): gộp phiếu SPK-01, phiếu Google Scholar và các điểm PH-01 còn chờ PO để PO chốt trong một lần.">
+<title>Phiếu chốt cuối PH-01 | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .ctx{font-size:.88rem;margin:.3rem 0 .5rem}
+.item .ctx ol{margin:.3rem 0;padding-left:1.4rem}
+.item .q{margin:.3rem 0 .6rem;font-weight:600}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="bao-cao-hoan-tat-ph01.html">Báo cáo PH-01</a> · Phiếu chốt cuối PH-01</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
+<h1>Phiếu chốt cuối PH-01</h1>
+<p class="meta">Số phiếu đề nghị: PC-05 · Lập 25/11/2026 theo yêu cầu PO (“để vấn đề cuối đưa về PC tôi chốt trong một lần”) · Gộp <a href="phieu-chot-spk-01.html">phiếu chốt SPK-01</a> (đề nghị PC-02, 12 mục), <a href="phieu-chot-google-scholar.html">phiếu chốt Google Scholar</a> (đề nghị PC-03, 19 mục) và 44 điểm PH-01 còn chờ PO · Tổng 75 mục</p>
+<div class="note"><p><strong>Bối cảnh.</strong> Sau đợt hoàn tất PH-01 (xem <a href="bao-cao-hoan-tat-ph01.html">báo cáo</a> và <a href="phieu-chot-ph01.html">PC-04</a>), PH-01 còn chờ: SPK-01 (key chính thức, PO chọn chạy Lần 3 — PC-04 B8), SPK-03 (PO chốt PC-03 — B9), PID-00012, PID-00013, PID-00159. Phiếu này gom mọi câu còn chờ PO để chốt trong một lần. Nhóm I và II giữ nguyên nội dung phiếu gốc (mã mục thêm tiền tố S-, GS-); nhóm III, IV là các điểm PH-01 còn lại. Câu trả lời ở phiếu này là căn cứ (R-02) để áp dụng vào PRD, kiến trúc, database, api-design, ui-design, hồ sơ ticket và mã. Khi PO chốt phiếu này, phiếu SPK-01 và phiếu Google Scholar coi như đã chốt theo phiếu này.</p></div>
+<div class="note no-print"><p>Chọn một phương án cho mỗi mục. Phương án gắn nhãn <strong>Đề xuất</strong> là đề xuất của người lập phiếu, không phải quyết định. Chọn <em>Khác</em> nếu muốn tự ghi câu trả lời. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="PC-05"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Điền đề xuất cho mục còn trống</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<button type="button" id="b-reset">Xóa phiếu</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="bao-cao-hoan-tat-ph01.html">← Báo cáo PH-01</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt cuối PH-01. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+const R = {
+ "s_ticket": [
+  "PID-00021",
+  "../tickets/issues/PID-00021/index.html"
+ ],
+ "s_scope": [
+  "scope EC01–EC04",
+  "../tickets/issues/PID-00021/specs/scope.html"
+ ],
+ "s_report": [
+  "report.md",
+  "../../agent/execution/PID-00021/report.md"
+ ],
+ "s_qc": [
+  "qc-report.md",
+  "../../agent/execution/PID-00021/qc-report.md"
+ ],
+ "s_p70": [
+  "PID-00070",
+  "../tickets/issues/PID-00070/index.html"
+ ],
+ "s_prd86": [
+  "PRD 8.6",
+  "sections/08-ai-assistant-and-multi-agent-orchestration.html#s-8-6"
+ ],
+ "s_arch84": [
+  "Kiến trúc 8.4",
+  "../architecture/sections/08-model-gateway-and-integrations.html#s-8-4"
+ ],
+ "s_arch122": [
+  "Kiến trúc 12.2",
+  "../architecture/sections/12-decisions-risks-and-open-issues.html#s-12-2"
+ ],
+ "s_asm": [
+  "ASM-02, ASM-03, ASM-10",
+  "sections/20-assumptions-constraints-and-open-questions.html#asm-02"
+ ],
+ "s_oq113": [
+  "PRD 20.3",
+  "sections/20-assumptions-constraints-and-open-questions.html#oq-113"
+ ],
+ "g_dec60": [
+  "DEC-60",
+  "sections/20-assumptions-constraints-and-open-questions.html#dec-60"
+ ],
+ "g_dec61": [
+  "DEC-61",
+  "sections/20-assumptions-constraints-and-open-questions.html#dec-61"
+ ],
+ "g_s10": [
+  "Mục 10",
+  "sections/10-academic-discovery-and-trusted-library.html"
+ ],
+ "g_s172": [
+  "17.2",
+  "sections/17-integrations-and-external-dependencies.html#s-17-2"
+ ],
+ "g_s15": [
+  "Mục 15",
+  "sections/15-ui-ux-requirements.html"
+ ],
+ "g_asm14": [
+  "ASM-14",
+  "sections/20-assumptions-constraints-and-open-questions.html#asm-14"
+ ],
+ "g_risk12": [
+  "RISK-12",
+  "sections/20-assumptions-constraints-and-open-questions.html#risk-12"
+ ],
+ "g_survey": [
+  "Báo cáo khảo sát",
+  "bao-cao-khao-sat-nguon-hoc-thuat.html"
+ ],
+ "g_p50": [
+  "PID-00050",
+  "../tickets/issues/PID-00050/index.html"
+ ],
+ "g_arch": [
+  "Kiến trúc 3",
+  "../architecture/sections/03-system-context-and-containers.html"
+ ],
+ "p_p12": [
+  "PID-00012",
+  "../tickets/issues/PID-00012/index.html"
+ ],
+ "p_p13": [
+  "PID-00013",
+  "../tickets/issues/PID-00013/index.html"
+ ],
+ "p_p159": [
+  "PID-00159",
+  "../tickets/issues/PID-00159/index.html"
+ ],
+ "p_p04": [
+  "PID-00004",
+  "../tickets/issues/PID-00004/index.html"
+ ],
+ "p_p02": [
+  "PID-00002",
+  "../tickets/issues/PID-00002/index.html"
+ ],
+ "p_p29": [
+  "PID-00029",
+  "../tickets/issues/PID-00029/index.html"
+ ],
+ "p_p30": [
+  "PID-00030",
+  "../tickets/issues/PID-00030/index.html"
+ ],
+ "p_p26": [
+  "PID-00026",
+  "../tickets/issues/PID-00026/index.html"
+ ],
+ "p_p09": [
+  "PID-00009",
+  "../tickets/issues/PID-00009/index.html"
+ ],
+ "p_p16": [
+  "PID-00016",
+  "../tickets/issues/PID-00016/index.html"
+ ],
+ "p_p14": [
+  "PID-00014",
+  "../tickets/issues/PID-00014/index.html"
+ ],
+ "p_p19": [
+  "PID-00019",
+  "../tickets/issues/PID-00019/index.html"
+ ],
+ "p_p42": [
+  "PID-00042",
+  "../tickets/issues/PID-00042/index.html"
+ ],
+ "p_p65": [
+  "PID-00065",
+  "../tickets/issues/PID-00065/index.html"
+ ],
+ "p_p35": [
+  "PID-00035",
+  "../tickets/issues/PID-00035/index.html"
+ ],
+ "p_design": [
+  "design.md",
+  "../ui-design/design.md"
+ ],
+ "p_db11": [
+  "database 11",
+  "../database/sections/11-security-and-tenancy.html"
+ ],
+ "p_dbd14": [
+  "DBD-14",
+  "../database/sections/13-decisions-risks-and-open-issues.html#dbd-14"
+ ],
+ "p_ph01": [
+  "Tickets 2, PH-01",
+  "../tickets/sections/02-phases-and-gates.html#ph-01"
+ ],
+ "p_pc04": [
+  "PC-04",
+  "phieu-chot-ph01.html"
+ ],
+ "p_report": [
+  "Báo cáo PH-01",
+  "bao-cao-hoan-tat-ph01.html"
+ ]
+};
+const APPROVE_OPTS = ['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'];
+// rec: index của phương án đề xuất
+const GROUPS = [
+ {
+  "title": "I. SPK-01 (đề nghị PC-02) — A. Key proxy và EC01 (G1, G2)",
+  "items": [
+   {
+    "id": "S-K1",
+    "kind": "Quyết định",
+    "refs": [
+     "s_ticket",
+     "s_scope",
+     "s_qc"
+    ],
+    "impact": "PID-00021-AC01–AC03, ASM-02, ASM-03, ASM-10",
+    "ctx": "PO đã cấp một key của proxy tổng hợp, đặt cho cả ba biến ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY; mọi phép đo của Lần 1 dùng key này. Kết quả: OpenAI đạt mọi phép thử qua proxy. Claude không đo được vì nhóm key không có kênh Claude (HTTP 503 “No available channel”). Với API dạng Anthropic và Gemini, proxy không giữ cấu hình structured output. Endpoint chính thức của cả ba hãng từ chối key này (401, 400), nên AC03 không so được proxy với endpoint chính thức. EC01 chỉ viết cho trường hợp “chưa có key của một provider”, chưa nói key proxy có được tính hay không.",
+    "q": "Key proxy tổng hợp có được tính là key của provider khi xét EC01 không?",
+    "opts": [
+     "Tính cho OpenAI, không tính cho Claude và Gemini. Kết luận ASM-02, ASM-10 cho OpenAI được nhận, ghi “đo qua proxy”. Claude và Gemini cần key theo mục K2 để chạy Lần 3; AC03 cần ít nhất một key chính thức để so với proxy.",
+     "Tính cho cả ba. Đóng PID-00021 với kết luận hiện có: Claude ghi “không đo được qua proxy”, Gemini ghi kết quả qua proxy, AC03 bỏ phần so với endpoint chính thức. Rủi ro: ASM-02 cho Claude chưa có bằng chứng nào; thiếu năng lực chỉ lộ ra ở ô Hội tụ của PID-00070.",
+     "Không tính. Cần key chính thức của cả ba hãng, kể cả OpenAI; kết luận OpenAI hiện có chỉ để tham khảo tới Lần 3."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-K2",
+    "kind": "Quyết định",
+    "refs": [
+     "s_report",
+     "s_qc"
+    ],
+    "impact": "PID-00021 Lần 3, chi phí",
+    "ctx": "Lần 3 không cần sửa mã: chạy lại capabilities.py và base_url.py compare trên endpoint chính thức. Lần 1 tốn dưới 0,01 USD trên model giá thấp (gpt-4.1-nano, gemini-2.5-flash-lite; claude-haiku-4-5 bị chặn).",
+    "q": "Lần 3 dùng key nào và trần chi phí bao nhiêu?",
+    "opts": [
+     "PO cấp key chính thức Anthropic (dạng sk-ant-…) và Google AI Studio (dạng AIza…), thêm OpenAI nếu K1 chọn “Không tính”; đặt ở biến môi trường cấp User như hiện tại; trần chi phí 1 USD cho Lần 3.",
+     "PO đổi sang nhóm key của proxy có kênh Claude và giữ nguyên structured output. Vẫn là phép đo qua proxy; AC03 vẫn không so được với endpoint chính thức.",
+     "Không cấp key cho SPK-01. Năng lực Claude, Gemini thật được đo ở test provider thật của PID-00070 (ô Hội tụ)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "I. SPK-01 (đề nghị PC-02) — B. Ánh xạ lỗi provider (G4)",
+  "items": [
+   {
+    "id": "S-OQ-113",
+    "kind": "Open Question",
+    "refs": [
+     "s_oq113",
+     "s_prd86",
+     "s_arch84",
+     "s_qc"
+    ],
+    "impact": "PRD 8.6 (AGENT-PROVIDER-001), ProviderErrorCode ở docs/api-design, kiến trúc 8.4, PID-00070",
+    "ctx": "Bộ mã chuẩn 8.6 có 11 mã lỗi provider. HTTP 400 hiện chỉ có hai dòng ánh xạ: vượt context → context_too_long, và (Gemini) key sai → auth_failed. Các HTTP 400 khác (tham số không hợp lệ; schema hay khai báo tool bị từ chối, ví dụ proxy từ chối strict của OpenAI) spike đang ghi unmapped. Đây là lỗi của yêu cầu: thử lại không giúp, Researcher thường phải đổi model hoặc base URL.",
+    "q": "HTTP 400 không thuộc 11 mã chuẩn ánh xạ về mã nào?",
+    "opts": [
+     "Thêm mã mới invalid_request (cố định, không thử lại) vào 8.6, ProviderErrorCode và kiến trúc 8.4. Agent Run báo yêu cầu bị provider từ chối, gợi ý kiểm model và base URL.",
+     "Gộp vào invalid_response (cố định), không thêm mã. Nhược điểm: invalid_response nói về phản hồi không qua schema, không phải yêu cầu bị từ chối, nên khó chẩn đoán.",
+     "Gộp vào provider_unavailable (tạm thời, tự thử lại). Không đề xuất: thử lại cùng yêu cầu vẫn bị từ chối, tốn lượt gọi."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-M1",
+    "kind": "Duyệt",
+    "refs": [
+     "s_arch84",
+     "s_report",
+     "s_qc"
+    ],
+    "impact": "Kiến trúc 8.4, 8.2; PID-00070",
+    "ctxList": [
+     "Proxy trả 503 kèm thân code: model_not_found; mapper xét HTTP status trước nên ra provider_unavailable và thử lại sai → quy tắc: mã lỗi trong thân phản hồi ưu tiên hơn HTTP status.",
+     "Gemini key sai là HTTP 400 INVALID_ARGUMENT, reason API_KEY_INVALID → auth_failed.",
+     "google-genai ném thẳng exception của httpx (ConnectTimeout, ConnectError, ReadTimeout) và JSONDecodeError → gateway tự ánh xạ thành timeout, network_error, invalid_response.",
+     "429 của Gemini phân biệt giới hạn tốc độ với hạn mức ngày bằng QuotaFailure.quotaId.",
+     "Anthropic hết tiền là 402 billing_error → quota_exceeded (theo SDK 2.12, chưa kiểm thật).",
+     "SDK Anthropic, OpenAI tự thử lại 2 lần → gateway đặt max_retries=0 để tự thử lại và đếm attempts.",
+     "Stream OpenAI phải luôn đặt stream_options.include_usage."
+    ],
+    "q": "Duyệt bảy bổ sung trên (đề xuất 4 ở report.md mục 6) cho kiến trúc 8.4, để PID-00070 làm theo?",
+    "opts": [
+     "Duyệt cả bảy; ghi vào kiến trúc 8.4 khi áp dụng phiếu.",
+     "Duyệt quy tắc ưu tiên mã trong thân (ý 1) và max_retries=0 (ý 6); các ý còn lại để PID-00070 tự kiểm lại.",
+     "Chưa duyệt; giữ kiến trúc 8.4 như hiện tại."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "I. SPK-01 (đề nghị PC-02) — C. Các mục LOW của QC (G5–G10)",
+  "note": "Các mục này không chặn merge (PR #55 đã merge). “Trước Lần 3” nghĩa là làm trên nhánh mới của PID-00021 trước khi chạy lại với key.",
+  "items": [
+   {
+    "id": "S-G5",
+    "kind": "Quyết định",
+    "refs": [
+     "s_report",
+     "s_qc"
+    ],
+    "impact": "report.md (O2)",
+    "ctx": "Báo cáo có ba câu lệch dữ liệu thô: Pydantic AI và LangGraph ghi “cùng số lời gọi và token” nhưng token khác (1 296–1 506 vào, 174–193 ra); Gemini ghi 72 lời gọi có usage, dữ liệu thô có 69; lượt d, e ghi usage không stream “có” trong khi summary ghi “không đủ”.",
+    "q": "Xử lý G5 thế nào?",
+    "opts": [
+     "Sửa ba câu trong report.md cho khớp dữ liệu, cùng nhánh với Lần 3.",
+     "Sửa ngay trong một PR nhỏ của luồng agent-core.",
+     "Giữ nguyên; chỗ lệch đã ghi ở qc-report."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-G6",
+    "kind": "Quyết định",
+    "refs": [
+     "s_report",
+     "s_qc"
+    ],
+    "impact": "frameworks.py, README spike (O1)",
+    "ctx": "frameworks.py mặc định ghi evidence vào evidence/frameworks-<platform>/, còn lệnh chạy lại trong report và README không có --out; evidence đã nộp nằm ở evidence/frameworks/.",
+    "q": "Xử lý G6 thế nào?",
+    "opts": [
+     "Đổi mặc định thành evidence/frameworks, trước Lần 3.",
+     "Giữ mặc định, ghi --out vào lệnh chạy lại.",
+     "Không sửa."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-G7",
+    "kind": "Quyết định",
+    "refs": [
+     "s_qc"
+    ],
+    "impact": "scripts/development/setup-windows.ps1 (luồng infra)",
+    "ctx": "setup-windows.ps1 -Spikes băm nguyên byte của requirements.txt. Trên checkout có core.autocrlf=true (mặc định của Git for Windows) file thành CRLF nên mã băm lệch: -Check báo “[cần]” dù gói đã cài, lần chạy thường xóa rồi tải lại khoảng 80 MB.",
+    "q": "Xử lý G7 thế nào?",
+    "opts": [
+     "Chuẩn hóa xuống dòng (CRLF → LF) trong setup-windows.ps1 trước khi băm; luồng infra làm, không phụ thuộc cấu hình checkout.",
+     "Ghim eol=lf cho apps/*/spikes/*/requirements.txt trong .gitattributes.",
+     "Không sửa."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-G8",
+    "kind": "Quyết định",
+    "refs": [
+     "s_qc"
+    ],
+    "impact": "common.py › redact(), evidence/ (repo public)",
+    "ctx": "Evidence còn 9 request id do proxy sinh và tên nhóm tài khoản trên proxy, nằm trong thông báo lỗi. Đây không phải host hay key, nhưng nhà vận hành proxy dùng được để đối chiếu tài khoản. Các dòng này đã nằm trong lịch sử git của main: che bây giờ chỉ ngăn lan tiếp, không xóa khỏi lịch sử.",
+    "q": "Xử lý G8 thế nào?",
+    "opts": [
+     "Thêm quy tắc che request id và tên nhóm vào redact(), che luôn các dòng trong evidence hiện có, bằng một PR nhỏ của luồng agent-core ngay (không chờ Lần 3).",
+     "Chỉ thêm quy tắc vào redact(); evidence sinh lại ở Lần 3 sẽ sạch, evidence cũ giữ nguyên.",
+     "Chấp nhận, không che."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-G9",
+    "kind": "Quyết định",
+    "refs": [
+     "s_qc",
+     "s_p70"
+    ],
+    "impact": "base_url.py; quy tắc key của Model Gateway (SCOPE-13, kiến trúc 8.2)",
+    "ctx": "base_url.py compare luôn gửi key trong biến môi trường tới endpoint chính thức, kể cả khi biến base URL trỏ proxy; key proxy vì vậy đã được gửi tới ba endpoint chính thức (đều bị từ chối). Sản phẩm phải chỉ gửi key của một Provider Connection tới base URL của chính kết nối đó.",
+    "q": "Xử lý G9 thế nào?",
+    "opts": [
+     "Sửa spike trước Lần 3: đường chính thức chỉ dùng key chính thức (biến riêng), không gửi key proxy; ghi quy tắc này vào hồ sơ PID-00070 khi làm rõ.",
+     "Không sửa spike; chỉ ghi quy tắc cho PID-00070.",
+     "Như phương án đề xuất, và PO đổi key proxy vì key đã được gửi tới bên thứ ba."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-G10",
+    "kind": "Quyết định",
+    "refs": [
+     "s_scope",
+     "s_qc"
+    ],
+    "impact": "PID-00021-AC04, EC03",
+    "ctx": "Burst 50 lời gọi đồng thời không gây được 429 trên proxy; 429, 402 billing_error, 529 chỉ kiểm bằng thân lỗi giả theo tài liệu của provider. EC03 cho phép cách này.",
+    "q": "Xử lý G10 thế nào?",
+    "opts": [
+     "Chấp nhận theo EC03; kiểm 429 thật khi có key bậc thấp riêng (không dùng key dùng chung), ở Lần 3 nếu có, hoặc ở ô Hội tụ của PID-00070.",
+     "Bắt buộc kiểm 429 thật trước khi đóng PID-00021."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "I. SPK-01 (đề nghị PC-02) — D. PID-00070 và điều kiện hoàn tất PID-00021",
+  "items": [
+   {
+    "id": "S-P70",
+    "kind": "Quyết định",
+    "refs": [
+     "s_p70",
+     "s_ticket"
+    ],
+    "impact": "PID-00070 (luồng agent-core, PH-03), PID-00073",
+    "ctx": "PID-00070 (Model Gateway ba provider) phụ thuộc PID-00005, PID-00007, PID-00020, PID-00021; hồ sơ “Chưa sẵn sàng — chờ PO làm rõ”. Mục 4.1 của ticket ghi key không chặn trước, test dùng Model Gateway giả lập. PID-00070-AC03 (cùng schema, ba provider đều qua kiểm schema) cần provider thật ở ô Hội tụ. Từ SPK-01 đã dùng được: API chốt cho từng adapter, output tool làm đường dự phòng cho mọi adapter, bảng ánh xạ lỗi, đề xuất framework Pydantic AI. Chưa có: năng lực Claude, Gemini trên API chính thức. PR của PH-02 trở đi vào develop từ mốc DEC-59.",
+    "q": "PID-00070 có được bắt đầu trên kết luận một phần của SPK-01 không?",
+    "opts": [
+     "Có, kèm điều kiện. PID-00021 được coi là đủ cho phụ thuộc của PID-00070 ở mức Xây (gateway giả lập). Khi chạy spec-clarify cho PID-00070, ghi vào hồ sơ: API và đường dự phòng theo SPK-01, ánh xạ lỗi theo OQ-113 và M1, quy tắc key của G9. PID-00070-AC03 chỉ nghiệm thu ở ô Hội tụ sau khi SPK-01 Lần 3 kết luận Claude, Gemini (hoặc PID-00070 tự đo nếu K2 chọn phương án 3).",
+     "Có, không điều kiện: làm rõ và giao PID-00070 theo ticket hiện tại.",
+     "Không: chờ PID-00021 Lần 3 xong mới làm rõ PID-00070."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "S-DK",
+    "kind": "Duyệt",
+    "refs": [
+     "s_ticket",
+     "s_qc",
+     "s_arch122",
+     "s_asm"
+    ],
+    "impact": "Trạng thái PID-00021 → Xong",
+    "ctx": "PID-00021 được coi là đủ khi đạt cả bảy điều kiện:",
+    "ctxList": [
+     "Key theo K1, K2 có trên máy chạy; Dev kiểm dạng key mà không in giá trị.",
+     "Lần 3: capabilities.py cho anthropic và google (thêm openai nếu K1 chọn “Không tính”) trên endpoint chính thức; mỗi năng lực đạt, hoặc ghi rõ năng lực thiếu và cách xử lý theo EC02 (AC01, AC02).",
+     "base_url.py compare có đường endpoint chính thức, kết luận tương đương hay lệch giữa proxy và endpoint chính thức (AC03).",
+     "Các mục G5–G10 mà PO chọn “trước Lần 3” đã xong.",
+     "ASM-02, ASM-03, ASM-10 có kết luận cho đủ ba provider; G1, G2 đóng.",
+     "QC độc lập Lần 3 không còn CRITICAL, HIGH; PO nghiệm thu.",
+     "PO ghi kiến trúc 12.2 (SPK-01 “Đã chạy”), kiến trúc 8.2–8.4 theo M1, PRD 20.2 (ASM-02, ASM-03, ASM-10) và PRD 8.6 theo OQ-113."
+    ],
+    "q": "Duyệt danh sách điều kiện hoàn tất PID-00021?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "II. Google Scholar (đề nghị PC-03) — A. Google Scholar trong discovery (DEC-61, trả lời OQ-114)",
+  "note": "PO đã chốt: Google Scholar chỉ dùng khi Researcher chọn, có giới hạn lượt tìm mỗi phiên làm việc của agent, và chỉ cho tài liệu OpenAlex không có. Các mục dưới làm rõ cách hiện thực.",
+  "items": [
+   {
+    "id": "GS-A1",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_s10"
+    ],
+    "impact": "DISC-ADAPTER-001, WF-04, hợp đồng library",
+    "ctx": "“Phiên làm việc của agent” cần một đơn vị đếm cụ thể để hệ thống trừ lượt tìm Google Scholar.",
+    "q": "Giới hạn lượt tìm Google Scholar tính trên đơn vị nào?",
+    "opts": [
+     "Mỗi lần chạy workflow discovery (một Task WF-04, từ lúc bắt đầu tới khi xong hoặc dừng).",
+     "Mỗi Agent Run của Discovery Agent.",
+     "Mỗi ngày trên tài khoản."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A2",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_survey"
+    ],
+    "impact": "Settings, hợp đồng library, chi phí SerpApi",
+    "ctx": "SerpApi tính mỗi trang kết quả là một lần tìm. Gói Free có 250 lần tìm mỗi tháng (50 mỗi giờ); gói Starter 25 USD cho 1 000 lần tìm (200 mỗi giờ).",
+    "q": "Hạn mức mặc định và khoảng Researcher được đặt?",
+    "opts": [
+     "Mặc định 5 lượt mỗi phiên; Researcher đặt từ 0 đến 20; 0 là tắt Google Scholar.",
+     "Mặc định 10 lượt mỗi phiên; Researcher đặt từ 0 đến 50.",
+     "Không có mặc định: Researcher nhập số mỗi lần bật."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A3",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_s15"
+    ],
+    "impact": "Settings (15), màn hình Discover",
+    "ctx": "Researcher “chọn” dùng Google Scholar: cần chỗ bật và đặt hạn mức.",
+    "q": "Researcher bật Google Scholar và đặt hạn mức ở đâu?",
+    "opts": [
+     "Trong Settings làm mặc định của tài khoản, ghi đè được ở từng lần tìm (Discover, prompt của agent).",
+     "Chỉ ở từng lần tìm.",
+     "Chỉ trong Settings."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A4",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_s10"
+    ],
+    "impact": "Quy tắc chuyển sang Google Scholar trong DISC-ADAPTER-001",
+    "ctx": "“Tài liệu OpenAlex không có” có thể hiểu theo truy vấn (không có kết quả) hoặc theo từng tài liệu cụ thể.",
+    "q": "Khi nào coi là “OpenAlex không có” để tìm tiếp trên Google Scholar?",
+    "opts": [
+     "Khi truy vấn trên OpenAlex trả 0 kết quả, hoặc khi một tài liệu cụ thể (theo DOI hoặc tiêu đề) không tìm thấy trên OpenAlex.",
+     "Chỉ khi truy vấn trên OpenAlex trả 0 kết quả.",
+     "Như phương án đầu, thêm cả khi kết quả OpenAlex thiếu dữ liệu tối thiểu INT-SCHOLAR-003 (ví dụ không có tóm tắt)."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A5",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Workflow discovery, Agent Activity",
+    "ctx": "Khi dùng hết hạn mức của phiên mà vẫn còn tài liệu OpenAlex không có.",
+    "q": "Hết hạn mức thì hệ thống làm gì?",
+    "opts": [
+     "Dừng gọi Google Scholar, ghi vào Agent Activity, workflow tiếp tục với kết quả đã có; Researcher nới hạn mức nếu muốn.",
+     "Tạo prompt hỏi Researcher có nới hạn mức không (workflow chuyển Waiting for User).",
+     "Dừng workflow."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A6",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec60",
+     "g_risk12"
+    ],
+    "impact": "Chi phí, Settings, DEC-19",
+    "ctx": "DEC-19 chọn dịch vụ trung gian theo hợp đồng của đội. Provider LLM thì người dùng tự cấp key (OQ-014).",
+    "q": "Ai trả lượt tìm SerpApi?",
+    "opts": [
+     "Hệ thống, theo hợp đồng của đội (DEC-19), kèm hạn mức theo tài khoản mỗi tháng.",
+     "Researcher tự nhập SerpApi API key của mình (như key provider).",
+     "Cả hai: hệ thống có hạn mức nhỏ, Researcher thêm key riêng để vượt."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-A7",
+    "kind": "Quyết định",
+    "refs": [
+     "g_s10"
+    ],
+    "impact": "Discovered Result, LIB-DEDUP",
+    "ctx": "Kết quả Google Scholar vào cùng danh sách Discovered Result với kết quả OpenAlex.",
+    "q": "Có khử trùng kết quả Google Scholar với OpenAlex không?",
+    "opts": [
+     "Có: chuẩn hóa theo 17.6, khử trùng theo DOI rồi theo tiêu đề và năm; mỗi kết quả ghi nguồn (trường source).",
+     "Không: chỉ tìm phần OpenAlex không có nên bỏ qua khử trùng."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "II. Google Scholar (đề nghị PC-03) — B. Connector Google Scholar và kế hoạch công bố (DEC-61, trả lời OQ-115)",
+  "note": "PO đã chốt: connector tổng hợp dữ liệu từ Google Scholar về SIRes để Researcher quản lý kế hoạch công bố nghiên cứu; “đăng” là công bố nghiên cứu, không phải đưa bài lên Google Scholar.",
+  "items": [
+   {
+    "id": "GS-B1",
+    "kind": "Quyết định",
+    "refs": [
+     "g_asm14",
+     "g_dec61"
+    ],
+    "impact": "Settings (DEC-24), ASM-14",
+    "ctx": "ASM-14 coi liên kết là một URL hồ sơ, không đăng nhập Google. SPK-03 đã đọc được hồ sơ qua URL bằng SerpApi.",
+    "q": "Researcher liên kết hồ sơ Google Scholar thế nào?",
+    "opts": [
+     "Một URL hồ sơ cho mỗi tài khoản, nhập ở Settings (trường của DEC-24); không đăng nhập Google.",
+     "Cho phép nhiều hồ sơ (ví dụ thêm hồ sơ đồng tác giả)."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B2",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_survey"
+    ],
+    "impact": "Dữ liệu (18), hợp đồng library",
+    "ctx": "SerpApi engine google_scholar_author trả hồ sơ, chỉ số trích dẫn và danh sách công bố, mỗi trang 20 bài.",
+    "q": "Tổng hợp những dữ liệu nào từ Google Scholar?",
+    "opts": [
+     "Hồ sơ: tên, đơn vị, lĩnh vực quan tâm, tổng trích dẫn, h-index, i10-index. Công bố: tiêu đề, tác giả, nơi đăng, năm, số trích dẫn, liên kết.",
+     "Như trên, thêm biểu đồ trích dẫn theo năm và danh sách đồng tác giả."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B3",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61",
+     "g_risk12"
+    ],
+    "impact": "Chi phí SerpApi, job đồng bộ",
+    "ctx": "Mỗi 20 công bố là một lần tìm SerpApi; hồ sơ 100 bài tốn 5 lượt mỗi lần đồng bộ.",
+    "q": "Khi nào đồng bộ dữ liệu từ Google Scholar?",
+    "opts": [
+     "Khi liên kết và khi Researcher bấm Đồng bộ; không tự chạy định kỳ.",
+     "Như trên, thêm tự đồng bộ mỗi tuần.",
+     "Tự đồng bộ mỗi ngày."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B4",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "State machine mới (18.2), UI",
+    "ctx": "Kế hoạch công bố gồm các mục bài dự định công bố, mỗi mục có trạng thái.",
+    "q": "Mục kế hoạch công bố có những trạng thái nào?",
+    "opts": [
+     "Dự kiến → Đang viết → Đã nộp → Đang phản biện → Được chấp nhận → Đã công bố; nhánh Bị từ chối (nộp lại được, quay về Đang viết hoặc Đã nộp).",
+     "Ít trạng thái hơn: Dự kiến → Đã nộp → Đã công bố.",
+     "Researcher tự đặt tên trạng thái."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B5",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Dữ liệu (18), liên kết với project và bản thảo (12)",
+    "ctx": "Mục kế hoạch có thể gắn với project và bản thảo LaTeX đang viết trong SIRes.",
+    "q": "Mục kế hoạch công bố có những trường nào?",
+    "opts": [
+     "Tiêu đề, nơi dự định đăng (tạp chí, hội nghị), hạn nộp, trạng thái, ghi chú; liên kết tùy chọn tới project và bản thảo LaTeX của SIRes.",
+     "Như trên, bắt buộc gắn với một project."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B6",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Đồng bộ, APR",
+    "ctx": "Bài đã công bố sẽ xuất hiện trên hồ sơ Google Scholar sau một thời gian.",
+    "q": "Có đối chiếu công bố trên Google Scholar với kế hoạch không?",
+    "opts": [
+     "Có: khi đồng bộ thấy công bố khớp tiêu đề một mục kế hoạch, SIRes đề xuất đánh dấu Đã công bố; Researcher xác nhận.",
+     "Tự đánh dấu, không cần xác nhận.",
+     "Không đối chiếu."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B7",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Export (16.8), UI",
+    "ctx": "Researcher cần xem và lấy ra tình hình công bố của mình.",
+    "q": "Báo cáo công bố có dạng nào?",
+    "opts": [
+     "Xem trong SIRes và xuất CSV danh sách công bố cùng trạng thái kế hoạch.",
+     "Xuất CSV và PDF.",
+     "Chỉ xem trong SIRes."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B8",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Quyền (3), context agent (14)",
+    "ctx": "Dữ liệu hồ sơ và kế hoạch công bố là dữ liệu của tài khoản.",
+    "q": "Ai thấy dữ liệu tổng hợp và kế hoạch; agent dùng thế nào?",
+    "opts": [
+     "Chỉ chủ tài khoản thấy; agent chỉ đọc khi Researcher yêu cầu (ví dụ “tìm công bố của tôi”), không tự đưa vào context.",
+     "Agent được đọc mọi lúc để đưa vào context."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B9",
+    "kind": "Quyết định",
+    "refs": [
+     "g_arch",
+     "g_p50"
+    ],
+    "impact": "Kiến trúc 3, kế hoạch luồng",
+    "ctx": "library đã sở hữu source adapter và client SerpApi (PID-00050).",
+    "q": "Connector và kế hoạch công bố thuộc service nào?",
+    "opts": [
+     "Cả hai thuộc library, dùng chung client SerpApi với source adapter.",
+     "Connector ở library, kế hoạch công bố ở workspace.",
+     "Service mới riêng cho connector."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B10",
+    "kind": "Quyết định",
+    "refs": [
+     "g_dec61"
+    ],
+    "impact": "Priority (2.4), kế hoạch PID",
+    "ctx": "Discovery dùng Google Scholar (mục A) gắn với WF-04; connector và kế hoạch công bố (mục B) là tính năng mới.",
+    "q": "Mức ưu tiên?",
+    "opts": [
+     "Mục A là P0 của MVP; mục B là P1 của MVP.",
+     "Cả hai là P0.",
+     "Mục A P0; mục B sau MVP (FUT)."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "GS-B11",
+    "kind": "Quyết định",
+    "refs": [
+     "g_asm14",
+     "g_dec61"
+    ],
+    "impact": "Discovery Agent, hạn mức A2",
+    "ctx": "ASM-14 đã cho Discovery Agent dùng URL hồ sơ khi Researcher tìm công bố của chính mình.",
+    "q": "Discovery Agent dùng hồ sơ đã liên kết thế nào?",
+    "opts": [
+     "Dùng khi Researcher tìm công bố của chính mình; lượt gọi tính vào hạn mức phiên (A2).",
+     "Không dùng; connector chỉ phục vụ màn hình kế hoạch công bố."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "II. Google Scholar (đề nghị PC-03) — C. Áp dụng phiếu",
+  "items": [
+   {
+    "id": "GS-C1",
+    "kind": "Duyệt",
+    "refs": [
+     "g_s10",
+     "g_s172"
+    ],
+    "impact": "10, 15, 17.2, 18, hợp đồng library, PID",
+    "ctx": "Sau khi PO chốt mục A, B: biên soạn viết requirement ở 10 và 17.2 (thêm 15 Settings, 18 dữ liệu và state machine), sửa hợp đồng library bằng contract-updating-skill (tham số hạn mức, endpoint connector và kế hoạch công bố), cập nhật PID-00050 và cấp PID mới cho connector.",
+    "q": "Duyệt cách áp dụng phiếu?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "III. PH-01 — PID-00012 shell và PID-00159 môi trường cục bộ",
+  "note": "PID-00012, PID-00013, PID-00159 là ba PID PH-01 còn chờ PO (cùng SPK-01, SPK-03). PO chốt các mục dưới đây thì phiên được giao sửa nguồn, đặt Sẵn sàng và làm tiếp.",
+  "items": [
+   {
+    "id": "P1",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "p_p12",
+     "p_design"
+    ],
+    "impact": "docs/ui-design/design.md §3; chặn S11 của PID-00012",
+    "ctx": "H4 của PID-00012: bảng nhãn trạng thái bổ sung ở design.md §3 (Đã chốt thêm Supported, Indexed, Valid, Active; Trung tính thêm Created, Not Indexed, Not Assessed, Untested, New, Excluded, Archived, Answered; Đề xuất thêm Selected, Imported; Cảnh báo liền thêm Revoked; Cảnh báo đứt thêm Stale, Outdated; Lỗi thêm Unavailable; kiểu mới “trung tính viền đứt” cho Expired; ghi rõ Proposed của Plan).",
+    "q": "Duyệt sửa design.md §3 theo H4?",
+    "opts": [
+     "Duyệt; sửa design.md §3 và dựng lại docs/ui-design/pages/.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt; S11 chờ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P2",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p12"
+    ],
+    "impact": "docs/api-design /events, orchestration.yaml#/Event; chặn S12 của PID-00012",
+    "ctx": "H5: cần tín hiệu khi Last-Event-ID không còn phát lại được (quá 24 giờ). Với SSE, khi đã mở luồng thì server không đổi được HTTP status; EventSource của trình duyệt không đọc được mã lỗi khi kết nối lại.",
+    "q": "Tín hiệu “không còn phát lại được” dùng dạng nào?",
+    "opts": [
+     "Loại sự kiện riêng (ví dụ replay.unavailable) gửi đầu luồng, thêm vào enum type của Event trong orchestration.yaml, sửa mô tả /events; sửa bằng contract-updating-skill.",
+     "Mã phản hồi của /events khi kết nối lại (ví dụ 412)."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P3",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "p_p12"
+    ],
+    "impact": "docs/ui-design/source/TopBar.dc.html, design.md §4; api-design /auth/logout; chặn S14 của PID-00012",
+    "ctx": "H9: avatar mở menu “Hồ sơ” (tới /settings/profile) và “Đăng xuất”; /auth/logout đổi từ 204 sang điều hướng trình duyệt tới trang kết thúc phiên của eTroy kèm post_logout_redirect_uri (ADR-27), hoặc trả địa chỉ đó để client điều hướng.",
+    "q": "Sửa TopBar và /auth/logout thế nào?",
+    "opts": [
+     "Thêm menu avatar; /auth/logout trả chuyển hướng (303) tới end_session của eTroy kèm post_logout_redirect_uri; dựng lại pages/, bundle OpenAPI.",
+     "Thêm menu avatar; /auth/logout trả 200 kèm địa chỉ end_session để client tự điều hướng.",
+     "Chưa; S14 chờ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P4",
+    "kind": "Duyệt sửa nguồn",
+    "refs": [
+     "p_p12"
+    ],
+    "impact": "tickets 1.5 khu vực shell; design.md §6; ghi chú Preferences.timezone (không chặn)",
+    "ctx": "Các mục “Phải sửa ở nguồn” không chặn của PID-00012: thêm path API và màn vào tickets 1.5 khu vực shell (H1, H2, H7, H8); design.md §6 định dạng số theo ngôn ngữ (H3); Preferences.timezone chưa nói dùng làm gì (EC21).",
+    "q": "Sửa các mục không chặn cùng lúc?",
+    "opts": [
+     "Duyệt, sửa cùng lượt P1–P3.",
+     "Để sau."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P5",
+    "kind": "Duyệt",
+    "refs": [
+     "p_p12",
+     "p_p13"
+    ],
+    "impact": "Trạng thái PID-00012, PID-00013",
+    "ctx": "Sau khi sửa nguồn theo P1–P4, PID-00012 đủ điều kiện Sẵn sàng; PID-00013 (mock theo OpenAPI) phụ thuộc client API, client SSE của PID-00012 (S04, S05).",
+    "q": "Đặt PID-00012 Sẵn sàng và làm PID-00012, PID-00013 trong PH-01?",
+    "opts": [
+     "Có: sửa nguồn, đặt Sẵn sàng, làm PID-00012 rồi PID-00013, QC độc lập, merge trước khi đóng PH-01.",
+     "Chuyển PID-00012, PID-00013 sang PH-02."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P6",
+    "kind": "Duyệt",
+    "refs": [
+     "p_p159",
+     "p_ph01"
+    ],
+    "impact": "PID-00159; staging cục bộ (PC-04 B7)",
+    "ctx": "PID-00159 (compose cục bộ tạo vai trò sires_<service>_* theo database 3.2) chờ PO xác nhận hồ sơ. PO đã chọn staging tạm chạy cục bộ trên máy PO (PC-04 B7); test migration bằng vai trò thật của nhiều service đang chờ compose này (QC PID-00016 G2, PID-00026).",
+    "q": "Xác nhận hồ sơ PID-00159?",
+    "opts": [
+     "Xác nhận Sẵn sàng; làm ngay trong PH-01.",
+     "Chưa xác nhận."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "IV. PH-01 — điểm QC nêu cho PO (không chặn cổng ra)",
+  "items": [
+   {
+    "id": "P7",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p04"
+    ],
+    "impact": "Hồ sơ PID-00004",
+    "ctx": "Hồ sơ PID-00004 ghi lệnh kiểm @sires/platform:test ở 11 dòng; đúng ra là @sires/testing:test.",
+    "q": "Sửa lệnh kiểm trong hồ sơ?",
+    "opts": [
+     "Sửa 11 dòng thành @sires/testing:test.",
+     "Giữ nguyên."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P8",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p04"
+    ],
+    "impact": "libs/ts/testing (luồng platform)",
+    "ctx": "G4 (MEDIUM) của QC PID-00004: FakeBroker typecheck được với EventEnvelope sinh nhưng test dùng TestEnvelope tự khai; chép sâu khi publish chưa có test.",
+    "q": "Đặt EventEnvelope sinh làm kiểu mặc định của FakeBroker?",
+    "opts": [
+     "Có, PR nhỏ của luồng platform: kiểu mặc định EventEnvelope, test S03 dùng kiểu sinh, thêm test chép sâu.",
+     "Không."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P9",
+    "kind": "Quy ước",
+    "refs": [
+     "p_p04"
+    ],
+    "impact": "Quy tắc 1.4.7 (tickets 1), pnpm catalog",
+    "ctx": "PR #20, #30, #34 thêm mục pnpm catalog (luồng infra) ngay trong PR của ticket; check-tracks cảnh báo PR chạm hai luồng.",
+    "q": "PR của ticket có được thêm mục pnpm catalog cho phụ thuộc mới của chính nó?",
+    "opts": [
+     "Được, ghi rõ trong PR; cảnh báo check-tracks được chấp nhận; ghi vào quy tắc 1.4.7.",
+     "Không, phải có PR riêng của luồng infra."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P10",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p04"
+    ],
+    "impact": "Image test và compose",
+    "ctx": "Chú thích trong mã ghi “Pin image digests in PH-01”; infra/local/compose.yaml vẫn dùng minio:latest và rabbitmq:4-management.",
+    "q": "Khi nào ghim digest image test và compose?",
+    "opts": [
+     "Trước PH-07, không chặn PH-01.",
+     "Ngay trong PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P11",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p29"
+    ],
+    "impact": "DDL research, PRD 18.3 (DATA-PROV-001)",
+    "ctx": "DDL và test hiện chấp nhận provenance với inputs: [] (mảng rỗng).",
+    "q": "inputs: [] có hợp lệ?",
+    "opts": [
+     "Hợp lệ: nội dung Researcher nhập tay có thể không có input; inputs bắt buộc có mặt nhưng được rỗng.",
+     "Không hợp lệ: bắt buộc ít nhất một input; sửa DDL như EC09."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P12",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p29",
+     "p_p19"
+    ],
+    "impact": "00-common.sql (is_versioned_refs, location, ActorRef); migration các service đã merge",
+    "ctx": "Các kiểm còn lỏng (không ra NULL): location chỉ kiểm có khóa page; phần tử của is_versioned_refs có thể là mảng; researcher accountId: null vẫn đạt; is_actor_ref nhận agent khác analysis có instance khác A/B (TS, Python từ chối).",
+    "q": "Có siết các kiểm này?",
+    "opts": [
+     "Siết ở một PR riêng như EC09 (DDL nguồn và migration mới cho mọi service đã merge), có test hồi quy.",
+     "Giữ như hiện tại."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P13",
+    "kind": "Quy ước",
+    "refs": [
+     "p_p29",
+     "p_db11"
+    ],
+    "impact": "Migration dữ liệu sau này (FORCE RLS áp cả owner)",
+    "ctx": "FORCE RLS áp cả owner: migration dữ liệu chạy bằng migrator sẽ không thấy dòng của tenant nếu không đặt tenant context.",
+    "q": "Quy ước migration dữ liệu theo tenant?",
+    "opts": [
+     "Chạy bằng vai trò _system, đặt app.account_id theo từng tài khoản; ghi vào database 11.",
+     "Chờ PID đầu tiên cần migration dữ liệu."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P14",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p30"
+    ],
+    "impact": "manuscript.sql:144, :180 (PID-00079, PID-00095)",
+    "ctx": "QC PID-00030: :144 không chặn INSERT thẳng Accepted khi base lỗi thời; :180 không chặn UPDATE reference_id sang Reference không Trusted.",
+    "q": "Xử lý hai kiểm còn lỏng của manuscript?",
+    "opts": [
+     "Mở DBQ-12, sửa DDL và test khi làm PID-00079, PID-00095.",
+     "Sửa ngay ở PR riêng."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P15",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p26",
+     "p_p159",
+     "p_p35"
+    ],
+    "impact": "Extension vector; Job migration knowledge",
+    "ctx": "Migration knowledge chạy bằng migrator không tạo được extension vector (cần superuser).",
+    "q": "Ai tạo extension vector?",
+    "opts": [
+     "Hạ tầng tạo sẵn: compose cục bộ (PID-00159), Helm/Terraform (PID-00011, PID-00035); migration không tự tạo.",
+     "Migration knowledge tự tạo bằng vai trò đặc quyền."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P16",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": ".github/workflows/ci.yml (G16, EC15/S11)",
+    "ctx": "PR chỉ đổi Helm chart: image không đổi.",
+    "q": "Có chạy image smoke khi chỉ đổi chart?",
+    "opts": [
+     "Không build image, không chạy image smoke; chạy helm lint và template.",
+     "Vẫn chạy image smoke bằng image của main."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P17",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "PID-00009 G9",
+    "ctx": "Các phép thử tay EC01, EC16, EC19, EC20, EC21, S04, S11, S12 chưa chạy.",
+    "q": "Khi nào chạy?",
+    "opts": [
+     "Ở PH-07 khi nghiệm thu phát hành; không chặn PH-01.",
+     "Trước khi đóng PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P18",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "libs/ts/contracts (G21, MEDIUM); ci-changes (G22)",
+    "ctx": "G21: @sires/contracts:test đọc docs/api-design nhưng không khai inputs, có thể lấy kết quả cũ từ cache. G22: PR vào develop chỉ đổi docs/api-design thì không chạy sires-common:test.",
+    "q": "Xử lý G21, G22?",
+    "opts": [
+     "G21: luồng contracts khai docs/api-design/**/*.yaml vào inputs của contracts:test ngay; G22: quyết tại mốc DEC-59 cùng G15.",
+     "Để sau PH-01 cả hai."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P19",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "OQ-112; AC thời gian CI",
+    "ctx": "Đủ 20 lần push main: p95 8,45 phút; ngưỡng p95 + 20% = 10,14 phút (mẫu có một lần đỏ, #94).",
+    "q": "Ghi ngưỡng thành AC?",
+    "opts": [
+     "Ghi AC: CI của PR chạm một service NestJS không quá 10,14 phút; đo lại khi pipeline đổi lớn.",
+     "Giữ mục tiêu 10 phút, không thêm AC."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P20",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p29"
+    ],
+    "impact": ".gitattributes (luồng repo)",
+    "ctx": "Checkout Windows (core.autocrlf=true) làm file SQL có CR; migrate từ Windows sinh thân hàm có CR, hash migration khác bản LF.",
+    "q": "Ép xuống dòng LF cho SQL?",
+    "opts": [
+     "Thêm *.sql text eol=lf (PR nhỏ luồng repo).",
+     "Không."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P21",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p65",
+     "p_p19"
+    ],
+    "impact": "Hồ sơ PID-00065",
+    "ctx": "H10 của PID-00019: DDL từ chối chuyển trạng thái bằng 23514 hoặc 23000 tùy trigger nào chạy trước.",
+    "q": "Ghi gì cho PID-00065?",
+    "opts": [
+     "Khi làm rõ PID-00065: 23000 và 23514 từ DDL ánh xạ cùng một lỗi API.",
+     "Không ghi."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P22",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p16",
+     "p_p42"
+    ],
+    "impact": "identity provider_secret; PID-00042",
+    "ctx": "QC PID-00016: vai trò _app không xóa được provider_secret theo connection_id (42501) và không có quyền UPDATE.",
+    "q": "Xử lý trước PID-00042 (thay, xóa key)?",
+    "opts": [
+     "Mở DBQ-13 trước khi làm rõ PID-00042.",
+     "Để PID-00042 tự xử lý."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P23",
+    "kind": "Quyết định",
+    "refs": [
+     "p_db11",
+     "p_dbd14"
+    ],
+    "impact": "docs/database 11",
+    "ctx": "Database mục 11 (bảo mật, vai trò) chưa dẫn sang DBD-14.",
+    "q": "Sửa database 11?",
+    "opts": [
+     "Thêm dẫn chiếu DBD-14 vào database 11.",
+     "Không."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P24",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p16",
+     "p_p35"
+    ],
+    "impact": "Triển khai identity lên cụm (staging)",
+    "ctx": "Trước khi có KMS thật, pod identity cần Secret chứa IDENTITY_LOCAL_KEK và IDENTITY_LOCAL_KEK_ID.",
+    "q": "Ghi ở đâu?",
+    "opts": [
+     "Ghi vào hồ sơ PID dựng staging (PID-00035) khi làm rõ.",
+     "Không ghi."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P25",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p02"
+    ],
+    "impact": "libs/ts/platform inbox/consumer.ts (G8 của PID-00002, QC 25/11/2026)",
+    "ctx": "A2 chốt: stop() hủy lần thử đang chờ. Sau PR #106, stop() xóa timer chờ thử lại, nhưng nếu đang ở giữa một lần kết nối dở (broker nhận TCP mà không trả lời) thì stop() vẫn chờ tới 10 s (CONNECT_TIMEOUT_MS); start() trên mạng chết cũng mất 10 s mới trả về.",
+    "q": "stop() có phải hủy cả lần kết nối đang dở?",
+    "opts": [
+     "Có: stop() hủy lần kết nối đang dở (đóng socket), không chờ hết 10 s; PR nhỏ của luồng platform, có test.",
+     "Không: giữ hành vi hiện tại, sửa README cho đúng."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P26",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p159"
+    ],
+    "impact": "infra/local (PID-00159)",
+    "ctx": "Chạy thử local 25/11/2026: phải tạo tay vai trò sires_<svc>_owner/_migrator/_app/_system/_purge, GRANT CREATE cho owner và extension vector của knowledge. Init của compose chỉ chạy khi volume trống.",
+    "q": "Phạm vi PID-00159?",
+    "opts": [
+     "Đưa SQL vai trò, GRANT và vector vào infra/local/postgres/init/02-roles.sql viết kiểu chạy lại được, thêm lệnh pnpm local:roles cho volume đã có; theo bản đã thử 25/11 (ghi ở báo cáo PH-01 mục 7).",
+     "Giữ phạm vi hồ sơ hiện tại."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P27",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p159"
+    ],
+    "impact": "package.json, infra/local/.env.example (luồng infra)",
+    "ctx": "Chạy cả hệ thống cục bộ cần migrate từng service, khởi động 12 service với cổng riêng và nhiều biến môi trường; .env.example chỉ có POSTGRES_URL, RABBITMQ_URL, S3_ENDPOINT.",
+    "q": "Thêm lệnh chạy cả hệ thống?",
+    "opts": [
+     "Thêm pnpm local:migrate, pnpm local:services (cổng theo values.yaml) và các biến DATABASE_{APP,SYSTEM,MIGRATOR}_URL từng service, IDENTITY_LOCAL_KEK, SERVICE_AUTH_DEV_SEED, LOG_ACCOUNT_HASH_KEY vào .env.example; làm cùng PID-00159 hoặc PID mới của luồng infra.",
+     "Chưa cần, chạy tay theo báo cáo."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P28",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p26"
+    ],
+    "impact": "apps/agent-core, apps/knowledge (migration.command)",
+    "ctx": "Trên Windows, Smart App Control chặn shim alembic.exe nên uv run alembic (migration.command) không chạy; python -m alembic chạy được, cùng mã.",
+    "q": "Đổi lệnh migration Python?",
+    "opts": [
+     "Đổi migration.command và README sang uv run python -m alembic …; thêm logging vào env.py của agent-core như knowledge.",
+     "Giữ, chỉ ghi chú cho máy Windows."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P29",
+    "kind": "Open Question",
+    "refs": [
+     "p_ph01"
+    ],
+    "impact": "Luồng platform: health/readiness",
+    "ctx": "/health của mọi service trả 200 cố định, không kiểm DB hay RabbitMQ; pool mở kết nối khi cần.",
+    "q": "Thêm readiness trước khi dùng /health làm cổng staging?",
+    "opts": [
+     "Có: thêm /ready kiểm DB, broker (luồng platform); staging và Helm probe dùng /ready.",
+     "Chưa; /health đủ cho PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P30",
+    "kind": "Quyết định",
+    "refs": [
+     "p_ph01"
+    ],
+    "impact": "scripts/development/setup-windows.ps1; e2e",
+    "ctx": "Playwright 1.64.1 cần chromium_headless_shell-1248, máy có 1255; e2e 14/14 đạt khi trỏ E2E_CHROMIUM_EXECUTABLE sang bản 1255.",
+    "q": "Cài trình duyệt cho e2e thế nào?",
+    "opts": [
+     "setup-windows.ps1 chạy playwright install chromium theo bản Playwright của repo.",
+     "Giữ cách trỏ E2E_CHROMIUM_EXECUTABLE."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P32",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "PR #63 (PID-00014); infra/ci/check-helm-images.sh (luồng infra)",
+    "ctx": "G8 (HIGH) của self-QC Lần 10: PR #63 sửa check-helm-images.sh của luồng infra để job helm khởi động được gateway (cần DSN và khóa CSRF). Bỏ bản sửa thì job helm và job build bắt buộc đỏ. CI của #63 xanh, test gateway 35/35. QC độc lập Lần 3 (25/11/2026): không còn lỗi mã chặn merge; bản sửa infra cần và đúng (chỉ áp cho gateway, DSN giả, khóa ngẫu nhiên, không có secret).",
+    "q": "Bản sửa infra của PR #63 xử lý thế nào?",
+    "opts": [
+     "Giữ trong PR #63: PO đồng ý (ghi nguyên văn vào report.md mục 5), PR chạm hai luồng có chủ đích; QC độc lập rồi merge.",
+     "Tách thành PR riêng của luồng infra, merge trước #63."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P33",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14",
+     "p_dbd14"
+    ],
+    "impact": "gateway.sql, identity.sql (hàm SECURITY DEFINER)",
+    "ctx": "Đề xuất của QC PID-00014 Lần 2: các hàm tra cứu SECURITY DEFINER (find_session, find_account_by_identity) nên REVOKE EXECUTE … FROM PUBLIC, chỉ GRANT cho vai trò _app.",
+    "q": "Thêm REVOKE EXECUTE FROM PUBLIC cho hai hàm tra cứu?",
+    "opts": [
+     "Có: thêm vào gateway.sql, identity.sql và migration mới của hai service, có test vai trò khác không gọi được.",
+     "Không: GRANT cho _app là đủ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P34",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "libs/ts/contracts/scripts/generate.mjs (G20 LOW của PID-00009)",
+    "ctx": "Hai lần sinh mã Python khác nhau 42 file vì không cố định PYTHONHASHSEED; chỉ làm đổi hash sires-common:test, không làm sai cache.",
+    "q": "Cố định PYTHONHASHSEED khi sinh mã?",
+    "opts": [
+     "Có, PR nhỏ của luồng contracts.",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P35",
+    "kind": "Quyết định",
+    "refs": [
+     "p_dbd14",
+     "p_p14"
+    ],
+    "impact": "GitHub issue #83 (DBQ-10)",
+    "ctx": "DBQ-10 đã đóng theo DBD-14 (24/11/2026); issue #83 trên GitHub vẫn mở.",
+    "q": "Đóng issue #83?",
+    "opts": [
+     "Đóng, kèm bình luận dẫn DBD-14 và PR #107, #63.",
+     "Giữ mở tới khi #63 merge."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P36",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p02"
+    ],
+    "impact": "libs/ts/platform inbox/consumer.ts (G9 LOW của PID-00002, có từ trước)",
+    "ctx": "Gọi stop() không await rồi start() ngay có thể làm consumer kẹt, không kết nối lại nữa (consumer.ts:200, :213, :225).",
+    "q": "Sửa?",
+    "opts": [
+     "Có, PR nhỏ của luồng platform: start() chờ stop() đang chạy xong; có test.",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P37",
+    "kind": "Quy ước",
+    "refs": [
+     "p_pc04"
+    ],
+    "impact": "DEC-58, spec-execution-skill",
+    "ctx": "QC #106, #108 (G10, G11): PR sửa theo phát hiện QC không có mục tự QC trong self-qc.md.",
+    "q": "PR sửa theo QC có bắt buộc thêm mục self-QC không?",
+    "opts": [
+     "Bắt buộc: thêm mục “Lần N” vào self-qc.md của PID liên quan; ghi vào spec-execution-skill.",
+     "Không bắt buộc với PR nhỏ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P38",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p02"
+    ],
+    "impact": "libs/ts/platform, libs/ts/sample-service (G9 LOW của QC #108)",
+    "ctx": "Timeout khai tại chỗ thấp hơn hằng chung vẫn đè lên config: describe 30 s ở 4 file platform, afterAll 60 s ở 8 file, beforeAll 120 s ở sample-service.",
+    "q": "Bỏ các timeout tại chỗ thấp hơn hằng chung?",
+    "opts": [
+     "Có, PR nhỏ của luồng platform.",
+     "Giữ."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P39",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p09"
+    ],
+    "impact": "PID-00009 G7",
+    "ctx": "T1, T2 (PR thử vào develop) chạy trên mã CI develop cũ; develop nay đã đồng bộ.",
+    "q": "Chạy lại T1, T2?",
+    "opts": [
+     "Chạy lại trên develop đã đồng bộ trước khi đóng PH-01.",
+     "Không cần, AC đã đạt."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P40",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p16",
+     "p_p159"
+    ],
+    "impact": "apps/identity (G1–G3 LOW của QC PID-00016)",
+    "ctx": "G1: test EC07 bỏ cả owner nên ca “có owner, thiếu vai trò khác” không còn được đi qua; G2: describe AC02 migrate bằng superuser; G3: report.md còn ghi “chưa push, PR chưa mở”.",
+    "q": "Làm khi nào?",
+    "opts": [
+     "Cùng PID-00159 (có compose tạo vai trò).",
+     "Để sau PH-01."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P41",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "apps/gateway README",
+    "ctx": "PR #63 dựng lại 0000_init.sql của gateway; database dev nào đã áp bản cũ sẽ lệch.",
+    "q": "Ghi hướng dẫn dựng lại database gateway cục bộ?",
+    "opts": [
+     "Ghi vào README gateway (xóa database sires_gateway cục bộ rồi migrate lại).",
+     "Không cần."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P42",
+    "kind": "Quyết định",
+    "refs": [
+     "p_dbd14",
+     "p_p14"
+    ],
+    "impact": "DBD-14 (database 13.1)",
+    "ctx": "QC PID-00014 Lần 3: vai trò migrator là thành viên của owner nên qua policy owner_lookup đọc được mọi dòng app.session (và app.account ở identity). DBD-14 chưa ghi điều này.",
+    "q": "Ghi ngoại lệ vào DBD-14?",
+    "opts": [
+     "Ghi: migrator kế thừa quyền đọc của owner; migrator chỉ dùng cho Job migration, không cấp cho người hay service khác.",
+     "Không ghi."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P43",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "Job dọn app.session hết hạn (N5 của PID-00014)",
+    "ctx": "N5 của PID-00014: việc dọn phiên hết hạn trong app.session chưa có PID nào nhận.",
+    "q": "Giao cho đâu?",
+    "opts": [
+     "Thêm PID mới luồng gateway ở PH-02 (Job dọn phiên hết hạn, chạy bằng _system hoặc _purge).",
+     "Gộp vào PID-00038 (đăng nhập eTroy OIDC).",
+     "Để sau, ghi rủi ro."
+    ],
+    "rec": 0
+   },
+   {
+    "id": "P44",
+    "kind": "Quyết định",
+    "refs": [
+     "p_p14"
+    ],
+    "impact": "apps/gateway testkit (G11 LOW của QC PID-00014)",
+    "ctx": "Fixture HTTP (database.testkit.ts:142) không tự kiểm đang chạy bằng vai trò thật: đổi fixture sang superuser thì 27/27 test vẫn đạt; test migration vẫn chặn được lỗi DBQ-10.",
+    "q": "Thêm chốt vai trò cho fixture HTTP?",
+    "opts": [
+     "Có, PR nhỏ sau khi #63 merge.",
+     "Không cần."
+    ],
+    "rec": 0
+   }
+  ]
+ },
+ {
+  "title": "V. Điều kiện đóng PH-01",
+  "items": [
+   {
+    "id": "P31",
+    "kind": "Duyệt",
+    "refs": [
+     "p_ph01",
+     "p_pc04",
+     "p_report"
+    ],
+    "impact": "Cổng ra PH-01; mốc DEC-59 (PR vào develop)",
+    "ctx": "PO đã duyệt baseline hợp đồng (PC-04 B6) và chọn staging cục bộ (B7). PH-01 được coi là xong khi đạt cả bảy điều kiện:",
+    "ctxList": [
+     "Các mục của phiếu này đã được áp dụng vào tài liệu và mã theo câu trả lời của PO.",
+     "PID-00012, PID-00013 (nếu P5 chọn làm trong PH-01) và PID-00159 đã merge, có QC độc lập nghiệm thu được.",
+     "PID-00014 (PR #63) đã merge, có QC độc lập nghiệm thu được.",
+     "SPK-01 (PID-00021) chạy Lần 3 với key chính thức theo mục S-K1, S-K2, S-DK (PC-04 B8).",
+     "SPK-03 (PID-00025, PR #38) hoàn tất theo nhóm II, merge, có QC độc lập (PC-04 B9).",
+     "CI của main xanh; chạy thử cục bộ: mọi service migrate được bằng vai trò thật, /health 200, e2e đạt.",
+     "PO xác nhận cổng ra PH-01 đạt; làm các việc tại mốc DEC-59 (đồng bộ develop, đổi nhánh mặc định, sửa AGENT.md, README.md, skill; luồng infra sửa ci.yml, check-tracks.mjs, nx.json)."
+    ],
+    "q": "Duyệt danh sách điều kiện đóng PH-01?",
+    "opts": [
+     "Duyệt.",
+     "Duyệt, kèm sửa (ghi ở ghi chú).",
+     "Chưa duyệt (ghi lý do ở ghi chú)."
+    ],
+    "rec": 0
+   }
+  ]
+ }
+];
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-cuoi-ph01-v1';
+let state = {head:{}, items:{}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const refLinks = it => it.refs.map(k => `<a href="${R[k][1]}">${esc(R[k][0])}</a>`).join(' · ');
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ctx = (it.ctx ? `<p>${esc(it.ctx)}</p>` : '') + (it.ctxList ? `<ol>${it.ctxList.map(c => `<li>${esc(c)}</li>`).join('')}</ol>` : '');
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${esc(it.id)}</h3><p class="ref">${esc(it.kind)} · ${refLinks(it)} · Ảnh hưởng: ${esc(it.impact)}</p>
+<div class="ctx">${ctx}</div><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${esc(it.id)}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${esc(it.id)}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  const n = ALL.filter(it => isDone(it.id)).length;
+  document.getElementById('progress').textContent = `Đã chốt ${n}/${ALL.length}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status:'Đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = new Date().toISOString().slice(0, 10);
+  if (!state.head.no) state.head.no = 'PC-05';
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-cuoi-ph01-${state.head.date || new Date().toISOString().slice(0, 10)}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, done = ALL.filter(it => isDone(it.id)).length;
+  const L = ['# Phiếu chốt cuối PH-01 — SIRes', '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    '- Gộp: phiếu SPK-01 (PC-02), phiếu Google Scholar (PC-03), điểm PH-01 còn chờ PO (25/11/2026)', `- Đã chốt: ${done}/${ALL.length}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id} — ${a.status}`, '', `- Loại: ${it.kind}`, `- Ảnh hưởng: ${it.impact}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-cuoi-ph01', source:'docs/overview@2026-11-25', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, type:it.kind, impact:it.impact, question:it.q,
+        status:a.status, decision:a.text || null, followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+function confirmGaps() {
+  const left = ALL.length - ALL.filter(it => isDone(it.id)).length;
+  return left === 0 || confirm(`Còn ${left} mục chưa chốt. Các mục này sẽ được xuất với trạng thái “Chưa chốt”. Tiếp tục?`);
+}
+
+document.getElementById('b-md').onclick = () => { if (confirmGaps()) download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8'); };
+document.getElementById('b-json').onclick = () => { if (confirmGaps()) download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8'); };
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  for (const it of ALL) if (!isDone(it.id)) state.items[it.id] = {...(state.items[it.id] || {other:'', note:''}), choice: String(it.rec)};
+  save(); render();
+};
+document.getElementById('b-reset').onclick = () => {
+  if (!confirm('Xóa toàn bộ lựa chọn và ghi chú trên phiếu này?')) return;
+  state = {head:{}, items:{}}; save(); bindHead(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>

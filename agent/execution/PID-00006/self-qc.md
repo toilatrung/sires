@@ -1,9 +1,9 @@
 # PID-00006 — Self-QC của Dev
 
-**Kết luận:** Đạt S01–S07 — chờ QC độc lập (Lần 2, 22/11/2026).
+**Kết luận:** Đạt (Lần 3, 24/11/2026) — 0 CRITICAL, 0 HIGH; QC-G3 (MEDIUM) đã sửa ở PR #86; QC-G2 (MEDIUM) PO chốt sửa trong PH-01 (PC-04 A4), đang sửa; còn QC-G5–G8 (LOW)
 
 - **Ticket:** [PID-00006](../../../docs/tickets/issues/PID-00006/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 22/11/2026 (Lần 2)
+- **Cập nhật:** 25/11/2026 (Lần 3: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Các bảng kiểm ban đầu dưới đây giữ kết quả Lần 1; kết quả mới nhất và việc đóng khoảng trống
 nằm ở mục Lần 2 cuối file. Checklist mục 4 phản ánh kết luận hiện tại.
@@ -132,6 +132,49 @@ CI hoặc docs riêng trong ticket; diff với main chỉ thuộc mã mẫu, loc
 Đã tự đọc mã/JSON/log CI và đối chiếu spec-converge-skill ở chế độ Dev: không còn khoảng trống
 CRITICAL/HIGH. Không tạo hoặc sửa qc-report.md của QC độc lập. PR không tự merge; PO review/QC
 và quyết định việc ghi kết quả vào nguồn kiến trúc/database.
+
+## Lần 3 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 3 ở commit `4d9c663` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+Mã `libs/ts/sample-service` trên `develop` chỉ có `e199a67` (#62), không đổi so với Lần 2.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm nx run @sires/sample-service:test --skip-nx-cache` | Đạt: 3 file, 13/13, 9,3 s; bảng DDL 11 database “đạt” (dòng `migration lỗi` là ca lỗi có chủ đích) |
+| `pnpm nx run-many -t lint typecheck build -p @sires/sample-service --skip-nx-cache` | Đạt cả ba |
+| `pnpm nx show projects --affected --files=docs/database/ddl/planning.sql` | 16 project, có `@sires/platform`, `@sires/sample-service` |
+| `pnpm nx show projects --affected --files=docs/README.md` (đối chứng) | `[]` |
+| `pnpm nx show project @sires/sample-service --json` (`targets.test`) | Không có `inputs`; `dependsOn: ["^build"]`, `cache: true` (QC-G3) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00006 --result` | `PID-00006: KẾT QUẢ ĐỦ (0 cảnh báo).` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+
+### 2. AC và edge case
+
+| AC | Kết quả |
+| --- | --- |
+| PID-00006-AC01…AC03, AC05 | Đạt: `sample.spec.ts` trong 13/13 (PostgreSQL thật qua Testcontainers) |
+| PID-00006-AC04 | Đạt khi chạy `--skip-nx-cache`: `ddl-pg16.spec.ts › dựng 11 database từ DDL tham chiếu (PID-00006-AC04)`, PostgreSQL 160016, knowledge có pgvector 0.8.7, `vector(1536)`, HNSW; xem QC-G3 về cache |
+| NFR-MAINT-004-AC01 (phần ticket) | Không chạy lại — thao tác tay, bằng chứng của Lần 1 (QC-G5) |
+
+Sửa lệch của mục 1, 3 Lần 1 (QC-G7): dòng `nx affected` dẫn log cục bộ `.nx/pid00006-affected.log`, không có trong repo; EC07 ở mục 3 ghi “Chưa xử lý — S07” nhưng đã giải quyết ở Lần 2 (S07 đủ 5/5 lần CI chính, bảng số đo trong `report.md`).
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G2 | contradicts | MEDIUM | Service mẫu dùng sự kiện thật `task.activated` thay cho loại sự kiện riêng (spec 2.3) | `libs/ts/sample-service/src/sample.service.ts:13`, `:29`, `:34`, `:47` | PO chốt (PC-04 A4): sửa trong PH-01, dùng loại sự kiện riêng; nếu CI kiểm hợp đồng không nhận sự kiện ngoài hợp đồng thì dừng và báo PO. Đang sửa ở luồng platform, chưa vào `main` (các dòng trên vẫn như cũ) |
+| QC-G3 | partial | MEDIUM | Phần affected đã đúng (gián tiếp qua `@sires/platform`), nhưng `test` của sample-service không khai DDL trong `inputs` nên CI có thể trả cache cũ khi chỉ DDL đổi (AC04, EC10, O4) | `libs/ts/sample-service/package.json:35–38`; `nx.json:7`; `.github/workflows/ci.yml:101–110` | Đã sửa ở PR [#86](https://github.com/toilatrung/sires/pull/86) (`4578236`): `package.json:40` `"inputs": ["default", "^default", "{workspaceRoot}/docs/database/ddl/*.sql"]` |
+| QC-G5 | partial | LOW | Bằng chứng offline chỉ của Dev, chưa ai tái lập | `agent/execution/PID-00006/linux-qc.sh:36–48` | Còn mở, không chặn |
+| QC-G6 | partial | LOW | README chỉ dạy `generate --custom`, không cảnh báo `generate` thường sinh lại `CREATE TABLE` | `drizzle.config.ts:7`, `README.md:37–43` | Còn mở |
+| QC-G7 | partial | LOW | `self-qc.md`, `report.md` còn dòng cũ | `self-qc.md:25`, `:55`; `report.md:19` | Sửa ở lần này: ghi chú lệch ở mục 2 trên (không ghi đè Lần 1); `report.md:19` sửa câu về worktree |
+| QC-G8 | partial | LOW | `report.md:3` vẫn `Xong — chờ QC` dù PR #62 đã merge | `agent/execution/PID-00006/report.md:3` | Sửa ở lần này: dòng PR (#62, #86), ngày cập nhật. Trạng thái giữ `Xong — chờ QC` tới khi PO QC độc lập và nghiệm thu |
+
+Không có G mới, không có CRITICAL, HIGH. Đề xuất cho PO (ngày 24/11, chưa có quyết định): đưa `{workspaceRoot}/docs/database/ddl/*.sql` vào một named input chung trong `nx.json` cho mọi project chạy DDL — việc của luồng infra.
 
 ---
 

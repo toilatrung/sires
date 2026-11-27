@@ -4,9 +4,10 @@
 
 import { Module } from '@nestjs/common';
 import { HealthModule } from '@sires/platform';
+import { EnvelopeModule } from './envelope';
 import { manifest } from './manifest';
 
 @Module({
-  imports: [HealthModule.forService(manifest)],
+  imports: [HealthModule.forService(manifest), EnvelopeModule],
 })
 export class AppModule {}

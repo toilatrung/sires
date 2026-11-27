@@ -1,9 +1,9 @@
 # PID-00017 — Self-QC của Dev
 
-**Kết luận:** Đạt
+**Kết luận:** Đạt (Lần 2, 24/11/2026) — 0 CRITICAL, 0 HIGH; QC-G3 (MEDIUM) đã sửa ở PR #89; QC-G1 (MEDIUM), QC-G2, QC-G4–G6 (LOW) còn mở
 
 - **Ticket:** [PID-00017](../../../docs/tickets/issues/PID-00017/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 22/11/2026
+- **Cập nhật:** 25/11/2026 (Lần 2: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -76,6 +76,52 @@ Chạy trên Linux, Docker cho Testcontainers (PostgreSQL 16 + pgvector), ngày 
 | G1 | partial | LOW | EC15 chưa dựng image Docker thật | `migrate.spec.ts` | QC hoặc CI |
 | G2 | partial | LOW | Chưa chạy migration trên `pnpm local:up` | Spec S04 bước 5 | Chờ PID-00159 |
 | G3 | partial | LOW | Signer `NO_OUTGOING_SIGNER` vì platform bắt buộc signer; nếu PO chốt workspace gọi orchestration (Phải sửa ở nguồn) thì đổi sang khóa ký thật | `src/auth/service-auth.ts:36` | PID-00044 |
+
+## Lần 2 — 24/11/2026
+
+Chuyển từ bản rà ngày 24/11/2026 (QC Lần 2 ở commit `20deeb9` của nhánh `qc/t1xnth-qc-pid-1124`, PR #85) theo PC-04 A7: PO quyết không merge bản rà này dưới dạng QC độc lập; kết quả ghi ở đây như Dev tự QC (spec-converge-skill, chế độ Dev tự QC), QC độc lập do PO chạy riêng. `qc-report.md` không đổi.
+
+Người chạy: Dev T1xNTH. Mã đã rà: `origin/develop` `083795b` (PR của ticket đã merge), worktree riêng. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker Engine 29.9.2. Cột “Sau 24/11” đối chiếu `origin/main` `a367f0b` ngày 25/11/2026 (đọc mã, không chạy lại test).
+
+`git diff c830985 083795b -- apps/workspace` rỗng: mã workspace trên `develop` trùng commit đã rà ở Lần 1 của QC. Môi trường thêm uv 0.13.8, Python 3.12; load average 2–4.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Đạt, 3,6 s; cảnh báo “Ignored build scripts: cpu-features, protobufjs, ssh2” |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/workspace --skip-nx-cache --parallel=1` | Đạt cả bốn; test 7 file, 26/26, 16,7 s |
+| `pnpm exec vitest run src/state-machine` (trong `libs/ts/platform`) | Đạt: 5 file, 63/63, gồm `ddl.pg.spec.ts` |
+| `uv sync --all-packages --frozen`; `uv run python -m pytest tests/test_state_machine.py tests/test_state_machine_cli.py tests/test_state_machine_pg.py -rs` (trong `libs/py/sires_common`) | Đạt: 53 passed, không skip |
+| `pnpm exec sires-state-transition-sql dist/domain/state-machines.js` (trong `apps/workspace`) | Trùng `0001_state_transition.sql` (bỏ phần giấy phép) |
+| `grep "SECURITY DEFINER"` trên `apps/workspace/migrations/*.sql`, `00-common.sql`, `workspace.sql` | Không có kết quả: không cùng dạng DBQ-10 |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00017 --result` | “KẾT QUẢ ĐỦ (0 cảnh báo)” |
+| `node scripts/docs/add-license.mjs --check` | Lần đầu báo 2 file thiếu giấy phép trong `libs/py/sires_common/.pytest_cache/` (cache vừa tạo, git không theo dõi); xóa cache rồi sạch |
+| `node scripts/docs/update-index.mjs --check` | Sạch: 159 PID, 15 đợt |
+| `check-tracks.mjs` | Không chạy: mã đã merge, không còn nhánh PR để so |
+
+### 2. AC và edge case
+
+| AC | Kết quả |
+| --- | --- |
+| PID-00017-AC01 | Đạt trong 26/26 (`migration.spec.ts`, `ddl-behaviour.spec.ts`); schema dựng bằng superuser (QC-G1) |
+| NFR-MAINT-003-AC01 (phần workspace) | Đạt (`state-machines.spec.ts`, `state-transition.spec.ts`); file migration trùng đầu ra helper |
+
+Bảng edge case mục 3 giữ nguyên. Không có edge case mới.
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) ngày 24/11 | Sau 24/11 |
+| --- | --- | --- | --- | --- | --- |
+| QC-G1 | partial | MEDIUM | Test dựng schema bằng superuser, không có `sires_workspace_migrator` (database 3.2, PID-00159 H3): lỗi FORCE RLS dạng DBQ-10 không lộ ở test | `apps/workspace/src/db/database.testkit.ts:35–40` | Còn mở. DBQ-10 đã đóng bằng DBD-14 (24/11/2026), nhưng chưa có quyết định chung về testkit chạy migration bằng migrator |
+| QC-G2 | partial | LOW | Ca “owner bị trigger từ chối” (EC07) chạy bằng superuser | `apps/workspace/src/db/ddl-behaviour.spec.ts:80–81` | Còn mở, phụ thuộc QC-G1 |
+| QC-G3 | partial | MEDIUM | Test dùng container không đặt timeout; không có `vitest.config` (24/11 không tái hiện: 26/26) | `apps/workspace/src/migrate.spec.ts:31`, `:35`; `state-transition.spec.ts:32`, `:46` | Đã sửa ở PR [#89](https://github.com/toilatrung/sires/pull/89) (`0153261`) theo PC-04 A6: `apps/workspace/vitest.config.ts:12–13` `testTimeout: 60_000`, `hookTimeout: 180_000` |
+| QC-G4 | partial | LOW | EC15 chưa dựng image Linux thật (trùng G1 mục 5) | `apps/workspace/src/migrate.spec.ts:59` | Còn mở |
+| QC-G5 | partial | LOW | Chưa chạy migration trên `pnpm local:up` (trùng G2 mục 5) | `report.md` mục 4 | Còn mở, chờ PID-00159 |
+| QC-G6 | partial | LOW | README chưa nêu `sires_workspace_migrator` và DSN mẫu cục bộ | `apps/workspace/README.md:45`, `:63` | Còn mở, chờ PID-00159 |
+| QC-G7 | unrequested | LOW | Phần thêm nhỏ ngoài spec mục 3 | `apps/workspace/src/db/schema.ts`; `service-auth.spec.ts:163–173` | Không cần làm |
+
+Không có G mới, không có CRITICAL, HIGH, `contradicts`.
 
 ---
 
