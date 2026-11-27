@@ -21,7 +21,7 @@ Stylesheet dùng chung `../overview/assets/styles.css` và logo `../overview/ass
 
 ## Quy ước mã
 
-- **Giai đoạn:** `PH-NN` (PH-01–PH-08). Không dùng lại M1–M7: đó là milestone cũ của PRD (DEC-41 Deprecated) và trùng mã màn mobile M1, M2 ở `ui-design`.
+- **Giai đoạn:** `PH-NN` (PH-01–PH-08). Không dùng lại M1–M7: đó là milestone cũ của PRD (DEC-41 Deprecated) và trùng mã màn mobile M1, M2 ở `ui-design`. Dòng “Giai đoạn” của hồ sơ PID: mã `PH-NN` đầu tiên là giai đoạn của PID (ô trên sơ đồ làn, bảng theo giai đoạn). PID xây sớm với mock theo D-UI (PO 26/11/2026) ghi “PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-NN”, dòng “Ô trên FIG-301” bắt đầu bằng “Xây với mock”; `update-index.mjs` tính PID vào PH-02 và ghi giai đoạn hội tụ ở cột “Hội tụ ở” của danh sách PID.
 - **Luồng:** gọi bằng tên thư mục `apps/<service>` (`gateway`, `agent-core`…) hoặc tên luồng dùng chung (`platform`, `contracts`, `infra`, `eval`, `e2e`). Khu vực của `web` theo mục 1.5 (`web/shell`, `web/planning`…).
 - **Quy tắc ranh giới:** trích theo số mục, ví dụ “quy tắc 1.4.3”.
 - **Rủi ro triển khai:** `DLR-NN` (mục 4.2). Rủi ro kỹ thuật vẫn là `TR-NN` (architecture 12.3) và `DR-NN` (database 13).
