@@ -13,6 +13,14 @@ Phiếu chốt cuối PH-01 ([PC-05](../overview/phieu-chot-cuoi-ph01.html)) P2,
 - `components/schemas/account.yaml#/Preferences.timezone`: thêm mô tả — giao diện không dùng để hiển thị, ngày giờ theo múi giờ trình duyệt (UX-I18N-004, PID-00012 EC21, PC-05 P4).
 - `.redocly.lint-ignore.yaml` bỏ qua `operation-2xx-response` cho `logout` như `startLogin`, `completeLogin`. `dist/openapi.bundled.yaml` dựng lại bằng `npx @redocly/cli@2.11.1 bundle openapi.yaml -o dist/openapi.bundled.yaml` (lint sạch).
 - Ticket cập nhật: PID-00012 (S12, S14, mục 5, đặt Sẵn sàng), PID-00013 (mục “Phải sửa ở nguồn”: mock chưa giả lập `replay.unavailable`).
+### Thay đổi gần nhất — đăng nhập, ngưỡng, embedding, Profile cho PID-00036 (27/11/2026)
+
+Theo “Phải sửa ở nguồn” của PID-00036 (H3, H11, H14, H16), chốt theo đề xuất, PO ủy quyền 26/11/2026.
+
+- `paths/15-settings-and-sign-in.yaml#/auth/login` (`startLogin`): IdP không khả dụng → `302` tới `/sign-in?error=oidc_unavailable` (giữ `returnTo`), bỏ `503` vì đây là điều hướng trình duyệt; IdP là eTroy OIDC hoặc OIDC mock (PID-00160) ở cục bộ, staging PH-02.
+- `#/auth/callback` (`completeLogin`): thêm tham số `error`, `error_description` (IdP trả thay cho `code`); `code` hết bắt buộc. Thất bại chuyển về `/sign-in?error=` với `login_cancelled` (`access_denied`), `oidc_unavailable`, `login_failed`, giữ `returnTo`. Phía gateway: PID-00038.
+- `components/schemas/account.yaml`: `VerificationThresholds.defaults` (chỉ đọc, cùng cấu trúc ngưỡng; giá trị do PID-00041 giữ); `EmbeddingSettings.indexedReferenceCount` (chỉ đọc; số Reference phải index lại khi đổi model; phía knowledge); `Profile.googleScholarProfileUrl` nhận `null` (merge-patch xóa liên kết).
+- Tương thích ngược: chỉ thêm trường chỉ đọc, nới kiểu, thêm tham số tùy chọn; `startLogin` đổi `503` sang `302` khi chưa có hiện thực (PID-00038 chưa làm). `dist/openapi.bundled.yaml` dựng lại, lint sạch.
 
 ### Thay đổi trước — DEC-61, PO chốt 22/11/2026
 
