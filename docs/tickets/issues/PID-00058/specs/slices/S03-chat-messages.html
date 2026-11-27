@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S03 của ticket PID-00058.">
+<title>S03 — Chat: hội thoại, tin nhắn, active task | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00058</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00058</p><h1>S03 — Chat: hội thoại, tin nhắn, active task</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H2, H8, H9, H10, H14, H18 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-CHAT-001-AC01, UX-CHAT-002-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1 (Chat), O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B4, B5, B6; H2, H8, H9, H10, H14</td></tr>
+<tr><th scope="row">Edge case</th><td>EC07, EC08, EC09, EC10, EC11, EC12, EC17, EC18, EC19, EC27 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; <code>listTasks</code> của planning (mã và tên Task); route Agent Run của PID-00059 (H8)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Hội thoại: <code>listConversations</code> (<code>scope=project</code>, <code>projectId</code>) lấy hội thoại có <code>lastMessageAt</code> mới nhất; chưa có thì màn trống có câu dẫn, gửi tin đầu tiên thì <code>createConversation</code> rồi <code>sendMessage</code> (EC07).</li>
+<li>Lịch sử: <code>listMessages</code> trang mới nhất (<code>limit</code> 50), hiện theo thời gian tăng dần; “Tải tin cũ hơn” theo <code>nextCursor</code>, giữ vị trí cuộn (EC08). Tin nhắn hiển thị dạng chữ, giữ xuống dòng (EC19).</li>
+<li>Dòng đầu tin: người gửi (“Bạn” hoặc tên agent theo <code>sender.agent</code>, Analysis Agent A, B theo <code>instance</code>), giờ <code>HH:mm</code>, mã Task khi có <code>activeTaskId</code> (tra mã, tên từ <code>listTasks</code>), liên kết “Agent Run” mã ngắn tới <code>/projects/:projectId/activity/agent-runs/:agentRunId</code> (route của PID-00059) (UX-CHAT-002-AC01, EC17); nhãn <code>deliberation</code> “Qua thảo luận” hoặc “Không qua thảo luận” (EC18); <code>links</code> có <code>objectType</code> biết route thì hiện thành liên kết, còn lại bỏ qua.</li>
+<li>Ô nhập: đăng ký với kho nháp của shell, gửi xong thì xóa nháp (EC12); nút gửi vô hiệu khi rỗng hoặc dài hơn 20000 ký tự; mỗi tin một <code>Idempotency-Key</code>, gửi lại dùng cùng khóa; lỗi thì giữ nội dung, báo theo UX-STATE-003 (EC09). Tin nhắn của Researcher hiện ngay sau <code>202</code> từ <code>MessageAccepted.message</code>.</li>
+<li>Active task: chỉ báo ngay trên ô nhập “Active task: mã tên” và câu “Tin nhắn sẽ mang tham chiếu mã”; nút × gọi <code>setActiveTask</code> với <code>taskId = null</code> (EC11); body <code>sendMessage</code> có <code>activeTaskId</code> khi có (UX-CHAT-001-AC01, EC10).</li>
+<li>Project Archived: ẩn ô nhập, hiện nhãn “Archived — chỉ đọc” (EC27).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/project/chat.spec.tsx › tham chiếu active task</code> (UX-CHAT-001-AC01, EC10); <code>› tên agent và Agent Run</code> (UX-CHAT-002-AC01, EC17); <code>› hội thoại đầu tiên</code> (EC07); <code>› tải tin cũ hơn</code> (EC08); <code>› gửi tin nhắn</code> (EC09); <code>› bỏ active task</code> (EC11); <code>› nháp</code> (EC12); <code>› nhãn thảo luận</code> (EC18); <code>› nội dung có HTML</code> (EC19); <code>› archived chỉ đọc</code> (EC27)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không có lỗi ở <code>apps/web/src/features/project/</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>UX-CHAT-001-AC01, UX-CHAT-002-AC01 đạt; gửi và đọc tin nhắn được trên mock; ô nhập giữ nội dung qua phiên hết hạn</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00058</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00058 · Slice S03 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

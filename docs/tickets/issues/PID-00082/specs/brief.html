@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00082.">
+<title>PID-00082 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00082</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00082</p><h1>PID-00082 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H20, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Ở Plan and Tasks của project (<code>/projects/:projectId/plan</code>), Researcher xem Plan Version, board Task theo trạng thái, đồ thị phụ thuộc có cảnh báo chu trình, chi tiết Task với kết quả readiness và nút Thực thi; duyệt hoặc từ chối Plan Version Proposed ở màn so sánh (<code>/projects/:projectId/plan/versions/:versionId</code>); nghiệm thu Task In Review ở TaskReview (<code>/projects/:projectId/tasks/:taskId</code>); xem Tasks &amp; Plan của mọi project ở GlobalTasks (<code>/tasks</code>, chỉ đọc). Chỉ thao tác của Researcher mới có hiệu lực. Lượt này dựng các màn trong <code>apps/web/src/features/planning/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-04 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Plan overview: version đang xem, trạng thái, bộ chọn version; so sánh hai version: Task thêm, xóa, sửa, dependency, label, mục tiêu, phương pháp — UX-PLAN-001; H7, H13</li>
+<li>Plan Version Proposed có Duyệt / Từ chối (bắt buộc lý do); giả định còn mở hiện trước nút Duyệt — UX-PLAN-002; APR-01; H13</li>
+<li>Board nhóm Task theo trạng thái chuẩn, lọc Phase, label, agent; không kéo thả đổi trạng thái — UX-TASK-001; PLAN-VIEWS-001; H8</li>
+<li>Đồ thị phụ thuộc đánh dấu Task bị chặn cùng Task gây chặn; Draft có chu trình thì tô rõ, nêu các Task, không cho trình duyệt — UX-TASK-002; ticket AC02; TASK-DEPENDENCY-001; H9</li>
+<li>Chi tiết Task: định nghĩa theo version, label, trạng thái, readiness, checklist và acceptance criteria, lịch sử workflow, artifact, phản hồi review, cờ needs review — UX-TASK-003; H10</li>
+<li>Readiness không đạt: từng lý do kèm nút hành động theo RC-01–RC-09 — UX-TASK-004; TASK-READINESS-001; ticket AC01; H11</li>
+<li>Thực thi chỉ khi Ready và readiness Đạt, luôn hỏi xác nhận, mỗi lần một Task — UX-TASK-005; APR-02; H12</li>
+<li>Task manual: không có nút giao cho agent, hiện “Bạn cần thực hiện” cùng yêu cầu và đầu ra bắt buộc; label có biểu tượng và chữ ở mọi nơi — UX-LABEL-001, UX-LABEL-002; H8, H12</li>
+<li>TaskReview: đầu ra cạnh acceptance criteria; Nghiệm thu chỉ khi mọi criterion đạt và đầu ra bắt buộc có version Accepted — UX-TASK-006; APR-03; H14</li>
+<li>Plan Version Proposed là “Cần bạn xử lý”, Draft là đề xuất “Chưa duyệt” — design.md §3 (bảng H4 của PID-00012, PR #120); H4</li>
+<li>Nhãn “qua thảo luận”, “không qua thảo luận” trên Plan Version theo <code>provenance.deliberation</code> — PLAN-GENERATE-001-AC02; ORCH-DELIB-001; H7</li>
+<li>Ô nhập (lý do từ chối, phản hồi khi trả lại, kết quả manual) đăng ký với kho nháp của shell — PID-00012 H7; H2</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; mọi lệnh ghi do Researcher bấm; version Approved, Superseded, Rejected chỉ đọc.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/Plan.dc.html</code> (board, graph, graph-cycle), <code>PlanCompare.dc.html</code>, <code>TaskReview.dc.html</code>, <code>GlobalTasks.dc.html</code> — có; chưa có thiết kế trình soạn Draft (PLAN-REVIEW-001), view checklist dạng cây và activity timeline (PLAN-VIEWS-001) (I1)</li>
+<li><code>docs/api-design/paths/09-research-plan-and-task-management.yaml</code>, <code>components/schemas/plan.yaml</code> — có; <code>Task.allowedActions</code> cho biết nút hợp lệ; <code>withdrawPlanVersion</code> là “Sửa thành bản Draft mới”</li>
+<li><code>apps/web/src/features/planning/index.tsx</code> (placeholder bốn route), <code>i18n/vi.json</code>, <code>en.json</code> — có</li>
+<li>Shell (PID-00012) và mock (PID-00013) — chưa có trên <code>main</code> ngày 27/11/2026; bảng nhãn trạng thái bổ sung ở PR #120</li>
+<li>Quy tắc chủ mock: PID-00037 H9; PID-00058 đã ghi <code>getPlan</code>, <code>getPlanVersion</code>, <code>listTasks</code> thuộc planning — có (H5)</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Plan, PlanCompare, TaskReview, GlobalTasks trong <code>apps/web/src/features/planning/</code>, i18n vi/en, đang tải, trống, lỗi → S01–S07</li>
+<li>O2 mock 23 operation của khu vực trong <code>apps/web/src/features/planning/__mocks__/</code> → S01</li>
+<li>O3 <code>task.spec.tsx</code> → S04; O4 <code>plan.spec.tsx</code> → S01–S03; O5 <code>compare.spec.tsx</code> → S05; O6 <code>review.spec.tsx</code> → S06; O7 <code>global-tasks.spec.tsx</code> → S07 (O5–O7 thêm khi làm rõ, H18)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>ResearchPlan</code>, <code>PlanVersion</code>, <code>TaskDefinition</code>, <code>Task</code>, <code>ReadinessResult</code>, <code>TaskReview</code> = Research Plan, Plan Version, định nghĩa Task theo version, Task, kết quả readiness, nghiệm thu</li>
+<li>baseline = Plan Version Approved hiện hành (<code>baselineVersionId</code>); Draft, Proposed tối đa một bản mở (<code>openVersionId</code>)</li>
+<li><code>ExecutionLabel</code> = Available for agent / Manual editor requirement (giữ tiếng Anh)</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00082</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00082 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

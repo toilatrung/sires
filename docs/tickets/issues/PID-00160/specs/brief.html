@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160: tóm tắt nghiệp vụ đã làm rõ.">
+<title>PID-00160 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>PID-00160 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H9). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Luồng infra dựng một OpenID Provider giả lập bằng thư viện <code>oidc-provider</code>, chạy như một service của compose cục bộ ở <code>http://localhost:9400</code> và chạy được ở staging PH-02 sau tunnel. Gateway dùng mock này thay eTroy OIDC để làm và kiểm đăng nhập (authorization code, PKCE, <code>nonce</code>), refresh, đăng xuất RP-initiated và thu hồi refresh token, với hai tài khoản thử A, B có claim như eTroy. Nối eTroy thật để lại tới khi eTroy_OIDC sửa xong <code>nonce</code> và <code>end_session</code>. Mock không bao giờ chạy ở production.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Chưa nối eTroy OIDC thật; cục bộ và staging PH-02 dùng OIDC mock; đăng xuất chuyển hướng tới <code>end_session_endpoint</code> của IdP đang cấu hình — H1 (D-OIDC, PO chọn trong phiên 26/11/2026).</li>
+<li>Mock là package <code>@sires/oidc-mock</code> ở <code>infra/local/oidc-mock/</code>, Node và <code>oidc-provider</code>, một service trong compose cục bộ — H2.</li>
+<li>Giao thức: code + PKCE S256 bắt buộc, <code>nonce</code> trong ID token, discovery, JWKS ở <code>/jwks</code>, <code>client_secret_basic</code>, refresh xoay vòng và phát hiện dùng lại, <code>end_session</code> theo RP-Initiated Logout 1.0 (<code>post_logout_redirect_uri</code> đã đăng ký, <code>state</code> tùy chọn), <code>/revoke</code>; thời hạn như eTroy (900 giây, 30 ngày, 8 giờ) — H3; SPK-02 K2, K5, K7, K8, K10, K13.</li>
+<li>URI của client cục bộ theo hợp đồng gateway: callback <code>http://localhost:5173/api/v1/auth/callback</code> (và <code>:3000</code>), <code>post_logout_redirect_uri</code> <code>http://localhost:5173/sign-in</code> — H8. Gateway gửi <code>client_id</code>, không gửi <code>id_token_hint</code>, <code>state</code>; mock nhận cả hai cách — H9.</li>
+<li>Client của gateway khai trong file cấu hình; tài khoản thử từ file seed, ít nhất 2, claim <code>sub</code>, <code>name</code>, <code>email</code>, <code>email_verified</code> (<code>picture</code> tùy chọn); đăng nhập bằng email và mật khẩu thử; không có màn đồng ý — H4; ASM-13; K9.</li>
+<li>Chỉ <code>local</code> và <code>staging</code>; <code>staging</code> bắt buộc <code>https</code>, file client, file tài khoản, cookie key gắn ngoài repo, không dùng mật khẩu hay secret cục bộ; triển khai staging thuộc PID-00035 — H5.</li>
+<li>Người nhận <code>congminh1705</code> (luồng infra, DEC-58), phiên do PO giao làm thay; PH-02; phụ thuộc PID-00159; pull request mã vào <code>develop</code> — H6.</li>
+<li>Gateway trỏ issuer bằng <code>OIDC_ISSUER</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code>, <code>OIDC_REDIRECT_URI</code>, <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> (đề xuất cho PID-00038) — H7.</li>
+<li>Token, code, mật khẩu, secret không vào log — <a href="../../../../overview/sections/16-non-functional-requirements.html#req-nfr-obs-002">NFR-OBS-002</a>.</li>
+<li>Fake OIDC trong test vẫn là FakeOidcProvider của luồng platform — quy tắc <a href="../../../sections/01-tracks-and-boundaries.html#rule-1-4-4">1.4.4</a>.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>infra/local/compose.yaml</code> — <code>postgres</code>, <code>rabbitmq</code>, <code>minio</code>, chưa có IdP — có.</li>
+<li><code>scripts/development/local-env.mjs</code> — <code>up</code> là <code>docker compose up -d --wait</code>, tham số thêm đi thẳng vào compose — có.</li>
+<li><code>pnpm-workspace.yaml</code> — <code>apps/*</code>, <code>libs/ts/*</code>, <code>e2e</code>; catalog có <code>openid-client</code> 6.8.8, <code>vitest</code>, <code>typescript</code>, <code>@types/node</code> — có.</li>
+<li><code>apps/web/vite.config.ts</code> — web ở cổng 5173, chuyển <code>/auth</code> tới gateway cổng 3000 — có.</li>
+<li><code>docs/api-design/paths/15-settings-and-sign-in.yaml</code> — <code>/auth/login</code>, <code>/auth/callback</code>, <code>/auth/logout</code> dưới <code>servers</code> <code>/api/v1</code> — có; <code>logout</code> 303 tới <code>end_session_endpoint</code> kèm <code>client_id</code>, <code>post_logout_redirect_uri</code> <code>/sign-in</code> theo PR #120 (PC-05 P3).</li>
+<li><code>libs/ts/testing/src/fakes/oidc.fake.ts</code> — thời hạn mặc định 900 giây, 30 ngày, code 300 giây — có (chỉ đọc).</li>
+<li><code>oidc-provider</code> trên npm: dòng 9.x, ESM (kiểm 27/11/2026).</li>
+<li>PID phụ thuộc: PID-00159 chưa merge (chặn S04, S05).</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1, O2 package và cấu hình TS; O12 workspace, lockfile → S01</li>
+<li>O3 <code>config.ts</code>, O4 <code>seed.ts</code>, O8 bốn file <code>config/</code>, <code>test/config.spec.ts</code> → S01</li>
+<li>O5 <code>provider.ts</code>, O6 <code>interactions.ts</code> (đăng nhập), O7 <code>main.ts</code>, phần đăng nhập của <code>test/flow.spec.ts</code> → S02</li>
+<li>Phần refresh, revoke, đăng xuất của O5, O6 và <code>test/flow.spec.ts</code> → S03</li>
+<li>O7 <code>log.ts</code>, O10 Dockerfile, O11 compose → S04</li>
+<li>O13 README → S05</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>OIDC mock = máy chủ OpenID Provider giả lập của PID này (khác FakeOidcProvider chạy trong test)</li>
+<li>IdP đang cấu hình = OpenID Provider mà gateway trỏ tới qua <code>OIDC_ISSUER</code>: OIDC mock ở cục bộ, staging PH-02; eTroy OIDC khi nối thật</li>
+<li>Tài khoản A, B = hai tài khoản thử trong <code>accounts.local.json</code></li>
+<li>family = chuỗi refresh token sinh từ cùng một lần đăng nhập</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00160</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

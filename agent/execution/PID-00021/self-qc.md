@@ -1,9 +1,9 @@
 # PID-00021 — Self-QC của Dev
 
-**Kết luận:** Chưa đạt — S01 (Claude, Gemini) và AC03 phần endpoint chính thức bị chặn vì chưa có key chính thức (EC01); phần đo được đạt, không còn lỗi trong mã
+**Kết luận:** Đạt (Lần 3, 27/11/2026) theo điều kiện hoàn tất đã sửa (S-DK, D-KEY): OpenAI đo đủ qua proxy; Claude, Gemini không đo được qua proxy; G4 (MEDIUM) chờ PO
 
 - **Ticket:** [PID-00021](../../../docs/tickets/issues/PID-00021/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 21/11/2026
+- **Cập nhật:** 27/11/2026 (Lần 3)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -81,6 +81,62 @@ Chạy theo `agent/skills/qc/spec-converge-skill/SKILL.md`, chế độ Dev tự
 | G5 | unrequested | LOW | Thêm biến thể OpenAI Responses, biến thể `fake`, `run.ps1`, `scan_secrets.py`, `README.md` trong thư mục O1 | `implement.md` mục 3 | Công cụ đo trong O1, không đổi hành vi sản phẩm; nêu để PO biết |
 | G6 | unrequested | LOW | PR chạm luồng infra và `AGENT.md` | `check-tracks.mjs`: 2 luồng | YC1 có lời PO trong phiên (report mục 5) nên không tính, commit riêng `0d1d4c5`; YC2 theo quyết định B của PO làm ở PR infra riêng #51, diff của PR với `main` ở `infra/` là 0 file |
 | G7 | partial | LOW | Chi phí ước tính chưa cộng 32 lời gọi probe của `base_url.py` và lượt (a) đầu bị lỗi mã spike | `report.md` mục 3, Chi phí | Ghi rõ trong báo cáo; tổng vẫn dưới 0,01 USD |
+
+## Lần 3 — 27/11/2026
+
+Người làm: phiên do PO giao. Chạy qua proxy theo D-KEY (PC-05 S-K1, S-K2, S-DK); sửa G5, G6, G8 (report.md, mục Lần 3). Mã tại nhánh `agent-core/spk-01-lan-3`, xếp chồng trên #118.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `ruff check --no-cache apps/agent-core/spikes/spk-01/`, `ruff format --no-cache --check` (ruff của venv workspace) | đạt; 9 file đã format |
+| `pnpm nx run agent-core:lint` | không chạy — worktree chưa `pnpm install` (`nx` không có); chạy thay `ruff` trực tiếp như dòng trên (cùng công cụ của target lint) |
+| `set-provider-keys.ps1 -Check` | file key có, quyền chỉ user hiện tại; ba key 51 ký tự, tiền tố `sk-`, cùng một key; ba base URL của proxy (host che); dòng khác: `SPK01_MODEL_OPENAI` |
+| Thử `connection`, `official_key`, `compare` với file key giả và `probe` giả (bỏ biến môi trường, tắt đọc registry) | đạt: key cổng không được gửi tới endpoint chính thức; endpoint chính thức chỉ nhận `*_API_KEY_OFFICIAL`; khi môi trường có key mà không có base URL, kết nối dùng endpoint chính thức, không lấy base URL của file; `model_for` đọc `SPK01_MODEL_OPENAI` từ file |
+| Thử `redact_ids` trên 5 chuỗi (request id dạng văn bản và JSON, tên nhóm có và không có dấu ngoặc kép, câu thường có chữ “group”) | đạt; che lần hai không đổi kết quả. Lần đầu quy tắc request id che chồng lên `[REDACTED…]` khi gặp lại chuỗi đã che; đã sửa trước khi nộp và chuẩn hóa lại evidence Lần 3 sinh trước bản sửa (2 file) |
+| `run.ps1 capabilities.py` (OpenAI Chat, Responses; Claude, Gemini với `--fail-fast`) | OpenAI đạt mọi phép thử; Claude 503 `provider_unavailable`; Gemini 404 `model_not_found` |
+| `run.ps1 errors.py --no-burst` | 17/18 khớp ở cả bốn adapter; lệch: model không có qua cổng (G4) |
+| `run.ps1 frameworks.py --variants fake openai openai-responses` | 9/9 ô đạt |
+| `run.ps1 base_url.py compare` | cổng ↔ proxy cục bộ tương đương 16/16; cột endpoint chính thức “bỏ qua” ở mọi dòng |
+| `run.ps1 scan_secrets.py ..\..\..\..\agent\execution\PID-00021 . ..\..\..\..\scripts\development ..\..\..\..\AGENT.md` | 70 file, 3 key, 1 host cổng: 0 chỗ khớp |
+| `grep` request id, tên nhóm, đường dẫn có tên người dùng trong `agent/execution/PID-00021` (trừ `qc-report.md`) | 0 |
+| `node scripts/docs/add-license.mjs --check` | 0 thiếu (sau khi chạy `add-license.mjs` cho 6 `summary.md` mới) |
+| `node scripts/docs/update-index.mjs --check` | khớp (159 PID, taskboard khớp) |
+| `check-tracks.mjs --stdin` (diff với `origin/dev-tools/provider-keys`, cộng file chưa theo dõi) | `agent-core`, `repo` (`repo` không tính) — một luồng |
+| `git diff --name-only origin/dev-tools/provider-keys -- docs` | 0 file |
+
+### 2. AC → test
+
+| AC | Test | Kết quả |
+| --- | --- | --- |
+| PID-00021-AC01 | `capabilities.py` › chạy tay | đạt theo S-DK — OpenAI (Chat, Responses) đạt mọi phép thử qua proxy; Claude, Gemini không đo được qua proxy (503, 404), ghi kèm lỗi đã che |
+| PID-00021-AC02 | `capabilities.py` › chạy tay | đạt theo S-DK — usage OpenAI đọc được (không stream, trong stream); chi phí không có trong phản hồi |
+| PID-00021-AC03 | `base_url.py compare` | đạt theo S-DK — cổng ↔ proxy cục bộ tương đương; phần endpoint chính thức bỏ |
+| PID-00021-AC04 | `errors.py --no-burst` | đạt — bảng ánh xạ bốn adapter; 429 thật không thử (G10, EC03) |
+| PID-00021-AC05 | `frameworks.py` | đạt — ba cách chạy vòng đạt trên OpenAI; đề xuất Pydantic AI giữ nguyên; chi phí Lần 3 ước tính 0,011 USD (ghi trong evidence) |
+
+### 3. Edge case
+
+| # | Trạng thái | Cách giải quyết hoặc lưu ý |
+| --- | --- | --- |
+| EC01 | đã giải quyết theo PO | D-KEY: key proxy tính là key provider; Claude, Gemini ghi “không đo được qua proxy”, kết luận chuyển sang ô Hội tụ của PID-00070 |
+| EC02 | đã giải quyết | Như Lần 1; Lần 3 không gặp năng lực thiếu ở OpenAI |
+| EC03 | đã giải quyết | `--no-burst`; mã 429 kiểm bằng thân lỗi theo tài liệu qua proxy |
+| EC04 | đã giải quyết | `redact()` che thêm request id, tên nhóm (G8); quét 0 chỗ khớp |
+| Mới | cần lưu ý | Đường Gemini của cổng không ổn định trong cùng ngày: hết giờ 40–90 s rồi 404 `model_not_found`, dù model có trong danh sách của định dạng OpenAI |
+| Mới | cần lưu ý | `gpt-4.1-nano` không còn trên cổng (Lần 1 dùng được): danh sách model của cổng thay đổi theo thời gian |
+
+### 4. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+Đối chiếu AC01–AC05, EC01–EC04, O1–O2 và các G của `qc-report.md` Lần 1 với mã, evidence Lần 3 và điều kiện hoàn tất S-DK đã sửa. Không còn CRITICAL, HIGH: G1, G2 đóng theo quyết định của PO.
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Đã xử lý |
+| --- | --- | --- | --- | --- | --- |
+| G1 | partial | MEDIUM | G4 của QC Lần 1 còn mở: HTTP 400 ngoài 11 mã ra `unmapped`; 503 kèm `model_not_found` ra `provider_unavailable` | `evidence/lan-3/errors/summary.md` (4 dòng LỆCH) | Chờ PO (OQ-113, M1); spike giữ nguyên |
+| G2 | partial | LOW | Câu “cùng số lời gọi” (mục 3, đề xuất framework) không còn đúng ở Lần 3: LangGraph trên Chat Completions cần 4 lời gọi | `evidence/lan-3/frameworks/summary.md` | Ghi ở report, mục Lần 3, S03; không đổi kết luận |
+| G3 | partial | LOW | Giá trị request id, tên nhóm cũ vẫn còn trong lịch sử git của `main` | G8, PC-05 S-G8 | Ghi ở report; che chỉ ngăn lan tiếp |
+| G4 | partial | LOW | G7 của QC Lần 1 (băm `requirements.txt` theo byte) thuộc luồng infra | `scripts/development/setup-windows.ps1` | Ghi lại, không sửa trong PR này |
 
 ---
 

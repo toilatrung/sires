@@ -18,13 +18,13 @@
 <div class="document">
 <header class="site-header"><a class="brand" href="../index.html"><img src="../assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span>v1.0 · 31/10/2026</span></header>
 <main id="main-content">
-<p class="eyebrow">Product Requirements Document · Section 18</p><h1>18. Data and State Specifications</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01); bổ sung 01/11/2026: Deliberation, Deliberation Entry, Context Snapshot (DEC-47, DEC-48), đồng bộ với API design (DEC-50), Waiting for User → Paused (DEC-53); bổ sung 03/11/2026: Account.status, ManuscriptRevision.tree (DEC-57) · Cơ sở: outline đã chốt, mục 3, 5, 6, mục 20.1</p><div class="note"><p>Mục này chi tiết hóa domain model ở <a href="05-core-domain-model.html">mục 5</a> thành schema logic, enumeration, bảng chuyển trạng thái, quy tắc phiên bản, idempotency và kiểm tra dữ liệu. Schema là <em>logic</em>: kiểu dữ liệu, bảng lưu trữ và công nghệ database là quyết định kỹ thuật. Tên entity và trạng thái giữ nguyên mục 5. Giải quyết SYNC-05, SYNC-11, BL-03-06, BL-03-07. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở 2.4). Toàn bộ chi tiết là <strong>Assumption</strong> trừ khi dẫn từ quyết định đã xác nhận; các trường và trạng thái theo PC-01 (OQ-015, OQ-030, OQ-061, OQ-062, OQ-073, OQ-078, OQ-092) ghi nguồn tại chỗ. Bảng Open Questions ở <a href="#s-18-oq">18.7</a>.</p></div>
+<p class="eyebrow">Product Requirements Document · Section 18</p><h1>18. Data and State Specifications</h1><p class="meta">Trạng thái biên soạn: Đã duyệt — bản cuối 31/10/2026 (phiếu chốt PC-01); bổ sung 01/11/2026: Deliberation, Deliberation Entry, Context Snapshot (DEC-47, DEC-48), đồng bộ với API design (DEC-50), Waiting for User → Paused (DEC-53); bổ sung 03/11/2026: Account.status, ManuscriptRevision.tree (DEC-57); bổ sung 27/11/2026: Account.googleScholarDiscovery, Workflow.scholarSearch, DiscoveredResult.source, ScholarProfile, ScholarPublication, PublicationPlanItem (PublicationPlanStatus), DATA-PUBPLAN-001 theo phiếu chốt cuối PH-01 (PC-05) nhóm II, chốt theo đề xuất (PO ủy quyền 26/11/2026) · Cơ sở: outline đã chốt, mục 3, 5, 6, mục 20.1, PC-05</p><div class="note"><p>Mục này chi tiết hóa domain model ở <a href="05-core-domain-model.html">mục 5</a> thành schema logic, enumeration, bảng chuyển trạng thái, quy tắc phiên bản, idempotency và kiểm tra dữ liệu. Schema là <em>logic</em>: kiểu dữ liệu, bảng lưu trữ và công nghệ database là quyết định kỹ thuật. Tên entity và trạng thái giữ nguyên mục 5. Giải quyết SYNC-05, SYNC-11, BL-03-06, BL-03-07. Priority do biên soạn đề xuất theo tiêu chí 2.4 (OQ-011) và được PO duyệt ngày 31/10/2026 (DEC-44, bảng tổng hợp ở 2.4). Toàn bộ chi tiết là <strong>Assumption</strong> trừ khi dẫn từ quyết định đã xác nhận; các trường và trạng thái theo PC-01 (OQ-015, OQ-030, OQ-061, OQ-062, OQ-073, OQ-078, OQ-092) ghi nguồn tại chỗ. Dữ liệu Google Scholar trong discovery, connector Google Scholar và kế hoạch công bố (bổ sung 27/11/2026) theo <a href="../phieu-chot-cuoi-ph01.html">PC-05</a> nhóm II, chốt theo đề xuất (PO ủy quyền 26/11/2026); tên trường và mã trạng thái tiếng Anh của các entity này là Assumption. Bảng Open Questions ở <a href="#s-18-oq">18.7</a>.</p></div>
 <div class="table-wrap"><table><thead><tr>
 <th scope="col">Priority</th>
 <th scope="col">Requirement</th>
 </tr></thead><tbody>
 <tr><td>P0</td><td>DATA-PERSIST-001, DATA-PERSIST-002, DATA-IDEMP-001, DATA-IDEMP-002, DATA-IDEMP-003, DATA-IDEMP-004, DATA-IDEMP-005, DATA-CONC-001, DATA-STATE-001, DATA-STATE-002, DATA-PROV-001, DATA-AUDIT-001, DATA-VALID-001</td></tr>
-<tr><td>P1</td><td>DATA-STORE-001</td></tr>
+<tr><td>P1</td><td>DATA-STORE-001; DATA-PUBPLAN-001 (bổ sung 27/11/2026, PC-05 GS-B10, chốt theo đề xuất, PO ủy quyền 26/11/2026)</td></tr>
 <tr><td>P2</td><td>Không có.</td></tr>
 </tbody></table></div><details class="local-toc"><summary>Nội dung trong mục</summary><ul><li><a href="#s-18-1">18.1. Core Entity Schemas</a></li>
 <li><a href="#s-18-2">18.2. Enumerations and State Machines</a></li>
@@ -84,7 +84,7 @@
 <th scope="col">Entity</th>
 <th scope="col">Trường</th>
 </tr></thead><tbody>
-<tr><td>Workflow</td><td>projectId*, type* (WorkflowType), taskId, planVersionId, triggeredBy* (ActorRef), status* (WorkflowStatus), currentStepId, startedAt, endedAt, lastError {code, message, agentRunId}, lastCheckpointId, idempotencyKey*.</td></tr>
+<tr><td>Workflow</td><td>projectId*, type* (WorkflowType), taskId, planVersionId, triggeredBy* (ActorRef), status* (WorkflowStatus), currentStepId, startedAt, endedAt, lastError {code, message, agentRunId}, lastCheckpointId, idempotencyKey*, scholarSearch {limit*, used*} (chỉ với type <code>discovery</code>: hạn mức Google Scholar hiệu lực của lần chạy, ghi khi bắt đầu, và số lượt đã dùng; một lượt là một trang kết quả SerpApi; DISC-SCHOLAR-003, PC-05 GS-A1, GS-A2).</td></tr>
 <tr><td>WorkflowStep</td><td>workflowId*, order*, description*, assignedAgent, status* (StepStatus), inputRefs[] {type, id, version}, outputRefs[] {type, id, version}, openPromptId, attemptCount*.</td></tr>
 <tr><td>AgentRun</td><td>workflowId*, stepId*, agent*, instance (<code>A</code> | <code>B</code>, bắt buộc khi agent là <code>analysis</code>; DEC-50), deliberationId, deliberationRound (khi Agent Run thuộc phiên thảo luận; DEC-50), providerConnectionId*, provider*, model*, adapterVersion*, capabilitiesUsed[], inputSummary*, contextManifest* {entities[] {type, id, version}, evidenceIds[], truncated[] {layer, reason}} (14.2), toolCalls[] {name, argumentsSummary, resultSummary}, outputRefs[], usage {inputTokens, outputTokens, calls, extra}, status* (AgentRunStatus), attempts* (số lần gọi provider trong Agent Run, 17.1), error {code (bộ mã chuẩn 8.6, hoặc mã hệ thống <code>interrupted</code>), message}, startedAt, endedAt, discarded* (bool, kết quả đến muộn bị bỏ), structuredOutput* (đầu ra có cấu trúc), debugTranscript {promptRef, responseRef, capturedAt, expiresAt} (chỉ có khi người dùng bật chế độ debug; expiresAt = capturedAt + 30 ngày; dữ liệu nhạy cảm, mã hóa khi lưu, NFR-RET-009). Bất biến sau khi kết thúc, trừ việc xóa debugTranscript khi hết hạn. Context manifest và đầu ra có cấu trúc luôn được lưu; toàn văn prompt/phản hồi không lưu khi debug tắt (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-062)).</td></tr>
 <tr><td>Deliberation (DEC-47)</td><td>projectId*, workflowId*, stepId*, problemType* (ProblemType), brief* {problem, constraints[], criteria[], knownOptions[], perspectives[] {participant, perspective}}, participants* [] {agent, instance, providerConnectionId, providerConnectionName, provider, model (ghi lúc mở phiên), status (<code>idle</code> | <code>running</code> | <code>error</code>), currentAgentRunId} (DEC-50), currentRound*, maxRounds*, contextSnapshotId*, status* (DeliberationStatus), recordArtifactId, recordArtifactVersionId (Artifact Version Draft loại <code>deliberation_record</code>; DEC-50), decisionPromptId (DEC-50), usageTotal {inputTokens, outputTokens, cost}, sameModelWarning (bool), startedAt*, endedAt.</td></tr>
@@ -103,7 +103,7 @@
 <th scope="col">Entity</th>
 <th scope="col">Trường</th>
 </tr></thead><tbody>
-<tr><td>DiscoveredResult</td><td>source*, query*, metadata* (schema chuẩn hóa 17.6), sourceUrl*, status* (DiscoveredResultStatus), importedReferenceId, createdByAgentRunId.</td></tr>
+<tr><td>DiscoveredResult</td><td>source* (<code>openalex</code> | <code>google_scholar</code>; DEC-60, PC-05 GS-A7), query*, metadata* (schema chuẩn hóa 17.6), sourceUrl*, status* (DiscoveredResultStatus), importedReferenceId, createdByAgentRunId.</td></tr>
 <tr><td>Reference</td><td>metadata* (schema chuẩn hóa 17.6, đã chỉnh), metadataVersion*, bibtexKey* (duy nhất trong tài khoản), origin* (<code>discovered</code> | <code>manual</code>), discoveredResultId, approvalStatus* (ReferenceApprovalStatus), indexingStatus* (IndexingStatus), indexingError, approval (ApprovalRecord), revocation (ApprovalRecord + reason), mergedIntoId.</td></tr>
 <tr><td>SourceDocument</td><td>referenceId* (duy nhất), contentHash*, fileRef, pageCount, extractedTextRef, embeddingModel*, indexedAt.</td></tr>
 <tr><td>Chunk</td><td>sourceDocumentId*, chunkKey* (ổn định), page, paragraph, charStart, charEnd, textRef*, vectorId.</td></tr>
@@ -134,10 +134,13 @@
 <th scope="col">Entity</th>
 <th scope="col">Trường</th>
 </tr></thead><tbody>
-<tr><td>Account / Profile</td><td>authIdentity* {issuer*, subject* (claim <code>sub</code> của eTroy OIDC)} — duy nhất, liên kết tài khoản SIRes với định danh eTroy; không có trường mật khẩu (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073); INT-OIDC-002). email (ban đầu lấy từ claim OIDC, ASM-13), displayName* (ban đầu lấy từ claim OIDC, người dùng sửa được), affiliation, researchField, avatarRef, googleScholarProfileUrl (URL hồ sơ Google Scholar; chỉ là liên kết, không phải đăng nhập Google, ASM-14), uiLanguage* (<code>vi</code> | <code>en</code>), defaultAgentLanguage, includeResearchFieldInContext* (bool, mặc định tắt; chỉ researchField được đưa vào context agent khi bật), timezone, debugMode* (bool, mặc định tắt; OQ-062), verificationThresholds* (nhóm “Ngưỡng kiểm chứng”). status* (<code>Active</code> | <code>Locked</code> | <code>Deletion Requested</code>; DEC-57), deletionRequestedAt (NFR-RET-004). Không có tham số nâng cao của model (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015)).</td></tr>
+<tr><td>Account / Profile</td><td>authIdentity* {issuer*, subject* (claim <code>sub</code> của eTroy OIDC)} — duy nhất, liên kết tài khoản SIRes với định danh eTroy; không có trường mật khẩu (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-073); INT-OIDC-002). email (ban đầu lấy từ claim OIDC, ASM-13), displayName* (ban đầu lấy từ claim OIDC, người dùng sửa được), affiliation, researchField, avatarRef, googleScholarProfileUrl (URL hồ sơ Google Scholar; một URL mỗi tài khoản, chỉ là liên kết, không phải đăng nhập Google; PC-05 GS-B1, trước là ASM-14), googleScholarDiscovery* {enabled* (bool, mặc định tắt; DEC-61), searchLimitPerRun* (số nguyên 0–20, mặc định 5; 0 là tắt)} (mặc định Google Scholar trong discovery của tài khoản; PC-05 GS-A2, GS-A3), uiLanguage* (<code>vi</code> | <code>en</code>), defaultAgentLanguage, includeResearchFieldInContext* (bool, mặc định tắt; chỉ researchField được đưa vào context agent khi bật), timezone, debugMode* (bool, mặc định tắt; OQ-062), verificationThresholds* (nhóm “Ngưỡng kiểm chứng”). status* (<code>Active</code> | <code>Locked</code> | <code>Deletion Requested</code>; DEC-57), deletionRequestedAt (NFR-RET-004). Không có tham số nâng cao của model (Confirmed — PO chốt 31/10/2026 (PC-01, OQ-015)).</td></tr>
 <tr><td>VerificationThresholds</td><td>Thuộc Account (một bộ mỗi tài khoản): các ngưỡng Verification Agent dùng để gán mức hỗ trợ claim và báo citation không khớp nguồn; giá trị mặc định do hệ thống hiệu chỉnh để đạt độ chính xác ≥ 85% (mức hỗ trợ claim) và ≥ 95% (phát hiện citation không khớp) so với nhãn chuyên gia; isDefault* (bool), updatedAt, updatedBy. Mỗi lần thay đổi ghi AuditEvent và áp dụng từ lần kiểm chứng sau; VerificationResult ghi bộ ngưỡng đã dùng (Confirmed ngưỡng mặc định — PO chốt 31/10/2026 (PC-01, OQ-092); cấu trúc nhóm Settings: Assumption ASM-15).</td></tr>
 <tr><td>ProviderConnection</td><td>name* (duy nhất trong tài khoản), provider* (<code>anthropic</code> | <code>openai</code> | <code>google</code>), baseUrl*, secretRef* (tham chiếu kho bí mật, không chứa key), keyHint* (≤ 4 ký tự cuối), testStatus* (ConnectionTestStatus), lastTestedAt, lastError, availableModels[] {id, capabilities}.</td></tr>
 <tr><td>AgentModelAssignment</td><td>agent* (Orchestrator, 8 Specialist Agent hoặc <code>default</code>), instance (<code>A</code> | <code>B</code>, bắt buộc khi agent là <code>analysis</code>, không dùng cho agent khác; DEC-50); duy nhất theo (agent, instance) trong tài khoản, providerConnectionId*, model*, capabilityWarnings[], sameModelWarning (chỉ đọc; true khi hai instance của <code>analysis</code> có cùng provider và model hiệu lực, kể cả khi cùng thừa kế <code>default</code>; DEC-50).</td></tr>
+<tr><td>ScholarProfile (PC-05 GS-B1–GS-B3, GS-B8)</td><td>Tối đa một bản mỗi tài khoản, gắn với Profile.googleScholarProfileUrl. profileUrl* (URL đã đồng bộ), name, affiliation, interests[], citedByTotal, hIndex, i10Index (dữ liệu của lần đồng bộ thành công gần nhất), lastSyncedAt (thời điểm đồng bộ thành công gần nhất), lastSyncAttemptAt, lastSyncError {code, message}. Đồng bộ thành công thay toàn bộ trường tổng hợp và danh sách ScholarPublication trong cùng giao dịch; đồng bộ lỗi chỉ ghi lastSyncAttemptAt, lastSyncError (Assumption). Chỉ chủ tài khoản đọc; agent chỉ đọc khi Researcher yêu cầu (INT-SCHOLAR-013).</td></tr>
+<tr><td>ScholarPublication (PC-05 GS-B2)</td><td>scholarProfileId*, title*, authors*, venue, year, citedBy, link. Dữ liệu chỉ đọc lấy từ Google Scholar, thay khi đồng bộ (INT-SCHOLAR-009).</td></tr>
+<tr><td>PublicationPlanItem (PC-05 GS-B4–GS-B6)</td><td>Cấp tài khoản, không thuộc project nào. title*, targetVenue (tạp chí, hội nghị), submissionDeadline (ngày), status* (PublicationPlanStatus), note, linkedProjectId (tùy chọn), linkedManuscriptId (tùy chọn; Manuscript của SIRes) (GS-B5); publishedSuggestion {scholarPublicationId*, suggestedAt*} (đề xuất đánh dấu Đã công bố từ đối chiếu, GS-B6; xóa khi Researcher xác nhận hoặc bỏ qua).</td></tr>
 <tr><td>Conversation</td><td>scope* (<code>global</code> | <code>project</code>), projectId (khi project), title.</td></tr>
 <tr><td>Message</td><td>conversationId*, sender* (ActorRef), activeTaskId, content*, embeddedPromptId, agentRunId, deliberation (DeliberationLabel; DEC-50).</td></tr>
 <tr><td>PendingAction</td><td>projectId, kind* (enum theo 4.4), objectType*, objectId*, status* (PendingActionStatus), resolvedBy, resolvedAt, expiryReason.</td></tr>
@@ -247,6 +250,7 @@
 <tr><td>ChangeProposal (ChangeProposalStatus)</td><td>Proposed → Accepted: Researcher, APR-05, khi baseRevisionId = currentRevisionId và citation check đạt. Proposed → Rejected: Researcher. Proposed → Outdated: System khi revision hiện hành đổi.</td></tr>
 <tr><td>Build (BuildStatus)</td><td>Queued → Running → Succeeded | Failed. Queued → Failed: hết thời gian chờ hoặc revision bị thay.</td></tr>
 <tr><td>Account (status, DEC-57)</td><td>Active → Locked: System (khóa tài khoản). Locked → Active: System. Active hoặc Locked → Deletion Requested: Researcher yêu cầu xóa tài khoản; trong cùng thao tác API key bị vô hiệu và phiên bị thu hồi (NFR-RET-004). Deletion Requested là trạng thái cuối; dữ liệu bị xóa trong ≤ 30 ngày.</td></tr>
+<tr><td>PublicationPlanItem (PublicationPlanStatus; PC-05 GS-B4, GS-B6)</td><td>Giá trị: <code>Planned</code> (Dự kiến), <code>Drafting</code> (Đang viết), <code>Submitted</code> (Đã nộp), <code>Under Review</code> (Đang phản biện), <code>Accepted</code> (Được chấp nhận), <code>Published</code> (Đã công bố), <code>Rejected</code> (Bị từ chối); nhãn tiếng Việt theo GS-B4, mã tiếng Anh là Assumption. Mục mới ở Planned (Assumption). Planned → Drafting → Submitted → Under Review → Accepted → Published: Researcher. Submitted hoặc Under Review → Rejected: Researcher (Assumption: hai trạng thái nguồn). Rejected → Drafting | Submitted: Researcher nộp lại. Trạng thái khác Published → Published: Researcher xác nhận đề xuất đối chiếu (GS-B6; Assumption: áp dụng cho mọi trạng thái nguồn). Published là trạng thái cuối.</td></tr>
 <tr><td>ProviderConnection (ConnectionTestStatus)</td><td>Untested → Valid | Invalid: kiểm tra kết nối. Valid → Invalid: lỗi auth/quota khi gọi. Mọi trạng thái → Untested: sửa base URL hoặc key.</td></tr>
 <tr><td>PendingAction (PendingActionStatus)</td><td>Open → Resolved: đối tượng được xử lý. Open → Expired: đối tượng hết hiệu lực. Expired → Resolved: Researcher đánh dấu đã xem.</td></tr>
 </tbody></table></div>
@@ -310,7 +314,7 @@
 </tr></thead><tbody>
 <tr><td>createdBy*</td><td>ActorRef (agent kèm agentRunId, hoặc researcher, hoặc system).</td></tr>
 <tr><td>workflowId, stepId, taskId, planVersionId</td><td>Ngữ cảnh điều phối và nghiên cứu khi tạo.</td></tr>
-<tr><td>inputs[]*</td><td>Danh sách {type, id, version} của đầu vào đã dùng: artifact version, evidence, reference + metadataVersion, context item, research context version.</td></tr>
+<tr><td>inputs[]*</td><td>Danh sách {type, id, version} của đầu vào đã dùng: artifact version, evidence, reference + metadataVersion, context item, research context version. Bắt buộc có mặt nhưng được rỗng: nội dung Researcher nhập tay có thể không có đầu vào (<a href="../phieu-chot-cuoi-ph01.html">PC-05</a> P11, 27/11/2026).</td></tr>
 <tr><td>provider, model</td><td>Lấy từ Agent Run (INT-PROVIDER-006).</td></tr>
 <tr><td>sources[]</td><td>Reference và chunk mà nội dung dựa vào (cho synthesis, draft_section).</td></tr>
 <tr><td>approval</td><td>ApprovalRecord khi được chấp nhận.</td></tr>
@@ -353,6 +357,7 @@
 <li>ProviderConnection.name duy nhất trong tài khoản; AgentModelAssignment duy nhất theo (accountId, agent, instance) (DEC-50).</li>
 <li>Prompt có tối đa một response.</li>
 <li>Account.authIdentity (issuer, subject) duy nhất toàn hệ thống: một định danh eTroy ứng với đúng một tài khoản SIRes (OQ-073).</li>
+<li>Mỗi tài khoản có tối đa một googleScholarProfileUrl và một ScholarProfile (PC-05 GS-B1).</li>
 </ul>
 <h3>Toàn vẹn tham chiếu</h3>
 <ul>
@@ -361,6 +366,7 @@
 <li>BibliographyEntry chỉ tham chiếu Reference <code>Trusted</code>.</li>
 <li>Không xóa vật lý entity còn được tham chiếu bởi provenance, ApprovalRecord hoặc AuditEvent (OWN-05).</li>
 <li>AgentModelAssignment chỉ tham chiếu ProviderConnection cùng tài khoản; model phải thuộc availableModels hoặc được người dùng nhập và kiểm tra.</li>
+<li>PublicationPlanItem.linkedProjectId, linkedManuscriptId chỉ tham chiếu project và Manuscript cùng tài khoản (OWN-03); khi có cả hai, Manuscript thuộc project đã liên kết (Assumption). publishedSuggestion chỉ tham chiếu ScholarPublication của cùng tài khoản.</li>
 </ul>
 <h3>Kiểm tra cấu trúc Plan Version (trước khi trình duyệt)</h3>
 <ul>
@@ -373,6 +379,7 @@
 <li>Trường đánh dấu * ở 18.1 bắt buộc. Enumeration chỉ nhận giá trị liệt kê ở 18.2.</li>
 <li>baseUrl là URL tuyệt đối hợp lệ, dùng HTTPS (NFR-TRANSIT-001) và tương thích API chính thức của provider đã chọn (INT-PROVIDER-005, OQ-014).</li>
 <li>googleScholarProfileUrl, nếu có, là URL tuyệt đối hợp lệ dùng HTTPS (OQ-015).</li>
+<li>googleScholarDiscovery.searchLimitPerRun và giá trị ghi đè ở từng lần tìm là số nguyên từ 0 đến 20 (PC-05 GS-A2, GS-A3).</li>
 <li>File tài liệu để index: chỉ PDF có lớp văn bản, tối đa 50 MB mỗi file (OQ-050, PC-01; INT-DOC-001). Độ dài văn bản và dung lượng file khác có giới hạn cấu hình; vượt giới hạn trả lỗi rõ ràng, không cắt ngầm.</li>
 <li>Giá trị trong VerificationThresholds nằm trong miền hợp lệ do hệ thống quy định; Researcher khôi phục được giá trị mặc định (OQ-092).</li>
 <li>reasonCode bắt buộc khi trả lại hoặc chặn Task (KPI-04).</li>
@@ -389,6 +396,7 @@
 <tr><td id="req-data-audit-001">DATA-AUDIT-001</td><td>Mọi chuyển trạng thái và phê duyệt sinh AuditEvent có actor.</td></tr>
 <tr><td>DATA-PERSIST-001, DATA-PERSIST-002, DATA-IDEMP-001–005, DATA-CONC-001, DATA-STORE-001</td><td>Theo 18.4.</td></tr>
 <tr><td id="req-data-valid-001">DATA-VALID-001</td><td>Ràng buộc duy nhất, toàn vẹn tham chiếu và kiểm tra cấu trúc theo 18.5.</td></tr>
+<tr><td id="req-data-pubplan-001">DATA-PUBPLAN-001</td><td>Dữ liệu connector Google Scholar và kế hoạch công bố theo 18.1, 18.2: tối đa một ScholarProfile mỗi tài khoản; đồng bộ thành công thay dữ liệu tổng hợp trong một giao dịch, đồng bộ lỗi giữ dữ liệu cũ; PublicationPlanItem chuyển trạng thái theo bảng 18.2 và mỗi lần chuyển sinh AuditEvent; dữ liệu chỉ chủ tài khoản đọc. P1 — Confirmed — chốt theo đề xuất (PO ủy quyền 26/11/2026), <a href="../phieu-chot-cuoi-ph01.html">PC-05</a> GS-B1–GS-B8, GS-B10 (bổ sung 27/11/2026); phần ghi Assumption ở 18.1, 18.2 giữ nguyên nhãn đó.</td></tr>
 </tbody></table></div>
 <p><strong>Acceptance criteria</strong></p>
 <ul>
@@ -408,6 +416,9 @@
 <li><strong>DATA-IDEMP-005-AC01</strong> — Given yêu cầu build hai lần cùng revision và cùng cấu hình, When xử lý, Then chỉ có một Build được chạy và yêu cầu thứ hai nhận kết quả của Build đó.</li>
 <li><strong>DATA-STORE-001-AC01</strong> — Given tải lên hai lần cùng một file PDF, When lưu, Then kho đối tượng chỉ giữ một bản theo contentHash và cả hai tham chiếu trỏ tới bản đó.</li>
 <li><strong>DATA-CONC-001-AC01</strong> — Given hai tab cùng sửa một Plan Version Draft, When tab thứ hai lưu sau, Then nhận lỗi xung đột và nội dung tab thứ nhất không bị ghi đè.</li>
+<li><strong>DATA-PUBPLAN-001-AC01</strong> — Given PublicationPlanItem ở <code>Published</code>, When có yêu cầu chuyển sang <code>Drafting</code>, Then bị từ chối và mục giữ <code>Published</code>.</li>
+<li><strong>DATA-PUBPLAN-001-AC02</strong> — Given PublicationPlanItem ở <code>Rejected</code>, When Researcher chuyển sang <code>Submitted</code>, Then mục ở <code>Submitted</code> và có AuditEvent với actor researcher, <code>Rejected</code> → <code>Submitted</code>.</li>
+<li><strong>DATA-PUBPLAN-001-AC03</strong> — Given ScholarProfile đã có dữ liệu và lần đồng bộ mới lỗi ở trang thứ 3 trong 5 trang công bố, When lần đồng bộ kết thúc, Then ScholarProfile và danh sách ScholarPublication giữ nguyên dữ liệu lần trước và lastSyncError được ghi.</li>
 </ul>
 
 <h2 id="s-18-oq">18.7. Open Questions của mục 18</h2>

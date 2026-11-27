@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phạm vi, ngoài phạm vi và edge case của ticket PID-00083.">
+<title>PID-00083 — Phạm vi, ngoài phạm vi, edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00083</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00083</p><h1>PID-00083 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc H1–H18 ở <a href="../index.html#s-5">trang ticket mục 5</a> (chốt theo đề xuất, PO ủy quyền 26/11/2026). Mọi test nằm trong <code>apps/web/src/features/monitoring/deliberation/</code> và chạy với mock của PID-00013.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Tab “Thảo luận” trong trang workflow (<code>?view=deliberation&amp;deliberation=</code> mã); chọn phiên khi workflow có nhiều phiên; mock 2 operation; i18n trong namespace <code>monitoring</code></td><td>ticket “Gồm”; H3, H4, H13</td><td>S01</td></tr>
+<tr><td>P2</td><td>Problem Brief, ba cột theo bên, hàng theo vòng; lập trường, phản biện, phát hiện; nối điểm bị phản biện; nhãn giả định; nguồn</td><td>UX-MONITOR-006; ORCH-DELIB-003; H5</td><td>S02</td></tr>
+<tr><td>P3</td><td>Ẩn entry của vòng đang mở (“Đang viết, mở khi vòng đóng”), “Không có lập trường”</td><td>ticket AC01; OQ-101; H2</td><td>S02</td></tr>
+<tr><td>P4</td><td>Đổi lập trường, rút lại, cần xem lại</td><td>CTX-BOARD-001, CTX-BOARD-003; H6</td><td>S02</td></tr>
+<tr><td>P5</td><td>Bản tổng hợp, Deliberation Record, prompt quyết định, “Bạn đã chọn”</td><td>ORCH-DELIB-004; UX-MONITOR-006; H7</td><td>S03</td></tr>
+<tr><td>P6</td><td>Trạng thái phiên Running, Completed, Failed, Cancelled; cảnh báo cùng model, snapshot lỗi thời; usage theo bên và tổng</td><td>ORCH-DELIB-002, ORCH-DELIB-005; CTX-SNAPSHOT-001; NFR-USAGE-005; H8–H10</td><td>S03</td></tr>
+<tr><td>P7</td><td>Trạng thái thiếu cấu hình Analysis Agent; nhãn qua / không qua thảo luận</td><td>ticket “Gồm”; ORCH-DELIB-001; H11</td><td>S04</td></tr>
+<tr><td>P8</td><td>Trạng thái agent trong phiên ở Agent List (thảo luận, tổng hợp, phiên lỗi)</td><td><code>AgentList--wfState-deliberation</code>, <code>-synthesis</code>, <code>-deliberation-failed</code>; H14</td><td>S04</td></tr>
+<tr><td>P9</td><td>Tự cập nhật theo sự kiện của phiên</td><td>UX-MONITOR-005; H12</td><td>S02, S03</td></tr>
+<tr><td>P10</td><td>Khổ 390 px: cột xếp chồng</td><td>design.md §5; PID-00059 H17; H15</td><td>S02</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Hội tụ với backend thật trên staging</td><td>D-UI: Hội tụ ở cổng PH-04 (H1)</td><td>PID này lần sau</td></tr>
+<tr><td>N2</td><td>Thẻ đề xuất thảo luận trong Chat</td><td>Ticket “Không gồm”</td><td>PID-00084</td></tr>
+<tr><td>N3</td><td>Trang chi tiết workflow, danh sách bước, dòng thời gian, Agent Run; khung Agent List</td><td>Thuộc PID-00059; PID này thêm tab và trạng thái thảo luận</td><td>PID-00059</td></tr>
+<tr><td>N4</td><td>Xem nội dung Deliberation Record (Artifact)</td><td>Record là Artifact Version, xem ở khu vực research; tab chỉ liên kết (H7)</td><td>PID của research (Artifacts)</td></tr>
+<tr><td>N5</td><td>Cấu hình model của Analysis Agent</td><td>Làm ở Settings → Agent Models; tab chỉ liên kết</td><td>PID-00036</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Quét theo nhóm áp dụng cho tab Thảo luận: dữ liệu rỗng và biên (không có phiên, bên không có lập trường, nhiều phiên); thời gian và chạy lâu (phiên đang chạy, vòng mở); trạng thái (Running, Completed, Failed, Cancelled theo 18.2; entry draft, final, retracted); sự kiện (vòng đóng, rút lại, snapshot lỗi thời, trùng, sai thứ tự); provider (bên lỗi sau thử lại); provenance (nguồn của điểm, giả định); giao diện (trống, đang tải, lỗi, 390 px, vi/en, reduced motion); nội dung nguy hiểm (HTML trong entry). Migration không áp dụng.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td>Workflow không có phiên thảo luận và không có prompt đề xuất thảo luận</td><td>Không hiện tab Thảo luận</td><td>H3</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › không có phiên không có tab</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>Phiên đang ở Vòng 1</td><td>Lập trường các bên chưa hiện; mỗi bên có ô “Đang viết, mở khi vòng đóng” theo <code>pendingEntries</code>; không có nội dung nào của vòng đang mở</td><td>ticket AC01; OQ-101; CTX-BOARD-002; H2</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › vòng 1 còn ẩn</code></td><td>S02</td></tr>
+<tr><td>EC03</td><td>Vòng 1 đã đóng, Vòng 2 đang mở</td><td>Lập trường Vòng 1 hiện đủ; Vòng 2 hiện ô “Đang viết…”</td><td>OQ-101; H2</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › vòng 2 đang mở</code></td><td>S02</td></tr>
+<tr><td>EC04</td><td>Phiên Completed với hai vòng</td><td>Ba cột Orchestrator, Analysis Agent A, B; lập trường và phản biện theo từng vòng; bất đồng còn lại trong bản tổng hợp</td><td>UX-MONITOR-006-AC01; H5, H7</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › ba cột theo vòng</code></td><td>S02, S03</td></tr>
+<tr><td>EC05</td><td>Phản biện trỏ tới điểm của lập trường khác</td><td>Điểm phản biện ghi loại (đồng ý, phản đối, bổ sung) và liên kết tới điểm đích; điểm đích ghi số phản biện, liên kết ngược; dùng được bằng bàn phím</td><td>UX-MONITOR-006; CritiqueContent; H5, H18</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › nối điểm bị phản biện</code></td><td>S02</td></tr>
+<tr><td>EC06</td><td>Điểm không có nguồn (<code>assumption = true</code>); điểm có <code>sourceRefs</code></td><td>Nhãn “Giả định”; điểm có nguồn ghi “Nguồn:” kèm liên kết theo <code>TypedRef</code></td><td>ORCH-DELIB-003; DeliberationPoint; H5</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › nhãn giả định và nguồn</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Lập trường được thay bằng entry mới (<code>supersedesEntryId</code>)</td><td>Hiện entry mới kèm “Đổi lập trường” và <code>changeReason</code>; entry cũ thu gọn “Đã thay”</td><td>CTX-BOARD-001; H6</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › đổi lập trường</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Entry bị rút lại; entry tham chiếu entry bị rút (<code>needsReview</code>)</td><td>Entry rút ghi “Đã rút lại” kèm lý do, nội dung giữ để xem; entry phụ thuộc có nhãn “Cần xem lại”</td><td>CTX-BOARD-003; RetractionContent; H6</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › rút lại và cần xem lại</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>Một bên không có lập trường trong vòng đã đóng</td><td>Ô ghi “Không có lập trường”</td><td>Workflow.dc.html; H5</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › không có lập trường</code></td><td>S02</td></tr>
+<tr><td>EC10</td><td>Có vòng hẹp</td><td>Hàng “Vòng hẹp” ghi <code>focus</code> (điểm bất đồng)</td><td>DeliberationRound; H5</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › vòng hẹp</code></td><td>S02</td></tr>
+<tr><td>EC11</td><td><code>sameModelWarning = true</code></td><td>Banner “Analysis Agent A và B cùng dùng … ” kèm liên kết “Đổi trong Agent Models” (<code>/settings/agents</code>)</td><td>ORCH-DELIB-005; H9</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › cảnh báo cùng model</code></td><td>S03</td></tr>
+<tr><td>EC12</td><td><code>snapshotOutdated = true</code></td><td>Banner snapshot lỗi thời nêu entity đã đổi (<code>changedEntities</code>: loại, version mới)</td><td>CTX-SNAPSHOT-001; H9</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › snapshot lỗi thời</code></td><td>S03</td></tr>
+<tr><td>EC13</td><td>Phiên Failed (một bên lỗi sau thử lại)</td><td>Chip Failed; cột của bên lỗi ghi “Lỗi” kèm liên kết Agent Run; prompt quyết định (<code>decisionPromptId</code>) bằng thẻ của shell: chạy lại phiên hoặc tiếp tục không thảo luận</td><td>ORCH-DELIB-002; Workflow--view-deliberation-failed; spec 4.7; H7, H8</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › phiên lỗi</code></td><td>S03</td></tr>
+<tr><td>EC14</td><td>Phiên Cancelled</td><td>Câu “Phiên Cancelled trước khi tổng hợp: không có bản tổng hợp, Deliberation Record hay prompt chọn phương án”; entry đã ghi giữ để xem lại</td><td>Workflow--view-deliberation-cancelled; H8</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › phiên hủy</code></td><td>S03</td></tr>
+<tr><td>EC15</td><td>Prompt quyết định đã trả lời ở đây hoặc ở Chat</td><td>“Bạn đã chọn” kèm người, giờ, phương án (<code>chosenOptionIds</code>, câu trả lời của prompt); trả lời ở nơi khác → <code>prompt.status_changed</code> cập nhật ngay</td><td>UX-MONITOR-006; UX-PROMPT-005; H7, H12</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › bạn đã chọn</code></td><td>S03</td></tr>
+<tr><td>EC16</td><td>Usage của phiên</td><td>Bảng theo bên: số Agent Run, token in, token out, chi phí (khi có, ghi “ước tính”); dòng tổng bằng <code>usageTotal</code>; <code>noDataAgentRunCount</code> > 0 thì ghi số Agent Run không có dữ liệu</td><td>NFR-USAGE-005; UsageTotal; H10</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › usage của phiên</code></td><td>S03</td></tr>
+<tr><td>EC17</td><td>Analysis Agent thiếu cấu hình hợp lệ (prompt <code>deliberation_proposal</code> có lý do, chưa có phiên)</td><td>Tab ghi “Chưa mở phiên” kèm lý do của prompt, liên kết Settings → Agent Models và thẻ prompt của shell</td><td>ticket “Gồm”; PromptPurpose; ORCH-DELIB-001 (luồng lỗi); H11</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › thiếu cấu hình</code></td><td>S04</td></tr>
+<tr><td>EC18</td><td>Researcher đã bỏ qua thảo luận; phiên Completed</td><td>Bỏ qua: nhãn “Không qua thảo luận”; Completed: nhãn “Qua thảo luận” kèm liên kết Deliberation Record (<code>recordArtifactVersionId</code>)</td><td>ticket “Gồm”; DeliberationLabel; H11</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › nhãn qua và không qua thảo luận</code></td><td>S04</td></tr>
+<tr><td>EC19</td><td>Vòng đóng khi đang xem (<code>deliberation.round_closed</code>)</td><td>Đọc lại <code>getDeliberation</code>; entry của vòng vừa đóng hiện, không cần tải lại trang; sự kiện trùng không đổi kết quả</td><td>UX-MONITOR-005; H12</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › vòng đóng theo SSE</code></td><td>S02</td></tr>
+<tr><td>EC20</td><td>Workflow có hai phiên</td><td>Bộ chọn phiên (mới nhất trước, loại vấn đề, trạng thái); mặc định phiên mới nhất hoặc phiên theo URL</td><td><code>listDeliberations</code>; H13</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › chọn phiên</code></td><td>S01</td></tr>
+<tr><td>EC21</td><td>Agent List khi phiên đang chạy, đang tổng hợp, phiên lỗi chờ quyết định</td><td>Orchestrator, Analysis Agent A, B theo <code>participants.status</code>: running → Đang chạy kèm “thảo luận bước m/n · Vòng k”; error → Lỗi; phiên Failed có prompt quyết định Open → Orchestrator “Chờ bạn”</td><td>AgentList--wfState-*; H14</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › agent list trong phiên</code></td><td>S04</td></tr>
+<tr><td>EC22</td><td>Khổ dưới 768 px, 390 px</td><td>Ba cột xếp chồng: mỗi vòng hiện lần lượt từng bên; không cuộn ngang</td><td>design.md §5; H15</td><td>Thao tác tay trên preview web 390×844, 1440×900</td><td>S02</td></tr>
+<tr><td>EC23</td><td>Đổi VI/EN; đang tải; tải lỗi; entry chứa HTML</td><td>Nhãn đổi, trạng thái giữ tiếng Anh; skeleton; lỗi theo UX-STATE-003; nội dung dạng chữ</td><td>UX-I18N-002; UX-STATE-001, UX-STATE-003</td><td><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › đổi ngôn ngữ, đang tải, lỗi</code></td><td>S01</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00083</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00083 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

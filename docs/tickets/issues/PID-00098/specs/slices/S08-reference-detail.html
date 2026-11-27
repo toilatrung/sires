@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S08 của ticket PID-00098.">
+<title>PID-00098 — S08 Trang Reference | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S08 — Trang Reference: trạng thái, metadata, tài liệu, project đang dùng, provenance, indexing lỗi</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00098-AC02, UX-REF-002-AC01, UX-REF-003-AC01, LIB-LIBRARY-001-AC02, LIB-CONTENT-001-AC01, LIB-CONTENT-001-AC02, LIB-LIFECYCLE-001-AC04</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC13, EC31, EC40–EC42, EC51, EC52</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S06, S11 (chip), S12 (tín hiệu cần tải lại)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thay Placeholder của route <code>library/:referenceId</code> bằng trang Reference (tạo mới trong <code>apps/web/src/features/library/</code>): <code>getReference</code>, giữ <code>ETag</code>; <code>404</code> → “Không tìm thấy” của shell (EC41); <code>mergedIntoId</code> → banner “Đã gộp vào” kèm liên kết, ẩn thao tác (EC42).</li>
+<li>Đầu trang theo H15: đường dẫn, tiêu đề, tác giả · venue năm · định danh, chip “Duyệt: …” và “index: …” (số đoạn khi Indexed), câu giải thích theo cặp trạng thái (UX-REF-002). Nội dung hiện dạng chữ (EC13).</li>
+<li>Mục “Metadata · phiên bản n” và Source Document; mục “Project đang dùng” từ <code>getReferenceUsage</code> (tên, liên kết <code>/projects/{projectId}/evidence</code>, số evidence, citation; trống có lý do); mục “Provenance” dựng từ trường của Reference theo H15 cộng nguồn phát hiện và truy vấn gốc từ <code>getDiscoveredResult</code> (<code>discoveredResultId</code>) và lịch sử từ <code>listAccountAuditEvents</code> (<code>objectType = reference</code>, <code>objectId</code>) theo H26 (EC51, EC52); khối BibTeX chỉ đọc từ <code>Reference.bibtex</code> (H27); số claim mỗi project từ <code>claimCount</code> (H28).</li>
+<li>Indexing theo H16: Failed → hộp lỗi <code>role="alert"</code> có lý do, mã, “Thử lại indexing” (<code>retryReferenceIndexing</code>; <code>409</code> → đọc lại; EC40) và “Tải PDF khác”; Trusted Unavailable hoặc Not Indexed → “Tải PDF lên”; Indexed → “Thay PDF” có dialog; kiểm tệp trên máy; <code>uploadReferenceDocument</code> và mã lỗi; “Tải PDF” khi có <code>document</code>; Queued, Indexing hiện chip đang chạy.</li>
+<li>Nghe <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code>, <code>project_reference.changed</code> của reference này → đọc lại; tín hiệu cần tải lại → đọc lại reference và usage (EC31).</li>
+<li>Test trong <code>apps/web/src/features/library/reference.spec.tsx</code> (tạo mới): indexing lỗi có thử lại, hai trạng thái và Unavailable, provenance, project đang dùng, Unavailable vẫn có key, tải PDF lên rồi Indexed, không tìm thấy, reference đã gộp, lịch sử trạng thái, nguồn phát hiện không đọc được, lịch sử lỗi.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → test của S08 đạt</li>
+<li>Test: <code>apps/web/src/features/library/reference.spec.tsx › indexing lỗi có thử lại</code> (PID-00098-AC02); <code>› hai trạng thái và Unavailable</code> (UX-REF-002-AC01); <code>› provenance</code> (UX-REF-003-AC01); <code>› project đang dùng</code> (LIB-LIBRARY-001-AC02); <code>› Unavailable vẫn có key</code> (LIB-CONTENT-001-AC01); <code>› tải PDF lên rồi Indexed</code> (LIB-CONTENT-001-AC02)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Trang Reference hiện đúng mọi tổ hợp trạng thái duyệt và indexing trên mock, indexing lỗi có thử lại; test đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S08 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

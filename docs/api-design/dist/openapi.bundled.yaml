@@ -346,11 +346,13 @@ paths:
       tags:
         - Account & Settings
       operationId: updatePreferences
-      summary: Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug
+      summary: Sửa ngôn ngữ, công tắc đưa lĩnh vực nghiên cứu vào context, chế độ debug, Google Scholar trong discovery
       x-requirements:
         - UX-I18N-001
         - CTX-ASSEMBLY-001
         - CTX-REGISTRY-002
+        - UX-SETTINGS-006
+        - DISC-SCHOLAR-003
       x-apr: APR-09
       x-priority: P0
       parameters:
@@ -2485,10 +2487,14 @@ paths:
       description: |
         OpenAlex là nguồn discovery mặc định; Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng của DEC-19),
         phía trước là module connector Google Scholar của SIRes (DEC-60, sửa DEC-19). Google Scholar chỉ dùng khi Researcher
-        chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức
-        thêm sau phiếu chốt PC-03.
+        chọn, trong giới hạn lượt tìm mỗi phiên làm việc của agent, cho tài liệu OpenAlex không có (DEC-61). Mỗi nguồn ghi
+        `role` (`primary` chạy trước, `fallback` chỉ khi Researcher chọn), bộ lọc hỗ trợ (`supportedFilters`) và, với Google
+        Scholar, hạn mức tháng của tài khoản (`monthlyQuota`). Researcher chọn dùng Google Scholar và số lượt cho từng lần chạy
+        bằng `googleScholar` của `startDiscoverySearch`, `startAuthorSearch`; mặc định ở `Preferences.googleScholarDiscovery`
+        (DISC-SCHOLAR-003; PC-05 GS-A1–GS-A7; chốt theo đề xuất, PO ủy quyền 26/11/2026).
       x-requirements:
         - DISC-SCHOLAR-002
+        - DISC-SCHOLAR-003
         - DISC-ADAPTER-001
         - INT-SCHOLAR-001
       x-priority: P0
@@ -2513,8 +2519,20 @@ paths:
       description: |
         Discovery Agent truy vấn nguồn; kết quả lưu thành Discovered Result ở trạng thái New. Discovered Result không bao giờ
         là nguồn evidence. Nguồn không khả dụng: workflow Failed với gợi ý nhập thủ công (INT-SCHOLAR-006).
+
+        Google Scholar (DISC-SCHOLAR-003, DISC-SCHOLAR-004): khi workflow bắt đầu, System ghi hạn mức hiệu lực của lần chạy ở
+        `Workflow.scholarSearch.limit` (theo `googleScholar` của request, không gửi thì theo `Preferences.googleScholarDiscovery`;
+        không dùng thì `0`) và đếm lượt đã dùng ở `scholarSearch.used`. Chỉ gọi Google Scholar cho truy vấn trả 0 kết quả trên
+        nguồn `primary` hoặc tài liệu cụ thể nguồn `primary` không có. Hết hạn mức của lần chạy hoặc hạn mức tháng của tài
+        khoản khi còn phần chưa tìm: dừng gọi Google Scholar, ghi `scholarSearch.limitReached` và mục Agent Activity của Agent
+        Run, workflow tiếp tục với kết quả đã có, không chuyển Waiting for User hay Failed vì lý do này (PC-05 GS-A5). SerpApi
+        lỗi hoặc bị giới hạn: không thử vượt, workflow tiếp tục với kết quả nguồn `primary` (INT-SCHOLAR-002, INT-SCHOLAR-007).
+        Chốt theo đề xuất (PO ủy quyền 26/11/2026), 27/11/2026; PID-00098 mục 1.
       x-requirements:
         - DISC-SCHOLAR-001
+        - DISC-SCHOLAR-003
+        - DISC-SCHOLAR-004
+        - UX-REF-004
         - INT-SCHOLAR-002
         - DATA-IDEMP-001
       x-priority: P0
@@ -2542,9 +2560,16 @@ paths:
         - Discovery
       operationId: startAuthorSearch
       summary: Tìm công bố theo tác giả
-      description: Kết quả có thể không đầy đủ (`completeness = partial`, 17.6).
+      description: |
+        Kết quả có thể không đầy đủ (`completeness = partial`, 17.6). Nguồn mặc định và điều kiện dùng Google Scholar theo
+        `AuthorSearchRequest.source` (DEC-60, DEC-61): tên tác giả tìm trên nguồn `primary`; URL hồ sơ Google Scholar (lối tắt
+        “Công bố của tôi”) tìm trên `google_scholar`, mỗi trang kết quả trừ một lượt Google Scholar của lần chạy
+        (`Workflow.scholarSearch`; DISC-SCHOLAR-003, DISC-AUTHOR-001-AC05; PC-05 GS-B11). Google Scholar không dùng cho lần chạy
+        mà request đòi `google_scholar` → `400 validation_failed`. Chốt theo đề xuất (PO ủy quyền 26/11/2026), 27/11/2026;
+        PID-00098 mục 2.
       x-requirements:
         - DISC-AUTHOR-001
+        - DISC-SCHOLAR-003
       x-priority: P1
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -2577,6 +2602,13 @@ paths:
           description: Lọc theo lần tìm kiếm.
           schema:
             $ref: '#/components/schemas/Id'
+        - name: importWorkflowId
+          in: query
+          description: |
+            Lọc theo lô nhập: các kết quả có `importState.workflowId` bằng mã này, để đọc trạng thái từng mục của lô
+            (LIB-IMPORT-001). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 4).
+          schema:
+            $ref: '#/components/schemas/Id'
         - name: status
           in: query
           schema:
@@ -2603,6 +2635,29 @@ paths:
         required: true
         schema:
           $ref: '#/components/schemas/Id'
+    get:
+      tags:
+        - Discovery
+      operationId: getDiscoveredResult
+      summary: Chi tiết một kết quả tìm kiếm
+      description: |
+        Đọc một Discovered Result, kể cả khi đã nhập (`Imported`): truy vấn, nguồn, lần tìm (`searchWorkflowId`), thời điểm
+        (`createdAt`), Agent Run (`createdByAgentRunId`), lô nhập (`importState.workflowId`). Trang Reference gọi với
+        `Reference.discoveredResultId` để hiện nguồn phát hiện và truy vấn gốc (UX-REF-003-AC01). Thêm 27/11/2026 (chốt theo
+        đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 6).
+      x-requirements:
+        - UX-REF-003
+        - DISC-REVIEW-001
+      x-priority: P0
+      responses:
+        '200':
+          description: Discovered Result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveredResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
     patch:
       tags:
         - Discovery
@@ -2646,6 +2701,12 @@ paths:
       description: |
         Tạo Reference ở Pending Approval (Reference Processing Agent chuẩn hóa metadata) và pending action
         `reference_approval`. Kết quả trùng với reference đã có được đánh dấu cảnh báo, không tạo bản sao.
+
+        Trạng thái từng mục (LIB-IMPORT-001 bước 1): mỗi kết quả gửi đi có `importState` (`queued` khi nhận lô, rồi
+        `processing`, `created`, `duplicate` hoặc `failed` kèm `error`). Client đọc bằng `listDiscoveredResults` với
+        `importWorkflowId` = mã workflow trong phản hồi `202`, khi nhận `workflow.status_changed` của workflow đó và khi workflow
+        kết thúc; không có sự kiện riêng cho từng mục. Lý do lỗi của từng mục ở `importState.error`, không lấy từ
+        `Workflow.lastError`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 4).
       x-requirements:
         - LIB-IMPORT-001
         - LIB-METADATA-001
@@ -2711,6 +2772,23 @@ paths:
           description: Chỉ reference chưa được chọn vào project này (khi chọn reference cho project).
           schema:
             $ref: '#/components/schemas/Id'
+        - name: selectedInProject
+          in: query
+          description: |
+            Chỉ reference đang được chọn (selection `Active`) vào project này (LIB-LIBRARY-001 “lọc theo … project”). Thêm
+            27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 10).
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: deleted
+          in: query
+          description: |
+            `true`: chỉ liệt kê reference đã xóa mềm còn trong hạn khôi phục 30 ngày (có `deletedAt`, `purgeAfter`), để khôi
+            phục bằng `restoreReference` (APR-08). Mặc định `false`: reference đã xóa mềm không có trong danh sách. Như project
+            đã xóa mềm (DATA-STATE-001), reference đã xóa mềm chỉ xem được trong danh sách này và khôi phục được; thao tác khác
+            trên nó trả `404`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 11).
+          schema:
+            type: boolean
+            default: false
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
@@ -2730,11 +2808,16 @@ paths:
       tags:
         - Trusted Library
       operationId: createReferenceManually
-      summary: Nhập reference thủ công theo DOI hoặc BibTeX
-      description: Reference tạo ra ở Pending Approval; không bỏ qua bước duyệt (LIB-IMPORT-002).
+      summary: Nhập reference thủ công theo DOI, nhiều DOI, BibTeX hoặc RIS
+      description: |
+        Reference tạo ra ở Pending Approval; không bỏ qua bước duyệt (LIB-IMPORT-002). Một lệnh nhận một DOI (`doi`), một
+        hoặc nhiều DOI (`dois`, tối đa 50), nội dung BibTeX (`bibtex`) hoặc RIS (`ris`); mỗi mục thành công ở `items`, mỗi mục
+        lỗi ở `errors` (`input` nêu mục). `422` chỉ khi gửi một `doi` không phân giải được (giữ như trước). Thêm `dois`, `ris`
+        27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 5).
       x-requirements:
         - LIB-IMPORT-002
         - LIB-METADATA-001
+        - INT-SCHOLAR-006
       x-priority: P0
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -2747,7 +2830,7 @@ paths:
               $ref: '#/components/schemas/ReferenceManualCreate'
       responses:
         '201':
-          description: Reference đã tạo (một hoặc nhiều với BibTeX nhiều entry).
+          description: Reference đã tạo (một hoặc nhiều với nhiều DOI, BibTeX hay RIS nhiều mục).
           content:
             application/json:
               schema:
@@ -2759,9 +2842,17 @@ paths:
                       $ref: '#/components/schemas/Reference'
                   errors:
                     type: array
-                    description: Entry BibTeX không phân tích được.
+                    description: Entry BibTeX hoặc bản ghi RIS không phân tích được; DOI không phân giải được (khi gửi `dois`).
                     items:
-                      $ref: '#/components/schemas/Problem'
+                      allOf:
+                        - $ref: '#/components/schemas/Problem'
+                        - type: object
+                          properties:
+                            input:
+                              type: string
+                              description: |
+                                Mục lỗi: DOI, citation key của entry BibTeX hoặc thẻ `ID` của bản ghi RIS (khi có), không thì
+                                số thứ tự của mục tính từ 1. Thêm 27/11/2026 (PID-00098 mục 5).
         '400':
           $ref: '#/components/responses/BadRequest'
         '422':
@@ -2869,7 +2960,9 @@ paths:
         - Trusted Library
       operationId: updateReferenceMetadata
       summary: Sửa metadata (tạo metadataVersion mới)
-      description: BibliographyEntry đang dùng version cũ được đề xuất cập nhật; Revoked/Rejected chỉ đọc.
+      description: |
+        BibliographyEntry đang dùng version cũ được đề xuất cập nhật; Revoked/Rejected chỉ đọc. BibTeX key không đổi được
+        (LIB-METADATA-001; xem `ReferenceUpdate.bibtexKey`); `bibtex` sinh lại theo metadata mới.
       x-requirements:
         - LIB-METADATA-001
       x-priority: P0
@@ -2898,7 +2991,11 @@ paths:
         - Trusted Library
       operationId: deleteReference
       summary: Xóa reference (APR-08)
-      description: Chỉ khi không project nào dùng; nếu đang dùng trả `409` — dùng thu hồi thay thế.
+      description: |
+        Chỉ khi không project nào dùng; nếu đang dùng trả `409` — dùng thu hồi thay thế. Xóa là xóa mềm (APR-08): ghi
+        `deletedAt`, `purgeAfter` (= +30 ngày); reference rời Trusted Library, khôi phục bằng `restoreReference` trước
+        `purgeAfter`, sau hạn System xóa vĩnh viễn trừ khi provenance còn tham chiếu (OWN-05). Ghi rõ 27/11/2026 (chốt theo
+        đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 11).
       x-requirements:
         - LIB-LIFECYCLE-001
       x-apr: APR-08
@@ -2908,6 +3005,36 @@ paths:
       responses:
         '204':
           $ref: '#/components/responses/NoContent'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /references/{referenceId}/restore:
+    parameters:
+      - $ref: '#/components/parameters/ReferenceId'
+    post:
+      tags:
+        - Trusted Library
+      operationId: restoreReference
+      summary: Khôi phục reference đã xóa mềm
+      description: |
+        Chỉ khi now < `purgeAfter`; quá hạn trả `409 restore_window_expired` (APR-08: xóa mềm, khôi phục trong 30 ngày; cùng
+        cách với `restoreProject`). Reference trở lại Trusted Library với trạng thái duyệt, indexing và metadata như trước khi
+        xóa; reference chưa xóa trả `409 invalid_transition`. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026;
+        PID-00098 mục 11).
+      x-requirements:
+        - LIB-LIFECYCLE-001
+        - LIB-LIBRARY-001
+      x-priority: P0
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Reference đã khôi phục.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reference'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
   /references/{referenceId}/revoke:
@@ -5352,15 +5479,52 @@ paths:
         - Audit
       operationId: listAccountAuditEvents
       summary: Audit Event cấp tài khoản (Settings, Provider Connection, Trusted Library)
+      description: |
+        Lọc theo đối tượng như `listProjectAuditEvents`. Lịch sử một reference (UX-REF-003 “các phiên bản metadata”,
+        LIB-LIFECYCLE-001-AC04 “lịch sử trạng thái, người thực hiện và lý do”): `objectType = reference`, `objectId` = mã
+        reference; mỗi Audit Event có người (`actor`), thời điểm (`at`), chuyển trạng thái (`fromState`, `toState`), phiên bản
+        metadata (`objectVersion`), lý do (thu hồi, từ chối, duyệt lại) trong `summary`. Thêm lọc 27/11/2026 (chốt theo đề xuất,
+        PO ủy quyền 26/11/2026; PID-00098 mục 7).
       x-requirements:
         - CTX-AUDIT-001
+        - UX-REF-003
+        - LIB-LIFECYCLE-001
       x-priority: P0
       parameters:
+        - name: objectType
+          in: query
+          schema:
+            type: string
+            examples:
+              - reference
+              - provider_connection
+        - name: objectId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: actorType
+          in: query
+          schema:
+            type: string
+            enum:
+              - researcher
+              - agent
+              - system
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
-          description: Trang Audit Event.
+          description: Trang Audit Event, mới nhất trước.
           content:
             application/json:
               schema:
@@ -5388,10 +5552,16 @@ paths:
         Client nhận tín hiệu này thì tải lại trạng thái bằng các endpoint GET. Kết nối lần đầu (không có `Last-Event-ID`)
         và nối lại còn trong thời gian giữ log không có tín hiệu này. Dùng loại sự kiện thay vì mã phản hồi vì
         `EventSource` của trình duyệt không đọc được status khi tự nối lại (PID-00012 H5, PC-05 P2).
+
+        `chat.delta` là một đoạn câu trả lời đang stream của Orchestrator (NFR-PERF-005), gateway chuyển từ stream
+        `sires.stream` (PID-00061); dữ liệu có thêm `conversationId`, `agentRunId`, `seq`, `text`, `final` (Event). Đoạn này
+        không bền và không phát lại khi nối lại: client bỏ bản nháp đang ghép, đọc lại tin nhắn đã lưu bằng `listMessages`,
+        không nhân đôi (PID-00058 H6, H7).
       x-requirements:
         - UX-MONITOR-001
         - UX-STATE-001
         - DATA-PERSIST-001
+        - NFR-PERF-005
       x-priority: P0
       parameters:
         - $ref: '#/components/parameters/ProjectIdFilter'
@@ -5419,6 +5589,12 @@ paths:
                   `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
                   `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
                   `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
+
+                  `chat.delta` mang thêm dữ liệu của một đoạn câu trả lời đang stream của Orchestrator: `conversationId`, `agentRunId`,
+                  `seq`, `text`, `final` — đúng payload `chatDelta` của `events/asyncapi.yaml`, bỏ `accountId` (gateway chỉ đẩy tới
+                  phiên của tài khoản đó; PID-00061). Với `chat.delta`, `conversationId`, `agentRunId`, `seq`, `text` luôn có; sự kiện
+                  loại khác không có năm trường này. Giao diện ghép đoạn theo `agentRunId` và `seq` tăng dần, bỏ đoạn trùng hoặc cũ,
+                  rồi thay bản nháp bằng tin nhắn đã lưu khi có `message.posted` (PID-00058 H6, H7).
                 required:
                   - id
                   - type
@@ -5465,6 +5641,21 @@ paths:
                     type: string
                   at:
                     $ref: '#/components/schemas/Timestamp'
+                  conversationId:
+                    $ref: '#/components/schemas/Id'
+                    description: Chỉ có ở `chat.delta` — hội thoại của câu trả lời.
+                  agentRunId:
+                    $ref: '#/components/schemas/Id'
+                    description: Chỉ có ở `chat.delta` — Agent Run của Orchestrator đang trả lời; trùng `Message.agentRunId` của câu trả lời đã lưu.
+                  seq:
+                    type: integer
+                    description: Chỉ có ở `chat.delta` — thứ tự của đoạn trong Agent Run, tăng dần.
+                  text:
+                    type: string
+                    description: Chỉ có ở `chat.delta` — nội dung của đoạn.
+                  final:
+                    type: boolean
+                    description: Chỉ có ở `chat.delta` — `true` ở đoạn cuối của câu trả lời.
         '401':
           $ref: '#/components/responses/Unauthorized'
 components:
@@ -5481,6 +5672,12 @@ components:
         `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
         `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
         `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
+
+        `chat.delta` mang thêm dữ liệu của một đoạn câu trả lời đang stream của Orchestrator: `conversationId`, `agentRunId`,
+        `seq`, `text`, `final` — đúng payload `chatDelta` của `events/asyncapi.yaml`, bỏ `accountId` (gateway chỉ đẩy tới
+        phiên của tài khoản đó; PID-00061). Với `chat.delta`, `conversationId`, `agentRunId`, `seq`, `text` luôn có; sự kiện
+        loại khác không có năm trường này. Giao diện ghép đoạn theo `agentRunId` và `seq` tăng dần, bỏ đoạn trùng hoặc cũ,
+        rồi thay bản nháp bằng tin nhắn đã lưu khi có `message.posted` (PID-00058 H6, H7).
       required:
         - id
         - type
@@ -5527,6 +5724,21 @@ components:
           type: string
         at:
           $ref: '#/components/schemas/Timestamp'
+        conversationId:
+          $ref: '#/components/schemas/Id'
+          description: Chỉ có ở `chat.delta` — hội thoại của câu trả lời.
+        agentRunId:
+          $ref: '#/components/schemas/Id'
+          description: Chỉ có ở `chat.delta` — Agent Run của Orchestrator đang trả lời; trùng `Message.agentRunId` của câu trả lời đã lưu.
+        seq:
+          type: integer
+          description: Chỉ có ở `chat.delta` — thứ tự của đoạn trong Agent Run, tăng dần.
+        text:
+          type: string
+          description: Chỉ có ở `chat.delta` — nội dung của đoạn.
+        final:
+          type: boolean
+          description: Chỉ có ở `chat.delta` — `true` ở đoạn cuối của câu trả lời.
     ErrorCode:
       type: string
       description: |
@@ -5792,6 +6004,27 @@ components:
           type: boolean
           default: false
           description: Bật thì lưu toàn văn prompt/phản hồi model 30 ngày (OQ-062, CTX-REGISTRY-002).
+        googleScholarDiscovery:
+          type: object
+          description: |
+            Mặc định Google Scholar trong discovery của tài khoản (PRD 18.1 `Account.googleScholarDiscovery`; UX-SETTINGS-006,
+            DISC-SCHOLAR-003; PC-05 GS-A2, GS-A3): dùng Google Scholar cho tài liệu OpenAlex không có hay không, và số lượt tối
+            đa mỗi lần chạy discovery. Mỗi lần chạy ghi đè được bằng `googleScholar` của `DiscoverySearchRequest`,
+            `AuthorSearchRequest` (Discover, chỉ dẫn cho agent); ghi đè không đổi giá trị ở đây. Giá trị ngoài 0–20 hoặc không
+            nguyên trả `400 validation_failed`, không lưu. Không có trường SerpApi API key: hệ thống trả phí lượt tìm trong hạn
+            mức tháng của tài khoản (`DiscoverySource.monthlyQuota`; PC-05 GS-A6). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy
+            quyền 26/11/2026; PID-00098 mục 1).
+          properties:
+            enabled:
+              type: boolean
+              default: false
+              description: Mặc định không dùng vì Google Scholar chỉ dùng khi Researcher chọn (DEC-61).
+            searchLimitPerRun:
+              type: integer
+              minimum: 0
+              maximum: 20
+              default: 5
+              description: Số lượt Google Scholar tối đa mỗi lần chạy discovery; một lượt là một trang kết quả SerpApi; 0 là tắt.
     Account:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
@@ -5906,7 +6139,9 @@ components:
       type: string
       description: |
         Bộ mã lỗi chuẩn hóa (8.6). Tạm thời (tự thử lại trong Agent Run): rate_limited, timeout, provider_unavailable,
-        network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision.
+        network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision. `invalid_request` (DEC-62, trả lời
+        OQ-113): provider từ chối yêu cầu bằng HTTP 400 không thuộc mã khác (tham số không hợp lệ; schema hay khai báo công
+        cụ bị từ chối); cố định, không thử lại (kiến trúc 8.4).
       enum:
         - auth_failed
         - permission_denied
@@ -5920,6 +6155,7 @@ components:
         - invalid_response
         - network_error
         - interrupted
+        - invalid_request
     ModelInfo:
       type: object
       required:
@@ -7304,6 +7540,51 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/Checkpoint'
                 - type: 'null'
+            scholarSearch:
+              type: object
+              readOnly: true
+              description: |
+                Chỉ với `type = discovery` (cả tìm theo tác giả): Google Scholar của lần chạy (PRD 18.1 `Workflow.scholarSearch`;
+                DISC-SCHOLAR-003, DISC-SCHOLAR-004; PC-05 GS-A1, GS-A2, GS-A5). `limit` là hạn mức hiệu lực ghi khi bắt đầu
+                (`googleScholar` của request hoặc `Preferences.googleScholarDiscovery`; `0` khi không dùng Google Scholar);
+                `used` là số lượt đã dùng, một lượt là một trang kết quả SerpApi. Lượt chưa dùng không chuyển sang lần chạy
+                khác. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
+              required:
+                - limit
+                - used
+              properties:
+                limit:
+                  type: integer
+                  minimum: 0
+                  maximum: 20
+                used:
+                  type: integer
+                  minimum: 0
+                limitReached:
+                  type: object
+                  description: |
+                    Có khi System dừng gọi Google Scholar vì hết hạn mức mà vẫn còn truy vấn hay tài liệu nguồn `primary` không
+                    có (DISC-SCHOLAR-004 bước 5; PC-05 GS-A5). Giao diện nêu số lượt đã dùng, phần chưa tìm và cách nới hạn mức
+                    trên danh sách kết quả (UX-REF-004). `run_limit`: hết `limit` của lần chạy, Researcher nới ở Settings hoặc ghi
+                    đè ở lần tìm sau; `monthly_limit`: tài khoản hết hạn mức tháng (`DiscoverySource.monthlyQuota`), Researcher
+                    không nới được. Workflow không chuyển Waiting for User hay Failed vì lý do này.
+                  required:
+                    - reason
+                    - at
+                    - pending
+                  properties:
+                    reason:
+                      type: string
+                      enum:
+                        - run_limit
+                        - monthly_limit
+                    at:
+                      $ref: '#/components/schemas/Timestamp'
+                    pending:
+                      type: array
+                      description: Truy vấn, hoặc tài liệu (DOI hay tiêu đề), chưa tìm trên Google Scholar.
+                      items:
+                        type: string
     ProjectStatus:
       type: string
       enum:
@@ -7632,6 +7913,13 @@ components:
         workflowId:
           $ref: '#/components/schemas/Id'
           description: Workflow được khởi tạo nếu yêu cầu cần điều phối.
+        agentRunId:
+          $ref: '#/components/schemas/Id'
+          description: |
+            Agent Run của Orchestrator trả lời tin nhắn này: cùng `agentRunId` của `chat.delta` và `Message.agentRunId` của
+            câu trả lời đã lưu. Giao diện dùng để theo dõi lỗi của lượt trả lời khi chưa có `chat.delta` nào và không có
+            `workflowId` (`agent_run.status_changed` sang `Failed` → `getAgentRun`; PID-00058 H15). Vắng khi lượt trả lời
+            chưa được tạo lúc trả `202`.
     PlanVersionStatus:
       type: string
       enum:
@@ -8328,6 +8616,12 @@ components:
           enum:
             - primary
             - fallback
+          description: |
+            `primary`: nguồn chạy trước cho mọi truy vấn và mọi lần tra tài liệu, là `DiscoverySearchRequest.source` mặc định
+            (OpenAlex, DEC-60). `fallback`: chỉ chạy khi Researcher chọn dùng cho lần chạy (`googleScholar` của request hoặc
+            `Preferences.googleScholarDiscovery`), cho phần nguồn `primary` không có, trong hạn mức của lần chạy (Google Scholar
+            qua SerpApi; DEC-61, DISC-SCHOLAR-003, DISC-SCHOLAR-004; PC-05 GS-A1–GS-A7). Mô tả thêm 27/11/2026 (chốt theo đề
+            xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
         available:
           type: boolean
         accessMethod:
@@ -8338,8 +8632,19 @@ components:
             - user_assisted_import
         supportedFilters:
           type: array
+          description: |
+            Bộ lọc của `DiscoverySearchRequest.filters` mà nguồn hỗ trợ, giá trị là đúng tên khóa của `filters`: `title`,
+            `author`, `keywords`, `yearFrom`, `yearTo` (khớp `FakeSourceAdapter` của `@sires/testing`). Giao diện ẩn bộ lọc không có trong danh sách (DISC-ADAPTER-001: năng lực không hỗ trợ thì ẩn
+            chức năng). Tìm theo tác giả là `supportsAuthorSearch`, không phải bộ lọc. Thêm giá trị 27/11/2026 (chốt theo đề
+            xuất, PO ủy quyền 26/11/2026; PID-00098 mục 12).
           items:
             type: string
+            enum:
+              - title
+              - author
+              - keywords
+              - yearFrom
+              - yearTo
         supportsAuthorSearch:
           type: boolean
         hasFullText:
@@ -8348,9 +8653,52 @@ components:
           type: string
         termsNotice:
           type: string
+        monthlyQuota:
+          type: object
+          readOnly: true
+          description: |
+            Chỉ với nguồn tính phí theo lượt (`google_scholar`): hạn mức lượt tìm SerpApi mỗi tháng của tài khoản, do hệ thống
+            trả theo hợp đồng của đội, Researcher không nhập SerpApi API key (DISC-SCHOLAR-003; PC-05 GS-A6). `limit` là cấu
+            hình hệ thống, Researcher không đặt (Assumption của DISC-SCHOLAR-003). Hết hạn mức tháng thì lần chạy không gọi
+            Google Scholar và xử lý như hết hạn mức của lần chạy (`Workflow.scholarSearch.limitReached.reason =
+            monthly_limit`). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
+          required:
+            - limit
+            - used
+          properties:
+            limit:
+              type: integer
+              minimum: 0
+            used:
+              type: integer
+              minimum: 0
+            resetsAt:
+              $ref: '#/components/schemas/Timestamp'
+    GoogleScholarRunOption:
+      type: object
+      description: |
+        Google Scholar cho một lần chạy discovery — một lần tìm ở Discover hoặc một lần tìm theo tác giả (DISC-SCHOLAR-003,
+        UX-REF-004; PC-05 GS-A1–GS-A3). Trường không gửi lấy theo `Preferences.googleScholarDiscovery` của tài khoản; ghi đè
+        chỉ áp dụng cho lần chạy này, không đổi Preferences. Một lượt là một lần tìm SerpApi, tức một trang kết quả Google
+        Scholar. `enabled = false` hoặc `searchLimit = 0`: lần chạy không gọi SerpApi. Khi workflow bắt đầu, hạn mức hiệu lực
+        ghi ở `Workflow.scholarSearch.limit`. Giá trị ngoài 0–20 hoặc không nguyên trả `400 validation_failed`. Thêm
+        27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
+      properties:
+        enabled:
+          type: boolean
+          description: Dùng Google Scholar cho phần nguồn `primary` không có (DEC-61, DISC-SCHOLAR-004).
+        searchLimit:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: Số lượt Google Scholar tối đa của lần chạy; 0 là không dùng (PC-05 GS-A2).
     DiscoverySearchRequest:
       type: object
-      description: Khởi chạy workflow discovery (DISC-SCHOLAR-001). Kết quả là Discovered Result, chưa phải Reference.
+      description: |
+        Khởi chạy workflow discovery (DISC-SCHOLAR-001). Kết quả là Discovered Result, chưa phải Reference. Mọi truy vấn và
+        mọi lần tra tài liệu chạy trên nguồn `primary` trước; Google Scholar chỉ chạy theo `googleScholar` cho phần nguồn
+        `primary` không có: truy vấn trả 0 kết quả, hoặc tài liệu cụ thể (theo DOI hoặc tiêu đề) không tìm thấy (DISC-SCHOLAR-004;
+        PC-05 GS-A4). Kết quả hai nguồn được khử trùng theo DOI rồi theo tiêu đề và năm; mỗi kết quả ghi `source` (PC-05 GS-A7).
       required:
         - query
       properties:
@@ -8360,7 +8708,13 @@ components:
         source:
           type: string
           default: openalex
-          description: Nguồn tìm kiếm; mặc định OpenAlex (DEC-60). Google Scholar qua SerpApi dùng giá trị `google_scholar`, chỉ khi Researcher chọn và cho tài liệu OpenAlex không có (DEC-61); tham số hạn mức thêm sau phiếu chốt PC-03.
+          description: |
+            Nguồn `primary` của lần tìm (`DiscoverySource.role = primary`); mặc định OpenAlex (DEC-60). Google Scholar không
+            chọn bằng trường này mà bằng `googleScholar` (DEC-61, DISC-SCHOLAR-003): gửi nguồn không phải `primary` (ví dụ
+            `google_scholar`) trả `400 validation_failed`. Đổi nghĩa 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026;
+            PID-00098 mục 1), khi chưa có bên gọi hay hiện thực.
+        googleScholar:
+          $ref: '#/components/schemas/GoogleScholarRunOption'
         filters:
           type: object
           properties:
@@ -8388,15 +8742,30 @@ components:
           default: 20
     AuthorSearchRequest:
       type: object
+      description: |
+        Tìm công bố theo tác giả (DISC-AUTHOR-001). Lượt gọi Google Scholar, kể cả lượt gọi hồ sơ khi Researcher tìm công bố
+        của chính mình, tính vào hạn mức Google Scholar của lần chạy (DISC-SCHOLAR-003; PC-05 GS-B11).
       required:
         - author
       properties:
         author:
           type: string
-          description: Tên tác giả hoặc URL hồ sơ Google Scholar.
+          description: Tên tác giả, hoặc URL hồ sơ Google Scholar (lối tắt “Công bố của tôi” dùng `Profile.googleScholarProfileUrl`).
         source:
           type: string
-          default: google_scholar
+          description: |
+            Không gửi: `author` là tên thì dùng nguồn `primary` (`openalex`, DEC-60); `author` là URL hồ sơ Google Scholar thì
+            dùng `google_scholar`. Google Scholar chỉ dùng khi Researcher chọn (DEC-61): `source = google_scholar` (hoặc URL hồ
+            sơ) mà Google Scholar không dùng cho lần chạy (`googleScholar.enabled = false`, `searchLimit = 0`, hoặc mặc định của
+            Preferences như vậy khi không gửi) trả `400 validation_failed`, không tạo workflow, không gọi SerpApi (DISC-AUTHOR-001
+            luồng thay thế). URL hồ sơ chỉ đi với `google_scholar`: gửi URL hồ sơ kèm nguồn khác trả `400 validation_failed`.
+            Trước 27/11/2026 mặc định là `google_scholar`; đổi theo DEC-60, DEC-61 (chốt theo đề xuất, PO ủy
+            quyền 26/11/2026; PID-00098 mục 2), khi chưa có bên gọi hay hiện thực.
+          examples:
+            - openalex
+            - google_scholar
+        googleScholar:
+          $ref: '#/components/schemas/GoogleScholarRunOption'
     DiscoveredResultStatus:
       type: string
       enum:
@@ -8506,6 +8875,13 @@ components:
           type: object
           additionalProperties: true
           description: Bản gốc để đối chiếu.
+    ReferenceApprovalStatus:
+      type: string
+      enum:
+        - Pending Approval
+        - Trusted
+        - Rejected
+        - Revoked
     DiscoveredResult:
       allOf:
         - $ref: '#/components/schemas/EntityMeta'
@@ -8521,6 +8897,12 @@ components:
               $ref: '#/components/schemas/Id'
             source:
               type: string
+              enum:
+                - openalex
+                - google_scholar
+              description: |
+                Nguồn thực tế của kết quả (PRD 18.1; DEC-60; PC-05 GS-A7). Giao diện ghi nhãn nguồn ở mỗi kết quả (UX-REF-004).
+                Trước 27/11/2026 là chuỗi tự do; enum theo PRD 18.1 (chốt theo đề xuất, PO ủy quyền 26/11/2026).
             query:
               type: string
             metadata:
@@ -8539,19 +8921,54 @@ components:
               description: Lý do agent cho là phù hợp — chỉ để tham khảo, không phải mức tin cậy tự động (OQ-090).
             duplicateOfReferenceId:
               $ref: '#/components/schemas/Id'
-              description: Đã có trong Trusted Library.
+              description: |
+                Reference đã có trong tài khoản trùng với kết quả này, ở mọi trạng thái duyệt (Trusted, Pending Approval,
+                Rejected, Revoked), không chỉ Trusted: DISC-SCHOLAR-001-AC04 “đã có trong thư viện”, LIB-APPROVAL-001-AC04 “đã
+                từ chối trước đây”. Trạng thái của reference đó ở `duplicateOfReferenceStatus`. Sửa mô tả 27/11/2026 (chốt theo
+                đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 3).
+            duplicateOfReferenceStatus:
+              allOf:
+                - $ref: '#/components/schemas/ReferenceApprovalStatus'
+              readOnly: true
+              description: |
+                Trạng thái duyệt hiện hành của `duplicateOfReferenceId`, tính khi đọc; có khi và chỉ khi có
+                `duplicateOfReferenceId`. Để giao diện ghi nhãn (“Đã có trong Trusted Library”, “Đang chờ duyệt”, “Đã từ chối
+                trước đây”, “Đã thu hồi”) mà không phải gọi `getReference` từng dòng (PID-00098 mục 3).
+            importState:
+              type: object
+              readOnly: true
+              description: |
+                Trạng thái nhập của kết quả trong lô gần nhất gửi bằng `importDiscoveredResults` (LIB-IMPORT-001 bước 1: chờ,
+                đang xử lý, đã tạo reference, trùng lặp, lỗi kèm lý do). Không có khi kết quả chưa được gửi nhập. `queued`: lô
+                đã nhận, chưa xử lý mục này; `processing`: Reference Processing Agent đang xử lý; `created`: đã tạo reference
+                Pending Approval (`importedReferenceId`, `status = Imported`), kể cả reference tạo ra có `duplicateWarnings`;
+                `duplicate`: trùng reference có sẵn (`duplicateOfReferenceId`) và không tạo reference mới (mô tả
+                `importDiscoveredResults`); `failed`: lỗi, lý do ở `error`. Gửi lại mục `failed` trong lô mới ghi đè trạng thái
+                này. Trạng thái này không quyết định cách xử lý trùng DOI (PRD 10 LIB-METADATA-001 và 18.5 còn chờ PO). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 4).
+              required:
+                - workflowId
+                - status
+              properties:
+                workflowId:
+                  $ref: '#/components/schemas/Id'
+                  description: Workflow `reference_processing` của lô (phản hồi `202` của `importDiscoveredResults`).
+                status:
+                  type: string
+                  enum:
+                    - queued
+                    - processing
+                    - created
+                    - duplicate
+                    - failed
+                error:
+                  $ref: '#/components/schemas/Problem'
+                updatedAt:
+                  $ref: '#/components/schemas/Timestamp'
             provenance:
               description: Provenance (18.3, DATA-PROV-001) — có khi kết quả do Discovery Agent tạo (`createdByAgentRunId`).
               oneOf:
                 - $ref: '#/components/schemas/Provenance'
                 - type: 'null'
-    ReferenceApprovalStatus:
-      type: string
-      enum:
-        - Pending Approval
-        - Trusted
-        - Rejected
-        - Revoked
     IndexingStatus:
       type: string
       enum:
@@ -8601,7 +9018,14 @@ components:
               type: integer
             bibtexKey:
               type: string
-              description: Duy nhất trong tài khoản.
+              description: Duy nhất trong tài khoản; ổn định sau khi tạo (LIB-METADATA-001).
+            bibtex:
+              type: string
+              readOnly: true
+              description: |
+                Chuỗi BibTeX của reference do hệ thống sinh từ metadata hiện hành và `bibtexKey`; sinh lại khi metadata đổi
+                (LIB-METADATA-001 “BibTeX sinh lại”, AC02), chỉ đọc. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026;
+                PID-00098 mục 8).
             origin:
               type: string
               enum:
@@ -8652,8 +9076,18 @@ components:
             usedInProjectCount:
               type: integer
               readOnly: true
+            purgeAfter:
+              $ref: '#/components/schemas/Timestamp'
+              readOnly: true
+              description: |
+                `deletedAt` + 30 ngày; chỉ có khi reference đã xóa mềm (APR-08: xóa mềm, khôi phục trong 30 ngày). Thêm
+                27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 11).
     ReferenceManualCreate:
-      description: Nhập thủ công DOI hoặc BibTeX (LIB-IMPORT-002). Reference tạo ra ở Pending Approval. PDF dùng `/references/pdf-imports`.
+      description: |
+        Nhập thủ công DOI, BibTeX hoặc RIS (LIB-IMPORT-002, INT-SCHOLAR-006). Reference tạo ra ở Pending Approval. PDF dùng
+        `/references/pdf-imports`. Mỗi DOI, entry BibTeX hoặc bản ghi RIS là một mục; tối đa 50 mục mỗi lệnh như lô nhập
+        (LIB-IMPORT-002 “giới hạn 50 mục mỗi lô”), hơn 50 mục trả `400 validation_failed` và không tạo reference nào. Thêm `dois`, `ris` 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026;
+        PID-00098 mục 5); `doi`, `bibtex` giữ nguyên.
       oneOf:
         - type: object
           title: Theo DOI
@@ -8664,6 +9098,22 @@ components:
               type: string
               pattern: ^10\.\d{4,9}/\S+$
         - type: object
+          title: Theo nhiều DOI
+          required:
+            - dois
+          properties:
+            dois:
+              type: array
+              minItems: 1
+              maxItems: 50
+              description: |
+                Một hoặc nhiều DOI trong một lệnh (LIB-IMPORT-002 “nhập một hoặc nhiều DOI”). Mỗi DOI xử lý riêng: DOI phân giải
+                được thành một Reference ở `items`, DOI không phân giải được nằm ở `errors` với `input` là DOI đó; lệnh vẫn trả
+                `201`.
+              items:
+                type: string
+                pattern: ^10\.\d{4,9}/\S+$
+        - type: object
           title: Theo BibTeX
           required:
             - bibtex
@@ -8671,6 +9121,16 @@ components:
             bibtex:
               type: string
               description: Một hoặc nhiều entry BibTeX; mỗi entry thành một Reference.
+        - type: object
+          title: Theo RIS
+          required:
+            - ris
+          properties:
+            ris:
+              type: string
+              description: |
+                Nội dung RIS, một hoặc nhiều bản ghi (`TY` … `ER`); mỗi bản ghi thành một Reference, metadata có `source = ris`
+                (parser RIS của library, PID-00024). Bản ghi không phân tích được nằm ở `errors`.
     ReferenceApprovalBatch:
       type: object
       description: |
@@ -8730,6 +9190,11 @@ components:
           $ref: '#/components/schemas/ReferenceMetadata'
         bibtexKey:
           type: string
+          deprecated: true
+          description: |
+            Không đổi được: BibTeX key ổn định sau khi tạo (LIB-METADATA-001). Gửi giá trị khác key hiện tại trả
+            `400 validation_failed`; gửi đúng key hiện tại không đổi gì. Trường giữ để tương thích, bỏ ở phiên bản API sau.
+            Ghi rõ 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 9).
     ReferenceUsage:
       type: object
       readOnly: true
@@ -8747,6 +9212,12 @@ components:
                 type: string
               evidenceCount:
                 type: integer
+              claimCount:
+                type: integer
+                description: |
+                  Số claim trong project dùng evidence của reference này; cùng với `evidenceCount`, `citationCount` nêu hệ quả
+                  khi thu hồi (claim gắn cờ cần xem lại, LIB-LIFECYCLE-001; APR-04). Thêm 27/11/2026 (chốt theo đề xuất, PO ủy
+                  quyền 26/11/2026; PID-00098 mục 10).
               citationCount:
                 type: integer
     ProjectReferenceSelection:

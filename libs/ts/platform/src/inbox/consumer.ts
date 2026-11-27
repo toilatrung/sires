@@ -10,7 +10,7 @@ import {
   trace,
   type TextMapGetter,
 } from '@opentelemetry/api';
-import { connect, type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
+import { connect, type Channel, type ChannelModel, type ConsumeMessage, type SocketOptions } from 'amqplib';
 import { sql } from 'drizzle-orm';
 import type { Logger } from 'pino';
 import { runWithLogContext } from '../logging/context';
@@ -110,6 +110,12 @@ export class EventConsumer {
   private running = false;
   private link?: Link;
   private opening?: Promise<void>;
+  /** Cancels the connection attempt in progress: closes its socket (PC-05 P25). */
+  private cancelOpening?: AbortController;
+  /** The stop() in progress; a start() waits for it (PC-05 P36). */
+  private stopping?: Promise<void>;
+  /** Number of stop() calls: a start() that waited for a stop() gives way to a later stop(). */
+  private stopCalls = 0;
   private reconnectTimer?: NodeJS.Timeout;
   private failedAttempts = 0;
 
@@ -135,9 +141,13 @@ export class EventConsumer {
    * Declares the exchange, the queue and its bindings, then consumes with manual ack. Never blocks the start of the
    * service on the broker (PO, QC PID-00002 G5): when this first attempt fails, it is logged and retried with the same
    * backoff as a lost connection, and `start()` resolves with {@link isConsuming} false; {@link stop} cancels the
-   * pending attempt.
+   * pending attempt. Called while a {@link stop} is still running (not awaited), waits for it to end before opening
+   * again (PC-05 P36); a stop() called after this start() wins.
    */
   async start(): Promise<void> {
+    const stopCalls = this.stopCalls;
+    while (this.stopping) await this.stopping;
+    if (this.stopCalls !== stopCalls) return;
     if (this.running) {
       await this.opening?.catch(() => undefined);
       return;
@@ -153,11 +163,24 @@ export class EventConsumer {
     }
   }
 
-  /** Stops consuming and reconnecting, waits for the messages in flight, closes the connection. */
-  async stop(): Promise<void> {
+  /**
+   * Stops consuming and reconnecting, waits for the messages in flight, closes the connection. A connection attempt
+   * in progress is cancelled, its socket closed, without waiting for CONNECT_TIMEOUT_MS (PC-05 P25).
+   */
+  stop(): Promise<void> {
+    this.stopCalls += 1;
     this.running = false;
     clearTimeout(this.reconnectTimer);
     this.reconnectTimer = undefined;
+    // Only an attempt not yet the current link: a live link is closed below, after its messages in flight.
+    if (!this.link) this.cancelOpening?.abort();
+    this.stopping ??= this.shutdown().finally(() => {
+      this.stopping = undefined;
+    });
+    return this.stopping;
+  }
+
+  private async shutdown(): Promise<void> {
     await this.opening?.catch(() => undefined);
     const link = this.link;
     this.link = undefined;
@@ -168,18 +191,25 @@ export class EventConsumer {
 
   /** One connection attempt; the link becomes current only once its consumer is registered and still alive. */
   private async open(): Promise<void> {
-    const opening = this.connectAndConsume();
+    const cancel = new AbortController();
+    const opening = this.connectAndConsume(cancel.signal);
     this.opening = opening;
+    this.cancelOpening = cancel;
     try {
       await opening;
     } finally {
-      if (this.opening === opening) this.opening = undefined;
+      if (this.opening === opening) {
+        this.opening = undefined;
+        this.cancelOpening = undefined;
+      }
     }
   }
 
-  private async connectAndConsume(): Promise<void> {
-    // The timeout bounds the TCP and AMQP opening only, so an attempt on a dead network fails and is retried.
-    const connection = await connect(this.options.amqpUrl, { timeout: CONNECT_TIMEOUT_MS });
+  private async connectAndConsume(signal: AbortSignal): Promise<void> {
+    // The timeout bounds the TCP and AMQP opening only, so an attempt on a dead network fails and is retried. The
+    // signal goes to the socket (amqplib passes its options to net/tls.connect): aborting it destroys the socket.
+    const socketOptions: SocketOptions & { signal: AbortSignal } = { timeout: CONNECT_TIMEOUT_MS, signal };
+    const connection = await connect(this.options.amqpUrl, socketOptions);
     const link: Link = { connection, lost: false };
     // 'error' comes before 'close': keep it for the log of the loss (an unhandled 'error' would crash the process).
     connection.on('error', (error: unknown) => {

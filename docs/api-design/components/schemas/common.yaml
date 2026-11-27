@@ -165,9 +165,11 @@ ProviderErrorCode:
   type: string
   description: |
     Bộ mã lỗi chuẩn hóa (8.6). Tạm thời (tự thử lại trong Agent Run): rate_limited, timeout, provider_unavailable,
-    network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision.
+    network_error. `interrupted` là mã hệ thống (14.7), đi qua Recovery decision. `invalid_request` (DEC-62, trả lời
+    OQ-113): provider từ chối yêu cầu bằng HTTP 400 không thuộc mã khác (tham số không hợp lệ; schema hay khai báo công
+    cụ bị từ chối); cố định, không thử lại (kiến trúc 8.4).
   enum: [auth_failed, permission_denied, model_not_found, rate_limited, quota_exceeded, context_too_long,
-    content_refused, timeout, provider_unavailable, invalid_response, network_error, interrupted]
+    content_refused, timeout, provider_unavailable, invalid_response, network_error, interrupted, invalid_request]
 
 ReasonCode:
   type: string

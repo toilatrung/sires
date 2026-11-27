@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160 slice S02: discovery, đăng nhập, token, userinfo.">
+<title>PID-00160 — S02 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>S02 — Discovery, đăng nhập, token và userinfo</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00160-AC01, PID-00160-AC02, PID-00160-AC03, PID-00160-AC07 (phần đăng nhập)</td></tr>
+<tr><th scope="row">Output spec</th><td>O5, O6 (trang đăng nhập), O7 (<code>main.ts</code>, <code>/health</code>); phần đăng nhập của <code>test/flow.spec.ts</code> (O9)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC07, EC08</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>src/provider.ts</code> (tạo mới): tạo <code>Provider</code> của <code>oidc-provider</code> với issuer, client, <code>findAccount</code> từ S01 và cấu hình ở <a href="../index.html#s-4-3">spec 4.3</a> (routes, <code>devInteractions</code> tắt, PKCE bắt buộc, claims, <code>conformIdTokenClaims: false</code>, ttl, <code>issueRefreshToken</code>, <code>rotateRefreshToken</code>, <code>proxy</code>, khóa RSA sinh lúc khởi động, <code>cookies.keys</code>).</li>
+<li>Viết phần đăng nhập của <code>src/interactions.ts</code> (tạo mới): <code>GET /interaction/:uid</code> hiện form theo <a href="../index.html#s-4-5">spec 4.5</a> (dải “Máy chủ OIDC thử của SIRes — không phải eTroy”; danh sách email thử chỉ ở <code>local</code>); <code>POST /interaction/:uid</code> đọc form (<code>URLSearchParams</code>), kiểm email và mật khẩu, sai thì hiện lại form với “Email hoặc mật khẩu không đúng”; đúng thì <code>interactionFinished</code> với <code>login.accountId</code>, rồi ở prompt <code>consent</code> tạo <code>Grant</code> cho đúng scope và claim được yêu cầu, không hiện màn đồng ý. Mọi giá trị đưa vào HTML đều được escape.</li>
+<li>Viết <code>src/main.ts</code> (tạo mới): máy chủ <code>node:http</code> trên <code>0.0.0.0:OIDC_MOCK_PORT</code>; <code>GET /health</code> trả <code>200 {"status":"ok"}</code>; <code>/interaction/*</code> tới <code>interactions.ts</code>; còn lại tới <code>provider.callback()</code>; xuất một hàm khởi động nhận cấu hình (để test chạy ở cổng 0) và trả hàm đóng.</li>
+<li>Viết phần đăng nhập của <code>test/flow.spec.ts</code> (tạo mới): khởi động mock ở cổng ngẫu nhiên với issuer <code>http://127.0.0.1:</code>cổng; dùng <code>openid-client</code> (<code>discovery</code>, <code>buildAuthorizationUrl</code>, <code>authorizationCodeGrant</code>, <code>fetchUserInfo</code>) với <code>ClientSecretBasic</code> và <code>execute: [allowInsecureRequests]</code> (issuer <code>http</code> của test); mô phỏng trình duyệt bằng <code>fetch</code> (<code>redirect: 'manual'</code>, hũ cookie theo host, đọc <code>action</code> và trường ẩn của form).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Test: <code>test/flow.spec.ts › discovery và JWKS</code> (PID-00160-AC01)</li>
+<li>Test: <code>test/flow.spec.ts › đăng nhập code + PKCE, nonce trong ID token</code> (PID-00160-AC02)</li>
+<li>Test: <code>test/flow.spec.ts › từ chối yêu cầu sai</code> (PID-00160-AC03, 7 ca; EC06)</li>
+<li>Test: <code>test/flow.spec.ts › hai tài khoản thử, sub ổn định</code> (PID-00160-AC07)</li>
+<li>Test: <code>test/flow.spec.ts › sau proxy https</code> (EC07: yêu cầu có <code>X-Forwarded-Proto: https</code> tới mock có issuer <code>https</code> nhận endpoint <code>https</code> trong discovery)</li>
+<li>Test: <code>test/flow.spec.ts › phiên mock dùng lại</code> (EC08: authorize lần hai cùng hũ cookie không hiện form; <code>prompt=login</code> hiện form)</li>
+<li><code>pnpm nx run @sires/oidc-mock:test</code> đạt</li>
+<li><code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Một RP chuẩn (<code>openid-client</code> với <code>expectedNonce</code>) đăng nhập được bằng tài khoản A và B; mọi yêu cầu sai của AC03 bị từ chối.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00160</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Slice S02 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
