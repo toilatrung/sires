@@ -64,6 +64,16 @@ Workflow:
         type: { $ref: '#/WorkflowType' }
         taskId: { $ref: common.yaml#/Id }
         planVersionId: { $ref: common.yaml#/Id }
+        subject:
+          allOf:
+            - $ref: common.yaml#/TypedRef
+          readOnly: true
+          description: |
+            Đối tượng mà workflow xử lý khi workflow được tạo từ thao tác trên một đối tượng: claim của `verifyClaim`
+            (`type = claim`), artifact được sửa của `requestDiagram` có `revisesArtifactId` (`type = artifact`). Giao diện
+            dùng để gắn lại thẻ thao tác dài vào đúng đối tượng sau khi tải lại trang (UX-STATE-001: rời trang được mà
+            thao tác vẫn tiếp tục), bằng `listWorkflows` theo `type`, `status` rồi lọc theo `subject`. Không có khi workflow
+            không gắn một đối tượng.
         triggeredBy: { $ref: common.yaml#/ActorRef }
         status: { $ref: '#/WorkflowStatus' }
         currentStepId: { $ref: common.yaml#/Id }

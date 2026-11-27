@@ -33,11 +33,11 @@
 </tbody></table></div>
 <h2 id="lam">Làm</h2>
 <ol><li>Vùng nội dung của version <code>synthesis</code> theo H11: <code>listClaims</code> với <code>artifactVersionId</code> của version (đối chiếu <code>claimIds</code>); nội dung hiện dạng chữ (EC29; Markdown an toàn tùy Dev, ghi <code>implement.md</code>).</li>
-<li>Định vị: với mỗi claim, tìm <code>statement</code> trong <code>content</code> sau khi chuẩn hóa khoảng trắng; thấy → chip mức hỗ trợ của shell (và chip duyệt khi khác Draft) ngay sau câu, bấm chip mở <code>/projects/{projectId}/claims/{claimId}</code>; lặp → lần đầu (EC39); không thấy → nhóm “Claim chưa định vị trong văn bản” dưới nội dung (EC38). Cách tìm đặt trong một hàm riêng để thay khi hợp đồng có vị trí claim.</li>
+<li>Định vị bằng <code>claimAnchors</code> của version (<code>ClaimAnchor {claimId, charStart, charEnd}</code>, hợp đồng sửa 27/11/2026 theo mục 5 của hồ sơ; H11: khi có thì thay hàm định vị, không đổi giao diện): claim có vị trí → chip mức hỗ trợ của shell (và chip duyệt khi khác Draft) ngay sau đoạn <code>[charStart, charEnd)</code>, bấm chip mở <code>/projects/{projectId}/claims/{claimId}</code>; nhiều claim cùng vị trí → các chip cạnh nhau theo thứ tự trong <code>claimAnchors</code> (EC39); claim không có vị trí, hoặc vị trí nằm ngoài <code>content</code> → nhóm “Claim chưa định vị trong văn bản” dưới nội dung (EC38). Định vị đặt trong một hàm riêng.</li>
 <li>Bảng “Claim của bản tổng hợp” dưới nội dung: phát biểu, chip mức hỗ trợ, chip duyệt, số evidence, liên kết claim; xuất số claim còn Draft cho S08.</li>
 <li>Sự kiện claim (EC43) tải lại danh sách claim của version; vi/en (EC46).</li></ol>
 <h2 id="kiem">Kiểm</h2>
-<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/synthesis.spec.tsx</code> › Unsupported tại câu (UX-CLAIM-001-AC01, PID-00114-AC01); › claim chưa định vị (EC38); › phát biểu lặp (EC39)</li>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/research/synthesis.spec.tsx</code> › Unsupported tại câu (UX-CLAIM-001-AC01, PID-00114-AC01); › claim chưa định vị (EC38); › nhiều claim cùng vị trí (EC39)</li>
 <li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li></ul>
 <h2 id="xong-khi">Xong khi</h2>
 <ul><li>Bản tổng hợp trên mock có chip mức hỗ trợ tại câu cho mọi claim định vị được, không claim nào mất nhãn</li></ul>

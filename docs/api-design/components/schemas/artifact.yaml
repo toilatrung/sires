@@ -66,6 +66,35 @@ ArtifactVersion:
           type: array
           description: Claim gắn với bản tổng hợp (synthesis).
           items: { $ref: common.yaml#/Id }
+        claimAnchors:
+          type: array
+          readOnly: true
+          description: |
+            Chỉ với synthesis — vị trí của claim trong `content`, để giao diện hiện nhãn mức hỗ trợ ngay tại câu
+            (UX-CLAIM-001-AC01; SYN-REVIEW-001: mỗi câu khẳng định gắn claim). Synthesis Agent gửi vị trí cùng claim
+            (`createClaimsBatch` nội bộ, trường `anchor`); research kiểm vị trí nằm trong `content` rồi trả ở đây theo
+            thứ tự `charStart`. Claim trong `claimIds` không có mục ở đây thì giao diện hiện ở nhóm “chưa định vị”, vẫn có
+            nhãn (KPI-01). Sửa phát biểu claim không đổi vị trí (nội dung version bất biến).
+          items: { $ref: '#/ClaimAnchor' }
+        diagramType:
+          type: string
+          description: |
+            Chỉ với diagram — `DiagramType.id` của version (DIAG-TYPES-001: loại sơ đồ và cú pháp ghi trong Artifact
+            Version; cú pháp là `format`, `mermaid` trong MVP).
+          examples: [workflow]
+        validation:
+          allOf:
+            - $ref: manuscript.yaml#/DiagramValidation
+          description: |
+            Chỉ với diagram — trạng thái kiểm tra của nguồn trong version này (DIAG-SOURCE-001, DIAG-VALIDATE-001). Chỉ
+            version có `status = valid` chấp nhận được (`acceptArtifactVersion`, DIAG-REVIEW-001).
+        manuscriptUsages:
+          type: array
+          readOnly: true
+          description: |
+            Vị trí version này được dùng trong bản thảo (SYN-PERSIST-001-AC01; PRD 4.3: artifact → vị trí được dùng trong
+            bản thảo). Rỗng khi chưa dùng; chỉ version Accepted được đưa vào bản thảo.
+          items: { $ref: manuscript.yaml#/ManuscriptUsage }
         review:
           type: object
           properties:
@@ -77,13 +106,32 @@ ArtifactVersion:
 
 ArtifactVersionCreate:
   type: object
-  description: Researcher sửa nội dung — tạo version Draft mới, không sửa tại chỗ.
+  description: |
+    Researcher sửa nội dung — tạo version Draft mới, không sửa tại chỗ. Với diagram, System kiểm tra nguồn mới và ghi
+    `validation` vào version mới (DIAG-VALIDATE-001: mỗi lần lưu nguồn); nguồn còn lỗi vẫn lưu được.
   required: [basedOnVersionId]
   properties:
     basedOnVersionId: { $ref: common.yaml#/Id }
     content: { type: string }
     fileUploadId: { $ref: common.yaml#/Id }
     note: { type: string }
+    diagramType:
+      type: string
+      description: Chỉ với diagram — `DiagramType.id` (DIAG-TYPES-001); bỏ trống thì giữ loại của `basedOnVersionId`.
+      examples: [state]
+
+ClaimAnchor:
+  type: object
+  readOnly: true
+  description: |
+    Vị trí một claim trong `content` của version synthesis (UX-CLAIM-001-AC01). Khoảng nửa mở `[charStart, charEnd)`, đếm
+    từ 0, cùng cách đếm với `Evidence.location.charStart`, `charEnd`; chip mức hỗ trợ đặt ngay sau `charEnd`. Hai claim
+    có thể cùng một khoảng (một câu gắn nhiều claim).
+  required: [claimId, charStart, charEnd]
+  properties:
+    claimId: { $ref: common.yaml#/Id }
+    charStart: { type: integer, minimum: 0 }
+    charEnd: { type: integer, minimum: 0 }
 
 ArtifactDecision:
   type: object
