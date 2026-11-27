@@ -474,7 +474,7 @@ async def main_async(args: argparse.Namespace, ev: Evidence) -> tuple[list[list[
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", type=Path, default=EVIDENCE_ROOT / f"frameworks-{sys.platform}")
+    parser.add_argument("--out", type=Path, default=EVIDENCE_ROOT / "frameworks")
     parser.add_argument("--variants", nargs="*", default=["anthropic", "openai", "google"])
     parser.add_argument("--frameworks", nargs="*", default=list(FRAMEWORKS), choices=FRAMEWORKS)
     parser.add_argument("--repeat", type=int, default=1)

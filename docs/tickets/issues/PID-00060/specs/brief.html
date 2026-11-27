@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00060.">
+<title>PID-00060 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00060</p><h1>PID-00060 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill (<code>references/brief-template.md</code>), <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a>. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc <code>H1</code>…</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Researcher thấy mọi việc hệ thống đang chờ mình ở một nơi (Pending Actions), thông tin nên biết ở Notifications, hỏi Global AI Assistant ở cấp tài khoản mà không rời trang, và trên điện thoại vẫn xem được việc chờ và trả lời được prompt. Dashboard nhận nội dung các khối việc chờ, workflow, bản thảo, lỗi gần đây. Lần này dựng giao diện chạy trên mock ở PH-02 (D-UI); hội tụ với backend ở cổng PH-03.</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Pending action và notification tách riêng; pending action bền vững tới khi xử lý hoặc hết hiệu lực; mở một việc đưa tới đúng ngữ cảnh, không quyết định từ danh sách trơn; việc hết hiệu lực hiện ở nhóm riêng kèm lý do tới khi người dùng xem — PRD 4.4; UX-PENDING-001, UX-PENDING-002; H4</li>
+<li>Bảy loại pending action, năm loại notification, tên giữ nguyên văn tiếng Anh — PRD 4.4; design.md §4; H4, H5</li>
+<li>Notification có đã đọc/chưa đọc, không chặn công việc; MVP chỉ thông báo trong ứng dụng — PRD 4.4, OQ-020; H5</li>
+<li>Global AI Assistant không bao giờ nhận context project; chỉ điều hướng, tạo project (qua form, Researcher xác nhận), đọc Trusted Library và danh sách project; khung mở cạnh trang hiện tại ở Global — PRD 4.1, 4.3; WS-CHAT-001; UX-LAYOUT-002; TS-01-05; H6</li>
+<li>Prompt: trả lời một lần; Expired, Cancelled không bao giờ là đồng ý; phương án của agent không chọn sẵn — PROMPT-LIFECYCLE-001; design.md §3; PID-00012 H8; H2</li>
+<li>Điện thoại: Pending Actions, trả lời prompt, phê duyệt, theo dõi tiến độ; không cam kết soạn; không cuộn ngang ở 390px — UX-RESP-001; design.md §5; H3, H9</li>
+<li>Dashboard chỉ đọc, khối lỗi không làm hỏng khối khác — WS-DASHBOARD-001; H7</li>
+<li>Số trên TopBar, rail do shell làm — PID-00012 H1; H1</li>
+<li>Bất biến: agent đề xuất, System kiểm soát, Researcher quyết định; mọi phê duyệt có ngữ cảnh và hệ quả; cách ly theo tài khoản và project.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li>Hợp đồng path 07: <code>listPendingActions</code>, <code>acknowledgePendingAction</code>, <code>listNotifications</code>, <code>markNotificationsRead</code>, <code>getDashboard</code>, <code>listProjects</code>, <code>listConversations</code>, <code>createConversation</code>, <code>listMessages</code>, <code>sendMessage</code> — có</li>
+<li>Path 08: <code>listPrompts</code>, <code>getPrompt</code>, <code>answerPrompt</code>, <code>listProviderConnections</code> — có; path 14: <code>listWorkflows</code> — có; path 12: <code>getManuscript</code> (404 khi chưa khởi tạo) — có</li>
+<li>Schema: <code>PendingAction</code> (có <code>deepLink</code>, <code>expiryReason</code>, <code>projectId</code> qua EntityMeta), <code>Notification</code> (không có <code>deepLink</code>), <code>InteractiveAgentPrompt</code>, <code>PromptResponse</code>, <code>Message</code> (có <code>links</code>, không có đề xuất tạo project), <code>Event</code> (<code>pending_action.changed</code>, <code>notification.created</code>, <code>prompt.status_changed</code>, <code>message.posted</code>, <code>workflow.status_changed</code>) — có</li>
+<li>Hợp đồng thiếu: thứ tự của listPendingActions, deepLink của Notification, dữ liệu đề xuất tạo project — đã chốt cách xử lý (H4–H6), đề xuất sửa nguồn không chặn</li>
+<li>Mã nguồn: <code>apps/web/src/features/global/index.tsx</code> (có route <code>pending-actions</code>, <code>notifications</code> dạng Placeholder) — có; shell, mock, PID-00037 — chưa merge</li>
+<li>Màn tham chiếu: <code>docs/ui-design/pages/PendingActions.html</code>, <code>Notifications.html</code>, <code>Notifications--filter-unread.html</code>, <code>Assistant.html</code>, <code>MobilePending.html</code>, <code>MobilePrompt.html</code>, <code>Dashboard.html</code> — có</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 Màn trong <code>apps/web/src/features/global/</code> → S02–S06</li>
+<li>O2 Override mock trong <code>apps/web/src/features/global/__mocks__/</code> → S01</li>
+<li>O3 <code>apps/web/src/features/global/pending.spec.tsx</code> → S02; O4 <code>apps/web/src/features/global/mobile.spec.tsx</code> → S05; O5 <code>apps/web/src/features/global/notifications.spec.tsx</code> → S03; O6 <code>apps/web/src/features/global/assistant.spec.tsx</code> → S04; O7 <code>apps/web/src/features/global/dashboard-data.spec.tsx</code> → S06</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li>pending action = Pending Action; notification = Notification (PRD 4.4)</li>
+<li>prompt = Interactive Agent Prompt (PRD 8.4)</li>
+<li>trợ lý = Global AI Assistant; hội thoại global = Conversation có scope global</li>
+<li>M1, M2 = MobilePending, MobilePrompt; G6, G9, G10 = Assistant, PendingActions, Notifications (mã ui-design ở tickets 1.5)</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00060</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00060 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

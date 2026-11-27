@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S09 của ticket PID-00115.">
+<title>PID-00115 — S09 Màn điện thoại: duyệt proposal | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00115</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00115</p><h1>S09 — Màn điện thoại: duyệt proposal</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Sketch: <a href="../../designs/Manuscript-states.html">designs/Manuscript-states.html</a> khối 17.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng (UX-RESP-001 phần phê duyệt trên điện thoại; H21)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O11</td></tr>
+<tr><th scope="row">Bước spec</th><td>B8, B10, B11</td></tr>
+<tr><th scope="row">Edge case</th><td>EC53, EC54 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S06; PID-00012 S03 (khung điện thoại) trên <code>develop</code></td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Dưới 768px (H21), trong khung điện thoại của shell: không có editor, cây file, vùng phải; một cột gồm thanh trên (“Project”, chip build) và danh sách Change Proposal Proposed rồi Outdated, cũ nhất trên.</li>
+<li>Mỗi mục mở ra: Task, diff theo file (xuống dòng, không cuộn ngang trang ở 390px), kết quả citation, claim; chấp nhận, từ chối, yêu cầu tạo lại dùng đúng điều kiện và xử lý của S06 (H12, H13); nút cao 44–48px.</li>
+<li>Dòng “Trên điện thoại: xem và quyết định proposal. Soạn bản thảo dùng máy tính hoặc tablet.”; không có proposal → trống kèm câu này (EC54). Deep link <code>?proposal=</code> mở thẳng mục đó.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/manuscript/mobile.spec.tsx</code> › 390 px duyệt proposal (EC53); › trống (EC54)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li>
+<li>Thao tác tay: preview <code>web</code> 390×844 và 375×812, vi và en, không cuộn ngang</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Trên điện thoại mở được proposal từ Pending Actions và quyết định được; không có editor; không cuộn ngang</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00115</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00115 · Slice S09 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

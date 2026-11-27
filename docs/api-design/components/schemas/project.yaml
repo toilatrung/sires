@@ -157,6 +157,13 @@ MessageAccepted:
     workflowId:
       $ref: common.yaml#/Id
       description: Workflow được khởi tạo nếu yêu cầu cần điều phối.
+    agentRunId:
+      $ref: common.yaml#/Id
+      description: |
+        Agent Run của Orchestrator trả lời tin nhắn này: cùng `agentRunId` của `chat.delta` và `Message.agentRunId` của
+        câu trả lời đã lưu. Giao diện dùng để theo dõi lỗi của lượt trả lời khi chưa có `chat.delta` nào và không có
+        `workflowId` (`agent_run.status_changed` sang `Failed` → `getAgentRun`; PID-00058 H15). Vắng khi lượt trả lời
+        chưa được tạo lúc trả `202`.
 
 PendingActionKind:
   type: string
@@ -181,7 +188,9 @@ PendingAction:
         resolvedAt: { $ref: common.yaml#/Timestamp }
         deepLink:
           type: string
-          description: Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4).
+          description: |
+            Đường dẫn giao diện tới đúng ngữ cảnh xử lý (4.4). Với `manuscript_change_proposal`:
+            `/projects/{projectId}/manuscript?proposal={proposalId}` (MS-DIFF-001).
 
 Notification:
   allOf:

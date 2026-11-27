@@ -4,7 +4,8 @@
 
 // Migration sires_identity (PID-00016 S01, S02): schema khớp DDL tham chiếu (PID-00016-AC02), quyền provider_secret
 // (EC05), RLS (EC06), thiếu vai trò (EC07), state machine (EC08); lệnh migrate và values cho Job migration; hàm
-// app.find_account_by_identity khi migration chạy bằng vai trò migrator thật (DBD-14). Cần Docker (Testcontainers).
+// app.find_account_by_identity khi migration chạy bằng vai trò migrator thật (DBD-14). Migration và DDL tham chiếu
+// chạy bằng sires_identity_migrator như compose của PID-00159 (QC G2). Cần Docker (Testcontainers).
 
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -50,16 +51,20 @@ async function seedAccount(pg: IdentityPostgres, database: string, issuer = 'htt
 describe('migration identity — PID-00016-AC02', () => {
   let pg: IdentityPostgres;
   let migratedDump: string;
+  let migratorUrl: string;
 
   beforeAll(async () => {
     pg = await startIdentityPostgres();
     await pg.createDatabase(MIGRATED);
     await pg.createDatabase(REFERENCE);
-    // Lệnh migrate của service (cùng hàm mà node dist/migrate.js gọi), DSN ở DATABASE_MIGRATOR_URL.
+    // Lệnh migrate của service (cùng hàm mà node dist/migrate.js gọi), DSN ở DATABASE_MIGRATOR_URL của vai trò
+    // migrator thật: lỗi quyền owner ở bất kỳ câu nào không bị superuser che (QC G2). DDL tham chiếu cũng chạy bằng
+    // migrator để hai bản dump cùng chủ, cùng người cấp quyền.
+    migratorUrl = await enableMigratorLogin(pg, MIGRATED);
     const run = capture();
-    expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(MIGRATED) }, ...run.io })).toBe(0);
+    expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: migratorUrl }, ...run.io })).toBe(0);
     expect(run.stdout).toEqual(['identity migrate: áp 2 migration mới, đã ghi sổ 2']);
-    await pg.applyReferenceDdl(REFERENCE);
+    await pg.applyReferenceDdl(REFERENCE, await enableMigratorLogin(pg, REFERENCE));
     migratedDump = await pg.dumpSchema(MIGRATED);
   }, CONTAINER_TIMEOUT);
 
@@ -85,8 +90,10 @@ describe('migration identity — PID-00016-AC02', () => {
     ]) {
       expect(migratedDump).toContain(fragment);
     }
+    // Đối tượng do migration tạo thuộc owner, không thuộc superuser.
+    expect(migratedDump).toContain(`ALTER TABLE app.account OWNER TO ${ROLES.owner};`);
     // Chạy lại không đổi.
-    expect(await runMigrations(pg.url(MIGRATED))).toEqual({ applied: 0, total: 2 });
+    expect(await runMigrations(migratorUrl)).toEqual({ applied: 0, total: 2 });
     expect(await pg.dumpSchema(MIGRATED)).toBe(migratedDump);
     const ledger = await pg.admin(MIGRATED, `SELECT count(*)::int AS n FROM "${MIGRATIONS_SCHEMA}"."${MIGRATIONS_TABLE}"`);
     expect(ledger).toEqual([{ n: 2 }]);
@@ -196,8 +203,8 @@ describe('migration identity — PID-00016-AC02', () => {
 
 // DBD-14 (PO 24/11/2026, đóng DBQ-10): app.find_account_by_identity là SECURITY DEFINER nên chạy bằng owner; owner
 // không BYPASSRLS (database 3.2) và app.account bị FORCE RLS, nên hàm đọc qua policy owner_lookup (FOR SELECT TO owner).
-// Các test khác chạy migration bằng superuser nên không phân biệt được; ở đây migration chạy bằng vai trò migrator thật
-// (thành viên owner, SET role owner) và request gọi hàm bằng _app không có app.account_id, như lúc đăng nhập.
+// Migration chạy bằng vai trò migrator thật (thành viên owner, SET role owner) và request gọi hàm bằng _app không có
+// app.account_id, như lúc đăng nhập.
 describe('migration identity — tra cứu trước tenant context bằng vai trò thật (DBD-14)', () => {
   let pg: IdentityPostgres;
   const database = 'identity_migrator';
@@ -253,25 +260,44 @@ describe('migration identity — tra cứu trước tenant context bằng vai tr
 
 describe('migration identity — thiếu vai trò thì migration lỗi (EC07)', () => {
   let pg: IdentityPostgres;
-  const database = 'identity_no_roles';
 
   beforeAll(async () => {
     pg = await startIdentityPostgres({ withRoles: false });
-    await pg.createDatabase(database);
   }, CONTAINER_TIMEOUT);
 
   afterAll(async () => {
     await pg?.stop();
   });
 
-  it('thiếu vai trò thì migration lỗi', async () => {
+  /** Lệnh migrate bằng superuser lên `database` mới, rỗng: mã 1, lỗi 42704, không lộ mật khẩu; trả stderr. */
+  async function migrateFails(database: string): Promise<string> {
+    await pg.createDatabase(database);
     const run = capture();
     expect(await runMigrationCommand({ env: { [MIGRATOR_URL_ENV]: pg.url(database) }, ...run.io })).toBe(1);
-    expect(run.stderr.join('\n')).toContain('SQLSTATE 42704');
-    expect(run.stderr.join('\n')).not.toContain(pg.server.password);
-    const leftovers = await pg.admin(database,
-      `SELECT nspname FROM pg_namespace WHERE nspname IN ('app', 'replica')
-       UNION ALL SELECT rolname FROM pg_roles WHERE rolname LIKE 'sires\\_identity\\_%'`);
-    expect(leftovers).toEqual([]);
+    const stderr = run.stderr.join('\n');
+    expect(stderr).toContain('SQLSTATE 42704');
+    expect(stderr).not.toContain(pg.server.password);
+    return stderr;
+  }
+
+  /** Giao dịch rollback toàn bộ (không còn schema app, replica) và migration không tạo vai trò nào. */
+  async function expectNothingLeft(database: string, roles: string[]): Promise<void> {
+    expect(await pg.admin(database, `SELECT nspname FROM pg_namespace WHERE nspname IN ('app', 'replica')`)).toEqual([]);
+    const existing = await pg.admin<{ rolname: string }>(database,
+      `SELECT rolname FROM pg_roles WHERE rolname LIKE 'sires\\_identity\\_%' ORDER BY 1`);
+    expect(existing.map((row) => row.rolname)).toEqual(roles);
+  }
+
+  it('thiếu mọi vai trò thì migration lỗi', async () => {
+    // Sau DBD-14 câu đầu tiên chạm vai trò là CREATE POLICY owner_lookup … TO sires_identity_owner.
+    expect(await migrateFails('identity_no_roles')).toContain(`role "${ROLES.owner}" does not exist`);
+    await expectNothingLeft('identity_no_roles', []);
+  });
+
+  it('có owner, thiếu _app, _system, _purge thì migration lỗi (QC G1)', async () => {
+    await pg.admin(pg.server.database, `CREATE ROLE ${ROLES.owner} NOLOGIN`);
+    // Ca EC07 của scope: lỗi nêu đúng vai trò thiếu đầu tiên mà app.grant_standard cấp.
+    expect(await migrateFails('identity_owner_only')).toContain(`role "${ROLES.app}" does not exist`);
+    await expectNothingLeft('identity_owner_only', [ROLES.owner]);
   });
 });

@@ -18,7 +18,8 @@ info:
     ## Quy ước chung
     - **Xác thực:** duy nhất qua eTroy OIDC (INT-OIDC-001–004). Backend SIRes là OIDC Relying Party,
       giữ token phía server và cấp cookie phiên `sires_session` (HttpOnly, Secure, SameSite=Lax).
-      Lệnh ghi (POST/PUT/PATCH/DELETE) gửi kèm header `X-CSRF-Token`.
+      Lệnh ghi (POST/PUT/PATCH/DELETE) gửi kèm header `X-CSRF-Token`; riêng `POST /auth/logout` gửi bằng form
+      HTML nên token nằm ở trường `csrfToken` của body (PID-00012 H9).
     - **Ownership:** mọi tài nguyên thuộc tài khoản của phiên; tài nguyên của tài khoản khác trả `404`
       (không tiết lộ sự tồn tại — OWN-03, NFR-ISOL). Tài nguyên cấp project nằm dưới `/projects/{projectId}`.
     - **Idempotency:** lệnh có tác động (kích hoạt Task, duyệt, trả lời prompt, chấp nhận proposal,
@@ -244,6 +245,8 @@ paths:
     $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1approvals
   /references/{referenceId}:
     $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}
+  /references/{referenceId}/restore:
+    $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1restore
   /references/{referenceId}/revoke:
     $ref: paths/10-academic-discovery-and-trusted-library.yaml#/~1references~1{referenceId}~1revoke
   /references/{referenceId}/reinstate:
@@ -388,6 +391,11 @@ paths:
     $ref: paths/14-shared-context-and-orchestration-architecture.yaml#/~1events
 
 components:
+  schemas:
+    # Event chỉ dùng trong luồng SSE của GET /events (x-event-schema); khai ở đây để bundle và type sinh có
+    # components.schemas.Event (PublicApi của @sires/contracts; PID-00012 S05, PID-00013 S03; PC-05 P2).
+    Event:
+      $ref: components/schemas/orchestration.yaml#/Event
   securitySchemes:
     sessionCookie:
       type: apiKey

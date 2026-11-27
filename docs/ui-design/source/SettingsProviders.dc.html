@@ -206,8 +206,15 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #0277DD; color: #FFFFFF; font: 600 14px Montserrat, sans-serif">Thêm kết nối</button>
       </div>
       <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44">Bạn tự cung cấp API key; SIRes không có key hay hạn mức mặc định. Key được mã hóa và chỉ hiển thị dạng che.</p>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+        <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px">
+          <p style="margin: 0; font-size: 15px; font-weight: 600">Chưa có kết nối nào</p>
+          <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #4D4A44">Agent chưa chạy được cho tới khi có một kết nối Valid. Tạo kết nối đầu tiên ở form dưới.</p>
+        </div>
+      </sc-if>
+      <sc-if value="{{hasConns}}" hint-placeholder-val="{{ true }}">
       <div style="background: #FCF9F5; border: 1px solid #DBD3C7; border-radius: 8px; overflow-x: auto">
-        <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px">
+        <table style="width: 100%; min-width: 980px; border-collapse: collapse; font-size: 14px">
           <thead><tr style="text-align: left; font-size: 12px; color: #4D4A44">
             <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Tên</th>
             <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Provider</th>
@@ -215,6 +222,7 @@ a{color:#025FAC}a:hover{color:#1C1B18}
             <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">API key</th>
             <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Kiểm tra</th>
             <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Agent dùng</th>
+            <th style="padding: 10px 16px; border-bottom: 1px solid #DBD3C7; font-weight: 600">Thao tác</th>
           </tr></thead>
           <tbody>
             <sc-for list="{{conns}}" as="c" hint-placeholder-count="3">
@@ -225,11 +233,13 @@ a{color:#025FAC}a:hover{color:#1C1B18}
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{c.key}}</td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 4px; border: 1.5px {{c.b}}; color: {{c.fg}}; background: {{c.bg}}; font-size: 12px; font-weight: 600">{{c.status}}</span><span style="display: block; margin-top: 4px; font-size: 12px; color: #4D4A44">{{c.note}}</span></td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #DBD3C7; color: #4D4A44">{{c.agents}}</td>
+                <td style="padding: 6px 10px; border-bottom: 1px solid #DBD3C7; white-space: nowrap"><button aria-label="Sửa {{c.name}}" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; border: 0; background: transparent; font: 500 13px Montserrat, sans-serif; cursor: pointer; color: #025FAC">Sửa</button><button aria-label="Kiểm tra lại {{c.name}}" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; border: 0; background: transparent; font: 500 13px Montserrat, sans-serif; cursor: pointer; color: #025FAC">Kiểm tra lại</button><button aria-label="Xóa {{c.name}}" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; border: 0; background: transparent; font: 500 13px Montserrat, sans-serif; cursor: pointer; color: #BE123C">Xóa</button></td>
               </tr>
             </sc-for>
           </tbody>
         </table>
       </div>
+      </sc-if>
 
       <section aria-labelledby="nc" style="background: #FCF9F5; border: 1.5px dashed #0277DD; border-radius: 8px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
         <h3 id="nc" style="margin: 0; font-size: 17px; font-weight: 600">Kết nối mới · Untested</h3>
@@ -248,23 +258,53 @@ a{color:#025FAC}a:hover{color:#1C1B18}
         <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">API key
           <input type="password" value="placeholder-key" style="background: #E5DED5; height: 40px; padding: 0 12px; border: 1px solid #C7C7C7; border-radius: 6px; font: 400 14px 'JetBrains Mono', monospace">
         </label>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+          <div role="note" style="background: #F6F2EE; border: 1px solid #DBD3C7; border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+            <p style="margin: 0; font-size: 14px; line-height: 1.55">Nội dung bạn gửi cho agent sẽ được gửi tới provider bạn cấu hình. Chỉ context do Orchestrator lắp ráp cho mỗi lần chạy agent được gửi; trong thông tin cá nhân, chỉ “Lĩnh vực nghiên cứu” được đưa vào, và chỉ khi bạn bật công tắc ở Profile.</p>
+            <label style="display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px; font-weight: 600"><input type="checkbox" style="width: 18px; height: 18px; margin: 0">Tôi đã đọc</label>
+          </div>
+        </sc-if>
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
-          <button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Kiểm tra kết nối</button>
+          <sc-if value="{{hasConns}}" hint-placeholder-val="{{ true }}"><button style="height: 40px; padding: 0 16px; border: 1px solid #0277DD; border-radius: 6px; background: #FCF9F5; color: #025FAC; font: 600 14px Montserrat, sans-serif">Kiểm tra kết nối</button></sc-if>
+          <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Kiểm tra kết nối</button></sc-if>
           <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Lưu</button>
-          <span style="font-size: 13px; color: #4D4A44">Lưu được sau khi kiểm tra thành công.</span>
+          <span style="font-size: 13px; color: #4D4A44">{{saveHint}}</span>
         </div>
       </section>
     </main>
   </div>
+  <sc-if value="{{deleting}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 30; background: rgba(28,27,24,.32); display: flex; align-items: center; justify-content: center; padding: 16px">
+      <div role="dialog" aria-modal="true" aria-labelledby="del-title" style="box-sizing: border-box; width: 480px; max-width: 100%; background: #FCF9F5; border-radius: 8px; padding: 22px 24px; box-shadow: 0 4px 16px rgba(28,27,24,.10); display: flex; flex-direction: column; gap: 14px">
+        <h3 id="del-title" style="margin: 0; font-size: 18px; font-weight: 600">Xóa “Claude cá nhân”?</h3>
+        <p style="margin: 0; font-size: 14px; line-height: 1.55">Kết nối đang dùng cho 4 agent: Orchestrator, Synthesis, Writing, Verification. Chọn kết nối Valid thay thế cho các agent này. Thao tác bị chặn cho tới khi chọn kết nối thay thế (AGENT-PROVIDER-002-AC03).</p>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 6px">
+          <legend style="padding: 0 0 6px; font-size: 13px; font-weight: 600">Kết nối thay thế</legend>
+          <label style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px"><input type="radio" name="replacement" style="margin: 0">OpenAI cá nhân <span style="color: #4D4A44">· Valid</span></label>
+          <label style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; border: 1px solid #DBD3C7; border-radius: 6px; font-size: 14px; color: #7A756C"><input type="radio" name="replacement" disabled style="margin: 0">Gemini cá nhân · Invalid — không chọn được</label>
+        </fieldset>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D4A44">Không có kết nối Valid khác thì nút xóa bị vô hiệu kèm liên kết “Thêm kết nối”.</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px">
+          <button style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #FCF9F5; color: #1C1B18; font: 500 14px Montserrat, sans-serif">Giữ kết nối</button>
+          <button disabled style="height: 40px; padding: 0 16px; border: 1px solid #DBD3C7; border-radius: 6px; background: #F6F2EE; color: #7A756C; font: 600 14px Montserrat, sans-serif">Xóa kết nối — chọn kết nối thay thế</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["default","first-connection","delete"],"default":"default"},"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
   renderVals() {
     const nav = [['profile', 'Profile', 'SettingsProfile.dc.html'], ['providers', 'Provider Connections', 'SettingsProviders.dc.html'], ['agents', 'Agent Models', 'SettingsAgents.dc.html'], ['prefs', 'Preferences', 'SettingsPreferences.dc.html']];
     const V = { status: 'Valid', b: 'solid #1C1B18', fg: '#1C1B18', bg: '#FFFFFF' };
     const I = { status: 'Invalid', b: 'solid #BE123C', fg: '#BE123C', bg: '#FFF1F2' };
+    // PID-00036 H5, H8, H9 (PC chốt theo đề xuất 27/11/2026): first-connection = chưa có kết nối, thông báo NFR-PRIV-001; delete = dialog xóa có kết nối thay thế.
+    const state = this.props.state ?? 'default';
+    const empty = state === 'first-connection';
     return {
+      empty, hasConns: !empty, deleting: state === 'delete',
+      saveHint: empty ? '“Kiểm tra kết nối” bật khi đã đánh dấu “Tôi đã đọc”.' : '“Kiểm tra kết nối” lưu kết nối rồi kiểm tra; “Lưu” bật khi kết quả là Valid. Kết nối chưa Valid vẫn ở trong bảng để sửa sau.',
       nav: nav.map(([k, label, href]) => ({ label, href, current: k === 'providers' ? 'page' : 'false', w: k === 'providers' ? 600 : 500, bg: k === 'providers' ? '#E5DED5' : 'transparent' })),
       conns: [
         { name: 'Claude cá nhân', provider: 'Anthropic Claude', url: 'https://api.anthropic.com', key: 'sk-ant-••••••••4f2a', ...V, note: 'Kiểm tra 31/10 08:02', agents: 'Orchestrator, Synthesis, Writing, Verification' },

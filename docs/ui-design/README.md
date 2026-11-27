@@ -10,7 +10,7 @@ Canvas gốc: https://claude.ai/artifact/PVpjdSkkPJZrNHnwXDFCqK (riêng tư; chi
 | --- | --- |
 | `index.html` | Trình xem: danh sách màn theo nhóm, chọn biến thể, khổ Desktop/Tablet/Điện thoại, mở riêng từng trang |
 | `design.md` | Hướng dẫn thiết kế: token, trạng thái, component, bố cục, câu chữ, a11y, danh sách cấm |
-| `pages/*.html` | 80 trang HTML tĩnh (35 nguồn + 45 biến thể Tweaks), sinh tự động — không sửa tay |
+| `pages/*.html` | 117 trang HTML tĩnh (35 nguồn + 82 biến thể Tweaks), sinh tự động — không sửa tay |
 | `source/*.dc.html`, `source/canvas.json` | Nguồn thiết kế (định dạng component của canvas) và chỉ mục bố cục |
 | `tools/render.mjs` | `node docs/ui-design/tools/render.mjs` — dựng lại `pages/` và `index.html` từ `source/` |
 | `tools/serve.mjs`, `tools/index.template.html` | Máy chủ xem cục bộ (cổng 5178) và khuôn của index |
@@ -28,33 +28,33 @@ Sửa thiết kế: sửa `source/<Tên>.dc.html` (hoặc trên canvas rồi t�
 | Mã | File | Màn hình | Cơ sở PRD |
 | --- | --- | --- | --- |
 | — | Main | Style guide (Cream) | DEC-18 |
-| — | Components | Nhãn trạng thái, execution label, prompt 4 trạng thái | 15.5, 5 |
-| — | TopBar, ProjectRail | Điều hướng dùng chung; số Pending Actions (8) và chuông Notifications (3 chưa đọc) | UX-LAYOUT-001/003, 4.4 |
+| — | Components | Nhãn trạng thái (gồm bảng bổ sung PID-00012 H4: Provider Connection, Project, Evidence, kết quả discovery, Change Proposal, prompt), execution label, prompt 4 trạng thái | 15.5, 5 |
+| — | TopBar, ProjectRail | Điều hướng dùng chung; số Pending Actions (8) và chuông Notifications (3 chưa đọc). TopBar có biến thể `menu: vi`, `menu: en` (menu tài khoản của avatar: Hồ sơ, Đăng xuất; PID-00012 H9) và `mode: project` | UX-LAYOUT-001/003, 4.4 |
 | — | AgentList | Danh sách 10 agent của project (Orchestrator, Discovery, Reference Processing, Evidence Retrieval, Synthesis, Writing, Verification, Diagram, Analysis Agent A, B), nhãn Đang chạy, Chờ bạn, Gián đoạn, Lỗi, Đang rảnh. Biến thể `wfState`: running (mặc định), waiting, interrupted, deliberation, synthesis, deliberation-failed, cancelled; `theme`: dark | SCOPE-12, UX-MONITOR-001, AGENT-ANALYSIS-001 |
 | — | AgentListPreview | Agent List light và dark cạnh nhau, cùng bảy biến thể `wfState` như AgentList | design.md 2.1 (dark) |
 | G1 | Dashboard | Dashboard, 8 việc chờ (cũ nhất trên); biến thể recovery, first-run | 15.1, UX-PENDING-001, UX-STATE-005, UX-SETTINGS-002 |
 | G2 | Projects | Research Projects + tạo project | 7.2 |
-| G3 | Discover | Tìm Google Scholar + nhập thủ công; biến thể đang tìm | 10.1–10.4, UX-STATE-001 |
-| G4 | Library | Trusted Library, duyệt theo lô; biến thể empty, loading | 10.6–10.8, UX-REF-001/002 |
-| G5 | Reference | Chi tiết Reference + provenance | UX-REF-003 |
+| G3 | Discover | Tìm (OpenAlex mặc định, Google Scholar khi bật cho lần tìm, số lượt 0–20), nhãn nguồn và “Bản ghi nguồn” mỗi kết quả, “Loại”, “Tải thêm”, nhập thủ công DOI nhiều dòng, BibTeX, RIS, PDF; biến thể `state`: searching (đang tìm OpenAlex), no-results (0 kết quả, “Tìm lại với Google Scholar”), scholar (kết quả Google Scholar, số lượt đã dùng), scholar-limit (hết hạn mức tháng). Sửa 27/11/2026 theo PID-00098 mục 14, PC-05 nhóm II | 10.1–10.4, UX-STATE-001, UX-REF-004 |
+| G4 | Library | Trusted Library, duyệt theo lô (mục có thể trùng không vào lô, ba nút riêng), lọc Duyệt (Trusted, Revoked, Rejected, Tất cả, Đã xóa), Indexing, Năm, Project, ngày duyệt dưới chip, Failed và Unavailable kiểu Lỗi; biến thể `state`: empty, loading, deleted (đã xóa mềm, Khôi phục). Sửa 27/11/2026 theo PID-00098 mục 15 | 10.6–10.8, UX-REF-001/002 |
+| G5 | Reference | Chi tiết Reference: hai chip và câu giải thích theo cặp trạng thái, metadata, BibTeX chỉ đọc, Project đang dùng (evidence, claim, citation), provenance với nguồn thực tế và truy vấn gốc; biến thể `state`: pending (Duyệt là nút chính), revoked (Duyệt lại, chỉ đọc), failed (indexing lỗi, Thử lại indexing), unavailable. Sửa 27/11/2026 theo PID-00098 mục 16 | UX-REF-002, UX-REF-003 |
 | G6 | Assistant | Global AI Assistant (khung bên) | UX-LAYOUT-002 |
 | G7 | GlobalTasks | Tasks & Plan tổng hợp (chỉ đọc) | 9.12 |
 | G8 | GlobalActivity | Agent Activity cấp Global: workflow đang hoạt động trên cùng, Tạm dừng cho cả Waiting for User (DEC-53) | UX-MONITOR-001, UX-MONITOR-004 |
 | G9 | PendingActions | Pending Actions (8 việc, lọc theo loại PRD 4.4) + nhóm Hết hiệu lực | 4.4, UX-PENDING-001/002 |
 | G10 | Notifications | Notifications mở từ chuông TopBar: đã đọc/chưa đọc, lọc theo loại; biến thể chưa đọc | 4.4, UX-STATE-001 |
 | S0 | SignIn | Đăng nhập eTroy OIDC; biến thể lỗi OIDC, hết phiên | UX-AUTH-001/002 |
-| S1 | SettingsProfile | Profile; biến thể URL sai | 15.12 |
-| S2 | SettingsProviders | Provider Connections | 15.12 |
+| S1 | SettingsProfile | Profile (ảnh chỉ hiển thị, không có nút đổi ảnh: hợp đồng không có tải ảnh, PID-00036 H11); biến thể URL sai | 15.12 |
+| S2 | SettingsProviders | Provider Connections: cột thao tác (Sửa, Kiểm tra lại, Xóa); biến thể `state`: first-connection (chưa có kết nối, thông báo NFR-PRIV-001 với ô “Tôi đã đọc”), delete (dialog xóa chọn kết nối thay thế) — PID-00036 H5, H8, H9 | 15.12, NFR-PRIV-001 |
 | S3 | SettingsAgents | Agent Models (dòng Analysis Agent A, B và cảnh báo cùng model); biến thể xác nhận đổi embedding | 15.12, ORCH-DELIB-005 |
-| S4 | SettingsPreferences | Preferences; biến thể debug | 15.12 |
+| S4 | SettingsPreferences | Preferences (ba ngưỡng như hợp đồng `VerificationThresholds`, bỏ dòng Conflicting; PID-00036 H15); biến thể debug | 15.12 |
 | P1 | Overview | Overview, 6 việc chờ của project; biến thể no-plan, archived, recovery | 15.2 |
 | P2 | Chat | Project AI Chat + Interactive Agent Prompt + thẻ đề xuất thảo luận; biến thể bỏ qua thảo luận | 15.3, UX-MONITOR-007 |
-| P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5 | UX-TASK-001–005 |
+| P3 | Plan | Task board + chi tiết Task + readiness; biến thể dependency graph (baseline v3) và dependency graph có chu trình khi soạn Draft v5; biến thể task manual-submit: Task Manual editor requirement In Progress, khối “Bạn cần thực hiện” và form gửi kết quả (WF-03) | UX-TASK-001–005, UX-LABEL-002, WF-03 |
 | P4 | PlanCompare | So sánh và duyệt Plan Version | UX-PLAN-001/002 |
 | P5 | TaskReview | Nghiệm thu Task | UX-TASK-006 |
-| P6 | Evidence | Claim + Evidence Inspector | UX-EVID-001, UX-CLAIM-001 |
-| P7 | Artifacts | Research Artifacts, phiên bản, provenance | 5.7, 13 |
-| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; biến thể khung phải build log, lịch sử; proposal citation lỗi, outdated; đang build | 15.7, UX-STATE-001 |
+| P6 | Evidence | References and Evidence: tab Claims (mặc định) với Inspector của claim Conflicting và thao tác duyệt; biến thể `view`: references (reference của project, chip duyệt và indexing, Unavailable), evidence (Evidence Inspector của một evidence: claim đang dùng, artifact và bản thảo dùng evidence), evidence-stale; `dialog`: accept-claim, link-evidence, remove-reference, exclude-evidence — PID-00114 H4–H6 | UX-EVID-001, UX-CLAIM-001, EVID-INSPECTOR-001, LIB-PROJECT-001 |
+| P7 | Artifacts | Research Artifacts: một dòng mỗi artifact (version mới nhất, “Đang dùng” khi version Accepted khác), lọc theo có hay chưa có version Accepted; phiên bản, provenance (đầu vào artifact version có liên kết), dòng “Dùng trong” — PID-00114 H8 | 5.7, 13 |
+| P8 | Manuscript | Editor, Change Proposal, build log, lịch sử revision; thanh công cụ có Lưu (số file chưa lưu), Export, nút ẩn vùng phải. Biến thể `rightPane`: build-log, history, compare (so sánh r16 ↔ r18, khôi phục file hoặc toàn bộ), hidden; `proposal`: citation-error, outdated; đang build (không có “Hủy build”, dòng hoạt động gần nhất); `scene`: init, archived, file-menu, new-file, rename, renamed, delete, save-conflict, draft, reject, regenerate, export; `viewport`: tablet (ba tab Tệp, Soạn thảo, Xem), phone (duyệt proposal) — PID-00115 H2–H21 | 15.7, UX-STATE-001, UX-STATE-004, UX-RESP-001 |
 | P9 | ProjectActivity | Agent Activity cấp project: danh sách workflow + Agent List; biến thể đang hoạt động, đã kết thúc | UX-MONITOR-001, UX-MONITOR-004 |
 | P9 | Workflow | Chi tiết workflow wf-52d + Agent Run + Recovery decision. Mặc định Waiting for User; biến thể state running, interrupted; view danh sách bước, thảo luận đang chạy, hoàn tất, Failed, Cancelled; debug | UX-MONITOR-002–004, UX-MONITOR-006, ORCH-DELIB-002, WF-06 |
 | P10 | History | Activity and History | 14.8 |

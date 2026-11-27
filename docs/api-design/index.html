@@ -26,7 +26,7 @@
 
 <h2 id="principles">Quy ước xuyên suốt</h2>
 <ul>
-<li><strong>Xác thực:</strong> duy nhất qua eTroy OIDC; backend giữ token, client dùng cookie phiên <code>sires_session</code> và header <code>X-CSRF-Token</code> (INT-OIDC-001–004).</li>
+<li><strong>Xác thực:</strong> duy nhất qua eTroy OIDC; backend giữ token, client dùng cookie phiên <code>sires_session</code> và header <code>X-CSRF-Token</code>, riêng <code>POST /auth/logout</code> gửi token ở trường <code>csrfToken</code> của form (INT-OIDC-001–004).</li>
 <li><strong>Ownership:</strong> tài nguyên cấp project nằm dưới <code>/projects/{projectId}</code>; tài nguyên của tài khoản khác trả <code>404</code> (OWN-01–03, NFR-ISOL).</li>
 <li><strong>Human-in-the-loop:</strong> APR-01–APR-10 là endpoint chỉ phiên Researcher gọi được, đánh dấu <code>x-apr</code>; agent chỉ tạo bản đề xuất (REL-04).</li>
 <li><strong>Chuyển trạng thái:</strong> endpoint hành động; chuyển ngoài bảng 18.2 trả <code>409 invalid_transition</code>.</li>
@@ -43,7 +43,7 @@
 <tr><td><a href="../overview/sections/07-workspace-and-project.html">7. Workspace and Project</a></td><td><a href="paths/07-workspace-and-project.yaml"><code>paths/07-…yaml</code></a></td><td>Workspace, Projects, Conversations</td><td>22</td></tr>
 <tr><td><a href="../overview/sections/08-ai-assistant-and-multi-agent-orchestration.html">8. AI Assistant and Multi-Agent Orchestration</a></td><td><a href="paths/08-ai-assistant-and-multi-agent-orchestration.yaml"><code>paths/08-…yaml</code></a></td><td>Provider Connections, Agent Models, Prompts, Deliberation</td><td>15</td></tr>
 <tr><td><a href="../overview/sections/09-research-plan-and-task-management.html">9. Research Plan and Task Management</a></td><td><a href="paths/09-research-plan-and-task-management.yaml"><code>paths/09-…yaml</code></a></td><td>Plan, Tasks</td><td>26</td></tr>
-<tr><td><a href="../overview/sections/10-academic-discovery-and-trusted-library.html">10. Academic Discovery and Trusted Library</a></td><td><a href="paths/10-academic-discovery-and-trusted-library.yaml"><code>paths/10-…yaml</code></a></td><td>Discovery, Trusted Library</td><td>23</td></tr>
+<tr><td><a href="../overview/sections/10-academic-discovery-and-trusted-library.html">10. Academic Discovery and Trusted Library</a></td><td><a href="paths/10-academic-discovery-and-trusted-library.yaml"><code>paths/10-…yaml</code></a></td><td>Discovery, Trusted Library</td><td>25</td></tr>
 <tr><td><a href="../overview/sections/11-evidence-rag-and-research-synthesis.html">11. Evidence, RAG and Research Synthesis</a></td><td><a href="paths/11-evidence-rag-and-research-synthesis.yaml"><code>paths/11-…yaml</code></a></td><td>Evidence &amp; Claims</td><td>17</td></tr>
 <tr><td><a href="../overview/sections/12-latex-manuscript-workspace.html">12. LaTeX Manuscript Workspace</a></td><td><a href="paths/12-latex-manuscript-workspace.yaml"><code>paths/12-…yaml</code></a></td><td>Manuscript</td><td>22</td></tr>
 <tr><td><a href="../overview/sections/13-diagram-agent.html">13. Diagram Agent</a></td><td><a href="paths/13-diagram-agent.yaml"><code>paths/13-…yaml</code></a></td><td>Diagrams</td><td>4</td></tr>
@@ -52,7 +52,7 @@
 </tbody>
 </table>
 </div>
-<p>Tổng: 134 path, 165 operation. Phiên thảo luận (PRD 8.7, 14.9 — DEC-47/48): <code>GET /projects/{projectId}/deliberations</code>, <code>GET /projects/{projectId}/deliberations/{deliberationId}</code>; quyết định của Researcher đi qua prompt hiện có (Assumption). Schema dùng chung ở <code>components/schemas/</code>: <a href="components/schemas/common.yaml">common</a>, <a href="components/schemas/account.yaml">account</a>, <a href="components/schemas/project.yaml">project</a>, <a href="components/schemas/plan.yaml">plan</a>, <a href="components/schemas/orchestration.yaml">orchestration</a>, <a href="components/schemas/library.yaml">library</a>, <a href="components/schemas/evidence.yaml">evidence</a>, <a href="components/schemas/artifact.yaml">artifact</a>, <a href="components/schemas/manuscript.yaml">manuscript</a> — nguồn: <a href="../overview/sections/05-core-domain-model.html">mục 5</a> và <a href="../overview/sections/18-data-and-state-specifications.html">mục 18</a>.</p>
+<p>Tổng: 135 path, 167 operation. Phiên thảo luận (PRD 8.7, 14.9 — DEC-47/48): <code>GET /projects/{projectId}/deliberations</code>, <code>GET /projects/{projectId}/deliberations/{deliberationId}</code>; quyết định của Researcher đi qua prompt hiện có (Assumption). Schema dùng chung ở <code>components/schemas/</code>: <a href="components/schemas/common.yaml">common</a>, <a href="components/schemas/account.yaml">account</a>, <a href="components/schemas/project.yaml">project</a>, <a href="components/schemas/plan.yaml">plan</a>, <a href="components/schemas/orchestration.yaml">orchestration</a>, <a href="components/schemas/library.yaml">library</a>, <a href="components/schemas/evidence.yaml">evidence</a>, <a href="components/schemas/artifact.yaml">artifact</a>, <a href="components/schemas/manuscript.yaml">manuscript</a> — nguồn: <a href="../overview/sections/05-core-domain-model.html">mục 5</a> và <a href="../overview/sections/18-data-and-state-specifications.html">mục 18</a>.</p>
 
 <h2 id="approvals">Endpoint phê duyệt (APR)</h2>
 <div class="table-wrap">

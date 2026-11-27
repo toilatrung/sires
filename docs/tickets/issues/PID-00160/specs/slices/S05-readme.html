@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160 slice S05: README.">
+<title>PID-00160 — S05 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>S05 — README: chạy mock, trỏ gateway, staging, khác biệt với eTroy</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>— (tài liệu)</td></tr>
+<tr><th scope="row">Output spec</th><td>O13</td></tr>
+<tr><th scope="row">Bước spec</th><td>B6</td></tr>
+<tr><th scope="row">Edge case</th><td>EC14, EC15</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01–S04; <a href="../../../PID-00159/index.html">PID-00159</a> đã merge (cùng hai README)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>infra/local/oidc-mock/README.md</code> (tạo mới) đủ danh mục ở <a href="../index.html#s-4-5">spec 4.5</a>. Bảng “Gateway trỏ issuer” ghi tên biến theo H7 (<code>OIDC_ISSUER</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code>, <code>OIDC_REDIRECT_URI</code>, <code>OIDC_POST_LOGOUT_REDIRECT_URI</code>) với giá trị cục bộ: <code>http://localhost:9400</code>, <code>sires-gateway-local</code>, secret cục bộ, <code>http://localhost:5173/api/v1/auth/callback</code>, <code>http://localhost:5173/sign-in</code> (H8); ghi giới hạn issuer <code>localhost</code> khi gateway chạy trong container. Mục staging chỉ ghi chỗ giữ chỗ (tên miền do PO cấp, PC-06 B3), không ghi tên miền, secret hay mật khẩu thật.</li>
+<li>Thêm dòng <code>local/oidc-mock/</code> vào bảng thư mục của <code>infra/README.md</code> (có sẵn) và sửa dòng <code>local/</code> (thêm OIDC mock).</li>
+<li>Trong <code>scripts/development/README.md</code> (có sẵn), phần môi trường cục bộ: thêm OIDC mock ở <code>http://localhost:9400</code>, <code>pnpm local:up --build</code> sau khi đổi mã của mock, liên kết tới README của mock.</li>
+<li>Chạy <code>node scripts/docs/add-license.mjs</code> cho file mới.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Đọc README theo danh mục spec 4.5: mục đích và giới hạn; chạy; endpoint (discovery và tĩnh); client; tài khoản; gateway trỏ issuer (H7); staging; khác biệt với eTroy; giả lập không khả dụng (EC15); đổi cổng (EC14) — đủ cả mười mục</li>
+<li>Thao tác tay (EC15): <code>docker compose -f infra/local/compose.yaml stop oidc-mock</code>, discovery không trả lời; <code>start</code>, trả lời lại</li>
+<li>Tìm trong diff: không có tên miền thật, secret hay mật khẩu staging, key provider, host của cổng proxy</li>
+<li><code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Dev khác đọc README là chạy được mock và trỏ gateway vào nó, biết mock khác eTroy ở đâu và không dùng nó ở production.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00160</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

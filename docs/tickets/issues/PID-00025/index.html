@@ -38,7 +38,7 @@
 <tr><th scope="row">Đợt song song</th><td>Đ1</td></tr>
 <tr><th scope="row">Phụ thuộc PID</th><td>Không</td></tr>
 <tr><th scope="row">Căn cứ</th><td><a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html">SPK-03</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-01">ASM-01</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-14">ASM-14</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-19">DEC-19</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a></td></tr>
-<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill; 22/11/2026 · PO quyết định DEC-60 (H3)</td></tr>
+<tr><th scope="row">Làm rõ</th><td>06/11/2026 · spec-clarify-skill; 22/11/2026 · PO quyết định DEC-60 (H3); 27/11/2026 · sửa câu chữ AC04 theo H3</td></tr>
 <tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
 </tbody></table></div>
 
@@ -69,7 +69,7 @@
 <ul><li><strong>PID-00025-AC01</strong> Given bộ truy vấn mẫu, When gọi OpenAlex, Then báo cáo có độ phủ, tỷ lệ đủ dữ liệu theo INT-SCHOLAR-003 và giới hạn tốc độ đo được.</li>
 <li><strong>PID-00025-AC02</strong> Given tài liệu công khai của các dịch vụ trung gian, When so sánh, Then báo cáo có bảng năng lực, giá, giới hạn, điều khoản, kèm nguồn và phần chưa rõ.</li>
 <li><strong>PID-00025-AC03</strong> Given file BibTeX, RIS thật, When thử các thư viện, Then báo cáo đề xuất một thư viện kèm giấy phép và lỗi gặp phải.</li>
-<li><strong>PID-00025-AC04</strong> Given báo cáo, When đọc, Then ghi rõ ASM-01, ASM-14 chưa kết luận vì chưa gọi thử dịch vụ trung gian.</li></ul>
+<li><strong>PID-00025-AC04</strong> Given báo cáo, When đọc, Then ghi rõ báo cáo không kết luận ASM-01, ASM-14, vì theo H3 kết luận do PO ghi ở PRD 20.2.</li></ul>
 
 <h2 id="s-3">3. Phụ thuộc</h2>
 <ul><li>PID phải xong trước: không có; bắt đầu được ngay.</li>
@@ -89,7 +89,8 @@
 <p>Căn cứ: đánh giá thực tế của PO 19–21/11/2026 trên số đo SPK-03 của Dev (<code>agent/execution/PID-00025/report.md</code> trên nhánh <code>library/pid-00025-sources-parsers</code>, PR #38 nháp); PO ghi quyết định thành <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-60">DEC-60</a>, sửa DEC-19.</p>
 <ul><li>H3: Sau số đo 19–21/11/2026, SPK-03 còn đo Semantic Scholar không, nguồn discovery nào là mặc định, Google Scholar nối qua đâu? → Đ: Bỏ hẳn Semantic Scholar khỏi phạm vi của ticket (AC01, P1, EC02, bước B2, spec mục 4.4 và 4.7, bảng AC → test): API thử không ổn định, trả 429 ngay request đầu ở mọi lượt, kể cả khi có key; Dev không đo thêm mẫu Semantic Scholar. OpenAlex là nguồn discovery mặc định. Google Scholar kết nối qua SerpApi (dịch vụ trung gian theo hợp đồng của DEC-19), phía trước là module connector Google Scholar của SIRes; SerpApi đã được thử thật ở Lần 6 của Dev (21/11/2026: 7/7 search thành công; đọc được hồ sơ Google Scholar qua URL, 40 công bố trên 2 trang). Kết luận ASM-01 và ASM-14 do PO ghi ở PRD 20.2, không do báo cáo của Dev. PO quyết — Trịnh Quang Trung, 22/11/2026. · Ảnh hưởng: PID-00025-AC01, P1, EC02 (bỏ), S01, spec mục 4.4, 4.7, B2, bảng mục 6, brief; <a href="../PID-00050/index.html">PID-00050</a> (tên, phạm vi); trạng thái ticket giữ nguyên.</li></ul>
 <h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
-<ul><li>Cổng PH-01 cần báo cáo SPK-03; theo H2 báo cáo này không kết luận được ASM-01. PO chọn nhà cung cấp trên tài liệu, hoặc cấp key thử sau. → Đã xử lý theo H3 (22/11/2026): PO chọn SerpApi (DEC-60); kết luận ASM-01, ASM-14 do PO ghi ở PRD 20.2.</li></ul>
+<ul><li>Cổng PH-01 cần báo cáo SPK-03; theo H2 báo cáo này không kết luận được ASM-01. PO chọn nhà cung cấp trên tài liệu, hoặc cấp key thử sau. → Đã xử lý theo H3 (22/11/2026): PO chọn SerpApi (DEC-60); kết luận ASM-01, ASM-14 do PO ghi ở PRD 20.2.</li>
+<li><strong>Câu chữ PID-00025-AC04 — đã sửa 27/11/2026:</strong> AC04 (mục 2, spec mục 6, <code>specs/acceptance.html</code>) còn ghi lý do “vì chưa gọi thử dịch vụ trung gian”, không khớp H3: SerpApi đã được thử thật ở Lần 6 của Dev, và kết luận ASM-01, ASM-14 do PO ghi ở PRD 20.2, không do báo cáo của Dev. Nguồn: <code>agent/execution/PID-00025/report.md</code> mục 6 đề xuất 3 và <code>self-qc.md</code> G7, trên nhánh <code>library/pid-00025-sources-parsers</code> (PR #38, đầu nhánh <code>035608a</code>). Chốt theo đề xuất (PO ủy quyền 26/11/2026): AC04 thành “Given báo cáo, When đọc, Then ghi rõ báo cáo không kết luận ASM-01, ASM-14, vì theo H3 kết luận do PO ghi ở PRD 20.2.” Chỉ sửa lý do cho khớp H3; không đổi phạm vi, slice S03, đầu ra hay bảng AC → test.</li></ul>
 <h3 id="con-mo">Còn mở</h3>
 <ul><li>Không có.</li></ul>
 

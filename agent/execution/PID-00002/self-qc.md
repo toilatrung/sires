@@ -1,9 +1,9 @@
 # PID-00002 — Self-QC của Dev
 
-**Kết luận:** Đạt (Lần 4, 24/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G6 đã sửa ở PR #86; QC-G5 PO chốt (PC-04 A2), đang sửa; QC-G7 cập nhật ở lần này
+**Kết luận:** Đạt (Lần 5, 25/11/2026) — 0 CRITICAL, 0 HIGH, 0 MEDIUM; QC-G8, QC-G9 sửa theo PC-05 P25, P36 ở nhánh `platform/consumer-stop-start`
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html) · **Báo cáo:** [report.md](report.md) · **Triển khai:** [implement.md](implement.md)
-- **Cập nhật:** 25/11/2026 (Lần 4: chuyển kết quả rà 24/11/2026 theo PC-04 A7)
+- **Cập nhật:** 25/11/2026 (Lần 5: `stop()` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36; bổ sung test sau QC sires-w3)
 
 Chỉ ghi kết quả thật của lệnh đã chạy. Không chạy được thì ghi “không chạy — lý do”. Test lỗi là lỗi, không ghi “đạt”. Lần chạy sau cập nhật kết luận và thêm mục `Lần N — dd/mm/yyyy` ở cuối file, không ghi đè.
 
@@ -192,6 +192,78 @@ Bảng mục 2, 3 của Lần 1–3 giữ nguyên: AC01…AC06 và các AC requi
 | QC-G7 | partial | LOW | Đầu `report.md`, `self-qc.md` chưa cập nhật sau Lần 3 và sau merge | `report.md:3`, `:6`; `self-qc.md:3`, `:6`, `:153` | Sửa ở lần này: kết luận, ngày cập nhật đầu `self-qc.md` và mục này; `report.md` dòng PR (#36, #70, #86), ngày cập nhật. Trạng thái giữ `Xong — chờ QC` tới khi PO QC độc lập và nghiệm thu |
 
 Không có G mới, không có CRITICAL, HIGH, MEDIUM. Các điểm của Lần 1–3 còn chờ PO giữ nguyên (`request_hash` slice S03, tên lease TS/Python, `writeCommand` chưa đặt `replyTo`/`correlation_id`, `uuid7()` Python của PID-00005).
+
+## Lần 5 — 25/11/2026
+
+Sửa theo PC-05 P25, P36 (`docs/overview/phieu-chot-cuoi-ph01.html`, phương án đề xuất 1), mục self-QC theo PC-05 P37. Nhánh `platform/consumer-stop-start` tạo từ `origin/main` `c9e745b`.
+
+Người chạy: Dev T1xNTH. Môi trường: Linux (Ubuntu, kernel 6.8), Node 22.23.3, pnpm 10.34.9, Docker (Testcontainers PostgreSQL 16 + pgvector, RabbitMQ).
+
+Thay đổi:
+
+- `libs/ts/platform/src/inbox/consumer.ts`:
+  - Mỗi lần kết nối có một `AbortController` riêng (`:195–203`). Signal của nó đi vào `connect()` của amqplib (`:211`); amqplib chuyển tùy chọn này sang `net/tls.connect`.
+  - `stop()` gọi `abort()` khi chưa có link hiện hành (`:176`). Lệnh này hủy socket của lần đang dở (P25), kể cả khi TCP đã nối nhưng broker không trả lời handshake.
+  - Link đã consume vẫn đóng như trước, sau khi các message đang xử lý xong.
+  - `stop()` giữ promise `stopping` (`:177–180`). `start()` chờ `stopping` xong rồi mới mở lại; nếu có `stop()` gọi sau `start()` đó thì `start()` trả về, lệnh cuối thắng (`:148–150`, P36).
+- `libs/ts/platform/README.md:46`: thay câu "gọi khi lần mở đầu còn chạy thì chờ lần đó xong, tối đa 10 s" bằng hành vi mới.
+- Test mới, viết đỏ trước, đỏ lại khi trả `consumer.ts` về `origin/main`:
+  - `inbox.spec.ts:636` (P25): TCP server câm thật.
+  - `consumer-lifecycle.spec.ts:87–163` (P36): amqplib giả, test quyết định khi nào từng lần kết nối xong.
+
+### 1. Lệnh
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm install --frozen-lockfile --prefer-offline` | Đạt; cảnh báo bỏ qua build script `cpu-features`, `protobufjs`, `ssh2` |
+| `npx vitest run src/inbox/consumer-lifecycle.spec.ts` trên `consumer.ts` cũ | Đỏ 1/3: "stop() khi lần mở đầu còn dở, start() lại…" (`isConsuming` false, một kết nối vẫn consume nhưng consumer không giữ) |
+| `npx vitest run src/inbox/inbox.spec.ts -t "P25"` trên `consumer.ts` cũ | Đỏ: `expected 9954 to be less than 1000` (`stop()` chờ hết `CONNECT_TIMEOUT_MS`) |
+| Hai lệnh trên sau khi sửa | Đạt 3/3 và 2/2 (khối "broker không tới được"); P25 dừng trong < 1 s, socket phía server đóng |
+| Trả `consumer.ts` về `origin/main`, chạy `-t "P25\|P36"` | 2 đỏ (2 test trên), 2 xanh (hai test P36 còn lại là test giữ hành vi); đã trả lại bản sửa |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/platform --skip-nx-cache` | Đạt cả bốn: 22 file, 178/178 (174 cũ + 4 mới) |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | `KẾT QUẢ ĐỦ (0 cảnh báo)` |
+| `node scripts/docs/add-license.mjs --check` | `0 file chưa có thông báo giấy phép.` |
+| `pnpm check:tracks --base origin/main` | `tracks touched: platform, repo` (`repo` do `agent/execution/`) |
+
+### 2. AC và edge case
+
+AC của Lần 1–4 giữ nguyên, xác nhận lại bằng 178/178 test của `@sires/platform`. Edge case mới:
+
+- `stop()` khi broker nhận TCP mà không trả lời: trả về < 1 s, `start()` đang chờ cũng trả về, không log, không còn timer, không thử lại (`inbox.spec.ts:636`).
+- `stop()` không await khi lần mở đầu còn dở, rồi `start()`:
+  - còn đúng một kết nối consume và đó là link của consumer;
+  - mất link thì kết nối lại (`consumer-lifecycle.spec.ts:88`).
+- `stop()` không await khi đang consume, rồi `start()`: kết nối cũ đóng, kết nối mới consume (`:120`).
+- `start()`, `stop()`, `start()`, `stop()` không await: không còn kết nối nào (`:151`).
+
+### 5. Tự đối chiếu (spec-converge-skill, chế độ Dev tự QC)
+
+| G | Loại | Mức | Mô tả | Bằng chứng (file:dòng, lệnh) | Sau sửa |
+| --- | --- | --- | --- | --- | --- |
+| QC-G8 | partial | LOW | `stop()` chờ lần kết nối đang dở tới 10 s (`CONNECT_TIMEOUT_MS`) khi broker nhận TCP mà không trả lời | `origin/main` `consumer.ts:161` (`await this.opening`); test P25 đỏ 9954 ms | PC-05 P25: `stop()` hủy socket của lần đang dở (`consumer.ts:176`, `:211`); test P25 xanh |
+| QC-G9 | partial | LOW | `stop()` không await rồi `start()` ngay có thể làm consumer kẹt: lần mở cũ thấy `running` true lại, ghi đè link, `stop()` đóng link đó, không kết nối lại | `origin/main` `consumer.ts:200`, `:213`, `:225`; test P36 đỏ | PC-05 P36: `start()` chờ `stop()` đang chạy (`consumer.ts:148–150`, `:177–180`); test P36 xanh |
+
+Không có G mới, không có CRITICAL, HIGH, MEDIUM. `start()` trên mạng chết vẫn chờ tối đa 10 s rồi mới trả về (README ghi rõ; P25 chỉ chốt phần `stop()`). Các điểm còn chờ PO của Lần 1–4 giữ nguyên.
+
+#### Bổ sung sau QC của sires-w3 (25/11/2026)
+
+QC nhánh này ĐẠT, có 1 LOW (G1): không test nào giữ dòng `consumer.ts:149` (`while (this.stopping) await this.stopping;`). Bỏ dòng này đi thì 4 test mới vẫn xanh. Ở `consumer-lifecycle.spec.ts:94–95`, biến `opened` được gán nhưng không có expect nào dùng.
+
+Đã sửa trong `consumer-lifecycle.spec.ts`:
+
+- **FakeChannel:** thêm `held` để `cancel()`, và vì thế cả `stop()`, còn chờ tới khi test cho chạy tiếp.
+- **Test "stop() khi đang consume, start() lại không await":** khi `stop()` còn chờ, assert `broker.attempts` dài 1, tức là `start()` chưa mở lần kết nối mới. Cho `stop()` chạy tiếp thì có lần thứ 2.
+- **Test "stop() khi lần mở đầu còn dở…":** bỏ biến `opened` và nhánh `if`. Thay bằng `expect(broker.attempts).toHaveLength(2)`: lần đầu bị `stop()` hủy, rồi lần thứ hai mở.
+
+| Lệnh | Kết quả |
+| --- | --- |
+| Bỏ dòng `consumer.ts:149`, chạy `npx vitest run src/inbox/consumer-lifecycle.spec.ts` | Đỏ 1/3: `expected [ …, … ] to have a length of 1 but got 2`; đã trả lại dòng |
+| Trả `consumer.ts` về `origin/main`, chạy lại file trên | Đỏ 2/3 (`isConsuming` false; độ dài 2), không treo; đã trả lại bản sửa |
+| `pnpm nx run-many -t lint typecheck build test -p @sires/platform --skip-nx-cache` | Đạt cả bốn: 22 file, 178/178 |
+
+| G | Loại | Mức | Mô tả | Bằng chứng | Sau sửa |
+| --- | --- | --- | --- | --- | --- |
+| QC-w3-G1 | test | LOW | Dòng `consumer.ts:149` không có test giữ; biến `opened` không được assert | Bỏ dòng `:149` thì 4 test vẫn xanh (QC sires-w3) | Đã thêm assert như trên; bỏ `:149` thì test đỏ |
 
 ---
 

@@ -32,7 +32,7 @@ describe('tenancy — withAccountTransaction trên PostgreSQL thật (RLS)', () 
   afterAll(async () => {
     await pool?.end();
     await database?.stop();
-  }, 60_000);
+  });
 
   it('vai trò _app không có BYPASSRLS và không sở hữu bảng', async () => {
     const [role] = await database.admin<{ rolbypassrls: boolean; owner: string }>(

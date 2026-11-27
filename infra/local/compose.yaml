@@ -16,7 +16,8 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sires"]
+      # Qua TCP: server tạm của entrypoint lúc chạy init chỉ nghe socket, nên healthy chỉ khi server thật đã lên.
+      test: ["CMD-SHELL", "pg_isready -U sires -h 127.0.0.1"]
       interval: 5s
       retries: 10
 

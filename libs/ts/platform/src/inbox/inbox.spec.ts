@@ -82,7 +82,7 @@ function taskEvent(taskId: string, version: number, toState: string, id = uuidv7
   });
 }
 
-describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', { timeout: 30_000 }, () => {
+describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ thật (PID-00002 S02)', () => {
   let stack: MessagingTestStack;
   let connection: ChannelModel;
   let publisher: Channel;
@@ -173,7 +173,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     await Promise.all(consumers.map((consumer) => consumer.stop()));
     await connection?.close().catch(() => undefined);
     await stack?.stop();
-  }, 60_000);
+  });
 
   const reset = () => {
     outcomes.length = 0;
@@ -406,7 +406,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
-  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', { timeout: 60_000 }, async () => {
+  it('lần kết nối đầu lỗi: start() không ném, thử lại có backoff rồi consume khi broker lên (QC PID-00002 G5)', async () => {
     // A TCP proxy to the broker that is not listening yet: the first attempt is refused, as when the broker is down.
     const broker = new URL(stack.rabbit.amqpUrl);
     const sockets = new Set<Socket>();
@@ -471,7 +471,7 @@ describe('consumer có inbox và helper replica trên PostgreSQL và RabbitMQ th
     }
   });
 
-  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', { timeout: 60_000 }, async () => {
+  it('kết nối lại sau khi broker đóng kết nối (G1, P3)', async () => {
     const results: { outcome: ConsumeOutcome; id: string | undefined }[] = [];
     const logs: LogEntry[] = [];
     const closeWhileHandling = new Set<string>();
@@ -631,5 +631,51 @@ describe('start() khi broker không tới được (QC PID-00002 G5)', () => {
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(logs).toHaveLength(1);
     expect(consumer.isConsuming).toBe(false);
+  });
+
+  it('stop() giữa lần kết nối đang dở (broker nhận TCP mà không trả lời) trả về ngay, đóng socket (PC-05 P25)', async () => {
+    // A mute broker: accepts the TCP connection and never answers the AMQP handshake.
+    const sockets: Socket[] = [];
+    const mute = createServer((socket) => {
+      socket.on('error', () => undefined);
+      // Reads and drops the handshake, so that the client closing the socket is seen.
+      socket.resume();
+      sockets.push(socket);
+    });
+    await new Promise<void>((resolve) => mute.listen(0, '127.0.0.1', resolve));
+    const { port } = mute.address() as { port: number };
+    const logs: LogEntry[] = [];
+    const consumer = new EventConsumer({
+      service: 'mute-broker',
+      db: {} as never,
+      amqpUrl: `amqp://guest:guest@127.0.0.1:${port}`,
+      handlers: [{ routingKeys: ['project.lifecycle_changed.*'], handle: async () => undefined }],
+      reconnectDelayMs: 200,
+      reconnectMaxDelayMs: 200,
+      logger: recordingLogger(logs),
+    });
+    try {
+      const starting = consumer.start();
+      await waitUntil(() => sockets.length === 1, 'kết nối TCP tới broker câm', 5_000);
+      const closed = new Promise<void>((resolve) => sockets[0]!.once('close', () => resolve()));
+
+      const before = Date.now();
+      await consumer.stop();
+      // Well under CONNECT_TIMEOUT_MS (10 s): the attempt was cancelled, not waited for.
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await expect(starting).resolves.toBeUndefined();
+      expect(Date.now() - before).toBeLessThan(1_000);
+      await closed;
+      expect(consumer.isConsuming).toBe(false);
+      expect((consumer as unknown as { reconnectTimer?: unknown }).reconnectTimer).toBeUndefined();
+      // A cancelled attempt is not a failure to report, and no new attempt follows stop().
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      expect(logs).toEqual([]);
+      expect(sockets).toHaveLength(1);
+    } finally {
+      await consumer.stop();
+      for (const socket of sockets) socket.destroy();
+      await new Promise((resolve) => mute.close(resolve));
+    }
   });
 });

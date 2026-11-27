@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00115 — Sketch: các trạng thái của màn Manuscript</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header small { color:var(--mute); }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:24px; padding:24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; min-width:0; }
+  .state.wide { grid-column: 1 / -1; }
+  .state h2 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:10px 12px; color:var(--mute); }
+  .ph + .ph { margin-top:8px; }
+  .ph b { color:var(--ink); }
+  .dash { border-style:dashed; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:4px 0; }
+  .row:last-child { border-bottom:0; }
+  .cols { display:flex; flex-wrap:wrap; gap:8px; }
+  .cols > .ph { flex:1 1 120px; margin-top:0; min-width:0; }
+  .cols > .ph.main { flex:3 1 220px; }
+  .chip { border:1px solid var(--line); border-radius:4px; padding:0 6px; font-size:12px; white-space:nowrap; }
+  .btn { border:1px solid var(--ink); border-radius:6px; padding:1px 8px; font-size:13px; white-space:nowrap; display:inline-block; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .btn.off { border-color:var(--line); color:var(--mute); }
+  .mono { font-family: ui-monospace, monospace; font-size:13px; }
+  .add { background:#eaf4fe; display:block; }
+  .del { background:#ffe4e6; display:block; }
+  .bad { border-bottom:2px dashed #be123c; color:#be123c; }
+  .warn { border-bottom:2px dashed #b45309; color:#92400e; }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+  small { color:var(--mute); }
+</style>
+</head>
+<body>
+<header>
+  <strong>PID-00115 — Manuscript</strong> · sketch bố cục và trạng thái chưa vẽ ở thiết kế<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/Manuscript.html và năm biến thể · route /projects/{projectId}/manuscript/(đường dẫn file), ?proposal={proposalId} · tác nhân Researcher · nguồn: spec mục 4.5, H2–H21 ở trang ticket mục 5</small>
+</header>
+<main>
+  <section class="state wide"><h2>1 · Mặc định ≥ 1280 px: thanh công cụ, ba vùng, proposal trong editor</h2><p class="why">H2, H4, H6, H11; UX-MS-001; Manuscript.html</p>
+    <div class="ph"><div class="row"><span>‹ Project · <span class="chip">Build OK · 09:41</span> revision 18 · đã lưu 09:41</span><span>[PDF | Build log | Lịch sử] [Ẩn vùng phải] <span class="btn">Lưu (1)</span> <span class="btn">Export</span> <span class="btn primary">Build PDF</span></span></div></div>
+    <div class="cols" style="margin-top:8px">
+      <div class="ph"><b>Tệp</b><br><span class="mono">main.tex<br>references.bib<br>sections/<br>&nbsp;&nbsp;intro.tex · đề xuất<br>&nbsp;&nbsp;method.tex<br>figures/</span><br><b>Dàn ý</b><br>1 Introduction · 2 Related Work · 3 Method</div>
+      <div class="ph main"><span class="mono">sections/intro.tex ● | main.tex</span><br><span class="mono">5 support literature review \citep{lewis2020rag, gao2023survey}.</span>
+        <div class="ph dash"><b>Change Proposal · Writing Agent · <span class="chip">Proposed</span></b> — T-2.1 · 2 claim · 3 evidence · 2 file<br><span class="mono"><span class="del">− Prior work shows retrieval always helps.</span><span class="add">+ Retrieval restricted to vetted sources improves factuality \citep{lewis2020rag, asai2024selfrag}.</span></span><span class="chip">Claim Supported</span> <span class="chip">Citation: 2/2 phân giải</span><br>▸ File khác trong proposal: sections/method.tex<br><span class="btn">Chấp nhận cả proposal</span> <span class="btn">Từ chối</span> Xem evidence</div></div>
+      <div class="ph"><b>Xem trước PDF · revision 18</b> — Trang 1 / 6<br>[trang PDF]</div>
+    </div>
+    <div class="ph"><small>Active task: T-2.3 · So sánh phương pháp đo &nbsp;·&nbsp; pdfLaTeX · natbib · thay đổi chưa lưu được giữ cục bộ</small></div>
+  </section>
+  <section class="state"><h2>2 · Khởi tạo (chưa có Manuscript)</h2><p class="why">H5; EC01, EC02; MS-INIT-001</p><div class="ph"><b>Project chưa có bản thảo</b><br>○ Default — tạo main.tex, bibliography/references.bib, figures/, sections/ (5 file); build được ngay<br>○ Blank — chỉ main.tex rỗng, cấu hình build trỏ tới nó<br><small>Chế độ không đổi được sau khi tạo.</small><br><span class="btn primary">Khởi tạo bản thảo</span> (vô hiệu tới khi chọn)</div></section>
+  <section class="state"><h2>3 · Đang tải, lỗi tại vùng, không tìm thấy</h2><p class="why">EC04, EC05</p><div class="ph">Cây file: khối skeleton theo dòng · “Đang tải tệp của bản thảo” (role=status)</div><div class="ph">Vùng PDF: Không tải được PDF · chưa có gì thay đổi · Thử lại · Mã lỗi: service_unavailable</div><div class="ph">Không tìm thấy (project không thuộc tài khoản)</div></section>
+  <section class="state"><h2>4 · Project Archived</h2><p class="why">H20; EC03</p><div class="ph" style="border-width:1.5px">Project đã lưu trữ — bản thảo chỉ đọc. Mở lại project ở Research Projects để sửa.</div><div class="ph">Không có Lưu, Build PDF, thao tác file, Chấp nhận/Từ chối; còn PDF, Build log, Lịch sử, Export</div></section>
+  <section class="state"><h2>5 · Thao tác file</h2><p class="why">H9; EC08–EC15, EC17; MS-EDITOR-001-AC01, AC03</p><div class="ph">Menu mục: Đổi tên / di chuyển · Xóa · (Tạo file, Tạo thư mục, Tải lên trên đầu cây)</div><div class="ph"><b>Đổi tên sections/method.tex</b><br>Tên mới: <span class="mono">sections/methods.tex</span><br>Đang được tham chiếu ở: <span class="mono">main.tex:12</span> — sau khi đổi, build sẽ báo thiếu file nếu chưa sửa.<br><span class="btn">Giữ tên cũ</span> <span class="btn">Đổi tên</span></div><div class="ph">Sau khi đổi: banner “Còn trỏ tới sections/method.tex: main.tex:12 (mở)”</div><div class="ph">Tạo file: <span class="mono">../x.tex</span> — Đường dẫn không được ra ngoài bản thảo. Chưa lưu.</div><div class="ph">references.bib: chỉ đọc · System sinh từ Trusted Reference — không sửa tay</div></section>
+  <section class="state"><h2>6 · Lưu và xung đột</h2><p class="why">H6, H7; EC16–EC20</p><div class="ph">Tab: <span class="mono">main.tex ●</span> (chưa lưu) · <span class="btn">Lưu (2)</span> Ctrl/Cmd+S → một revision</div><div class="ph"><b>sections/intro.tex đã đổi ở nơi khác</b> (revision 19 · Researcher · 10:02). Thay đổi của bạn vẫn còn.<br><span class="btn">Xem khác biệt</span> <span class="btn">Giữ bản của tôi</span> <span class="btn">Dùng bản trên server</span></div><div class="ph">Lưu không thành công · nội dung vẫn còn · Lưu lại · Mã lỗi: internal_error</div></section>
+  <section class="state"><h2>7 · Khôi phục nháp</h2><p class="why">H8; UX-STATE-004-AC01; EC21, EC22</p><div class="ph dash">Có thay đổi chưa lưu từ 09:58 cho main.tex. <span class="btn">Khôi phục</span> <span class="btn">Bỏ nháp</span></div><div class="ph dash">Có thay đổi chưa lưu từ 09:58; file đã đổi trên server lúc 10:02 (revision 19). Khôi phục rồi lưu sẽ hỏi cách xử lý xung đột.</div></section>
+  <section class="state"><h2>8 · Citation trong editor</h2><p class="why">H10; UX-MS-001-AC01, UX-MS-005-AC01, MS-BIB-001-AC03; EC26–EC29</p><div class="ph"><span class="mono">\cite{smi▏</span><div class="ph"><span class="mono">smith2020</span> · Smith, 2020 · Retrieval for … — thêm vào bibliography khi chọn<br><span class="mono">smith2019</span> · Smith, 2019 · …</div></div><div class="ph"><span class="mono">\citep{<span class="bad">gao2023survy</span>}</span> → Citation không phân giải: gao2023survy · Gợi ý: <span class="mono">gao2023survey</span></div><div class="ph"><span class="mono">\citep{<span class="warn">doe2021</span>}</span> → Reference đã bị thu hồi (Revoked) · thay citation hoặc duyệt lại reference</div><div class="ph">Rê chuột hoặc focus <span class="mono">lewis2020rag</span>: Lewis et al., 2020 · Retrieval-Augmented Generation … · Trusted · phân giải được</div></section>
+  <section class="state"><h2>9 · Proposal nhiều file, citation lỗi, chấp nhận vô hiệu</h2><p class="why">H11, H12; UX-MS-002-AC01; EC23, EC30, EC35</p><div class="ph dash"><b>Change Proposal · Writing Agent · <span class="chip">Proposed</span></b> — T-2.1 · 2 file<br><span class="mono"><span class="add">+ … \citep{<span class="bad">asai2024selfrg</span>}</span></span><span class="chip">Citation lỗi: asai2024selfrg</span><br>▾ sections/method.tex: <span class="mono"><span class="add">+ \subsection{Retrieval scope}</span></span><br><span class="btn off">Chấp nhận — citation lỗi</span> <span class="btn">Từ chối</span></div><div class="ph dash">Lưu thay đổi ở file này sẽ làm proposal thành Outdated. <span class="btn off">Chấp nhận cả proposal</span> — lưu hoặc bỏ thay đổi ở sections/intro.tex trước</div></section>
+  <section class="state"><h2>10 · Outdated và yêu cầu tạo lại</h2><p class="why">H13; PID-00115-AC01, UX-MS-003-AC01; EC31, EC38</p><div class="ph dash" style="background:#f6f7f9"><b>Change Proposal · Writing Agent · <span class="chip dash">Outdated</span></b><br>Hết hiệu lực: <span class="mono">sections/intro.tex</span> đã đổi từ revision 16 (gốc của proposal) sang 18.<br><span class="btn">Yêu cầu tạo lại</span> Xem evidence</div><div class="ph"><b>Yêu cầu Writing Agent tạo lại</b><br>[Tạo lại Change Proposal cho sections/intro.tex trên revision 18; proposal cũ: “Rút gọn đoạn mở đầu …”]<br><small>Gửi tới Orchestrator trong Project AI Chat, kèm Task T-2.1.</small><br><span class="btn">Hủy</span> <span class="btn">Gửi yêu cầu</span></div><div class="ph">Đã gửi tới Orchestrator · Mở Project AI Chat</div></section>
+  <section class="state"><h2>11 · Từ chối</h2><p class="why">H12</p><div class="ph"><b>Từ chối Change Proposal?</b><br>Bản thảo không đổi. Không hoàn tác được; muốn giữ một phần, yêu cầu proposal nhỏ hơn hoặc sửa trực tiếp.<br>Lý do (tùy chọn): [ ]<br><span class="btn">Giữ proposal</span> <span class="btn">Từ chối proposal</span></div></section>
+  <section class="state"><h2>12 · Đang build</h2><p class="why">H15; EC25, EC46; Manuscript--building</p><div class="ph"><span class="chip">Đang build · 00:12</span> revision 19 · đã lưu 09:52 · <span class="btn off">Build PDF</span> — đang build revision 19</div><div class="ph"><b>Đang build revision 19 · pdfLaTeX</b><br>System · đã chạy 00:12 · rời trang được, kết quả báo qua notification<br>[thanh chạy lặp]</div><div class="ph">Xem trước PDF · revision 18 (bản build gần nhất)</div></section>
+  <section class="state"><h2>13 · Build lỗi: log hai lớp</h2><p class="why">H16; PID-00115-AC02, UX-MS-004-AC01, MS-BUILD-001-AC01; EC47–EC49</p><div class="ph"><b>Build thất bại · 08:52 · revision 17</b><br>Bản PDF trước (revision 16) vẫn được giữ.</div><div class="ph"><b>Thiếu package</b> — main.tex dòng 4 dùng \toprule nhưng chưa nạp package booktabs. Cách sửa: thêm \usepackage{booktabs}. · Đi tới main.tex:4</div><div class="ph"><b>Citation không phân giải</b> — sections/intro.tex dòng 7: gao2023survy · Đi tới intro.tex:7</div><div class="ph"><b>Lỗi LaTeX</b> (mã: some_new_code) — [friendlyMessage hoặc message] · không có liên kết khi thiếu file</div><div class="ph">▸ Log gốc (pdfLaTeX) — tải khi mở, chữ mono, cuộn trong khung</div></section>
+  <section class="state"><h2>14 · Lịch sử, so sánh, khôi phục</h2><p class="why">H14; UX-MS-006-AC01, MS-REVISION-001-AC01, AC02; EC40–EC43</p><div class="ph"><div class="row"><span>☑ <span class="mono">r18</span> · Nguyễn Thanh · 09:41 · Sửa trực tiếp · method.tex</span></div><div class="row"><span>☐ <span class="mono">r17</span> · Writing Agent · 08:50 · Proposal đã chấp nhận · T-2.1</span></div><div class="row"><span>☑ <span class="mono">r16</span> · Nguyễn Thanh · 30/10 17:02 · Sửa trực tiếp · main.tex</span></div><div class="row"><span>☐ <span class="mono">r15</span> · System · 20/10 10:00 · Khởi tạo Default</span></div><span class="btn">So sánh r16 ↔ r18</span> · Tải thêm</div><div class="ph"><b>r16 ↔ r18</b> · r16 Nguyễn Thanh, Sửa trực tiếp · r18 Nguyễn Thanh, Sửa trực tiếp<br><span class="mono">sections/method.tex</span> <span class="btn">Khôi phục file này về r16</span><br><span class="mono"><span class="del">− old line</span><span class="add">+ new line</span></span>figures/arch.pdf — file nhị phân đã đổi (không khôi phục được ở lượt này)</div><div class="ph">r17 (Proposal đã chấp nhận): Task T-2.1 · Agent Run (workflow) · Claim C-4, C-7</div></section>
+  <section class="state"><h2>15 · Export</h2><p class="why">H18; MS-EXPORT-001-AC02; EC51</p><div class="ph"><span class="btn">Export ▾</span> PDF · Zip mã nguồn (.tex, .bib)</div><div class="ph"><b>PDF thuộc revision 7; revision hiện hành là 8</b><br>PDF chưa có các thay đổi của revision 8.<br><span class="btn">Tải PDF revision 7</span> <span class="btn">Build revision 8</span></div><div class="ph">Chưa có PDF để export — Build PDF trước; zip mã nguồn vẫn export được</div></section>
+  <section class="state"><h2>16 · Tablet 768–1279 px</h2><p class="why">H4; UX-RESP-001; EC06</p><div class="ph">‹ Project · <span class="chip">Build OK · 09:41</span> · <span class="btn primary">Build PDF</span></div><div class="ph">[Tệp | <b>Soạn thảo</b> | Xem]</div><div class="ph">Editor toàn chiều rộng; tab Xem chứa PDF, Build log, Lịch sử</div></section>
+  <section class="state"><h2>17 · Điện thoại 390 px: duyệt proposal</h2><p class="why">H21; EC53, EC54; UX-RESP-001</p><div class="phone"><div class="ph">‹ Project · <span class="chip">Build OK</span></div><div class="ph"><b>2 proposal chờ bạn</b></div><div class="ph"><span class="chip">Proposed</span> 09:20 · Sửa mục 1 Introduction · T-2.1<br>▾ sections/intro.tex<br><span class="mono"><span class="del">− Prior work shows retrieval always helps.</span><span class="add">+ Retrieval restricted to vetted sources improves factuality …</span></span><span class="chip">Citation: 2/2 phân giải</span><br><span class="btn">Chấp nhận cả proposal</span> <span class="btn">Từ chối</span> (cao 44–48 px)</div><div class="ph"><span class="chip dash">Outdated</span> · Hết hiệu lực: … · <span class="btn">Yêu cầu tạo lại</span></div><div class="ph"><small>Trên điện thoại: xem và quyết định proposal. Soạn bản thảo dùng máy tính hoặc tablet.</small></div></div></section>
+</main>
+</body>
+</html>

@@ -33,7 +33,7 @@ SIRes không phải chatbot trả lời một lần. Mỗi Research Project có 
 ### Điểm chính
 
 - **Plan và Task dài hạn:** Plan phải được duyệt trước khi thực thi. Plan đã duyệt là baseline có phiên bản. Người dùng chọn từng Task, hệ thống không tự chạy Task tiếp theo.
-- **Trusted Library:** tìm tài liệu qua Google Scholar (dự phòng OpenAlex, Semantic Scholar) hoặc nhập DOI, BibTeX, PDF. Reference được duyệt theo lô và dùng lại ở mọi project.
+- **Trusted Library:** tìm tài liệu qua OpenAlex (nguồn mặc định); Google Scholar qua SerpApi khi người dùng bật, trong giới hạn lượt tìm do họ đặt, chỉ cho tài liệu OpenAlex không có (DEC-60, DEC-61); hoặc nhập DOI, BibTeX, PDF. Reference được duyệt theo lô và dùng lại ở mọi project.
 - **Evidence trước, câu chữ sau:** RAG trên Trusted Reference đã index giúp giảm hallucination. Mỗi claim gắn với evidence hỗ trợ hoặc phản bác, có trang, đoạn và chunk.
 - **Manuscript LaTeX:** editor, build PDF, Change Proposal dạng diff do Writing Agent đề xuất, kiểm tra citation trước khi chấp nhận.
 - **Multi-agent độc lập provider:** Orchestrator và các Specialist Agent (Discovery, Evidence Retrieval, Synthesis, Verification, Writing, Diagram…) chạy trên Claude, OpenAI hoặc Gemini bằng API key của người dùng.
@@ -160,7 +160,7 @@ Mỗi pull request chỉ chạm một luồng (một service hoặc một khu v�
 ## Đóng góp
 
 - `docs/` chỉ được ghi khi PO yêu cầu hoặc duyệt. Quy tắc R-01–R-07 ở [docs/README.md](docs/README.md).
-- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request tới khi PO xác nhận cổng ra PH-01 đạt; từ đó, khi bắt đầu logic nghiệp vụ (PH-02 trở đi), mọi pull request, kể cả tài liệu, vào `develop` (nhánh chứa code chạy staging, thành nhánh mặc định), `main` chỉ nhận `develop` khi phát hành (DEC-59, sửa mốc của OQ-111). Thay đổi `docs/` cần PO review (CODEOWNERS); commit phải có chữ ký, check CI `tracks`, `build` phải đạt (ruleset `protect-main-develop`).
+- Mỗi việc làm trên nhánh riêng và vào `main` qua pull request tới khi PO xác nhận cổng ra PH-01 đạt; từ đó, khi bắt đầu logic nghiệp vụ (PH-02 trở đi), mọi pull request, kể cả tài liệu, vào `develop` (nhánh chứa code chạy staging, thành nhánh mặc định), `main` chỉ nhận `develop` khi phát hành (DEC-59, sửa mốc của OQ-111). Ngoại lệ (DEC-63): trước mốc, pull request mã của ticket PH-02 trở đi vào `develop` sau QC độc lập; ticket PH-01 và pull request tài liệu vẫn vào `main`. Thay đổi `docs/` cần PO review (CODEOWNERS); commit phải có chữ ký, check CI `tracks`, `build` phải đạt (ruleset `protect-main-develop`).
 - Coding agent đọc [AGENT.md](AGENT.md) trước khi làm việc.
 - File mới phải có ghi chú giấy phép:
 

@@ -8,8 +8,9 @@
     python base_url.py compare [--out DIR] [--variants anthropic openai openai-responses google]
 
 ``compare`` starts the proxy in-process, runs the same probes against the official endpoint and through the proxy,
-and checks the normalised results match. The proxy logs method, path, status, duration and byte count only — never
-headers (they carry the API key), query strings or bodies.
+and checks the normalised results match. The proxy forwards to each provider's configured endpoint (the official
+one when none is set), and a key is only sent to its own connection's endpoint (see ``compare``). The proxy logs
+method, path, status, duration and byte count only — never headers (they carry the API key), query strings or bodies.
 
 The proxy also answers with canned provider responses when a request carries the header ``x-spk01-fault`` (used by
 errors.py): error bodies follow each provider's documented error format; the header is never forwarded upstream.
@@ -40,9 +41,11 @@ from common import (
     VARIANTS,
     Evidence,
     base_url_for,
+    endpoint_label,
     environment_info,
     md_table,
     model_for,
+    official_key,
     provider_of,
     read_key,
     say,
@@ -483,7 +486,12 @@ def mark(data: dict[str, Any] | None) -> str:
 
 async def compare(variants: list[str], ev: Evidence) -> list[list[Any]]:
     """Official endpoint, configured custom endpoint (when set) and the local proxy in front of the custom endpoint
-    (or of the official one). Equivalence is checked between the endpoint the proxy forwards to and the proxy."""
+    (or of the official one). Equivalence is checked between the endpoint the proxy forwards to and the proxy.
+
+    Each key goes only to its own connection's base URL (SCOPE-13, architecture 8.2; QC G9): the connection key to
+    the configured endpoint and, through the local proxy, to that same endpoint; the official endpoint is probed only
+    with an official key (the connection key when no custom endpoint is set, else <NAME>_OFFICIAL), never with a
+    gateway key."""
     rows: list[list[Any]] = []
     upstream = {p: upstream_of(p) for p in UPSTREAM}
     with ProxyServer(upstream=upstream) as server:
@@ -496,8 +504,12 @@ async def compare(variants: list[str], ev: Evidence) -> list[list[Any]]:
                 rows.append([variant, "Bị chặn — chờ key", "", "", "", ""])
                 continue
             custom = base_url_for(provider)
-            official = await probe(variant, key, None)
-            direct = await probe(variant, key, custom) if custom else official
+            if custom:
+                direct = await probe(variant, key, custom)
+                official_only = official_key(provider)
+                official = await probe(variant, official_only, None) if official_only else None
+            else:
+                direct = official = await probe(variant, key, None)
             via_proxy_url = proxy_base_url(variant, server.port)
             before = len(server.proxy.log)
             proxied = await probe(variant, key, via_proxy_url)
@@ -510,17 +522,18 @@ async def compare(variants: list[str], ev: Evidence) -> list[list[Any]]:
                 custom_base_url=custom,
                 proxy_base_url=via_proxy_url.replace(str(server.port), "<port>"),
                 official=official,
+                official_skipped=None if official else "không có key chính thức riêng; key của cổng không gửi tới đây",
                 custom=direct if custom else None,
                 proxy=proxied,
                 equivalent=same,
                 proxy_requests=seen,
             )
-            for name in official:
+            for name in direct:
                 rows.append(
                     [
                         variant,
                         name,
-                        mark(official.get(name)),
+                        mark(official.get(name)) if official else "bỏ qua (không có key chính thức)",
                         mark(direct.get(name)) if custom else "—",
                         mark(proxied.get(name)),
                         "tương đương"
@@ -543,8 +556,10 @@ def main() -> None:
     cmp_.add_argument("--variants", nargs="*", default=list(VARIANTS), choices=VARIANTS)
     args = parser.parse_args()
     if args.cmd == "serve":
-        say(f"proxy http://127.0.0.1:{args.port}/<anthropic|openai|google>/... → endpoint chính thức")
-        uvicorn.run(Proxy().app, host="127.0.0.1", port=args.port, log_level="warning", access_log=False)
+        upstream = {p: upstream_of(p) for p in UPSTREAM}
+        for p in UPSTREAM:
+            say(f"proxy http://127.0.0.1:{args.port}/{p}/... → {endpoint_label(p)}")
+        uvicorn.run(Proxy(upstream).app, host="127.0.0.1", port=args.port, log_level="warning", access_log=False)
         return
     ev = Evidence(args.out)
     ev.write("environment.json", environment_info())

@@ -64,6 +64,16 @@ Workflow:
         type: { $ref: '#/WorkflowType' }
         taskId: { $ref: common.yaml#/Id }
         planVersionId: { $ref: common.yaml#/Id }
+        subject:
+          allOf:
+            - $ref: common.yaml#/TypedRef
+          readOnly: true
+          description: |
+            Đối tượng mà workflow xử lý khi workflow được tạo từ thao tác trên một đối tượng: claim của `verifyClaim`
+            (`type = claim`), artifact được sửa của `requestDiagram` có `revisesArtifactId` (`type = artifact`). Giao diện
+            dùng để gắn lại thẻ thao tác dài vào đúng đối tượng sau khi tải lại trang (UX-STATE-001: rời trang được mà
+            thao tác vẫn tiếp tục), bằng `listWorkflows` theo `type`, `status` rồi lọc theo `subject`. Không có khi workflow
+            không gắn một đối tượng.
         triggeredBy: { $ref: common.yaml#/ActorRef }
         status: { $ref: '#/WorkflowStatus' }
         currentStepId: { $ref: common.yaml#/Id }
@@ -87,6 +97,37 @@ Workflow:
           oneOf:
             - $ref: '#/Checkpoint'
             - type: 'null'
+        scholarSearch:
+          type: object
+          readOnly: true
+          description: |
+            Chỉ với `type = discovery` (cả tìm theo tác giả): Google Scholar của lần chạy (PRD 18.1 `Workflow.scholarSearch`;
+            DISC-SCHOLAR-003, DISC-SCHOLAR-004; PC-05 GS-A1, GS-A2, GS-A5). `limit` là hạn mức hiệu lực ghi khi bắt đầu
+            (`googleScholar` của request hoặc `Preferences.googleScholarDiscovery`; `0` khi không dùng Google Scholar);
+            `used` là số lượt đã dùng, một lượt là một trang kết quả SerpApi. Lượt chưa dùng không chuyển sang lần chạy
+            khác. Thêm 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026; PID-00098 mục 1).
+          required: [limit, used]
+          properties:
+            limit: { type: integer, minimum: 0, maximum: 20 }
+            used: { type: integer, minimum: 0 }
+            limitReached:
+              type: object
+              description: |
+                Có khi System dừng gọi Google Scholar vì hết hạn mức mà vẫn còn truy vấn hay tài liệu nguồn `primary` không
+                có (DISC-SCHOLAR-004 bước 5; PC-05 GS-A5). Giao diện nêu số lượt đã dùng, phần chưa tìm và cách nới hạn mức
+                trên danh sách kết quả (UX-REF-004). `run_limit`: hết `limit` của lần chạy, Researcher nới ở Settings hoặc ghi
+                đè ở lần tìm sau; `monthly_limit`: tài khoản hết hạn mức tháng (`DiscoverySource.monthlyQuota`), Researcher
+                không nới được. Workflow không chuyển Waiting for User hay Failed vì lý do này.
+              required: [reason, at, pending]
+              properties:
+                reason:
+                  type: string
+                  enum: [run_limit, monthly_limit]
+                at: { $ref: common.yaml#/Timestamp }
+                pending:
+                  type: array
+                  description: Truy vấn, hoặc tài liệu (DOI hay tiêu đề), chưa tìm trên Google Scholar.
+                  items: { type: string }
 
 Checkpoint:
   type: object
@@ -475,8 +516,19 @@ Event:
   description: |
     Sự kiện phát qua SSE sau khi giao dịch commit (outbox — DATA-PERSIST-001). `id` dùng cho `Last-Event-ID` khi kết nối lại.
     `type` là đúng tên message trong `events/asyncapi.yaml` mà gateway nghe ở `gatewayConsumesForSse`, cộng `chat.delta`
-    từ stream `sires.stream` (không có `id` bền, không phát lại). Prompt mới là `prompt.status_changed` với
-    `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed` (phân biệt bằng `objectType`).
+    từ stream `sires.stream` (không có `id` bền, không phát lại), cộng `replay.unavailable`. Prompt mới là
+    `prompt.status_changed` với `toState = Open`; Change Proposal và Build là `manuscript.object_status_changed`
+    (phân biệt bằng `objectType`).
+
+    `replay.unavailable` không phải message của `events/asyncapi.yaml`: gateway tự phát ở đầu luồng khi
+    `Last-Event-ID` của lần nối lại không còn phát lại được (mô tả `GET /events`, PID-00012 H5). Bản ghi này chỉ có
+    `id`, `type`, `at`; `id` là vị trí mới nhất của log phát lại tại lúc kết nối (log trống thì `0`), để lần nối lại sau phát tiếp từ đó.
+
+    `chat.delta` mang thêm dữ liệu của một đoạn câu trả lời đang stream của Orchestrator: `conversationId`, `agentRunId`,
+    `seq`, `text`, `final` — đúng payload `chatDelta` của `events/asyncapi.yaml`, bỏ `accountId` (gateway chỉ đẩy tới
+    phiên của tài khoản đó; PID-00061). Với `chat.delta`, `conversationId`, `agentRunId`, `seq`, `text` luôn có; sự kiện
+    loại khác không có năm trường này. Giao diện ghép đoạn theo `agentRunId` và `seq` tăng dần, bỏ đoạn trùng hoặc cũ,
+    rồi thay bản nháp bằng tin nhắn đã lưu khi có `message.posted` (PID-00058 H6, H7).
   required: [id, type, at]
   properties:
     id: { type: string }
@@ -488,13 +540,28 @@ Event:
         prompt.status_changed, deliberation.started, deliberation.round_closed, deliberation.entry_retracted,
         deliberation.status_changed, context_snapshot.outdated, reference.status_changed,
         reference.indexing_status_changed, project_reference.changed, research.object_status_changed,
-        manuscript.object_status_changed, chat.delta]
+        manuscript.object_status_changed, chat.delta, replay.unavailable]
     projectId: { $ref: common.yaml#/Id }
     objectType: { type: string }
     objectId: { $ref: common.yaml#/Id }
     fromState: { type: string }
     toState: { type: string }
     at: { $ref: common.yaml#/Timestamp }
+    conversationId:
+      $ref: common.yaml#/Id
+      description: Chỉ có ở `chat.delta` — hội thoại của câu trả lời.
+    agentRunId:
+      $ref: common.yaml#/Id
+      description: Chỉ có ở `chat.delta` — Agent Run của Orchestrator đang trả lời; trùng `Message.agentRunId` của câu trả lời đã lưu.
+    seq:
+      type: integer
+      description: Chỉ có ở `chat.delta` — thứ tự của đoạn trong Agent Run, tăng dần.
+    text:
+      type: string
+      description: Chỉ có ở `chat.delta` — nội dung của đoạn.
+    final:
+      type: boolean
+      description: Chỉ có ở `chat.delta` — `true` ở đoạn cuối của câu trả lời.
 
 # ---------- Deliberation (PRD 8.7, 14.9, 18.1 — DEC-47, DEC-48) ----------
 # Trạng thái: Assumption — bản đề xuất của biên soạn; service sở hữu: orchestration (ADR-24 (Proposed)).

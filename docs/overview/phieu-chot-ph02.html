@@ -1,0 +1,636 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Phiếu chốt PH-02 (PC-06): các điểm còn mở của PH-02 đã chốt ngày 27/11/2026 theo ủy quyền và lựa chọn của PO — giao diện trước, nhánh, OIDC mock, staging trên máy PO, Settings, phân công, cổng ra PH-02.">
+<title>Phiếu chốt PH-02 | SIRes PRD</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+<style>
+.form-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem 1.2rem;margin:1.5rem 0}
+.form-head label,.item label,.toolbar,.progress,.item .ref,.chip{font-family:"Segoe UI",Arial,sans-serif}
+.form-head label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:.25rem}
+input[type=text],input[type=date],textarea{font:inherit;font-size:.95rem;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:.4rem .55rem;background:#fff;width:100%}
+textarea{min-height:2.6rem;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:.6rem 0;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;font-size:.85rem}
+.toolbar button{font:inherit;border:1px solid var(--line);background:var(--wash);color:var(--ink);padding:.35rem .8rem;border-radius:4px;cursor:pointer}
+.toolbar button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.toolbar button:hover{border-color:var(--accent)}
+.progress{margin-left:auto;color:var(--muted)}
+.item{border:1px solid var(--line);border-left:3px solid var(--line);padding:.8rem 1rem;margin:1rem 0;break-inside:avoid}
+.item.done{border-left-color:var(--accent)}
+.item h3{margin:0 0 .3rem;font-size:1.02rem}
+.item .ref{font-size:.75rem;color:var(--muted);margin:0 0 .5rem}
+.item .ctx{font-size:.88rem;margin:.3rem 0 .5rem}
+.item .ctx ol{margin:.3rem 0;padding-left:1.4rem}
+.item .q{margin:.3rem 0 .6rem;font-weight:600}
+.opts{display:flex;flex-direction:column;gap:.35rem;margin:.4rem 0 .6rem}
+.opts label{display:flex;gap:.55rem;align-items:flex-start;font-size:.88rem;line-height:1.5;cursor:pointer;padding:.3rem .45rem;border-radius:4px}
+.opts label:hover{background:var(--wash)}
+.opts input{margin-top:.25rem;flex:none}
+.chip{display:inline-block;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);border-radius:3px;padding:0 .3rem;margin-left:.35rem;vertical-align:1px}
+.chip.decided{background:var(--accent);color:#fff}
+.other-text{margin:.2rem 0 .4rem 1.6rem;width:calc(100% - 1.6rem)}
+.note-label{font-size:.75rem;color:var(--muted);display:block;margin-top:.2rem}
+.hidden{display:none}
+.print-only{display:none}
+@media print{
+ .toolbar,.no-print{display:none!important}
+ .print-only{display:block}
+ .opts label{padding:0}
+ .opts label:not(.picked){display:none}
+ .item{border-left-width:1px}
+ input[type=text],input[type=date],textarea{border:none;padding:0;resize:none}
+ textarea:placeholder-shown,input:placeholder-shown{display:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="phieu-chot-cuoi-ph01.html">Phiếu chốt cuối PH-01</a> · Phiếu chốt PH-02</span></header>
+<main id="main-content">
+<p class="eyebrow">Product Requirements Document · Phiếu chốt</p>
+<h1>Phiếu chốt PH-02</h1>
+<p class="meta">Số phiếu: PC-06 · Lập 25/11/2026 theo yêu cầu PO (“Rà soát các điểm còn mở của PH-02, sau đó xuất ra PC để tôi chốt”) · Chốt 27/11/2026 theo ủy quyền và lựa chọn của PO ngày 26/11/2026 · Trạng thái: đã chốt, chờ PO xem lại · Phạm vi: 21 PID PH-02 (<a href="../tickets/index.html#pids">PID-00035–PID-00055</a>), PID web kéo lên từ PH-03–PH-06, <a href="../tickets/issues/PID-00160/index.html">PID-00160</a>, <a href="../tickets/issues/PID-00161/index.html">PID-00161</a>, <a href="../tickets/sections/02-phases-and-gates.html#ph-02">cổng ra PH-02</a> · 24 mục quyết định (19 chốt theo đề xuất, 5 PO chọn trong phiên) và 11 mục ghi nhận ở nhóm H (câu chốt khi làm rõ PID web)</p>
+<div class="note"><p><strong>Bối cảnh.</strong> PH-02 là lát 1: đăng nhập (F-01), lệnh ghi chuẩn (F-02), realtime qua SSE (F-03); cổng ra kiểm trên staging. Phiếu lập 25/11/2026 với 17 mục. Ngày 26/11/2026 PO giao hoàn thiện PH-01 và ủy quyền: “PH-01 đang trong giai đoạn hoàn thiện, các vấn đề còn chưa đạt thì tự đề xuất và hoàn thiện cho xong giúp tôi … tôi cần xây giao diện trước để cho dev trực quan theo dõi. Nên hãy đẩy các task UI lên sớm trong PH-02 hoàn thiện tối đa nhất có thể. Các vấn đề phát sinh hãy chốt theo đề xuất (OIDC viết mockup server để test chứ chưa cần dùng OIDC thật), xuất PC để nêu rõ các vấn đề bạn đã chốt”; về key provider: “vấn đề API Key của provider điều chỉnh cho phép test và sử dụng key proxy vì đây là key mà của chúng tôi tự cung cấp”. Mục có cơ sở “PO chọn trong phiên 26/11/2026” là quyết định PO tự nêu (giao diện trước, OIDC mock, key proxy); mục “Chốt theo đề xuất” là đề xuất của người lập phiếu, đã áp dụng theo ủy quyền. Ba quyết định quy trình được ghi vào PRD 20.1: <a href="sections/20-assumptions-constraints-and-open-questions.html#dec-63">DEC-63</a> (nhánh, G2), <a href="sections/20-assumptions-constraints-and-open-questions.html#dec-64">DEC-64</a> (giao diện trước, G1), <a href="sections/20-assumptions-constraints-and-open-questions.html#dec-65">DEC-65</a> (OIDC mock, C1–C3, G4).</p></div>
+<div class="note"><p><strong>Mục của <a href="phieu-chot-cuoi-ph01.html">PC-05</a> mà PH-02 cần</strong> (không lặp lại ở đây): P31 (đóng PH-01, mốc DEC-59; ngoại lệ ở G2); P1–P5 → PID-00036, PID-00037; P2 → PID-00040; P3 → PID-00038 (hướng theo C2); P6, P24, P26, P29 → PID-00035; P19 → ngưỡng CI ở cổng PH-02; P22 → PID-00042; P43 → <a href="../tickets/issues/PID-00161/index.html">PID-00161</a> (G5); S-OQ-113, S-K2 → PID-00048; nhóm II Google Scholar → PID-00050.</p></div>
+<div class="note no-print"><p>Mỗi mục đã được chọn sẵn phương án đã áp dụng (nhãn <strong>Đã chốt</strong>). Nhãn <strong>Đề xuất</strong> đánh dấu đề xuất của người lập phiếu ngày 25/11/2026; ở các mục PO chọn trong phiên, phương án PO chọn có thể khác đề xuất. PO muốn đổi thì chọn phương án khác hoặc <em>Khác</em>, ghi lý do ở ghi chú. Phiếu tự lưu trên trình duyệt này; xuất Markdown hoặc JSON để gửi lại, hoặc In / Lưu PDF.</p></div>
+
+<div class="form-head">
+<label>Người chốt<input type="text" id="f-owner" placeholder="Họ tên Product Owner"></label>
+<label>Ngày chốt<input type="date" id="f-date"></label>
+<label>Số phiếu<input type="text" id="f-no" placeholder="PC-06"></label>
+</div>
+<label class="note-label" for="f-general">Ghi chú chung</label>
+<textarea id="f-general" placeholder="Ghi chú áp dụng cho cả phiếu (nếu có)"></textarea>
+
+<div class="toolbar" role="toolbar" aria-label="Thao tác phiếu">
+<button type="button" id="b-rec">Về phương án đã chốt</button>
+<button type="button" class="primary" id="b-md">Xuất Markdown</button>
+<button type="button" id="b-json">Xuất JSON</button>
+<button type="button" id="b-print">In / Lưu PDF</button>
+<span class="progress" id="progress" aria-live="polite"></span>
+</div>
+
+<div id="groups"></div>
+
+<h2 id="con-cho-po">Còn chờ PO</h2>
+<p class="status">Những điểm phiếu không tự chốt được vì cần PO cấp hoặc làm việc với bên ngoài. Mỗi dòng nêu điều đang chờ, chặn gì và khi nào cần.</p>
+<ol>
+<li><strong>Tên miền cho URL HTTPS của staging (B3).</strong> Cloudflare Tunnel cần tên miền PO quản lý, cho web staging và issuer của OIDC mock staging (C3). Cần trước khi PO chạy spec-clarify-skill cho PID-00035; chặn chạy mock ở staging (PID-00160 N2) và cổng PH-02 trên staging. Cục bộ không bị chặn.</li>
+<li><strong>Nối eTroy OIDC thật (C1–C3, DEC-65).</strong> PO xếp người sửa eTroy_OIDC theo <a href="../architecture/sections/12-decisions-risks-and-open-issues.html#etr-10">ETR-10</a> (<code>nonce</code> trong ID token) và <a href="../architecture/sections/12-decisions-risks-and-open-issues.html#etr-07">ETR-07</a> (end session theo RP-Initiated Logout 1.0; back-channel logout); có môi trường eTroy thử, client SIRes staging và hai tài khoản thử; PO cấp PID cho việc nối thật. Muộn nhất trước cổng PH-07; tới lúc đó ASM-13 còn mở.</li>
+<li><strong>Provider qua key proxy (D2).</strong> Ngày 27/11/2026 cổng proxy chỉ có kênh OpenAI chạy được; kênh Anthropic trả 503, Gemini hết thời gian chờ (bàn giao PR #118). Cổng PH-02 đạt với một provider Valid; cổng PH-03 cần Agent Run chạy với cả ba provider, nên PO cần cấp kênh hoặc key cho Anthropic, Gemini trước PH-03.</li>
+<li><strong>Mục của PC-05 mà PH-02 cần</strong> (danh sách ở đầu phiếu), đặc biệt P1–P5 cho PID-00036, PID-00037 ở đợt 0 (A2). <strong>Xác nhận cổng ra PH-01</strong> (PC-05 P31) và mốc DEC-59.</li>
+<li><strong>Phiếu I còn mở của PID web</strong> (nhóm H; phần liên quan đang ở Ngoài phạm vi của hồ sơ, không chặn Xây với mock):
+<ul><li>PID-00058 I1: nguồn của khối “Bước tiếp theo gợi ý” ở Overview.</li>
+<li>PID-00059 I1: tổng hợp usage theo NFR-USAGE-002. PID-00059 I2: nhóm loại sự kiện của History.</li>
+<li>PID-00082 I1: trình soạn Draft, view checklist dạng cây, activity timeline chưa có thiết kế; đề xuất tách PID riêng.</li></ul></li>
+<li><strong>Điểm của PRD và hợp đồng cần PO quyết khi sửa nguồn:</strong>
+<ul><li>PID-00098 H11 (tạm): chọn hồ sơ tác giả qua prompt choice; hợp đồng <code>/discovery/author-searches</code> chưa mô tả bước này.</li>
+<li>PID-00098: trùng DOI — PRD 10 (LIB-METADATA-001) và PRD 18.5 nói khác nhau.</li>
+<li>PID-00115: câu edit-and-approve ở PRD 12.5 MS-DIFF-001 mâu thuẫn PRD 18 và hợp đồng; đề xuất bỏ câu này.</li></ul></li>
+<li><strong>12 Assumption Google Scholar của PR #132</strong> (PRD nhóm II của PC-05, có nhãn Assumption tại chỗ):
+<ol><li>Hạn mức tháng theo tài khoản.</li>
+<li>Lượt đồng bộ connector có tính vào hạn mức không.</li>
+<li>Hết hạn mức giữa chừng.</li>
+<li>Kết quả trùng thì giữ bản OpenAlex.</li>
+<li>OpenAlex lỗi khác với 0 kết quả.</li>
+<li>“Công bố của tôi” khi tắt Google Scholar.</li>
+<li>Đồng bộ lỗi.</li>
+<li>Mã của PublicationPlanStatus.</li>
+<li>Cột CSV, nhãn nguồn, vị trí nhóm cài đặt.</li>
+<li>Gỡ URL hồ sơ Google Scholar.</li>
+<li>Vị trí màn kế hoạch công bố; đối chiếu có là APR không.</li>
+<li>Chưa đồng bộ các mục 3.5, 4.1, 5, 14, 16.8, 19 của PRD.</li></ol></li>
+<li><strong>Merge các pull request</strong> đã qua QC độc lập: lệnh merge bypass của phiên điều phối bị chặn, nên PO merge. Thứ tự cho phiếu này: #121 → #136 → #112; cho PID-00115: #112 → #135 → #154 (QC #154 G4). #125 (PID-00159) đã gồm thay đổi của #113 (PID-00016): squash #125 rồi đóng #113 (QC PID-00159 G8, chốt theo đề xuất).</li>
+<li><strong>PO xem lại</strong> 19 mục chốt theo đề xuất, 11 mục ghi nhận ở nhóm H và hồ sơ PID-00160 (Sẵn sàng theo ủy quyền).</li>
+</ol>
+<h3 id="con-cho-po-phat-sinh">Phát sinh từ PR sửa nguồn và QC (27/11/2026)</h3>
+<p>Các điểm dưới đây phát sinh sau lần cập nhật trước, khi sửa nguồn cho PID web (#140, #153, #154, #156, #157) và khi QC PID-00025 (#38). Người làm không tự chốt vì chưa có phương án có căn cứ, hoặc vì cần PO cấp. “Làm rõ PID-…” là trước khi PO chạy spec-clarify-skill cho PID đó. Không điểm nào chặn lượt Xây với mock của PID web.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Điều đang chờ</th><th>PR nguồn</th><th>Chặn gì</th><th>Cần trước</th></tr></thead>
+<tbody>
+<tr><td>DBQ cho các trường research chưa có chỗ trong DDL (DEC-57): <code>ArtifactVersion.validation</code>, <code>diagramType</code>, vị trí claim (<code>ClaimAnchor</code>), <code>Workflow.subject</code>. Mở sau khi #124 merge (DBQ-12, DBQ-13) để không trùng mã.</td><td>#140 (PID-00114)</td><td>Backend lưu các trường này: <a href="../tickets/issues/PID-00046/index.html">PID-00046</a> (<code>Workflow.subject</code>), <a href="../tickets/issues/PID-00078/index.html">PID-00078</a> (claim), <a href="../tickets/issues/PID-00106/index.html">PID-00106</a> (artifact).</td><td>Làm rõ PID-00046 (PH-02); sau đó PID-00078 (PH-03), PID-00106 (PH-05).</td></tr>
+<tr><td>Đường dữ liệu của <code>ManuscriptUsage</code>: chưa có API hay sự kiện để research nhận từ manuscript nơi bản thảo dùng evidence, claim, artifact.</td><td>#140 (PID-00114)</td><td><code>manuscriptUsages[]</code> của Evidence, Claim, ArtifactVersion có trong hợp đồng nhưng chưa có nguồn dữ liệu.</td><td>Làm rõ <a href="../tickets/issues/PID-00079/index.html">PID-00079</a> (Change Proposal, PH-03), khi làm hợp đồng manuscript.</td></tr>
+<tr><td>Đơn vị đếm của <code>charStart</code>, <code>charEnd</code>: code point hay UTF-16. Áp dụng cho cả <code>ClaimAnchor</code> và <code>Evidence.location</code>.</td><td>#140 (PID-00114)</td><td>Python (agent, research) và TypeScript (web) đếm khác nhau khi văn bản có ký tự ngoài BMP, nên vị trí claim và evidence bị lệch.</td><td>Làm rõ PID-00078 (ghi claim theo lô, PH-03); trước Hội tụ của PID-00114 và trước <a href="../tickets/issues/PID-00120/index.html">PID-00120</a>.</td></tr>
+<tr><td><code>ArtifactVersionCreate.basedOnVersionId</code> là trường bắt buộc, nhưng schema này cũng là payload của <code>createArtifactVersionFromAgent</code> khi agent tạo artifact mới (chưa có version gốc).</td><td>#140 (ghi nhận, không sửa)</td><td>Agent không tạo được version đầu tiên của artifact mới mà vẫn đúng hợp đồng.</td><td>Làm rõ PID-00106 (Artifact, PH-05); trước PID-00120.</td></tr>
+<tr><td>Cách điền <code>MessageAccepted.agentRunId</code> (và <code>workflowId</code>) lúc trả <code>202</code>. (A) Workspace cấp trước id của Agent Run và gửi trong <code>message.posted</code>: đổi luồng F-04 của kiến trúc, ảnh hưởng <a href="../tickets/issues/PID-00063/index.html">PID-00063</a>, <a href="../tickets/issues/PID-00068/index.html">PID-00068</a>. (B) Để vắng, giao diện chờ <code>chat.delta</code> đầu tiên: cần thêm cách báo lỗi xảy ra trước delta đầu.</td><td>#153 (PID-00058, PID-00059)</td><td>Chat của <a href="../tickets/issues/PID-00058/index.html">PID-00058</a> cần biết lượt trả lời để hiện và hủy ngay sau khi gửi. Hiện giao diện dựng theo hợp đồng, trường có thể vắng.</td><td>Làm rõ PID-00063, PID-00068 (PH-03); trước Hội tụ của PID-00058.</td></tr>
+<tr><td>Ba ghi nhận cho PID-00061, có từ trước #153: (1) payload <code>chatDelta</code> không có <code>projectId</code>, nên <code>GET /events?projectId=…</code> không lọc được <code>chat.delta</code>; (2) <code>Event.id</code> bắt buộc, nhưng <code>chat.delta</code> không có id bền, nên nối lại bằng <code>Last-Event-ID</code> sẽ nhận <code>replay.unavailable</code>; (3) <code>WorkflowType</code> không có loại chat-turn mà F-04 nhắc.</td><td>#153</td><td>Stream chat và nối lại SSE của <a href="../tickets/issues/PID-00061/index.html">PID-00061</a>; loại workflow của PID-00068.</td><td>Làm rõ PID-00061 (PH-03).</td></tr>
+<tr><td>Ánh xạ citation → claim tại vị trí, và vị trí citation trong PDF (PID-00115 mục 2). DDL không có thực thể citation, build không lưu vị trí. Cần DBQ và luồng tạo dữ liệu (Verification Agent, SyncTeX ở sandbox-runner).</td><td>#154 (PID-00115)</td><td>Chưa thêm được vào hợp đồng; PID-00115 giữ phần này ở Ngoài phạm vi (N7).</td><td>Làm rõ <a href="../tickets/issues/PID-00094/index.html">PID-00094</a>, <a href="../tickets/issues/PID-00095/index.html">PID-00095</a> (PH-04); trước <a href="../tickets/issues/PID-00108/index.html">PID-00108</a> (PH-05) và PID-00122.</td></tr>
+<tr><td>Nguồn revision <code>manual_submission</code>: MS-REVISION-001 có liệt kê, nhưng PRD 18.1 và DDL chỉ có ba nguồn và chưa có luồng tạo revision. PO sửa câu ở PRD 12.10 hoặc chốt luồng.</td><td>#154 (PID-00115)</td><td>PRD mâu thuẫn với chính nó; không tạo được revision từ bản nộp tay.</td><td>Làm rõ <a href="../tickets/issues/PID-00053/index.html">PID-00053</a> (revision, PH-02).</td></tr>
+<tr><td>“Hoạt động gần nhất” của build: thiết kế Manuscript đã bỏ theo đề xuất, nhưng UX-STATE-001 và design.md 2.4.1 vẫn yêu cầu cho mọi thao tác dài (trang States còn lấy build làm ví dụ). PO chọn một trong hai: thêm trường hoạt động cho <code>Build</code> và cho sandbox-runner báo tiến độ (PID-00108); hoặc sửa UX-STATE-001 (cùng design.md 2.4.1) cho build.</td><td>#154 (PID-00115; QC #154 G2)</td><td>Thẻ build của PID-00115 lệch quy tắc chung của thao tác dài.</td><td>Làm rõ PID-00108 (Build, PH-05).</td></tr>
+<tr><td>Hợp đồng nội bộ cho hạn mức Google Scholar: library (source adapter) nhận hạn mức hiệu lực của lần chạy thế nào, ghi số lượt đã dùng vào <code>Workflow.scholarSearch</code> (orchestration) ra sao, và đếm hạn mức tháng ở đâu. Cần quyết định kiến trúc (kiến trúc 3).</td><td>#156 (PID-00098)</td><td><code>internal/*.yaml</code> chưa sửa; <a href="../tickets/issues/PID-00050/index.html">PID-00050</a> chưa biết nhận và trả hạn mức qua đâu.</td><td>Làm rõ PID-00050, PID-00046 (PH-02).</td></tr>
+<tr><td>DBQ cho các cột mới: Preferences Google Scholar (identity), <code>orchestration.workflow.scholar_search</code>, <code>library.discovered_result.import_state</code> (cùng <code>search_workflow_id</code> vốn đã thiếu), <code>library.reference.deleted_at</code>. Mở sau DBQ-12, DBQ-13 (#124).</td><td>#156 (PID-00098)</td><td>Lưu các trường mới của hợp đồng: <a href="../tickets/issues/PID-00041/index.html">PID-00041</a>, PID-00046, PID-00050, <a href="../tickets/issues/PID-00076/index.html">PID-00076</a>.</td><td>Làm rõ PID-00041, PID-00046, PID-00050 (PH-02); PID-00076 (PH-03).</td></tr>
+<tr><td>Bảy ticket cập nhật mục 2.3 theo hợp đồng mới khi làm rõ: <a href="../tickets/issues/PID-00036/index.html">PID-00036</a>, PID-00041, <a href="../tickets/issues/PID-00045/index.html">PID-00045</a>, PID-00050 (PH-02); <a href="../tickets/issues/PID-00059/index.html">PID-00059</a>, PID-00076 (PH-03); <a href="../tickets/issues/PID-00101/index.html">PID-00101</a> (PH-05).</td><td>#156 (PID-00098)</td><td>Mục 2.3 của các ticket thiếu operation và trường mới (<code>googleScholar</code>, <code>Preferences.googleScholarDiscovery</code>, <code>getDiscoveredResult</code>, <code>restoreReference</code>, lọc Audit Event). PID đã làm rõ thì chạy lại spec-clarify-skill.</td><td>Khi làm rõ từng PID; bốn PID PH-02 trước.</td></tr>
+<tr><td>Giá trị hạn mức tháng SerpApi của mỗi tài khoản (<code>DiscoverySource.monthlyQuota.limit</code>, cấu hình hệ thống; thiết kế ghi tạm 250).</td><td>#156 (PID-00098)</td><td>Cấu hình của PID-00050; con số hiện trên Discover.</td><td>Trước khi PID-00050 bật Google Scholar (PH-02); xét cùng dòng SerpApi của PID-00025.</td></tr>
+<tr><td>Đính kèm file có thuộc phạm vi PID-00082 không (H12, N3). Thiết kế có khung đầu ra file theo hợp đồng, còn hồ sơ giữ lượt này ở mức gửi bằng chữ. Nếu đưa vào: làm rõ lại PID-00082 (thêm <code>uploadFile</code>, AC).</td><td>#157 (PID-00082)</td><td>Khung đầu ra file của form gửi kết quả; S04 dựng phần còn lại, trừ khung này.</td><td>Khi PO duyệt thiết kế form (N3); trước khi Dev làm S04 của <a href="../tickets/issues/PID-00082/index.html">PID-00082</a>.</td></tr>
+<tr><td>Thiết kế màn Ready của Task Manual: nút “Bắt đầu thực hiện” và dialog xác nhận (H12) chưa có trong thiết kế.</td><td>#157 (PID-00082)</td><td>Dev phải dựng màn Ready không có màn tham chiếu; dialog theo mẫu ở design.md §4.</td><td>Trước khi Dev làm phần màn Ready của PID-00082.</td></tr>
+<tr><td>Parser BibTeX ở kiến trúc 2.3: kiến trúc ghi <code>@retorquere/bibtex-parser</code> (chưa thử), còn PID-00024 và spike dùng Citation.js 0.9.0 (định dạng <code>@biblatex/text</code>). PO chọn sửa kiến trúc theo kết quả spike, hoặc giao thử thêm.</td><td>#38 (<a href="../tickets/issues/PID-00025/index.html">PID-00025</a>)</td><td>Kiến trúc lệch với mã đang chạy của PID-00024; chưa chặn PID nào.</td><td>Làm rõ PID-00076 (nhập reference, PH-03).</td></tr>
+<tr><td>SerpApi: hệ thống chưa có key. Throughput 50 lượt/giờ ở trang pricing khác <code>account_rate_limit_per_hour</code> 250 ở Account API. Cần rà điều khoản và quyền lưu metadata trước khi mua gói trả phí (ASM-01, RISK-12).</td><td>#38 (PID-00025)</td><td>Adapter Google Scholar của PID-00050; Hội tụ discovery có Google Scholar.</td><td>Làm rõ PID-00050 (PH-02).</td></tr>
+<tr><td>Key OpenAlex của hệ thống: adapter sản phẩm cần key, vì truy cập ẩn danh dùng chung ngân sách theo IP. Dev không tự tạo key.</td><td>#38 (PID-00025)</td><td>Adapter OpenAlex của PID-00050 chạy ổn định trên staging.</td><td>Trước khi PID-00050 chạy trên staging (cổng PH-02).</td></tr>
+<tr><td>11 commit cũ chưa ký trên nhánh của #38: squash khi merge, hoặc ký lại.</td><td>#38 (PID-00025)</td><td>Merge #38, vì ruleset bắt mọi commit phải có chữ ký.</td><td>Lúc merge #38.</td></tr>
+</tbody>
+</table></div>
+<h2 class="print-only">Xác nhận</h2>
+<p class="print-only">Người chốt ký tên: ................................................ Ngày: ....................</p>
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="phieu-chot-cuoi-ph01.html">← Phiếu chốt cuối PH-01</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Product Requirements Document · Phiếu chốt PH-02. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+<script>
+const T = '../tickets/issues/';
+const pid = n => ['PID-' + n, T + 'PID-' + n + '/index.html'];
+const R = {
+ t_ph01: ['Tickets 2, PH-01', '../tickets/sections/02-phases-and-gates.html#ph-01'],
+ t_ph02: ['Tickets 2, PH-02', '../tickets/sections/02-phases-and-gates.html#ph-02'],
+ t_29: ['Tickets 2.9', '../tickets/sections/02-phases-and-gates.html#s-2-9'],
+ t_32: ['Tickets 3.2 (web)', '../tickets/sections/03-track-plans.html#s-3-2'],
+ t_41: ['Tickets 4.1', '../tickets/sections/04-dependencies-risks-and-questions.html#s-4-1'],
+ t_oq108: ['OQ-108', '../tickets/sections/04-dependencies-risks-and-questions.html#oq-108'],
+ t_dlr09: ['DLR-09', '../tickets/sections/04-dependencies-risks-and-questions.html#dlr-09'],
+ t_pids: ['Danh sách PID', '../tickets/index.html#pids'],
+ board: ['Taskboard (task-registry)', '../../agent/execution/taskboard.html'],
+ dec58: ['DEC-58', 'sections/20-assumptions-constraints-and-open-questions.html#dec-58'],
+ dec59: ['DEC-59', 'sections/20-assumptions-constraints-and-open-questions.html#dec-59'],
+ dec63: ['DEC-63', 'sections/20-assumptions-constraints-and-open-questions.html#dec-63'],
+ dec64: ['DEC-64', 'sections/20-assumptions-constraints-and-open-questions.html#dec-64'],
+ dec65: ['DEC-65', 'sections/20-assumptions-constraints-and-open-questions.html#dec-65'],
+ asm13: ['ASM-13', 'sections/20-assumptions-constraints-and-open-questions.html#asm-13'],
+ asm15: ['ASM-15', 'sections/20-assumptions-constraints-and-open-questions.html#asm-15'],
+ oidc1: ['INT-OIDC-001', 'sections/17-integrations-and-external-dependencies.html#req-int-oidc-001'],
+ oidc3: ['INT-OIDC-003', 'sections/17-integrations-and-external-dependencies.html#req-int-oidc-003'],
+ a102: ['Kiến trúc 10.2', '../architecture/sections/10-security-architecture.html#s-10-2'],
+ a113: ['Kiến trúc 11.3', '../architecture/sections/11-deployment-and-operations.html#s-11-3'],
+ a122: ['Kiến trúc 12.2', '../architecture/sections/12-decisions-risks-and-open-issues.html#s-12-2'],
+ etr07: ['ETR-07', '../architecture/sections/12-decisions-risks-and-open-issues.html#etr-07'],
+ etr10: ['ETR-10', '../architecture/sections/12-decisions-risks-and-open-issues.html#etr-10'],
+ db4: ['Database 4', '../database/sections/04-identity-gateway-workspace.html'],
+ spk02r: ['SPK-02 report.md', '../../agent/execution/PID-00015/report.md'],
+ spk02q: ['QC SPK-02', '../../agent/execution/PID-00015/qc-report.md'],
+ etroy: ['eTroy_OIDC e5fa331', 'https://github.com/toilatrung/eTroy_OIDC/tree/e5fa331'],
+ pc04: ['PC-04', 'phieu-chot-ph01.html'],
+ pc05: ['PC-05', 'phieu-chot-cuoi-ph01.html'],
+ pc05_p3: ['PC-05 P3', 'phieu-chot-cuoi-ph01.html#it-P3'],
+ pc05_p31: ['PC-05 P31', 'phieu-chot-cuoi-ph01.html#it-P31'],
+ pc05_p43: ['PC-05 P43', 'phieu-chot-cuoi-ph01.html#it-P43'],
+ pc05_sk2: ['PC-05 S-K2', 'phieu-chot-cuoi-ph01.html#it-S-K2'],
+ report: ['Báo cáo PH-01', 'bao-cao-hoan-tat-ph01.html'],
+ pr120: ['PR #120', 'https://github.com/toilatrung/sires/pull/120'],
+ pr122: ['PR #122', 'https://github.com/toilatrung/sires/pull/122'],
+ pr123: ['PR #123', 'https://github.com/toilatrung/sires/pull/123'],
+ pr127: ['PR #127', 'https://github.com/toilatrung/sires/pull/127'],
+ pr132: ['PR #132', 'https://github.com/toilatrung/sires/pull/132'],
+ pr133: ['PR #133', 'https://github.com/toilatrung/sires/pull/133'],
+ pr134: ['PR #134', 'https://github.com/toilatrung/sires/pull/134'],
+ pr135: ['PR #135', 'https://github.com/toilatrung/sires/pull/135'],
+ pr136: ['PR #136', 'https://github.com/toilatrung/sires/pull/136'],
+ pr137: ['PR #137', 'https://github.com/toilatrung/sires/pull/137'],
+ pr150: ['PR #150', 'https://github.com/toilatrung/sires/pull/150'],
+ pr154: ['PR #154', 'https://github.com/toilatrung/sires/pull/154'],
+ pr118: ['PR #118 (key proxy)', 'https://github.com/toilatrung/sires/pull/118'],
+ p23: pid('00023'), p35: pid('00035'), p36: pid('00036'), p37: pid('00037'), p38: pid('00038'), p41: pid('00041'),
+ p42: pid('00042'), p48: pid('00048'), p49: pid('00049'), p50: pid('00050'), p55: pid('00055'), p58: pid('00058'),
+ p74: pid('00074'), p156: pid('00156'), p160: pid('00160'), p161: pid('00161'),
+ p59: pid('00059'), p60: pid('00060'), p82: pid('00082'), p83: pid('00083'), p84: pid('00084'),
+ p98: pid('00098'), p114: pid('00114'), p115: pid('00115'),
+};
+const BASIS_A = 'Chốt theo đề xuất (PO ủy quyền 26/11/2026)';
+const BASIS_B = 'PO chọn trong phiên 26/11/2026';
+const BASIS_H = 'Chốt theo đề xuất bởi phiên Dev do PO giao (PO ủy quyền 26/11/2026, G6)';
+const HOPTS = ['Giữ các câu đã chốt.', 'Giữ, kèm sửa (ghi ở ghi chú).', 'Xem lại (ghi lý do ở ghi chú).'];
+const WEB = 'PID-00036, PID-00037, rồi PID-00058, PID-00059, PID-00060, PID-00082, PID-00083, PID-00084, PID-00098, PID-00114, PID-00115';
+// rec: chỉ số phương án đề xuất (lập phiếu 25/11/2026); chosen: chỉ số phương án đã chốt và áp dụng
+const GROUPS = [
+ {title:'A. Bắt đầu PH-02 và thứ tự làm rõ', items:[
+  {id:'A1', kind:'Quyết định', basis:BASIS_A, refs:['t_ph01','dec59','dec63','dec64','pc05_p31'], impact:'Thời điểm giao PID PH-02; nhánh và đích pull request',
+   ctx:'21 PID PH-02 (PID-00035–PID-00055) đều “Chưa làm rõ”, soạn 05/11/2026. Cổng ra PH-01 chưa đạt (PC-05 P31). DEC-59: ticket PH-02 xong trước mốc thì chờ mốc. Ngày 26/11/2026 PO giao đẩy PID giao diện lên sớm (G1, DEC-64); PR mã PID PH-02 vào develop không chờ mốc (G2, DEC-63). Đề xuất 25/11/2026 sửa thành làm rõ PID web trước.',
+   q:'Làm rõ và giao PID PH-02 từ khi nào?',
+   opts:['Ngay, không chờ cổng ra PH-01: làm rõ PID web trước (đợt 0 của A2, theo G1), rồi các đợt còn lại; giao Dev theo sổ task-registry; Dev làm trên nhánh riêng; pull request mã của PID PH-02 vào develop sau QC độc lập (G2).',
+     'Chờ PO xác nhận cổng ra PH-01 (PC-05 P31) rồi mới làm rõ và giao.'], rec:0, chosen:0},
+  {id:'A2', kind:'Quyết định', basis:BASIS_A, refs:['t_pids','board','t_32','pc05'], impact:'Thứ tự chạy spec-clarify-skill; PID chờ mục của PC-05',
+   ctx:'Dev chỉ chạy spec-execution-skill sau khi PID được làm rõ bằng spec-clarify-skill. Đề xuất 25/11/2026 chia ba đợt; theo G1 thêm đợt 0 cho PID web, ba đợt cũ giữ nguyên thứ tự:',
+   ctxList:[
+    'Đợt 0, PID web (G1): ' + WEB + '. PID-00036, PID-00037 vẫn cần PC-05 P1–P5 và PID-00012, PID-00013; các PID kéo lên chạy trên mock của PID-00013. Làm rõ bởi phiên Dev theo G6.',
+    'Đợt 1, không chờ PC-05: PID-00041 (sau D1), PID-00043, PID-00044, PID-00045, PID-00049 (sau D3) của T1xNTH (PID-00045 chuyển theo E1); PID-00046, PID-00047, PID-00051 của toilatrung; PID-00052, PID-00053, PID-00054 của Vietanhhhhhh2003.',
+    'Đợt 2, chờ mục PC-05 hoặc PID PH-01: PID-00039, PID-00040 (PID-00014 ở PR #63; P2 cho PID-00040); PID-00042 (P22); PID-00048 (S-OQ-113, S-K2); PID-00050 (nhóm II Google Scholar); PID-00161 (Job dọn phiên, G5).',
+    'Đợt 3, chờ nhóm B, C: PID-00035 (B1–B4; PC-05 P6, P24, P26, P29); PID-00038 (C1–C4; PC-05 P3); PID-00055 (F1, F2; sau khi các PID hội tụ đã có hồ sơ). PID-00160 (OIDC mock) đã Sẵn sàng ngày 27/11/2026 (G4).'
+   ],
+   q:'Thứ tự làm rõ PID PH-02?',
+   opts:['Theo bốn đợt trên: đợt 0 là PID web, sau đó ba đợt của đề xuất 25/11/2026.',
+     'Theo ba đợt của đề xuất 25/11/2026 (không có đợt 0).',
+     'Làm rõ cả 21 PID một lần, sau khi PC-05 và phiếu này đều chốt.',
+     'Chỉ làm rõ 13 PID hội tụ của cổng PH-02 (PID-00035–PID-00045, PID-00048, PID-00055); 8 PID “Xây với stub” để sang PH-03.'], rec:1, chosen:0},
+ ]},
+ {title:'B. Staging trên máy PO (PC-04 B7)', note:'PO chọn staging tạm chạy cục bộ trên máy PO (PC-04 B7). Hồ sơ PID-00035, OQ-108, DLR-09, quy tắc 2.9 và kiến trúc 11 mô tả Home Lab; sửa theo B4.', items:[
+  {id:'B1', kind:'Quyết định', basis:BASIS_A, refs:['p35','t_oq108','a113','report'], impact:'PID-00035 (congminh1705); Helm chart chung (PID-00010); PID-00112',
+   ctx:'OQ-108 chọn Kubernetes một node và Argo CD trên Home Lab: runner của GitHub build và đẩy image, Argo CD trong cụm kéo về, nên runner không cần vào mạng nội bộ. Chạy thử cục bộ 25/11/2026 trên máy PO (Docker Engine trong WSL) đã chạy được 12 service cùng PostgreSQL, RabbitMQ, MinIO. DLR-09 ghi 16 GB RAM là sát giới hạn khi chạy đủ 13 service. Cấu hình máy PO chưa được ghi ở tài liệu nào.',
+   q:'Staging trên máy PO dựng trên nền nào?',
+   opts:['Kubernetes một node trong WSL (k3s hoặc k3d), Argo CD và Helm chart chung, giữ thiết kế OQ-108; khi Home Lab sẵn sàng chỉ chuyển cụm. PO ghi cấu hình máy (CPU, RAM, ổ đĩa) khi làm rõ PID-00035.',
+     'docker compose mở rộng từ infra/local: dựng nhanh hơn, nhưng không kiểm được Helm, Argo CD; chuyển sang Home Lab phải làm lại PID-00035.',
+     'Chờ Home Lab; PH-02 chưa có staging nên cổng PH-02 chưa kiểm được.'], rec:0, chosen:0},
+  {id:'B2', kind:'Quyết định', basis:BASIS_A, refs:['p35','board','dec58'], impact:'Người làm PID-00035; quyền vào máy PO',
+   ctx:'PID-00035 thuộc luồng infra (congminh1705, DEC-58). Staging nằm trên máy PO nên Dev không vào được máy để dựng cụm, tạo vai trò database theo service hay xem log.',
+   q:'Ai dựng staging trên máy PO?',
+   opts:['congminh1705 viết script dựng cụm chạy lặp lại được (kể cả vai trò database theo database 3.2) và Argo CD Application trong repo, thử trên máy của mình; PO chạy script một lần trên máy PO. Sau đó deploy đi qua Argo CD, Dev không cần vào máy; PO gửi log khi Dev cần.',
+     'PO, hoặc phiên PO giao, làm PID-00035.',
+     'PO cấp cho congminh1705 quyền truy cập từ xa vào máy PO.'], rec:0, chosen:0},
+  {id:'B3', kind:'Quyết định', basis:BASIS_A, refs:['t_41','etr07','p160','spk02r'], impact:'URL staging; issuer OIDC mock staging (PID-00160); đăng ký client eTroy khi nối thật (K13); PID-00035, PID-00055',
+   ctx:'Staging cần URL HTTPS cố định cho web và cho issuer của OIDC mock (C3); khi nối eTroy thật, eTroy so redirect_uri và post_logout_redirect_uri khớp từng ký tự (K13), nên URL không được đổi. OQ-108 để PO cấp URL khi Dev yêu cầu; hiện chưa có URL. Còn chờ PO cấp tên miền (mục “Còn chờ PO”).',
+   q:'Staging có URL HTTPS cố định bằng cách nào?',
+   opts:['Cloudflare Tunnel với tên miền PO quản lý (ví dụ staging.<miền> cho web, auth-staging.<miền> cho OIDC mock); khi chuyển sang Home Lab chỉ chạy lại connector, URL giữ nguyên. PO cấp tên miền trước khi làm rõ PID-00035.',
+     'Tailscale Funnel (tên *.ts.net gắn với máy): không cần tên miền, nhưng đổi máy thì đổi URL và phải đăng ký lại client.',
+     'Giữ như OQ-108: PO cấp khi Dev yêu cầu.'], rec:0, chosen:0},
+  {id:'B4', kind:'Duyệt sửa nguồn', basis:BASIS_A, refs:['t_29','t_ph01','t_ph02','t_dlr09','t_oq108','a113','p35'], impact:'Tickets 2 (PH-01, PH-02, 2.9), 4.1, DLR-09, OQ-108; kiến trúc 11; PID-00035, PID-00055',
+   ctx:'Quy tắc 2.9 ghi “Cổng kiểm trên staging, không kiểm trên máy cá nhân”, trong khi staging nay chạy trên máy PO. Sửa (mục 1–3 đã áp dụng 27/11/2026; mục 4 làm khi làm rõ PID-00035):',
+   ctxList:[
+    '2.9: staging trên máy PO được tính cho cổng khi deploy tự động từ develop qua pipeline của PID-00035, truy cập qua URL HTTPS cố định (B3), số đo ghi kèm cấu hình máy; máy cá nhân của Dev không tính.',
+    'DLR-09: thêm rủi ro máy PO tắt hoặc mất mạng thì staging dừng; chỉ kiểm cổng khi máy chạy, lần kiểm hỏng vì máy không tính là đạt.',
+    'Tickets 2 (PH-01, PH-02), 4.1, OQ-108, kiến trúc 11: ghi staging tạm trên máy PO theo B1–B3; Home Lab là nơi chuyển tới sau.',
+    'PID-00035: tiêu đề, phần “Gồm”, bước B1 và thư mục infra/homelab/ theo B1–B3; thêm chạy OIDC mock ở staging (PID-00160 N2); sổ task-registry và trang ticket dùng cùng một tiêu đề.'
+   ],
+   q:'Duyệt các sửa trên?', opts:['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'], rec:0, chosen:0},
+ ]},
+ {title:'C. OIDC: đăng nhập, đăng xuất và ASM-13 (PID-00038)', note:'Nguồn: báo cáo và QC của SPK-02 (PID-00015), đối chiếu lại mã eTroy_OIDC tại commit e5fa331 (17/05/2026), vẫn là commit mới nhất ngày 25/11/2026. Ngày 26/11/2026 PO chọn chưa nối eTroy OIDC thật, viết OIDC mock để test (D-OIDC, DEC-65); C1–C3 chốt theo lựa chọn đó.', items:[
+  {id:'C1', kind:'Quyết định', basis:BASIS_B, refs:['spk02q','etroy','oidc1','asm13','etr10','p160','dec65'], impact:'Đăng nhập (TS-12-07); INT-OIDC-001; PID-00038, PID-00160; kiến trúc 12.5 (ETR-10)',
+   ctx:'eTroy nhận và kiểm nonce ở /authorize nhưng không đưa vào ID token: endpoint /token gọi issueIdToken chỉ với audience, scope, user (oidc.service.ts, quanh dòng 1652). INT-OIDC-001 bắt SIRes kiểm nonce; openid-client với expectedNonce từ chối ID token thiếu nonce, nên đăng nhập vào eTroy thật sẽ lỗi. SPK-02 chỉ chạy trên stub có trả nonce.',
+   q:'Xử lý nonce thế nào?',
+   opts:['Theo D-OIDC: gateway luôn kiểm nonce (INT-OIDC-001 giữ nguyên); cục bộ và staging PH-02 dùng OIDC mock PID-00160, có nonce trong ID token. Yêu cầu eTroy_OIDC lưu nonce cùng authorization code và đưa vào ID token ghi thành ETR-10 ở kiến trúc 12.5; eTroy sửa xong là điều kiện trước khi nối eTroy thật (C3).',
+     'Sửa eTroy_OIDC ngay: lưu nonce cùng authorization code và đưa vào ID token (OIDC Core). Ghi ETR-10; PO xếp người sửa trước khi PID-00038 nối eTroy thật.',
+     'SIRes bỏ kiểm nonce khi ID token không có, chỉ dựa vào state và PKCE: sửa INT-OIDC-001, ghi DEC mới; kém an toàn hơn chuẩn OIDC.'], rec:1, chosen:0},
+  {id:'C2', kind:'Quyết định', basis:BASIS_B, refs:['spk02r','etroy','oidc3','pc05_p3','etr07','p160','dec65'], impact:'INT-OIDC-003, DEC-55, ADR-27, ETR-07; PC-05 P3 (TopBar, /auth/logout); PID-00038, PID-00160',
+   ctx:'eTroy chỉ có POST /logout (server.ts, dòng 97), cần cookie phiên và CSRF token của eTroy, không có end_session dạng GET, không nhận id_token_hint (K4). Gateway của SIRes không lấy được CSRF của eTroy nên chưa làm được RP-initiated logout với eTroy thật. Phương án của PC-05 P3 (/auth/logout trả 303 tới end_session) chạy được với mọi IdP có end_session. Sửa 27/11/2026 theo QC (X1): câu đã chốt khớp hợp đồng logout của PR #120 (client_id, không id_token_hint, không state).',
+   q:'Đăng xuất RP-initiated làm thế nào?',
+   opts:['Theo D-OIDC và hợp đồng logout (PC-05 P3, PR #120): gateway hủy phiên SIRes, thu hồi token (gọi /revoke cho refresh token, K5), rồi trả 303 tới end_session_endpoint của IdP đang cấu hình kèm client_id và post_logout_redirect_uri (URL /sign-in của SIRes đã đăng ký); không gửi id_token_hint vì token OIDC không xuống trình duyệt (kiến trúc 10.2), không có state. OIDC mock PID-00160 có end session theo RP-Initiated Logout 1.0 và nhận client_id. INT-OIDC-003, DEC-55 giữ nguyên. Yêu cầu eTroy_OIDC thêm end session (GET và POST, nhận client_id mà không cần id_token_hint, post_logout_redirect_uri đã đăng ký) gộp vào ETR-07; eTroy sửa xong là điều kiện trước khi nối eTroy thật (C3).',
+     'Sửa eTroy_OIDC ngay: thêm end_session theo OpenID Connect RP-Initiated Logout 1.0, gộp vào ETR-07; gateway gọi thêm /revoke cho refresh token khi đăng xuất (K5).',
+     'SIRes chỉ kết thúc phiên SIRes và thu hồi refresh token qua /revoke; phiên eTroy còn tới khi hết hạn (8 giờ). Sửa INT-OIDC-003, DEC-55; PC-05 P3 chọn lại.'], rec:1, chosen:0},
+  {id:'C3', kind:'Quyết định', basis:BASIS_B, refs:['t_41','etr07','etr10','t_ph02','asm13','p160','p156','dec65'], impact:'Cổng PH-02 (TS-12-07, TS-12-01); PID-00038-AC03; kết luận ASM-13; PID-00160; cổng PH-07',
+   ctx:'Cổng PH-02 cần đăng nhập, đăng xuất trên staging và hai tài khoản thử (tài khoản B không đọc được project của A). Chưa có môi trường thử eTroy OIDC, client SIRes hay tài khoản thử; ETR-07 ghi “Chưa gửi”.',
+   q:'Staging PH-02 nối với IdP nào?',
+   opts:['Theo D-OIDC: cục bộ và staging PH-02 nối OIDC mock PID-00160 (ở staging chạy trên cùng máy, sau tunnel với tên riêng theo B3) với hai tài khoản thử trong file seed. Nối eTroy thật để lại, muộn nhất trước cổng PH-07, khi đủ điều kiện: eTroy đã sửa theo ETR-10 (nonce) và ETR-07 (end session); có môi trường eTroy thử, client SIRes staging đã đăng ký đúng URL của B3 và hai tài khoản thử; PO cấp PID cho việc nối. Tới lúc đó ASM-13 còn mở.',
+     'Chạy eTroy_OIDC (bản đã sửa theo C1, C2) trên cùng máy staging, sau tunnel với tên riêng; PO đăng ký client SIRes staging và tạo hai tài khoản thử.',
+     'Dùng môi trường eTroy OIDC dùng chung do đội eTroy vận hành; PO cấp issuer, client SIRes staging và hai tài khoản thử.',
+     'Cổng PH-02 kiểm bằng FakeOidcProvider; nối eTroy thật dời sang PH-08 (PID-00156). ASM-13 mở tới PH-08.'], rec:1, chosen:0},
+  {id:'C4', kind:'Duyệt sửa nguồn', basis:BASIS_A, refs:['p38','spk02r','spk02q','a122'], impact:'Hồ sơ PID-00038; kiến trúc 12.2; FakeOidcProvider (luồng platform)',
+   ctx:'Kết quả SPK-02 chưa vào hồ sơ PID-00038 (trang ticket chỉ ghi ETR-07). Ghi khi làm rõ PID-00038 (mục 4 đã áp dụng 27/11/2026):',
+   ctxList:[
+    'Danh sách kiểm lại K1–K14 (report.md mục 3.3): cấu hình tĩnh vì eTroy không có discovery (K1), JWKS ở /jwks (K2), client_secret_basic (K7), hạn token và phiên eTroy 8 giờ (K8), giá trị iss thật (K9), xoay khóa ký (K11), cách nhận biết eTroy không khả dụng (K12). Gateway chạy được cả discovery (OIDC mock) lẫn cấu hình tĩnh (eTroy).',
+    'Tuần tự hóa refresh theo phiên bằng khóa trên dòng phiên (SELECT … FOR UPDATE): hai refresh đồng thời làm eTroy thu hồi cả family và đăng xuất người dùng (K10); OIDC mock làm giống vậy.',
+    'G4 (phân loại lỗi mạng), G5 (hạn và dùng một lần của pending login) của QC SPK-02.',
+    'Kiến trúc 12.2, dòng SPK-02: “Đã chạy trên stub 18/11/2026 (PID-00015); ASM-13 còn mở tới khi nối eTroy thật (DEC-65)”.',
+    'Sửa FakeOidcProvider cho giống eTroy (không discovery, refresh trả id_token, logout theo C2) sau khi eTroy sửa theo ETR-07, ETR-10: luồng platform, PID mới hoặc làm cùng PID-00038.'
+   ],
+   q:'Duyệt các sửa trên?', opts:['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'], rec:0, chosen:0},
+ ]},
+ {title:'D. Settings, Provider Connection và Project', items:[
+  {id:'D1', kind:'Quyết định', basis:BASIS_A, refs:['asm15','p41','db4'], impact:'PID-00041; VerificationThresholds; hiệu chỉnh ở PH-06',
+   ctx:'ASM-15: giá trị mặc định của Ngưỡng kiểm chứng được hiệu chỉnh trên bộ dữ liệu nghiệm thu, chỉ có từ PH-06. PID-00041 (PH-02) phải lưu bộ mặc định ngay. Hợp đồng có ba ngưỡng (claimSupport.supported, claimSupport.partiallySupported, citationMismatch.mismatch, từ 0 đến 1) nhưng chưa có giá trị; DDL identity chỉ ghi ví dụ 0,8 / 0,5 / 0,6. Bảng có cột is_default.',
+   q:'Giá trị mặc định ở PH-02 và cách cập nhật khi hiệu chỉnh?',
+   opts:['Mặc định tạm 0,80 / 0,50 / 0,60, ghi “tạm, hiệu chỉnh ở PH-06”. Khi hiệu chỉnh, tài khoản còn isDefault = true theo bộ mới; tài khoản đã tự chỉnh giữ giá trị của mình.',
+     'Cùng giá trị tạm, nhưng mọi tài khoản giữ giá trị lúc tạo; bộ hiệu chỉnh chỉ áp dụng cho tài khoản mới.',
+     'Chưa đặt giá trị; PID-00041 làm phần Ngưỡng kiểm chứng sau PH-06.'], rec:0, chosen:0},
+  {id:'D2', kind:'Quyết định', basis:BASIS_B, refs:['p42','p48','t_ph02','pc05_sk2','pr118'], impact:'Cổng PH-02 (một phần REL-07); PID-00042, PID-00048',
+   ctx:'Cổng PH-02 có “lưu và kiểm tra Provider Connection”. Chưa có key chính thức Anthropic, Google (PC-04 B8, PC-05 S-K2). Ngày 26/11/2026 PO cho dùng key proxy (cổng trung gian PO tự cấp) như key provider để test và phát triển (D-KEY). Thử ngày 27/11/2026: qua proxy chỉ kênh OpenAI chạy được (PR #118). Cổng PH-03 đã yêu cầu Agent Run chạy với cả ba provider.',
+   q:'Cổng PH-02 kiểm Provider Connection tới mức nào?',
+   opts:['Theo D-KEY: key proxy được tính là key provider. Mỗi provider có ca key sai → Invalid kèm lý do; ít nhất một provider Valid bằng key proxy (base URL của proxy nhập ở Settings; key và host của proxy không ghi vào repo); key không có trong log, phản hồi, sự kiện. Key chính thức không còn là điều kiện; đủ ba provider Valid (bằng key proxy hoặc key chính thức) kiểm ở cổng PH-03.',
+     'Mỗi provider có ca key sai → Invalid kèm lý do; ít nhất một provider Valid bằng key thật (OpenAI, hoặc proxy với base URL nhập ở Settings, không ghi vào repo); key không có trong log, phản hồi, sự kiện. Đủ ba provider Valid kiểm ở cổng PH-03.',
+     'Cả ba provider Valid bằng key chính thức ngay ở cổng PH-02.'], rec:1, chosen:0},
+  {id:'D3', kind:'Quyết định', basis:BASIS_A, refs:['p23','p49','p74'], impact:'PID-00049, PID-00074; cách làm tương tự cho PID-00052, PID-00053',
+   ctx:'Trigger tg_project_writable của planning chỉ cho ghi plan_version, task khi replica.project_state của project là Active. Consumer project.lifecycle_changed điền bảng này nằm ở PID-00074 (PH-03), trong khi PID-00049 (PH-02) đã ghi Plan Version; QC PID-00023 nêu điểm này. library, research, manuscript cũng có trigger này, consumer ở các PID PH-04–PH-06.',
+   q:'Consumer project.lifecycle_changed của planning đặt ở đâu?',
+   opts:['Đưa vào PID-00049; PID-00074 bỏ phần này. Khi làm rõ PID-00052, PID-00053 áp dụng cùng cách nếu PID đó ghi bảng có trigger.',
+     'Giữ ở PID-00074; PID-00049 test bằng cách chèn replica.project_state bằng vai trò _system; trên staging planning chưa ghi được Plan tới PH-03.'], rec:0, chosen:0},
+ ]},
+ {title:'E. Phân công và hồ sơ', items:[
+  {id:'E1', kind:'Quyết định', basis:BASIS_A, refs:['board','dec58','pc04'], impact:'Sổ task-registry; tiến độ cổng PH-02',
+   ctx:'Theo DEC-58, T1xNTH giữ 10/21 PID PH-02, trong đó 8 PID hội tụ của cổng PH-02 (gateway 3, identity 3, workspace, audit), thêm PID-00161 (G5). congminh1705 giữ 4 PID hội tụ (staging, settings, global, e2e), PID-00160 và các PID web kéo lên (G3). Vietanhhhhhh2003 giữ 4 PID, đều “Xây với stub”. toilatrung giữ 4 PID (orchestration 2, agent-core, knowledge) cùng việc của PO.',
+   q:'Phân công PID PH-02?',
+   opts:['Chuyển PID-00045 (audit) sang Vietanhhhhhh2003 cho PH-02, để T1xNTH tập trung gateway, identity, workspace; luồng audit từ PH-03 giữ theo DEC-58; CODEOWNERS không đổi.',
+     'Giữ theo luồng (DEC-58); PO xem lại tiến độ của T1xNTH sau đợt 1.',
+     'Chuyển cả luồng audit sang Vietanhhhhhh2003 (sửa DEC-58, CODEOWNERS).'], rec:0, chosen:0},
+  {id:'E2', kind:'Duyệt sửa nguồn', basis:BASIS_A, refs:['p50','board','t_pids'], impact:'Sổ task-registry; trang PID-00050; spec của 21 PID',
+   ctx:'Hồ sơ PH-02 lệch các quyết định sau ngày soạn (05/11/2026); sửa khi làm rõ từng PID:',
+   ctxList:[
+    'Sổ task-registry ghi PID-00050 là “Scholar trung gian, OpenAlex, Semantic Scholar”; DEC-60 đã bỏ Semantic Scholar và trang ticket đã đổi tiêu đề. Trang PID-00050 còn ghi “chờ OQ-115” dù OQ-115 đã trả lời ở DEC-61.',
+    'Sổ task-registry và trang PID-00035 dùng hai tiêu đề khác nhau (sửa theo B4).',
+    'Spec của 21 PID ghi các PID tiền đề là “Chưa làm”, phần lớn nay đã xong ở PH-01; spec-clarify-skill cập nhật khi làm rõ từng PID.'
+   ],
+   q:'Duyệt sửa sổ task-registry và trang ticket theo trên (cùng lúc làm rõ từng PID)?', opts:['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'], rec:0, chosen:0},
+ ]},
+ {title:'F. Cổng ra PH-02', items:[
+  {id:'F1', kind:'Quyết định', basis:BASIS_A, refs:['oidc3','p38','p160','t_ph02'], impact:'Cách kiểm INT-OIDC-003-AC02 ở cổng PH-02; PID-00055',
+   ctx:'Cổng PH-02 có “phiên hết hạn sau 12 giờ không hoạt động”. Gateway (PR #63) cố định 12 giờ trong câu SQL; test hiện có lùi last_seen_at, idle_expires_at trong database để giả lập, không có biến cấu hình rút ngắn.',
+   q:'Kiểm hạn 12 giờ trên staging thế nào?',
+   opts:['Tạo phiên thật trên staging (đăng nhập qua OIDC mock PID-00160), lùi idle_expires_at của phiên đó trong database gateway (như test hiện có), kiểm request tiếp theo bị từ chối và web về màn đăng nhập; không sửa mã.',
+     'Chờ đủ 12 giờ trên staging (máy PO chạy liên tục).',
+     'Thêm biến cấu hình rút ngắn hạn, chỉ dùng cho staging.'], rec:0, chosen:0},
+  {id:'F2', kind:'Duyệt', basis:BASIS_A, refs:['t_ph02','p55','asm13','pc05_p31','dec65'], impact:'Cổng ra PH-02; PID-00055',
+   ctx:'Cổng ra PH-02 (tickets 2) cụ thể hóa thành danh sách PID-00055 kiểm, đã sửa theo D-OIDC. PH-02 xong khi đạt cả tám điều kiện:',
+   ctxList:[
+    'Các PID hội tụ (PID-00035–PID-00045, PID-00048, PID-00160, PID-00161) đã merge vào develop, có QC độc lập nghiệm thu được; staging tự deploy theo B1–B3; CI của develop xanh trong ngưỡng OQ-112 (PC-05 P19). PID web kéo lên theo G1 không thuộc điều kiện này.',
+    'TS-12-07 trên staging với OIDC mock PID-00160 (C3): đăng nhập; đăng xuất chuyển tới end_session_endpoint của mock, kết thúc phiên mock và quay về SIRes (C2).',
+    'Phiên hết hạn sau 12 giờ không hoạt động, kiểm theo F1.',
+    'Tạo, lưu trữ, xóa mềm project; tài khoản B không đọc được project của A (hai tài khoản thử của OIDC mock).',
+    'Provider Connection theo D2; key không xuất hiện trong log, phản hồi hay sự kiện.',
+    'Sự kiện từ outbox tới web qua SSE: ví dụ project vừa lưu trữ đổi trạng thái trên web mà không cần tải lại.',
+    'PID-00038-AC03 đạt trên OIDC mock. ASM-13 còn mở tới khi nối eTroy thật (C3); nhãn INT-OIDC-004, NFR-AUTH-001 giữ nguyên ở PH-02.',
+    'PO xác nhận cổng ra PH-02; kết quả ghi vào nhật ký docs_context.md (quy tắc 2.9).'
+   ],
+   q:'Duyệt danh sách điều kiện đóng PH-02?', opts:['Duyệt.', 'Duyệt, kèm sửa (ghi ở ghi chú).', 'Chưa duyệt (ghi lý do ở ghi chú).'], rec:0, chosen:0},
+ ]},
+ {title:'G. Giao diện trước', note:'Thêm 27/11/2026 theo yêu cầu PO ngày 26/11/2026 (“tôi cần xây giao diện trước để cho dev trực quan theo dõi. Nên hãy đẩy các task UI lên sớm trong PH-02 hoàn thiện tối đa nhất có thể”) và các việc phát sinh.', items:[
+  {id:'G1', kind:'Quyết định', basis:BASIS_B, refs:['t_32','t_ph02','p58','dec64'], impact:'PID web PH-03–PH-06; tickets 2, 3.2; DEC-64',
+   ctx:'PID web của PH-03–PH-06 ở ô Hội tụ của giai đoạn gốc: PID-00058, PID-00059, PID-00060 (PH-03), PID-00082, PID-00083, PID-00084 (PH-04), PID-00098 (PH-05), PID-00114, PID-00115 (PH-06). Shell và mock theo OpenAPI của PID-00013 đã có từ PH-01, nên màn hình dựng được trước khi backend xong.',
+   q:'Đưa PID web lên PH-02 thế nào? (D-UI)',
+   opts:['Chín PID web trên kéo lên PH-02 ở mức “Xây với mock”: dựng màn hình, trạng thái, i18n trên mock của PID-00013; phần “Hội tụ” với backend thật (đổi mock sang gateway, kiểm trên staging) giữ ở cổng giai đoạn gốc. Mỗi PID làm rõ thì sửa dòng giai đoạn trong hồ sơ của mình (G6).',
+     'Giữ PID web ở giai đoạn gốc (PH-03–PH-06).'], rec:0, chosen:0},
+  {id:'G2', kind:'Quyết định', basis:BASIS_A, refs:['dec59','dec63','t_ph01','a113'], impact:'Đích pull request; AGENT.md mục Git; tickets 2, 4.1; DEC-63',
+   ctx:'DEC-59: tới khi PO xác nhận cổng ra PH-01, mọi pull request vào main; ticket PH-02 trở đi xong trước mốc thì chờ mốc. Theo G1, PID web và PID PH-02 bắt đầu trước khi PH-01 đóng (PC-05 P31 còn chờ), nên chờ mốc sẽ giữ mã đã QC nằm ngoài nhánh. develop chứa code chạy staging.',
+   q:'Pull request của PID PH-02 vào nhánh nào trước mốc DEC-59? (D-BRANCH)',
+   opts:['Ngoại lệ “chờ mốc” của DEC-59: PID PH-01 (gồm PID-00012, PID-00013, PID-00159) và pull request tài liệu vẫn vào main; pull request mã của PID PH-02 trở đi (kể cả PID web kéo lên) vào develop sau QC độc lập, không chờ mốc. develop đồng bộ theo main bằng PR main → develop. Ghi DEC-63.',
+     'Giữ DEC-59: PID PH-02 xong trước mốc thì chờ mốc.'], rec:0, chosen:0},
+  {id:'G3', kind:'Quyết định', basis:BASIS_A, refs:['board','dec58','t_32'], impact:'Sổ task-registry; người làm PID web',
+   ctx:'PID web thuộc luồng web của congminh1705 (DEC-58). Để kịp đưa giao diện lên sớm, PO giao phiên làm các PID web.',
+   q:'Assignee của PID web?',
+   opts:['Giữ congminh1705 trong sổ task-registry; phiên do PO giao làm thay, ghi “phiên do PO toilatrung giao, làm thay assignee congminh1705” ở commit, PR và report.md.',
+     'Đổi assignee sang toilatrung.'], rec:0, chosen:0},
+  {id:'G4', kind:'Quyết định', basis:BASIS_A, refs:['p160','dec65','etr07','etr10'], impact:'PID-00160 (luồng infra); compose cục bộ; staging PH-02',
+   ctx:'D-OIDC cần một IdP thay eTroy ở cục bộ và staging PH-02, có nonce trong ID token và end session (eTroy chưa có, C1, C2).',
+   q:'OIDC mock làm ở đâu, bằng gì?',
+   opts:['Tạo PID-00160 (luồng infra, assignee congminh1705, phiên do PO giao làm thay, PH-02, phụ thuộc PID-00159): infra/local/oidc-mock/ (Node, thư viện oidc-provider), một service trong compose cục bộ; code + PKCE, nonce, discovery, JWKS, end_session_endpoint (RP-Initiated Logout 1.0, post_logout_redirect_uri đã đăng ký, state), /revoke; client của gateway trong file cấu hình; tài khoản thử từ file seed (ít nhất 2, claim như eTroy); chỉ chạy ở cục bộ và staging. Hồ sơ Sẵn sàng 27/11/2026.',
+     'Chạy một IdP mã nguồn mở có sẵn (ví dụ Keycloak) trong compose: đủ tính năng nhưng nặng RAM và claim khác eTroy.',
+     'Chạy FakeOidcProvider của luồng platform như một service.'], rec:0, chosen:0},
+  {id:'G5', kind:'Quyết định', basis:BASIS_A, refs:['p161','pc05_p43'], impact:'PID-00161 (luồng gateway); app.session',
+   ctx:'N5 của PID-00014: việc dọn phiên hết hạn trong app.session chưa có PID nào nhận (PC-05 P43, đề xuất PID mới luồng gateway ở PH-02).',
+   q:'Giao Job dọn app.session cho đâu?',
+   opts:['Tạo PID-00161 (luồng gateway, assignee T1xNTH, PH-02, phụ thuộc PID-00014), hồ sơ ở mức đề xuất; làm rõ ở đợt 2 (A2), hỏi thời gian giữ và cách chạy Job.',
+     'Gộp vào PID-00038.',
+     'Để sau, ghi rủi ro.'], rec:0, chosen:0},
+  {id:'G6', kind:'Quyết định', basis:BASIS_A, refs:['t_32','board','dec64'], impact:'Làm rõ PID web (spec-clarify-skill); trạng thái Sẵn sàng; nhóm H',
+   ctx:'spec-clarify-skill do PO chạy và chỉ PO đặt Sẵn sàng. Có 11 PID web cần làm rõ ở đợt 0, song song với việc làm của phiên Dev.',
+   q:'Ai làm rõ PID web?',
+   opts:['PO ủy quyền cho phiên Dev do PO giao chạy spec-clarify-skill cho PID web của mình, chốt theo đề xuất và đặt Sẵn sàng; câu trả lời ghi ở mục 5 hồ sơ từng PID (H…); câu chốt chung cho nhiều PID gửi phiên điều phối để ghi vào nhóm H của phiếu này.',
+     'PO tự làm rõ từng PID web.'], rec:0, chosen:0},
+  {id:'G7', kind:'Quyết định', basis:BASIS_A, refs:['board','t_pids','pr136','dec64'], impact:'Sổ task-registry; trang hồ sơ PID web; danh sách PID ở tickets',
+   ctx:'Hồ sơ PID web kéo lên ghi giai đoạn dạng “PH-02 (Xây với mock, D-UI); Hội tụ ở cổng PH-NN”; danh sách PID ở tickets tính các PID này vào PH-02 và ghi giai đoạn hội tụ ở cột “Hội tụ ở” (PR #136). Sổ task-registry ở taskboard cũng có cột giai đoạn; một số phiên Dev đề nghị đổi sổ sang PH-02 (PID-00060, PID-00098, PID-00114, PID-00115).',
+   q:'Sổ task-registry ghi giai đoạn nào cho PID web kéo lên?',
+   opts:['Giữ giai đoạn gốc trong sổ task-registry (giai đoạn của cổng Hội tụ); chỉ trang hồ sơ ghi PH-02 “Xây với mock”.',
+     'Đổi sổ task-registry sang PH-02.'], rec:0, chosen:0},
+ ]},
+ {title:'H. Câu chốt khi làm rõ PID web', note:'Điền 27/11/2026 từ ghi chú của các phiên Dev (G6). Mỗi mục là một PID: PR hồ sơ, số câu H đã chốt, các câu quan trọng, phiếu I còn mở; toàn văn ở mục 5 hồ sơ từng PID. Câu chung cho mọi PID web: phụ thuộc PID-00012, PID-00013 chưa merge không chặn Sẵn sàng, Dev bắt đầu khi hai PID đó đã vào develop; không làm lại số trên TopBar, rail (PID-00012 H1); chủ mock theo PID-00037 H9; test đặt tên *.spec.tsx; giai đoạn ghi theo G7.', items:[
+  {id:'H1', title:'PID-00036 (PR #122)', kind:'Ghi nhận', basis:BASIS_H, refs:['p36','pr122'], impact:'Hồ sơ PID-00036; 20 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Khu vực settings: SignIn, Profile, Provider Connections, Agent Models, Preferences. Sẵn sàng; 8 mục sửa nguồn đã làm ở PR #126.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-02 (PID-00055 kiểm).',
+    'H2: nút đăng nhập điều hướng tới startLogin; gateway chuyển tới IdP đang cấu hình (OIDC mock PID-00160 ở cục bộ, staging).',
+    'H3: lỗi đăng nhập về /sign-in?error= với oidc_unavailable, login_cancelled, login_failed; mã lạ như login_failed.',
+    'H5: “Kiểm tra kết nối” = tạo hoặc sửa rồi kiểm; “Lưu” bật khi Valid; Valid qua key proxy được tính (D2).',
+    'H6, H7: lỗi kết nối hiện mã và một hành động, không hiện lastError.message; key là ô password, không vào URL, storage, kho nháp.',
+    'H9: xóa kết nối đang gán phải chọn kết nối Valid thay thế (replacementConnectionId).',
+    'H10: gọi 19 operation, mock của khu vực khai 16 (không khai getSession, getMe, startLogin).',
+    'H16: giá trị mặc định của ngưỡng lấy từ trường hợp đồng (VerificationThresholds.defaults, PR #126).'
+   ],
+   q:'Giữ các câu đã chốt của PID-00036?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H2', title:'PID-00037 (PR #123)', kind:'Ghi nhận', basis:BASIS_H, refs:['p37','pr123'], impact:'Hồ sơ PID-00037; 11 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Research Projects và khung Dashboard. Sẵn sàng.',
+   ctxList:[
+    'H2: PID-00037 làm khung 5 khối Dashboard, khối Project gần đây, first-run, banner khôi phục; PID-00060 lấp dữ liệu các khối còn lại.',
+    'H3: first-run = chưa có project Active (nút “Tạo project”) hoặc chưa có Provider Connection (banner “Thêm API key”).',
+    'H5: form tạo project không có lựa chọn bản thảo LaTeX (PROJ-CRUD-001); tạo xong mở Chat.',
+    'H7: lưu trữ, xóa (APR-08) có dialog hệ quả; 409 active_workflow_exists liệt kê workflow.',
+    'H9: quy tắc chủ mock: mỗi operation có đúng một khu vực chủ khai override; khu vực khác override trong test. Các PID web khác áp dụng quy tắc này.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00037?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H3', title:'PID-00058 (PR #127)', kind:'Ghi nhận', basis:BASIS_H, refs:['p58','pr127'], impact:'Hồ sơ PID-00058; 20 câu H đã chốt; phiếu I còn mở: I1',
+   ctx:'Khu vực project: Overview và Project AI Chat.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-03.',
+    'H5: chủ mock 9 operation (project, context, hội thoại).',
+    'H6, H7: dữ liệu chat.delta theo AsyncAPI; ghép theo agentRunId và seq, message.posted thay bản nháp, nối lại SSE không nhân đôi.',
+    'H8: route mới /projects/:projectId/activity/agent-runs/:agentRunId (monitoring).',
+    'H12: Overview lấy tiến độ từ Plan, Task; việc chờ từ Pending Actions; bản thảo từ getManuscript.',
+    'I1 (mở): nguồn của khối “Bước tiếp theo gợi ý” — ở Ngoài phạm vi tới khi PO chọn.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00058?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H4', title:'PID-00059 (PR #127)', kind:'Ghi nhận', basis:BASIS_H, refs:['p59','pr127'], impact:'Hồ sơ PID-00059; 20 câu H đã chốt; phiếu I còn mở: I1, I2',
+   ctx:'Khu vực monitoring: Agent Activity, Workflow, AgentList, History.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-03.',
+    'H6: chủ mock 10 operation (workflow, Agent Run, audit của project).',
+    'H8, H11: nút điều khiển theo trạng thái workflow; Recovery decision continue, rerun_step, cancel, không chọn sẵn.',
+    'H14: usage theo Agent Run và tổng workflow, chi phí luôn “ước tính”.',
+    'H16: History chỉ hai nhóm loại sự kiện (Phê duyệt, Sự kiện agent).',
+    'I1 (mở): tổng hợp usage theo NFR-USAGE-002. I2 (mở): nhóm loại sự kiện của History.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00059?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H5', title:'PID-00060 (PR #123)', kind:'Ghi nhận', basis:BASIS_H, refs:['p60','pr123'], impact:'Hồ sơ PID-00060; 13 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Khu vực global: Pending Actions, Notifications, Global Assistant, màn điện thoại. Sẵn sàng.',
+   ctxList:[
+    'H3: màn điện thoại M1 = /pending-actions dưới 768 px; M2 = route mới /pending-actions/prompts/{promptId}.',
+    'H5: Notifications dựng liên kết theo objectType → địa chỉ PRD 4.3 khi chưa có deepLink.',
+    'H6: Global Assistant là hội thoại scope=global; thẻ “Đề xuất tạo project” ngoài phạm vi.',
+    'H8: chủ mock của Pending Actions, Notifications và ba operation prompt.',
+    'H9: trên điện thoại trả lời được choice, approval, information_request; edit_and_approve chỉ đọc.',
+    'H11: PH-02 Xây với mock; Hội tụ ở cổng PH-03. H13: kho mock prompt có đủ loại, kể cả deliberation_proposal.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00060?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H6', title:'PID-00082 (PR #134)', kind:'Ghi nhận', basis:BASIS_H, refs:['p82','pr134'], impact:'Hồ sơ PID-00082; 20 câu H đã chốt; phiếu I còn mở: I1',
+   ctx:'Khu vực planning: Plan, PlanCompare, TaskReview, GlobalTasks.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-04.',
+    'H5: chủ mock 23 operation của path 09.',
+    'H9: đồ thị phụ thuộc theo lớp; chu trình ở Draft hiện banner và nút bỏ dependency.',
+    'H11, H12: mỗi Readiness Condition dẫn tới một hành động; thực thi Task khi Ready, luôn xác nhận, một Task.',
+    'H13, H14: PlanCompare có impact và ô “Tôi đã xem”; TaskReview nghiệm thu khi đủ criterion và artifact Accepted.',
+    'I1 (mở): trình soạn Draft, view checklist dạng cây, activity timeline chưa có thiết kế; đề xuất tách PID riêng.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00082?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H7', title:'PID-00083 (PR #134)', kind:'Ghi nhận', basis:BASIS_H, refs:['p83','pr134'], impact:'Hồ sơ PID-00083; 18 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Tab Thảo luận của trang workflow.',
+   ctxList:[
+    'H2: chỉ hiện entry của vòng đã đóng; vòng mở hiện “Đang viết” (DEC-47, DEC-48).',
+    'H3: tab trong trang workflow của PID-00059, mở bằng ?view=deliberation.',
+    'H7: bản tổng hợp giữ bất đồng; prompt quyết định dùng thẻ của shell.',
+    'H14: Agent List trong phiên theo trạng thái participant.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00083?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H8', title:'PID-00084 (PR #134)', kind:'Ghi nhận', basis:BASIS_H, refs:['p84','pr134'], impact:'Hồ sơ PID-00084; 12 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Thẻ đề xuất thảo luận trong Chat.',
+   ctxList:[
+    'H2: thẻ thay thẻ chuẩn cho prompt deliberation_proposal trong Chat của PID-00058.',
+    'H4: nút theo choices của server, không chọn sẵn, một lời gọi answerPrompt.',
+    'H7: không khai mock; fixture có type; kho mock prompt của PID-00060 có prompt loại này.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00084?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H9', title:'PID-00098 (PR #137)', kind:'Ghi nhận', basis:BASIS_H, refs:['p98','pr137'], impact:'Hồ sơ PID-00098; 20 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Khu vực library: Discover, Trusted Library, Reference. Sẵn sàng; 19 mục sửa nguồn, các mục 1, 4, 6, 7 phải xong trước Hội tụ PH-05.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-05.',
+    'H4: chủ mock 23 operation của path 10.',
+    'H6: OpenAlex mặc định; Google Scholar khi Researcher chọn; ô hạn mức chờ hợp đồng.',
+    'H11 (tạm): chọn hồ sơ tác giả qua Interactive Agent Prompt choice; hợp đồng author-searches chưa mô tả bước này (xem “Còn chờ PO”).',
+    'H12, H14: nhập thủ công DOI, BibTeX, PDF ≤ 50 MB; duyệt theo lô bằng một decideReferences, nghi trùng có ba nút riêng.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00098?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H10', title:'PID-00114 (PR #133)', kind:'Ghi nhận', basis:BASIS_H, refs:['p114','pr133'], impact:'Hồ sơ PID-00114; 17 câu H đã chốt; phiếu I còn mở: không',
+   ctx:'Khu vực research: Evidence Inspector, Artifacts. Sẵn sàng; 12 mục sửa nguồn, không chặn slice nào.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-06.',
+    'H3, H4: route /projects/{p}/evidence với ba tab Claims, Evidence, References.',
+    'H6: duyệt claim; Not Assessed không chấp nhận được; Unsupported, Conflicting cần xác nhận thêm.',
+    'H7: không làm ghi đè mức hỗ trợ, tìm evidence RAG, xóa artifact, tạo sơ đồ mới.',
+    'H11: claim tại câu tạm định vị bằng nguyên văn phát biểu; không thấy thì vào nhóm “Claim chưa định vị”.',
+    'H12: chủ mock 24 operation.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00114?', opts:HOPTS, rec:0, chosen:0},
+  {id:'H11', title:'PID-00115 (PR #135, #154)', kind:'Ghi nhận', basis:BASIS_H, refs:['p115','pr135','pr154','pr150'], impact:'Hồ sơ PID-00115; 24 câu H đã chốt; quyết định sửa nguồn ở #154; phiếu I còn mở: không',
+   ctx:'Khu vực manuscript: LaTeX Manuscript Workspace. Sẵn sàng; 13 mục sửa nguồn.',
+   ctxList:[
+    'H1: PH-02 Xây với mock; Hội tụ ở cổng PH-06.',
+    'H3: gọi 26 operation, chủ mock 20 operation của path 12.',
+    'H6, H7: lưu chủ động (một commit một revision, không tự lưu); xung đột 409 tự gửi lại một lần khi file không đổi trên server.',
+    'H12: chấp nhận proposal chỉ khi Proposed và citationCheck.passed đúng bằng true; không sửa diff.',
+    'H21: điện thoại chỉ xem và quyết định proposal.',
+    'H22: gói editor, PDF khai trong apps/web/package.json; chấp nhận cảnh báo web/shell của check-tracks.',
+    'Sửa nguồn mục 5: PRD 12.5 MS-DIFF-001 bỏ câu edit-and-approve (xem “Còn chờ PO”).',
+    'Sửa nguồn ở #154, chốt theo đề xuất: BuildIssue.params có limit (số giây với timeout, số MB với memory_limit) và reason (chỉ với memory_limit: tex_capacity khi TeX hết dung lượng trong, memory khi chạm giới hạn bộ nhớ của môi trường build). QC #154 G5: bằng chứng SPK-06 ghi cgroup_oom, nên đổi memory thành cgroup_oom hoặc ghi cách ánh xạ.',
+    'Sửa nguồn ở #154, chốt theo đề xuất: FileChange.restoreFromRevisionId (tùy chọn, writeOnly) lấy nội dung văn bản hoặc nhị phân của file cùng path ở một revision cũ; revision không thuộc Manuscript hoặc không có file đó trả 400 validation_failed; không dùng cho bibliography/references.bib (System sinh lại, MS-BIB-001); revision khôi phục ghi source = direct_edit, actor Researcher.',
+    'Sửa nguồn ở #154, chốt theo đề xuất: không thêm giá trị enum cho ManuscriptRevision.source; chèn sơ đồ là change_proposal có artifactVersionIds, khôi phục là direct_edit. manual_submission chờ PO (xem “Còn chờ PO”).',
+    'Nghiệm thu (QC #154 G1, chốt theo đề xuất): #150 nghiệm thu theo AC ở c8cf274 (hồ sơ của #135); phần AC mới của #154 là Lần 2 của PID-00115.'
+   ],
+   q:'Giữ các câu đã chốt của PID-00115?', opts:HOPTS, rec:0, chosen:0},
+ ]},
+];
+const ALL = GROUPS.flatMap(g => g.items);
+const KEY = 'prd-phieu-chot-ph02-v2';
+const initial = () => ({head:{}, items:Object.fromEntries(ALL.map(it => [it.id, {choice:String(it.chosen), other:'', note:''}]))});
+let state = initial();
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const refLinks = it => it.refs.map(k => `<a href="${R[k][1]}">${esc(R[k][0])}</a>`).join(' · ');
+
+function render() {
+  const root = document.getElementById('groups');
+  root.innerHTML = GROUPS.map(g => `<h2>${esc(g.title)}</h2>${g.note ? `<p class="status">${esc(g.note)}</p>` : ''}` + g.items.map(it => {
+    const name = 'r-' + it.id;
+    const opts = it.opts.map((o, i) => `<label><input type="radio" name="${name}" value="${i}">${esc(o)}${i === it.chosen ? '<span class="chip decided">Đã chốt</span>' : ''}${i === it.rec ? '<span class="chip">Đề xuất</span>' : ''}</label>`).join('');
+    const ctx = (it.ctx ? `<p>${esc(it.ctx)}</p>` : '') + (it.ctxList ? `<ol>${it.ctxList.map(c => `<li>${esc(c)}</li>`).join('')}</ol>` : '');
+    return `<section class="item" id="it-${it.id}" data-id="${it.id}">
+<h3>${esc(it.id)}${it.title ? ' — ' + esc(it.title) : ''}</h3><p class="ref">${esc(it.kind)} · ${esc(it.basis)} · ${refLinks(it)} · Ảnh hưởng: ${esc(it.impact)}</p>
+<div class="ctx">${ctx}</div><p class="q">${esc(it.q)}</p>
+<div class="opts" role="radiogroup" aria-label="Phương án cho ${esc(it.id)}">${opts}
+<label><input type="radio" name="${name}" value="other">Khác</label></div>
+<input type="text" class="other-text hidden" placeholder="Câu trả lời của PO" aria-label="Câu trả lời khác cho ${esc(it.id)}">
+<label class="note-label">Ghi chú<textarea placeholder="Điều kiện, chỉnh sửa hoặc lý do (không bắt buộc)"></textarea></label>
+</section>`;
+  }).join('')).join('');
+  root.querySelectorAll('.item').forEach(el => {
+    const id = el.dataset.id, s = state.items[id] || {};
+    const other = el.querySelector('.other-text'), note = el.querySelector('textarea');
+    if (s.choice != null) { const r = el.querySelector(`input[value="${s.choice}"]`); if (r) r.checked = true; }
+    other.value = s.other || ''; note.value = s.note || '';
+    el.addEventListener('input', () => {
+      const r = el.querySelector('input[type=radio]:checked');
+      state.items[id] = {choice: r ? r.value : null, other: other.value, note: note.value};
+      save(); sync(el);
+    });
+    sync(el);
+  });
+  updateProgress();
+}
+
+function sync(el) {
+  const r = el.querySelector('input[type=radio]:checked');
+  el.querySelectorAll('.opts label').forEach(l => l.classList.toggle('picked', l.contains(r)));
+  el.querySelector('.other-text').classList.toggle('hidden', !(r && r.value === 'other'));
+  el.classList.toggle('done', isDone(el.dataset.id));
+  updateProgress();
+}
+
+function updateProgress() {
+  const changed = ALL.filter(it => isChanged(it)).length;
+  document.getElementById('progress').textContent = `${ALL.length} mục · PO đổi ${changed}`;
+}
+
+function isDone(id) { const s = state.items[id]; return !!(s && s.choice != null && (s.choice !== 'other' || s.other.trim())); }
+function isChanged(it) { const s = state.items[it.id]; return !!(s && s.choice != null && s.choice !== String(it.chosen)); }
+
+function answer(it) {
+  const s = state.items[it.id];
+  if (!isDone(it.id)) return {status:'Chưa chốt', text:''};
+  const text = s.choice === 'other' ? s.other.trim() : it.opts[+s.choice];
+  return {status: isChanged(it) ? 'PO đổi' : 'Giữ như đã chốt', text, recommended: s.choice !== 'other' && +s.choice === it.rec};
+}
+
+function bindHead() {
+  const map = {owner:'f-owner', date:'f-date', no:'f-no', general:'f-general'};
+  if (!state.head.date) state.head.date = '2026-11-27';
+  if (!state.head.no) state.head.no = 'PC-06';
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    el.value = state.head[k] || '';
+    el.addEventListener('input', () => { state.head[k] = el.value; save(); });
+  }
+}
+
+function fmtDate(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function fileBase() { return `phieu-chot-ph02-${state.head.date || '2026-11-27'}${state.head.no ? '-' + state.head.no.replace(/[^\w-]+/g, '') : ''}`; }
+
+function toMarkdown() {
+  const h = state.head, changed = ALL.filter(it => isChanged(it)).length;
+  const L = ['# Phiếu chốt PH-02 — SIRes', '',
+    `- Số phiếu: ${h.no || '—'}`, `- Người chốt: ${h.owner || '—'}`, `- Ngày chốt: ${fmtDate(h.date) || '—'}`,
+    '- Phạm vi: các điểm còn mở của PH-02 (rà 25/11/2026), chốt 27/11/2026 theo ủy quyền và lựa chọn của PO ngày 26/11/2026', `- Số mục: ${ALL.length}; PO đổi: ${changed}`, ''];
+  if (h.general && h.general.trim()) L.push('## Ghi chú chung', '', h.general.trim(), '');
+  for (const g of GROUPS) {
+    L.push(`## ${g.title}`, '');
+    if (!g.items.length && g.note) L.push(g.note, '');
+    for (const it of g.items) {
+      const a = answer(it), s = state.items[it.id] || {};
+      L.push(`### ${it.id}${it.title ? ' — ' + it.title : ''} — ${a.status}`, '', `- Loại: ${it.kind}`, `- Cơ sở: ${it.basis}`, `- Ảnh hưởng: ${it.impact}`, `- Câu hỏi: ${it.q}`);
+      if (a.text) L.push(`- Quyết định: ${a.text}${a.recommended ? ' *(theo đề xuất)*' : ''}`);
+      if (isChanged(it)) L.push(`- Đã chốt trước đó: ${it.opts[it.chosen]}`);
+      if (s.note && s.note.trim()) L.push(`- Ghi chú: ${s.note.trim().replace(/\n+/g, ' ')}`);
+      L.push('');
+    }
+  }
+  return L.join('\n');
+}
+
+function toJSON() {
+  return JSON.stringify({form:'phieu-chot-ph02', source:'docs/overview@2026-11-27', head:state.head,
+    items: ALL.map(it => { const a = answer(it), s = state.items[it.id] || {};
+      return {id:it.id, type:it.kind, basis:it.basis, impact:it.impact, question:it.q,
+        status:a.status, decision:a.text || null, decidedBefore:it.opts[it.chosen], changedByPO:isChanged(it),
+        followsRecommendation:!!a.recommended, note:(s.note || '').trim() || null}; })}, null, 2);
+}
+
+document.getElementById('b-md').onclick = () => download(fileBase() + '.md', toMarkdown(), 'text/markdown;charset=utf-8');
+document.getElementById('b-json').onclick = () => download(fileBase() + '.json', toJSON(), 'application/json;charset=utf-8');
+document.getElementById('b-print').onclick = () => window.print();
+document.getElementById('b-rec').onclick = () => {
+  if (!confirm('Đưa mọi mục về phương án đã chốt và xóa ghi chú?')) return;
+  state = {...initial(), head: state.head}; save(); render();
+};
+
+bindHead();
+render();
+</script>
+</body>
+</html>

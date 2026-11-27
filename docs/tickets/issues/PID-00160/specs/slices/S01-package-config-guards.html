@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160 slice S01: package, cấu hình, chặn môi trường.">
+<title>PID-00160 — S01 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>S01 — Package, cấu hình và chặn theo môi trường</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00160-AC07 (phần file), PID-00160-AC08</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O2, O3, O4, O8, O12; <code>test/config.spec.ts</code> của O9</td></tr>
+<tr><th scope="row">Bước spec</th><td>B1, B2</td></tr>
+<tr><th scope="row">Edge case</th><td>EC01–EC05 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>— (không cần compose; PID-00159 không chặn slice này)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Tạo <code>infra/local/oidc-mock/package.json</code> (tạo mới) theo <a href="../index.html#o1">O1</a>: <code>@sires/oidc-mock</code>, <code>type: module</code>, script <code>build</code> (<code>tsc -p tsconfig.build.json</code>), <code>typecheck</code>, <code>lint</code> (<code>eslint .</code>), <code>test</code> (<code>vitest run</code>), <code>start</code> (<code>node dist/main.js</code>); <code>oidc-provider</code> ghim một phiên bản 9.x chính xác; dev <code>openid-client</code>, <code>vitest</code>, <code>typescript</code>, <code>@types/node</code> bằng <code>catalog:</code>; <code>nx.tags</code> <code>type:app</code>, <code>lang:ts</code>, <code>scope:infra</code>. Tạo <code>tsconfig.json</code>, <code>tsconfig.build.json</code> (tạo mới) theo mẫu của <code>libs/ts/testing</code>.</li>
+<li>Thêm <code>infra/local/oidc-mock</code> vào <code>packages</code> của <code>pnpm-workspace.yaml</code> (có sẵn); chạy <code>pnpm install</code> để sinh lại <code>pnpm-lock.yaml</code> (không sửa tay).</li>
+<li>Viết <code>src/config.ts</code> (tạo mới): đọc sáu biến của <a href="../index.html#s-4-2">spec 4.2</a>, trả cấu hình đã kiểm hoặc ném lỗi có thông điệp một dòng theo thứ tự kiểm ở <a href="../index.html#s-4-4">spec 4.4</a>; đường dẫn file mặc định tính từ thư mục package (không theo thư mục chạy lệnh).</li>
+<li>Viết <code>src/seed.ts</code> (tạo mới): đọc file client (mảng metadata) và file tài khoản; kiểm theo <a href="../index.html#s-4-1">spec 4.1</a>; hàm tra tài khoản theo <code>sub</code> và theo email (không phân biệt hoa thường); hàm so mật khẩu bằng <code>timingSafeEqual</code> trên SHA-256. Thông báo lỗi không in mật khẩu, secret.</li>
+<li>Tạo bốn file trong <code>config/</code> (tạo mới) đúng nội dung của spec 4.1: <code>clients.local.json</code>, <code>accounts.local.json</code>, <code>clients.staging.example.json</code>, <code>accounts.staging.example.json</code>.</li>
+<li>Viết <code>test/config.spec.ts</code> (tạo mới) với các test ở mục Kiểm. Ca “không nghe cổng nào” kiểm bằng cách gọi hàm khởi động và xác nhận hàm ném lỗi trước khi tạo máy chủ.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm install</code>; <code>pnpm nx show project @sires/oidc-mock</code> có <code>build</code>, <code>typecheck</code>, <code>lint</code>, <code>test</code></li>
+<li>Test: <code>test/config.spec.ts › chặn theo môi trường</code> (PID-00160-AC08 ca 1, 2, 7; EC01)</li>
+<li>Test: <code>test/config.spec.ts › quy tắc staging</code> (PID-00160-AC08 ca 3–6; EC05)</li>
+<li>Test: <code>test/config.spec.ts › issuer sai</code> (PID-00160-AC08 ca 7, 8; EC04)</li>
+<li>Test: <code>test/config.spec.ts › file tài khoản sai</code> (EC02), <code>› file client sai</code> (EC03)</li>
+<li>Test: <code>test/config.spec.ts › file cục bộ hợp lệ</code> (PID-00160-AC07 phần file: hai tài khoản <code>sires-mock-a</code>, <code>sires-mock-b</code>, <code>sub</code> và email khác nhau), <code>› file mẫu staging bị từ chối khi chưa thay chỗ giữ chỗ</code></li>
+<li><code>pnpm nx run @sires/oidc-mock:test</code>, <code>pnpm nx run @sires/oidc-mock:typecheck</code>, <code>pnpm nx run @sires/oidc-mock:lint</code> đạt</li>
+<li><code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Package có trong workspace; cấu hình sai theo spec 4.4 đều bị từ chối trước khi mở cổng; bốn file <code>config/</code> đúng spec 4.1.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00160</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Slice S01 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

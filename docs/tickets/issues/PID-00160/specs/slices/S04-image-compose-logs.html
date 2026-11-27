@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160 slice S04: log, image, service compose.">
+<title>PID-00160 — S04 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>S04 — Log, image Docker và service trong compose cục bộ</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00160-AC09, PID-00160-AC10</td></tr>
+<tr><th scope="row">Output spec</th><td>O7 (<code>src/log.ts</code>), O10, O11; test log của <code>test/flow.spec.ts</code> (O9)</td></tr>
+<tr><th scope="row">Bước spec</th><td>B5</td></tr>
+<tr><th scope="row">Edge case</th><td>EC13, EC16, EC17</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02, S03; <a href="../../../PID-00159/index.html">PID-00159</a> đã merge (cùng môi trường cục bộ)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Viết <code>src/log.ts</code> (tạo mới): ghi một dòng JSON ra stdout cho mỗi sự kiện ở <a href="../index.html#s-4-3">spec 4.3</a> với <code>ts</code>, <code>event</code>, <code>client_id</code>, <code>sub</code> khi có, mã lỗi khi có; không ghi token, code, mật khẩu, secret, cookie, header <code>Authorization</code>. Hàm ghi nhận được bộ ghi thay thế để test thu log.</li>
+<li>Thêm test <code>test/flow.spec.ts › log không chứa token, mật khẩu, secret</code>: thu log trong lúc chạy luồng của AC02, AC04, AC05, AC06; tìm mọi giá trị token, code, <code>sires-local-gateway-secret</code>, <code>sires-local</code> đã dùng.</li>
+<li>Tạo <code>infra/local/oidc-mock/Dockerfile</code> (tạo mới) theo mẫu <code>infra/docker/node/Dockerfile</code>: build từ gốc repo, <code>pnpm install --frozen-lockfile</code>, <code>pnpm nx run @sires/oidc-mock:build</code>, <code>pnpm --filter @sires/oidc-mock deploy --legacy --prod /out</code>; image chạy chép <code>/out</code> và thư mục <code>config/</code>, <code>USER node</code>, <code>EXPOSE 9400</code>, <code>CMD ["node", "dist/main.js"]</code>; không đặt <code>NODE_ENV=production</code>. Tạo <code>Dockerfile.dockerignore</code> (tạo mới): như file mẫu, thêm <code>.sires</code>, <code>**/.sires</code>.</li>
+<li>Thêm service <code>oidc-mock</code> vào <code>infra/local/compose.yaml</code> (có sẵn) theo <a href="../index.html#o11">O11</a>: <code>build.context: ../..</code>, <code>build.dockerfile: infra/local/oidc-mock/Dockerfile</code>, <code>image: sires/oidc-mock:local</code>, <code>environment</code> <code>OIDC_MOCK_ENV: local</code>, <code>OIDC_MOCK_ISSUER: http://localhost:9400</code>, <code>ports: ["9400:9400"]</code>, healthcheck chạy <code>node -e</code> gọi <code>http://127.0.0.1:9400/health</code>; sửa dòng chú thích đầu file (thêm OIDC mock, PID-00160).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li>Test: <code>test/flow.spec.ts › log không chứa token, mật khẩu, secret</code> (PID-00160-AC10)</li>
+<li>Thao tác tay (PID-00160-AC09): <code>pnpm local:up --build</code> → mã 0; <code>docker compose -f infra/local/compose.yaml ps</code> (trong WSL ở Windows) thấy <code>oidc-mock</code> healthy; từ máy, <code>curl -s http://localhost:9400/.well-known/openid-configuration</code> có <code>"issuer":"http://localhost:9400"</code>; <code>docker run --rm --entrypoint id sires/oidc-mock:local</code> in <code>uid</code> của <code>node</code></li>
+<li>Thao tác tay (EC16): <code>docker run --rm --entrypoint sh sires/oidc-mock:local -c "ls -a /app; find / -name provider-keys.env 2&gt;/dev/null"</code> không có <code>.sires</code>, <code>.env</code>, <code>.git</code></li>
+<li>Thao tác tay (EC13): ghi <code>kid</code> ở <code>/jwks</code>, <code>docker compose -f infra/local/compose.yaml restart oidc-mock</code>, <code>kid</code> khác</li>
+<li>Thao tác tay (EC17): <code>time docker compose -f infra/local/compose.yaml stop oidc-mock</code> dưới 10 giây</li>
+<li><code>pnpm nx affected -t lint typecheck test build</code>; <code>node scripts/docs/add-license.mjs --check</code>, <code>node scripts/development/check-tracks.mjs</code> → sạch, chỉ luồng <code>infra</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li><code>pnpm local:up</code> có OIDC mock chạy ở <code>http://localhost:9400</code>; image không mang bí mật của máy Dev; log không lộ token, mật khẩu, secret.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00160</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

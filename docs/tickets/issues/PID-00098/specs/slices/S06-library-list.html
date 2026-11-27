@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S06 của ticket PID-00098.">
+<title>PID-00098 — S06 Trusted Library: danh sách | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S06 — Trusted Library: bộ lọc, bảng, trống, đang tải, lỗi</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>UX-STATE-002-AC01, DISC-SCHOLAR-002-AC02, UX-REF-002-AC01 (dòng trong bảng)</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O6</td></tr>
+<tr><th scope="row">Bước spec</th><td>B3, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC28–EC31, EC44–EC46, EC53</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; PID-00012 S06, S11 (chip Indexed, Not Indexed, Unavailable, Revoked)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thay Placeholder của route <code>library</code> bằng màn Trusted Library (tạo mới trong <code>apps/web/src/features/library/</code>): tiêu đề, nút “Tìm ở Discover” và “Nhập DOI / BibTeX / PDF” (mở <code>/discover#nhap-thu-cong</code>, H12).</li>
+<li>Bộ lọc theo H13 (tìm <code>q</code>, Duyệt, Indexing, Năm); đổi lọc gọi lại <code>listReferences</code> từ trang đầu; lọc rỗng → “Không có reference khớp bộ lọc” và “Xóa lọc” (EC28).</li>
+<li>Bảng năm cột theo H13: chip duyệt kèm ngày duyệt, chip indexing kèm ghi chú (Failed: <code>indexingError.message</code>; Unavailable: “Dùng được cho citation, không dùng được cho evidence”), Project dùng kèm cờ “needs review” khi Revoked đang dùng; tiêu đề mở <code>/library/</code> mã reference; bảng cuộn trong thẻ; trang 50 mục, “Tải thêm” (EC30).</li>
+<li>Trống tài khoản → “Thư viện chưa có reference nào”, nút chính “Tìm tài liệu ở Discover” (EC28); đang tải → skeleton 6 dòng và <code>role="status"</code> (EC45); lỗi → trạng thái lỗi có mã, “Thử lại” (EC29). Không gọi operation discovery nào trên màn này.</li>
+<li>Lọc Project (H28): danh sách project từ <code>listProjects</code> (mock của global, test override), gửi <code>selectedInProject</code>. Duyệt thêm “Đã xóa” (H29): <code>listReferences</code> với <code>deleted = true</code>, bảng Reference, BibTeX key, Đã xóa (<code>deletedAt</code>), Xóa vĩnh viễn sau (<code>purgeAfter</code>), nút “Khôi phục” → <code>restoreReference</code> → dòng rời danh sách, reference về bảng Trusted; <code>409</code> → lý do (EC53). Chip Failed, Unavailable kiểu Lỗi (H18).</li>
+<li>Nghe <code>reference.status_changed</code>, <code>reference.indexing_status_changed</code> → đọc lại dòng bằng <code>getReference</code>; tín hiệu cần tải lại → tải lại trang đầu (EC31).</li>
+<li>Test trong <code>apps/web/src/features/library/library.spec.tsx</code> (tạo mới): thư viện trống, lọc rỗng, đang tải, lỗi tại phần, tải thêm, cập nhật theo sự kiện, nguồn discovery lỗi không ảnh hưởng, ghi chú Unavailable trong bảng, lọc theo project, khôi phục reference đã xóa, khôi phục quá hạn.</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → test của S06 đạt</li>
+<li>Test: <code>apps/web/src/features/library/library.spec.tsx › thư viện trống</code> (UX-STATE-002-AC01); <code>› nguồn discovery lỗi không ảnh hưởng</code> (DISC-SCHOLAR-002-AC02)</li>
+<li><code>node agent/skills/qc/sires-ui-review/scripts/check-ui.mjs apps/web/src</code> → không lỗi</li>
+<li>Thao tác tay: 1024×768 bảng cuộn trong thẻ, 390×844 không cuộn ngang (EC44); reduced motion (EC46)</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Bảng, bộ lọc và bốn trạng thái của danh sách chạy trên mock; hai trạng thái của mỗi reference hiện riêng; test đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S06 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

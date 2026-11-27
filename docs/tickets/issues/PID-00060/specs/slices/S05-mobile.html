@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S05 của ticket PID-00060.">
+<title>PID-00060 — S05 MobilePending, MobilePrompt (M1, M2) | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00060</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00060</p><h1>S05 — MobilePending, MobilePrompt (M1, M2)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>PID-00060-AC02, UX-RESP-001-AC01</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC06, EC19–EC25</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S02; PID-00012 S03 (khung điện thoại), S10 (thẻ prompt)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>M1: <code>/pending-actions</code> dưới 768px hiện danh sách gọn theo <code>MobilePending.html</code> (H3), nhóm Hết hiệu lực, trống (EC06); chạm Interactive Agent Prompt mở M2, loại khác mở <code>deepLink</code>.</li>
+<li>M2: route <code>/pending-actions/prompts/{promptId}</code> đăng ký qua hợp đồng Feature; <code>getPrompt</code>; đầu trang “Project” và tên project; thẻ prompt của shell với dữ liệu và callback.</li>
+<li>Callback gửi <code>answerPrompt</code> theo loại (H9) kèm <code>Idempotency-Key</code>, nút vô hiệu khi đang gửi (EC24); 409 (EC20); 404 (EC23); Expired, Cancelled, Answered chỉ đọc (EC19); <code>edit_and_approve</code> chỉ đọc (EC21); nghe <code>prompt.status_changed</code> của prompt đang mở.</li>
+<li>Không độ rộng cố định gây cuộn ngang; radio rộng hết thẻ; nút xác nhận 44–48px (EC22). Thẻ thiếu loại → dừng (EC25).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → <code>apps/web/src/features/global/mobile.spec.tsx</code> › 390 px trả lời prompt (PID-00060-AC02); › 375 px trả lời prompt approval (UX-RESP-001-AC01); › prompt hết hiệu lực chỉ đọc (EC19); › trả lời bị 409 (EC20); › edit_and_approve chỉ đọc (EC21); › không có độ rộng cố định (EC22); › không tìm thấy (EC23); › không gửi trùng (EC24)</li>
+<li>Thao tác tay trên preview 390×844 và 375×812: không cuộn ngang, trả lời bằng bàn phím và chạm</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Trên 390px và 375px xem được việc chờ và trả lời đầy đủ prompt choice, approval, information_request trên mock</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00060</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00060 · Slice S05 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

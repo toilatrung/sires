@@ -6,10 +6,18 @@ import { Test } from '@nestjs/testing';
 import { HealthController } from '@sires/platform';
 import { describe, expect, it } from 'vitest';
 import { AppModule } from './app.module';
+import { SESSION_OPTIONS } from './session/session.service';
 
 describe('gateway AppModule', () => {
   it('wires the health endpoint with this service manifest', async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    expect(moduleRef.get(HealthController).check()).toEqual({ service: 'gateway', status: 'ok' });
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(SESSION_OPTIONS)
+      .useValue({ databaseUrl: 'postgres://unused:unused@127.0.0.1/unused', csrfKey: Buffer.alloc(32, 1) })
+      .compile();
+    try {
+      expect(moduleRef.get(HealthController).check()).toEqual({ service: 'gateway', status: 'ok' });
+    } finally {
+      await moduleRef.close();
+    }
   });
 });

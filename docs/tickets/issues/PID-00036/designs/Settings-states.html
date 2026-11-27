@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00036 — Sketch: trạng thái Settings và SignIn chưa vẽ</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; --err:#9f1239; --warn:#9a3412; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header small { color:var(--mute); }
+  main { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:24px; padding:24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; }
+  .state h2 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:12px; color:var(--mute); }
+  .ph p { margin:4px 0; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0; }
+  .btn { display:inline-block; border:1px solid var(--ink); border-radius:6px; padding:4px 10px; color:var(--ink); font-size:13px; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .btn.off { opacity:.45; }
+  .chip { display:inline-block; border:1.5px solid var(--line); border-radius:4px; padding:0 6px; font-size:12px; font-weight:600; }
+  .chip.err { border-color:var(--err); color:var(--err); }
+  .chip.warn { border:1.5px dashed var(--warn); color:var(--warn); }
+  .box { border-left:3px solid var(--line); padding:4px 10px; margin:6px 0; }
+  .box.err { border-color:var(--err); }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  td, th { border-bottom:1px solid var(--line); padding:4px; text-align:left; }
+</style>
+</head>
+<body>
+<header>
+  <strong>PID-00036 — Trạng thái Settings và SignIn chưa có trong docs/ui-design</strong> · sketch bố cục và trạng thái<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/SignIn*.html, SettingsProviders.html, SettingsProfile.html, SettingsAgents*.html, SettingsPreferences*.html · tác nhân Researcher · nguồn: trang ticket mục 5 (H2–H17, chốt theo đề xuất, PO ủy quyền 26/11/2026)</small>
+</header>
+<main>
+  <section class="state"><h2>1 · SignIn — lỗi theo mã</h2><p class="why">PID-00036-AC02, UX-AUTH-002-AC01 · EC05–EC07 · H3</p>
+    <div class="ph"><p><strong>Đăng nhập vào SIRes</strong></p><p>SIRes thuộc nền tảng eTroy. Tài khoản do eTroy quản lý.</p>
+      <div class="box err"><p><strong>oidc_unavailable:</strong> eTroy tạm thời không phản hồi · <strong>login_cancelled:</strong> Bạn đã hủy đăng nhập ở eTroy · <strong>login_failed</strong> (và mã lạ): Đăng nhập không thành công</p><p>Chưa có dữ liệu nào bị thay đổi. Thử lại sau vài phút; nếu vẫn lỗi, liên hệ quản trị eTroy.</p><p>Mã lỗi: oidc_unavailable</p></div>
+      <div class="row"><span class="btn primary">Đăng nhập bằng eTroy</span></div></div></section>
+  <section class="state"><h2>2 · SignIn — điện thoại 390 px</h2><p class="why">UX-RESP-001 · EC04 · H17</p>
+    <div class="phone"><div class="ph"><p><strong>Đăng nhập vào SIRes</strong></p><p>Một cột; banner phiên hết hạn hoặc lỗi ở trên nút.</p><div class="row"><span class="btn primary" style="width:100%;text-align:center;padding:12px">Đăng nhập bằng eTroy</span></div><p>VI | EN ở góc trên (shell).</p></div></div></section>
+  <section class="state"><h2>3 · Provider Connections — trống</h2><p class="why">UX-SETTINGS-002-AC02 (phần Settings) · EC13</p>
+    <div class="ph"><p><strong>Provider Connections</strong></p><p>Thêm API key của bạn để agent hoạt động. SIRes không có key hay hạn mức mặc định.</p><div class="row"><span class="btn primary">Thêm kết nối</span></div></div></section>
+  <section class="state"><h2>4 · Form kết nối đầu tiên — thông báo gửi tới provider</h2><p class="why">NFR-PRIV-001-AC01 · EC13 · H8</p>
+    <div class="ph"><p><strong>Kết nối mới · Untested</strong></p><p>Tên · Provider (Anthropic Claude / OpenAI / Google Gemini) · Base URL · API key (••••)</p>
+      <div class="box"><p>Nội dung bạn gửi cho agent sẽ được gửi tới provider bạn cấu hình. Chỉ context do Orchestrator lắp ráp được gửi; trong thông tin cá nhân chỉ “Lĩnh vực nghiên cứu”, khi bạn bật công tắc ở Profile.</p><p>☐ Tôi đã đọc</p></div>
+      <div class="row"><span class="btn off">Kiểm tra kết nối</span><span class="btn off">Lưu</span></div><p>“Kiểm tra kết nối” bật khi đã đánh dấu.</p></div></section>
+  <section class="state"><h2>5 · Form — kiểm tra Invalid kèm hành động</h2><p class="why">PID-00036-AC01 · EC19, EC20 · H6, H7</p>
+    <div class="ph"><p><strong>Gemini cá nhân</strong> · API key ••••••••a7e0</p>
+      <div class="box err"><p><span class="chip err">Invalid</span> API key bị provider từ chối. Kết nối chưa dùng được cho agent nào. Mã lỗi: auth_failed</p><div class="row"><span class="btn">Sửa API key</span></div></div>
+      <div class="row"><span class="btn">Kiểm tra kết nối</span><span class="btn off">Lưu</span></div><p>Lưu được sau khi kiểm tra thành công; kết nối đã được lưu từ lần kiểm tra đầu.</p></div></section>
+  <section class="state"><h2>6 · Đang kiểm tra (chạy lâu)</h2><p class="why">DEC-52 · EC21</p>
+    <div class="ph"><div class="row"><span class="btn off">Đang kiểm tra…</span></div><p role="status">Đang gọi provider để kiểm tra kết nối.</p></div></section>
+  <section class="state"><h2>7 · Bảng — cột hành động</h2><p class="why">H9 · EC22, EC23</p>
+    <div class="ph"><table><tr><th>Tên</th><th>Kiểm tra</th><th>Agent dùng</th><th></th></tr>
+      <tr><td>Claude cá nhân</td><td><span class="chip">Valid</span> 31/10 08:02</td><td>Orchestrator, Writing…</td><td>Sửa · Kiểm tra lại · Xóa</td></tr>
+      <tr><td>Proxy OpenAI</td><td><span class="chip">Valid</span></td><td>Mặc định</td><td>Sửa · Kiểm tra lại · Xóa</td></tr>
+      <tr><td>Gemini cá nhân</td><td><span class="chip err">Invalid</span> auth_failed</td><td>—</td><td>Sửa · Kiểm tra lại · Xóa</td></tr></table></div></section>
+  <section class="state"><h2>8 · Dialog xóa — kết nối đang gán</h2><p class="why">AGENT-PROVIDER-002-AC03 · EC26–EC28 · H9</p>
+    <div class="ph"><p><strong>Xóa “Claude cá nhân”?</strong></p><p>Đang dùng cho: Orchestrator, Writing Agent. Chọn kết nối thay thế cho các agent này:</p><p>◯ OpenAI cá nhân (Valid) · ◯ Proxy OpenAI (Valid)</p><p>Gemini cá nhân (Invalid) — không chọn được</p>
+      <div class="row"><span class="btn">Giữ kết nối</span><span class="btn off">Xóa kết nối</span></div><p>Không có kết nối Valid khác → nút xóa vô hiệu, liên kết “Thêm kết nối”.</p></div></section>
+  <section class="state"><h2>9 · Profile — không đổi ảnh</h2><p class="why">UX-SETTINGS-001-AC01 · H11</p>
+    <div class="ph"><div class="row"><span class="chip">NT</span> ảnh chỉ hiển thị, không có nút đổi</div><p>Họ tên · Email (chỉ đọc · do eTroy quản lý) · Đơn vị · Lĩnh vực · URL Scholar</p><p>Dùng lĩnh vực nghiên cứu làm context cho agent · Tắt</p><div class="row"><span class="btn primary">Lưu thay đổi</span><span class="btn">Hủy</span></div></div></section>
+  <section class="state"><h2>10 · Agent Models — chưa có kết nối Valid</h2><p class="why">EC37 · H13</p>
+    <div class="ph"><p>Agent cần ít nhất một Provider Connection Valid. Thêm hoặc kiểm tra kết nối ở Provider Connections.</p><div class="row"><span class="btn">Quản lý Provider Connections</span></div></div></section>
+  <section class="state"><h2>11 · Ngưỡng kiểm chứng — khôi phục mặc định</h2><p class="why">UX-SETTINGS-005-AC01 · EC51, EC52 · H15, H16</p>
+    <div class="ph"><table><tr><td>Supported</td><td>0,80</td><td>Mặc định 0,80</td><td></td></tr><tr><td>Partially Supported</td><td>0,60</td><td>Mặc định 0,50</td><td><span class="chip warn">đã chỉnh</span></td></tr><tr><td>Citation không khớp</td><td>0,60</td><td>Mặc định 0,60</td><td></td></tr></table>
+      <p>Hợp đồng chưa có giá trị mặc định → không có cột “Mặc định”, một nhãn “đã chỉnh” cạnh tiêu đề nhóm.</p>
+      <div class="box"><p><strong>Khôi phục ngưỡng mặc định?</strong> Ba ngưỡng về giá trị mặc định; áp dụng từ lần kiểm chứng sau, kết quả đã có không đổi.</p><div class="row"><span class="btn">Giữ ngưỡng hiện tại</span><span class="btn primary">Khôi phục mặc định</span></div></div></div></section>
+  <section class="state"><h2>12 · Lỗi tải và 412</h2><p class="why">UX-STATE-003 · EC02, EC34 · H12</p>
+    <div class="ph"><div class="box err"><p>Dữ liệu đã đổi ở nơi khác. Thay đổi của bạn chưa được lưu và vẫn còn trong form. Xem lại rồi bấm Lưu. Mã lỗi: precondition_failed</p></div><div class="box err"><p>Không tải được Agent Models. Thử lại; nếu vẫn lỗi, ghi lại mã. Mã lỗi: service_unavailable</p><div class="row"><span class="btn">Thử lại</span></div></div></div></section>
+</main>
+</body>
+</html>

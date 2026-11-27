@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S09 của ticket PID-00098.">
+<title>PID-00098 — S09 Thao tác trên Reference | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00098</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00098</p><h1>S09 — Thao tác trên Reference: sửa metadata, thêm vào project, thu hồi, duyệt lại, gộp, xóa</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>LIB-LIBRARY-001-AC01, LIB-PROJECT-001-AC02, LIB-LIFECYCLE-001-AC01, LIB-METADATA-001-AC02</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O4</td></tr>
+<tr><th scope="row">Bước spec</th><td>B4, B7, B8</td></tr>
+<tr><th scope="row">Edge case</th><td>EC27, EC34–EC39</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S07 (quyết định duyệt, form metadata), S08; PID-00012 S09 (kho nháp)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Nút theo trạng thái theo H17: Pending Approval (Duyệt, Sửa rồi duyệt, Từ chối, Gộp khi nghi trùng — dùng lại lệnh của S07); Trusted (Sửa metadata, Thêm vào project, Thu hồi, Xóa khi <code>usedInProjectCount</code> bằng 0, Gộp khi nghi trùng); Revoked, Rejected (Duyệt lại, Xóa khi không dùng; metadata chỉ đọc, EC36). Một nút chính mỗi màn (design.md §4).</li>
+<li>Sửa metadata: form theo H17, đăng ký kho nháp (EC27); <code>updateReferenceMetadata</code> merge-patch với <code>If-Match</code> và <code>metadata</code> đầy đủ, không gửi <code>bibtexKey</code>; <code>412</code> → báo, đọc lại, giữ nội dung (EC35); <code>409</code> → đọc lại.</li>
+<li>Thêm vào project: dialog chọn project Active (<code>listProjects</code>), vô hiệu project đã có (<code>getReferenceUsage</code>), lý do tùy chọn → <code>selectReferencesForProject</code>; <code>422 reference_not_trusted</code>, <code>409</code>, không có project Active → theo EC37.</li>
+<li>Thu hồi: dialog 480px nêu số từ <code>getReferenceUsage</code> (project, evidence, claim theo <code>claimCount</code>, citation; H28), lý do bắt buộc, “Giữ Trusted” / “Thu hồi reference” → <code>revokeReference</code> (<code>Idempotency-Key</code>) → chip Revoked và tóm tắt <code>impact</code> (EC38). Duyệt lại: dialog lý do tùy chọn → <code>reinstateReference</code> (<code>Idempotency-Key</code>).</li>
+<li>Gộp: dialog nêu reference đích và hệ quả → <code>mergeReference</code> (<code>Idempotency-Key</code>) → mở trang reference đích. Xóa: dialog APR-08 → <code>deleteReference</code> → về <code>/library</code>; <code>409</code> → nêu nơi dùng, gợi ý Thu hồi (EC39). Hủy mọi dialog không gọi API (EC34).</li>
+<li>Test trong <code>apps/web/src/features/library/reference.spec.tsx</code> (override <code>listProjects</code> cục bộ): thêm vào project không duyệt lại, reference chờ duyệt không thêm vào project, thu hồi nêu ảnh hưởng hai project, sửa tiêu đề giữ key, sửa xung đột phiên bản, Revoked chỉ đọc, thêm vào project các trường hợp, xóa bị từ chối khi đang dùng. Dialog Xóa ghi khôi phục được trong 30 ngày ở Trusted Library › Đã xóa (H29).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → test của S09 đạt</li>
+<li>Test: <code>apps/web/src/features/library/reference.spec.tsx › thêm vào project không duyệt lại</code> (LIB-LIBRARY-001-AC01); <code>› reference chờ duyệt không thêm vào project</code> (LIB-PROJECT-001-AC02); <code>› thu hồi nêu ảnh hưởng hai project</code> (LIB-LIFECYCLE-001-AC01); <code>› sửa tiêu đề giữ key</code> (LIB-METADATA-001-AC02)</li>
+<li>Thao tác tay: mọi dialog dùng được bằng bàn phím, Esc đóng và trả focus</li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Mỗi thao tác hiện hệ quả trước khi xác nhận, gửi đúng operation và xử lý mã lỗi; test đạt</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00098</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00098 · Slice S09 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
