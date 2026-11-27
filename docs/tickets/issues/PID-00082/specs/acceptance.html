@@ -1,0 +1,44 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tiêu chí nghiệm thu, test và slice của ticket PID-00082.">
+<title>PID-00082 — Tiêu chí nghiệm thu → test | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00082</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00082</p><h1>PID-00082 — Tiêu chí nghiệm thu → test</h1>
+
+<p>Mỗi AC ít nhất một test Vitest trong Nx project <code>@sires/web</code>, dùng mock của khu vực (<code>apps/web/src/features/planning/__mocks__/</code>) và mock của PID-00013; operation của khu vực khác override cục bộ trong test (H5). Số liệu lấy từ ticket, PRD, hợp đồng và H1–H20 (chốt theo đề xuất, PO ủy quyền 26/11/2026); dữ liệu mẫu lấy từ <code>Plan.dc.html</code>, <code>PlanCompare.dc.html</code>, <code>TaskReview.dc.html</code>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">AC</th><th scope="col">Given–When–Then (đã làm rõ)</th><th scope="col">Test (file › tên)</th><th scope="col">Slice</th><th scope="col">Nguồn số liệu</th></tr></thead><tbody>
+<tr><td>PID-00082-AC01</td><td>Given T-2.5 <code>Blocked</code> với <code>lastReadiness.passed = false</code>, RC-04 không đạt (T-2.3 chưa Completed) và RC-07 không đạt (tiêu chí so sánh chưa xác nhận), When mở panel T-2.5, Then nút Thực thi vô hiệu; hiện hai lý do, lý do RC-04 có nút “Mở T-2.3”, RC-07 có nút “Trả lời câu hỏi”; RC-08, RC-05 hiện “Đạt”.</td><td><code>apps/web/src/features/planning/task.spec.tsx › lý do chặn kèm hành động</code></td><td>S04</td><td>Ticket; TASK-READINESS-001; Plan.dc.html; H11</td></tr>
+<tr><td>PID-00082-AC02</td><td>Given Draft v5 có dependency T-3.1 → T-2.3 tạo chu trình T-2.3 → T-2.5 → T-3.1 → T-2.3, When xem đồ thị, Then banner nêu đúng ba Task và mã <code>dependency_cycle</code>, cạnh chu trình được tô, nút trình duyệt vô hiệu và không có lời gọi <code>submitPlanVersion</code>.</td><td><code>apps/web/src/features/planning/plan.spec.tsx › chu trình chặn trình duyệt</code></td><td>S03</td><td>Ticket; Plan--view-graph-cycle; H9</td></tr>
+<tr><td>UX-PLAN-001-AC01</td><td>Given v3 và v4 khác nhau ở dependency của T-2.5, When so sánh v4 với v3, Then dòng T-2.5 đánh dấu dependency thay đổi kèm trước và sau.</td><td><code>apps/web/src/features/planning/compare.spec.tsx › dependency thay đổi</code></td><td>S05</td><td>PRD 15; H13</td></tr>
+<tr><td>UX-PLAN-002-AC01</td><td>Given v4 Proposed và <code>getSharedContext</code> có 2 Context Item <code>kind = assumption</code> đang Active, When mở thanh duyệt, Then 2 giả định hiện trước nút Duyệt; Duyệt bật sau khi đánh dấu “Tôi đã xem các giả định này”; Từ chối chỉ gửi được khi đã nhập lý do.</td><td><code>apps/web/src/features/planning/compare.spec.tsx › giả định trước nút Duyệt</code></td><td>S05</td><td>PRD 15; H13</td></tr>
+<tr><td>UX-TASK-001-AC01</td><td>Given board có Task ở Ready, In Progress, Blocked, gồm cả manual và agent, When lọc label “Manual editor requirement”, Then chỉ Task manual hiện, vẫn nhóm theo trạng thái.</td><td><code>apps/web/src/features/planning/plan.spec.tsx › lọc label</code></td><td>S02</td><td>PRD 15; H8</td></tr>
+<tr><td>UX-TASK-002-AC01</td><td>Given T-2.5 Blocked vì T-2.3 chưa Completed, When xem đồ thị, Then nút T-2.5 đánh dấu bị chặn và có liên kết tới T-2.3.</td><td><code>apps/web/src/features/planning/plan.spec.tsx › đồ thị Task bị chặn</code></td><td>S03</td><td>PRD 15; H9</td></tr>
+<tr><td>UX-TASK-003-AC01</td><td>Given Task đã chạy hai lần (hai workflow theo <code>taskId</code>), When mở panel, Then lịch sử workflow có hai dòng, mỗi dòng có artifact của lần đó.</td><td><code>apps/web/src/features/planning/task.spec.tsx › lịch sử hai lần chạy</code></td><td>S04</td><td>PRD 15; H10</td></tr>
+<tr><td>UX-TASK-004-AC01</td><td>Given readiness không đạt vì RC-08 (agent chưa có kết nối hợp lệ), When xem kết quả, Then lý do đó có nút “Mở Settings → Agent Models” tới <code>/settings/agents</code>.</td><td><code>apps/web/src/features/planning/task.spec.tsx › lý do chặn kèm hành động</code></td><td>S04</td><td>PRD 15; TASK-READINESS-001-AC03; H11</td></tr>
+<tr><td>UX-TASK-005-AC01</td><td>Given Task <code>Blocked</code>, When mở panel, Then nút Thực thi vô hiệu và hiện lý do chặn; Given Task Ready và readiness Đạt, When bấm Thực thi, Then có dialog xác nhận trước khi gọi <code>activateTask</code>.</td><td><code>apps/web/src/features/planning/task.spec.tsx › Blocked không thực thi</code></td><td>S04</td><td>PRD 15; APR-02; H12</td></tr>
+<tr><td>UX-TASK-006-AC01</td><td>Given T-2.1 In Review có 3 criterion, 2 đã đánh dấu, When xem TaskReview, Then nút Nghiệm thu vô hiệu.</td><td><code>apps/web/src/features/planning/review.spec.tsx › criterion chưa đánh dấu</code></td><td>S06</td><td>PRD 15; TaskReview.dc.html; H14</td></tr>
+<tr><td>UX-LABEL-001-AC01</td><td>Given board có Task manual và Task agent, When xem với bộ lọc thang xám (<code>filter: grayscale(1)</code>), Then mỗi thẻ vẫn có biểu tượng và chữ của label khác nhau (kiểm bằng nội dung chữ và biểu tượng, không bằng màu).</td><td><code>apps/web/src/features/planning/plan.spec.tsx › label có biểu tượng và chữ</code></td><td>S02</td><td>PRD 15; H8</td></tr>
+<tr><td>UX-LABEL-002-AC01</td><td>Given Task manual Ready, When mở panel, Then không có nút giao cho agent hay Thực thi, có khối “Bạn cần thực hiện” kèm đầu ra bắt buộc và nút “Bắt đầu thực hiện”.</td><td><code>apps/web/src/features/planning/task.spec.tsx › Task manual</code></td><td>S04</td><td>PRD 15; H12</td></tr>
+<tr><td>PLAN-GENERATE-001-AC02</td><td>Phần nhãn thảo luận (thêm khi làm rõ, H7): Given Plan Version có <code>provenance.deliberation.status = skipped</code>, When xem Plan, Then có nhãn “Không qua thảo luận”; <code>deliberated</code> thì nhãn “Qua thảo luận” kèm liên kết Deliberation Record. Phần nội dung khác của AC thuộc backend.</td><td><code>apps/web/src/features/planning/plan.spec.tsx › nhãn thảo luận</code></td><td>S02</td><td>PRD 9; ORCH-DELIB-001; PID-00084-AC01 (phần Plan); H7</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00082</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00082 · Tiêu chí nghiệm thu · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

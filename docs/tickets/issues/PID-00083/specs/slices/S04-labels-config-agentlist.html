@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Slice S04 của ticket PID-00083.">
+<title>S04 — Thiếu cấu hình, nhãn thảo luận, Agent List trong phiên | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../../index.html"><img src="../../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00083</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00083</p><h1>S04 — Thiếu cấu hình, nhãn thảo luận, Agent List trong phiên</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam">Làm</a></li>
+<li><a href="#kiem">Kiểm</a></li>
+<li><a href="#xong-khi">Xong khi</a></li></ul></details>
+
+<p>Một lát dọc làm xong và kiểm được độc lập, trong đúng luồng của ticket. Trạng thái thực hiện ghi ở <code>report.md</code> của Dev, không ghi ở đây. Theo H11, H14 (chốt theo đề xuất, PO ủy quyền 26/11/2026).</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">AC</th><td>Không có AC riêng; phủ “Nhãn deliberated, skipped; Trạng thái thiếu cấu hình” của ticket</td></tr>
+<tr><th scope="row">Output spec</th><td>O1, O3</td></tr>
+<tr><th scope="row">Bước spec</th><td>B2, B3; H11, H14</td></tr>
+<tr><th scope="row">Edge case</th><td>EC17, EC18, EC21 (từ <code>specs/scope.html</code>)</td></tr>
+<tr><th scope="row">Phụ thuộc</th><td>S01; Agent List của PID-00059 (S05, cùng khu vực)</td></tr>
+</tbody></table></div>
+<h2 id="lam">Làm</h2>
+<ol><li>Thiếu cấu hình: bước của workflow chờ prompt <code>purpose = deliberation_proposal</code> mà chưa có phiên → tab ghi “Chưa mở phiên”, lý do từ <code>deliberationProposal.reason</code>, liên kết Settings → Agent Models, thẻ prompt của shell (EC17).</li>
+<li>Nhãn: prompt đề xuất đã trả lời <code>skip</code> → “Không qua thảo luận”; phiên Completed → “Qua thảo luận” kèm liên kết Deliberation Record; nhãn đặt ở đầu tab và cạnh bước tương ứng (EC18).</li>
+<li>Agent List (component của PID-00059, cùng khu vực): khi project có phiên Running hoặc Failed (<code>listDeliberations</code> với <code>status</code>), trạng thái Orchestrator, Analysis Agent A, B lấy theo <code>participants.status</code> — running → Đang chạy kèm “thảo luận bước m/n · Vòng k”, error → Lỗi; phiên Failed có prompt quyết định Open → Orchestrator “Chờ bạn”; giữ thứ tự ưu tiên của PID-00059 H15 (EC21).</li></ol>
+<h2 id="kiem">Kiểm</h2>
+<ul><li><code>pnpm nx run @sires/web:test</code> → đạt</li>
+<li><code>apps/web/src/features/monitoring/deliberation/deliberation.spec.tsx › thiếu cấu hình</code> (EC17); <code>› nhãn qua và không qua thảo luận</code> (EC18); <code>› agent list trong phiên</code> (EC21)</li>
+<li>Thao tác tay trên mock: so với <code>AgentList--wfState-deliberation</code>, <code>-synthesis</code>, <code>-deliberation-failed</code></li></ul>
+<h2 id="xong-khi">Xong khi</h2>
+<ul><li>Trạng thái thiếu cấu hình, nhãn thảo luận và Agent List trong phiên hiện đúng</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../../index.html">← PID-00083</a><a href="../../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00083 · Slice S04 · © 2026 eTroy · <a href="../../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tóm tắt nghiệp vụ đã làm rõ của ticket PID-00083.">
+<title>PID-00083 — Tóm tắt nghiệp vụ | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00083</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00083</p><h1>PID-00083 — Tóm tắt nghiệp vụ (đã làm rõ)</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#lam-gi">Làm gì</a></li>
+<li><a href="#quy-tac">Quy tắc</a></li>
+<li><a href="#input-da-kiem">Input đã kiểm</a></li>
+<li><a href="#output-phai-tao">Output phải tạo</a></li>
+<li><a href="#thuat-ngu">Thuật ngữ</a></li></ul></details>
+
+<p>Bản tóm tắt theo spec-read-skill, <strong>đã gộp câu trả lời ở mục Làm rõ</strong> của <a href="../index.html#s-5">trang ticket</a> (H1–H18, chốt theo đề xuất, PO ủy quyền 26/11/2026). Mỗi dòng dẫn nguồn.</p>
+<h2 id="lam-gi">Làm gì</h2>
+<p>Tác nhân là Researcher. Trong chi tiết workflow của Agent Activity (màn của PID-00059), tab “Thảo luận” cho xem từng phiên thảo luận (Agent Deliberation, DEC-47, DEC-48): Problem Brief, ba cột Orchestrator, Analysis Agent A, B với lập trường và phản biện theo vòng, điểm bị phản biện nối với phản biện, nhãn giả định, cảnh báo snapshot lỗi thời hoặc cùng model, usage của phiên, bản tổng hợp và lựa chọn của Researcher. Entry của vòng đang mở chưa hiện (“đang viết, mở khi vòng đóng”). Lượt này dựng trong <code>apps/web/src/features/monitoring/deliberation/</code> trên mock của PID-00013 (“Xây với mock”); nối backend thật ở cổng PH-04 (H1).</p>
+<h2 id="quy-tac">Quy tắc</h2>
+<ul><li>Vòng 1 đề xuất độc lập, Vòng 2 phản biện chéo, vòng hẹp nếu còn bất đồng; entry chỉ hiện khi vòng chứa nó đóng, vòng đang mở hiện “Đang viết, mở khi vòng đóng” — DEC-47, DEC-48; OQ-101; CTX-BOARD-002; ticket AC01; H2</li>
+<li>Một cột cho mỗi bên (Orchestrator, Analysis Agent A, B), lập trường và phản biện xếp theo vòng; điểm bị phản biện nối với phản biện; nhãn giả định — UX-MONITOR-006; ORCH-DELIB-003; H5</li>
+<li>Entry bất biến: đổi lập trường bằng entry mới (lý do bắt buộc), rút lại bằng <code>retracted</code> — CTX-BOARD-001; H6</li>
+<li>Cảnh báo khi hai instance cùng provider và model; cảnh báo snapshot lỗi thời — ORCH-DELIB-005; CTX-SNAPSHOT-001; H9</li>
+<li>Bản tổng hợp: đồng thuận, bất đồng, bảng đánh đổi theo tiêu chí, khuyến nghị, lựa chọn Researcher đã chọn; prompt quyết định trả lời bằng thẻ của shell — ORCH-DELIB-004; UX-MONITOR-006; H7</li>
+<li>Usage theo từng bên và tổng của phiên khớp tổng Agent Run — NFR-USAGE-005; H10</li>
+<li>Nhãn “qua thảo luận”, “không qua thảo luận”; trạng thái thiếu cấu hình; phiên lỗi — ticket “Gồm”; ORCH-DELIB-001, ORCH-DELIB-002; H8, H11</li>
+<li>Không chiếm operation mà PID-00059 đã giữ mock; tab gắn vào trang workflow của PID-00059 (cùng khu vực monitoring) — ghi chú của phiên điều phối; H3, H4</li>
+<li>Bất biến: agent đề xuất, Researcher quyết định; giao diện không tự trả lời prompt quyết định.</li></ul>
+<h2 id="input-da-kiem">Input đã kiểm</h2>
+<ul><li><code>docs/ui-design/source/Workflow.dc.html</code> (trạng thái <code>view-deliberation-running</code>, <code>-done</code>, <code>-failed</code>, <code>-cancelled</code>), <code>AgentList.dc.html</code> (<code>wfState-deliberation</code>, <code>synthesis</code>, <code>deliberation-failed</code>) — có</li>
+<li><code>docs/api-design/paths/08-ai-assistant-and-multi-agent-orchestration.yaml#/projects/{projectId}/deliberations</code>, <code>components/schemas/orchestration.yaml</code> (<code>Deliberation</code>, <code>DeliberationDetail</code>, <code>DeliberationEntry</code>, <code>UsageTotal</code>) — có, đủ cho màn</li>
+<li>Trang chi tiết workflow và Agent List của PID-00059 (cùng khu vực) — chưa có; làm ở PID-00059 S03, S05</li>
+<li>Shell (PID-00012), mock (PID-00013) — chưa có trên <code>main</code> ngày 27/11/2026</li></ul>
+<h2 id="output-phai-tao">Output phải tạo</h2>
+<ul><li>O1 tab Thảo luận trong <code>apps/web/src/features/monitoring/deliberation/</code>, i18n vi/en, đang tải, trống, lỗi → S01–S04</li>
+<li>O2 mock 2 operation (<code>listDeliberations</code>, <code>getDeliberation</code>) trong <code>apps/web/src/features/monitoring/__mocks__/</code> → S01</li>
+<li>O3 <code>deliberation.spec.tsx</code> → S01–S04 (đổi tên, H16)</li></ul>
+<h2 id="thuat-ngu">Thuật ngữ</h2>
+<ul><li><code>Deliberation</code> = phiên thảo luận (Agent Deliberation); <code>DeliberationEntry</code> = entry trên Deliberation Board; <code>ProblemBrief</code> = Problem Brief</li>
+<li>Vòng: <code>brief</code> 0, <code>independent</code> 1, <code>cross_critique</code> 2, <code>narrow</code> vòng hẹp, <code>synthesis</code> tổng hợp (<code>DeliberationRoundKind</code>)</li>
+<li>Bên: Orchestrator, Analysis Agent A, Analysis Agent B (<code>DeliberationPartyRef</code>)</li>
+<li>Xây với mock = dựng và test với mock sinh từ OpenAPI (D-UI); Hội tụ = chạy cùng backend thật trên staging</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00083</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00083 · Tóm tắt nghiệp vụ · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
