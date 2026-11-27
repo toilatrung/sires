@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PID-00098 — Sketch: Discover, Trusted Library, Reference</title>
+<style>
+  /* Sketch khung dây: tự chứa, không tải tài nguyên ngoài. Không phải thiết kế chốt: thiết kế thật theo docs/ui-design/design.md và sires-ui-executor. */
+  :root { --ink:#1f2328; --mute:#5f6875; --line:#c9ced6; --bg:#f6f7f9; --warn:#9a3412; --danger:#be123c; --brand:#0277dd; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); background:#fff; }
+  header small { color:var(--mute); }
+  h2.group { margin:24px 24px 0; font-size:16px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap:24px; padding:16px 24px 24px; }
+  .state { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:16px; }
+  .state h3 { margin:0 0 4px; font-size:14px; color:var(--mute); }
+  .state p.why { margin:0 0 12px; font-size:13px; color:var(--mute); }
+  .ph { border:1px solid var(--line); border-radius:4px; padding:10px 12px; color:var(--mute); }
+  .ph + .ph { margin-top:8px; }
+  .ph b { color:var(--ink); }
+  .row { display:flex; gap:8px; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding:6px 0; }
+  .row:last-child { border-bottom:0; }
+  .chip { border:1.5px solid var(--ink); border-radius:4px; padding:0 6px; font-size:12px; white-space:nowrap; }
+  .chip.dash { border-style:dashed; color:var(--mute); }
+  .chip.need { border-color:var(--brand); }
+  .chip.warn { border-color:var(--warn); color:var(--warn); }
+  .chip.warn.dash { border-style:dashed; }
+  .chip.err { border-color:var(--danger); color:var(--danger); }
+  .chip.run::before { content:"● "; color:var(--brand); }
+  .btn { border:1px solid var(--ink); border-radius:6px; padding:2px 8px; font-size:13px; white-space:nowrap; }
+  .btn.primary { background:var(--ink); color:#fff; }
+  .btn.danger { border-color:var(--danger); color:var(--danger); }
+  .alert { border:1.5px solid var(--danger); }
+  .need { border:1.5px solid var(--brand); }
+  .phone { width:390px; max-width:100%; margin:auto; border:6px solid var(--ink); border-radius:8px; padding:12px; background:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <strong>PID-00098 — Discover, Trusted Library, Reference</strong> · sketch bố cục và trạng thái<br>
+  <small>Màn tham chiếu: docs/ui-design/pages/Discover.html, Discover--state-searching.html, Library.html, Library--state-empty.html, Library--state-loading.html, Reference.html · route /discover, /library, /library/{referenceId} · tác nhân Researcher · nguồn: H6–H20</small>
+</header>
+<main>
+<h2 class="group">Discover (/discover)</h2>
+<div class="grid">
+  <section class="state"><h3>1 · Form tìm</h3><p class="why">H6, H7; EC01, EC02, EC06</p><div class="ph"><b>Discover</b> · Nguồn: OpenAlex (mặc định) · Google Scholar khi bạn chọn</div><div class="ph">[Query] Tiêu đề · Tác giả · Từ khóa</div><div class="ph">[ retrieval augmented generation hallucination ] Năm [2019]–[2026] <span class="btn">Tìm</span></div><div class="ph">Cột phải: Đã chọn · 0 · Nhập thủ công (#nhap-thu-cong)</div></section>
+  <section class="state"><h3>2 · Đang tìm</h3><p class="why">H8; UX-STATE-001; EC07, EC08</p><div class="ph need"><span class="chip need run">Đang tìm</span> OpenAlex · Discovery Agent · đã chạy 00:08 · rời trang được, kết quả báo qua notification<br>Gần nhất 09:52:14 · [thanh không xác định] <span class="btn">Hủy tìm</span></div><div class="ph">5 dòng skeleton (aria-hidden) · /discover?search=[mã workflow]</div></section>
+  <section class="state"><h3>3 · Có kết quả</h3><p class="why">PID-00098-AC01; UX-REF-001-AC01; DISC-SCHOLAR-001-AC01, AC04; H9, H10</p><div class="ph">24 kết quả đã tải + · Discovery Agent · 09:51 · không khẳng định bao phủ đầy đủ</div><div class="ph"><div class="row"><span>[x] A Survey on Hallucination in LLMs · Huang et al. · ACM TOIS · 2024 · doi:10.1145/3703155 · OpenAlex · Bản ghi nguồn</span><span class="chip dash">Chưa duyệt — không dùng làm nguồn</span></div><div class="row"><span>[–] RAG for Knowledge-Intensive NLP · Lewis et al. · 2020</span><span class="chip">Đã có trong Trusted Library ›</span></div><div class="row"><span>[–] Hallucination detection preprint · Doe 2023</span><span class="chip dash">Đã thu hồi ›</span></div><div class="row"><span>[ ] Active RAG · Jiang 2023 · <u>Loại</u></span><span class="chip dash">Chưa duyệt — không dùng làm nguồn</span></div><div class="row"><span style="opacity:.6">Rejected · Self-Ask… · <u>Chọn lại</u></span><span class="chip dash">Rejected</span></div></div><div class="ph">Tải thêm · Cột phải: Đã chọn · 3 <span class="btn primary">Gửi 3 kết quả vào luồng duyệt</span></div></section>
+  <section class="state"><h3>4 · Tóm tắt lô</h3><p class="why">LIB-IMPORT-001-AC01, AC03; H10; EC16–EC18</p><div class="ph">Lô 5 mục · Reference Processing Agent · xong 09:55</div><div class="ph"><div class="row"><span>Huang 2024</span><span class="chip need">Đã tạo · Pending Approval</span></div><div class="row"><span>Chen 2024</span><span class="chip warn dash">Trùng lặp · đã có [chen2023] ›</span></div><div class="row"><span>Jiang 2023</span><span class="chip err">Lỗi · [lý do từ lastError]</span></div></div><div class="ph">3 đã tạo · 1 trùng · 1 lỗi · <span class="btn">Thử lại các mục lỗi</span> · Mở Trusted Library để duyệt</div></section>
+  <section class="state"><h3>5 · Lỗi nguồn</h3><p class="why">DISC-SCHOLAR-001-AC02; INT-SCHOLAR-002-AC01; H8; EC03, EC04</p><div class="ph alert"><b>Nguồn tạm giới hạn truy cập</b> · mã rate_limited<br>Trusted Library và reference đã có không bị ảnh hưởng. Không tự gửi lại.<br><span class="btn">Nhập thủ công</span> <span class="btn">Tìm lại</span></div></section>
+  <section class="state"><h3>6 · Không có kết quả</h3><p class="why">H6; GS-A4; EC05</p><div class="ph">Không có kết quả cho truy vấn này trên OpenAlex. Thử bớt từ khóa hoặc đổi kiểu tìm.</div><div class="ph"><span class="btn">Tìm trên Google Scholar</span> (khi available) · <span class="btn">Nhập thủ công</span></div></section>
+  <section class="state"><h3>7 · Tác giả: chọn hồ sơ</h3><p class="why">DISC-AUTHOR-001-AC01; H11; EC19</p><div class="ph need">Thẻ prompt của shell (Open): “Chọn đúng hồ sơ tác giả”<br>( ) P. Lewis · Meta AI · 120 công bố<br>( ) P. Lewis · University of X · 14 công bố<br><span class="btn">Xác nhận</span> (vô hiệu tới khi chọn)</div><div class="ph">Chưa tải danh sách công bố trước khi trả lời</div></section>
+  <section class="state"><h3>8 · Tác giả: kết quả</h3><p class="why">DISC-AUTHOR-001-AC02–AC04; INT-SCHOLAR-004-AC01; EC12, EC20, EC21</p><div class="ph"><b>Danh sách có thể không đầy đủ</b> · lọc Năm [ ] Từ khóa [ ]</div><div class="ph"><span class="btn">Chọn tất cả kết quả đủ điều kiện (5)</span> · lối tắt “Công bố của tôi” chỉ khi đã lưu URL hồ sơ Google Scholar</div></section>
+  <section class="state"><h3>9 · Nhập thủ công</h3><p class="why">LIB-IMPORT-002-AC01–AC03; H12; EC22–EC27</p><div class="ph">DOI (mỗi dòng một DOI, tối đa 50)<br>[ 10.1145/3703155 / 10.18653/v1/xxx ]</div><div class="ph">BibTeX [ @article{…} ] · Chọn tệp .bib</div><div class="ph">PDF: Chọn PDF · có lớp văn bản, tối đa 50 MB</div><div class="ph"><span class="btn">Thêm vào luồng duyệt</span><div class="row"><span>10.1145/3703155</span><span class="chip need">Pending Approval</span></div><div class="row"><span>10.9999/khong-co</span><span class="chip err">Lỗi · không phân giải được</span></div><div class="row"><span>scan.pdf</span><span class="chip err">Từ chối · pdf_without_text_layer</span></div></div></section>
+</div>
+
+<h2 class="group">Trusted Library (/library)</h2>
+<div class="grid">
+  <section class="state"><h3>10 · Có dữ liệu và panel chờ duyệt</h3><p class="why">H13, H14; LIB-APPROVAL-001-AC05, AC06; UX-REF-002</p><div class="ph"><b>Trusted Library</b> <span class="btn">Tìm ở Discover</span> <span class="btn">Nhập DOI / BibTeX / PDF</span></div><div class="ph need"><b>5 reference chờ duyệt</b><div class="row"><span>[x] Huang 2024 · ACM TOIS · OpenAlex · <u>Sửa metadata</u></span></div><div class="row"><span>Chen 2024 · AAAI</span><span class="chip warn dash">Có thể trùng: Chen 2023 preprint</span></div><div class="row"><span></span><span><span class="btn">Gộp vào reference có sẵn</span> <span class="btn">Giữ riêng và duyệt</span> <span class="btn">Từ chối</span></span></div><div class="row"><span>[ ] Shi 2023 · ICML</span></div>Duyệt: 3 reference thành Trusted, dùng được cho citation; reference có PDF được đưa vào indexing. <span class="btn">Từ chối đã chọn</span> <span class="btn primary">Duyệt 3 mục đã chọn</span></div><div class="ph">[Tìm] Duyệt [Trusted ▾] Indexing [Tất cả ▾] Năm [ ]</div><div class="ph"><div class="row"><span>RAG for Knowledge-Intensive NLP · Lewis 2020 · <code>lewis2020rag</code></span><span><span class="chip">Trusted</span> 31/10/2026 · <span class="chip">Indexed</span> · 2 project</span></div><div class="row"><span>Lost in the Middle · <code>liu2024lost</code></span><span><span class="chip">Trusted</span> · <span class="chip err">Unavailable</span> Dùng được cho citation, không dùng được cho evidence</span></div><div class="row"><span>Survey of RAG · <code>gao2023survey</code></span><span><span class="chip err">Failed</span> PDF không có lớp văn bản</span></div><div class="row"><span>Hallucination detection preprint · <code>doe2023hd</code></span><span><span class="chip warn">Revoked</span> · 1 project <span class="chip warn dash">needs review</span></span></div></div><div class="ph">Tải thêm</div></section>
+  <section class="state"><h3>11 · Trống, lọc rỗng, đang tải, lỗi</h3><p class="why">UX-STATE-002-AC01; EC28, EC29, EC45</p><div class="ph">Trống: “Thư viện chưa có reference nào” · Agent chỉ dùng Trusted Reference làm nguồn. <span class="btn primary">Tìm tài liệu ở Discover</span></div><div class="ph">Lọc rỗng: “Không có reference khớp bộ lọc” · <span class="btn">Xóa lọc</span></div><div class="ph">Đang tải: 6 dòng skeleton + “Đang tải Trusted Library…”</div><div class="ph alert">Lỗi: không tải được Trusted Library · mã · <span class="btn">Thử lại</span></div></section>
+  <section class="state"><h3>12 · Điện thoại 390 px: duyệt</h3><p class="why">UX-RESP-001; H14, H20; EC44</p><div class="phone"><div class="ph need"><b>5 reference chờ duyệt</b><br>[x] Huang 2024<br>Chen 2024 · Có thể trùng<br><span class="btn">Gộp</span> <span class="btn">Giữ riêng và duyệt</span> <span class="btn">Từ chối</span><br><span class="btn primary">Duyệt 3 mục đã chọn</span> (cao 44px)</div><div class="ph">Bảng cuộn trong thẻ, không cuộn ngang trang</div></div></section>
+</div>
+
+<h2 class="group">Reference (/library/{referenceId})</h2>
+<div class="grid">
+  <section class="state"><h3>13 · Trusted, Indexed</h3><p class="why">UX-REF-002, UX-REF-003-AC01; LIB-LIBRARY-001-AC02; H15, H17</p><div class="ph">Trusted Library / <code>lewis2020rag</code><br><b>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</b><br>P. Lewis et al. · NeurIPS 2020 · arXiv:2005.11401<br><span class="chip">Duyệt: Trusted</span> <span class="chip">index: Indexed · 142 đoạn</span> Dùng được cho citation và evidence</div><div class="ph"><span class="btn">Sửa metadata</span> <span class="btn">Thêm vào project</span> <span class="btn danger">Thu hồi</span></div><div class="ph"><b>Metadata · phiên bản 2</b> · tiêu đề, tác giả, venue/năm, loại, định danh, tóm tắt, BibTeX key · Source Document lewis2020.pdf · 1,8 MB · 18 trang · Tải PDF · Thay PDF</div><div class="ph"><b>Project đang dùng</b><div class="row"><span>RAG trong tổng quan tài liệu</span><span>7 evidence · 3 citation</span></div><div class="row"><span>Học máy trong chẩn đoán ảnh</span><span>1 evidence · 1 citation</span></div></div><div class="ph"><b>Provenance</b><br>27/10 14:02 Discovery Agent · phát hiện qua OpenAlex<br>27/10 14:20 [tên Researcher] · duyệt phiên bản 1 → Trusted<br>27/10 14:31 System · index xong · text-embedding-3-small<br>29/10 10:15 [tên Researcher] · sửa metadata → phiên bản 2<br><small>Truy vấn gốc và lịch sử đầy đủ: khi hợp đồng có (N6)</small></div></section>
+  <section class="state"><h3>14 · Indexing lỗi</h3><p class="why">PID-00098-AC02; H16; EC40</p><div class="ph"><span class="chip">Duyệt: Trusted</span> <span class="chip err">index: Failed</span> Dùng được cho citation; evidence khi đã Indexed</div><div class="ph alert"><b>Indexing lỗi:</b> PDF không có lớp văn bản · mã pdf_without_text_layer<br>Reference vẫn Trusted, dùng được cho citation.<br><span class="btn">Thử lại indexing</span> <span class="btn">Tải PDF khác</span></div></section>
+  <section class="state"><h3>15 · Unavailable, Pending, Revoked, đã gộp</h3><p class="why">UX-REF-002-AC01; LIB-CONTENT-001-AC01; H15, H17; EC36, EC42</p><div class="ph"><span class="chip">Trusted</span> <span class="chip err">Unavailable</span> Dùng được cho citation, không dùng được cho evidence · <span class="btn">Tải PDF lên</span></div><div class="ph"><span class="chip need">Pending Approval</span> Chưa duyệt — chưa dùng được ở đâu · <span class="btn primary">Duyệt</span> <span class="btn">Sửa rồi duyệt</span> <span class="btn">Từ chối</span> (không có “Thêm vào project”)</div><div class="ph"><span class="chip warn">Revoked</span> Đã thu hồi — không dùng cho evidence mới; citation báo lỗi · metadata chỉ đọc · <span class="btn">Duyệt lại</span></div><div class="ph">Banner: Đã gộp vào [tên reference đích] › · ẩn thao tác</div></section>
+  <section class="state"><h3>16 · Dialog thu hồi (APR-04)</h3><p class="why">LIB-LIFECYCLE-001-AC01; H17; EC34, EC38</p><div class="ph"><b>Thu hồi lewis2020rag?</b><br>Đang dùng ở 2 project: 8 evidence chuyển Stale, 4 citation báo lỗi khi kiểm tra, claim và Task phụ thuộc cần xem lại.<br>Lý do * [ ]<br><span class="btn">Giữ Trusted</span> <span class="btn danger">Thu hồi reference</span></div></section>
+  <section class="state"><h3>17 · Dialog thêm vào project, xóa</h3><p class="why">LIB-LIBRARY-001-AC01; LIB-PROJECT-001-AC02; H17; EC37, EC39</p><div class="ph"><b>Thêm vào project</b><br>( ) RAG trong tổng quan tài liệu · đã có<br>( ) Độ tin cậy của LLM trong giáo dục<br>Lý do (tùy chọn) [ ] · <span class="btn">Hủy</span> <span class="btn">Thêm vào project</span></div><div class="ph"><b>Xóa reference?</b> (chỉ khi không project nào dùng)<br>Xóa khỏi Trusted Library; xóa mềm, giữ 30 ngày (APR-08). · <span class="btn">Giữ reference</span> <span class="btn danger">Xóa</span><br>409: đang dùng ở [project] → dùng Thu hồi</div></section>
+</div>
+</main>
+</body>
+</html>
