@@ -1,0 +1,75 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="PID-00160: phạm vi, ngoài phạm vi, edge case.">
+<title>PID-00160 — Phạm vi và edge case | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../../index.html"><img src="../../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>PID-00160 — Phạm vi, ngoài phạm vi, edge case</h1>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#pham-vi">Phạm vi</a></li>
+<li><a href="#ngoai-pham-vi">Ngoài phạm vi</a></li>
+<li><a href="#edge-case">Edge case</a></li></ul></details>
+
+<p>Dev chỉ làm những gì nằm trong “Phạm vi”. Việc thuộc “Ngoài phạm vi” mà có người yêu cầu trong phiên → ghi mục “Yêu cầu thêm” của <code>report.md</code>, không tự làm. Mỗi dòng dẫn nguồn: mã, đường dẫn#anchor, hoặc H1–H9 ở <a href="../index.html#s-5">trang ticket</a>.</p>
+<h2 id="pham-vi">Phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Nguồn</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>P1</td><td>Package <code>@sires/oidc-mock</code> ở <code>infra/local/oidc-mock/</code> (Node, TypeScript, <code>oidc-provider</code>), thành viên pnpm workspace, có target Nx <code>build</code>, <code>typecheck</code>, <code>lint</code>, <code>test</code></td><td>H2; spec O1, O2, O12</td><td>S01</td></tr>
+<tr><td>P2</td><td>Đọc cấu hình từ biến môi trường; chặn chạy khi không phải <code>local</code>, <code>staging</code>; quy tắc riêng của <code>staging</code></td><td>H5; spec 4.2, 4.4</td><td>S01</td></tr>
+<tr><td>P3</td><td>File client của gateway và file tài khoản thử (hai tài khoản A, B; claim như eTroy); file mẫu staging có chỗ giữ chỗ</td><td>H4; ASM-13; K9; spec 4.1</td><td>S01</td></tr>
+<tr><td>P4</td><td>Discovery, JWKS, authorize với PKCE S256 bắt buộc, trang đăng nhập, token (<code>client_secret_basic</code>), userinfo; <code>nonce</code> và claim theo scope trong ID token; thời hạn như eTroy</td><td>H3; INT-OIDC-001, INT-OIDC-002; K2, K7, K8, K9; spec 4.3</td><td>S02</td></tr>
+<tr><td>P5</td><td>Refresh xoay vòng, dùng lại thì thu hồi family; <code>/revoke</code>; <code>end_session</code> theo RP-Initiated Logout 1.0 với <code>client_id</code> hoặc <code>id_token_hint</code>, <code>post_logout_redirect_uri</code> đã đăng ký, <code>state</code> tùy chọn; URI của client theo hợp đồng gateway (<code>/api/v1/auth/callback</code>, <code>/sign-in</code>)</td><td>H3, H8, H9; INT-OIDC-003; K5, K10, K13; spec 4.1, 4.3</td><td>S03</td></tr>
+<tr><td>P6</td><td>Log sự kiện không lộ bí mật; image Docker; service <code>oidc-mock</code> trong compose cục bộ, có healthcheck</td><td>H2; NFR-OBS-002; spec O7, O10, O11</td><td>S04</td></tr>
+<tr><td>P7</td><td>README của mock (gồm cách gateway trỏ issuer, chạy ở staging, khác biệt với eTroy); dòng mới ở <code>infra/README.md</code>, <code>scripts/development/README.md</code></td><td>H6, H7; spec 4.5, O13</td><td>S05</td></tr>
+</tbody></table></div>
+<h2 id="ngoai-pham-vi">Ngoài phạm vi</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Nội dung</th><th scope="col">Vì sao</th><th scope="col">Ai/ở đâu</th></tr></thead><tbody>
+<tr><td>N1</td><td>Đăng nhập, callback, đăng xuất, refresh của gateway</td><td>Luồng gateway</td><td><a href="../../PID-00038/index.html">PID-00038</a></td></tr>
+<tr><td>N2</td><td>Chạy mock trên staging: build và đẩy image, Secret chứa file client, tài khoản, cookie key; tên riêng sau tunnel</td><td>Staging do PID-00035 dựng (PC-06 B1–B3); tên miền chờ PO cấp</td><td><a href="../../PID-00035/index.html">PID-00035</a></td></tr>
+<tr><td>N3</td><td>Đổi FakeOidcProvider cho giống eTroy hay dùng chung mã với mock</td><td>Fake dùng chung cho test là của luồng platform (quy tắc 1.4.4); mock là môi trường chạy</td><td>Luồng platform (PC-06 C4)</td></tr>
+<tr><td>N4</td><td>Back-channel, front-channel logout</td><td>ADR-27: chờ eTroy (ETR-07); gateway chưa nhận logout token</td><td>Khi eTroy có ETR-07</td></tr>
+<tr><td>N5</td><td>Sửa eTroy_OIDC (<code>nonce</code> trong ID token, <code>end_session</code>) và nối eTroy thật</td><td>D-OIDC: để lại tới trước khi nối eTroy thật</td><td>PO; ETR-07, yêu cầu <code>nonce</code> ở kiến trúc 12.5</td></tr>
+<tr><td>N6</td><td>Lưu phiên, grant bền vững qua khởi động lại; xoay khóa ký theo lịch</td><td>Mock chỉ cho phát triển và kiểm cổng; bộ nhớ trong là đủ (EC13)</td><td>Không làm</td></tr>
+<tr><td>N7</td><td>Production, Helm chart, Terraform cho mock</td><td>Mock không bao giờ chạy ở production (H5)</td><td>Không làm</td></tr>
+<tr><td>N8</td><td>Màn đồng ý, đăng ký client động, introspection, access token dạng JWT</td><td>Gateway không dùng; eTroy chưa có đăng ký động</td><td>Không làm</td></tr>
+<tr><td>N9</td><td>Chạy compose trong CI</td><td>Test của package chạy mock trong tiến trình; CI không cần Docker cho PID này</td><td>Không làm</td></tr>
+</tbody></table></div>
+<h2 id="edge-case">Edge case</h2>
+<p>Đã quét: cấu hình và file sai, môi trường (local, staging, production), giao thức (PKCE, <code>redirect_uri</code>, <code>nonce</code>, code dùng lại, refresh đồng thời, đăng xuất có và không có <code>id_token_hint</code>), proxy, khởi động lại, build image, log. Không áp dụng: database, sự kiện, phê duyệt, provider, giao diện của SIRes.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Tình huống</th><th scope="col">Xử lý mong đợi</th><th scope="col">Nguồn</th><th scope="col">Test</th><th scope="col">Slice</th></tr></thead><tbody>
+<tr><td>EC01</td><td><code>OIDC_MOCK_ENV</code> thiếu, rỗng, <code>production</code> hay giá trị khác</td><td>Thoát mã 1 với một dòng lý do, không mở cổng</td><td>H5; spec 4.4</td><td><code>test/config.spec.ts › chặn theo môi trường</code></td><td>S01</td></tr>
+<tr><td>EC02</td><td>File tài khoản: JSON hỏng, thiếu trường, sai kiểu, trùng <code>sub</code> hay <code>email</code> (không phân biệt hoa thường), ít hơn 2 tài khoản</td><td>Thoát mã 1, nêu file và chỉ số tài khoản, không in mật khẩu</td><td>spec 4.1</td><td><code>test/config.spec.ts › file tài khoản sai</code></td><td>S01</td></tr>
+<tr><td>EC03</td><td>File client: JSON hỏng hay metadata bị <code>oidc-provider</code> từ chối</td><td>Thoát mã 1, nêu file</td><td>spec 4.1</td><td><code>test/config.spec.ts › file client sai</code></td><td>S01</td></tr>
+<tr><td>EC04</td><td>Issuer có dấu <code>/</code> cuối, có query, fragment; <code>local</code> với host khác <code>localhost</code>, <code>127.0.0.1</code></td><td>Thoát mã 1</td><td>K9 (issuer khớp tuyệt đối); spec 4.4</td><td><code>test/config.spec.ts › issuer sai</code></td><td>S01</td></tr>
+<tr><td>EC05</td><td><code>staging</code> với issuer <code>http</code>, thiếu file hay cookie key, mật khẩu <code>sires-local</code>, <code>CHANGE-ME</code>, secret cục bộ hay <code>CHANGE-ME</code></td><td>Thoát mã 1</td><td>H5; spec 4.4</td><td><code>test/config.spec.ts › quy tắc staging</code></td><td>S01</td></tr>
+<tr><td>EC06</td><td>Sai mật khẩu hay email không có</td><td>Hiện lại form với “Email hoặc mật khẩu không đúng”, không nói email có tồn tại hay không, không cấp code</td><td>spec 4.3</td><td><code>test/flow.spec.ts › từ chối yêu cầu sai</code></td><td>S02</td></tr>
+<tr><td>EC07</td><td>Truy cập qua tunnel hay reverse proxy (<code>X-Forwarded-Proto: https</code>)</td><td>Endpoint trong discovery dùng <code>https</code> và khớp issuer</td><td>spec 4.3 (<code>proxy</code>)</td><td><code>test/flow.spec.ts › sau proxy https</code></td><td>S02</td></tr>
+<tr><td>EC08</td><td>Authorize lại khi phiên mock còn hạn (dưới 8 giờ)</td><td>Không hỏi mật khẩu, cấp code ngay; <code>prompt=login</code> thì hỏi lại</td><td>K8; spec 4.4</td><td><code>test/flow.spec.ts › phiên mock dùng lại</code></td><td>S02</td></tr>
+<tr><td>EC09</td><td>Hai refresh gần như cùng lúc với cùng refresh token</td><td>Một lần thành công, lần kia <code>invalid_grant</code>; family bị thu hồi như eTroy</td><td>K10</td><td><code>test/flow.spec.ts › refresh xoay vòng, dùng lại thu hồi family</code></td><td>S03</td></tr>
+<tr><td>EC10</td><td><code>end_session</code> chỉ có <code>client_id</code>, không có <code>id_token_hint</code> (cách gateway gửi theo hợp đồng <code>logout</code>)</td><td>Chấp nhận <code>post_logout_redirect_uri</code> đã đăng ký của client đó</td><td>RP-Initiated Logout 1.0; H9</td><td><code>test/flow.spec.ts › đăng xuất RP-initiated</code></td><td>S03</td></tr>
+<tr><td>EC11</td><td>Trình duyệt tắt JS ở trang xác nhận đăng xuất</td><td>Nút “Đăng xuất” gửi form, kết quả như khi tự gửi</td><td>spec 4.3</td><td><code>test/flow.spec.ts › đăng xuất RP-initiated</code> (gửi form bằng <code>fetch</code>)</td><td>S03</td></tr>
+<tr><td>EC12</td><td><code>end_session</code> không có <code>post_logout_redirect_uri</code></td><td>Trang “Đã đăng xuất khỏi OIDC mock”</td><td>spec 4.3</td><td><code>test/flow.spec.ts › đăng xuất RP-initiated</code></td><td>S03</td></tr>
+<tr><td>EC13</td><td>Mock khởi động lại</td><td>Mất phiên, grant, refresh token; <code>kid</code> mới, gateway tải lại JWKS; người dùng đăng nhập lại ở lần refresh kế tiếp. README ghi rõ</td><td>spec 4.1, 4.3</td><td>thao tác tay: <code>docker compose restart oidc-mock</code>, JWKS có <code>kid</code> khác</td><td>S04</td></tr>
+<tr><td>EC14</td><td>Cổng 9400 đã bị chiếm</td><td>Compose báo lỗi; README hướng dẫn đổi cổng map cùng <code>OIDC_MOCK_ISSUER</code></td><td>spec 4.5</td><td>thao tác tay: đọc README</td><td>S05</td></tr>
+<tr><td>EC15</td><td>Giả lập eTroy không khả dụng (INT-OIDC-004)</td><td><code>docker compose stop oidc-mock</code>; bật lại bằng <code>start</code>. README ghi rõ</td><td>INT-OIDC-004; spec 4.5</td><td>thao tác tay: dừng, discovery không trả lời; bật lại, trả lời</td><td>S05</td></tr>
+<tr><td>EC16</td><td>Build context có <code>.sires/</code> (key provider, D-KEY), <code>.env*</code>, <code>.git</code>, <code>node_modules</code></td><td>Không vào image</td><td>D-KEY; spec O10</td><td>thao tác tay: <code>docker run --rm --entrypoint sh sires/oidc-mock:local -c "find / -name provider-keys.env -o -name '.env*' 2&gt;/dev/null"</code> không in gì</td><td>S04</td></tr>
+<tr><td>EC17</td><td><code>docker compose stop</code> hay <code>down</code></td><td>Nhận SIGTERM, đóng máy chủ và thoát trong dưới 10 giây</td><td>spec O7</td><td>thao tác tay: <code>time docker compose stop oidc-mock</code></td><td>S04</td></tr>
+</tbody></table></div>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← PID-00160</a><a href="../../index.html">Danh sách ticket</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · Phạm vi và edge case · © 2026 eTroy · <a href="../../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>

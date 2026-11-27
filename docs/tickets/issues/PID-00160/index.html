@@ -1,0 +1,150 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Ticket PID-00160: OIDC mock server cho môi trường cục bộ và staging PH-02.">
+<title>PID-00160 — OIDC mock server cho môi trường cục bộ và staging PH-02 | SIRes Delivery Plan</title>
+<link rel="icon" href="../../../overview/assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../../overview/assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="../../index.html"><img src="../../../overview/assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / Delivery Plan</a><span>PID-00160</span></header>
+<main id="main-content">
+<p class="eyebrow">Ticket · PID-00160</p><h1>PID-00160 — OIDC mock server cho môi trường cục bộ và staging PH-02</h1>
+<p class="meta">Xác nhận: Confirmed 27/11/2026 — chốt theo đề xuất (PO ủy quyền 26/11/2026) · Soạn và làm rõ 27/11/2026 theo spec-docs-skill, spec-clarify-skill, căn cứ D-OIDC (PO chọn trong phiên 26/11/2026) · Dev thực thi theo spec-execution-skill</p>
+<details class="local-toc"><summary>Nội dung</summary><ul><li><a href="#files">Tài liệu trong hồ sơ</a></li>
+<li><a href="#s-1">1. Ticket</a></li>
+<li><a href="#s-2">2. Tiêu chí nghiệm thu</a></li>
+<li><a href="#s-3">3. Phụ thuộc</a></li>
+<li><a href="#s-4">4. Cổng sẵn sàng</a></li>
+<li><a href="#s-5">5. Làm rõ</a></li>
+<li><a href="#s-6">6. Slice</a></li>
+<li><a href="#s-7">7. Điểm dừng</a></li>
+<li><a href="#s-8">8. Kiểm tra hoàn thành</a></li></ul></details>
+
+<p>Trang vào của ticket. Dev đọc file này trước, rồi <code>specs/</code>, rồi từng slice theo thứ tự. Trạng thái thực hiện và kết quả nằm ở <code>agent/execution/PID-00160/report.md</code>, không ghi ở đây.</p>
+<div class="table-wrap"><table><tbody>
+<tr><th scope="row">Luồng</th><td>infra</td></tr>
+<tr><th scope="row">Giai đoạn</th><td>PH-02</td></tr>
+<tr><th scope="row">Ô trên FIG-301</th><td>Hội tụ trên staging: OIDC mock cho cục bộ và staging</td></tr>
+<tr><th scope="row">Đợt song song</th><td>Đ2</td></tr>
+<tr><th scope="row">Phụ thuộc PID</th><td><a href="../PID-00159/index.html">PID-00159</a></td></tr>
+<tr><th scope="row">Người làm (sổ đăng ký)</th><td>congminh1705; phiên do PO <code>toilatrung</code> giao làm thay assignee</td></tr>
+<tr><th scope="row">Căn cứ</th><td>D-OIDC (PO chọn trong phiên 26/11/2026; phiếu chốt PC-06 mục C, G4); PRD <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-001">INT-OIDC-001</a>–<a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-004">004</a>, <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#asm-13">ASM-13</a>; kiến trúc <a href="../../../architecture/sections/10-security-architecture.html#s-10-2">10.2</a>, <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#etr-07">ETR-07</a>; SPK-02 (<a href="../PID-00015/index.html">PID-00015</a>, K1–K14)</td></tr>
+<tr><th scope="row">Làm rõ</th><td>27/11/2026 · spec-clarify-skill; chốt theo đề xuất (PO ủy quyền 26/11/2026), không hỏi PO trong phiên</td></tr>
+<tr><th scope="row">Trạng thái</th><td>Sẵn sàng</td></tr>
+</tbody></table></div>
+
+<h2 id="files">Tài liệu trong hồ sơ</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Thư mục</th><th scope="col">Tài liệu</th><th scope="col">Nội dung</th></tr></thead><tbody>
+<tr><td><code>specs/</code></td><td><a href="specs/index.html">index.html</a></td><td>Spec kỹ thuật 7 mục cho agent (spec-docs-skill)</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/brief.html">brief.html</a></td><td>Tóm tắt nghiệp vụ đã làm rõ</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/scope.html">scope.html</a></td><td>Phạm vi, ngoài phạm vi, edge case</td></tr>
+<tr><td><code>specs/</code></td><td><a href="specs/acceptance.html">acceptance.html</a></td><td>AC → test → slice</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S01-package-config-guards.html">S01</a></td><td>Package, cấu hình, chặn theo môi trường, file client và tài khoản</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S02-login-flow.html">S02</a></td><td>Discovery, đăng nhập, token, userinfo</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S03-refresh-logout-revoke.html">S03</a></td><td>Refresh xoay vòng, đăng xuất RP-initiated, <code>/revoke</code></td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S04-image-compose-logs.html">S04</a></td><td>Log, image Docker, service trong compose cục bộ</td></tr>
+<tr><td><code>specs/slices/</code></td><td><a href="specs/slices/S05-readme.html">S05</a></td><td>README: chạy, trỏ gateway, staging, khác biệt với eTroy</td></tr>
+<tr><td><code>designs/</code></td><td><a href="designs/notes.html">notes.html</a></td><td>Điều thiết kế đã chốt; bảng khác biệt với eTroy</td></tr>
+</tbody></table></div>
+
+<h2 id="s-1">1. Ticket</h2>
+<ul><li><strong>Mục đích:</strong> PH-02 cần đăng nhập và đăng xuất theo chuẩn OIDC để làm gateway (PID-00038) và kiểm cổng PH-02, nhưng eTroy_OIDC chưa đưa <code>nonce</code> vào ID token và chưa có <code>end_session</code> (SPK-02, K3, K4). Theo D-OIDC, cục bộ và staging PH-02 dùng một OIDC mock thay eTroy thật; nối eTroy thật để lại tới khi eTroy sửa xong. PID này dựng mock đó.</li>
+<li><strong>Gồm:</strong> package <code>@sires/oidc-mock</code> ở <code>infra/local/oidc-mock/</code> (Node, <code>oidc-provider</code>); authorization code với PKCE S256 bắt buộc; <code>nonce</code> và claim theo scope trong ID token; discovery; JWKS; token với <code>client_secret_basic</code>; userinfo; refresh xoay vòng, dùng lại thì thu hồi family; <code>end_session_endpoint</code> theo RP-Initiated Logout 1.0 (<code>post_logout_redirect_uri</code> đã đăng ký, <code>state</code>); <code>/revoke</code>; client của gateway khai trong file cấu hình; tài khoản thử từ file seed (hai tài khoản A, B, claim như eTroy); chặn chạy ngoài <code>local</code>, <code>staging</code>; log không lộ bí mật; image Docker; service <code>oidc-mock</code> trong compose cục bộ; README (cách gateway trỏ issuer, chạy ở staging, khác biệt với eTroy).</li>
+<li><strong>Không gồm:</strong> mã đăng nhập, đăng xuất của gateway (<a href="../PID-00038/index.html">PID-00038</a>); chạy mock trên staging: image trong registry, Secret, tên riêng sau tunnel (<a href="../PID-00035/index.html">PID-00035</a>); FakeOidcProvider của test (luồng platform); back-channel logout; sửa eTroy_OIDC và nối eTroy thật; production.</li></ul>
+<p>Chi tiết phạm vi và edge case: <a href="specs/scope.html">specs/scope.html</a>.</p>
+<h3 id="dau-vao">Đầu vào</h3>
+<ul><li><strong>PID phải xong trước:</strong> <a href="../PID-00159/index.html">PID-00159</a> (chỉ chặn S04, S05: cùng môi trường cục bộ và hai README).</li>
+<li><strong>Tệp có sẵn:</strong> <a href="../../../../infra/local/compose.yaml"><code>infra/local/compose.yaml</code></a>, <a href="../../../../pnpm-workspace.yaml"><code>pnpm-workspace.yaml</code></a>, <a href="../../../../infra/docker/node/Dockerfile"><code>infra/docker/node/Dockerfile</code></a> (mẫu), <a href="../../../../infra/README.md"><code>infra/README.md</code></a>, <a href="../../../../scripts/development/README.md"><code>scripts/development/README.md</code></a>.</li>
+<li><strong>Chỉ đọc:</strong> <code>libs/ts/testing/src/fakes/oidc.fake.ts</code> (giá trị mặc định giống eTroy), <code>apps/web/vite.config.ts</code> (cổng web, gateway), <code>docs/api-design/paths/15-settings-and-sign-in.yaml</code>.</li></ul>
+<h3 id="dau-ra">Đầu ra</h3>
+<ul><li>Package: <code>infra/local/oidc-mock/</code> — <code>package.json</code>, <code>tsconfig.json</code>, <code>tsconfig.build.json</code>, <code>src/config.ts</code>, <code>src/seed.ts</code>, <code>src/provider.ts</code>, <code>src/interactions.ts</code>, <code>src/main.ts</code>, <code>src/log.ts</code> (tạo mới)</li>
+<li>Dữ liệu thử: <code>infra/local/oidc-mock/config/clients.local.json</code>, <code>accounts.local.json</code>, <code>clients.staging.example.json</code>, <code>accounts.staging.example.json</code> (tạo mới)</li>
+<li>Test: <code>infra/local/oidc-mock/test/config.spec.ts</code>, <code>test/flow.spec.ts</code> (tạo mới)</li>
+<li>Image: <code>infra/local/oidc-mock/Dockerfile</code>, <code>Dockerfile.dockerignore</code> (tạo mới)</li>
+<li>Tệp: <code>infra/local/compose.yaml</code> — service <code>oidc-mock</code>; <code>pnpm-workspace.yaml</code>, <code>pnpm-lock.yaml</code> — thêm package</li>
+<li>Tài liệu: <code>infra/local/oidc-mock/README.md</code> (tạo mới); <code>infra/README.md</code>, <code>scripts/development/README.md</code></li></ul>
+
+<h2 id="s-2">2. Tiêu chí nghiệm thu</h2>
+<ul><li><strong>PID-00160-AC01</strong> Given mock chạy ở <code>local</code>, When đọc discovery và JWKS, Then issuer đúng cấu hình; có đủ endpoint authorize, token, userinfo, JWKS, revocation, end session; PKCE chỉ S256; ID token ký RS256; JWKS có một khóa RSA có <code>kid</code>.</li>
+<li><strong>PID-00160-AC02</strong> Given client của gateway và tài khoản A, When một RP chuẩn đăng nhập bằng authorization code với <code>state</code>, <code>nonce</code>, PKCE S256 và đổi code bằng <code>client_secret_basic</code>, Then ID token có <code>iss</code>, <code>aud</code>, <code>sub</code> của A, <code>nonce</code> đã gửi, hạn 900 giây, <code>name</code>, <code>email</code>, <code>email_verified</code>; có refresh token; <code>/userinfo</code> trả cùng claim.</li>
+<li><strong>PID-00160-AC03</strong> Given như AC02, Then thiếu PKCE, PKCE <code>plain</code>, <code>redirect_uri</code> chưa đăng ký, sai mật khẩu, sai <code>code_verifier</code>, code dùng lại, sai <code>client_secret</code> đều bị từ chối và không cấp token.</li>
+<li><strong>PID-00160-AC04</strong> Given refresh token R1, When refresh, Then nhận token mới và R2; dùng lại R1 thì <code>invalid_grant</code> và R2 cũng hết dùng được.</li>
+<li><strong>PID-00160-AC05</strong> Given A đã đăng nhập, When mở <code>end_session_endpoint</code> với <code>client_id</code> (như gateway gửi) hoặc <code>id_token_hint</code>, <code>post_logout_redirect_uri</code> đã đăng ký (<code>/sign-in</code>) và <code>state</code> nếu có, Then phiên mock kết thúc và trình duyệt về URI đó (kèm <code>state</code> khi có); URI chưa đăng ký thì không chuyển hướng tới đó.</li>
+<li><strong>PID-00160-AC06</strong> Given refresh token còn hạn, When <code>POST /revoke</code> với <code>client_secret_basic</code>, Then refresh bằng token đó bị <code>invalid_grant</code>.</li>
+<li><strong>PID-00160-AC07</strong> Given file seed của repo, Then có hai tài khoản A, B khác <code>sub</code> và email; mỗi tài khoản đăng nhập được với claim của mình; <code>sub</code> không đổi qua các lần đăng nhập.</li>
+<li><strong>PID-00160-AC08</strong> Given <code>OIDC_MOCK_ENV</code> thiếu hay khác <code>local</code>, <code>staging</code> (kể cả <code>production</code>), hoặc <code>staging</code> mà issuer không <code>https</code>, thiếu cookie key, dùng mật khẩu hay secret cục bộ, chỗ giữ chỗ của file mẫu, When khởi động, Then thoát mã 1 trước khi mở cổng.</li>
+<li><strong>PID-00160-AC09</strong> Given máy Dev, When <code>pnpm local:up --build</code>, Then <code>oidc-mock</code> healthy và discovery đọc được ở <code>http://localhost:9400</code>; image không chứa <code>.sires/</code>, <code>.env*</code>, <code>.git</code>.</li>
+<li><strong>PID-00160-AC10</strong> Given log của mock trong một luồng đăng nhập, refresh, đăng xuất, thu hồi, Then không có token, code, mật khẩu, secret, cookie.</li>
+<li>AC requirement: không có riêng. PID tạo môi trường để <a href="../PID-00038/index.html">PID-00038</a> và <a href="../PID-00055/index.html">PID-00055</a> kiểm <a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-001">INT-OIDC-001</a>–<a href="../../../overview/sections/17-integrations-and-external-dependencies.html#req-int-oidc-004">004</a> ở cổng <a href="../../sections/02-phases-and-gates.html#ph-02">PH-02</a>.</li></ul>
+<p>Bảng AC → test → slice: <a href="specs/acceptance.html">specs/acceptance.html</a>.</p>
+
+<h2 id="s-3">3. Phụ thuộc</h2>
+<ul><li>PID phải xong trước: <a href="../PID-00159/index.html">PID-00159</a> Môi trường cục bộ: vai trò database theo service — chỉ chặn S04 (compose) và S05 (README); S01–S03 bắt đầu được ngay.</li>
+<li>Ranh giới luồng: <code>infra/</code>, <code>pnpm-workspace.yaml</code> thuộc luồng <code>infra</code> (<a href="../../sections/01-tracks-and-boundaries.html#trk-infra">1.3</a>, <code>scripts/development/check-tracks.mjs</code>). Không sửa <code>apps/</code>, <code>libs/</code>.</li>
+<li>OQ, AQ, DBQ đang chặn: không có. Tên miền staging (PC-06 B3) chưa có nhưng không chặn: repo chỉ có file mẫu.</li>
+<li>PID dùng kết quả: <a href="../PID-00038/index.html">PID-00038</a> (gateway đăng nhập, đăng xuất trên mock), <a href="../PID-00035/index.html">PID-00035</a> (chạy mock trên staging), <a href="../PID-00055/index.html">PID-00055</a> (kiểm cổng PH-02 với hai tài khoản thử), PID web làm trước theo D-UI khi chạy với gateway thật ở cục bộ.</li></ul>
+
+<h2 id="s-4">4. Cổng sẵn sàng</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Căn cứ</th><th scope="col">Spec</th><th scope="col">Phụ thuộc</th><th scope="col">Câu hỏi</th><th scope="col">Môi trường</th></tr></thead><tbody>
+<tr><td>Đạt: D-OIDC (PO chọn 26/11/2026); hồ sơ chốt theo đề xuất (PO ủy quyền 26/11/2026)</td><td>Có (spec-docs-skill, 27/11/2026)</td><td>Một phần: PID-00159 chưa merge, chỉ chặn S04, S05</td><td>Đạt: H1–H9, không còn phiếu mở</td><td>Node 24, pnpm 10; Docker Engine trong WSL2 (Windows) hoặc Docker trên Linux cho S04</td></tr>
+</tbody></table></div>
+
+<h2 id="s-5">5. Làm rõ</h2>
+<h3 id="phien-1">Phiên 27/11/2026 (chốt theo đề xuất, PO ủy quyền 26/11/2026)</h3>
+<p>PO ủy quyền ngày 26/11/2026 (nguyên văn: “Các vấn đề phát sinh hãy chốt theo đề xuất (OIDC viết mockup server để test chứ chưa cần dùng OIDC thật), xuất PC để nêu rõ các vấn đề bạn đã chốt”). H1 là quyết định PO tự nêu; H2–H7 là đề xuất của phiên điều phối PH-02, chốt theo đề xuất và ghi vào phiếu chốt PC-06 (G4) để PO xem lại.</p>
+<ul><li>H1 (D-OIDC, PO chọn trong phiên 26/11/2026): Staging PH-02 nối với IdP nào? → Đ: chưa nối eTroy OIDC thật; viết OIDC mock server (PID-00160, luồng infra) cho cục bộ và staging PH-02; đăng xuất chuyển hướng tới <code>end_session_endpoint</code> của IdP đang cấu hình. · Ảnh hưởng: toàn bộ ticket; P1–P7.</li>
+<li>H2 (chốt theo đề xuất): Đặt ở đâu, dùng gì? → Đ: <code>infra/local/oidc-mock/</code>, Node với thư viện <code>oidc-provider</code> (OpenID Provider có sẵn discovery, RP-initiated logout, revocation; không tự viết), package <code>@sires/oidc-mock</code> trong pnpm workspace để test chạy trong CI; một service trong compose cục bộ. · Ảnh hưởng: P1, P6; S01, S04.</li>
+<li>H3 (chốt theo đề xuất): Giao thức nào? → Đ: authorization code + PKCE S256 bắt buộc; <code>nonce</code> trong ID token; discovery; JWKS ở <code>/jwks</code>; <code>client_secret_basic</code>; refresh xoay vòng, dùng lại thì thu hồi family; <code>end_session_endpoint</code> theo RP-Initiated Logout 1.0 (<code>post_logout_redirect_uri</code> đã đăng ký, <code>state</code>); <code>/revoke</code>; thời hạn như eTroy (token 900 giây, refresh 30 ngày, phiên 8 giờ). · Ảnh hưởng: P4, P5; S02, S03.</li>
+<li>H4 (chốt theo đề xuất): Client và tài khoản? → Đ: client của gateway khai trong file cấu hình; tài khoản thử lấy từ file seed, ít nhất 2 tài khoản (A, B cho ca tài khoản B không đọc được project của A ở cổng PH-02), claim <code>sub</code>, <code>name</code>, <code>email</code>, <code>email_verified</code> như eTroy (INT-OIDC-001–004, ASM-13, K9); đăng nhập bằng email và mật khẩu thử; không có màn đồng ý. · Ảnh hưởng: P3, P4; S01, S02.</li>
+<li>H5 (chốt theo đề xuất): Môi trường? → Đ: chỉ chạy ở <code>local</code> và <code>staging</code>, không bao giờ ở production: biến <code>OIDC_MOCK_ENV</code> bắt buộc; <code>staging</code> bắt buộc issuer <code>https</code>, file client, file tài khoản, cookie key gắn ngoài repo, cấm mật khẩu và secret cục bộ; repo chỉ có file mẫu staging; triển khai mock lên staging thuộc PID-00035. · Ảnh hưởng: P2; S01; N2, N7.</li>
+<li>H6 (chốt theo đề xuất): Ai làm, giai đoạn, nhánh? → Đ: luồng infra, assignee <code>congminh1705</code> (DEC-58), phiên do PO giao làm thay; PH-02; phụ thuộc PID-00159; pull request mã vào <code>develop</code> sau QC độc lập (ngoại lệ “chờ mốc” của DEC-59, D-BRANCH). · Ảnh hưởng: sổ đăng ký; mục 8.</li>
+<li>H7 (chốt theo đề xuất): Gateway trỏ issuer bằng biến nào? → Đ: <code>OIDC_ISSUER</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code>, <code>OIDC_REDIRECT_URI</code>, <code>OIDC_POST_LOGOUT_REDIRECT_URI</code>; giá trị cục bộ ghi ở README của mock. · Ảnh hưởng: P7; S05; PID-00038 dùng các tên này khi làm rõ.</li>
+<li>Trạng thái: Sẵn sàng (chốt theo đề xuất, PO ủy quyền 26/11/2026).</li></ul>
+<h3 id="phien-2">Phiên 27/11/2026 (sau QC độc lập Lần 1 của hồ sơ, chốt theo đề xuất)</h3>
+<p>QC hồ sơ (PR #121) nêu F1 (MEDIUM): URI của client cục bộ thiếu gốc <code>/api/v1</code>. QC PR #120 nêu X2: hợp đồng <code>logout</code> mới đặt <code>post_logout_redirect_uri</code> là URL <code>/sign-in</code>, và X1: gateway gửi <code>client_id</code>, không gửi <code>id_token_hint</code>, không có <code>state</code>. Sửa hồ sơ cho khớp hợp đồng của #120.</p>
+<ul><li>H8 (từ F1, X2): URI nào của client cục bộ? → Đ: <code>redirect_uris</code> là <code>http://localhost:5173/api/v1/auth/callback</code>, <code>http://localhost:3000/api/v1/auth/callback</code> (hợp đồng <code>servers</code> <code>/api/v1</code>, kiến trúc F-01, SPK-02, guard của PR #63); <code>post_logout_redirect_uris</code> là <code>http://localhost:5173/sign-in</code> (hợp đồng <code>logout</code>, PC-05 P3); file mẫu staging dùng cùng đường. · Ảnh hưởng: spec 2.1, 2.2, 4.1, 4.5; AC02, AC05; P5; S05 (README).</li>
+<li>H9 (từ X1): Gateway gửi gì tới <code>end_session_endpoint</code>? → Đ: theo hợp đồng <code>logout</code>: <code>client_id</code> và <code>post_logout_redirect_uri</code>; không gửi <code>id_token_hint</code> (token OIDC không xuống trình duyệt, kiến trúc 10.2), không có <code>state</code>. Mock vẫn nhận <code>id_token_hint</code> và trả <code>state</code> khi có (RP-Initiated Logout 1.0). · Ảnh hưởng: spec 4.2; AC05 (ca chính là <code>client_id</code>), EC10; S03.</li>
+<li>Không đổi: H7 (tên biến gateway) — giá trị cục bộ của <code>OIDC_REDIRECT_URI</code>, <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> đổi theo H8. Ghi thêm cho Dev (LOW của QC): ca hai refresh đồng thời ở AC04 thử sớm trong S03, không bảo đảm thì dừng theo spec mục 7; README nêu giới hạn issuer <code>localhost</code> khi gateway chạy trong container.</li></ul>
+<h3 id="sua-o-nguon">Phải sửa ở nguồn</h3>
+<ul><li>Kế hoạch <a href="../../sections/01-tracks-and-boundaries.html#entry-local">1.1 môi trường local</a>, cổng <a href="../../sections/02-phases-and-gates.html#ph-02">PH-02</a>, kiến trúc <a href="../../../architecture/sections/10-security-architecture.html#s-10-2">10.2</a>, <a href="../../../architecture/sections/11-deployment-and-operations.html#s-11-1">11.1</a> (staging dùng “eTroy OIDC môi trường thử”) và <a href="../../../architecture/sections/12-decisions-risks-and-open-issues.html#s-12-5">12.5</a> (yêu cầu <code>nonce</code>, <code>end_session</code> gửi eTroy): ghi OIDC mock theo D-OIDC. PO sửa cùng phiếu chốt PC-06 (PR #112); không chặn PID này.</li>
+<li>Hồ sơ <a href="../PID-00038/index.html">PID-00038</a>: khi làm rõ, dùng tên biến của H7, chạy được cả discovery lẫn cấu hình tĩnh, chuyển tới <code>end_session_endpoint</code> của IdP đang cấu hình; bật <code>allowInsecureRequests</code> của <code>openid-client</code> chỉ khi issuer là <code>http://localhost</code>; giá trị <code>OIDC_REDIRECT_URI</code>, <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> theo H8. Không chặn PID này.</li>
+<li>Hồ sơ <a href="../PID-00035/index.html">PID-00035</a>: khi làm rõ, thêm chạy mock ở staging (image, Secret, tên riêng sau tunnel theo PC-06 B3). Không chặn PID này.</li></ul>
+<h3 id="con-mo">Còn mở</h3>
+<ul><li>Không có phiếu mở.</li></ul>
+
+<h2 id="s-6">6. Slice</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Slice</th><th scope="col">Mục tiêu</th><th scope="col">AC</th><th scope="col">Phụ thuộc</th></tr></thead><tbody>
+<tr><td><a href="specs/slices/S01-package-config-guards.html">S01</a></td><td>Package, cấu hình, chặn theo môi trường, file client và tài khoản</td><td>PID-00160-AC07 (phần file), PID-00160-AC08</td><td>—</td></tr>
+<tr><td><a href="specs/slices/S02-login-flow.html">S02</a></td><td>Discovery, JWKS, đăng nhập, token, userinfo</td><td>PID-00160-AC01, PID-00160-AC02, PID-00160-AC03, PID-00160-AC07</td><td>S01</td></tr>
+<tr><td><a href="specs/slices/S03-refresh-logout-revoke.html">S03</a></td><td>Refresh xoay vòng, đăng xuất RP-initiated, <code>/revoke</code></td><td>PID-00160-AC04, PID-00160-AC05, PID-00160-AC06</td><td>S02</td></tr>
+<tr><td><a href="specs/slices/S04-image-compose-logs.html">S04</a></td><td>Log, image Docker, service <code>oidc-mock</code> trong compose</td><td>PID-00160-AC09, PID-00160-AC10</td><td>S02, S03; PID-00159 đã merge</td></tr>
+<tr><td><a href="specs/slices/S05-readme.html">S05</a></td><td>README của mock, <code>infra/README.md</code>, <code>scripts/development/README.md</code></td><td>— (tài liệu)</td><td>S01–S04; PID-00159 đã merge</td></tr>
+</tbody></table></div>
+
+<h2 id="s-7">7. Điểm dừng</h2>
+<ul><li>Không được sửa (spec mục 7): <code>apps/</code>, <code>libs/</code>, <code>infra/helm</code>, <code>infra/terraform</code>, <code>.github/workflows</code>, <code>scripts/development/local-env.mjs</code>, <code>docs/</code>.</li>
+<li>Không ghi vào repo tên miền, URL staging thật, secret hay mật khẩu staging, key provider, host của cổng proxy.</li>
+<li><code>oidc-provider</code> không làm được một yêu cầu của spec 4.3 → dừng slice, ghi “Cần PO” trong <code>report.md</code>; không tự viết OpenID Provider khác.</li>
+<li>Gặp điều spec và mục Làm rõ không nói tới mà đổi hành vi → dừng slice, ghi “Cần PO” trong <code>report.md</code>; PO chạy lại spec-clarify-skill.</li>
+<li>Cần sửa luồng khác (gateway, FakeOidcProvider) → dừng, đề xuất ticket cho luồng đó (quy tắc 1.4).</li></ul>
+
+<h2 id="s-8">8. Kiểm tra hoàn thành</h2>
+<ul><li>Lệnh (spec mục 6): <code>pnpm nx run @sires/oidc-mock:test</code>; <code>pnpm nx affected -t lint typecheck test build</code>; <code>pnpm local:up --build</code>; <code>curl -s http://localhost:9400/.well-known/openid-configuration</code>; <code>node scripts/development/check-tracks.mjs</code>; <code>node scripts/docs/add-license.mjs --check</code>.</li>
+<li>Tự kiểm theo <a href="../../../overview/sections/20-assumptions-constraints-and-open-questions.html#dec-58">DEC-58</a>: bảng AC → test của <code>self-qc.md</code> và spec-converge-skill chạy trên PID này trước khi đặt “Xong — chờ QC”; pull request vào <code>develop</code> (PID PH-02, ngoại lệ “chờ mốc” của DEC-59), QC độc lập trước khi merge.</li>
+<li>Bảng AC → test: <a href="specs/acceptance.html">specs/acceptance.html</a>.</li></ul>
+<nav class="section-nav" aria-label="Điều hướng"><a href="../index.html">← Danh sách ticket</a><a href="../../index.html">Kế hoạch triển khai</a></nav>
+</main>
+<footer>SIRes · Ticket PID-00160 · © 2026 eTroy · <a href="../../../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
