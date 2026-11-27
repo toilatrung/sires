@@ -1,6 +1,6 @@
 # PID-00002 — Báo cáo QC độc lập
 
-**Kết luận mới nhất:** Merge được PR #106 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 3 LOW (Lần 4, 25/11/2026). G5 đóng theo PC-04 A2: `start()` không ném khi broker chưa tới được, lần đầu lỗi vào cùng vòng thử lại có backoff, `stop()` hủy timer đang chờ (có test thật, đột biến đưa `start()` về kiểu cũ thì đỏ); G6, G7 đã đóng. Còn G8 (`stop()` giữa lần thử đang kết nối dở vẫn chờ tới 10 s — cần PO xác nhận phạm vi “hủy lần thử đang chờ”), G9 (`stop()` không `await` rồi `start()` có thể làm consumer kẹt, có từ trước), G10 (chưa có self-QC cho lượt G5), đều LOW, không chặn merge theo DEC-58
+**Kết luận mới nhất:** Merge được PR #117 — 0 CRITICAL, 0 HIGH, 0 MEDIUM, 1 LOW (Lần 5, 27/11/2026). G8 đóng theo PC-05 P25: `stop()` hủy cả lần kết nối đang dở qua `AbortController` (socket đóng, không chờ 10 s); G9 đóng theo PC-05 P36: `start()` chờ `stop()` đang chạy, `stop()` gọi sau thắng. Test thật (broker câm) và test amqplib giả đều đỏ khi bỏ từng dòng sửa. Còn G10 LOW (self-QC cho lượt G5 của #106).
 
 - **Ticket:** [PID-00002](../../../docs/tickets/issues/PID-00002/index.html)
 - **Kết quả của Dev:** `report.md`, `implement.md`, `self-qc.md` trong thư mục này
@@ -355,6 +355,66 @@ Không còn việc chặn merge PR #106.
 - **Cần PO trả lời một câu (G8):** “`stop()` hủy lần thử đang chờ” có gồm lần thử đang kết nối dở (hiện chờ tới 10 s) không.
 - Ghi PC-04 A2 vào mục 5 hồ sơ PID-00002 (PC-04 ghi “chưa làm”; R-01–R-07).
 - Bản Python (`sires_common`, PID-00005): mô tả PR nêu `EventConsumer.start(connection)` nhận kết nối do bên gọi mở, không có vòng thử lại; A2 chỉ nói bản TS. QC không đọc mã Python lần này — ghi như lời khai để PO quyết có cần A2 cho bản Python.
+
+## Lần 5 — 27/11/2026 · spec-converge-skill
+
+Người chạy: phiên QC do PO `toilatrung` giao, không mang kết luận của Dev. Mã nguồn: PR #117, nhánh `platform/consumer-stop-start`. QC đánh giá mã ở `8a07308` (`8a073082fd73f27d1a2489e0ca5f10c02dae25d1`), gốc `origin/main` `c9e745b`; rồi thêm commit `1b1e04e` (`1b1e04ed832046786304c9a8143ca311c9d19216`) chỉ sửa một dòng chữ trong `self-qc.md` (xem Lệch với Self-QC). Đầu nhánh đã QC: `1b1e04e`.
+
+Đã đối chiếu: G8, G9, G10 của Lần 4; PC-05 P25 (phương án 1), P36 (phương án 1), P37; README `libs/ts/platform/README.md:46`; `self-qc.md` Lần 5; toàn bộ diff (6 file); mã nguồn amqplib 2.2.0 (`lib/connect.js`, `lib/connection.js`) để xác nhận `signal` tới được socket.
+
+### Kiểm lại việc còn lại của Lần 4
+
+| G Lần 4 | Kết quả Lần 5 | Bằng chứng |
+| --- | --- | --- |
+| G8 LOW: `stop()` chờ lần kết nối đang dở tới 10 s | Đã xử lý (P25) | `consumer.ts:193-206` mỗi lần mở có `AbortController`; `:211-212` signal đi vào `connect()` cùng `timeout`. amqplib 2.2.0 chép nông tùy chọn (`clone` → `copyInto`) rồi gọi `net.connect(sockopts)`, nên signal tới socket; hủy trước khi TCP nối thì `sock.once('error')` gọi callback, sau khi nối (broker câm) thì `endWhileOpening` của `Connection.open` gọi callback lỗi. `stop()` chỉ `abort()` khi chưa có link (`:176`), link đang consume vẫn đóng sau khi message đang xử lý xong. `start()` bị hủy không log, không lên lịch thử lại (`:160`, test kiểm `logs` rỗng và `reconnectTimer` không còn) |
+| G9 LOW: `stop()` không await rồi `start()` làm consumer kẹt | Đã xử lý (P36) | `start()` chờ `this.stopping` (`:149`) rồi bỏ qua nếu có `stop()` gọi sau nó (`stopCalls`, `:148`, `:150`); `stop()` dùng chung một promise `shutdown()` (`:177-180`). Cách này thay cho “số thế hệ” Lần 4 đề xuất, cùng tác dụng |
+| G10 LOW: chưa có self-QC cho lượt G5 (#106) | Còn mở | `self-qc.md` Lần 5 phủ P25, P36, chưa phủ lượt G5 |
+
+### Khoảng trống
+
+| Mã | Nguồn | Loại | Mức | Bằng chứng | Việc cần làm |
+| --- | --- | --- | --- | --- | --- |
+| G10 | DEC-58 | partial | LOW | Như Lần 4 | Như Lần 4; hoặc PO nhận mô tả PR #106 làm bản tự QC |
+
+Không có CRITICAL, HIGH, MEDIUM. Không có G mới.
+
+Ghi nhận, không tính G: `start()` trên mạng chết vẫn mất tới `CONNECT_TIMEOUT_MS` (10 s) mới trả về; P25 chỉ chốt `stop()`, README và self-QC nêu đúng. Service không `await start()` trước khi mở HTTP (README).
+
+### AC
+
+AC của PID-00002 không đổi; CI chạy mới `@sires/platform` 178/178 (174 cũ + 4 mới). Edge case mới đạt: `stop()` giữa lần kết nối tới broker câm trả về dưới 1 s và đóng socket (`inbox.spec.ts:636`); ba thứ tự `start()`/`stop()` không await (`consumer-lifecycle.spec.ts`).
+
+### Thử đột biến (cây gộp 7 nhánh, sửa tạm rồi `git checkout`)
+
+| Mã | Đột biến | Kết quả |
+| --- | --- | --- |
+| M1 | Bỏ `if (!this.link) this.cancelOpening?.abort();` (`:176`) | Đỏ: test P25 (`inbox.spec.ts`, 10 024 ms, tức chờ hết `CONNECT_TIMEOUT_MS`) và `consumer-lifecycle` ca 1 |
+| M2 | Bỏ `while (this.stopping) await this.stopping;` (`:149`) | Đỏ: `consumer-lifecycle` ca 2 (bổ sung sau QC sires-w3, nay giữ được dòng này) |
+| M3 | Bỏ `if (this.stopCalls !== stopCalls) return;` (`:150`) | Đỏ: `consumer-lifecycle` ca 3 (“lệnh cuối thắng”) |
+
+### Lệnh đã chạy
+
+| Lệnh | Kết quả |
+| --- | --- |
+| `pnpm exec vitest run src/inbox/consumer-lifecycle.spec.ts src/local-timeouts.spec.ts` (platform, cây gộp có #116) | 4/4 đạt |
+| `pnpm exec vitest run src/inbox/inbox.spec.ts -t "broker không tới được"` | 2/2 đạt, 11 bỏ qua (không dựng container) |
+| Đột biến M1–M3 | Như bảng trên |
+| `pnpm nx run-many -t lint typecheck -p @sires/platform …` trên cây gộp | Đạt |
+| `node agent/skills/dev/spec-execution-skill/scripts/check-pid.mjs PID-00002 --result` | KẾT QUẢ ĐỦ (0 cảnh báo), trước và sau commit `1b1e04e` |
+| `node scripts/development/check-tracks.mjs --base origin/main` | `tracks touched: platform, repo` |
+| `gh api repos/toilatrung/sires/pulls/117/commits` | 4/4 `verified: true`; không có dòng ghi công AI |
+| `gh pr checks 117` (run 45656293748 trên `8a07308`) | 25/25 đạt; log `typescript`: platform chạy mới 178/178, gồm test P25 (757 ms) và `consumer-lifecycle.spec.ts` 3/3. CI trên `1b1e04e`: xem bảng tổng hợp của phiên QC |
+| Test Testcontainers đầy đủ của platform | Không chạy lại cục bộ (máy dùng chung); dựa vào CI chạy mới |
+
+### Lệch với Self-QC
+
+- `self-qc.md:6` dòng Cập nhật bị ghép sai chữ (“`stop(; bổ sung test sau QC sires-w3)` hủy …”). QC sửa ở `1b1e04e`: “`stop()` hủy lần kết nối đang dở, `start()` chờ `stop()` đang chạy, theo PC-05 P25, P36; bổ sung test sau QC sires-w3”. Không đổi nội dung khác.
+- Phần còn lại khớp: 178/178, test đỏ trước khi sửa, đỏ khi trả `consumer.ts` về `main`.
+
+### Việc còn lại
+
+1. Phiên điều phối merge #117. #116 cũng sửa `inbox.spec.ts` (chỗ khác); QC đã thử gộp, không xung đột. Merge một PR thì PR kia cập nhật với `main` và chờ CI.
+2. G10: tùy PO.
 
 ---
 
