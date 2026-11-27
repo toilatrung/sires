@@ -1,0 +1,172 @@
+<!doctype html>
+<!--
+  SIRes — Copyright © 2026 The eTroy development team · eTroy One platform.
+  Sole decision-maker: PO Trịnh Quang Trung. Non-commercial use only; commercial use in any form is prohibited.
+  SPDX-License-Identifier: LicenseRef-eTroy-NC-1.0 — see LICENSES.md
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Báo cáo đợt 26–27/11/2026: hoàn thiện PH-01, đưa giao diện lên đầu PH-02 (11 khu vực web chạy trên mock), OIDC mock, key proxy; PR, kết quả QC, thứ tự merge, việc còn chờ PO">
+<title>Báo cáo giao diện trước PH-02 | SIRes</title>
+<link rel="icon" href="assets/brand/sires-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/styles.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Đến nội dung chính</a>
+<div class="document">
+<header class="site-header"><a class="brand" href="index.html"><img src="assets/brand/sires-mark.svg" alt="" width="22" height="22">SIRes / PRD</a><span><a href="phieu-chot-ph02.html">Phiếu chốt PH-02 (PC-06)</a> · <a href="phieu-chot-cuoi-ph01.html">PC-05</a></span></header>
+<main id="main-content">
+<p class="eyebrow">Kế hoạch triển khai · Báo cáo</p>
+<h1>Báo cáo đợt hoàn thiện PH-01 và giao diện trước PH-02 (26–27/11/2026)</h1>
+<p class="meta">Lập sáng 27/11/2026 theo yêu cầu PO · Người làm: phiên điều phối do PO <code>toilatrung</code> giao, cùng các phiên Dev và QC do phiên đó mở · Nguồn: GitHub (PR, CI), báo cáo QC trong <code>agent/execution/PID-*/qc-report.md</code>, <a href="../docs_context.md">docs_context</a></p>
+
+<h2 id="ket-luan">1. Kết luận</h2>
+<div class="note">
+<p><strong>Giao diện:</strong> cả 11 khu vực web đã dựng trên mock theo OpenAPI, cùng shell (PID-00012) và bộ mock (PID-00013). Chạy được trên máy ở nhánh tích hợp <code>preview/ui-ph02</code> (mục 3). Mỗi khu vực có PR riêng vào <code>develop</code>, có QC chéo độc lập.</p>
+<p><strong>PH-01:</strong> các PID còn lại đều có PR đạt QC độc lập: PID-00012, 00013, 00014, 00016, 00021 (SPK-01 Lần 3 qua proxy), 00025 (SPK-03), 00159; thêm các PR sửa theo PC-04, PC-05. Cổng ra PH-01 chưa được xác nhận: đó là việc của PO (PC-05 P31), kèm các mục ở mục 7.</p>
+<p><strong>Merge:</strong> theo yêu cầu “Merge hộ tôi đi” của PO, mọi PR đạt QC đã vào nhánh đích qua hai PR gộp (mục 5): #160 vào <code>main</code> (31 PR, cùng #38 squash riêng) và #161 vào <code>develop</code> (12 PR giao diện, kèm <code>main</code> mới).</p>
+<p><strong>Phiếu chốt để PO làm việc:</strong> <a href="phieu-chot-ph02.html">PC-06</a> (PR #112) là phiếu duy nhất của đợt này: mục đã chốt theo đề xuất, mục PO chọn trong phiên, câu chốt khi làm rõ 11 PID web (nhóm H) và bảng “Còn chờ PO”. Các mục của PH-01 đã đánh dấu trong <a href="phieu-chot-cuoi-ph01.html">PC-05</a> (PR #124).</p>
+</div>
+
+<h2 id="quyet-dinh">2. Yêu cầu của PO và quyết định</h2>
+<p>PO yêu cầu ngày 26–27/11/2026: hoàn thiện PH-01; đưa task giao diện lên sớm nhất trong PH-02 để Dev theo dõi trực quan; các vấn đề phát sinh chốt theo đề xuất và xuất PC; OIDC viết mock server để test, chưa dùng eTroy thật; key provider dùng key proxy do đội tự cấp; gọi phiên chạy song song, QC chéo, đạt thì merge.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Mã</th><th>Quyết định</th><th>Căn cứ</th><th>Ghi ở</th></tr></thead>
+<tbody>
+<tr><td>D-KEY</td><td>Key proxy (cổng trung gian PO tự cấp) tính là key provider để test và phát triển. File key ở <code>&lt;checkout chính&gt;\.sires\provider-keys.env</code>, Git bỏ qua, quyền chỉ user hiện tại; lệnh nhập <code>scripts/development/set-provider-keys.ps1</code></td><td>PO chọn trong phiên</td><td>PC-05 S-K1, S-K2, S-DK (#124); PC-06 D2 (#112); PR #118</td></tr>
+<tr><td>D-OIDC</td><td>Chưa nối eTroy OIDC thật; OIDC mock server PID-00160 cho cục bộ và staging PH-02; sửa eTroy_OIDC (ETR-10 nonce, ETR-07 logout) để trước khi nối thật</td><td>PO chọn trong phiên</td><td>PC-06 C1–C4, DEC-65 (#112); PR #121, #130</td></tr>
+<tr><td>D-UI</td><td>9 PID web của PH-03–PH-06 kéo lên PH-02 ở mức “Xây với mock”; Hội tụ với backend thật giữ ở cổng giai đoạn gốc</td><td>PO yêu cầu; cách làm chốt theo đề xuất</td><td>PC-06 G1, DEC-64 (#112); tickets 2, 3</td></tr>
+<tr><td>D-BRANCH</td><td>PID PH-01 và tài liệu vào <code>main</code>; mã PH-02 vào <code>develop</code> sau QC độc lập, không chờ mốc DEC-59</td><td>Chốt theo đề xuất</td><td>PC-06 G2, DEC-63 (#112); AGENT.md</td></tr>
+<tr><td>PC-05</td><td>75 mục đánh dấu: chọn đề xuất cho mọi mục trừ S-K1, S-K2 (theo D-KEY); P31 duyệt danh sách điều kiện, xác nhận cổng ra vẫn là của PO</td><td>Chốt theo đề xuất</td><td>PR #124; nhóm II Google Scholar vào PRD ở PR #132</td></tr>
+<tr><td>PC-06</td><td>24 mục quyết định, nhóm H (câu chốt khi làm rõ 11 PID web), bảng “Còn chờ PO”</td><td>Chốt theo đề xuất / PO chọn</td><td>PR #112</td></tr>
+</tbody></table></div>
+<p>Phiên Dev được PO cho làm rõ PID web (PC-06 G6): mọi câu trả lời ghi “chốt theo đề xuất (PO ủy quyền 26/11/2026)” trong hồ sơ PID; câu không có căn cứ để đề xuất để mở (phiếu I) và đưa vào “Còn chờ PO”.</p>
+
+<h2 id="giao-dien">3. Giao diện trên mock</h2>
+<p>Nhánh tích hợp <code>preview/ui-ph02</code> (không được bảo vệ, chỉ để xem và để các khu vực dựng tiếp; không merge đi đâu) gộp <code>develop</code>, <code>main</code> và các PR giao diện. Trên nhánh này: lint, typecheck, build của <code>@sires/web</code> đạt, 725/725 test trong 68 file đạt (07:00, gồm đủ 11 khu vực).</p>
+<p>Chạy trên máy PO (PowerShell):</p>
+<pre>git fetch origin
+git worktree add ..\sires-preview origin/preview/ui-ph02
+cd ..\sires-preview
+pnpm install --frozen-lockfile
+pnpm --filter @sires/web dev:mock</pre>
+<p>Mở <code>http://localhost:5173</code>. Mock bật bằng chế độ <code>mock</code> của Vite; bản build production không chứa mock (có test chặn). Khi mock khởi động, trang trắng khoảng 1–2 giây.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>PID</th><th>Khu vực</th><th>PR (→ develop)</th><th>QC chéo</th></tr></thead>
+<tbody>
+<tr><td>PID-00012</td><td>Shell: TopBar, ProjectRail, routing, i18n VI/EN, client API, client SSE, chip trạng thái, kho nháp, thẻ Interactive Agent Prompt, Dialog dùng chung</td><td>#138 (→ main)</td><td>Đạt, Lần 3 (<code>b157d02</code>)</td></tr>
+<tr><td>PID-00013</td><td>Mock theo OpenAPI cho mọi khu vực, dữ liệu mẫu tiếng Việt và English</td><td>#131 (→ main)</td><td>Đạt, Lần 2 (<code>f406d47</code>)</td></tr>
+<tr><td>PID-00036</td><td>Settings: SignIn, Profile, Provider Connections, Agent Models, Preferences</td><td>#158 (thay #143)</td><td>Đạt, Lần 2 (<code>3ef43df</code>)</td></tr>
+<tr><td>PID-00037</td><td>Research Projects, khung Dashboard</td><td>#141</td><td>Đạt (<code>49ab71c</code>)</td></tr>
+<tr><td>PID-00060</td><td>Pending Actions, Notifications, Global Assistant, màn điện thoại</td><td>#142</td><td>Đạt (<code>7199dbd</code>)</td></tr>
+<tr><td>PID-00058</td><td>Project Overview, Project AI Chat</td><td>#151</td><td>Đạt (<code>6234b40</code>)</td></tr>
+<tr><td>PID-00059</td><td>Agent Activity, Workflow, Agent List, History</td><td>#155</td><td>Đạt (<code>13316b9</code>)</td></tr>
+<tr><td>PID-00082</td><td>Plan, so sánh version, TaskReview, Tasks toàn cục</td><td>#145</td><td>Đạt, Lần 2 (<code>d91aab2</code>)</td></tr>
+<tr><td>PID-00083</td><td>Tab Thảo luận trong chi tiết workflow</td><td>#148</td><td>Đạt, Lần 2 (<code>5c1a766</code>)</td></tr>
+<tr><td>PID-00084</td><td>Thẻ đề xuất thảo luận trong Chat</td><td>#146</td><td>Đạt, Lần 2 (<code>0de7022</code>)</td></tr>
+<tr><td>PID-00098</td><td>Discover, Trusted Library, Reference</td><td>#144</td><td>Đạt, Lần 3 (<code>6420c5b</code>; Lần 2 chưa đạt vì trùng mock với research khi gộp, đã sửa)</td></tr>
+<tr><td>PID-00114</td><td>References and Evidence (Evidence Inspector), Research Artifacts</td><td>#147</td><td>Đạt (<code>bac3f69</code>)</td></tr>
+<tr><td>PID-00115</td><td>Manuscript: editor LaTeX, diff Change Proposal, build log, PDF, Export</td><td>#150</td><td>Đạt, Lần 2 (<code>7d3cc4f</code>, theo AC mới của #154)</td></tr>
+<tr><td>PID-00160</td><td>OIDC mock server (cục bộ, staging PH-02)</td><td>#130</td><td>Đạt, Lần 3 (<code>7276d4e</code>)</td></tr>
+</tbody></table></div>
+<p>Ảnh chụp trên mock, 1440×900, tiếng Việt (nhánh tích hợp, 27/11/2026 lúc 07:03):</p>
+<figure><img src="assets/ui-ph02/01-dashboard.jpg" alt="Dashboard: banner workflow bị gián đoạn và 9 việc chờ" width="800"><figcaption>Dashboard (PID-00037, PID-00060): banner workflow bị gián đoạn, danh sách việc chờ có nút hành động theo loại.</figcaption></figure>
+<figure><img src="assets/ui-ph02/02-project-overview.jpg" alt="Project Overview" width="800"><figcaption>Project Overview (PID-00058): research context, giả định còn mở, tiến độ Plan theo Phase, việc chờ của project.</figcaption></figure>
+<figure><img src="assets/ui-ph02/03-project-chat.jpg" alt="Project AI Chat" width="800"><figcaption>Project AI Chat (PID-00058, PID-00084): thẻ prompt choice của shell, thẻ đề xuất thảo luận, panel context của cuộc trò chuyện.</figcaption></figure>
+<figure><img src="assets/ui-ph02/04-plan-tasks.jpg" alt="Plan and Tasks" width="800"><figcaption>Plan and Tasks (PID-00082): board theo trạng thái Task, nhãn Available for agent / Manual editor requirement, active task.</figcaption></figure>
+<figure><img src="assets/ui-ph02/05-evidence.jpg" alt="References and Evidence" width="800"><figcaption>References and Evidence (PID-00114): claim theo mức hỗ trợ (Supported, Conflicting, Unsupported, needs review), Evidence Inspector.</figcaption></figure>
+<figure><img src="assets/ui-ph02/06-manuscript.jpg" alt="Manuscript" width="800"><figcaption>Manuscript (PID-00115): cây file có đề xuất, editor LaTeX, preview PDF, build lỗi, Export.</figcaption></figure>
+<figure><img src="assets/ui-ph02/07-workflow-recovery.jpg" alt="Workflow và Recovery decision" width="800"><figcaption>Agent Activity (PID-00059): workflow Interrupted, Recovery decision (tiếp tục, chạy lại bước, hủy), Agent List.</figcaption></figure>
+<figure><img src="assets/ui-ph02/08-discover.jpg" alt="Discover" width="800"><figcaption>Discover (PID-00098): nguồn OpenAlex mặc định, bốn kiểu tìm, nhập thủ công DOI, BibTeX, PDF.</figcaption></figure>
+<figure><img src="assets/ui-ph02/09-trusted-library.jpg" alt="Trusted Library" width="800"><figcaption>Trusted Library (PID-00098): duyệt theo lô, mục nghi trùng tách riêng (Gộp có dialog nêu hệ quả).</figcaption></figure>
+<figure><img src="assets/ui-ph02/10-settings-providers.jpg" alt="Provider Connections" width="800"><figcaption>Settings › Provider Connections (PID-00036): key chỉ hiện dạng che, kiểm tra Valid/Invalid, kết nối proxy tương thích OpenAI.</figcaption></figure>
+<figure><img src="assets/ui-ph02/11-mobile-pending.jpg" alt="Pending Actions trên điện thoại" width="300"><figcaption>Pending Actions ở 390 px (PID-00060): thanh tab dưới, không cuộn ngang.</figcaption></figure>
+
+<h2 id="pr">4. Pull request của đợt và kết quả QC</h2>
+<p>Mọi PR có QC độc lập do một phiên khác phiên làm (QC chéo); báo cáo QC nằm trong <code>agent/execution/PID-*/qc-report.md</code> trên nhánh của PR hoặc trong mô tả PR. Cột “SHA đã QC”: sau SHA đó nhánh chỉ thêm file báo cáo QC, trừ khi ghi khác.</p>
+<h3>4.1. PH-01 và công cụ (→ main)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>PR</th><th>Nội dung</th><th>Phiên làm</th><th>QC độc lập</th></tr></thead>
+<tbody>
+<tr><td>#138</td><td>PID-00012 shell web</td><td>web-shell</td><td>Đạt Lần 3, <code>b157d02</code></td></tr>
+<tr><td>#131</td><td>PID-00013 mock theo OpenAPI (thay #128, #129 vì gitleaks dương tính giả)</td><td>web-mocks</td><td>Đạt Lần 2, <code>f406d47</code></td></tr>
+<tr><td>#63</td><td>PID-00014 phiên gateway, CSRF, migration (PC-05 P32: giữ bản sửa infra)</td><td>Vietanhhhhhh2003, QC thêm mục 5</td><td>Đạt Lần 4, <code>d43618d</code></td></tr>
+<tr><td>#125</td><td>PID-00159 vai trò database cục bộ, <code>local:roles</code>, <code>local:migrate</code>, <code>local:services</code>; đã chứa #113 (PID-00016 report)</td><td>local-env-oidc</td><td>Đạt Lần 2, <code>b453798</code></td></tr>
+<tr><td>#118</td><td>Lệnh nhập key provider, file key ngoài Git; SPK-01 đọc file; sửa G9 (không gửi key proxy tới endpoint chính thức)</td><td>provider-keys</td><td>Đạt, <code>4e334f2</code></td></tr>
+<tr><td>#139</td><td>PID-00021 SPK-01 Lần 3 qua proxy (D-KEY); G5, G6, G8</td><td>provider-keys</td><td>Đạt Lần 4, <code>ef55e22</code></td></tr>
+<tr><td>#38</td><td>PID-00025 SPK-03: OpenAlex, parser BibTeX/RIS (DEC-60, DEC-61)</td><td>local-env-oidc (làm thay Vietanhhhhhh2003)</td><td>Đạt, <code>035608a</code>; <strong>đã squash vào main 07:00 (<code>7f6173c</code>)</strong></td></tr>
+<tr><td>#114, #115</td><td>planning, workspace dùng hằng timeout chung (PC-04 A6)</td><td>T1xNTH</td><td>Đạt</td></tr>
+<tr><td>#116, #117</td><td>platform: bỏ timeout tại chỗ (P38); <code>stop()</code>/<code>start()</code> của consumer (P25, P36)</td><td>T1xNTH</td><td>Đạt</td></tr>
+<tr><td>#152</td><td>Bỏ <code>semantic_scholar</code> khỏi fake adapter (DEC-60)</td><td>local-env-oidc (làm thay T1xNTH)</td><td>Đạt, <code>1588850</code></td></tr>
+</tbody></table></div>
+<h3>4.2. Tài liệu (→ main)</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>PR</th><th>Nội dung</th><th>QC độc lập</th></tr></thead>
+<tbody>
+<tr><td>#120</td><td>PC-05 P1–P6: nhãn trạng thái bổ sung, <code>replay.unavailable</code>, <code>components.schemas.Event</code>, menu avatar, <code>/auth/logout</code> 303; PID-00012, PID-00159 Sẵn sàng</td><td>Đạt</td></tr>
+<tr><td>#124</td><td>PC-05 đánh dấu 75 mục; DEC-62 <code>invalid_request</code> (đóng OQ-113); DBQ-12, DBQ-13</td><td>Đạt (M1 sửa trong #160)</td></tr>
+<tr><td>#132</td><td>Google Scholar vào PRD: 13 requirement, 31 AC (282 requirement, 505 AC); đóng OQ-114, OQ-115</td><td>Đạt</td></tr>
+<tr><td>#112</td><td>PC-06: 24 mục, nhóm H, “Còn chờ PO”; DEC-63–DEC-65; kế hoạch PH-02 giao diện trước</td><td>Đạt</td></tr>
+<tr><td>#121, #136</td><td>Hồ sơ PID-00160 (Sẵn sàng), PID-00161 (đề xuất); script bảng giai đoạn đọc PH-0N đầu tiên</td><td>Đạt</td></tr>
+<tr><td>#122, #123, #127, #133, #134, #135, #137</td><td>Làm rõ 11 PID web (Sẵn sàng): 00036; 00037, 00060; 00058, 00059; 00114; 00082–00084; 00115; 00098</td><td>Đạt</td></tr>
+<tr><td>#126, #140, #153, #154, #157, #159</td><td>Sửa nguồn theo hồ sơ PID web (hợp đồng, thiết kế, tickets 1.5); #159 thay #156 (gitleaks)</td><td>Đạt (#154 Lần 2, #159 Lần 2)</td></tr>
+<tr><td>#149</td><td>PID-00025-AC04 khớp H3; README gốc theo DEC-60, DEC-61</td><td>Đạt</td></tr>
+</tbody></table></div>
+<h3>4.3. Mã PH-02 (→ develop)</h3>
+<p>Bảng ở mục 3, cộng #130 (PID-00160 OIDC mock: authorization code + PKCE, <code>nonce</code>, JWKS, <code>end_session</code>, <code>/revoke</code>; client cục bộ chỉ đăng ký <code>/api/v1/auth/callback</code> và <code>/sign-in</code>; 34 test). Đã đóng: #128, #129 (thay bằng #131), #143 (thay bằng #158), #156 (thay bằng #159).</p>
+
+<h2 id="merge">5. Merge (PO làm)</h2>
+<p>Lệnh merge bằng quyền bypass ruleset bị bộ phân loại an toàn chặn lúc khoảng 01:00 (khi yêu cầu merge chỉ nằm trong lời giao việc đầu đêm). Sau tin nhắn của PO lúc khoảng 07:00 (“Merge hộ tôi đi”), lệnh chạy được. Vì khoảng 30 PR tài liệu cùng sửa file sinh tự động và nhật ký, merge lần lượt sẽ làm các PR sau xung đột, nên mỗi nhánh đích nhận một PR gộp, merge bằng merge commit: head của từng PR con nằm trong nhánh đích nên GitHub tự đánh dấu các PR con là đã merge.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Lúc</th><th>PR</th><th>Vào</th><th>Cách</th><th>Kết quả</th></tr></thead>
+<tbody>
+<tr><td>07:00</td><td>#38 (PID-00025)</td><td>main</td><td>squash (nhánh có 11 commit cũ chưa ký)</td><td><code>7f6173c</code></td></tr>
+<tr><td>07:3x</td><td>#160 gộp 31 PR: #120, #138, #131, #118, #139, #63, #114–#117, #152, #125 (đã chứa #113), #121, #136, #112, #122, #126, #123, #127, #153, #124, #132, #133, #140, #134, #157, #135, #154, #137, #159, #149</td><td>main</td><td>merge commit; CI 25/25 trước merge</td><td><code>d8f6660</code>; 32 PR con ở trạng thái MERGED; CI của <code>main</code> sau merge đạt</td></tr>
+<tr><td>07:35</td><td>#161 gộp 12 PR: #130, #141, #142, #158, #144, #145, #146, #148, #147, #151, #155, #150, cùng <code>main</code> <code>d8f6660</code></td><td>develop</td><td>merge commit; CI 25/25 trước merge</td><td><code>898eb89</code>; 12 PR con ở trạng thái MERGED; <code>develop</code> chứa toàn bộ <code>main</code></td></tr>
+</tbody></table></div>
+<p>Phiên gộp đã kiểm: mọi head PR là tổ tiên của nhánh gộp; tập file đổi của nhánh gộp nằm trong hợp các file của PR con; file sinh được sinh lại (<code>render.mjs</code> 117 trang, bundle redocly, <code>update-index.mjs</code>); nhật ký giữ đủ dòng; #124 và #132 ghép tay ở backlog, PRD 20.3 (21 mục Đã hoàn thành, không còn OQ mở). Đã đóng mà không merge: #128, #129, #143, #156 (thay bằng PR có lịch sử sạch). #119 (đồng bộ develop) được GitHub đánh dấu đã merge vì <code>main</code> đã vào <code>develop</code> qua #161.</p>
+
+<h2 id="ph01">6. PH-01</h2>
+<p>36 PID của PH-01: 30 xong từ đêm 25/11. 6 PID còn lại có PR đạt QC độc lập ở đợt này: PID-00012 (#138), 00013 (#131), 00014 (#63), 00016 (#113, gộp trong #125), 00021 (#139), 00025 (#38), 00159 (#125). PID-00021 kết luận qua proxy theo D-KEY: OpenAI đo đủ; Claude và Gemini ghi “không đo được qua proxy” (proxy không có kênh Claude, Gemini hết thời gian chờ).</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Điều kiện cổng ra (PC-05 P31)</th><th>Trạng thái</th></tr></thead>
+<tbody>
+<tr><td>Mọi PID PH-01 xong, QC độc lập nghiệm thu được</td><td>Đạt (#38, #160 đã vào <code>main</code>)</td></tr>
+<tr><td>Báo cáo SPK-01, SPK-03</td><td>Đạt theo D-KEY (SPK-01 qua proxy) và DEC-60, DEC-61 (SPK-03 chỉ OpenAlex); SerpApi chưa có key</td></tr>
+<tr><td>Hợp đồng baseline; nơi dựng staging</td><td>PO đã duyệt 25/11 (PC-04 B6, B7)</td></tr>
+<tr><td>Môi trường cục bộ đủ vai trò database</td><td>Đạt (PID-00159, #125)</td></tr>
+<tr><td>PO xác nhận cổng ra và làm các việc tại mốc DEC-59</td><td><strong>Chờ PO</strong></td></tr>
+</tbody></table></div>
+
+<h2 id="cho-po">7. Còn chờ PO</h2>
+<p>Danh sách đầy đủ, kèm “chặn gì, cần trước mốc nào”, ở mục <a href="phieu-chot-ph02.html#con-cho-po">Còn chờ PO của PC-06</a>. Tóm tắt:</p>
+<ol>
+<li><strong>Xác nhận cổng ra PH-01</strong> (PC-05 P31) và làm các việc tại mốc DEC-59 (đổi nhánh mặc định sang <code>develop</code>, AGENT.md, README, skill; luồng infra sửa <code>ci.yml</code>, <code>check-tracks.mjs</code>, <code>nx.json</code>).</li>
+<li><strong>Duyệt lại các mục chốt theo đề xuất</strong> trong PC-05 (75 mục) và PC-06 (24 mục, nhóm H); mỗi mục ghi căn cứ, đổi được.</li>
+<li><strong>Cấp hoặc làm với bên ngoài:</strong> tên miền cho Cloudflare Tunnel của staging (PC-06 B3); người sửa eTroy_OIDC (ETR-10 nonce, ETR-07 logout) trước khi nối thật; nhóm key proxy có kênh Claude và Gemini, hoặc key chính thức, nếu muốn đo hai provider này; key SerpApi, điều khoản gói trả phí (ASM-01, RISK-12), hạn mức tháng; key OpenAlex của hệ thống cho adapter sản phẩm.</li>
+<li><strong>Phiếu I còn mở của PID web:</strong> PID-00058 I1 (nguồn “Bước tiếp theo gợi ý”), PID-00059 I1 (tổng hợp usage NFR-USAGE-002), I2 (nhóm sự kiện History), PID-00082 I1 (trình soạn Draft, checklist dạng cây, activity timeline chưa có thiết kế; đề xuất tách PID).</li>
+<li><strong>Mâu thuẫn trong PRD, hợp đồng:</strong> trùng DOI (PRD 10 và 18.5); câu edit-and-approve ở PRD 12.5 MS-DIFF-001; <code>manual_submission</code> chưa có luồng tạo revision (PRD 12.10); “hoạt động gần nhất” của build bị bỏ khỏi thiết kế nhưng UX-STATE-001 vẫn yêu cầu; cách điền <code>MessageAccepted.agentRunId</code> lúc trả 202 (A: workspace cấp trước id; B: chờ <code>chat.delta</code> đầu); <code>ArtifactVersionCreate.basedOnVersionId</code> bắt buộc khi agent tạo mới; đơn vị offset của claim anchor (code point hay UTF-16); hồ sơ PID-00098 N9, H4 vẫn ghi <code>listProjectReferences</code> là mock của library, trái H31.</li>
+<li><strong>Database cần DBQ:</strong> cột cho <code>validation</code>, <code>diagramType</code>, claim anchor, <code>Workflow.subject</code> (research); Preferences Scholar, <code>scholar_search</code>, <code>import_state</code>, <code>deleted_at</code> (library); citation → claim và vị trí citation trong PDF (manuscript).</li>
+<li><strong>Kiến trúc:</strong> hợp đồng nội bộ để library nhận hạn mức Scholar của lần chạy và nơi đếm hạn mức tháng; nguồn dữ liệu <code>ManuscriptUsage</code> (manuscript → research, PID-00079); kiến trúc 2.3 ghi <code>@retorquere/bibtex-parser</code> chưa thử trong khi PID-00024 dùng Citation.js, spike SPK-03 dùng <code>@biblatex/text</code>.</li>
+<li><strong>12 Assumption Google Scholar</strong> trong PRD (#132), có nhãn tại chỗ.</li>
+<li><strong>Phạm vi PID-00082:</strong> có đưa đính kèm file vào lượt này không; màn Ready (“Bắt đầu thực hiện”) chưa có thiết kế.</li>
+</ol>
+
+<h2 id="ghi-chu">8. Ghi chú vận hành</h2>
+<ul>
+<li><strong>Cách chạy đợt:</strong> 9 phiên song song (tài liệu PC-05, kế hoạch PH-02, shell, mock, Settings, global, môi trường cục bộ, key provider, QC độc lập). Mỗi PR do một phiên khác phiên làm QC (QC chéo); phiên Dev tự QC trước theo DEC-58. Phiên mới chỉ mở được khi PO nhắn trực tiếp, nên các PID sau giao cho phiên đã rảnh.</li>
+<li><strong>Nhánh tích hợp <code>preview/ui-ph02</code>:</strong> lập khi merge bypass bị chặn, để các khu vực dựng tiếp trên shell và mock chưa merge. Xung đột file sinh ở đây giải tạm (giữ một phía), vì nhánh không merge đi đâu; xóa được sau khi #160 và nhánh gộp develop vào.</li>
+<li><strong>Gitleaks dương tính giả</strong> với khóa BibTeX mẫu (<code>key: '…'</code>) ở fixture mock và thiết kế: gitleaks quét mọi commit của PR, nên phải dựng lại lịch sử nhánh (PR mới #131, #158, #159), không sửa <code>gitleaks.toml</code>.</li>
+<li><strong>Tích hợp:</strong> lỗi chỉ lộ khi gộp nhiều khu vực (hai khu vực cùng khai mock <code>listProjectReferences</code>) được bắt bằng chạy toàn bộ test web trên nhánh tích hợp; nên giữ bước này trước khi merge một loạt PR giao diện.</li>
+<li><strong>Máy PO:</strong> Nx ghi cache vào <code>.nx/cache</code> của checkout chính, lỗi ENOENT khi checkout chính bị dọn; worktree đặt <code>NX_CACHE_DIRECTORY</code> riêng. Agent con mở trình duyệt với <code>file://</code> bị treo khoảng 4 giờ; kiểm render bằng <code>render.mjs</code>. Hạn mức sử dụng hết một lần lúc khoảng 05:30, các phiên làm tiếp sau khi reset.</li>
+<li><strong>Key provider:</strong> nạp file key vào PowerShell đang mở: <code>Get-Content -LiteralPath 'H:\Troy University\sires\.sires\provider-keys.env' | ForEach-Object { if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') { Set-Item -LiteralPath "env:$($Matches[1])" -Value $Matches[2].Trim().Trim("'").Trim('"') } }</code>; đổi key: chạy lại <code>scripts/development/set-provider-keys.ps1</code>, kiểm dạng key không in giá trị: thêm <code>-Check</code>.</li>
+</ul>
+
+<nav class="section-nav no-print" aria-label="Điều hướng"><a href="phieu-chot-ph02.html">← Phiếu chốt PH-02</a><a href="index.html">Mục lục PRD</a><span></span></nav>
+</main>
+<footer>AI Research Assistant · Báo cáo giao diện trước PH-02. · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a> · © 2026 eTroy · <a href="../../LICENSES.md">Non-commercial license</a></footer>
+</div>
+</body>
+</html>
