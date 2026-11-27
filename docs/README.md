@@ -46,6 +46,7 @@ Câu hỏi mới phát sinh được ghi thành Open Question (`OQ-NNN`, mã ti�
 | `back-log.html` | Nguồn theo dõi chính: trạng thái section, việc `BL-NN-MM`, sổ OQ, việc đồng bộ `SYNC-NN`, nhật ký |
 | `phieu-chot-backlog.html` | Phiếu chốt để PO trả lời OQ và duyệt hàng loạt |
 | `phieu-chot-cuoi-ph01.html` | Phiếu chốt cuối PH-01 (đề nghị PC-05, 75 mục; phiếu duy nhất còn mở của PH-01): gộp phiếu SPK-01, phiếu Google Scholar và các điểm PH-01 còn chờ PO để chốt một lần; lập 25/11/2026 |
+| `phieu-chot-ph02.html` | Phiếu chốt PC-06 (24 mục quyết định, 11 mục ghi nhận câu chốt PID web): điểm còn mở của PH-02 — thứ tự làm rõ (PID web trước), staging trên máy PO, OIDC (OIDC mock thay eTroy ở PH-02, `nonce`, đăng xuất), Settings và Provider Connection (key proxy), phân công, điều kiện đóng PH-02, giao diện trước (nhóm G), câu chốt khi làm rõ 11 PID web (nhóm H), mục “Còn chờ PO”; lập 25/11/2026, chốt 27/11/2026 theo ủy quyền và lựa chọn của PO (DEC-63–DEC-65), chờ PO xem lại |
 | `bao-cao-hoan-tat-ph01.html` | Báo cáo đợt hoàn tất PH-01 đêm 24–25/11/2026: PR đã merge, trạng thái 36 PID, cổng ra còn thiếu, việc PO cần làm |
 | `phieu-chot-ph01.html` | Phiếu chốt PC-04: quyết định ngày 24/11/2026 để hoàn tất PH-01 (DBD-14, EC09, điểm QC luồng platform, #85, thứ tự merge, H10 của PID-00019); đã chốt theo ủy quyền của PO, chờ PO xem lại |
 | `phieu-chot-spk-01.html` | Phiếu chốt sau SPK-01 (PID-00021): key proxy, OQ-113, G5–G10, PID-00070; lập 21/11/2026, chờ PO chốt (đề nghị PC-02) |
